@@ -1,7 +1,7 @@
 # Panvitium
 
 A dark-themed incremental / idle game. The player — a human already damned — corrupts and culls
-human souls to climb Hell's hierarchy across many lifetimes (_Katabasis_).
+human souls to climb Hell's hierarchy across many descents (_Katabasis_).
 
 Design documents and architecture decisions live alongside this repo in the project knowledge base
 (`01`–`04`). This repository is the implementation, structured per **ADR-015** (pnpm monorepo).
