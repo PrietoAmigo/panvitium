@@ -1,0 +1,158 @@
+/**
+ * GameState — the complete gameplay state the simulation operates on (02 §9).
+ *
+ * This is the gameplay core only. The save *envelope* (schemaVersion, saveVersion,
+ * lastTickAt-as-wall-clock, deviceId — ADR-010) wraps this and lives in @panvitium/shared.
+ *
+ * Unbounded values are BigNum (ADR-005). Naturally-bounded integer counts are plain numbers.
+ * Derived quantities (Sin *levels* from Devotion totals, Skill *intensities*, max acolytes
+ * from influence) are computed on demand, not stored, so they can never drift from their source.
+ */
+import { type BigNum, bn, ZERO } from './bignum.js';
+import { hashSeed, type RngState } from './rng.js';
+
+/** The eight Cardinal Sins, keyed by their Latin name (03 §1). */
+export type Sin =
+  | 'gula'
+  | 'luxuria'
+  | 'avaritia'
+  | 'tristitia'
+  | 'ira'
+  | 'acedia'
+  | 'vanagloria'
+  | 'superbia';
+
+export const SINS: readonly Sin[] = [
+  'gula',
+  'luxuria',
+  'avaritia',
+  'tristitia',
+  'ira',
+  'acedia',
+  'vanagloria',
+  'superbia',
+] as const;
+
+/** Reprobate subtypes (03 §3). `reprobate` is the unconverted default. */
+export type ReprobateSubtype =
+  | 'reprobate'
+  | 'glutton'
+  | 'degenerate'
+  | 'gambler'
+  | 'nihilist'
+  | 'choleric'
+  | 'husk'
+  | 'celebrity'
+  | 'sigma';
+
+export const REPROBATE_SUBTYPES: readonly ReprobateSubtype[] = [
+  'reprobate',
+  'glutton',
+  'degenerate',
+  'gambler',
+  'nihilist',
+  'choleric',
+  'husk',
+  'celebrity',
+  'sigma',
+] as const;
+
+/** Sigils are referenced by their canonical Goetia number, 1..72. */
+export type SigilId = number;
+
+/** A pending or running timed action (Opera). Resolves when `remainingSeconds` hits 0. */
+export interface ActionTimer {
+  /** Identifier of the action being performed (e.g. 'suasio', 'caedis'). */
+  readonly actionId: string;
+  /** Seconds of work left, given the combined efficiency assigned to it. */
+  remainingSeconds: number;
+}
+
+/** An acolyte and the action it is currently delegated to, if any. */
+export interface Acolyte {
+  readonly id: number;
+  assignedAction: string | null;
+}
+
+/** State scoped to a single lifetime — reset (mostly) on Katabasis. */
+export interface LifetimeState {
+  gold: BigNum;
+  influence: BigNum;
+  maxInfluence: BigNum;
+  /** Living reprobate counts by subtype. Plain integers (1 person = 1 soul). */
+  reprobates: Record<ReprobateSubtype, number>;
+  acolytes: Acolyte[];
+  /** Active invocations as type -> count (most stack; the apex ones are capped at 1). */
+  invocations: Record<string, number>;
+  /** Equipped maleficia by id; stackable ones may repeat. */
+  maleficia: string[];
+  /** Maleficia surfaced by Indagatio and available to buy via Emptio. Lost on Katabasis. */
+  emptioList: string[];
+  /** Toggle actions currently active (e.g. 'panvitium', 'bacchanal'). */
+  activeToggles: string[];
+  /** In-flight timed actions. */
+  actionQueue: ActionTimer[];
+}
+
+/** The complete gameplay state. */
+export interface GameState {
+  /** Unspent soul pool — the meta-currency carried across lifetimes. */
+  souls: BigNum;
+  /** Total Devotion (souls offered, permanent) per Sin. Sin levels are derived from this. */
+  devotion: Record<Sin, BigNum>;
+  /** Souls currently bound to each sigil (recoverable). Absent key == unbound. */
+  sigilBindings: Partial<Record<SigilId, BigNum>>;
+  /** Current lifetime. */
+  lifetime: LifetimeState;
+  /** Serializable RNG state (ADR-011). */
+  rngState: RngState;
+  /** Logical clock in ms since epoch; advanced by `tick`, reconciled with wall-clock on load. */
+  lastTickAt: number;
+}
+
+function zeroReprobates(): Record<ReprobateSubtype, number> {
+  const out = {} as Record<ReprobateSubtype, number>;
+  for (const t of REPROBATE_SUBTYPES) out[t] = 0;
+  return out;
+}
+
+function zeroDevotion(): Record<Sin, BigNum> {
+  const out = {} as Record<Sin, BigNum>;
+  for (const s of SINS) out[s] = ZERO;
+  return out;
+}
+
+/**
+ * Create a fresh starting state for a brand-new game.
+ *
+ * `seed` keys the RNG (ADR-011). `now` is the starting logical clock (defaults to wall-clock).
+ * Starting resource amounts are placeholders pending the economy constants; treat as tuning inputs.
+ */
+export function createInitialState(seed: string, now: number = Date.now()): GameState {
+  return {
+    souls: ZERO,
+    devotion: zeroDevotion(),
+    sigilBindings: {},
+    lifetime: {
+      gold: ZERO,
+      influence: ZERO,
+      maxInfluence: bn(100),
+      reprobates: zeroReprobates(),
+      acolytes: [],
+      invocations: {},
+      maleficia: [],
+      emptioList: [],
+      activeToggles: [],
+      actionQueue: [],
+    },
+    rngState: hashSeed(seed),
+    lastTickAt: now,
+  };
+}
+
+/** Total living reprobates across all subtypes. */
+export function totalReprobates(state: GameState): number {
+  let sum = 0;
+  for (const t of REPROBATE_SUBTYPES) sum += state.lifetime.reprobates[t];
+  return sum;
+}

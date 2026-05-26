@@ -1,0 +1,336 @@
+/* Panvitium — lo-fi grimoire-baroque skeleton styling.
+   Palette: void-black ground, candle-orange, blood-red, gold-leaf; parchment for grimoire pages.
+   Type: Cinzel (inscriptional display) over EB Garamond (body). Real degraded-photoreal room art
+   replaces the CSS backdrops later (ADR-021); these establish the mood and the structure. */
+
+:root {
+  --void: #0a0807;
+  --void-2: #120d0a;
+  --ink: #2a1d12;
+  --candle: #e6a23c;
+  --candle-soft: #c9822f;
+  --blood: #7c1417;
+  --blood-bright: #a01e22;
+  --gold: #c9a227;
+  --gold-leaf: #d8b658;
+  --parchment: #e7d8b4;
+  --parchment-shadow: #c9b489;
+
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at 50% 30%, var(--void-2) 0%, var(--void) 70%, #050403 100%);
+  color: var(--parchment);
+  font-family: var(--font-body);
+  font-size: 18px;
+  overflow: hidden;
+}
+
+.app {
+  position: relative;
+  height: 100%;
+  display: flex;
+}
+
+/* ---------- HUD ---------- */
+
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  padding: 1.4rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  animation: fade-in 1.4s ease 0.2s both;
+}
+
+.hud-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+  color: var(--gold-leaf);
+  text-shadow: 0 0 12px rgba(201, 162, 39, 0.35);
+  margin-bottom: 0.6rem;
+}
+
+.resource {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.resource-label {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--candle-soft);
+}
+
+.resource-value {
+  font-size: 1.4rem;
+  color: var(--parchment);
+  font-variant-numeric: tabular-nums;
+}
+
+.vigil {
+  margin-top: 0.8rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: rgba(231, 216, 180, 0.45);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vigil-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--blood-bright);
+  box-shadow: 0 0 8px var(--blood-bright);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+/* ---------- Stage & rooms ---------- */
+
+.stage {
+  position: relative;
+  flex: 1;
+  margin: auto;
+  width: min(100%, 1280px);
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  overflow: hidden;
+  box-shadow: inset 0 0 240px 40px rgba(0, 0, 0, 0.85);
+  animation: fade-in 1.8s ease both;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+/* bespoke candlelit backdrops, one per room */
+.scene-invocation {
+  background:
+    radial-gradient(circle at 30% 60%, rgba(230, 162, 60, 0.18), transparent 40%),
+    radial-gradient(circle at 50% 45%, rgba(124, 20, 23, 0.22), transparent 55%),
+    linear-gradient(180deg, #15100b 0%, #0b0806 100%);
+}
+
+.scene-altar {
+  background:
+    radial-gradient(circle at 50% 70%, rgba(230, 162, 60, 0.15), transparent 45%),
+    linear-gradient(180deg, #1a1a1d 0%, #0c0c0e 60%, #070708 100%);
+}
+
+.scene-studio {
+  background:
+    radial-gradient(circle at 18% 40%, rgba(230, 162, 60, 0.2), transparent 38%),
+    linear-gradient(180deg, #181109 0%, #0c0805 100%);
+}
+
+.room-name {
+  position: absolute;
+  bottom: 1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(216, 182, 88, 0.6);
+  pointer-events: none;
+}
+
+/* ---------- Hotspots (diegetic click regions) ---------- */
+
+.hotspot {
+  position: absolute;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.hotspot:hover,
+.hotspot:focus-visible {
+  border-color: rgba(216, 182, 88, 0.5);
+  background: radial-gradient(ellipse at center, rgba(230, 162, 60, 0.14), transparent 70%);
+  box-shadow: 0 0 26px rgba(230, 162, 60, 0.18);
+  outline: none;
+}
+
+.hotspot-label {
+  margin-bottom: 0.5rem;
+  padding: 0.15rem 0.6rem;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--parchment);
+  background: rgba(10, 8, 7, 0.78);
+  border: 1px solid rgba(216, 182, 88, 0.3);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.hotspot:hover .hotspot-label,
+.hotspot:focus-visible .hotspot-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---------- Grimoire-page panels ---------- */
+
+.panel-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 3, 3, 0.72);
+  animation: fade-in 0.25s ease both;
+}
+
+.panel {
+  width: min(540px, 86vw);
+  max-height: 80vh;
+  overflow: auto;
+  padding: 2rem 2.4rem;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 250, 235, 0.5), transparent 60%),
+    linear-gradient(160deg, var(--parchment), var(--parchment-shadow));
+  border: 1px solid #7a6740;
+  box-shadow:
+    0 0 0 6px rgba(10, 8, 7, 0.6),
+    0 24px 60px rgba(0, 0, 0, 0.7);
+  animation: panel-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(122, 103, 64, 0.5);
+  padding-bottom: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--blood);
+  letter-spacing: 0.04em;
+}
+
+.panel-title::first-letter {
+  font-size: 1.6em;
+  line-height: 0;
+}
+
+.panel-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--ink);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.panel-close:hover {
+  opacity: 1;
+}
+
+.panel-body {
+  font-size: 1.06rem;
+  line-height: 1.6;
+}
+
+.stub-list {
+  margin: 0.6rem 0 0;
+  padding-left: 1.2rem;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.stub-list li {
+  margin: 0.25rem 0;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

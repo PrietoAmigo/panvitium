@@ -1,6 +1,8 @@
 /**
  * @panvitium/sim — pure-functional game math.
- * Framework-free. Consumed by apps/web and exercised directly by tests.
- * Real contents (BigNum, seeded RNG, tick function, GameState) land in step 2.
+ * Framework-free. Consumed by apps/web and exercised directly by Vitest.
  */
-export const SIM_PACKAGE = '@panvitium/sim';
+export * from './bignum.js';
+export * from './rng.js';
+export * from './state.js';
+export * from './tick.js';

@@ -3,12 +3,31 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"no tests yet (@panvitium/api)\" && exit 0",
-    "dev": "echo \"no dev server yet (@panvitium/api)\" && exit 0"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@panvitium/shared": "workspace:*",
+    "@panvitium/sim": "workspace:*",
+    "@fastify/cookie": "^11.0.2",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.8.5",
+    "fastify-type-provider-zod": "^4.0.2",
+    "pg": "^8.21.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "tsup": "^8.5.1",
+    "tsx": "^4.22.3",
+    "vitest": "^2.1.9"
   }
 }
