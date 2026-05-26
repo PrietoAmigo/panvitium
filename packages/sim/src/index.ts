@@ -6,3 +6,7 @@ export * from './bignum.js';
 export * from './rng.js';
 export * from './state.js';
 export * from './tick.js';
+export * from './constants.js';
+export * from './probability.js';
+export * from './progression.js';
+export * from './sigils.js';
