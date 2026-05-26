@@ -1,0 +1,15 @@
+# Keep the build context small and clean.
+**/node_modules
+**/dist
+**/.turbo
+.git
+.gitignore
+*.tar
+*.tar.gz
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.example
+**/coverage
+docs
+assets

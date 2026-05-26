@@ -1,0 +1,39 @@
+# Development overrides, auto-merged by `docker compose up`. Bind-mounts the repo for hot reload
+# (tsx watch / Vite HMR) and exposes ports to localhost. The anonymous volumes on each node_modules
+# path preserve the container's installed dependencies over the bind mount, so the host's
+# node_modules (possibly a different OS/arch) never shadow the Linux ones built in the image.
+services:
+  postgres:
+    ports:
+      - '5432:5432'
+
+  migrate:
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/apps/api/node_modules
+      - /app/apps/web/node_modules
+      - /app/packages/sim/node_modules
+      - /app/packages/shared/node_modules
+
+  api:
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/apps/api/node_modules
+      - /app/apps/web/node_modules
+      - /app/packages/sim/node_modules
+      - /app/packages/shared/node_modules
+
+  web:
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/apps/api/node_modules
+      - /app/apps/web/node_modules
+      - /app/packages/sim/node_modules
+      - /app/packages/shared/node_modules
