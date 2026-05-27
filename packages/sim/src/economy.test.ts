@@ -10,7 +10,7 @@ describe('tick — passive generation', () => {
   it('generates base gold and influence over one second', () => {
     const { state } = tick(createInitialState('seed', 0), 1);
     expect(eq(state.lifetime.gold, bn(10))).toBe(true); // 10/s
-    expect(eq(state.lifetime.influence, bn(5))).toBe(true); // 5/s
+    expect(eq(state.lifetime.influence, bn(2.5))).toBe(true); // 0.025 × maxInfluence(100) = 2.5/s
   });
 
   it('accumulates sub-unit gains across 100 ms ticks (online == offline)', () => {
@@ -20,7 +20,7 @@ describe('tick — passive generation', () => {
     expect(goldOf(online)).toBe(goldOf(offline));
     expect(influenceOf(online)).toBe(influenceOf(offline));
     expect(goldOf(online)).toBe(10);
-    expect(influenceOf(online)).toBe(5);
+    expect(influenceOf(online)).toBe(2); // floor(2.5)
   });
 
   it('caps influence at maxInfluence but lets gold run free', () => {

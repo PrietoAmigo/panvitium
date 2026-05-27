@@ -13,7 +13,7 @@
  */
 import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
-import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_PER_SECOND } from './constants.js';
+import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { type OutcomeEvent } from './events.js';
 import { makeRng } from './rng.js';
 import { type ActionTimer, type GameState } from './state.js';
@@ -35,15 +35,19 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
 
   const rng = makeRng(state.rngState);
 
-  // 1. Passive generation (02 §1). Gold accrues at a flat base rate; influence accrues toward the
-  //    maximum and is capped there. Resources are natural numbers (02 §1), but a 100 ms tick of a
-  //    5/s rate yields 0.5 — so values accumulate with full precision here and are floored only at
-  //    the display/spend/comparison boundary (see format + the bignum gotcha), never per tick.
+  // 1. Passive generation (02 §1). Gold accrues at a flat base rate; influence accrues as a
+  //    fraction of maxInfluence per second (Globals: BASE_INFLUENCE_RATE × maxInfluence) and is
+  //    capped at the maximum. Resources are natural numbers (02 §1), but a 100 ms tick yields
+  //    fractions — so values accumulate with full precision here and are floored only at the
+  //    display/spend/comparison boundary (the bignum gotcha), never per tick.
   const lifetime = {
     ...state.lifetime,
     gold: add(state.lifetime.gold, mul(BASE_GOLD_PER_SECOND, deltaSeconds)),
     influence: min(
-      add(state.lifetime.influence, mul(BASE_INFLUENCE_PER_SECOND, deltaSeconds)),
+      add(
+        state.lifetime.influence,
+        mul(state.lifetime.maxInfluence, BASE_INFLUENCE_RATE * deltaSeconds),
+      ),
       state.lifetime.maxInfluence,
     ),
   };

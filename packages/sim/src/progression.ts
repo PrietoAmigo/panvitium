@@ -4,8 +4,8 @@
  * `pow` drifts at the last bit (180^4 = 1049760000.0000002), so every threshold is floored and
  * Devotion is floored before comparison — the documented bignum gotcha.
  */
-import { type BigNum, floor, pow, gte, lte, ZERO } from './bignum.js';
-import { DEVOTION_LEVEL_BASE, MAX_SIN_LEVEL } from './constants.js';
+import { type BigNum, floor, pow, gte, lte, ONE, ZERO } from './bignum.js';
+import { DEVOTION_LEVEL_BASE, MAX_SIN_LEVEL, SKILL_INTENSITY_DIVISOR } from './constants.js';
 
 /**
  * Cumulative Devotion needed to reach a Sin level (02 §4): DEVOTION_LEVEL_BASE^level for levels
@@ -28,12 +28,14 @@ export function sinLevel(devotion: BigNum): number {
 }
 
 /**
- * Skill intensity for a Sin from its total Devotion x, default shape (02 §4):
- *   (1 + log10(x) + sqrt(x) / 20) / 10
- * Zero Devotion grants no skill. Per-Sin coefficients (the spreadsheet) scale this later.
+ * Skill intensity for a Sin from its total Devotion x (Sins & Devotion sheet):
+ *   intensity = ln(x)² / 6.537
+ * Verified against the sheet's sampled table (x=10 → 0.811, x=180 → 4.125, x=1049760000 → 66.004).
+ * x ≤ 1 grants no skill (ln(1) = 0; a fresh Sin has 0 Devotion). Per-Sin scaling arrives later.
  */
 export function skillIntensity(devotion: BigNum): number {
   const x = floor(devotion);
-  if (lte(x, ZERO)) return 0;
-  return (1 + x.log10() + x.sqrt().toNumber() / 20) / 10;
+  if (lte(x, ONE)) return 0;
+  const ln = x.ln();
+  return (ln * ln) / SKILL_INTENSITY_DIVISOR;
 }

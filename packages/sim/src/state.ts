@@ -9,6 +9,7 @@
  * from influence) are computed on demand, not stored, so they can never drift from their source.
  */
 import { type BigNum, bn, ZERO } from './bignum.js';
+import { BASE_MAX_INFLUENCE } from './constants.js';
 import { hashSeed, type RngState } from './rng.js';
 
 /** The eight Cardinal Sins, keyed by their Latin name (03 §1). */
@@ -136,7 +137,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
     lifetime: {
       gold: ZERO,
       influence: ZERO,
-      maxInfluence: bn(100),
+      maxInfluence: bn(BASE_MAX_INFLUENCE),
       reprobates: zeroReprobates(),
       acolytes: [],
       invocations: {},

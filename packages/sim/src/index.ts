@@ -11,5 +11,6 @@ export * from './probability.js';
 export * from './progression.js';
 export * from './sigils.js';
 export * from './events.js';
+export * from './katabasis.js';
 export * from './population.js';
 export * from './actions.js';

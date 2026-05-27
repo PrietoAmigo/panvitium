@@ -1,27 +1,47 @@
 /**
- * Cross-cutting economy constants from the design docs (02 §1/§4, 03 §1/§3/§9). The per-action
- * numbers — probabilities, costs, business outputs, sigil coefficients — live in the economy
- * spreadsheet and arrive with their systems; these are the baselines the engines need now.
+ * Cross-cutting economy constants. These mirror the `Globals` sheet of the economy spreadsheet,
+ * which is the source of truth for numbers (the per-action tables arrive with their systems). Where
+ * a design-doc prose value disagreed with the spreadsheet, the spreadsheet wins — noted inline.
  */
 
-/** Base passive gold gain per second (02 §1). */
+/** Base passive gold gain per second (Globals: 10 gold/s). */
 export const BASE_GOLD_PER_SECOND = 10;
 
-/** Base passive influence gain per second, capped at maxInfluence (02 §1). */
-export const BASE_INFLUENCE_PER_SECOND = 5;
+/**
+ * Base passive influence gain, as a fraction of maxInfluence per second (Globals: 0.025, unit
+ * "% of max infl / s"). Influence is generated as a percentage of the maximum and capped there
+ * (02 §1) — so gain/s = BASE_INFLUENCE_RATE × maxInfluence. (Supersedes the doc's flat "5/s".)
+ */
+export const BASE_INFLUENCE_RATE = 0.025;
 
-/** Base reprobate suicide chance per second, applied to the whole population (03 §3). */
+/** Base maximum influence for a fresh lifetime; sin/sigil/maleficia modifiers raise it later. */
+export const BASE_MAX_INFLUENCE = 100;
+
+/** Base reprobate suicide chance per second, applied to the whole population (Globals: 0.00023). */
 export const BASE_SUICIDE_RATE_PER_SECOND = 0.00023;
 
-/** Cumulative Devotion to reach Sin level X is DEVOTION_LEVEL_BASE^X souls (02 §4, 03 §1). */
+/** Cumulative Devotion to reach Sin level X is DEVOTION_LEVEL_BASE^X souls (Globals: 180). */
 export const DEVOTION_LEVEL_BASE = 180;
 
 /** Cardinal Sins run level 0..4 (03 §1). */
 export const MAX_SIN_LEVEL = 4;
 
-/** Default carry-over rolls on Katabasis (02 §1/§8). */
-export const BASE_REMAINING_GOLD = 0.05; // 5%
-export const BASE_REMAINING_MALEFICIA = 0.25; // 25%
+/** Skill intensity = ln(devotion)² / SKILL_INTENSITY_DIVISOR (Sins & Devotion sheet: 6.537). */
+export const SKILL_INTENSITY_DIVISOR = 6.537;
 
-/** Souls offered to the Eternal Sin to end the game (03 §9). */
+/**
+ * Katabasis carry-over base fractions (Globals). Each is raised additively by a Sin's per-level
+ * effect (Sins & Devotion sheet) and, later, by sigils:
+ *   - remaining gold %:          +6.25%/level Avaritia (Mammon)
+ *   - remaining unconverted %:   +6.25%/level Luxuria (Asmodeus)
+ *   - remaining maleficia chance: +12.5%/level Superbia (Lucifer)
+ */
+export const BASE_REMAINING_GOLD = 0.05; // Globals: 0.05 (5%)
+export const BASE_REMAINING_MALEFICIA = 0.05; // Globals value 0.05 (the "(25%)" note is superseded)
+export const BASE_REMAINING_UNCONVERTED_REPROBATE = 0.05; // Globals: 0.05
+export const REMAINING_GOLD_PER_AVARITIA_LEVEL = 0.0625;
+export const REMAINING_UNCONVERTED_PER_LUXURIA_LEVEL = 0.0625;
+export const REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL = 0.125;
+
+/** Souls offered to the Eternal Sin to end the game (Globals: 8 × 180^4). */
 export const ETERNAL_SIN_THRESHOLD = 8398080000;
