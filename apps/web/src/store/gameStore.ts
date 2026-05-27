@@ -50,7 +50,7 @@ interface GameStore {
   /** Advance the simulation by `deltaSeconds`, folding any outcomes into the log/signature. */
   advance: (deltaSeconds: number) => void;
   /** Begin an Opera action (pays its cost and queues it), or set a notice if it can't start. */
-  act: (actionId: string) => void;
+  act: (actionId: string, target?: string) => void;
   /** Open the Katabasis menu (returns any bound souls to the pool first, 02 §5). */
   beginKatabasis: () => void;
   /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
@@ -104,10 +104,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  act: (actionId) => {
+  act: (actionId, target) => {
     const current = get().state;
     if (!current) return;
-    const result = startAction(current, actionId);
+    const result = startAction(current, actionId, target === undefined ? {} : { target });
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },

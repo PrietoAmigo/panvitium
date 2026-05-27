@@ -35,6 +35,25 @@ export const strings = {
     suasioIntro: 'The temptations, written to be spoken. Whisper one and wait.',
     notYet: 'not yet inscribed',
     idle: 'No rite underway.',
+    search: 'Search',
+    buy: 'Buy',
+    indagatioIntro:
+      'A long, patient search of the world\u2019s corners. Most of what is found cannot be picked up — only listed for purchase.',
+    emptioIntro: 'What the search surfaced, ready to be bought. The deal itself can still sour.',
+    emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be bought.',
+    indagatioCta: 'Begin the search',
+  },
+  maleficia: {
+    intro:
+      'What has been found, paid for, and brought home. Each item has its own price in attention.',
+    empty: 'Empty hooks and clean dust-rings. Nothing has yet been found or purchased.',
+    rarity: {
+      common: 'common',
+      rare: 'rare',
+      profane: 'profane',
+      anathema: 'anathema',
+    },
+    invokingPower: 'invoking power',
   },
   tiers: {
     stellar: 'Stellar',

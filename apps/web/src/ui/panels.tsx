@@ -7,6 +7,9 @@ import {
   MAX_SIN_LEVEL,
   ACTIONS,
   categoryEfficiency,
+  MALEFICIA,
+  countCopies,
+  totalInvokingPower,
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../rooms/rooms.js';
@@ -162,9 +165,139 @@ const PC_GROUPS: { id: PcGroupId; label: string }[] = [
   { id: 'logs', label: strings.opera.logs },
 ];
 
-/** Body for a selected PC group; only Decimatio and Logs are implemented yet. */
+/** Indagatio (03 §2.5): one long, no-cost search button. Duration scales with player efficiency. */
+function IndagatioGroup(): ReactElement {
+  const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'indagatio') : 1));
+  const notice = useGameStore((s) => s.notice);
+  const act = useGameStore((s) => s.act);
+  const underway = useUnderway();
+  const baseSec = ACTIONS.indagatio?.baseTimeSeconds ?? 1800;
+  const actualSec = Math.max(1, Math.floor(baseSec / Math.max(eff, 1e-9)));
+  return (
+    <>
+      <p className="opera-intro">{strings.opera.indagatioIntro}</p>
+      <ActionRow
+        name={strings.opera.indagatio}
+        cost={formatDuration(actualSec)}
+        cta={strings.opera.indagatioCta}
+        disabled={underway}
+        onAct={() => act('indagatio')}
+      />
+      {underway && <p className="opera-hint">{strings.opera.underway}</p>}
+      {notice !== null && <p className="opera-notice">{notice}</p>}
+    </>
+  );
+}
+
+/** Emptio (03 §2.6): the listed maleficia, each with a buy button at the listed gold cost. */
+function EmptioGroup(): ReactElement {
+  const list = useGameStore((s) => (s.state ? s.state.lifetime.emptioList : []));
+  const gold = useGameStore((s) => (s.state ? floor(s.state.lifetime.gold).toNumber() : 0));
+  const notice = useGameStore((s) => s.notice);
+  const act = useGameStore((s) => s.act);
+  const underway = useUnderway();
+  if (list.length === 0) {
+    return (
+      <>
+        <p className="opera-intro">{strings.opera.emptioIntro}</p>
+        <p className="pc-empty">{strings.opera.emptioEmpty}</p>
+      </>
+    );
+  }
+  return (
+    <>
+      <p className="opera-intro">{strings.opera.emptioIntro}</p>
+      <ul className="emptio-list">
+        {list.map((id, idx) => {
+          const def = MALEFICIA[id];
+          if (!def) return null;
+          return (
+            <li key={`${idx}-${id}`} className="emptio-row">
+              <span className={`rarity-badge rarity-${def.rarity}`}>
+                {strings.maleficia.rarity[def.rarity]}
+              </span>
+              <span className="emptio-name">{def.name}</span>
+              <span className="emptio-cost">
+                {def.cost} {strings.resources.gold}
+              </span>
+              <button
+                type="button"
+                className="opera-btn emptio-buy"
+                disabled={underway || gold < def.cost}
+                onClick={() => act('emptio', id)}
+              >
+                {strings.opera.buy}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {underway && <p className="opera-hint">{strings.opera.underway}</p>}
+      {notice !== null && <p className="opera-notice">{notice}</p>}
+    </>
+  );
+}
+
+/** Maleficia shelf: groups owned items by id; stackables show their count. */
+function MaleficiaShelf(): ReactElement {
+  const owned = useGameStore((s) => (s.state ? s.state.lifetime.maleficia : []));
+  if (owned.length === 0) {
+    return <p className="pc-empty">{strings.maleficia.empty}</p>;
+  }
+  // Preserve first-acquired order while collapsing duplicates into counts.
+  const order: string[] = [];
+  const seen = new Set<string>();
+  for (const id of owned) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      order.push(id);
+    }
+  }
+  const totalPower = totalInvokingPower(owned);
+  return (
+    <div className="maleficia-shelf">
+      <p className="opera-intro">{strings.maleficia.intro}</p>
+      <p className="maleficia-power">
+        {totalPower} {strings.maleficia.invokingPower}
+      </p>
+      <ul className="maleficia-list">
+        {order.map((id) => {
+          const def = MALEFICIA[id];
+          if (!def) return null;
+          const count = countCopies(owned, id);
+          return (
+            <li key={id} className="maleficium-row">
+              <span className={`rarity-badge rarity-${def.rarity}`}>
+                {strings.maleficia.rarity[def.rarity]}
+              </span>
+              <span className="maleficium-name">
+                {def.name}
+                {count > 1 ? ` ×${count}` : ''}
+              </span>
+              <span className="maleficium-desc">{def.description}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** Format a duration in seconds as HH:MM:SS or MMm SS, etc. */
+function formatDuration(totalSec: number): string {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = Math.floor(totalSec % 60);
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+/** Body for a selected PC group. */
 function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
   if (group === 'decimatio') return <DecimatioGroup />;
+  if (group === 'indagatio') return <IndagatioGroup />;
+  if (group === 'emptio') return <EmptioGroup />;
   if (group === 'logs') return <OutcomeLog />;
   return <p className="pc-empty">{strings.opera.notYet}.</p>;
 }
@@ -261,7 +394,7 @@ export const PANELS: Record<PanelId, PanelContent> = {
   },
   maleficia: {
     title: 'The Maleficia Shelf',
-    body: <p>Empty hooks and clean dust-rings. Nothing has yet been found or purchased.</p>,
+    body: <MaleficiaShelf />,
   },
   'altar-menu': {
     title: 'The Altar',

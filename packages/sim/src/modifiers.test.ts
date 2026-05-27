@@ -110,3 +110,46 @@ describe('computeModifiers — tier weight shifts', () => {
     expect(NEUTRAL_MODIFIERS.tierWeightMul).toEqual({});
   });
 });
+
+describe('computeModifiers — maleficia effects (anathema)', () => {
+  function equipped(ids: string[]): GameState {
+    const s = fresh();
+    return { ...s, lifetime: { ...s.lifetime, maleficia: ids } };
+  }
+
+  it('Spear of Longinus triples maxInfluenceMul', () => {
+    const m = computeModifiers(equipped(['spear_of_longinus']));
+    expect(m.maxInfluenceMul).toBeCloseTo(3, 6); // base 1 × 3
+  });
+
+  it('Codex Gigas triples influenceRateMul', () => {
+    const m = computeModifiers(equipped(['codex_gigas']));
+    expect(m.influenceRateMul).toBeCloseTo(3, 6);
+  });
+
+  it('Thirty Pieces of Silver triples goldRateMul', () => {
+    const m = computeModifiers(equipped(['thirty_pieces_of_silver']));
+    expect(m.goldRateMul).toBeCloseTo(3, 6);
+  });
+
+  it('Mark of Cain zeroes the Apocalyptic tier outright (overrides Insatiability damping)', () => {
+    const s = fresh();
+    const state: GameState = {
+      ...s,
+      devotion: { ...s.devotion, gula: bn(180) }, // Insatiability would damp to ≈ 0.195
+      lifetime: { ...s.lifetime, maleficia: ['mark_of_cain'] },
+    };
+    expect(computeModifiers(state).tierWeightMul.apocalyptic).toBe(0);
+  });
+
+  it('Maleficia effects stack multiplicatively with Sin skills', () => {
+    // Avaritia 180 → goldRateMul ≈ 5.1253; + Silver triples it → ≈ 15.376.
+    const s = fresh();
+    const state: GameState = {
+      ...s,
+      devotion: { ...s.devotion, avaritia: bn(180) },
+      lifetime: { ...s.lifetime, maleficia: ['thirty_pieces_of_silver'] },
+    };
+    expect(computeModifiers(state).goldRateMul).toBeCloseTo(5.1253 * 3, 2);
+  });
+});

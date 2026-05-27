@@ -67,6 +67,8 @@ export interface ActionTimer {
   readonly actionId: string;
   /** Seconds of work left, given the combined efficiency assigned to it. */
   remainingSeconds: number;
+  /** Action-specific payload — e.g. the maleficium id targeted by an Emptio purchase. */
+  readonly target?: string;
 }
 
 /** An acolyte and the action it is currently delegated to, if any. */

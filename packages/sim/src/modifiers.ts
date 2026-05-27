@@ -12,6 +12,10 @@
  *                 Satan      (Retribution)    → decimatioEfficiencyMul
  *                 Gula       (Insatiability)  → tierWeightMul.{terrible, apocalyptic} (damped)
  *                 Lucifer    (Morning Star)   → tierWeightMul.stellar (lifted)
+ *   - MALEFICIA:  Spear of Longinus           → maxInfluenceMul × 3
+ *                 Codex Gigas                 → influenceRateMul × 3
+ *                 Thirty Pieces of Silver     → goldRateMul × 3
+ *                 Mark of Cain                → tierWeightMul.apocalyptic = 0
  *
  * Other Sin effects (Tristitia → suicide rate, Ira → acolyte/invocation eff, Acedia → offline,
  * Luxuria → reprobate generation, Resignation/Retribution → per-category tier shifts) attach as
@@ -25,6 +29,7 @@
 import { type GameState } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers } from './probability.js';
+import { countCopies } from './maleficia.js';
 
 export interface Modifiers {
   /** Multiplier on the base gold-per-second rate. */
@@ -71,6 +76,13 @@ export function computeModifiers(state: GameState): Modifiers {
   const gulaIntensity = skillIntensity(state.devotion.gula);
   const superbiaIntensity = skillIntensity(state.devotion.superbia);
 
+  // Equipped maleficia (03 §4). Each anathema item is a single, decisive multiplier.
+  const owned = state.lifetime.maleficia;
+  const hasSpear = countCopies(owned, 'spear_of_longinus') > 0;
+  const hasCodex = countCopies(owned, 'codex_gigas') > 0;
+  const hasSilver = countCopies(owned, 'thirty_pieces_of_silver') > 0;
+  const hasMarkOfCain = countCopies(owned, 'mark_of_cain') > 0;
+
   // Build tier-weight muls incrementally; missing keys mean 1 in `applyTierModifiers`. Under
   // exactOptionalPropertyTypes we never assign `undefined`, so increments are gated on > 0.
   const tierWeightMul: TierModifiers = {};
@@ -83,14 +95,19 @@ export function computeModifiers(state: GameState): Modifiers {
   if (superbiaIntensity > 0) {
     tierWeightMul.stellar = skillBonus(superbiaIntensity);
   }
+  if (hasMarkOfCain) {
+    // Anathema lock: the sevenfold guarantee zeroes the worst draw outright. Applies last so it
+    // wins over Insatiability damping.
+    tierWeightMul.apocalyptic = 0;
+  }
 
   return {
-    goldRateMul: skillBonus(avaritiaIntensity), // Mammon — "Golden Hand"
-    influenceRateMul: 1.5 ** vanagloriaLvl, // Rosier — level
-    maxInfluenceMul: skillBonus(vanagloriaIntensity), // Rosier — "Acclaim"
-    playerEfficiencyMul: 2 ** gulaLvl, // Beelzebub — level
-    suasioEfficiencyMul: skillBonus(tristitiaIntensity), // Leviathan — "Resignation"
-    decimatioEfficiencyMul: skillBonus(iraIntensity), // Satan — "Retribution"
+    goldRateMul: skillBonus(avaritiaIntensity) * (hasSilver ? 3 : 1),
+    influenceRateMul: 1.5 ** vanagloriaLvl * (hasCodex ? 3 : 1),
+    maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1),
+    playerEfficiencyMul: 2 ** gulaLvl,
+    suasioEfficiencyMul: skillBonus(tristitiaIntensity),
+    decimatioEfficiencyMul: skillBonus(iraIntensity),
     tierWeightMul,
   };
 }
@@ -100,9 +117,18 @@ export function playerEfficiency(state: GameState): number {
   return computeModifiers(state).playerEfficiencyMul;
 }
 
-/** Player × category efficiency for a specific action category (03 §2.1/§2.2). */
-export function categoryEfficiency(state: GameState, category: 'suasio' | 'decimatio'): number {
+/**
+ * Player × category efficiency for an action category (03 §2.1/§2.2). Unknown / future categories
+ * (indagatio, emptio, depraedatio, invocatio) currently return just the player multiplier; a
+ * per-category mul attaches here as those sigils/skills land.
+ */
+export function categoryEfficiency(
+  state: GameState,
+  category: 'suasio' | 'decimatio' | 'indagatio' | 'emptio',
+): number {
   const m = computeModifiers(state);
-  const cat = category === 'suasio' ? m.suasioEfficiencyMul : m.decimatioEfficiencyMul;
-  return m.playerEfficiencyMul * cat;
+  let categoryMul = 1;
+  if (category === 'suasio') categoryMul = m.suasioEfficiencyMul;
+  else if (category === 'decimatio') categoryMul = m.decimatioEfficiencyMul;
+  return m.playerEfficiencyMul * categoryMul;
 }

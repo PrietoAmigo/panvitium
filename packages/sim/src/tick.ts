@@ -60,18 +60,31 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
 
   // 2. Resolve in-flight Opera timers. A timer whose remaining time falls to <= 0 this tick
   //    completes: its outcome is drawn from `rng` and applied, scaled by player efficiency.
-  //    A large (offline) delta resolves every queued action at once.
+  //    A large (offline) delta resolves every queued action at once. Emptio carries its target
+  //    maleficium id on the timer so the resolver knows which item was being bought.
   if (working.lifetime.actionQueue.length > 0) {
     const remaining: ActionTimer[] = [];
-    const completed: string[] = [];
+    const completed: ActionTimer[] = [];
     for (const timer of working.lifetime.actionQueue) {
       const left = timer.remainingSeconds - deltaSeconds;
-      if (left > 0) remaining.push({ actionId: timer.actionId, remainingSeconds: left });
-      else completed.push(timer.actionId);
+      if (left > 0) {
+        remaining.push(
+          timer.target === undefined
+            ? { actionId: timer.actionId, remainingSeconds: left }
+            : { actionId: timer.actionId, remainingSeconds: left, target: timer.target },
+        );
+      } else {
+        completed.push(timer);
+      }
     }
     working = { ...working, lifetime: { ...working.lifetime, actionQueue: remaining } };
-    for (const actionId of completed) {
-      const resolved = resolveAction(working, actionId, rng);
+    for (const timer of completed) {
+      const resolved = resolveAction(
+        working,
+        timer.actionId,
+        rng,
+        timer.target === undefined ? {} : { target: timer.target },
+      );
       working = resolved.state;
       if (resolved.event) events.push(resolved.event);
     }

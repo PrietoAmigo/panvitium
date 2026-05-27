@@ -12,6 +12,12 @@ export interface OutcomeEvent {
   readonly soulsDelta: number;
   readonly reprobateDelta: number;
   readonly goldDelta: number;
+  /** Maleficium ids surfaced into the Emptio list this outcome (Indagatio). */
+  readonly maleficiaSurfaced?: readonly string[];
+  /** Maleficium ids added to the player's inventory this outcome (Emptio purchase). */
+  readonly maleficiaAcquired?: readonly string[];
+  /** Maleficium ids dropped from the Emptio list (Emptio failure terrible/apocalyptic). */
+  readonly maleficiaLost?: readonly string[];
 }
 
 /** Tiers dramatic enough to warrant a pop-up (02 §2). */

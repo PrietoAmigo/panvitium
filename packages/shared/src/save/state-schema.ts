@@ -39,6 +39,7 @@ const acolyteSchema = z.object({
 const actionTimerSchema = z.object({
   actionId: z.string(),
   remainingSeconds: z.number(),
+  target: z.string().optional(),
 });
 
 const lifetimeSchema = z.object({
@@ -95,7 +96,11 @@ export function serializeGameState(state: GameState): SerializedGameState {
       maleficia: [...state.lifetime.maleficia],
       emptioList: [...state.lifetime.emptioList],
       activeToggles: [...state.lifetime.activeToggles],
-      actionQueue: state.lifetime.actionQueue.map((t) => ({ ...t })),
+      actionQueue: state.lifetime.actionQueue.map((t) =>
+        t.target === undefined
+          ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
+          : { actionId: t.actionId, remainingSeconds: t.remainingSeconds, target: t.target },
+      ),
     },
     rngState: state.rngState,
     lastTickAt: state.lastTickAt,
@@ -129,7 +134,11 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       maleficia: [...s.lifetime.maleficia],
       emptioList: [...s.lifetime.emptioList],
       activeToggles: [...s.lifetime.activeToggles],
-      actionQueue: s.lifetime.actionQueue.map((t) => ({ ...t })),
+      actionQueue: s.lifetime.actionQueue.map((t) =>
+        t.target === undefined
+          ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
+          : { actionId: t.actionId, remainingSeconds: t.remainingSeconds, target: t.target },
+      ),
     },
     rngState: s.rngState,
     lastTickAt: s.lastTickAt,
