@@ -126,6 +126,13 @@ export function startAction(state: GameState, actionId: string, efficiency = 1):
   const def = ACTIONS[actionId];
   if (!def) return { ok: false, reason: `unknown action: ${actionId}` };
 
+  // One player-driven action at a time (02 §3). Every action in the queue is a single timed
+  // action; toggles and delegated (acolyte/invocation) work are separate channels. So a non-empty
+  // queue means a rite is already underway and a new one cannot be started by the player.
+  if (state.lifetime.actionQueue.length > 0) {
+    return { ok: false, reason: 'A rite is already underway.' };
+  }
+
   const goldCost = Math.ceil((def.cost.gold ?? 0) * efficiency);
   const influenceCost = Math.ceil((def.cost.influence ?? 0) * efficiency);
   if (!gte(floor(state.lifetime.gold), goldCost)) return { ok: false, reason: 'not enough gold' };

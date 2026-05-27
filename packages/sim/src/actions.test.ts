@@ -36,6 +36,20 @@ describe('startAction', () => {
     expect(r.ok).toBe(true);
     if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(0);
   });
+
+  it('refuses a second action while one is already underway, then allows it once resolved', () => {
+    const start = {
+      ...withGold(fresh(), 300),
+      lifetime: { ...withGold(fresh(), 300).lifetime, influence: bn(50) },
+    };
+    const first = startAction(start, 'caedis');
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    const blocked = startAction(first.state, 'suggestion'); // a rite is underway
+    expect(blocked.ok).toBe(false);
+    const resolved = tick(first.state, 10).state; // caedis completes, queue empties
+    expect(startAction(resolved, 'suggestion').ok).toBe(true);
+  });
 });
 
 describe('resolveSuggestion', () => {

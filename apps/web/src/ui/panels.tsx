@@ -1,4 +1,4 @@
-import { type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
 import { floor, type OutcomeEvent } from '@panvitium/sim';
 import { type PanelId } from '../rooms/rooms.js';
@@ -72,12 +72,19 @@ function ActionRow({
 }
 
 /** The Suasio scroll (Studio): tempt ordinary humans into reprobates. */
+/** True while a player-driven rite is in flight (02 §3: one action at a time). */
+function useUnderway(): boolean {
+  return useGameStore((s) => (s.state ? s.state.lifetime.actionQueue.length > 0 : false));
+}
+
+/** The Suasio scroll (Studio): tempt ordinary humans into reprobates. */
 function SuasioPanel(): ReactElement {
   const influence = useGameStore((s) =>
     s.state ? floor(s.state.lifetime.influence).toNumber() : 0,
   );
   const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
+  const underway = useUnderway();
   return (
     <div className="opera">
       <p className="opera-intro">{strings.opera.suasioIntro}</p>
@@ -85,9 +92,10 @@ function SuasioPanel(): ReactElement {
         name={strings.opera.suggestion}
         cost={`5 ${strings.resources.influence} · 10s`}
         cta={strings.opera.tempt}
-        disabled={influence < 5}
+        disabled={underway || influence < 5}
         onAct={() => act('suggestion')}
       />
+      {underway && <p className="opera-hint">{strings.opera.underway}</p>}
       {notice !== null && <p className="opera-notice">{notice}</p>}
     </div>
   );
@@ -108,29 +116,77 @@ function OutcomeLog(): ReactElement {
   );
 }
 
-/** The desk terminal (Studio): Decimatio (Caedis) wired; the log; other ledgers pending. */
-function PcPanel(): ReactElement {
+/** Decimatio actions (only Caedis wired so far). */
+function DecimatioGroup(): ReactElement {
   const gold = useGameStore((s) => (s.state ? floor(s.state.lifetime.gold).toNumber() : 0));
   const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
+  const underway = useUnderway();
+  return (
+    <>
+      <ActionRow
+        name={strings.opera.caedis}
+        cost={`100 ${strings.resources.gold} · 10s`}
+        cta={strings.opera.cull}
+        disabled={underway || gold < 100}
+        onAct={() => act('caedis')}
+      />
+      {underway && <p className="opera-hint">{strings.opera.underway}</p>}
+      {notice !== null && <p className="opera-notice">{notice}</p>}
+    </>
+  );
+}
+
+type PcGroupId = 'depraedatio' | 'decimatio' | 'indagatio' | 'emptio' | 'logs';
+
+const PC_GROUPS: { id: PcGroupId; label: string }[] = [
+  { id: 'depraedatio', label: strings.opera.depraedatio },
+  { id: 'decimatio', label: strings.opera.decimatio },
+  { id: 'indagatio', label: strings.opera.indagatio },
+  { id: 'emptio', label: strings.opera.emptio },
+  { id: 'logs', label: strings.opera.logs },
+];
+
+/** Body for a selected PC group; only Decimatio and Logs are implemented yet. */
+function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
+  if (group === 'decimatio') return <DecimatioGroup />;
+  if (group === 'logs') return <OutcomeLog />;
+  return <p className="pc-empty">{strings.opera.notYet}.</p>;
+}
+
+/**
+ * The desk terminal (Studio, 02 §10): a simple Win95-style menu of action groups; selecting one
+ * opens that group's actions, with a way back to the menu.
+ */
+function PcPanel(): ReactElement {
+  const [group, setGroup] = useState<PcGroupId | null>(null);
+
+  if (group === null) {
+    return (
+      <div className="pc">
+        <p className="pc-prompt">
+          {'C:\\LAIR> '}
+          {strings.opera.selectLedger}
+        </p>
+        <div className="pc-menu">
+          {PC_GROUPS.map((g) => (
+            <button key={g.id} type="button" className="pc-menu-btn" onClick={() => setGroup(g.id)}>
+              {g.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const label = PC_GROUPS.find((g) => g.id === group)?.label ?? group;
   return (
     <div className="pc">
-      <section className="pc-section">
-        <h3 className="pc-heading">{strings.opera.decimatio}</h3>
-        <ActionRow
-          name={strings.opera.caedis}
-          cost={`100 ${strings.resources.gold} · 10s`}
-          cta={strings.opera.cull}
-          disabled={gold < 100}
-          onAct={() => act('caedis')}
-        />
-        {notice !== null && <p className="opera-notice">{notice}</p>}
-      </section>
-      <section className="pc-section">
-        <h3 className="pc-heading">{strings.opera.logs}</h3>
-        <OutcomeLog />
-      </section>
-      <p className="pc-stub">Depraedatio · Indagatio · Emptio — {strings.opera.notYet}.</p>
+      <button type="button" className="pc-back" onClick={() => setGroup(null)}>
+        ← {strings.opera.back}
+      </button>
+      <h3 className="pc-heading">{label}</h3>
+      <PcGroupBody group={group} />
     </div>
   );
 }

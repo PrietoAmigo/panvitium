@@ -595,3 +595,53 @@ body {
 .error-reset {
   background: transparent;
 }
+
+/* ── PC terminal: Win95-light group menu (02 §10) ────────────────────────── */
+.pc-prompt {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #6fae6f;
+  margin: 0 0 0.7rem;
+}
+.pc-menu {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+.pc-menu-btn {
+  font-family: 'MS Sans Serif', 'Tahoma', system-ui, sans-serif;
+  font-size: 0.9rem;
+  color: #0a0a0a;
+  background: #c3c3c3;
+  border: 2px solid;
+  border-color: #ffffff #808080 #808080 #ffffff; /* beveled, outset */
+  padding: 0.55rem 0.5rem;
+  cursor: pointer;
+}
+.pc-menu-btn:hover {
+  background: #cfcfcf;
+}
+.pc-menu-btn:active {
+  border-color: #808080 #ffffff #ffffff #808080; /* pressed/inset */
+}
+.pc-back {
+  display: inline-block;
+  margin-bottom: 0.8rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--candle);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.pc-back:hover {
+  color: var(--candle-soft);
+  text-decoration: underline;
+}
+.opera-hint {
+  font-style: italic;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin: 0.4rem 0 0;
+}

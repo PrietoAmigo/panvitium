@@ -37,6 +37,15 @@ describe('gameStore — action wiring', () => {
     expect(store().notice).toBeNull();
   });
 
+  it('refuses a second action while one is underway (one player action at a time)', () => {
+    patchGold(300);
+    store().act('caedis');
+    expect(store().state?.lifetime.actionQueue).toHaveLength(1);
+    store().act('caedis'); // a rite is already underway
+    expect(store().state?.lifetime.actionQueue).toHaveLength(1);
+    expect(store().notice).toBeTruthy();
+  });
+
   it('refuses an unaffordable action with a notice and no queue', () => {
     store().act('caedis'); // fresh game has no gold
     expect(store().state?.lifetime.actionQueue ?? []).toHaveLength(0);
