@@ -22,7 +22,8 @@ import {
   mintSouls,
   removeReprobatesRandom,
 } from './population.js';
-import { type GameState, type ReprobateSubtype, type Sin, SINS } from './state.js';
+import { type GameState, type ReprobateSubtype, type Sin, SINS, totalReprobates } from './state.js';
+import { type OutcomeEvent } from './events.js';
 
 export interface ActionCost {
   readonly gold?: number;
@@ -144,19 +145,32 @@ export function startAction(state: GameState, actionId: string, efficiency = 1):
   return { ok: true, state: { ...state, lifetime } };
 }
 
-/** Draw the outcome tier for a completed action and apply its effect. */
+/** Draw the outcome tier for a completed action, apply its effect, and report what happened. */
 export function resolveAction(
   state: GameState,
   actionId: string,
   rng: Rng,
   efficiency = 1,
-): GameState {
+): { state: GameState; event: OutcomeEvent | null } {
   const def = ACTIONS[actionId];
-  if (!def) return state;
+  if (!def) return { state, event: null };
   const tier = resolveTier(def.weights, rng);
-  if (def.id === 'suggestion') return resolveSuggestion(state, tier, rng, efficiency);
-  if (def.id === 'caedis') return resolveCaedis(state, tier, rng, efficiency);
-  return state;
+  const next =
+    def.id === 'suggestion'
+      ? resolveSuggestion(state, tier, rng, efficiency)
+      : def.id === 'caedis'
+        ? resolveCaedis(state, tier, rng, efficiency)
+        : state;
+  // `.toNumber()` of a zero BigNum can yield -0; normalize so consumers compare and render cleanly.
+  const norm = (n: number): number => (n === 0 ? 0 : n);
+  const event: OutcomeEvent = {
+    actionId: def.id,
+    tier,
+    soulsDelta: norm(sub(floor(next.souls), floor(state.souls)).toNumber()),
+    reprobateDelta: totalReprobates(next) - totalReprobates(state),
+    goldDelta: norm(sub(floor(next.lifetime.gold), floor(state.lifetime.gold)).toNumber()),
+  };
+  return { state: next, event };
 }
 
 /** Suggestion outcome effects (exported for direct testing of each tier). */

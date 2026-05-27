@@ -4,6 +4,7 @@ import { ROOMS, type RoomId, type PanelId, type HotspotAction } from './rooms/ro
 import { RoomView } from './rooms/RoomView.js';
 import { Hud } from './ui/Hud.js';
 import { Panel, PANELS } from './ui/panels.js';
+import { SignaturePopup } from './ui/SignaturePopup.js';
 import { audio } from './audio/audio.js';
 
 export function App(): ReactElement {
@@ -36,6 +37,7 @@ export function App(): ReactElement {
         <RoomView room={ROOMS[room]} onAction={handleAction} />
         <div className="room-name">{ROOMS[room].title}</div>
       </main>
+      <SignaturePopup />
       {activePanel && (
         <Panel title={activePanel.title} onClose={closePanel}>
           {activePanel.body}

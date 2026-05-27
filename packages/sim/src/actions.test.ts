@@ -3,7 +3,7 @@ import { bn, floor } from './bignum.js';
 import { hashSeed, makeRng } from './rng.js';
 import { createInitialState, totalReprobates, type GameState } from './state.js';
 import { addReprobates } from './population.js';
-import { startAction, resolveSuggestion, resolveCaedis } from './actions.js';
+import { startAction, resolveAction, resolveSuggestion, resolveCaedis } from './actions.js';
 import { tick } from './tick.js';
 
 const fresh = (): GameState => createInitialState('seed', 0);
@@ -98,14 +98,18 @@ describe('resolveCaedis', () => {
   });
 });
 
-describe('tick — action resolution', () => {
+describe('tick — action resolution and events', () => {
   it('resolves a queued action only once its time elapses', () => {
     const started = startAction(withGold(fresh(), 200), 'caedis');
     if (!started.ok) throw new Error('should start');
     const half = tick(started.state, 5);
-    expect(half.lifetime.actionQueue).toHaveLength(1);
-    expect(half.lifetime.actionQueue[0]?.remainingSeconds ?? 0).toBeCloseTo(5, 5);
-    expect(tick(half, 5).lifetime.actionQueue).toHaveLength(0);
+    expect(half.state.lifetime.actionQueue).toHaveLength(1);
+    expect(half.state.lifetime.actionQueue[0]?.remainingSeconds ?? 0).toBeCloseTo(5, 5);
+    expect(half.events).toHaveLength(0);
+    const done = tick(half.state, 5);
+    expect(done.state.lifetime.actionQueue).toHaveLength(0);
+    expect(done.events).toHaveLength(1);
+    expect(done.events[0]?.actionId).toBe('caedis');
   });
 
   it('closes the corruption → cull → soul loop deterministically', () => {
@@ -113,10 +117,26 @@ describe('tick — action resolution', () => {
     const started = startAction(seeded, 'caedis');
     if (!started.ok) throw new Error('should start');
     const after = tick(started.state, 10);
-    expect(after.lifetime.actionQueue).toHaveLength(0);
-    expect(after.rngState).not.toBe(started.state.rngState); // the outcome consumed the RNG
+    expect(after.state.lifetime.actionQueue).toHaveLength(0);
+    expect(after.state.rngState).not.toBe(started.state.rngState); // the outcome consumed the RNG
     const again = tick(started.state, 10);
-    expect(after.souls.toString()).toBe(again.souls.toString());
-    expect(totalReprobates(after)).toBe(totalReprobates(again));
+    expect(after.state.souls.toString()).toBe(again.state.souls.toString());
+    expect(totalReprobates(after.state)).toBe(totalReprobates(again.state));
+  });
+});
+
+describe('resolveAction', () => {
+  it('returns an event describing the outcome', () => {
+    const { state, event } = resolveAction(addReprobates(fresh(), 'reprobate', 5), 'caedis', rng());
+    expect(event).not.toBeNull();
+    if (event) {
+      expect(event.actionId).toBe('caedis');
+      expect(event.soulsDelta + event.reprobateDelta).toBe(0); // souls minted == reprobates killed
+      expect(soulsOf(state)).toBe(event.soulsDelta);
+    }
+  });
+
+  it('returns a null event for an unknown action', () => {
+    expect(resolveAction(fresh(), 'nope', rng()).event).toBeNull();
   });
 });

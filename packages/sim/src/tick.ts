@@ -8,26 +8,30 @@
  * Purity contract: no DOM access, no `Math.random`, no mutation of the input `state`. All randomness
  * comes from the injected seeded RNG (ADR-011); its advanced state is written back into the result.
  *
- * Systems land here in order; this slice adds Opera action-timer resolution on top of passive
- * generation. Toggles and reprobate population effects slot in where marked.
+ * Returns the new state plus the outcome events generated this tick (02 §2) — transient, not
+ * persisted; the caller surfaces them in the log / pop-ups.
  */
 import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_PER_SECOND } from './constants.js';
+import { type OutcomeEvent } from './events.js';
 import { makeRng } from './rng.js';
 import { type ActionTimer, type GameState } from './state.js';
 
-/**
- * Injected dependencies for a tick (tuning tables that aren't part of the state). Empty for now;
- * systems that need data receive it here rather than importing it, to keep `tick` deterministic.
- */
+/** Injected dependencies for a tick (tuning tables that aren't part of the state). Empty for now. */
 export interface TickDeps {
   readonly _reserved?: never;
 }
 
+/** The result of advancing the game: the new state and any outcomes that resolved this tick. */
+export interface TickResult {
+  readonly state: GameState;
+  readonly events: OutcomeEvent[];
+}
+
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
-export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {}): GameState {
-  if (deltaSeconds <= 0) return state;
+export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {}): TickResult {
+  if (deltaSeconds <= 0) return { state, events: [] };
 
   const rng = makeRng(state.rngState);
 
@@ -44,6 +48,7 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
     ),
   };
   let working: GameState = { ...state, lifetime };
+  const events: OutcomeEvent[] = [];
 
   // 2. Resolve in-flight Opera timers. A timer whose remaining time falls to <= 0 this tick
   //    completes: its outcome is drawn from `rng` and applied. A large (offline) delta resolves
@@ -58,7 +63,9 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
     }
     working = { ...working, lifetime: { ...working.lifetime, actionQueue: remaining } };
     for (const actionId of completed) {
-      working = resolveAction(working, actionId, rng);
+      const resolved = resolveAction(working, actionId, rng);
+      working = resolved.state;
+      if (resolved.event) events.push(resolved.event);
     }
   }
 
@@ -66,8 +73,11 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   // 4. reprobate suicide / murder population effects            [step: reprobates]
 
   return {
-    ...working,
-    lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
-    rngState: rng.state,
+    state: {
+      ...working,
+      lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
+      rngState: rng.state,
+    },
+    events,
   };
 }

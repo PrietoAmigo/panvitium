@@ -26,5 +26,5 @@ export function startNewGame(now: number = Date.now()): GameState {
 export function resumeGame(saved: GameState, now: number = Date.now()): GameState {
   const elapsedSeconds = Math.max(0, (now - saved.lastTickAt) / 1000);
   const capped = Math.min(elapsedSeconds, MAX_OFFLINE_SECONDS);
-  return tick(saved, capped);
+  return tick(saved, capped).state;
 }

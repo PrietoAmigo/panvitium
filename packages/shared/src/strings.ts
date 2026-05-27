@@ -16,6 +16,29 @@ export const strings = {
     altar: 'Altar',
     invocation: 'Invocation Room',
   },
+  reprobates: 'Reprobates',
+  opera: {
+    suasio: 'Suasio',
+    decimatio: 'Decimatio',
+    suggestion: 'Suggestion',
+    caedis: 'Caedis',
+    tempt: 'Tempt',
+    cull: 'Cull',
+    logs: 'Logs',
+    emptyLog: 'The terminal log is empty. Nothing has been done.',
+    suasioIntro: 'The temptations, written to be spoken. Whisper one and wait.',
+    notYet: 'not yet inscribed',
+    idle: 'No rite underway.',
+  },
+  tiers: {
+    stellar: 'Stellar',
+    excellent: 'Excellent',
+    good: 'Good',
+    neutral: 'Neutral',
+    bad: 'Bad',
+    terrible: 'Terrible',
+    apocalyptic: 'Apocalyptic',
+  },
 } as const;
 
 export type Strings = typeof strings;

@@ -334,3 +334,212 @@ body {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* ── Population & active-action progress (HUD) ───────────────────────────── */
+.population .resource-value {
+  color: var(--blood-bright);
+}
+.active-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 1.2rem;
+}
+.active-actions.idle {
+  opacity: 0.5;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+.action-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.action-progress-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  color: var(--candle);
+}
+.action-progress-bar {
+  height: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.action-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--candle-soft), var(--candle));
+  transition: width 0.1s linear;
+}
+
+/* ── Opera action rows (Suasio scroll, PC ledgers) ───────────────────────── */
+.opera-intro {
+  font-style: italic;
+  opacity: 0.85;
+  margin-top: 0;
+}
+.opera-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--parchment-shadow);
+}
+.opera-meta {
+  display: flex;
+  flex-direction: column;
+}
+.opera-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+}
+.opera-cost {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+.opera-btn {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: var(--parchment);
+  background: var(--blood);
+  border: 1px solid var(--blood-bright);
+  border-radius: 3px;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.05s ease;
+}
+.opera-btn:hover:not(:disabled) {
+  background: var(--blood-bright);
+}
+.opera-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.opera-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.opera-notice {
+  color: var(--blood-bright);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0.4rem 0 0;
+}
+
+/* ── PC terminal: Win95-light sections + green-on-black log (02 §10) ──────── */
+.pc-section {
+  margin-bottom: 1rem;
+}
+.pc-heading {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 0 0 0.3rem;
+}
+.pc-empty {
+  opacity: 0.6;
+  font-style: italic;
+}
+.pc-log {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #050807;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  color: #6fae6f;
+}
+.pc-log-line {
+  padding: 0.1rem 0;
+  white-space: nowrap;
+}
+.pc-log-line.tier-stellar {
+  color: var(--blood-bright);
+}
+.pc-log-line.tier-excellent {
+  color: var(--candle);
+}
+.pc-log-line.tier-terrible {
+  color: #9a6fae;
+}
+.pc-log-line.tier-apocalyptic {
+  color: #6fa8c9;
+}
+.pc-stub {
+  opacity: 0.5;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* ── Signature pop-up: Stellar / Apocalyptic (02 §2) ─────────────────────── */
+.signature-popup {
+  position: fixed;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  min-width: 220px;
+  max-width: 80vw;
+  padding: 0.7rem 1.4rem;
+  text-align: center;
+  background: #050403;
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+  animation: signature-in 0.25s ease-out;
+}
+.signature-stellar {
+  border-color: var(--blood-bright);
+  box-shadow: 0 0 28px rgba(160, 30, 34, 0.55);
+}
+.signature-apocalyptic {
+  border-color: #6fa8c9;
+  box-shadow: 0 0 28px rgba(111, 168, 201, 0.5);
+}
+.signature-tier {
+  font-family: var(--font-display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+.signature-stellar .signature-tier {
+  color: var(--blood-bright);
+}
+.signature-apocalyptic .signature-tier {
+  color: #6fa8c9;
+}
+.signature-action {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  margin: 0.15rem 0;
+}
+.signature-effect {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+@keyframes signature-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
