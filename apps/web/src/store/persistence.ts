@@ -51,11 +51,17 @@ export function loadGame(now: number = Date.now()): LoadedGame {
   const deviceId = getDeviceId();
   const blob = loadSaveBlob();
   if (blob) {
-    return {
-      state: resumeGame(deserializeGameState(blob.state), now),
-      saveVersion: blob.saveVersion,
-      deviceId,
-    };
+    try {
+      return {
+        state: resumeGame(deserializeGameState(blob.state), now),
+        saveVersion: blob.saveVersion,
+        deviceId,
+      };
+    } catch (err) {
+      // The blob validated against the schema but could not be resumed (deserialize or offline
+      // tick threw). Don't brick the game on a single bad save — log and start fresh.
+      console.error('Failed to resume saved game; starting fresh.', err);
+    }
   }
   return { state: startNewGame(now), saveVersion: 0, deviceId };
 }
