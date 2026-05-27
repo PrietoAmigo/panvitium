@@ -71,7 +71,7 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
     }
     working = { ...working, lifetime: { ...working.lifetime, actionQueue: remaining } };
     for (const actionId of completed) {
-      const resolved = resolveAction(working, actionId, rng, mods.playerEfficiencyMul);
+      const resolved = resolveAction(working, actionId, rng);
       working = resolved.state;
       if (resolved.event) events.push(resolved.event);
     }

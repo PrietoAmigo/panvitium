@@ -6,7 +6,7 @@ import {
   sinLevel,
   MAX_SIN_LEVEL,
   ACTIONS,
-  playerEfficiency,
+  categoryEfficiency,
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../rooms/rooms.js';
@@ -91,7 +91,7 @@ function SuasioPanel(): ReactElement {
   const influence = useGameStore((s) =>
     s.state ? floor(s.state.lifetime.influence).toNumber() : 0,
   );
-  const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
+  const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'suasio') : 1));
   const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
   const underway = useUnderway();
@@ -132,7 +132,7 @@ function OutcomeLog(): ReactElement {
 /** Decimatio actions (only Caedis wired so far). */
 function DecimatioGroup(): ReactElement {
   const gold = useGameStore((s) => (s.state ? floor(s.state.lifetime.gold).toNumber() : 0));
-  const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
+  const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'decimatio') : 1));
   const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
   const underway = useUnderway();

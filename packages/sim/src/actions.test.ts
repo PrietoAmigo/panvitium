@@ -181,3 +181,62 @@ describe('modifier integration', () => {
     expect(r.ok).toBe(false);
   });
 });
+
+describe('modifier integration — per-category efficiency', () => {
+  it('Leviathan (Resignation) scales Suggestion cost but not Caedis', () => {
+    // Tristitia 180 → suasioEffMul ≈ 5.1253. Suggestion influence cost = ceil(5 × 5.1253) = 26.
+    const base = fresh();
+    const state: GameState = {
+      ...base,
+      devotion: { ...base.devotion, tristitia: bn(180) },
+      lifetime: { ...base.lifetime, influence: bn(100), gold: bn(500) },
+    };
+    const r1 = startAction(state, 'suggestion');
+    expect(r1.ok).toBe(true);
+    if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(74); // 100 − 26
+
+    // Caedis on the same state pays base 100 gold (no Decimatio boost in play).
+    const r2 = startAction(state, 'caedis');
+    expect(r2.ok).toBe(true);
+    if (r2.ok) expect(floor(r2.state.lifetime.gold).toNumber()).toBe(400); // 500 − 100
+  });
+
+  it('Satan (Retribution) scales Caedis cost but not Suggestion', () => {
+    // Ira 180 → decimatioEffMul ≈ 5.1253. Caedis gold cost = ceil(100 × 5.1253) = 513.
+    const base = fresh();
+    const state: GameState = {
+      ...base,
+      devotion: { ...base.devotion, ira: bn(180) },
+      lifetime: { ...base.lifetime, influence: bn(100), gold: bn(1000) },
+    };
+    const r1 = startAction(state, 'caedis');
+    expect(r1.ok).toBe(true);
+    if (r1.ok) expect(floor(r1.state.lifetime.gold).toNumber()).toBe(487); // 1000 − 513
+
+    const r2 = startAction(state, 'suggestion');
+    expect(r2.ok).toBe(true);
+    if (r2.ok) expect(floor(r2.state.lifetime.influence).toNumber()).toBe(95); // 100 − 5
+  });
+});
+
+describe('modifier integration — tier weight shifts reach resolveAction', () => {
+  it('Lucifer (Morning Star) at L4 reliably shifts Caedis tier choices on shared RNG seeds', () => {
+    // At Lucifer L4 (intensity ≈ 66), Stellar weight goes from 0.01 → ≈ 0.67 (pre-normalization);
+    // normalized Stellar share is ≈ 40 %. Across many identical seeds, the same draw lands on a
+    // different tier ~40 % of the time. The bar here is non-zero: prove the wiring is real.
+    const trials = 50;
+    let differing = 0;
+    for (let i = 0; i < trials; i++) {
+      const s0 = createInitialState(`tier-${i}`, 0);
+      const sL: GameState = {
+        ...s0,
+        devotion: { ...s0.devotion, superbia: bn(1049760000) },
+      };
+      const seed = hashSeed(`wire-${i}`);
+      const t0 = resolveAction(s0, 'caedis', makeRng(seed)).event?.tier;
+      const tL = resolveAction(sL, 'caedis', makeRng(seed)).event?.tier;
+      if (t0 !== tL) differing++;
+    }
+    expect(differing).toBeGreaterThan(5);
+  });
+});

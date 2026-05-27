@@ -13,8 +13,8 @@
  */
 import { floor, gte, sub } from './bignum.js';
 import { type Rng } from './rng.js';
-import { type Tier, type TierWeights, resolveTier } from './probability.js';
-import { playerEfficiency } from './modifiers.js';
+import { type Tier, type TierWeights, applyTierModifiers, resolveTier } from './probability.js';
+import { categoryEfficiency, computeModifiers } from './modifiers.js';
 import { sinLevel } from './progression.js';
 import {
   addReprobates,
@@ -123,11 +123,7 @@ export type StartResult = { ok: true; state: GameState } | { ok: false; reason: 
  * natural numbers; the bignum gotcha). Efficiency scales the cost (ceil so a fractional cost rounds
  * up). Time is not affected by efficiency for these actions.
  */
-export function startAction(
-  state: GameState,
-  actionId: string,
-  efficiency = playerEfficiency(state),
-): StartResult {
+export function startAction(state: GameState, actionId: string, efficiency?: number): StartResult {
   const def = ACTIONS[actionId];
   if (!def) return { ok: false, reason: `unknown action: ${actionId}` };
 
@@ -138,8 +134,10 @@ export function startAction(
     return { ok: false, reason: 'A rite is already underway.' };
   }
 
-  const goldCost = Math.ceil((def.cost.gold ?? 0) * efficiency);
-  const influenceCost = Math.ceil((def.cost.influence ?? 0) * efficiency);
+  // Efficiency = player (Gula) × category (Leviathan for Suasio, Satan for Decimatio).
+  const eff = efficiency ?? categoryEfficiency(state, def.category);
+  const goldCost = Math.ceil((def.cost.gold ?? 0) * eff);
+  const influenceCost = Math.ceil((def.cost.influence ?? 0) * eff);
   if (!gte(floor(state.lifetime.gold), goldCost)) return { ok: false, reason: 'not enough gold' };
   if (!gte(floor(state.lifetime.influence), influenceCost)) {
     return { ok: false, reason: 'not enough influence' };
@@ -162,16 +160,24 @@ export function resolveAction(
   state: GameState,
   actionId: string,
   rng: Rng,
-  efficiency = playerEfficiency(state),
+  efficiency?: number,
 ): { state: GameState; event: OutcomeEvent | null } {
   const def = ACTIONS[actionId];
   if (!def) return { state, event: null };
-  const tier = resolveTier(def.weights, rng);
+  // One pass over the modifier engine: per-tier weight muls (Insatiability damps Terrible/
+  // Apocalyptic, Morning Star lifts Stellar) AND per-action eff (player × category) come from the
+  // same `Modifiers` bundle. resolveTier renormalizes internally.
+  const mods = computeModifiers(state);
+  const eff =
+    efficiency ??
+    mods.playerEfficiencyMul *
+      (def.category === 'suasio' ? mods.suasioEfficiencyMul : mods.decimatioEfficiencyMul);
+  const tier = resolveTier(applyTierModifiers(def.weights, mods.tierWeightMul), rng);
   const next =
     def.id === 'suggestion'
-      ? resolveSuggestion(state, tier, rng, efficiency)
+      ? resolveSuggestion(state, tier, rng, eff)
       : def.id === 'caedis'
-        ? resolveCaedis(state, tier, rng, efficiency)
+        ? resolveCaedis(state, tier, rng, eff)
         : state;
   // `.toNumber()` of a zero BigNum can yield -0; normalize so consumers compare and render cleanly.
   const norm = (n: number): number => (n === 0 ? 0 : n);
