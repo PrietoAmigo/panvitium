@@ -42,6 +42,11 @@ const actionTimerSchema = z.object({
   target: z.string().optional(),
 });
 
+const buildTimerSchema = z.object({
+  businessId: z.string(),
+  remainingSeconds: z.number(),
+});
+
 const lifetimeSchema = z.object({
   gold: bigNumString,
   influence: bigNumString,
@@ -59,6 +64,11 @@ const lifetimeSchema = z.object({
   generationPool: z.number().nonnegative().optional(),
   suicidePool: z.number().nonnegative().optional(),
   murderPool: z.number().nonnegative().optional(),
+  // Vitium Mercatura — businesses + builds + conversion pool (03 §2.3 / 02 §9). All additive
+  // optional under ADR-023; absent / empty / 0 round-trips identically to a pre-Vitium save.
+  businesses: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  buildQueue: z.array(buildTimerSchema).optional(),
+  conversionPool: z.number().nonnegative().optional(),
 });
 
 /** Zod schema for the serialized gameplay state. */
@@ -114,6 +124,21 @@ export function serializeGameState(state: GameState): SerializedGameState {
         : {}),
       ...(state.lifetime.suicidePool > 0 ? { suicidePool: state.lifetime.suicidePool } : {}),
       ...(state.lifetime.murderPool > 0 ? { murderPool: state.lifetime.murderPool } : {}),
+      ...(state.lifetime.conversionPool > 0
+        ? { conversionPool: state.lifetime.conversionPool }
+        : {}),
+      // Vitium Mercatura state. Omit when empty so fresh games match the pre-Vitium wire form.
+      ...(Object.keys(state.lifetime.businesses).length > 0
+        ? { businesses: { ...state.lifetime.businesses } }
+        : {}),
+      ...(state.lifetime.buildQueue.length > 0
+        ? {
+            buildQueue: state.lifetime.buildQueue.map((t) => ({
+              businessId: t.businessId,
+              remainingSeconds: t.remainingSeconds,
+            })),
+          }
+        : {}),
     },
     rngState: state.rngState,
     lastTickAt: state.lastTickAt,
@@ -156,6 +181,14 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       generationPool: s.lifetime.generationPool ?? 0,
       suicidePool: s.lifetime.suicidePool ?? 0,
       murderPool: s.lifetime.murderPool ?? 0,
+      conversionPool: s.lifetime.conversionPool ?? 0,
+      // Vitium Mercatura: empty defaults match pre-Vitium saves; new saves round-trip whatever
+      // is present. `buildQueue` entries copy verbatim — they don't carry optional payload.
+      businesses: { ...(s.lifetime.businesses ?? {}) },
+      buildQueue: (s.lifetime.buildQueue ?? []).map((t) => ({
+        businessId: t.businessId,
+        remainingSeconds: t.remainingSeconds,
+      })),
     },
     rngState: s.rngState,
     lastTickAt: s.lastTickAt,

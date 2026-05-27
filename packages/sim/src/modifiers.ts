@@ -65,6 +65,12 @@ export interface Modifiers {
    * Harpy, etc.) once those sources attach.
    */
   readonly cholericMurderRateMul: number;
+  /**
+   * Multiplier on Vitium Mercatura output (gold AND reprobate generation AND conversion). Future
+   * sources: Plutus invocation (flat factor on output), Vapula #60 sigil (overall VM gold
+   * output), and analogous. Currently 1× — businesses contribute at catalog values.
+   */
+  readonly vitiumMercaturaOutputMul: number;
 }
 
 /** No sources active — every multiplier is 1; tier shifts are absent (all default 1). */
@@ -79,6 +85,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   reprobateGenerationRateMul: 1,
   reprobateSuicideRateMul: 1,
   cholericMurderRateMul: 1,
+  vitiumMercaturaOutputMul: 1,
 };
 
 /** Default skill→effect coupling for a skill that "increases X": X *= (1 + intensity). */
@@ -140,6 +147,8 @@ export function computeModifiers(state: GameState): Modifiers {
     reprobateSuicideRateMul: skillBonus(tristitiaIntensity) * 2 ** tristitiaLvl,
     // Murder: no source attached this slice; multiplier is 1 so Cholerics×base feeds straight in.
     cholericMurderRateMul: 1,
+    // Vitium Mercatura output: 1× until Plutus (invocations slice) and Vapula #60 (sigils slice).
+    vitiumMercaturaOutputMul: 1,
   };
 }
 

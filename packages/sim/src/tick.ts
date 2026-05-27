@@ -13,6 +13,7 @@
  */
 import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
+import { advanceBuilds, businessGoldPerSecond } from './builds.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
@@ -39,15 +40,17 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   const mods = computeModifiers(state);
 
   // 1. Passive generation (02 §1) with modifier bundle applied.
-  //    Gold/s scales with `goldRateMul` (Avaritia skill et al.).
+  //    Gold/s = (base + Σ business goldPerSecond × count) × goldRateMul. Business income obeys
+  //    the same multiplier so Avaritia / Silver / etc. scale shop output as well as base.
   //    Influence is gain = effectiveMax × BASE_INFLUENCE_RATE × `influenceRateMul`, capped at
   //    `effectiveMax = base × maxInfluenceMul` (Vanagloria skill raises the cap; level its rate).
   //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
   //    only at display/spend/comparison boundary.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
+  const goldPerSecond = (BASE_GOLD_PER_SECOND + businessGoldPerSecond(state)) * mods.goldRateMul;
   const lifetime = {
     ...state.lifetime,
-    gold: add(state.lifetime.gold, mul(BASE_GOLD_PER_SECOND * mods.goldRateMul, deltaSeconds)),
+    gold: add(state.lifetime.gold, mul(goldPerSecond, deltaSeconds)),
     influence: min(
       add(
         state.lifetime.influence,
@@ -91,10 +94,14 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
     }
   }
 
-  // 3. toggles per-second effects & costs (incl. Panvitium)     [step: toggles]
+  // 3. Vitium Mercatura build queue (03 §2.3 / 02 §3): builds advance independently of the
+  //    player action slot. Completed builds increment the businesses map; new owned counts
+  //    contribute to subsequent ticks' gold/generation/conversion rates.
+  working = advanceBuilds(working, deltaSeconds);
+
   // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer
-  //    births / suicides / murders (02 §9). Each death mints 1 soul. The pools live on the
-  //    lifetime state and persist across save/load (ADR-023 additive optional).
+  //    births / suicides / murders / conversions (02 §9). Each death mints 1 soul. The pools
+  //    live on the lifetime state and persist across save/load (ADR-023 additive optional).
   working = applyReprobateDynamics(working, deltaSeconds, rng);
 
   return {

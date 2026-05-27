@@ -14,6 +14,11 @@ function patchSouls(v: number): void {
   useGameStore.setState({ state: { ...s, souls: bn(v) } });
 }
 
+function patchDevotion(sin: 'gula', value: number): void {
+  const s = store().state as GameState;
+  useGameStore.setState({ state: { ...s, devotion: { ...s.devotion, [sin]: bn(value) } } });
+}
+
 beforeEach(() => {
   localStorage.clear();
   useGameStore.setState({
@@ -135,5 +140,57 @@ describe('gameStore — Katabasis', () => {
     store().closeRecap();
     expect(store().katabasisPhase).toBeNull();
     expect(store().recap).toBeNull();
+  });
+});
+
+describe('gameStore — Vitium Mercatura (build/shutdown)', () => {
+  it('refuses to build when below the gating Sin level (sets a notice)', () => {
+    patchGold(500);
+    // Devotion is 0 → gula L0 → can't build gula-mercatura-1 (requires L1).
+    store().build('gula-mercatura-1');
+    expect(store().state?.lifetime.buildQueue ?? []).toHaveLength(0);
+    expect(store().notice).toMatch(/gula level/i);
+  });
+
+  it('refuses to build when gold is insufficient', () => {
+    patchDevotion('gula', 180); // exactly L1
+    patchGold(50);
+    store().build('gula-mercatura-1');
+    expect(store().state?.lifetime.buildQueue ?? []).toHaveLength(0);
+    expect(store().notice).toMatch(/gold/i);
+  });
+
+  it('queues a build when gated and paid, leaving the player slot free', () => {
+    patchDevotion('gula', 180);
+    patchGold(500);
+    store().build('gula-mercatura-1');
+    const s = store().state as GameState;
+    expect(s.lifetime.buildQueue).toHaveLength(1);
+    expect(s.lifetime.actionQueue).toHaveLength(0); // doesn't occupy the player slot
+    expect(floor(s.lifetime.gold).toNumber()).toBe(400);
+    expect(store().notice).toBeNull();
+  });
+
+  it('completes a build via advance and lets the player shut it down for a 50% refund', () => {
+    patchDevotion('gula', 180);
+    patchGold(200);
+    store().build('gula-mercatura-1');
+    store().advance(30); // build completes in 30s
+    const built = store().state as GameState;
+    expect(built.lifetime.buildQueue).toHaveLength(0);
+    expect(built.lifetime.businesses['gula-mercatura-1']).toBe(1);
+    // Advance produced 30 s × 1 g/s of business gold ON TOP of base 10 g/s → 100 + 30 + base.
+    // Don't over-specify the exact number; just check the shutdown delta.
+    const goldBefore = floor(built.lifetime.gold).toNumber();
+    store().shutdown('gula-mercatura-1');
+    const after = store().state as GameState;
+    expect(after.lifetime.businesses['gula-mercatura-1']).toBeUndefined();
+    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 50);
+  });
+
+  it('refuses shutdown when nothing owned', () => {
+    patchDevotion('gula', 180);
+    store().shutdown('gula-mercatura-1');
+    expect(store().notice).toBeTruthy();
   });
 });

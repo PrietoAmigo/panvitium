@@ -71,6 +71,16 @@ export interface ActionTimer {
   readonly target?: string;
 }
 
+/**
+ * A Vitium Mercatura business build in progress (03 §2.3). Builds live in their own queue
+ * separate from `actionQueue` — they don't occupy the player slot and multiple can be in flight
+ * at once. They cannot be delegated to acolytes or invocations.
+ */
+export interface BuildTimer {
+  readonly businessId: string;
+  remainingSeconds: number;
+}
+
 /** An acolyte and the action it is currently delegated to, if any. */
 export interface Acolyte {
   readonly id: number;
@@ -96,6 +106,16 @@ export interface LifetimeState {
   /** In-flight timed actions. */
   actionQueue: ActionTimer[];
   /**
+   * Owned Vitium Mercatura businesses by id (03 §2.3). Multiple owned copies stack — fungible
+   * (no per-instance state). Empty by default.
+   */
+  businesses: Record<string, number>;
+  /**
+   * In-flight Vitium Mercatura builds. Multiple builds run concurrently and do NOT occupy the
+   * player's action slot (02 §3 / user correction). Empty by default.
+   */
+  buildQueue: BuildTimer[];
+  /**
    * Reprobate-dynamics accrual pools (02 §9). Each tick the per-second rate × deltaSeconds is
    * added to the matching pool; while the pool ≥ 1 it is decremented and an integer event applied
    * (a birth / suicide / murder). Pools persist across ticks and save/load so fractional progress
@@ -105,6 +125,14 @@ export interface LifetimeState {
   generationPool: number;
   suicidePool: number;
   murderPool: number;
+  /**
+   * Conversion pool (02 §9 / 03 §2.3). Vitium Mercatura businesses (and later Vitium Compositum
+   * toggles, Panvitium) contribute conversion attempts per second. While the pool ≥ 1, one
+   * unconverted reprobate is converted to a subtype picked by `biasedSubtype` (which weights by
+   * the active Vitium sources). If no unconverted reprobate exists when the pool crosses, the
+   * pool is left intact so progress isn't wasted.
+   */
+  conversionPool: number;
 }
 
 /** The complete gameplay state. */
@@ -157,9 +185,12 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       emptioList: [],
       activeToggles: [],
       actionQueue: [],
+      businesses: {},
+      buildQueue: [],
       generationPool: 0,
       suicidePool: 0,
       murderPool: 0,
+      conversionPool: 0,
     },
     rngState: hashSeed(seed),
     lastTickAt: now,

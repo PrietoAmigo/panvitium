@@ -132,3 +132,63 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(CURRENT_SCHEMA_VERSION).toBe(1);
   });
 });
+
+describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
+  it('a v1 save without businesses/buildQueue/conversionPool loads with defaults', () => {
+    const fresh = createInitialState('seed', 0);
+    const serialized = serializeGameState(fresh);
+    // Strip the Vitium fields entirely — simulates a pre-Vitium save.
+    const {
+      businesses,
+      buildQueue,
+      conversionPool,
+      generationPool,
+      suicidePool,
+      murderPool,
+      ...rest
+    } = serialized.lifetime;
+    void businesses;
+    void buildQueue;
+    void conversionPool;
+    void generationPool;
+    void suicidePool;
+    void murderPool;
+    const oldShape = { ...serialized, lifetime: rest };
+    const parsed = serializedGameStateSchema.safeParse(oldShape);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const back = deserializeGameState(parsed.data);
+    expect(back.lifetime.businesses).toEqual({});
+    expect(back.lifetime.buildQueue).toEqual([]);
+    expect(back.lifetime.conversionPool).toBe(0);
+  });
+
+  it('a fresh save omits empty businesses/buildQueue and zero conversionPool from the wire', () => {
+    const serialized = serializeGameState(createInitialState('seed', 0));
+    expect('businesses' in serialized.lifetime).toBe(false);
+    expect('buildQueue' in serialized.lifetime).toBe(false);
+    expect('conversionPool' in serialized.lifetime).toBe(false);
+  });
+
+  it('non-empty Vitium state round-trips through the wire', () => {
+    const fresh = createInitialState('seed', 0);
+    const withVitium: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        businesses: { 'gula-mercatura-1': 3, 'avaritia-mercatura-1': 1 },
+        buildQueue: [
+          { businessId: 'luxuria-mercatura-1', remainingSeconds: 12.5 },
+          { businessId: 'gula-mercatura-1', remainingSeconds: 27 },
+        ],
+        conversionPool: 0.42,
+      },
+    };
+    const back = deserializeGameState(serializeGameState(withVitium));
+    expect(back.lifetime.businesses).toEqual({ 'gula-mercatura-1': 3, 'avaritia-mercatura-1': 1 });
+    expect(back.lifetime.buildQueue).toHaveLength(2);
+    expect(back.lifetime.buildQueue[0]!.businessId).toBe('luxuria-mercatura-1');
+    expect(back.lifetime.buildQueue[0]!.remainingSeconds).toBe(12.5);
+    expect(back.lifetime.conversionPool).toBeCloseTo(0.42, 10);
+  });
+});

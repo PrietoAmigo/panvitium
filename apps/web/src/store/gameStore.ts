@@ -12,6 +12,8 @@ import { create } from 'zustand';
 import {
   tick,
   startAction,
+  startBuild,
+  shutdownBusiness,
   isSignatureTier,
   unbindAllSigils,
   offerDevotion,
@@ -51,6 +53,17 @@ interface GameStore {
   advance: (deltaSeconds: number) => void;
   /** Begin an Opera action (pays its cost and queues it), or set a notice if it can't start. */
   act: (actionId: string, target?: string) => void;
+  /**
+   * Start a Vitium Mercatura build (03 §2.3). Pays the up-front gold cost and queues a build
+   * timer. Builds run alongside the player slot — multiple may be in flight concurrently.
+   * Sets a notice on failure (no level / not enough gold / unknown id).
+   */
+  build: (businessId: string) => void;
+  /**
+   * Manually shut down one owned business of `businessId` (03 §2.3). Instant; refunds the default
+   * 50% of the buildCost into gold and decrements the owned count by one.
+   */
+  shutdown: (businessId: string) => void;
   /** Open the Katabasis menu (returns any bound souls to the pool first, 02 §5). */
   beginKatabasis: () => void;
   /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
@@ -108,6 +121,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     const result = startAction(current, actionId, target === undefined ? {} : { target });
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  build: (businessId) => {
+    const current = get().state;
+    if (!current) return;
+    const result = startBuild(current, businessId);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  shutdown: (businessId) => {
+    const current = get().state;
+    if (!current) return;
+    const result = shutdownBusiness(current, businessId);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },

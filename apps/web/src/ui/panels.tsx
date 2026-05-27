@@ -10,6 +10,9 @@ import {
   MALEFICIA,
   countCopies,
   totalInvokingPower,
+  BUSINESS_IDS,
+  businessById,
+  SHUTDOWN_REFUND_FRACTION,
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../rooms/rooms.js';
@@ -293,8 +296,98 @@ function formatDuration(totalSec: number): string {
   return `${s}s`;
 }
 
+/**
+ * Depraedatio (03 §2.3): Vitium Mercatura. Eight entry-tier businesses (one per Sin, gated at
+ * Level 1). Each builds via the parallel buildQueue — does NOT occupy the player slot, so the
+ * player can run a Studio rite simultaneously and queue multiple builds at once.
+ */
+function DepraedatioGroup(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const notice = useGameStore((s) => s.notice);
+  const build = useGameStore((s) => s.build);
+  const shutdown = useGameStore((s) => s.shutdown);
+  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+
+  const gold = floor(state.lifetime.gold).toNumber();
+  const buildQueue = state.lifetime.buildQueue;
+  const owned = state.lifetime.businesses;
+
+  return (
+    <>
+      <p className="opera-intro">{strings.opera.depraedatioIntro}</p>
+      <ul className="vitium-list">
+        {BUSINESS_IDS.map((id) => {
+          const def = businessById(id);
+          if (!def) return null;
+          const have = sinLevel(state.devotion[def.sin]);
+          const unlocked = have >= def.level;
+          const ownedCount = owned[id] ?? 0;
+          const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION);
+          const name = strings.businesses[id] ?? id;
+          const buildCostLabel = `${def.buildCost} ${strings.resources.gold} · ${formatDuration(def.buildTimeSeconds)}`;
+          return (
+            <li key={id} className={`vitium-row${unlocked ? '' : ' vitium-locked'}`}>
+              <div className="vitium-meta">
+                <span className="vitium-name">{name}</span>
+                <span className="vitium-sub">
+                  {def.sin} L{def.level}
+                  {ownedCount > 0 ? ` · ${ownedCount} ${strings.opera.owned}` : ''}
+                </span>
+              </div>
+              <div className="vitium-actions">
+                <button
+                  type="button"
+                  className="opera-btn"
+                  disabled={!unlocked || gold < def.buildCost}
+                  onClick={() => build(id)}
+                  aria-label={`${strings.opera.build} ${name}`}
+                >
+                  {unlocked
+                    ? `${strings.opera.build} · ${buildCostLabel}`
+                    : `${strings.opera.sinLocked} · ${def.sin} L${def.level}`}
+                </button>
+                {ownedCount > 0 && (
+                  <button
+                    type="button"
+                    className="opera-btn opera-btn--secondary"
+                    onClick={() => shutdown(id)}
+                    aria-label={`${strings.opera.shutdown} ${name}`}
+                  >
+                    {strings.opera.shutdown} · +{refund} {strings.resources.gold}
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {buildQueue.length > 0 && (
+        <>
+          <h3 className="vitium-heading">{strings.opera.inFlight}</h3>
+          <ul className="vitium-queue">
+            {buildQueue.map((t, idx) => {
+              const def = businessById(t.businessId);
+              const name = def ? (strings.businesses[t.businessId] ?? t.businessId) : t.businessId;
+              return (
+                <li key={`${idx}-${t.businessId}`} className="vitium-queue-row">
+                  <span className="vitium-queue-name">{name}</span>
+                  <span className="vitium-queue-time">
+                    {formatDuration(Math.max(0, Math.ceil(t.remainingSeconds)))}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+      {notice !== null && <p className="opera-notice">{notice}</p>}
+    </>
+  );
+}
+
 /** Body for a selected PC group. */
 function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
+  if (group === 'depraedatio') return <DepraedatioGroup />;
   if (group === 'decimatio') return <DecimatioGroup />;
   if (group === 'indagatio') return <IndagatioGroup />;
   if (group === 'emptio') return <EmptioGroup />;

@@ -1020,3 +1020,91 @@ body {
   background: rgba(212, 72, 72, 0.14);
   text-shadow: 0 0 6px rgba(212, 72, 72, 0.45);
 }
+
+/* ── Depraedatio (Vitium Mercatura) ─────────────────────────────────────── */
+.vitium-list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.vitium-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(196, 158, 74, 0.22);
+  background: rgba(8, 8, 10, 0.55);
+}
+.vitium-row.vitium-locked {
+  opacity: 0.55;
+  border-style: dashed;
+}
+.vitium-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.vitium-name {
+  font-family: var(--font-display);
+  color: var(--candle);
+  letter-spacing: 0.03em;
+}
+.vitium-sub {
+  font-family: var(--font-mono, monospace);
+  color: var(--ash, #c8b48a);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.vitium-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.opera-btn--secondary {
+  background: rgba(8, 8, 10, 0.5);
+  border-color: rgba(196, 158, 74, 0.4);
+  color: var(--ash, #c8b48a);
+}
+.opera-btn--secondary:hover:not(:disabled) {
+  background: rgba(40, 16, 16, 0.5);
+  border-color: rgba(212, 72, 72, 0.5);
+  color: #e6c993;
+}
+.vitium-heading {
+  margin: 0.9rem 0 0.3rem;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--candle);
+}
+.vitium-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.vitium-queue-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(196, 158, 74, 0.18);
+  background: rgba(8, 8, 10, 0.4);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85rem;
+}
+.vitium-queue-name {
+  color: var(--candle);
+}
+.vitium-queue-time {
+  color: var(--ash, #c8b48a);
+  letter-spacing: 0.05em;
+}

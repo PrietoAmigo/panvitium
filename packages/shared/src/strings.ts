@@ -42,7 +42,31 @@ export const strings = {
     emptioIntro: 'What the search surfaced, ready to be bought. The deal itself can still sour.',
     emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be bought.',
     indagatioCta: 'Begin the search',
+    depraedatioIntro:
+      'Sin-themed enterprises. Each pays out in gold and grooms its own reprobate subtype while it stands. Builds run independently of the Studio rite.',
+    depraedatioEmpty:
+      'No business yet stands. Reach Level 1 of a Sin to break ground on its trade.',
+    build: 'Build',
+    shutdown: 'Shutdown',
+    owned: 'owned',
+    inFlight: 'in flight',
+    sinLocked: 'Locked',
   },
+  /**
+   * Display names for Vitium Mercatura businesses (03 §2.3). Latin/Latinate where it suits the
+   * voice; flavorful where a plain trade name lands better. Keyed by business id so the catalog
+   * stays the source of truth for numbers while strings stay translatable.
+   */
+  businesses: {
+    'gula-mercatura-1': 'Tavern',
+    'luxuria-mercatura-1': 'House of Ill Repute',
+    'avaritia-mercatura-1': 'Pawnshop',
+    'tristitia-mercatura-1': 'Funeral Parlour',
+    'ira-mercatura-1': 'Fight Pit',
+    'acedia-mercatura-1': 'Idler\u2019s Hall',
+    'vanagloria-mercatura-1': 'Vanity Press',
+    'superbia-mercatura-1': 'Solitary Spire',
+  } as Record<string, string>,
   maleficia: {
     intro:
       'What has been found, paid for, and brought home. Each item has its own price in attention.',

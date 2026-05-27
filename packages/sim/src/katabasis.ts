@@ -12,6 +12,7 @@
  * fractions, with the hooks marked. All randomness comes from the injected save RNG (ADR-011).
  */
 import { add, clamp, floor, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
+import { businessById, SHUTDOWN_REFUND_FRACTION } from './businesses.js';
 import {
   BASE_MAX_INFLUENCE,
   BASE_REMAINING_GOLD,
@@ -144,8 +145,22 @@ export function commitKatabasis(
 ): { state: GameState; recap: KatabasisRecap } {
   const rng = makeRng(state.rngState);
 
-  // Remaining gold: a fraction of the gold held at this Katabasis (02 §6).
-  const goldKept = floor(mul(floor(state.lifetime.gold), remainingGoldFraction(state)));
+  // Vitium Mercatura auto-shutdown (02 §6): every owned business shuts down and refunds a
+  // fraction of its buildCost into the gold pool BEFORE the carry-over roll. This means the
+  // refund participates in the remaining-gold % and not at face value — the design intent is
+  // that businesses are real risk capital subject to the same loss as cash on hand at descent.
+  let goldAtDescent = state.lifetime.gold;
+  for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
+    if (!count) continue;
+    const def = businessById(bid);
+    if (!def) continue;
+    const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION) * count;
+    if (refund > 0) goldAtDescent = add(goldAtDescent, refund);
+  }
+
+  // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
+  // business shutdown refunds folded in above.
+  const goldKept = floor(mul(floor(goldAtDescent), remainingGoldFraction(state)));
 
   // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8).
   const chance = remainingMaleficiaChance(state);
@@ -173,9 +188,12 @@ export function commitKatabasis(
     emptioList: [], // lost track of them (02 §6)
     activeToggles: [], // toggles stop
     actionQueue: [], // uncompleted actions fizzle
+    businesses: {}, // all businesses auto-shut-down at descent (refund folded into goldAtDescent)
+    buildQueue: [], // in-flight builds fizzle (no refund — they hadn't completed)
     generationPool: 0, // pools reset with the fresh lifetime
     suicidePool: 0,
     murderPool: 0,
+    conversionPool: 0,
   };
 
   return {
