@@ -1,0 +1,122 @@
+import { describe, it, expect } from 'vitest';
+import { bn, floor } from './bignum.js';
+import { hashSeed, makeRng } from './rng.js';
+import { createInitialState, totalReprobates, type GameState } from './state.js';
+import { addReprobates } from './population.js';
+import { startAction, resolveSuggestion, resolveCaedis } from './actions.js';
+import { tick } from './tick.js';
+
+const fresh = (): GameState => createInitialState('seed', 0);
+const rng = () => makeRng(hashSeed('test'));
+const soulsOf = (s: GameState): number => floor(s.souls).toNumber();
+const goldOf = (s: GameState): number => floor(s.lifetime.gold).toNumber();
+const withGold = (s: GameState, g: number): GameState => ({
+  ...s,
+  lifetime: { ...s.lifetime, gold: bn(g) },
+});
+
+describe('startAction', () => {
+  it('queues caedis and deducts its gold cost when affordable', () => {
+    const r = startAction(withGold(fresh(), 150), 'caedis');
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(goldOf(r.state)).toBe(50); // 150 - 100
+      expect(r.state.lifetime.actionQueue).toEqual([{ actionId: 'caedis', remainingSeconds: 10 }]);
+    }
+  });
+
+  it('refuses caedis without enough gold and rejects unknown actions', () => {
+    expect(startAction(fresh(), 'caedis').ok).toBe(false);
+    expect(startAction(fresh(), 'nope').ok).toBe(false);
+  });
+
+  it('queues suggestion and deducts influence', () => {
+    const s = { ...fresh(), lifetime: { ...fresh().lifetime, influence: bn(5) } };
+    const r = startAction(s, 'suggestion');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(0);
+  });
+});
+
+describe('resolveSuggestion', () => {
+  it('good adds one unconverted reprobate', () => {
+    expect(resolveSuggestion(fresh(), 'good', rng()).lifetime.reprobates.reprobate).toBe(1);
+  });
+
+  it('stellar mints a soul and adds no reprobate', () => {
+    const s = resolveSuggestion(fresh(), 'stellar', rng());
+    expect(soulsOf(s)).toBe(1);
+    expect(totalReprobates(s)).toBe(0);
+  });
+
+  it('excellent stays unconverted with no Sin developed, converts toward a developed one', () => {
+    expect(resolveSuggestion(fresh(), 'excellent', rng()).lifetime.reprobates.reprobate).toBe(1);
+    const developed = { ...fresh(), devotion: { ...fresh().devotion, gula: bn(180) } }; // Gula L1
+    const s = resolveSuggestion(developed, 'excellent', rng());
+    expect(s.lifetime.reprobates.glutton).toBe(1);
+    expect(s.lifetime.reprobates.reprobate).toBe(0);
+  });
+
+  it('bad removes a reprobate; terrible loses 9% of the population', () => {
+    expect(
+      totalReprobates(resolveSuggestion(addReprobates(fresh(), 'reprobate', 3), 'bad', rng())),
+    ).toBe(2);
+    expect(
+      totalReprobates(
+        resolveSuggestion(addReprobates(fresh(), 'reprobate', 100), 'terrible', rng()),
+      ),
+    ).toBe(91);
+  });
+
+  it('neutral changes nothing', () => {
+    const s = resolveSuggestion(fresh(), 'neutral', rng());
+    expect(totalReprobates(s)).toBe(0);
+    expect(soulsOf(s)).toBe(0);
+  });
+});
+
+describe('resolveCaedis', () => {
+  it('good kills one reprobate and mints one soul', () => {
+    const s = resolveCaedis(addReprobates(fresh(), 'reprobate', 5), 'good', rng());
+    expect(totalReprobates(s)).toBe(4);
+    expect(soulsOf(s)).toBe(1);
+  });
+
+  it('mints nothing when there are no reprobates to kill', () => {
+    expect(soulsOf(resolveCaedis(fresh(), 'good', rng()))).toBe(0);
+  });
+
+  it('never mints more souls than reprobates killed (population caps the kill)', () => {
+    const s = resolveCaedis(addReprobates(fresh(), 'reprobate', 5), 'stellar', rng()); // would kill 15..45
+    expect(totalReprobates(s)).toBe(0);
+    expect(soulsOf(s)).toBe(5);
+  });
+
+  it('bad and terrible lose 5% and 15% of current gold', () => {
+    expect(goldOf(resolveCaedis(withGold(fresh(), 1000), 'bad', rng()))).toBe(950);
+    expect(goldOf(resolveCaedis(withGold(fresh(), 1000), 'terrible', rng()))).toBe(850);
+  });
+});
+
+describe('tick — action resolution', () => {
+  it('resolves a queued action only once its time elapses', () => {
+    const started = startAction(withGold(fresh(), 200), 'caedis');
+    if (!started.ok) throw new Error('should start');
+    const half = tick(started.state, 5);
+    expect(half.lifetime.actionQueue).toHaveLength(1);
+    expect(half.lifetime.actionQueue[0]?.remainingSeconds ?? 0).toBeCloseTo(5, 5);
+    expect(tick(half, 5).lifetime.actionQueue).toHaveLength(0);
+  });
+
+  it('closes the corruption → cull → soul loop deterministically', () => {
+    const seeded = withGold(addReprobates(fresh(), 'reprobate', 10), 500);
+    const started = startAction(seeded, 'caedis');
+    if (!started.ok) throw new Error('should start');
+    const after = tick(started.state, 10);
+    expect(after.lifetime.actionQueue).toHaveLength(0);
+    expect(after.rngState).not.toBe(started.state.rngState); // the outcome consumed the RNG
+    const again = tick(started.state, 10);
+    expect(after.souls.toString()).toBe(again.souls.toString());
+    expect(totalReprobates(after)).toBe(totalReprobates(again));
+  });
+});
