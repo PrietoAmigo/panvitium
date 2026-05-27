@@ -16,12 +16,7 @@ import {
   unbindAllSigils,
   offerDevotion,
   commitKatabasis,
-  sinLevel,
-  devotionForLevel,
-  floor,
-  sub,
-  gte,
-  MAX_SIN_LEVEL,
+  type BigNum,
   type GameState,
   type OutcomeEvent,
   type Sin,
@@ -58,8 +53,8 @@ interface GameStore {
   act: (actionId: string) => void;
   /** Open the Katabasis menu (returns any bound souls to the pool first, 02 §5). */
   beginKatabasis: () => void;
-  /** Offer exactly enough Devotion to push a Sin to its next level, if affordable (permanent). */
-  offerToNextLevel: (sin: Sin) => void;
+  /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
+  offer: (sin: Sin, amount: BigNum | number) => void;
   /** Commit the descent: reset the lifetime and show the recap. */
   confirmKatabasis: () => void;
   /** Close the Katabasis menu without descending. */
@@ -124,17 +119,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ state: unbindAllSigils(current), katabasisPhase: 'menu', notice: null });
   },
 
-  offerToNextLevel: (sin) => {
+  offer: (sin, amount) => {
     const current = get().state;
     if (!current) return;
-    const level = sinLevel(current.devotion[sin]);
-    if (level >= MAX_SIN_LEVEL) return;
-    const needed = sub(devotionForLevel(level + 1), current.devotion[sin]);
-    if (!gte(floor(current.souls), needed)) {
-      set({ notice: 'Not enough souls for the next level.' });
-      return;
-    }
-    set({ state: offerDevotion(current, sin, needed), notice: null });
+    // Offer any amount; offerDevotion floors and clamps to the available pool. Levels are reached
+    // naturally as cumulative Devotion crosses each 180^X threshold (the continuous skill curve).
+    set({ state: offerDevotion(current, sin, amount), notice: null });
   },
 
   confirmKatabasis: () => {

@@ -58,21 +58,20 @@ export const strings = {
   altar: {
     intro:
       'The Devotion owed each Prince, and the rank it buys you. Bound sigils show here once they bite.',
-    descend: 'Descend — begin Katabasis',
+    descend: 'Lay upon the altar — descend',
     sigilsNone: 'No sigils bound.',
   },
   katabasis: {
     title: 'Katabasis',
     intro:
-      'Lie upon the stone. Offer what you have gathered to the Princes; the rest you carry down.',
+      'You lie still; the soul descends to settle its accounts. Offer what you carry — a single soul or a thousand — then rise.',
     pool: 'Souls in the pool',
-    offer: 'Offer',
-    level: 'Lvl',
+    skill: 'Skill',
+    offerAll: 'All',
     mastered: 'Mastered',
-    confirm: 'Confirm descent',
-    notYet: 'Not yet',
+    confirm: 'Ascend — rise to the world',
+    notYet: 'Climb back out',
     sigilsDeferred: 'Sigil binding (the recoverable axis) arrives with the modifier engine.',
-    notEnough: 'Not enough souls for the next level.',
     recapTitle: 'You rise',
     soulsCarried: 'Souls carried',
     goldKept: 'Gold remaining',

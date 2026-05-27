@@ -3,11 +3,13 @@ import { strings } from '@panvitium/shared';
 import {
   SINS,
   sinLevel,
+  skillIntensity,
   devotionForLevel,
   floor,
   sub,
+  div,
   gte,
-  ZERO,
+  isZero,
   MAX_SIN_LEVEL,
   type GameState,
   type Sin,
@@ -22,15 +24,33 @@ function levelPips(level: number): string {
   return out;
 }
 
-/** One Prince's offering card: current level/Devotion and a button to reach the next level. */
+/** Fixed quick-offer amounts; players can stack these to reach any total, down to a single soul. */
+const QUICK_AMOUNTS: { label: string; amount: number }[] = [
+  { label: '+1', amount: 1 },
+  { label: '+10', amount: 10 },
+  { label: '+100', amount: 100 },
+  { label: '+1K', amount: 1000 },
+];
+
+/**
+ * One Prince's offering card. Offering is continuous: any amount raises the skill intensity, and a
+ * level is reached naturally once cumulative Devotion crosses its 180^X threshold (02 §4).
+ */
 function PrinceCard({ sin, state }: { sin: Sin; state: GameState }): ReactElement {
-  const offer = useGameStore((s) => s.offerToNextLevel);
+  const offer = useGameStore((s) => s.offer);
   const info = strings.sins[sin];
   const devotion = state.devotion[sin];
   const level = sinLevel(devotion);
   const maxed = level >= MAX_SIN_LEVEL;
-  const needed = maxed ? ZERO : sub(devotionForLevel(level + 1), devotion);
-  const affordable = !maxed && gte(floor(state.souls), needed);
+  const pool = floor(state.souls);
+
+  const lower = devotionForLevel(level);
+  const upper = devotionForLevel(level + 1);
+  const span = sub(upper, lower);
+  const ratio =
+    maxed || isZero(span)
+      ? 1
+      : Math.max(0, Math.min(1, div(sub(devotion, lower), span).toNumber()));
 
   return (
     <div className="prince-card">
@@ -40,21 +60,50 @@ function PrinceCard({ sin, state }: { sin: Sin; state: GameState }): ReactElemen
           {info.latin} · {info.english}
         </span>
       </div>
-      <div className="prince-pips" aria-label={`level ${level} of ${MAX_SIN_LEVEL}`}>
-        {levelPips(level)}
+      <div className="prince-stats">
+        <span className="prince-pips" aria-label={`level ${level} of ${MAX_SIN_LEVEL}`}>
+          {levelPips(level)}
+        </span>
+        <span className="prince-skill">
+          {strings.katabasis.skill} {skillIntensity(devotion).toFixed(2)}
+        </span>
       </div>
-      <div className="prince-devotion">{formatBigNum(devotion)}</div>
+      <div className="prince-devotion">
+        {formatBigNum(devotion)}
+        {maxed ? '' : ` / ${formatBigNum(upper)}`}
+      </div>
       {maxed ? (
         <div className="prince-mastered">{strings.katabasis.mastered}</div>
       ) : (
-        <button
-          type="button"
-          className="opera-btn prince-offer"
-          disabled={!affordable}
-          onClick={() => offer(sin)}
-        >
-          {strings.katabasis.offer} {formatBigNum(needed)} → {strings.katabasis.level} {level + 1}
-        </button>
+        <>
+          <div className="prince-progress">
+            <span
+              className="prince-progress-fill"
+              style={{ width: `${(ratio * 100).toFixed(1)}%` }}
+            />
+          </div>
+          <div className="prince-offer-row">
+            {QUICK_AMOUNTS.map((q) => (
+              <button
+                key={q.label}
+                type="button"
+                className="offer-chip"
+                disabled={!gte(pool, q.amount)}
+                onClick={() => offer(sin, q.amount)}
+              >
+                {q.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="offer-chip offer-all"
+              disabled={isZero(pool)}
+              onClick={() => offer(sin, state.souls)}
+            >
+              {strings.katabasis.offerAll}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
@@ -62,7 +111,6 @@ function PrinceCard({ sin, state }: { sin: Sin; state: GameState }): ReactElemen
 
 function KatabasisMenu(): ReactElement {
   const state = useGameStore((s) => s.state);
-  const notice = useGameStore((s) => s.notice);
   const confirm = useGameStore((s) => s.confirmKatabasis);
   const close = useGameStore((s) => s.closeKatabasis);
   if (!state) return <div className="katabasis" />;
@@ -80,7 +128,6 @@ function KatabasisMenu(): ReactElement {
             <PrinceCard key={sin} sin={sin} state={state} />
           ))}
         </div>
-        {notice !== null && <p className="opera-notice">{notice}</p>}
         <p className="katabasis-deferred">{strings.katabasis.sigilsDeferred}</p>
         <div className="katabasis-actions">
           <button type="button" className="opera-btn" onClick={() => confirm()}>

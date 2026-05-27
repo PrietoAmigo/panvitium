@@ -94,22 +94,28 @@ describe('gameStore — Katabasis', () => {
     expect(store().katabasisPhase).toBe('menu');
   });
 
-  it('offers exactly enough Devotion to reach the next level', () => {
+  it('offers any amount (down to 1); levels are reached naturally at the threshold', () => {
     patchSouls(200);
     store().beginKatabasis();
-    store().offerToNextLevel('gula');
-    const st = store().state as GameState;
-    expect(st.devotion.gula.toString()).toBe('180'); // 180^1 threshold
+    store().offer('gula', 1);
+    let st = store().state as GameState;
+    expect(st.devotion.gula.toString()).toBe('1');
+    expect(sinLevel(st.devotion.gula)).toBe(0); // not a level yet, but skill rises
+    expect(floor(st.souls).toNumber()).toBe(199);
+    store().offer('gula', 179); // cumulative 180 → level 1 naturally
+    st = store().state as GameState;
     expect(sinLevel(st.devotion.gula)).toBe(1);
-    expect(floor(st.souls).toNumber()).toBe(20); // 200 - 180
+    expect(floor(st.souls).toNumber()).toBe(20);
   });
 
-  it('refuses to offer when the pool cannot reach the next level', () => {
-    patchSouls(50); // < 180
+  it('offering more than the pool clamps to what is available (Offer all)', () => {
+    patchSouls(50);
     store().beginKatabasis();
-    store().offerToNextLevel('gula');
-    expect((store().state as GameState).devotion.gula.toString()).toBe('0');
-    expect(store().notice).toBeTruthy();
+    const all = (store().state as GameState).souls;
+    store().offer('avaritia', all);
+    const st = store().state as GameState;
+    expect(st.devotion.avaritia.toString()).toBe('50');
+    expect(floor(st.souls).toNumber()).toBe(0);
   });
 
   it('confirm resets the lifetime, shows the recap, then closes', () => {

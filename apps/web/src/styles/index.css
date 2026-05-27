@@ -833,3 +833,62 @@ body {
   padding: 0.7rem 2.2rem;
   letter-spacing: 0.12em;
 }
+
+/* ── Katabasis Prince card: skill, progress, quick-offer chips ───────────── */
+.prince-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.prince-skill {
+  font-size: 0.8rem;
+  color: var(--candle);
+  font-variant-numeric: tabular-nums;
+}
+.prince-progress {
+  height: 5px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.prince-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--candle-soft), var(--blood-bright));
+  transition: width 0.15s ease;
+}
+.prince-offer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+.offer-chip {
+  flex: 1 1 auto;
+  min-width: 2.6rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--parchment);
+  background: rgba(160, 30, 34, 0.35);
+  border: 1px solid var(--blood);
+  border-radius: 3px;
+  padding: 0.35rem 0.2rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.offer-chip:hover:not(:disabled) {
+  background: var(--blood);
+}
+.offer-chip:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.offer-all {
+  background: rgba(196, 158, 74, 0.25);
+  border-color: var(--candle);
+}
+.offer-all:hover:not(:disabled) {
+  background: rgba(196, 158, 74, 0.45);
+}
