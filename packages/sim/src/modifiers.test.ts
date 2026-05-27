@@ -153,3 +153,35 @@ describe('computeModifiers — maleficia effects (anathema)', () => {
     expect(computeModifiers(state).goldRateMul).toBeCloseTo(5.1253 * 3, 2);
   });
 });
+
+describe('computeModifiers — reprobate-dynamics rate multipliers (02 §9)', () => {
+  it('NEUTRAL bundle carries all three reprobate-rate multipliers at 1', () => {
+    expect(NEUTRAL_MODIFIERS.reprobateGenerationRateMul).toBe(1);
+    expect(NEUTRAL_MODIFIERS.reprobateSuicideRateMul).toBe(1);
+    expect(NEUTRAL_MODIFIERS.cholericMurderRateMul).toBe(1);
+  });
+
+  it('fresh state stays at 1× across all three rate multipliers', () => {
+    const m = computeModifiers(fresh());
+    expect(m.reprobateGenerationRateMul).toBe(1);
+    expect(m.reprobateSuicideRateMul).toBe(1);
+    expect(m.cholericMurderRateMul).toBe(1);
+  });
+
+  it('Tristitia 180 Devotion (level 1 + Resignation skill) lifts suicide rate ~10.25×', () => {
+    // Level 1 contributes 2× outright; Resignation at devotion 180 has intensity ≈ 4.1253,
+    // so skill contributes (1 + 4.1253) ≈ 5.1253. Combined: 2 × 5.1253 ≈ 10.2506.
+    const s = fresh();
+    const state: GameState = { ...s, devotion: { ...s.devotion, tristitia: bn(180) } };
+    expect(computeModifiers(state).reprobateSuicideRateMul).toBeCloseTo(10.25, 1);
+  });
+
+  it('Tristitia skill alone (sub-level devotion) lifts suicide rate but not by 2×', () => {
+    // Devotion 10 gives skill intensity ≈ 0.81; level still 0, so mul ≈ 1.81 (not doubled).
+    const s = fresh();
+    const state: GameState = { ...s, devotion: { ...s.devotion, tristitia: bn(10) } };
+    const mul = computeModifiers(state).reprobateSuicideRateMul;
+    expect(mul).toBeGreaterThan(1.5);
+    expect(mul).toBeLessThan(2);
+  });
+});

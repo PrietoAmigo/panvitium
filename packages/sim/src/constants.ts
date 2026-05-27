@@ -20,6 +20,21 @@ export const BASE_MAX_INFLUENCE = 100;
 /** Base reprobate suicide chance per second, applied to the whole population (Globals: 0.00023). */
 export const BASE_SUICIDE_RATE_PER_SECOND = 0.00023;
 
+/**
+ * Base reprobate generation per second, before *Vitium*-driven contributions (Globals).
+ * Currently 0: no passive reprobate generation happens until a business is producing one (02 §9).
+ * The `generationPool` mechanism is in place so a future Vitium slice can simply add to the rate.
+ */
+export const BASE_REPROBATE_GENERATION_PER_SECOND = 0;
+
+/**
+ * Base per-Choleric murder rate (kills / Choleric / second), before sigil/maleficium modifiers
+ * (Reprobates sheet placeholder). Cholerics don't exist until Vitium-driven conversion lands, so
+ * the pool stays at 0 for now and this value is a hold-the-shape placeholder, not authoritative
+ * tuning. The spreadsheet will pin the real number when Cholerics arrive.
+ */
+export const BASE_CHOLERIC_MURDER_RATE_PER_SECOND = 0.001;
+
 /** Cumulative Devotion to reach Sin level X is DEVOTION_LEVEL_BASE^X souls (Globals: 180). */
 export const DEVOTION_LEVEL_BASE = 180;
 

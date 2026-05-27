@@ -1,6 +1,6 @@
 # 04 — Architecture Decision Records
 
-This document captures the architectural decisions taken during Phase 1 (stack and infrastructure). Each record states the context, the decision, what it costs us, and what we rejected.
+This document captures the architectural decisions taken during the project's lifetime. Each record states the context, the decision, what it costs us, and what we rejected.
 
 **Conventions.**
 - `Accepted` — decision is in force and should be relied on.
@@ -40,12 +40,12 @@ If any of the records below should be downgraded from `Accepted` to `Proposed`, 
 
 **Context.** Each room (Studio, Altar room, Invocation Room) is composed from many small sprite layers — decor, fixtures, active-invocation silhouettes, mood overlays (the red glow of *Panvitium* on the Studio window). Rooms are mostly static backgrounds with discrete click regions and modest per-layer animation needs (candle flicker, fireplace, silhouette idle loops).
 
-**Decision.** Render rooms as a stack of positioned `<div>`s and `<img>`s with `image-rendering: pixelated`, organized through a scene-graph abstraction (`Room` → `Layer[]`, each layer has position, z-index, click region, optional animation). PixiJS reserved as an explicit escape hatch if a future requirement (particles, hundreds of layers, frame-synchronized animation) demands it.
+**Decision.** Render rooms as a stack of positioned `<div>`s and `<img>`s, organized through a scene-graph abstraction (`Room` → `Layer[]`, each layer has position, z-index, click region, optional animation). PixiJS reserved as an explicit escape hatch if a future requirement (particles, hundreds of layers, frame-synchronized animation) demands it. **The rendering detail (pixelation strategy, asset resolution) is amended by ADR-021 — see that record for the current pipeline; this ADR retains the DOM-first scene-graph framework.**
 
 **Consequences.**
 - Fast iteration; layers are inspectable in browser DevTools.
 - React handles click and hover natively; no bridge between Canvas and React menus.
-- CSS keyframes cover candle flicker, fireplace crackle, Panvitium overlay pulses.
+- CSS keyframes cover candle flicker, fireplace crackle, *Panvitium* overlay pulses.
 - The scene-graph abstraction means a future renderer swap touches one module, not every room.
 - Performance ceiling is lower than Canvas — at hundreds of animated layers we would feel it. We are not near that ceiling.
 
@@ -107,7 +107,7 @@ If any of the records below should be downgraded from `Accepted` to `Proposed`, 
 
 **Context.** Hard-spec numbers reach 8 billion (the Eternal Sin reveal threshold). Under stacking sigil bindings, sin skill multipliers, and the exponential growth of *Panvitium* gold cost, intermediate values can exceed `Number.MAX_SAFE_INTEGER` (9.007 × 10¹⁵). The systems doc explicitly anticipates this.
 
-**Decision.** All gameplay resource values (hellsouls, gold, influence, Devotion totals, sigil-bound counts, intermediate scaling factors) stored and computed as `Decimal` from break_infinity.js. Naturally-bounded integer counts (reprobate counts by subtype, acolytes, invocation counts) stay as plain `number`. A thin `BigNum` helper module wraps the most-used operations so the rest of the codebase doesn't read `a.add(b).mul(c)` everywhere.
+**Decision.** All gameplay resource values (souls, gold, influence, Devotion totals, sigil-bound counts, intermediate scaling factors) stored and computed as `Decimal` from break_infinity.js. Naturally-bounded integer counts (reprobate counts by subtype, acolytes, invocation counts) stay as plain `number`. A thin `BigNum` helper module wraps the most-used operations so the rest of the codebase doesn't read `a.add(b).mul(c)` everywhere.
 
 **Consequences.**
 - Operator-call syntax replaces infix arithmetic — discipline required, the helper module reduces friction.
@@ -135,7 +135,7 @@ If any of the records below should be downgraded from `Accepted` to `Proposed`, 
 - The game is fully playable signed-out and offline.
 - Cloud-save is a backup and cross-device feature, not a runtime dependency.
 - Network failure never blocks gameplay.
-- localStorage version field drives forward migration on load and rejection of unknown future versions.
+- localStorage version field drives forward migration on load and rejection of unknown future versions (see ADR-023 for the evolution policy).
 - Save blob size budget: 100 KB compressed is the hard ceiling; alert if approached.
 
 **Alternatives considered.**
@@ -215,7 +215,7 @@ If any of the records below should be downgraded from `Accepted` to `Proposed`, 
 
 **Context.** Cloud-save must not silently overwrite a player's progress when they play on a second device, when a flaky connection rolls a stale save back, or when the server crashes mid-write.
 
-**Decision.** Each save carries `{ schemaVersion, saveVersion, lastTickAt, deviceId }`. The client submits a save with the current `saveVersion`. The server accepts only if the stored `saveVersion` is less than or equal to the submitted one. On rejection, the client receives the server's save and prompts the player with a chooser showing both summaries (in-game time, hellsouls, sin levels). The server retains the last ten accepted saves per user for recovery.
+**Decision.** Each save carries `{ schemaVersion, saveVersion, lastTickAt, deviceId }`. The client submits a save with the current `saveVersion`. The server accepts only if the stored `saveVersion` is less than or equal to the submitted one. On rejection, the client receives the server's save and prompts the player with a chooser showing both summaries (in-game time, souls, sin levels). The server retains the last ten accepted saves per user for recovery.
 
 **Consequences.**
 - No silent overwrites; multi-device play is supported but the player is in the loop on divergence.
@@ -255,7 +255,7 @@ If any of the records below should be downgraded from `Accepted` to `Proposed`, 
 
 **Status:** Accepted 2026-05-14
 
-**Context.** The game's correctness lives in math: probability tier normalization, sigil binding curves, the 180^X devotion ladder, the skill intensity formula, exponential Panvitium cost, offline gain integration. Math is exactly what regresses under continuous tuning, and tuning is what we will do most.
+**Context.** The game's correctness lives in math: probability tier normalization, sigil binding curves, the 180^X devotion ladder, the skill intensity formula, exponential *Panvitium* cost, offline gain integration, per-tier modifier composition. Math is exactly what regresses under continuous tuning, and tuning is what we will do most.
 
 **Decision.** Vitest for unit tests against the pure-functional game-math package (`packages/sim`). Playwright for end-to-end: a full Katabasis, save/refresh, cloud-sync roundtrip, two-device divergence-and-chooser. CI runs unit tests on every push; e2e tests on PRs to `main` and on release tags.
 
@@ -473,6 +473,77 @@ If any of the records below should be downgraded from `Accepted` to `Proposed`, 
 
 ---
 
+## ADR-022: Modifier engine — single composition point for all derived multipliers
+
+**Status:** Accepted 2026-05-27 (retroactively documented after implementation)
+
+**Context.** Many independent sources affect many independent targets. Sin levels feed player efficiency and influence rate. Sin skills (intensity ∝ ln(devotion)²) feed gold rate, max influence, per-category efficiency, and tier-weight shifts. Equipped maleficia feed gold rate, influence rate, max influence, and tier-weight zeroing. Sigil bindings feed nearly every modifier dimension at some intensity. Acolytes and invocations will feed efficiency. Reprobate subtypes feed several rates (positive and negative). There is no realistic future where this graph gets simpler.
+
+If each consumer (tick loop, action engine, probability resolver) reads sources directly, every new source means editing every consumer; every consumer drifts away from every other; and the test surface grows as the product of sources × consumers. The only design that survives is one composition point that every consumer reads from.
+
+**Decision.** A single function, `computeModifiers(state: GameState): Modifiers`, in `packages/sim/src/modifiers.ts`, assembles the `Modifiers` bundle from every source. Consumers (the tick loop, `startAction`, `resolveAction`, future systems) consume only the bundle.
+
+**The bundle shape grows over time.** Each field is a single scalar multiplier or a small structured value (e.g. `TierModifiers` for per-tier weights). New sources slot in as additional terms folded into existing fields, or new fields when a new dimension lands. The bundle is immutable per-call (functional return).
+
+**Composition rule.** All effects compose multiplicatively unless a target's nature demands otherwise (e.g. tier-weight modifiers are multiplicative per-tier, but `Mark of Cain` zeroes Apocalyptic outright — a "lock" that overrides further multipliers). The default is `out *= source.contribution`; deviations are explicit and commented.
+
+**Skill→effect coupling.** A Sin skill that "increases X" multiplies X by `1 + intensity`. A skill that "decreases X" multiplies X by `1 / (1 + intensity)`, which is asymptotic to 0 and never negative. This convention is fixed across the project; per-skill coefficients (the divisor inside `intensity`, per-Sin overrides) are tunable in the spreadsheet.
+
+**Discipline.** No system reads `state.devotion` or `state.lifetime.maleficia` to derive a multiplier directly — that derivation must live in `computeModifiers`. Consumers are read-only with respect to the bundle. A test pinning `NEUTRAL_MODIFIERS` (all fields at 1, empty tier mul) guards against accidental dependency on a specific source.
+
+**Consequences.**
+- Adding a new source is a one-line change: `result.someField *= sourceContribution`. Adding a new dimension is a new field on `Modifiers` plus its initial value in `NEUTRAL_MODIFIERS`.
+- Tests pin per-source contributions in isolation (e.g. "Leviathan 180 → suasioEfficiencyMul ≈ 5.1253") and per-target composition (e.g. "Avaritia 180 + Thirty Pieces of Silver → goldRateMul ≈ 15.376").
+- The bundle is recomputed each tick. Cost is negligible at our budget (a handful of multiplications and one log per Sin).
+- The bundle is **derived**, not persisted. The save format stores sources (Devotion, sigil bindings, equipped maleficia, etc.); the bundle is rebuilt on load.
+- A consumer that wants only one field (e.g. `playerEfficiency(state)`) gets a thin helper that calls the engine and reads the field; this preserves the discipline that the bundle is the source of truth.
+
+**Alternatives considered.**
+- *Distribute the math across each consumer.* Rejected. Drift is the entire problem this ADR exists to solve.
+- *Event-driven recomputation on state change.* Rejected. The tick loop is already the right cadence; on-change adds complexity for no measurable saving.
+- *Per-source registries with a runtime composition step.* Rejected at this size — a single function is more honest and more debuggable; we can move to a registry pattern later if the source list ever exceeds ~50 distinct contributions.
+- *Encode the bundle in the save.* Rejected. Storing derived data invites desynchronization between sources and effect; rebuilding on load is cheap and removes the entire class of bugs.
+
+---
+
+## ADR-023: Save schema evolution policy
+
+**Status:** Accepted 2026-05-27
+
+**Context.** The save schema (`packages/shared/src/save/state-schema.ts`) will evolve over the project's lifetime. Some changes are additive (a new optional field on `ActionTimer` for Emptio's target maleficium); some are breaking (a renamed field, a type change, a removed field, a non-optional addition). We need a clear rule for when each kind requires what.
+
+Without a policy, ad-hoc decisions accumulate: a developer adds a non-optional field without a migration; a player's old save fails to load; the developer scrambles to write a migration retroactively under load. The cost of a written policy is one paragraph; the cost of skipping it is one bad night per user-base outage.
+
+**Decision.**
+
+**Additive optional fields do not bump `schemaVersion`.** A new optional field on an existing object is parsed cleanly by Zod from old saves (the field is simply absent), and TypeScript's `exactOptionalPropertyTypes` is honoured at the de/serialiser by *conditionally* including the field in the output object only when defined (never assigning `undefined` to the key). Example: adding `ActionTimer.target?: string` for the Emptio purchase target — old saves without a target field load as if `target` is absent; new saves with a target round-trip correctly. **No version bump.**
+
+**The following changes DO require a `schemaVersion` bump and a migration file:**
+- Renaming a field.
+- Removing a field.
+- Changing a field's type (string → number, string → enum, etc.).
+- Adding a non-optional field.
+- Changing the shape of a nested object (e.g. converting `maleficia: string[]` to `maleficia: Record<string, number>`).
+- Tightening a Zod validator in a way that would reject previously-valid saves.
+
+**Migration file layout.** Migrations live in `packages/shared/src/save/migrations/` as `v{from}-to-v{to}.ts`. Each exports a single function `migrate(input: SerializedGameStateVFrom): SerializedGameStateVTo`. A migration is pure, deterministic, and has its own unit test. The save-load path calls migrations in order until the input matches the current version. A save whose `schemaVersion` is *higher* than the runtime's current version is rejected with a user-visible message ("save is from a newer version of the game"); a save with an unknown lower version is rejected the same way.
+
+**Versioning starts at v1.** The current schema is v1. There are no migrations yet. The `migrations/` directory contains a `_noop.ts` placeholder and its test, exercising the harness so the first real migration doesn't need to also build the harness.
+
+**Consequences.**
+- Most schema changes (adding new game systems, new state fields for new dynamics like reprobate accrual pools) are additive-optional and need no migration. The team's velocity stays high.
+- Breaking changes are explicit, locally-scoped, and tested. A v1-to-v2 migration is a self-contained PR.
+- The de/serializer becomes slightly more verbose because of the conditional-spread rule for optional fields, but the verbosity is local to one file and follows a single recipe.
+- A regression suite of "old save loads cleanly" can be built by checking sample saves from each prior version into the repo and running the load path on them.
+- A future "the save format is so different we can't migrate" decision (an apocalyptic rewrite) is explicitly *not* in scope here. If it happens, that becomes its own ADR superseding this one.
+
+**Alternatives considered.**
+- *Bump schemaVersion on every change.* Rejected — too much ceremony for additive-optional changes; migrations become trivial-but-numerous and lose meaning.
+- *Never migrate; tolerate old saves with absent-field fallbacks in code.* Rejected — works for additive changes but accumulates implicit-defaults everywhere and breaks any rename or shape change. The policy here covers both worlds (the easy cases stay easy; the hard cases get explicit attention).
+- *Use a "tolerant Zod schema" that accepts any superset.* Rejected — undermines the integrity check we need on the server side, where a malformed save should be flagged not silently coerced.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.
@@ -483,3 +554,4 @@ These are deliberate non-decisions, dated for revisit.
 - **Multi-device save chooser UI** [2026-05-14] — see ADR-010. The mechanism is decided; the in-game presentation is not.
 - **Sentry or equivalent error tracking** [2026-05-14] — deferred until error volume justifies the integration.
 - **Public ladder / Eternal Sin Ladder** [2026-05-14] — deliberately out of scope until ADR-011's anti-tampering posture has server-side replay validation.
+- **Indagatio pre-acolyte UX** [2026-05-27] — Indagatio's baseline duration (1800 s, per spreadsheet) collides with the one-player-action-at-a-time rule before acolytes exist, so a solo player effectively locks their action queue for 30 minutes per search. The unblocking system is **acolyte delegation** — until that lands, the design tolerates the friction. Pinned here so we don't lower the baseline number reflexively when the real fix is the delegation system.

@@ -16,3 +16,4 @@ export * from './population.js';
 export * from './actions.js';
 export * from './modifiers.js';
 export * from './maleficia.js';
+export * from './dynamics.js';

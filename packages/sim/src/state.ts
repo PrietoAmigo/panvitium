@@ -95,6 +95,16 @@ export interface LifetimeState {
   activeToggles: string[];
   /** In-flight timed actions. */
   actionQueue: ActionTimer[];
+  /**
+   * Reprobate-dynamics accrual pools (02 §9). Each tick the per-second rate × deltaSeconds is
+   * added to the matching pool; while the pool ≥ 1 it is decremented and an integer event applied
+   * (a birth / suicide / murder). Pools persist across ticks and save/load so fractional progress
+   * is never lost. Always defined at runtime (default 0); on the wire they are additive-optional
+   * fields per ADR-023 — old saves load with the pools at 0.
+   */
+  generationPool: number;
+  suicidePool: number;
+  murderPool: number;
 }
 
 /** The complete gameplay state. */
@@ -147,6 +157,9 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       emptioList: [],
       activeToggles: [],
       actionQueue: [],
+      generationPool: 0,
+      suicidePool: 0,
+      murderPool: 0,
     },
     rngState: hashSeed(seed),
     lastTickAt: now,

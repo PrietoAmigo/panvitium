@@ -53,6 +53,12 @@ const lifetimeSchema = z.object({
   emptioList: z.array(z.string()),
   activeToggles: z.array(z.string()),
   actionQueue: z.array(actionTimerSchema),
+  // Reprobate-dynamics accrual pools (02 §9). Optional for back-compat with v1 saves predating
+  // their existence — when absent, the deserializer defaults each to 0 (ADR-023). New saves
+  // round-trip them when non-zero, omit them when 0 to keep wire size minimal for fresh games.
+  generationPool: z.number().nonnegative().optional(),
+  suicidePool: z.number().nonnegative().optional(),
+  murderPool: z.number().nonnegative().optional(),
 });
 
 /** Zod schema for the serialized gameplay state. */
@@ -101,6 +107,13 @@ export function serializeGameState(state: GameState): SerializedGameState {
           ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
           : { actionId: t.actionId, remainingSeconds: t.remainingSeconds, target: t.target },
       ),
+      // Only emit pool fields when non-zero (additive-optional per ADR-023): keeps fresh-game
+      // saves identical to their pre-pool wire form, and only spends bytes when there's progress.
+      ...(state.lifetime.generationPool > 0
+        ? { generationPool: state.lifetime.generationPool }
+        : {}),
+      ...(state.lifetime.suicidePool > 0 ? { suicidePool: state.lifetime.suicidePool } : {}),
+      ...(state.lifetime.murderPool > 0 ? { murderPool: state.lifetime.murderPool } : {}),
     },
     rngState: state.rngState,
     lastTickAt: state.lastTickAt,
@@ -139,6 +152,10 @@ export function deserializeGameState(s: SerializedGameState): GameState {
           ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
           : { actionId: t.actionId, remainingSeconds: t.remainingSeconds, target: t.target },
       ),
+      // Pool fields are additive-optional (ADR-023): missing in old saves means 0 at runtime.
+      generationPool: s.lifetime.generationPool ?? 0,
+      suicidePool: s.lifetime.suicidePool ?? 0,
+      murderPool: s.lifetime.murderPool ?? 0,
     },
     rngState: s.rngState,
     lastTickAt: s.lastTickAt,

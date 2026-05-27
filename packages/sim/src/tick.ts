@@ -14,6 +14,7 @@
 import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
+import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
 import { computeModifiers } from './modifiers.js';
 import { makeRng } from './rng.js';
@@ -91,7 +92,10 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   }
 
   // 3. toggles per-second effects & costs (incl. Panvitium)     [step: toggles]
-  // 4. reprobate suicide / murder population effects            [step: reprobates]
+  // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer
+  //    births / suicides / murders (02 §9). Each death mints 1 soul. The pools live on the
+  //    lifetime state and persist across save/load (ADR-023 additive optional).
+  working = applyReprobateDynamics(working, deltaSeconds, rng);
 
   return {
     state: {

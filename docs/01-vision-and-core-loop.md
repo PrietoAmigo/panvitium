@@ -33,7 +33,7 @@ The fiction is grim-baroque, not satirical. Latin and pseudo-ecclesiastical voca
 
 **The defining constraint is uniformity.** Every visual element — room backgrounds, props, character and invocation sprites, and UI surfaces — passes through the *same* degradation recipe: the same pixelation block size, the same colour-depth reduction, the same grade. A single fidelity across the whole frame is what makes the look intentional rather than broken. Mismatched fidelity — a sharp background under a coarse sprite — reads as an error, not a style, and is the one failure mode to guard against.
 
-The three-room playspace (see `02-systems-and-mechanics.md` §10) is rendered as lightly-pixelated side-elevation interiors. Movement is minimal: it's a stage, not a platformer.
+The three-room playspace (see `02-systems-and-mechanics.md` §12) is rendered as lightly-pixelated side-elevation interiors. Movement is minimal: it's a stage, not a platformer.
 
 ## The world does not know it's you
 
@@ -56,7 +56,7 @@ The Earth in *Panvitium* is the real Earth — populated by ordinary, distractib
    ┌─────────────────────────────┐
    │  Cull / drive REPROBATES    │
    │  to die unrepentant         │
-   │  → +1 SOUL each         │
+   │  → +1 SOUL each             │
    └──────────────┬──────────────┘
                   │
                   ▼
@@ -106,6 +106,12 @@ Idle (offline) time is **uncapped** — the player can leave the game running fo
 | **Lifetime** | Tens of minutes to days | Katabasis intervals. |
 | **Sigil meta** | A few katabases | Experimenting with different sigil bindings to specialise a build. |
 | **Devotion meta** | Many katabases | Climbing each Prince's Cardinal Sin level toward the cap (level 4). Time-to-cap is what defines "endgame." |
+
+## After the Eternal Sin
+
+When the eighth Sin reaches Level 4 and the player has offered the Eternal Sin's threshold of souls (see `03-content-catalog.md` §8), the reveal screen plays: a black page, white text, the total runtime, the Latin closing flavour. The reveal is a milestone and a credits roll.
+
+The Steam achievement set (when it exists; see `03-content-catalog.md` §7) carries one terminal achievement at this point, named for the act of becoming the Sin you have been climbing toward. Earning it does not transition the game out of its post-reveal state — it simply lights up.
 
 ## What this game is not
 

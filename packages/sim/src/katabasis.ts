@@ -173,6 +173,9 @@ export function commitKatabasis(
     emptioList: [], // lost track of them (02 §6)
     activeToggles: [], // toggles stop
     actionQueue: [], // uncompleted actions fizzle
+    generationPool: 0, // pools reset with the fresh lifetime
+    suicidePool: 0,
+    murderPool: 0,
   };
 
   return {

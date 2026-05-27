@@ -16,6 +16,13 @@ describe('createInitialState', () => {
     expect(totalReprobates(s)).toBe(0);
   });
 
+  it('starts with all three reprobate-dynamics pools at zero', () => {
+    const s = createInitialState('seed', 0);
+    expect(s.lifetime.generationPool).toBe(0);
+    expect(s.lifetime.suicidePool).toBe(0);
+    expect(s.lifetime.murderPool).toBe(0);
+  });
+
   it('keys the RNG from the seed (same seed -> same rngState)', () => {
     expect(createInitialState('x', 0).rngState).toBe(createInitialState('x', 0).rngState);
     expect(createInitialState('x', 0).rngState).not.toBe(createInitialState('y', 0).rngState);

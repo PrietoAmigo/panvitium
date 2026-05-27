@@ -123,6 +123,24 @@ describe('commitKatabasis', () => {
     expect(eq(state.lifetime.maxInfluence, bn(100))).toBe(true);
   });
 
+  it('resets the reprobate-dynamics pools to 0 on rebirth (02 §9 / §6)', () => {
+    const base = loaded();
+    // Stuff non-trivial residuals into the pools — the rebirth must wipe them.
+    const dirtied = {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        generationPool: 0.7,
+        suicidePool: 0.5,
+        murderPool: 0.99,
+      },
+    };
+    const { state } = commitKatabasis(dirtied);
+    expect(state.lifetime.generationPool).toBe(0);
+    expect(state.lifetime.suicidePool).toBe(0);
+    expect(state.lifetime.murderPool).toBe(0);
+  });
+
   it('carries Devotion and sigil bindings through unchanged', () => {
     let s = loaded();
     s = offerDevotion(s, 'avaritia', 200); // permanent: souls 500 → 300
