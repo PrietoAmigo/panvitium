@@ -1,8 +1,9 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
-import { floor, type OutcomeEvent } from '@panvitium/sim';
+import { floor, SINS, sinLevel, MAX_SIN_LEVEL, type OutcomeEvent } from '@panvitium/sim';
 import { type PanelId } from '../rooms/rooms.js';
 import { useGameStore } from '../store/gameStore.js';
+import { formatBigNum } from '../game/format.js';
 
 interface PanelProps {
   title: string;
@@ -196,6 +197,43 @@ interface PanelContent {
   body: ReactNode;
 }
 
+/** Four pips, `level` filled — a Sin's 0..4 progress. */
+function altarPips(level: number): string {
+  let out = '';
+  for (let i = 0; i < MAX_SIN_LEVEL; i++) out += i < level ? '●' : '○';
+  return out;
+}
+
+/** The altar menu (02 §10): Devotion and level per Prince, plus the descent trigger. */
+function AltarPanel(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const begin = useGameStore((s) => s.beginKatabasis);
+  if (!state) return <p>{strings.altar.intro}</p>;
+  return (
+    <div className="altar">
+      <p className="altar-intro">{strings.altar.intro}</p>
+      <ul className="devotion-list">
+        {SINS.map((sin) => {
+          const info = strings.sins[sin];
+          return (
+            <li className="devotion-row" key={sin}>
+              <span className="devotion-name">
+                {info.prince} · {info.latin}
+              </span>
+              <span className="devotion-pips">{altarPips(sinLevel(state.devotion[sin]))}</span>
+              <span className="devotion-total">{formatBigNum(state.devotion[sin])}</span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="altar-sigils">{strings.altar.sigilsNone}</p>
+      <button type="button" className="opera-btn descend-btn" onClick={() => begin()}>
+        {strings.altar.descend}
+      </button>
+    </div>
+  );
+}
+
 /** Placeholder copy in the game's voice; each panel's real menu lands with its system. */
 export const PANELS: Record<PanelId, PanelContent> = {
   'ars-goetia': {
@@ -213,12 +251,7 @@ export const PANELS: Record<PanelId, PanelContent> = {
   },
   'altar-menu': {
     title: 'The Altar',
-    body: (
-      <p>
-        Here the loadout will be read: the Sigil bindings, the Devotion owed each Prince, the buffs
-        in force. The stone is silent for now.
-      </p>
-    ),
+    body: <AltarPanel />,
   },
   pc: {
     title: 'The Desk',

@@ -13,13 +13,27 @@ import {
   tick,
   startAction,
   isSignatureTier,
+  unbindAllSigils,
+  offerDevotion,
+  commitKatabasis,
+  sinLevel,
+  devotionForLevel,
+  floor,
+  sub,
+  gte,
+  MAX_SIN_LEVEL,
   type GameState,
   type OutcomeEvent,
+  type Sin,
+  type KatabasisRecap,
 } from '@panvitium/sim';
 import { loadGame, saveGame, clearSave } from './persistence.js';
 
 /** How many recent outcomes the PC log keeps (02 §10). */
 const LOG_CAP = 100;
+
+/** Which Katabasis screen is showing: the allocation menu, the recap, or neither. */
+export type KatabasisPhase = 'menu' | 'recap' | null;
 
 interface GameStore {
   state: GameState | null;
@@ -32,12 +46,26 @@ interface GameStore {
   signature: OutcomeEvent | null;
   /** A transient message for a refused action (e.g. "not enough gold"), or null. */
   notice: string | null;
+  /** Which Katabasis screen is open (null = none). */
+  katabasisPhase: KatabasisPhase;
+  /** The recap produced by the last descent, shown on the recap screen. */
+  recap: KatabasisRecap | null;
   /** Load (or start) the game and offline-catch-up. Idempotent. */
   init: () => void;
   /** Advance the simulation by `deltaSeconds`, folding any outcomes into the log/signature. */
   advance: (deltaSeconds: number) => void;
   /** Begin an Opera action (pays its cost and queues it), or set a notice if it can't start. */
   act: (actionId: string) => void;
+  /** Open the Katabasis menu (returns any bound souls to the pool first, 02 §5). */
+  beginKatabasis: () => void;
+  /** Offer exactly enough Devotion to push a Sin to its next level, if affordable (permanent). */
+  offerToNextLevel: (sin: Sin) => void;
+  /** Commit the descent: reset the lifetime and show the recap. */
+  confirmKatabasis: () => void;
+  /** Close the Katabasis menu without descending. */
+  closeKatabasis: () => void;
+  /** Dismiss the recap and resume the game. */
+  closeRecap: () => void;
   /** Persist the current state to localStorage, bumping the save version. */
   persist: () => void;
   /** Dismiss the active signature pop-up. */
@@ -56,6 +84,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   log: [],
   signature: null,
   notice: null,
+  katabasisPhase: null,
+  recap: null,
 
   init: () => {
     if (get().ready) return;
@@ -87,6 +117,37 @@ export const useGameStore = create<GameStore>((set, get) => ({
     else set({ notice: result.reason });
   },
 
+  beginKatabasis: () => {
+    const current = get().state;
+    if (!current) return;
+    // Bound souls return to the pool to be re-allocated (02 §5); no-op until binding exists.
+    set({ state: unbindAllSigils(current), katabasisPhase: 'menu', notice: null });
+  },
+
+  offerToNextLevel: (sin) => {
+    const current = get().state;
+    if (!current) return;
+    const level = sinLevel(current.devotion[sin]);
+    if (level >= MAX_SIN_LEVEL) return;
+    const needed = sub(devotionForLevel(level + 1), current.devotion[sin]);
+    if (!gte(floor(current.souls), needed)) {
+      set({ notice: 'Not enough souls for the next level.' });
+      return;
+    }
+    set({ state: offerDevotion(current, sin, needed), notice: null });
+  },
+
+  confirmKatabasis: () => {
+    const current = get().state;
+    if (!current) return;
+    const { state, recap } = commitKatabasis(current);
+    set({ state, recap, katabasisPhase: 'recap', log: [], signature: null, notice: null });
+    get().persist();
+  },
+
+  closeKatabasis: () => set({ katabasisPhase: null, notice: null }),
+  closeRecap: () => set({ katabasisPhase: null, recap: null }),
+
   persist: () => {
     const { state, saveVersion, deviceId } = get();
     if (!state) return;
@@ -101,6 +162,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
   hardReset: () => {
     clearSave();
     const loaded = loadGame(Date.now());
-    set({ ...loaded, ready: true, log: [], signature: null, notice: null });
+    set({
+      ...loaded,
+      ready: true,
+      log: [],
+      signature: null,
+      notice: null,
+      katabasisPhase: null,
+      recap: null,
+    });
   },
 }));

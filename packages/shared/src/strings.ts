@@ -45,6 +45,42 @@ export const strings = {
     terrible: 'Terrible',
     apocalyptic: 'Apocalyptic',
   },
+  sins: {
+    gula: { prince: 'Beelzebub', latin: 'Gula', english: 'Gluttony' },
+    luxuria: { prince: 'Asmodeus', latin: 'Luxuria', english: 'Lust' },
+    avaritia: { prince: 'Mammon', latin: 'Avaritia', english: 'Greed' },
+    tristitia: { prince: 'Leviathan', latin: 'Tristitia', english: 'Sorrow' },
+    ira: { prince: 'Satan', latin: 'Ira', english: 'Wrath' },
+    acedia: { prince: 'Belphegor', latin: 'Acedia', english: 'Sloth' },
+    vanagloria: { prince: 'Rosier', latin: 'Vanagloria', english: 'Vainglory' },
+    superbia: { prince: 'Lucifer', latin: 'Superbia', english: 'Pride' },
+  },
+  altar: {
+    intro:
+      'The Devotion owed each Prince, and the rank it buys you. Bound sigils show here once they bite.',
+    descend: 'Descend — begin Katabasis',
+    sigilsNone: 'No sigils bound.',
+  },
+  katabasis: {
+    title: 'Katabasis',
+    intro:
+      'Lie upon the stone. Offer what you have gathered to the Princes; the rest you carry down.',
+    pool: 'Souls in the pool',
+    offer: 'Offer',
+    level: 'Lvl',
+    mastered: 'Mastered',
+    confirm: 'Confirm descent',
+    notYet: 'Not yet',
+    sigilsDeferred: 'Sigil binding (the recoverable axis) arrives with the modifier engine.',
+    notEnough: 'Not enough souls for the next level.',
+    recapTitle: 'You rise',
+    soulsCarried: 'Souls carried',
+    goldKept: 'Gold remaining',
+    reprobatesKept: 'Reprobates still yours',
+    maleficiaKept: 'Maleficia retained',
+    maleficiaLost: 'Maleficia lost',
+    rise: 'Rise',
+  },
 } as const;
 
 export type Strings = typeof strings;

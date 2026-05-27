@@ -645,3 +645,191 @@ body {
   opacity: 0.7;
   margin: 0.4rem 0 0;
 }
+
+/* ── Altar panel: Devotion per Prince + descent ──────────────────────────── */
+.altar-intro {
+  font-style: italic;
+  opacity: 0.85;
+  margin-top: 0;
+}
+.devotion-list {
+  list-style: none;
+  margin: 0 0 0.8rem;
+  padding: 0;
+}
+.devotion-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--parchment-shadow);
+}
+.devotion-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+}
+.devotion-pips {
+  letter-spacing: 0.15em;
+  color: var(--blood-bright);
+}
+.devotion-total {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+  min-width: 4ch;
+  text-align: right;
+}
+.altar-sigils {
+  opacity: 0.55;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+.descend-btn {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.7rem;
+  letter-spacing: 0.1em;
+}
+
+/* ── Katabasis: full-screen carved-in-stone modal (02 §6/§10) ────────────── */
+.katabasis {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  background: radial-gradient(ellipse at top, rgba(40, 30, 28, 0.9), rgba(5, 4, 3, 0.98)), #050403;
+  padding: 2.5rem 1.5rem;
+}
+.katabasis-inner {
+  max-width: 920px;
+  width: 100%;
+}
+.katabasis-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  letter-spacing: 0.12em;
+  text-align: center;
+  color: var(--parchment);
+  margin: 0;
+}
+.katabasis-intro {
+  text-align: center;
+  font-style: italic;
+  opacity: 0.8;
+  margin: 0.4rem 0 1.2rem;
+}
+.katabasis-pool {
+  text-align: center;
+  font-size: 1.1rem;
+  margin-bottom: 1.4rem;
+  color: var(--candle);
+}
+.katabasis-pool strong {
+  color: var(--parchment);
+  font-variant-numeric: tabular-nums;
+}
+.prince-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.9rem;
+}
+.prince-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.9rem;
+  background: rgba(20, 14, 12, 0.85);
+  border: 1px solid var(--ink);
+  border-radius: 4px;
+}
+.prince-head {
+  display: flex;
+  flex-direction: column;
+}
+.prince-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  color: var(--parchment);
+}
+.prince-sin {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+.prince-pips {
+  letter-spacing: 0.2em;
+  color: var(--blood-bright);
+}
+.prince-devotion {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+.prince-offer {
+  margin-top: auto;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.6rem;
+}
+.prince-mastered {
+  margin-top: auto;
+  text-align: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  color: var(--candle);
+  padding: 0.45rem 0;
+}
+.katabasis-deferred {
+  text-align: center;
+  opacity: 0.5;
+  font-style: italic;
+  font-size: 0.85rem;
+  margin: 1.2rem 0 0.6rem;
+}
+.katabasis-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 0.6rem;
+}
+.katabasis-actions .opera-btn {
+  padding: 0.7rem 1.6rem;
+  letter-spacing: 0.08em;
+}
+
+/* ── Katabasis recap: black page, white text (01 / 02 §6) ────────────────── */
+.katabasis.recap {
+  background: #000;
+  align-items: center;
+}
+.recap-inner {
+  max-width: 480px;
+  width: 100%;
+  color: #f2ece4;
+}
+.recap-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.16em;
+  text-align: center;
+  font-size: 1.8rem;
+  margin: 0 0 1.6rem;
+}
+.recap-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #1c1c1c;
+}
+.recap-label {
+  opacity: 0.7;
+}
+.recap-value {
+  font-variant-numeric: tabular-nums;
+}
+.recap-rise {
+  display: block;
+  margin: 1.8rem auto 0;
+  padding: 0.7rem 2.2rem;
+  letter-spacing: 0.12em;
+}
