@@ -14,6 +14,7 @@
 import { floor, gte, sub } from './bignum.js';
 import { type Rng } from './rng.js';
 import { type Tier, type TierWeights, resolveTier } from './probability.js';
+import { playerEfficiency } from './modifiers.js';
 import { sinLevel } from './progression.js';
 import {
   addReprobates,
@@ -122,7 +123,11 @@ export type StartResult = { ok: true; state: GameState } | { ok: false; reason: 
  * natural numbers; the bignum gotcha). Efficiency scales the cost (ceil so a fractional cost rounds
  * up). Time is not affected by efficiency for these actions.
  */
-export function startAction(state: GameState, actionId: string, efficiency = 1): StartResult {
+export function startAction(
+  state: GameState,
+  actionId: string,
+  efficiency = playerEfficiency(state),
+): StartResult {
   const def = ACTIONS[actionId];
   if (!def) return { ok: false, reason: `unknown action: ${actionId}` };
 
@@ -157,7 +162,7 @@ export function resolveAction(
   state: GameState,
   actionId: string,
   rng: Rng,
-  efficiency = 1,
+  efficiency = playerEfficiency(state),
 ): { state: GameState; event: OutcomeEvent | null } {
   const def = ACTIONS[actionId];
   if (!def) return { state, event: null };

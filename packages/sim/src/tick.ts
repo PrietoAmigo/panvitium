@@ -15,6 +15,7 @@ import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { type OutcomeEvent } from './events.js';
+import { computeModifiers } from './modifiers.js';
 import { makeRng } from './rng.js';
 import { type ActionTimer, type GameState } from './state.js';
 
@@ -34,29 +35,32 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   if (deltaSeconds <= 0) return { state, events: [] };
 
   const rng = makeRng(state.rngState);
+  const mods = computeModifiers(state);
 
-  // 1. Passive generation (02 §1). Gold accrues at a flat base rate; influence accrues as a
-  //    fraction of maxInfluence per second (Globals: BASE_INFLUENCE_RATE × maxInfluence) and is
-  //    capped at the maximum. Resources are natural numbers (02 §1), but a 100 ms tick yields
-  //    fractions — so values accumulate with full precision here and are floored only at the
-  //    display/spend/comparison boundary (the bignum gotcha), never per tick.
+  // 1. Passive generation (02 §1) with modifier bundle applied.
+  //    Gold/s scales with `goldRateMul` (Avaritia skill et al.).
+  //    Influence is gain = effectiveMax × BASE_INFLUENCE_RATE × `influenceRateMul`, capped at
+  //    `effectiveMax = base × maxInfluenceMul` (Vanagloria skill raises the cap; level its rate).
+  //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
+  //    only at display/spend/comparison boundary.
+  const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const lifetime = {
     ...state.lifetime,
-    gold: add(state.lifetime.gold, mul(BASE_GOLD_PER_SECOND, deltaSeconds)),
+    gold: add(state.lifetime.gold, mul(BASE_GOLD_PER_SECOND * mods.goldRateMul, deltaSeconds)),
     influence: min(
       add(
         state.lifetime.influence,
-        mul(state.lifetime.maxInfluence, BASE_INFLUENCE_RATE * deltaSeconds),
+        mul(effectiveMax, BASE_INFLUENCE_RATE * mods.influenceRateMul * deltaSeconds),
       ),
-      state.lifetime.maxInfluence,
+      effectiveMax,
     ),
   };
   let working: GameState = { ...state, lifetime };
   const events: OutcomeEvent[] = [];
 
   // 2. Resolve in-flight Opera timers. A timer whose remaining time falls to <= 0 this tick
-  //    completes: its outcome is drawn from `rng` and applied. A large (offline) delta resolves
-  //    every queued action at once.
+  //    completes: its outcome is drawn from `rng` and applied, scaled by player efficiency.
+  //    A large (offline) delta resolves every queued action at once.
   if (working.lifetime.actionQueue.length > 0) {
     const remaining: ActionTimer[] = [];
     const completed: string[] = [];
@@ -67,7 +71,7 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
     }
     working = { ...working, lifetime: { ...working.lifetime, actionQueue: remaining } };
     for (const actionId of completed) {
-      const resolved = resolveAction(working, actionId, rng);
+      const resolved = resolveAction(working, actionId, rng, mods.playerEfficiencyMul);
       working = resolved.state;
       if (resolved.event) events.push(resolved.event);
     }

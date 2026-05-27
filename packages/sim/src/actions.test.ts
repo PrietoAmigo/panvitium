@@ -154,3 +154,30 @@ describe('resolveAction', () => {
     expect(resolveAction(fresh(), 'nope', rng()).event).toBeNull();
   });
 });
+
+describe('modifier integration', () => {
+  it('startAction defaults its efficiency to playerEfficiency(state) — Gula scales cost', () => {
+    // Gula L2 (Devotion 32 400) → playerEfficiencyMul = 4. Suggestion costs 5 × 4 = 20 influence.
+    const base = fresh();
+    const state: GameState = {
+      ...base,
+      devotion: { ...base.devotion, gula: bn(32400) },
+      lifetime: { ...base.lifetime, influence: bn(50) },
+    };
+    const r = startAction(state, 'suggestion');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(30); // 50 - 20
+  });
+
+  it('startAction with Gula L2 and only enough influence for L0 cost is refused', () => {
+    // 5 influence covers a L0 (eff=1) Suggestion but not a L2 (eff=4, cost 20) one.
+    const base = fresh();
+    const state: GameState = {
+      ...base,
+      devotion: { ...base.devotion, gula: bn(32400) },
+      lifetime: { ...base.lifetime, influence: bn(5) },
+    };
+    const r = startAction(state, 'suggestion');
+    expect(r.ok).toBe(false);
+  });
+});

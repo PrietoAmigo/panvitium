@@ -1,6 +1,14 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
-import { floor, SINS, sinLevel, MAX_SIN_LEVEL, type OutcomeEvent } from '@panvitium/sim';
+import {
+  floor,
+  SINS,
+  sinLevel,
+  MAX_SIN_LEVEL,
+  ACTIONS,
+  playerEfficiency,
+  type OutcomeEvent,
+} from '@panvitium/sim';
 import { type PanelId } from '../rooms/rooms.js';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
@@ -83,17 +91,21 @@ function SuasioPanel(): ReactElement {
   const influence = useGameStore((s) =>
     s.state ? floor(s.state.lifetime.influence).toNumber() : 0,
   );
+  const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
   const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
   const underway = useUnderway();
+  // Efficiency scales cost and outcome the same percentage (03 §2.1). Display the actual cost the
+  // player will pay so the bump from Gula levels never silently surprises them.
+  const cost = Math.ceil((ACTIONS.suggestion?.cost.influence ?? 0) * eff);
   return (
     <div className="opera">
       <p className="opera-intro">{strings.opera.suasioIntro}</p>
       <ActionRow
         name={strings.opera.suggestion}
-        cost={`5 ${strings.resources.influence} · 10s`}
+        cost={`${cost} ${strings.resources.influence} · 10s`}
         cta={strings.opera.tempt}
-        disabled={underway || influence < 5}
+        disabled={underway || influence < cost}
         onAct={() => act('suggestion')}
       />
       {underway && <p className="opera-hint">{strings.opera.underway}</p>}
@@ -120,16 +132,18 @@ function OutcomeLog(): ReactElement {
 /** Decimatio actions (only Caedis wired so far). */
 function DecimatioGroup(): ReactElement {
   const gold = useGameStore((s) => (s.state ? floor(s.state.lifetime.gold).toNumber() : 0));
+  const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
   const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
   const underway = useUnderway();
+  const cost = Math.ceil((ACTIONS.caedis?.cost.gold ?? 0) * eff);
   return (
     <>
       <ActionRow
         name={strings.opera.caedis}
-        cost={`100 ${strings.resources.gold} · 10s`}
+        cost={`${cost} ${strings.resources.gold} · 10s`}
         cta={strings.opera.cull}
-        disabled={underway || gold < 100}
+        disabled={underway || gold < cost}
         onAct={() => act('caedis')}
       />
       {underway && <p className="opera-hint">{strings.opera.underway}</p>}

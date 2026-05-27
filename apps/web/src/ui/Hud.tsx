@@ -2,7 +2,14 @@ import { type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
-import { ACTIONS, ZERO, totalReprobates, type ActionTimer, type BigNum } from '@panvitium/sim';
+import {
+  ACTIONS,
+  ZERO,
+  totalReprobates,
+  playerEfficiency,
+  type ActionTimer,
+  type BigNum,
+} from '@panvitium/sim';
 
 const NO_TIMERS: readonly ActionTimer[] = [];
 
@@ -71,6 +78,18 @@ function Vigil(): ReactElement {
   );
 }
 
+/** Player action efficiency from Sin levels (currently only Gula). Hidden at the neutral 1×. */
+function Efficiency(): ReactElement | null {
+  const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
+  if (eff <= 1) return null;
+  const label = Number.isInteger(eff) ? `${eff}×` : `${eff.toFixed(1)}×`;
+  return (
+    <div className="hud-efficiency" title="Player action efficiency (Sin levels / skills)">
+      ★ eff {label}
+    </div>
+  );
+}
+
 export function Hud(): ReactElement {
   const souls = useGameStore((s) => s.state?.souls ?? ZERO);
   const gold = useGameStore((s) => s.state?.lifetime.gold ?? ZERO);
@@ -85,6 +104,7 @@ export function Hud(): ReactElement {
       <Population />
       <ActiveActions />
       <Vigil />
+      <Efficiency />
     </aside>
   );
 }
