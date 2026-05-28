@@ -17,6 +17,13 @@ import {
   compositumById,
   compositumUnlocked,
   isToggleActive,
+  INVOCATION_IDS,
+  invocationById,
+  invocationVisible,
+  invocationUnlocked,
+  invocationSoulCost,
+  activeInvocationCount,
+  currentInvokingPower,
   assignedCount,
   isDelegatable,
   type OutcomeEvent,
@@ -638,16 +645,94 @@ function AltarPanel(): ReactElement {
   );
 }
 
+/**
+ * Ars Goetia (Invocation Room, 02 §12): the invocation list. An entry appears once invoking power
+ * reaches half its requirement (a teaser). Each shows its gate, soul cost, and active count, with a
+ * Summon button (gated) and a Dispel button when ≥1 active. Invoking power is shown at the top.
+ */
+function ArsGoetiaPanel(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const summon = useGameStore((s) => s.summon);
+  const banish = useGameStore((s) => s.banish);
+  const notice = useGameStore((s) => s.notice);
+  if (!state) return <p className="pc-empty">{strings.invocations.empty}</p>;
+
+  const power = currentInvokingPower(state);
+  const souls = floor(state.souls).toNumber();
+  const visible = INVOCATION_IDS.map(invocationById).filter(
+    (def): def is NonNullable<typeof def> => !!def && invocationVisible(state, def),
+  );
+
+  return (
+    <div className="invocations">
+      <p className="invocations-power">
+        {strings.invocations.power}: {power}
+      </p>
+      <p className="opera-intro">{strings.invocations.intro}</p>
+      {visible.length === 0 ? (
+        <p className="pc-empty">{strings.invocations.empty}</p>
+      ) : (
+        <ul className="vitium-list">
+          {visible.map((def) => {
+            const unlocked = invocationUnlocked(state, def);
+            const count = activeInvocationCount(state, def.id);
+            const cost = floor(invocationSoulCost(state, def)).toNumber();
+            const name = strings.invocations.names[def.id] ?? def.id;
+            const gate =
+              def.sinLevel !== undefined && def.sin !== null
+                ? `${def.invokingPower} ${strings.maleficia.invokingPower} · ${def.sin} L${def.sinLevel}`
+                : `${def.invokingPower} ${strings.maleficia.invokingPower}`;
+            const costLabel =
+              cost > 0 ? `${cost} ${strings.resources.souls}` : strings.invocations.free;
+            const atCap = def.maxActive !== undefined && count >= def.maxActive;
+            return (
+              <li
+                key={def.id}
+                className={`vitium-row${unlocked ? '' : ' vitium-locked'}${count > 0 ? ' vitium-active' : ''}`}
+              >
+                <div className="vitium-meta">
+                  <span className="vitium-name">{name}</span>
+                  <span className="vitium-sub">
+                    {unlocked ? costLabel : gate}
+                    {count > 0 ? ` · ${count} ${strings.invocations.active}` : ''}
+                  </span>
+                </div>
+                <div className="vitium-actions">
+                  <button
+                    type="button"
+                    className="opera-btn"
+                    disabled={!unlocked || atCap || souls < cost}
+                    onClick={() => summon(def.id)}
+                    aria-label={`${strings.invocations.summon} ${name}`}
+                  >
+                    {unlocked ? strings.invocations.summon : `${strings.opera.sinLocked} · ${gate}`}
+                  </button>
+                  {count > 0 && (
+                    <button
+                      type="button"
+                      className="opera-btn opera-btn--secondary"
+                      onClick={() => banish(def.id)}
+                      aria-label={`${strings.invocations.dispel} ${name}`}
+                    >
+                      {strings.invocations.dispel}
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {notice !== null && <p className="opera-notice">{notice}</p>}
+    </div>
+  );
+}
+
 /** Placeholder copy in the game's voice; each panel's real menu lands with its system. */
 export const PANELS: Record<PanelId, PanelContent> = {
   'ars-goetia': {
     title: 'Ars Goetia',
-    body: (
-      <p>
-        The seventy-two seals wait beneath the ink, unlit. The <em>Invocatio</em> rite is not yet
-        bound to this page.
-      </p>
-    ),
+    body: <ArsGoetiaPanel />,
   },
   maleficia: {
     title: 'The Maleficia Shelf',

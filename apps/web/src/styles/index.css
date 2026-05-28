@@ -1190,3 +1190,19 @@ body {
   color: #e6a86a;
   text-shadow: 0 0 6px rgba(201, 122, 75, 0.4);
 }
+
+/* ── Ars Goetia / invocations ───────────────────────────────────────────── */
+.invocations {
+  display: flex;
+  flex-direction: column;
+}
+.invocations-power {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--candle);
+  margin: 0 0 0.4rem;
+  border-bottom: 1px solid rgba(196, 158, 74, 0.25);
+  padding-bottom: 0.3rem;
+}

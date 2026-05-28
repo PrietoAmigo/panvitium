@@ -274,3 +274,53 @@ describe('gameStore — Vitium Compositum ceremonies', () => {
     expect(store().notice).toMatch(/bacchanal/i);
   });
 });
+
+describe('gameStore — invocations', () => {
+  function equipPower(ip: number): void {
+    const s = store().state as GameState;
+    const maleficia = Array.from({ length: ip }, () => 'black_salt_pouch');
+    useGameStore.setState({ state: { ...s, lifetime: { ...s.lifetime, maleficia } } });
+  }
+  function patchSuperbia(level: number): void {
+    const s = store().state as GameState;
+    useGameStore.setState({
+      state: { ...s, devotion: { ...s.devotion, superbia: bn(180 ** level) } },
+    });
+  }
+
+  it('refuses to summon without invoking power / Sin level', () => {
+    patchSouls(1_000_000);
+    store().summon('behemoth');
+    expect(store().notice).toBeTruthy();
+    expect(store().state?.lifetime.invocations.behemoth ?? 0).toBe(0);
+  });
+
+  it('summons when gated and paid, deducting souls', () => {
+    equipPower(3);
+    patchSuperbia(1);
+    patchSouls(1000);
+    store().summon('behemoth'); // cost = max(100, 10% of 1000) = 100
+    const s = store().state as GameState;
+    expect(s.lifetime.invocations.behemoth).toBe(1);
+    expect(floor(s.souls).toNumber()).toBe(900);
+    expect(store().notice).toBeNull();
+  });
+
+  it('dispels an active invocation', () => {
+    equipPower(3);
+    patchSuperbia(1);
+    patchSouls(1_000_000);
+    store().summon('behemoth');
+    store().banish('behemoth');
+    expect(store().state?.lifetime.invocations.behemoth ?? 0).toBe(0);
+  });
+
+  it('enforces the apex max-active cap (Doppelgaenger)', () => {
+    equipPower(12);
+    patchSuperbia(3);
+    store().summon('doppelgaenger'); // free, max 1
+    store().summon('doppelgaenger'); // second is rejected
+    expect(store().state?.lifetime.invocations.doppelgaenger).toBe(1);
+    expect(store().notice).toMatch(/limit/i);
+  });
+});

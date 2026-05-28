@@ -88,6 +88,24 @@ export const strings = {
       gala: 'Gala',
     } as Record<string, string>,
   },
+  invocations: {
+    intro: 'Names called up from below. Each asks a price in souls and stays until dispelled.',
+    empty:
+      'The seals lie unlit. Gather invoking power \u2014 from maleficia \u2014 to glimpse what waits beneath the ink.',
+    power: 'Invoking power',
+    summon: 'Summon',
+    dispel: 'Dispel',
+    active: 'bound',
+    free: 'no soul cost',
+    names: {
+      fama: 'Fama',
+      nightmare: 'Nightmare',
+      harpy: 'Harpy',
+      behemoth: 'Behemoth',
+      midas: 'Midas',
+      doppelgaenger: 'Doppelg\u00e4nger',
+    } as Record<string, string>,
+  },
   maleficia: {
     intro:
       'What has been found, paid for, and brought home. Each item has its own price in attention.',

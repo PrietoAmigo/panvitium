@@ -122,29 +122,45 @@ export function computeModifiers(state: GameState): Modifiers {
   const hasSilver = countCopies(owned, 'thirty_pieces_of_silver') > 0;
   const hasMarkOfCain = countCopies(owned, 'mark_of_cain') > 0;
 
-  // Build tier-weight muls incrementally; missing keys mean 1 in `applyTierModifiers`. Under
-  // exactOptionalPropertyTypes we never assign `undefined`, so increments are gated on > 0.
+  // Active invocations (03 §2.4). Counts read straight from the lifetime map; effect magnitudes
+  // live here alongside the other effect coefficients (the catalog in invocations.ts owns the
+  // gates and costs, this module owns what each does — mirroring how maleficia effects are coded).
+  const inv = state.lifetime.invocations;
+  const famaCount = inv.fama ?? 0; // each: influence gain ×1.25
+  const nightmareCount = inv.nightmare ?? 0; // each: +5% suicide rate (additive)
+  const harpyCount = inv.harpy ?? 0; // each: Choleric murder ×1.1
+  const behemothCount = inv.behemoth ?? 0; // each: +50% Stellar weight
+  const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
+  const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
+
+  // Build tier-weight muls as accumulating products; missing keys mean 1 in `applyTierModifiers`.
+  // Under exactOptionalPropertyTypes we never assign `undefined`, so we assign only when ≠ 1.
   const tierWeightMul: TierModifiers = {};
+  // Worst tiers: Insatiability (Gula) damps; nothing else touches `terrible` this slice.
   if (gulaIntensity > 0) {
-    // Insatiability: dampens the worst tiers asymptotically — never negative, never zero outright.
-    const damp = 1 / (1 + gulaIntensity);
-    tierWeightMul.terrible = damp;
-    tierWeightMul.apocalyptic = damp;
+    tierWeightMul.terrible = 1 / (1 + gulaIntensity);
   }
-  if (superbiaIntensity > 0) {
-    tierWeightMul.stellar = skillBonus(superbiaIntensity);
-  }
+  // Stellar: Morning Star (Superbia skill) lifts it; each Behemoth lifts +50% on top.
+  let stellar = 1;
+  if (superbiaIntensity > 0) stellar *= skillBonus(superbiaIntensity);
+  if (behemothCount > 0) stellar *= 1 + 0.5 * behemothCount;
+  if (stellar !== 1) tierWeightMul.stellar = stellar;
+  // Apocalyptic: Insatiability damps; Midas multiplies ×100; Mark of Cain LOCKS to 0 last (wins).
+  let apocalyptic = 1;
+  if (gulaIntensity > 0) apocalyptic *= 1 / (1 + gulaIntensity);
+  if (hasMidas) apocalyptic *= 100;
+  if (apocalyptic !== 1) tierWeightMul.apocalyptic = apocalyptic;
   if (hasMarkOfCain) {
-    // Anathema lock: the sevenfold guarantee zeroes the worst draw outright. Applies last so it
-    // wins over Insatiability damping.
+    // Anathema lock: the sevenfold guarantee zeroes the worst draw outright — overrides all above.
     tierWeightMul.apocalyptic = 0;
   }
 
   return {
-    goldRateMul: skillBonus(avaritiaIntensity) * (hasSilver ? 3 : 1),
-    influenceRateMul: 1.5 ** vanagloriaLvl * (hasCodex ? 3 : 1),
+    goldRateMul: skillBonus(avaritiaIntensity) * (hasSilver ? 3 : 1) * (hasMidas ? 3 : 1),
+    influenceRateMul:
+      1.5 ** vanagloriaLvl * (hasCodex ? 3 : 1) * 1.25 ** famaCount * (hasDoppel ? 0.5 : 1),
     maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1),
-    playerEfficiencyMul: 2 ** gulaLvl,
+    playerEfficiencyMul: 2 ** gulaLvl * (hasDoppel ? 1.5 : 1),
     suasioEfficiencyMul: skillBonus(tristitiaIntensity),
     decimatioEfficiencyMul: skillBonus(iraIntensity),
     tierWeightMul,
@@ -152,10 +168,11 @@ export function computeModifiers(state: GameState): Modifiers {
     // so future sigil-driven boosters compose cleanly.
     reprobateGenerationRateMul: 1,
     // Suicide: Resignation lifts the rate by (1 + intensity); Tristitia level applies a per-level
-    // doubling on top (03 §1: "+100% per level multiplicatively"). Composed multiplicatively.
-    reprobateSuicideRateMul: skillBonus(tristitiaIntensity) * 2 ** tristitiaLvl,
-    // Murder: no source attached this slice; multiplier is 1 so Cholerics×base feeds straight in.
-    cholericMurderRateMul: 1,
+    // doubling on top (03 §1: "+100% per level multiplicatively"); each Nightmare adds +5%.
+    reprobateSuicideRateMul:
+      skillBonus(tristitiaIntensity) * 2 ** tristitiaLvl * (1 + 0.05 * nightmareCount),
+    // Murder: each Harpy lifts the Choleric murder rate ×1.1 (03 §2.4).
+    cholericMurderRateMul: 1.1 ** harpyCount,
     // Vitium Mercatura output: 1× until Plutus (invocations slice) and Vapula #60 (sigils slice).
     vitiumMercaturaOutputMul: 1,
     // Acolyte efficiency: 0.33 baseline (02 §10). Future sources fold in multiplicatively; this

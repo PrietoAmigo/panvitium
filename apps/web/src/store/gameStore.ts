@@ -16,6 +16,8 @@ import {
   shutdownBusiness,
   activateToggle,
   deactivateToggle,
+  invoke,
+  dispel,
   assignAcolyteToAction,
   unassignAcolyteFromAction,
   isSignatureTier,
@@ -82,6 +84,13 @@ interface GameStore {
   activateCeremony: (vcId: string) => void;
   /** Manually deactivate a Vitium Compositum ceremony toggle. */
   deactivateCeremony: (vcId: string) => void;
+  /**
+   * Summon an invocation (02 §7, 03 §2.4). Pays the soul cost and increments the active count.
+   * Notice on failure (gates unmet, at cap, not enough souls).
+   */
+  summon: (invocationId: string) => void;
+  /** Dispel one active invocation of the given id. */
+  banish: (invocationId: string) => void;
   /** Open the Katabasis menu (returns any bound souls to the pool first, 02 §5). */
   beginKatabasis: () => void;
   /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
@@ -190,6 +199,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     const result = deactivateToggle(current, vcId);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  summon: (invocationId) => {
+    const current = get().state;
+    if (!current) return;
+    const result = invoke(current, invocationId);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  banish: (invocationId) => {
+    const current = get().state;
+    if (!current) return;
+    const result = dispel(current, invocationId);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },
