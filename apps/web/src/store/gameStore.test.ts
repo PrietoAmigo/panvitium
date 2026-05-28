@@ -324,3 +324,29 @@ describe('gameStore — invocations', () => {
     expect(store().notice).toMatch(/limit/i);
   });
 });
+
+describe('gameStore — Panvitium', () => {
+  function unlockAllSins(): void {
+    const s = store().state as GameState;
+    const devotion = { ...s.devotion };
+    for (const k of Object.keys(devotion) as (keyof typeof devotion)[]) devotion[k] = bn(180 ** 3);
+    useGameStore.setState({
+      state: { ...s, devotion, lifetime: { ...s.lifetime, gold: bn(1e12), influence: bn(1e12) } },
+    });
+  }
+
+  it('activates Panvitium once every Sin is level 3, and refuses manual deactivation', () => {
+    unlockAllSins();
+    store().activateCeremony('panvitium');
+    expect(store().state?.lifetime.activeToggles).toContain('panvitium');
+    store().deactivateCeremony('panvitium');
+    expect(store().state?.lifetime.activeToggles).toContain('panvitium'); // still on
+    expect(store().notice).toMatch(/cannot be stopped/i);
+  });
+
+  it('refuses activation before all Sins are level 3', () => {
+    store().activateCeremony('panvitium');
+    expect(store().state?.lifetime.activeToggles ?? []).not.toContain('panvitium');
+    expect(store().notice).toBeTruthy();
+  });
+});

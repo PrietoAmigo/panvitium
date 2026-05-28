@@ -187,6 +187,7 @@ export function commitKatabasis(
     maleficia: maleficiaKept,
     emptioList: [], // lost track of them (02 §6)
     activeToggles: [], // toggles stop
+    toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle
     businesses: {}, // all businesses auto-shut-down at descent (refund folded into goldAtDescent)
     buildQueue: [], // in-flight builds fizzle (no refund — they hadn't completed)

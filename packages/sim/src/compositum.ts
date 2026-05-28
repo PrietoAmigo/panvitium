@@ -46,6 +46,17 @@ export interface CompositumDef {
   readonly conversionPerSecond?: number;
   /** Per-subtype conversion bias; need not sum to 1 — renormalized at draw (02 §9). */
   readonly subtypeBias?: Partial<Record<ReprobateSubtype, number>>;
+  /**
+   * If true, the toggle cannot be turned off by hand — it ends only by auto-deactivation when it
+   * can no longer pay upkeep (Panvitium, 03 §2.3). Default false (manually dispellable).
+   */
+  readonly manualDeactivateForbidden?: boolean;
+  /**
+   * If set, the per-second cost is multiplied by `costGrowthPerSecond ** secondsActive` — an
+   * exponential ramp that makes sustained activation unaffordable (Panvitium). Duration is tracked
+   * in `LifetimeState.toggleDurations`. Default: flat cost (no growth).
+   */
+  readonly costGrowthPerSecond?: number;
 }
 
 /** The wired subset of the Vitium Compositum catalog (03 §2.3). Keyed by id. */
@@ -85,6 +96,31 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     influencePerSecond: 5,
     conversionPerSecond: 0.04,
     subtypeBias: { sigma: 0.5, celebrity: 0.5 },
+  },
+  // The endgame ritual (03 §2.3). Gated on ALL eight Sins at level 3. Cannot be turned off by
+  // hand; its cost ramps exponentially with active duration so it can't become a steady state —
+  // "flipped on for a glorious, expensive minute or two." Enormous generation + conversion here,
+  // with suicide/murder amplified via the modifier bundle (see modifiers.ts). Placeholders;
+  // spreadsheet-overridable. Even subtype bias — Panvitium drives the whole population at once.
+  panvitium: {
+    id: 'panvitium',
+    sins: ['gula', 'luxuria', 'avaritia', 'tristitia', 'ira', 'acedia', 'vanagloria', 'superbia'],
+    minLevel: 3,
+    costPerSecond: { gold: 10000, influence: 100 },
+    generationPerSecond: 10,
+    conversionPerSecond: 5,
+    subtypeBias: {
+      glutton: 1,
+      degenerate: 1,
+      gambler: 1,
+      nihilist: 1,
+      choleric: 1,
+      husk: 1,
+      celebrity: 1,
+      sigma: 1,
+    },
+    manualDeactivateForbidden: true,
+    costGrowthPerSecond: 1.03,
   },
 } as const;
 
@@ -134,9 +170,17 @@ export function activateToggle(state: GameState, vcId: string): ToggleResult {
   };
 }
 
-/** Manually deactivate a toggle. No-op-safe; fails only if it wasn't active. */
+/** Manually deactivate a toggle. Fails if it wasn't active, or if it forbids manual deactivation
+ *  (Panvitium — it ends only by running out of upkeep). */
 export function deactivateToggle(state: GameState, vcId: string): ToggleResult {
   if (!isToggleActive(state, vcId)) return { ok: false, reason: 'not active' };
+  const def = compositumById(vcId);
+  if (def?.manualDeactivateForbidden) {
+    return {
+      ok: false,
+      reason: 'cannot be stopped by will \u2014 it ends when it can no longer be paid',
+    };
+  }
   return {
     ok: true,
     state: {
@@ -155,9 +199,14 @@ export function deactivateToggle(state: GameState, vcId: string): ToggleResult {
  * with no partial application and no refund (02 §3). Returns the new state and the list of ids
  * that deactivated, so the caller can surface a notice.
  *
+ * Cost ramp: a toggle with `costGrowthPerSecond` (Panvitium) pays
+ * `baseCost × growth ** secondsActive × deltaSeconds`, using its tracked duration BEFORE this
+ * tick's increment. Durations live in `LifetimeState.toggleDurations`; survivors' durations grow
+ * by `deltaSeconds`, deactivated ones are cleared. A non-finite cost (runaway exponential) counts
+ * as unpayable, so Panvitium always ends rather than overflowing.
+ *
  * Costs are deducted BEFORE income is applied in the tick, so a toggle never earns on a tick it
- * couldn't afford. Unknown ids in `activeToggles` (e.g. from a future-version save) are dropped
- * silently rather than blocking the tick.
+ * couldn't afford. Unknown ids in `activeToggles` (e.g. from a future-version save) are dropped.
  */
 export function advanceToggles(
   state: GameState,
@@ -169,6 +218,7 @@ export function advanceToggles(
 
   let gold = state.lifetime.gold;
   let influence = state.lifetime.influence;
+  const durations = { ...state.lifetime.toggleDurations };
   const stillActive: string[] = [];
   const deactivated: string[] = [];
 
@@ -177,32 +227,49 @@ export function advanceToggles(
     if (!def) {
       // Unknown toggle id — drop it (don't carry it forward, don't bill it).
       deactivated.push(vcId);
+      delete durations[vcId];
       continue;
     }
-    const goldCost = (def.costPerSecond.gold ?? 0) * deltaSeconds;
-    const inflCost = (def.costPerSecond.influence ?? 0) * deltaSeconds;
+    const dur = durations[vcId] ?? 0;
+    const growth = def.costGrowthPerSecond ? Math.pow(def.costGrowthPerSecond, dur) : 1;
+    const goldCost = (def.costPerSecond.gold ?? 0) * growth * deltaSeconds;
+    const inflCost = (def.costPerSecond.influence ?? 0) * growth * deltaSeconds;
     const canPay =
-      gte(floor(gold), Math.ceil(goldCost)) && gte(floor(influence), Math.ceil(inflCost));
+      Number.isFinite(goldCost) &&
+      Number.isFinite(inflCost) &&
+      gte(floor(gold), Math.ceil(goldCost)) &&
+      gte(floor(influence), Math.ceil(inflCost));
     if (!canPay) {
       deactivated.push(vcId);
+      delete durations[vcId];
       continue;
     }
     if (goldCost > 0) gold = sub(gold, goldCost);
     if (inflCost > 0) influence = sub(influence, inflCost);
+    durations[vcId] = dur + deltaSeconds;
     stillActive.push(vcId);
   }
 
   if (deactivated.length === 0) {
-    // Everyone paid; only resource totals changed.
+    // Everyone paid; resource totals and durations changed, active set unchanged.
     return {
-      state: { ...state, lifetime: { ...state.lifetime, gold, influence } },
+      state: {
+        ...state,
+        lifetime: { ...state.lifetime, gold, influence, toggleDurations: durations },
+      },
       deactivated,
     };
   }
   return {
     state: {
       ...state,
-      lifetime: { ...state.lifetime, gold, influence, activeToggles: stillActive },
+      lifetime: {
+        ...state.lifetime,
+        gold,
+        influence,
+        activeToggles: stillActive,
+        toggleDurations: durations,
+      },
     },
     deactivated,
   };

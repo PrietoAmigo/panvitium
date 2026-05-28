@@ -133,6 +133,15 @@ export function computeModifiers(state: GameState): Modifiers {
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
 
+  // Panvitium (03 §2.3): the endgame ritual. While active it drives the whole population at once —
+  // generation, suicide, and murder rates are enormous. The flat generation/conversion come from
+  // its Vitium Compositum entry; these multipliers amplify the churn. Placeholders, spreadsheet-
+  // overridable. (It cannot be read as a per-stack count — it's a single toggle, on or off.)
+  const panvitiumActive = state.lifetime.activeToggles.includes('panvitium');
+  const PANV_GEN_MUL = 10;
+  const PANV_SUICIDE_MUL = 20;
+  const PANV_MURDER_MUL = 20;
+
   // Build tier-weight muls as accumulating products; missing keys mean 1 in `applyTierModifiers`.
   // Under exactOptionalPropertyTypes we never assign `undefined`, so we assign only when ≠ 1.
   const tierWeightMul: TierModifiers = {};
@@ -164,15 +173,17 @@ export function computeModifiers(state: GameState): Modifiers {
     suasioEfficiencyMul: skillBonus(tristitiaIntensity),
     decimatioEfficiencyMul: skillBonus(iraIntensity),
     tierWeightMul,
-    // Reprobate generation: 0 baseline (no Vitium contribution yet); the multiplier is still 1
-    // so future sigil-driven boosters compose cleanly.
-    reprobateGenerationRateMul: 1,
-    // Suicide: Resignation lifts the rate by (1 + intensity); Tristitia level applies a per-level
-    // doubling on top (03 §1: "+100% per level multiplicatively"); each Nightmare adds +5%.
+    // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies the total.
+    reprobateGenerationRateMul: panvitiumActive ? PANV_GEN_MUL : 1,
+    // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
+    // Panvitium multiplies the lot while active (03 §2.3 "suiciding … rates are enormous").
     reprobateSuicideRateMul:
-      skillBonus(tristitiaIntensity) * 2 ** tristitiaLvl * (1 + 0.05 * nightmareCount),
-    // Murder: each Harpy lifts the Choleric murder rate ×1.1 (03 §2.4).
-    cholericMurderRateMul: 1.1 ** harpyCount,
+      skillBonus(tristitiaIntensity) *
+      2 ** tristitiaLvl *
+      (1 + 0.05 * nightmareCount) *
+      (panvitiumActive ? PANV_SUICIDE_MUL : 1),
+    // Murder: each Harpy lifts ×1.1; Panvitium multiplies while active ("killing rates enormous").
+    cholericMurderRateMul: 1.1 ** harpyCount * (panvitiumActive ? PANV_MURDER_MUL : 1),
     // Vitium Mercatura output: 1× until Plutus (invocations slice) and Vapula #60 (sigils slice).
     vitiumMercaturaOutputMul: 1,
     // Acolyte efficiency: 0.33 baseline (02 §10). Future sources fold in multiplicatively; this

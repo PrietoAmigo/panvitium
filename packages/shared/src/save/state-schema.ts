@@ -63,6 +63,9 @@ const lifetimeSchema = z.object({
   maleficia: z.array(z.string()),
   emptioList: z.array(z.string()),
   activeToggles: z.array(z.string()),
+  // Per-toggle active-duration counters for duration-scaled cost (Panvitium). Additive-optional
+  // (ADR-023): absent in old saves → {} at runtime; omitted from the wire when empty.
+  toggleDurations: z.record(z.string(), z.number().nonnegative()).optional(),
   actionQueue: z.array(actionTimerSchema),
   // Reprobate-dynamics accrual pools (02 §9). Optional for back-compat with v1 saves predating
   // their existence — when absent, the deserializer defaults each to 0 (ADR-023). New saves
@@ -124,6 +127,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
       maleficia: [...state.lifetime.maleficia],
       emptioList: [...state.lifetime.emptioList],
       activeToggles: [...state.lifetime.activeToggles],
+      ...(Object.keys(state.lifetime.toggleDurations).length > 0
+        ? { toggleDurations: { ...state.lifetime.toggleDurations } }
+        : {}),
       actionQueue: state.lifetime.actionQueue.map((t) =>
         t.target === undefined
           ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
@@ -188,6 +194,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       maleficia: [...s.lifetime.maleficia],
       emptioList: [...s.lifetime.emptioList],
       activeToggles: [...s.lifetime.activeToggles],
+      toggleDurations: { ...(s.lifetime.toggleDurations ?? {}) },
       actionQueue: s.lifetime.actionQueue.map((t) =>
         t.target === undefined
           ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }

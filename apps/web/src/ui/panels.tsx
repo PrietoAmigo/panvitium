@@ -510,7 +510,7 @@ function CompositumSection(): ReactElement {
     <>
       <h3 className="vitium-heading">{strings.compositum.heading}</h3>
       <ul className="vitium-list">
-        {COMPOSITUM_IDS.map((id) => {
+        {COMPOSITUM_IDS.filter((id) => id !== 'panvitium').map((id) => {
           const def = compositumById(id);
           if (!def) return null;
           const unlocked = compositumUnlocked(state, def);
@@ -552,7 +552,72 @@ function CompositumSection(): ReactElement {
           );
         })}
       </ul>
+      <PanvitiumRow />
     </>
+  );
+}
+
+/**
+ * Panvitium (03 §2.3): the endgame ritual. A Vitium Compositum gated on all eight Sins at level 3,
+ * with a two-step confirmation before activation (it cannot be turned off by hand and its cost
+ * ramps exponentially). Always shown as a teaser, dimmed until unlocked; while active it pulses.
+ */
+function PanvitiumRow(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const activate = useGameStore((s) => s.activateCeremony);
+  const [confirming, setConfirming] = useState(false);
+  const def = compositumById('panvitium');
+  if (!state || !def) return <></>;
+  const unlocked = compositumUnlocked(state, def);
+  const active = isToggleActive(state, 'panvitium');
+  const name = strings.compositum.names.panvitium ?? 'Panvitium';
+  return (
+    <div className={`panvitium-row${active ? ' panvitium-row--active' : ''}`}>
+      <div className="vitium-meta">
+        <span className="vitium-name panvitium-name">{name}</span>
+        <span className="vitium-sub">
+          {active
+            ? strings.compositum.panvitiumActive
+            : unlocked
+              ? strings.compositum.panvitiumReady
+              : strings.compositum.panvitiumGate}
+        </span>
+      </div>
+      <div className="vitium-actions">
+        {active ? (
+          <span className="panvitium-burning">{strings.compositum.panvitiumBurning}</span>
+        ) : confirming ? (
+          <>
+            <button
+              type="button"
+              className="opera-btn panvitium-btn"
+              onClick={() => {
+                activate('panvitium');
+                setConfirming(false);
+              }}
+            >
+              {strings.compositum.panvitiumConfirm}
+            </button>
+            <button
+              type="button"
+              className="opera-btn opera-btn--secondary"
+              onClick={() => setConfirming(false)}
+            >
+              {strings.compositum.panvitiumCancel}
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="opera-btn panvitium-btn"
+            disabled={!unlocked}
+            onClick={() => setConfirming(true)}
+          >
+            {unlocked ? strings.compositum.panvitiumBegin : strings.opera.sinLocked}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

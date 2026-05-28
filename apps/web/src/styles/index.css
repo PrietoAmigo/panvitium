@@ -1206,3 +1206,78 @@ body {
   border-bottom: 1px solid rgba(196, 158, 74, 0.25);
   padding-bottom: 0.3rem;
 }
+
+/* ── Panvitium — the endgame ritual ─────────────────────────────────────── */
+.panvitium-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid rgba(212, 72, 72, 0.45);
+  background: rgba(28, 8, 8, 0.6);
+}
+.panvitium-name {
+  color: #e0703a;
+  text-shadow: 0 0 8px rgba(212, 72, 72, 0.5);
+  letter-spacing: 0.06em;
+}
+.panvitium-btn {
+  border-color: rgba(212, 72, 72, 0.65);
+  color: #e6a86a;
+}
+.panvitium-btn:hover:not(:disabled) {
+  background: rgba(80, 16, 12, 0.6);
+  color: #ffd9a8;
+}
+.panvitium-row--active {
+  border-color: rgba(212, 72, 72, 0.9);
+  background: rgba(56, 10, 8, 0.75);
+  animation: panvitium-pulse 1.4s ease-in-out infinite;
+}
+.panvitium-burning {
+  font-family: var(--font-display);
+  color: #ff8a4a;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  text-shadow: 0 0 10px rgba(255, 120, 60, 0.6);
+}
+@keyframes panvitium-pulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 14px rgba(212, 72, 72, 0.2);
+  }
+  50% {
+    box-shadow: inset 0 0 26px rgba(255, 100, 50, 0.5);
+  }
+}
+
+/* The Studio window onto the world, tinted red and lit by fires while Panvitium runs. */
+.scene-studio.panvitium-active {
+  position: relative;
+}
+.scene-studio.panvitium-active::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 90% at 18% 42%,
+    rgba(255, 90, 30, 0.42) 0%,
+    rgba(180, 30, 20, 0.22) 35%,
+    rgba(0, 0, 0, 0) 70%
+  );
+  mix-blend-mode: screen;
+  animation: panvitium-firelight 2.6s ease-in-out infinite;
+}
+@keyframes panvitium-firelight {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}

@@ -237,3 +237,41 @@ describe('Acolyte schema — additive-optional remainingSeconds', () => {
     expect(back.lifetime.acolytes[1]!.remainingSeconds).toBeNull();
   });
 });
+
+describe('toggleDurations — ADR-023 additive-optional', () => {
+  it('a pre-Panvitium save without toggleDurations loads with an empty map', () => {
+    const fresh = createInitialState('seed', 0);
+    const serialized = serializeGameState(fresh);
+    const { toggleDurations, ...rest } = serialized.lifetime;
+    void toggleDurations;
+    const parsed = serializedGameStateSchema.safeParse({
+      ...serialized,
+      lifetime: rest,
+    });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const back = deserializeGameState(parsed.data);
+    expect(back.lifetime.toggleDurations).toEqual({});
+  });
+
+  it('a fresh save omits toggleDurations from the wire', () => {
+    const serialized = serializeGameState(createInitialState('seed', 0));
+    expect('toggleDurations' in serialized.lifetime).toBe(false);
+  });
+
+  it('a Panvitium burst mid-flight round-trips its duration', () => {
+    const fresh = createInitialState('seed', 0);
+    const live: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        activeToggles: ['panvitium'],
+        toggleDurations: { panvitium: 42.5 },
+      },
+    };
+    const wire = serializeGameState(live);
+    expect(wire.lifetime.toggleDurations).toEqual({ panvitium: 42.5 });
+    const back = deserializeGameState(wire);
+    expect(back.lifetime.toggleDurations.panvitium).toBe(42.5);
+  });
+});

@@ -18,6 +18,7 @@ import {
   bn,
   COMPOSITA,
   COMPOSITUM_IDS,
+  commitKatabasis,
   compositumById,
   compositumConversionPerSecond,
   compositumConversionSources,
@@ -60,13 +61,24 @@ function withInfluence(s: GameState, i: number): GameState {
 }
 
 describe('Vitium Compositum — catalog', () => {
-  it('exposes the wired four two-Sin entries, all at minLevel 2', () => {
-    expect(COMPOSITUM_IDS).toEqual(['bacchanal', 'loan-shark-op', 'charity', 'gala']);
-    for (const id of COMPOSITUM_IDS) {
+  it('exposes the four two-Sin entries plus the apex Panvitium', () => {
+    expect(COMPOSITUM_IDS).toEqual(['bacchanal', 'loan-shark-op', 'charity', 'gala', 'panvitium']);
+  });
+
+  it('the two-Sin ceremonies are minLevel 2 over two Sins', () => {
+    for (const id of ['bacchanal', 'loan-shark-op', 'charity', 'gala']) {
       const def = compositumById(id)!;
       expect(def.minLevel).toBe(2);
       expect(def.sins.length).toBe(2);
     }
+  });
+
+  it('Panvitium gates on all eight Sins at level 3 and forbids manual deactivation', () => {
+    const p = compositumById('panvitium')!;
+    expect(p.minLevel).toBe(3);
+    expect(p.sins.length).toBe(8);
+    expect(p.manualDeactivateForbidden).toBe(true);
+    expect(p.costGrowthPerSecond).toBeGreaterThan(1);
   });
 
   it('every entry has a cost and at least one effect', () => {
@@ -279,5 +291,108 @@ describe('Vitium Compositum + Vitium Mercatura conversion sources aggregate', ()
     for (let i = 0; i < 400; i++) seen.add(biasedSubtype(s, rng));
     expect(seen.has('glutton')).toBe(true);
     expect(seen.has('degenerate')).toBe(true);
+  });
+});
+
+describe('Panvitium — the endgame ritual (03 §2.3)', () => {
+  /** Unlock Panvitium: all eight Sins at level 3. */
+  function unlockPanvitium(s: GameState): GameState {
+    return unlock(s, COMPOSITA.panvitium!);
+  }
+
+  it('is gated behind all eight Sins at level 3', () => {
+    expect(compositumUnlocked(fresh(), COMPOSITA.panvitium!)).toBe(false);
+    // Seven of eight is not enough.
+    let seven = fresh();
+    const sins: Sin[] = ['gula', 'luxuria', 'avaritia', 'tristitia', 'ira', 'acedia', 'vanagloria'];
+    for (const s of sins) seven = withSin(seven, s, 3);
+    expect(compositumUnlocked(seven, COMPOSITA.panvitium!)).toBe(false);
+    // All eight unlocks it.
+    expect(compositumUnlocked(unlockPanvitium(fresh()), COMPOSITA.panvitium!)).toBe(true);
+  });
+
+  it('cannot be manually deactivated', () => {
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e9), 1e9));
+    const a = activateToggle(s, 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    const d = deactivateToggle(s, 'panvitium');
+    expect(d.ok).toBe(false);
+    if (!d.ok) expect(d.reason).toMatch(/cannot be stopped/i);
+    expect(isToggleActive(s, 'panvitium')).toBe(true);
+  });
+
+  it('cost ramps exponentially with active duration', () => {
+    // First tick at base (~10000 g/s); a later tick costs strictly more for the same delta.
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e12), 1e12));
+    const a = activateToggle(s, 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    const goldStart = s.lifetime.gold.toNumber();
+    const r1 = advanceToggles(s, 1);
+    const firstCost = goldStart - r1.state.lifetime.gold.toNumber();
+    expect(r1.state.lifetime.toggleDurations.panvitium).toBeCloseTo(1, 6);
+    // Advance the duration substantially, then a single 1s tick should cost more than the first.
+    let later = r1.state;
+    for (let i = 0; i < 30; i++) later = advanceToggles(later, 1).state;
+    const beforeLate = later.lifetime.gold.toNumber();
+    const rLate = advanceToggles(later, 1);
+    const lateCost = beforeLate - rLate.state.lifetime.gold.toNumber();
+    expect(lateCost).toBeGreaterThan(firstCost);
+  });
+
+  it('auto-deactivates once upkeep outgrows reserves; duration clears', () => {
+    // Modest reserves: the exponential cost outpaces them within a reasonable burst.
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1_000_000), 1_000_000));
+    const a = activateToggle(s, 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    let ended = false;
+    for (let i = 0; i < 600 && !ended; i++) {
+      const r = advanceToggles(s, 1);
+      s = r.state;
+      if (r.deactivated.includes('panvitium')) ended = true;
+    }
+    expect(ended).toBe(true);
+    expect(isToggleActive(s, 'panvitium')).toBe(false);
+    expect(s.lifetime.toggleDurations.panvitium).toBeUndefined();
+  });
+
+  it('drives enormous churn while active: generation/suicide/murder multipliers', () => {
+    const s = unlockPanvitium(fresh());
+    const a = activateToggle(withGold(withInfluence(s, 1e9), 1e9), 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    const base = computeModifiers(s); // unlocked but NOT active
+    const live = computeModifiers(a.state); // active
+    expect(live.reprobateGenerationRateMul).toBeGreaterThan(base.reprobateGenerationRateMul);
+    expect(live.reprobateSuicideRateMul).toBeGreaterThan(base.reprobateSuicideRateMul);
+    expect(live.cholericMurderRateMul).toBeGreaterThan(base.cholericMurderRateMul);
+  });
+
+  it('through the tick, a brief Panvitium burst mints souls', () => {
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e12), 1e12));
+    // Seed some unconverted reprobates so suicides/murders have fuel immediately.
+    s = {
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: 500 } },
+    };
+    const a = activateToggle(s, 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    const soulsBefore = s.souls.toNumber();
+    // Run a few seconds of burst.
+    for (let i = 0; i < 50; i++) s = tick(s, 0.1).state;
+    expect(s.souls.toNumber()).toBeGreaterThan(soulsBefore);
+  });
+
+  it('Katabasis clears toggleDurations', () => {
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e12), 1e12));
+    const a = activateToggle(s, 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    s = advanceToggles(a.state, 5).state; // accrue some duration
+    expect(s.lifetime.toggleDurations.panvitium).toBeGreaterThan(0);
+    const { state } = commitKatabasis(s);
+    expect(Object.keys(state.lifetime.toggleDurations)).toHaveLength(0);
+    expect(state.lifetime.activeToggles).toHaveLength(0);
   });
 });

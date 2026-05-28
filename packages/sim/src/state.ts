@@ -127,6 +127,12 @@ export interface LifetimeState {
   emptioList: string[];
   /** Toggle actions currently active (e.g. 'panvitium', 'bacchanal'). */
   activeToggles: string[];
+  /**
+   * Seconds each active toggle has been running, keyed by toggle id. Used by toggles whose cost
+   * ramps with duration (Panvitium's exponential upkeep). Survivors accrue, deactivated ones are
+   * cleared. Additive-optional on the wire (ADR-023); empty by default.
+   */
+  toggleDurations: Record<string, number>;
   /** In-flight timed actions. */
   actionQueue: ActionTimer[];
   /**
@@ -208,6 +214,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       maleficia: [],
       emptioList: [],
       activeToggles: [],
+      toggleDurations: {},
       actionQueue: [],
       businesses: {},
       buildQueue: [],
