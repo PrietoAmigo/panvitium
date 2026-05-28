@@ -237,8 +237,12 @@ describe('Vitium Compositum — conversion + generation sourcing', () => {
     const a = activateToggle(s, 'bacchanal');
     if (!a.ok) throw new Error('activate');
     s = a.state;
-    const rates = reprobateRates(s, computeModifiers(s));
-    expect(rates.generationPerSecond).toBeCloseTo(0.05, 6); // base 0 + VC 0.05
+    const mods = computeModifiers(s);
+    const rates = reprobateRates(s, mods);
+    // bacchanal contributes 0.05/s to generation; unlock() set Luxuria L1, which now activates
+    // Seduction (03 §1) — the rate is multiplied by the Luxuria skill bonus. Compute against the
+    // live modifier rather than a hardcoded constant.
+    expect(rates.generationPerSecond).toBeCloseTo(0.05 * mods.reprobateGenerationRateMul, 6);
     expect(rates.conversionPerSecond).toBeCloseTo(0.04, 6);
   });
 

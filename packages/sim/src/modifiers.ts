@@ -47,6 +47,7 @@ import {
   GAMBLER_GENERATION_REDUCTION_PER_COUNT,
   GLUTTON_OFFLINE_PENALTY_PER_COUNT,
   HUSK_EFFICIENCY_REDUCTION_PER_COUNT,
+  IRA_ACOLYTE_INVOCATION_PER_LEVEL,
   NIHILIST_SUICIDE_INCREASE_PER_COUNT,
   SIGMA_INFLUENCE_REDUCTION_PER_COUNT,
   SUBTYPE_VM_GOLD_BOOST_PER_COUNT,
@@ -106,6 +107,13 @@ export interface Modifiers {
    */
   readonly acolyteEfficiencyMul: number;
   /**
+   * Multiplier on invocation-runner action efficiency (03 §1, "Retribution"/Satan level — each
+   * +33% per Ira level). Composed at the per-runner call site in `advanceInvocationRunners` on
+   * top of the per-invocation `auto.efficiency × playerEfficiencyMul` term. Default 1×; sigils
+   * targeting invocation runners (none yet) will compose here.
+   */
+  readonly invocationEfficiencyMul: number;
+  /**
    * Per-Sin multiplier on Vitium Mercatura business gold output, driven by the matching subtype
    * count (03 §3: "Gluttons increase the gold output of Gula-related Vitium actions", etc.).
    * Composed multiplicatively with `vitiumMercaturaOutputMul` at the per-business call site in
@@ -138,6 +146,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   cholericMurderRateMul: 1,
   vitiumMercaturaOutputMul: 1,
   acolyteEfficiencyMul: 0.33,
+  invocationEfficiencyMul: 1,
   subtypeVitiumGoldMulBySin: {
     gula: 1,
     luxuria: 1,
@@ -160,6 +169,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const gulaLvl = sinLevel(state.devotion.gula);
   const vanagloriaLvl = sinLevel(state.devotion.vanagloria);
   const tristitiaLvl = sinLevel(state.devotion.tristitia);
+  const iraLvl = sinLevel(state.devotion.ira);
 
   // Sin skill intensities (continuous; intensity = ln(devotion)² / SKILL_INTENSITY_DIVISOR).
   const avaritiaIntensity = skillIntensity(state.devotion.avaritia);
@@ -168,6 +178,8 @@ export function computeModifiers(state: GameState): Modifiers {
   const iraIntensity = skillIntensity(state.devotion.ira);
   const gulaIntensity = skillIntensity(state.devotion.gula);
   const superbiaIntensity = skillIntensity(state.devotion.superbia);
+  const luxuriaIntensity = skillIntensity(state.devotion.luxuria); // Seduction → gen rate
+  const acediaIntensity = skillIntensity(state.devotion.acedia); // Procrastination → offline
 
   // Equipped maleficia (03 §4). Each anathema item is a single, decisive multiplier.
   const owned = state.lifetime.maleficia;
@@ -304,12 +316,14 @@ export function computeModifiers(state: GameState): Modifiers {
     decimatioEfficiencyMul: skillBonus(iraIntensity) * sc('decimatioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; each Lamia
-    // lifts it; Succubus multiplies it dramatically; Gambler subtype drags it down; sigils
-    // (Aamon #7 up, Zepar #16 down) compose.
+    // lifts it; Succubus multiplies it dramatically; Luxuria's Seduction skill lifts it
+    // continuously (03 §1); Gambler subtype drags it down; sigils (Aamon #7 up, Zepar #16 down)
+    // compose.
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
       (1 + LAMIA_GENERATION * lamiaCount) *
       (hasSuccubus ? SUCCUBUS_GEN_MUL : 1) *
+      skillBonus(luxuriaIntensity) *
       gamblerGenerationMul *
       sc('reprobateGenerationRateMul'),
     // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
@@ -335,13 +349,20 @@ export function computeModifiers(state: GameState): Modifiers {
     // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
     // multiplier scales business gold + generation + conversion at the tick/dynamics call sites.
     vitiumMercaturaOutputMul: (1 + PLUTUS_OUTPUT * plutusCount) * sc('vitiumMercaturaOutputMul'),
-    // Acolyte efficiency: 0.33 baseline (02 §10); Bathin #18 sigil composes on top.
-    acolyteEfficiencyMul: 0.33 * sc('acolyteEfficiencyMul'),
+    // Acolyte efficiency: 0.33 baseline (02 §10); Ira level lifts ×1.33/level (03 §1 Retribution);
+    // Bathin #18 sigil composes on top.
+    acolyteEfficiencyMul:
+      0.33 * IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl * sc('acolyteEfficiencyMul'),
+    // Invocation efficiency: 1× baseline; Ira level lifts ×1.33/level (03 §1 Retribution shared
+    // with acolytes). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
+    invocationEfficiencyMul: IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl,
     // Per-Sin Vitium Mercatura gold boost from matched subtype counts (03 §3). Read at the
     // per-business call site so each Sin's businesses receive their own themed boost.
     subtypeVitiumGoldMulBySin,
-    // Offline time scaling (Glutton slows; Acedia's Procrastination skill will lift, future).
-    offlineTimeMul: gluttonOfflineMul,
+    // Offline time scaling: Glutton slows; Acedia's Procrastination skill lifts (03 §1, continuous);
+    // Acedia's per-level effect compounds on top dynamically in `session.resumeGame` (it depends
+    // on the offline duration itself and can't be expressed as a static scalar).
+    offlineTimeMul: gluttonOfflineMul * skillBonus(acediaIntensity),
   };
 }
 

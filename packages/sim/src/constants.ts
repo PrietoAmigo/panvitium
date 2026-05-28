@@ -128,3 +128,19 @@ export const HUSK_EFFICIENCY_REDUCTION_PER_COUNT = 0.0001;
 export const CELEBRITY_GOLD_REDUCTION_PER_COUNT = 0.0001;
 /** Sigma (Superbia): per-count multiplicative reduction on influence rate. */
 export const SIGMA_INFLUENCE_REDUCTION_PER_COUNT = 0.0001;
+
+/**
+ * Ira per-level effect (03 §1, "Retribution" / Satan): each level multiplies BOTH acolyte action
+ * efficiency and invocation action efficiency by this factor. Doc text: "+33% per level". Folded
+ * into `acolyteEfficiencyMul` and `invocationEfficiencyMul` by `computeModifiers`.
+ */
+export const IRA_ACOLYTE_INVOCATION_PER_LEVEL = 1.33;
+
+/**
+ * Acedia per-level effect (03 §1, "Procrastination" / Belphegor): each level applies a
+ * `1.00002^(X · L²)` multiplier to the offline-time duration used by `resumeGame`, where X is the
+ * offline minutes and L is the Acedia level. Time-dependent — *not* a static modifier; applied at
+ * session-resume time. Base 1.00002 is a placeholder, spreadsheet-overridable; the shape (an
+ * exponential in `X · L²`) is authoritative.
+ */
+export const ACEDIA_OFFLINE_COMPOUND_BASE = 1.00002;

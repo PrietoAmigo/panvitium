@@ -450,7 +450,9 @@ export function advanceInvocationRunners(
   for (const id of active) {
     const def = INVOCATIONS[id]!;
     const auto = def.autonomous!;
-    const eff = auto.efficiency * computeModifiers(working).playerEfficiencyMul;
+    const mods = computeModifiers(working);
+    // Per-invocation auto.efficiency × player's own × any invocation-wide boost (Ira level, 03 §1).
+    const eff = auto.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul;
     // Absent key (undefined) ⇒ null: a fresh or previously-stalled channel the engine will (re)start.
     const prev = existing[id] ?? null;
     const r = advanceRunnerCycles(
