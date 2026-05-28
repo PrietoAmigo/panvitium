@@ -44,22 +44,22 @@ describe('computeModifiers — Sin level effects', () => {
 
 describe('computeModifiers — Sin skill effects (continuous)', () => {
   it('Avaritia (Golden Hand) bumps goldRateMul by 1 + intensity', () => {
-    // skillIntensity(180) = ln(180)² / 6.537 ≈ 4.1253 → goldRateMul ≈ 5.1253.
+    // skillIntensity(180) = ln(180)² / 65.37 ≈ 0.41253 → goldRateMul ≈ 1.4125.
     expect(computeModifiers(withDevotion({ avaritia: bn(180) })).goldRateMul).toBeCloseTo(
-      5.1253,
+      1.4125,
       3,
     );
   });
 
   it('Vanagloria (Acclaim) bumps maxInfluenceMul by 1 + intensity', () => {
     expect(computeModifiers(withDevotion({ vanagloria: bn(180) })).maxInfluenceMul).toBeCloseTo(
-      5.1253,
+      1.4125,
       3,
     );
   });
 
   it('skill bonus is continuous below the first level (a single Devotion still nudges intensity)', () => {
-    // skillIntensity(1) = ln(1)² / 6.537 = 0 → bonus = 1; but skillIntensity(2) > 0.
+    // skillIntensity(1) = ln(1)² / 65.37 = 0 → bonus = 1; but skillIntensity(2) > 0.
     expect(computeModifiers(withDevotion({ avaritia: bn(1) })).goldRateMul).toBe(1);
     expect(computeModifiers(withDevotion({ avaritia: bn(2) })).goldRateMul).toBeGreaterThan(1);
   });
@@ -68,37 +68,37 @@ describe('computeModifiers — Sin skill effects (continuous)', () => {
 describe('computeModifiers — per-category efficiency', () => {
   it('Leviathan (Resignation) lifts suasioEfficiencyMul and only that', () => {
     const m = computeModifiers(withDevotion({ tristitia: bn(180) }));
-    expect(m.suasioEfficiencyMul).toBeCloseTo(5.1253, 3);
+    expect(m.suasioEfficiencyMul).toBeCloseTo(1.4125, 3);
     expect(m.decimatioEfficiencyMul).toBe(1);
   });
 
   it('Satan (Retribution) lifts decimatioEfficiencyMul and only that', () => {
     const m = computeModifiers(withDevotion({ ira: bn(180) }));
-    expect(m.decimatioEfficiencyMul).toBeCloseTo(5.1253, 3);
+    expect(m.decimatioEfficiencyMul).toBeCloseTo(1.4125, 3);
     expect(m.suasioEfficiencyMul).toBe(1);
   });
 
   it('categoryEfficiency stacks player × category multiplicatively', () => {
-    // Gula L1 → player 2×; Leviathan 180 → Suasio mul ≈ 5.1253. Total Suasio eff ≈ 10.25.
+    // Gula L1 → player 2×; Leviathan 180 → Suasio mul ≈ 1.4125. Total Suasio eff ≈ 2.825.
     // Decimatio receives no category boost → just the player 2×.
     const s = withDevotion({ gula: bn(180), tristitia: bn(180) });
-    expect(categoryEfficiency(s, 'suasio')).toBeCloseTo(2 * 5.1253, 2);
+    expect(categoryEfficiency(s, 'suasio')).toBeCloseTo(2 * 1.4125, 2);
     expect(categoryEfficiency(s, 'decimatio')).toBeCloseTo(2, 6);
   });
 });
 
 describe('computeModifiers — tier weight shifts', () => {
   it('Gula (Insatiability) damps Terrible and Apocalyptic toward zero (never negative)', () => {
-    // intensity(180) ≈ 4.1253 → damp = 1 / 5.1253 ≈ 0.1951.
+    // intensity(180) ≈ 0.41253 → damp = 1 / 1.4125 ≈ 0.7079.
     const mul = computeModifiers(withDevotion({ gula: bn(180) })).tierWeightMul;
-    expect(mul.terrible).toBeCloseTo(0.1951, 3);
-    expect(mul.apocalyptic).toBeCloseTo(0.1951, 3);
+    expect(mul.terrible).toBeCloseTo(0.7079, 3);
+    expect(mul.apocalyptic).toBeCloseTo(0.7079, 3);
     expect(mul.stellar).toBeUndefined();
   });
 
   it('Lucifer (Morning Star) lifts the Stellar tier weight by 1 + intensity', () => {
     const mul = computeModifiers(withDevotion({ superbia: bn(180) })).tierWeightMul;
-    expect(mul.stellar).toBeCloseTo(5.1253, 3);
+    expect(mul.stellar).toBeCloseTo(1.4125, 3);
     expect(mul.terrible).toBeUndefined();
   });
 
@@ -143,14 +143,14 @@ describe('computeModifiers — maleficia effects (anathema)', () => {
   });
 
   it('Maleficia effects stack multiplicatively with Sin skills', () => {
-    // Avaritia 180 → goldRateMul ≈ 5.1253; + Silver triples it → ≈ 15.376.
+    // Avaritia 180 → goldRateMul ≈ 1.4125; + Silver triples it → ≈ 4.2376.
     const s = fresh();
     const state: GameState = {
       ...s,
       devotion: { ...s.devotion, avaritia: bn(180) },
       lifetime: { ...s.lifetime, maleficia: ['thirty_pieces_of_silver'] },
     };
-    expect(computeModifiers(state).goldRateMul).toBeCloseTo(5.1253 * 3, 2);
+    expect(computeModifiers(state).goldRateMul).toBeCloseTo(1.4125 * 3, 2);
   });
 });
 
@@ -168,20 +168,20 @@ describe('computeModifiers — reprobate-dynamics rate multipliers (02 §9)', ()
     expect(m.cholericMurderRateMul).toBe(1);
   });
 
-  it('Tristitia 180 Devotion (level 1 + Resignation skill) lifts suicide rate ~10.25×', () => {
-    // Level 1 contributes 2× outright; Resignation at devotion 180 has intensity ≈ 4.1253,
-    // so skill contributes (1 + 4.1253) ≈ 5.1253. Combined: 2 × 5.1253 ≈ 10.2506.
+  it('Tristitia 180 Devotion (level 1 + Resignation skill) lifts suicide rate ~2.825×', () => {
+    // Level 1 contributes 2× outright; Resignation at devotion 180 has intensity ≈ 0.41253,
+    // so skill contributes (1 + 0.41253) ≈ 1.4125. Combined: 2 × 1.4125 ≈ 2.82505.
     const s = fresh();
     const state: GameState = { ...s, devotion: { ...s.devotion, tristitia: bn(180) } };
-    expect(computeModifiers(state).reprobateSuicideRateMul).toBeCloseTo(10.25, 1);
+    expect(computeModifiers(state).reprobateSuicideRateMul).toBeCloseTo(2.825, 1);
   });
 
   it('Tristitia skill alone (sub-level devotion) lifts suicide rate but not by 2×', () => {
-    // Devotion 10 gives skill intensity ≈ 0.81; level still 0, so mul ≈ 1.81 (not doubled).
+    // Devotion 10 gives skill intensity ≈ 0.081; level still 0, so mul ≈ 1.081 (not doubled).
     const s = fresh();
     const state: GameState = { ...s, devotion: { ...s.devotion, tristitia: bn(10) } };
     const mul = computeModifiers(state).reprobateSuicideRateMul;
-    expect(mul).toBeGreaterThan(1.5);
-    expect(mul).toBeLessThan(2);
+    expect(mul).toBeGreaterThan(1);
+    expect(mul).toBeLessThan(1.2);
   });
 });

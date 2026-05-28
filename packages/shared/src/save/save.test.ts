@@ -312,3 +312,37 @@ describe('eternalDevotion + startedAt — ADR-023 additive-optional', () => {
     expect(back.lastTickAt).toBe(94_000);
   });
 });
+
+describe('achievements + katabasisCount — ADR-023 additive-optional', () => {
+  it('a save predating achievements loads with [] and 0', () => {
+    const fresh = createInitialState('seed', 4_000);
+    const serialized = serializeGameState(fresh);
+    const { achievements, katabasisCount, ...rest } = serialized;
+    void achievements;
+    void katabasisCount;
+    const parsed = serializedGameStateSchema.safeParse(rest);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const back = deserializeGameState(parsed.data);
+    expect(back.achievements).toEqual([]);
+    expect(back.katabasisCount).toBe(0);
+  });
+
+  it('a fresh save omits both (empty/zero)', () => {
+    const serialized = serializeGameState(createInitialState('seed', 4_000));
+    expect('achievements' in serialized).toBe(false);
+    expect('katabasisCount' in serialized).toBe(false);
+  });
+
+  it('round-trips populated achievements and a descent count', () => {
+    const fresh = createInitialState('seed', 4_000);
+    const live: GameState = {
+      ...fresh,
+      achievements: ['first_harvest', 'semet'],
+      katabasisCount: 3,
+    };
+    const back = deserializeGameState(serializeGameState(live));
+    expect(back.achievements).toEqual(['first_harvest', 'semet']);
+    expect(back.katabasisCount).toBe(3);
+  });
+});

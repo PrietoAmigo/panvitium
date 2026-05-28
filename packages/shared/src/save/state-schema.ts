@@ -93,6 +93,11 @@ export const serializedGameStateSchema = z.object({
   lastTickAt: z.number().int(),
   // Game-start clock for the runtime score. Additive-optional; old saves default to lastTickAt.
   startedAt: z.number().int().optional(),
+  // Unlocked achievement ids (03 §7). Additive-optional; old saves default to []. Re-evaluated
+  // against current state on the next tick, so absence never loses an already-earned unlock.
+  achievements: z.array(z.string()).optional(),
+  // Completed-Katabasis counter. Additive-optional; old saves default to 0.
+  katabasisCount: z.number().int().nonnegative().optional(),
 });
 
 /** The JSON-safe form of GameState. */
@@ -169,6 +174,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
     rngState: state.rngState,
     lastTickAt: state.lastTickAt,
     startedAt: state.startedAt,
+    // Omit when empty/zero so fresh and pre-achievements saves keep the prior wire form.
+    ...(state.achievements.length > 0 ? { achievements: [...state.achievements] } : {}),
+    ...(state.katabasisCount > 0 ? { katabasisCount: state.katabasisCount } : {}),
   };
 }
 
@@ -230,5 +238,8 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     lastTickAt: s.lastTickAt,
     // Old saves predating the runtime score default startedAt to lastTickAt (runtime starts now).
     startedAt: s.startedAt ?? s.lastTickAt,
+    // Old saves predating achievements default to none / zero; the next tick re-evaluates.
+    achievements: s.achievements ? [...s.achievements] : [],
+    katabasisCount: s.katabasisCount ?? 0,
   };
 }

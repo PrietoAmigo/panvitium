@@ -26,6 +26,7 @@ import { type OutcomeEvent } from './events.js';
 import { computeModifiers } from './modifiers.js';
 import { makeRng } from './rng.js';
 import { type ActionTimer, type GameState } from './state.js';
+import { evaluateAchievements } from './achievements.js';
 
 /** Injected dependencies for a tick (tuning tables that aren't part of the state). Empty for now. */
 export interface TickDeps {
@@ -43,11 +44,16 @@ export interface TickResult {
    * "ended" message via a discriminated log union.
    */
   readonly notices: string[];
+  /**
+   * Ids of achievements newly unlocked on this tick (03 §7), in catalog order. Folded into
+   * `state.achievements` already; returned so the UI can raise a toast. Empty on most ticks.
+   */
+  readonly achievementsUnlocked: string[];
 }
 
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
 export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {}): TickResult {
-  if (deltaSeconds <= 0) return { state, events: [], notices: [] };
+  if (deltaSeconds <= 0) return { state, events: [], notices: [], achievementsUnlocked: [] };
 
   const rng = makeRng(state.rngState);
 
@@ -147,13 +153,20 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   working = acoResult.state;
   for (const ev of acoResult.events) events.push(ev);
 
+  // 6. Achievements (03 §7). Evaluate the catalog against the fully-advanced state; fold any newly-
+  //    earned ids into state.achievements and surface them for a toast. Last step, so every change
+  //    this tick (and offline progression run as one big tick) is reflected.
+  const finalState: GameState = {
+    ...working,
+    lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
+    rngState: rng.state,
+  };
+  const ach = evaluateAchievements(finalState);
+
   return {
-    state: {
-      ...working,
-      lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
-      rngState: rng.state,
-    },
+    state: ach.state,
     events,
     notices,
+    achievementsUnlocked: ach.unlocked,
   };
 }

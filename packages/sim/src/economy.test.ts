@@ -49,19 +49,19 @@ describe('tick — passive generation', () => {
 
 describe('tick — modifiers (Sin level / Sin skill)', () => {
   it('Avaritia skill scales the passive gold rate (Golden Hand)', () => {
-    // Devotion 180 → intensity ≈ 4.1253 → goldRateMul ≈ 5.1253 → gold/s ≈ 51.25.
+    // Devotion 180 → intensity ≈ 0.41253 → goldRateMul ≈ 1.4125 → gold/s ≈ 14.13.
     const base = createInitialState('seed', 0);
     const state: GameState = { ...base, devotion: { ...base.devotion, avaritia: bn(180) } };
     const { state: after } = tick(state, 1);
-    expect(floor(after.lifetime.gold).toNumber()).toBe(51);
+    expect(floor(after.lifetime.gold).toNumber()).toBe(14);
   });
 
   it('Vanagloria scales both influence rate (level) and the effective cap (Acclaim)', () => {
-    // L1 → influenceRateMul = 1.5. Skill intensity ≈ 4.1253 → maxInfluenceMul ≈ 5.1253.
-    // effectiveMax = 100 × 5.1253 = 512.53; influence/s = 512.53 × 0.025 × 1.5 ≈ 19.22.
+    // L1 → influenceRateMul = 1.5. Skill intensity ≈ 0.41253 → maxInfluenceMul ≈ 1.4125.
+    // effectiveMax = 100 × 1.4125 = 141.25; influence/s = 141.25 × 0.025 × 1.5 ≈ 5.30.
     const base = createInitialState('seed', 0);
     const state: GameState = { ...base, devotion: { ...base.devotion, vanagloria: bn(180) } };
     const { state: after } = tick(state, 1);
-    expect(floor(after.lifetime.influence).toNumber()).toBe(19);
+    expect(floor(after.lifetime.influence).toNumber()).toBe(5);
   });
 });

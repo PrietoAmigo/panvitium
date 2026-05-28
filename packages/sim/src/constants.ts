@@ -41,8 +41,12 @@ export const DEVOTION_LEVEL_BASE = 180;
 /** Cardinal Sins run level 0..4 (03 §1). */
 export const MAX_SIN_LEVEL = 4;
 
-/** Skill intensity = ln(devotion)² / SKILL_INTENSITY_DIVISOR (Sins & Devotion sheet: 6.537). */
-export const SKILL_INTENSITY_DIVISOR = 6.537;
+/**
+ * Skill intensity = ln(devotion)² / SKILL_INTENSITY_DIVISOR (Sins & Devotion sheet). The divisor is
+ * 65.37, fixed against the sheet's sampled intensities (e.g. devotion 180 → 0.4125, 1e9 → 6.60).
+ * (The sheet's formula-text "/0.6537" is a typo; the sampled values are authoritative.)
+ */
+export const SKILL_INTENSITY_DIVISOR = 65.37;
 
 /**
  * Katabasis carry-over base fractions (Globals). Each is raised additively by a Sin's per-level

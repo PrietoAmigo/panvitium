@@ -13,6 +13,7 @@
  */
 import { add, clamp, floor, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
 import { businessById, SHUTDOWN_REFUND_FRACTION } from './businesses.js';
+import { sigilKatabasisBonus } from './sigils.js';
 import {
   BASE_MAX_INFLUENCE,
   BASE_REMAINING_GOLD,
@@ -159,11 +160,14 @@ export function commitKatabasis(
   }
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
-  // business shutdown refunds folded in above.
-  const goldKept = floor(mul(floor(goldAtDescent), remainingGoldFraction(state)));
+  // business shutdown refunds folded in above. Sigils (Purson #20, Semet #32) lift the fraction.
+  const goldKept = floor(
+    mul(floor(goldAtDescent), remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold'))),
+  );
 
-  // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8).
-  const chance = remainingMaleficiaChance(state);
+  // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8). Sigils
+  // (Halphas #38, Semet #32) lift the chance.
+  const chance = remainingMaleficiaChance(state, sigilKatabasisBonus(state, 'maleficia'));
   const maleficiaKept: string[] = [];
   const maleficiaLost: string[] = [];
   for (const m of state.lifetime.maleficia) {
@@ -172,9 +176,11 @@ export function commitKatabasis(
   }
 
   // Remaining reprobates: a fraction of the UNCONVERTED survive; converted subtypes are lost.
+  // Sigils (Semet #32) lift the fraction.
   const reprobates = emptyReprobates();
   reprobates.reprobate = Math.floor(
-    state.lifetime.reprobates.reprobate * remainingUnconvertedFraction(state),
+    state.lifetime.reprobates.reprobate *
+      remainingUnconvertedFraction(state, sigilKatabasisBonus(state, 'unconverted')),
   );
 
   const lifetime: LifetimeState = {
@@ -198,7 +204,13 @@ export function commitKatabasis(
   };
 
   return {
-    state: { ...state, lifetime, rngState: rng.state, lastTickAt: now },
+    state: {
+      ...state,
+      lifetime,
+      rngState: rng.state,
+      lastTickAt: now,
+      katabasisCount: state.katabasisCount + 1,
+    },
     recap: {
       goldKept,
       reprobatesKept: reprobates.reprobate,

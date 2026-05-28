@@ -3,7 +3,7 @@
  *   - catalog covers the eight Sins at Level 1
  *   - startBuild enforces Sin level + gold; appends to buildQueue; does NOT occupy the player slot
  *   - advanceBuilds promotes finished builds into the businesses map
- *   - shutdownBusiness refunds 50% (default) and removes one count; cleans up the key at 0
+ *   - shutdownBusiness refunds 25% (default) and removes one count; cleans up the key at 0
  *   - businessGoldPerSecond aggregates by owned count
  *   - tick folds business gold into the per-tick gain (goldRateMul applies to both base + biz)
  *   - business generation contributions feed the generation pool (an unconverted reprobate per
@@ -103,20 +103,20 @@ describe('startBuild', () => {
   });
 
   it('on success: deducts buildCost, appends a BuildTimer, leaves actionQueue untouched', () => {
-    const s = withSinLevel(withGold(fresh(), 500), 'gula', 1);
+    const s = withSinLevel(withGold(fresh(), 2000), 'gula', 1);
     const r = startBuild(s, 'gula-mercatura-1');
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.state.lifetime.gold.toNumber()).toBe(400);
+    expect(r.state.lifetime.gold.toNumber()).toBe(1000);
     expect(r.state.lifetime.buildQueue).toHaveLength(1);
     expect(r.state.lifetime.buildQueue[0]!.businessId).toBe('gula-mercatura-1');
-    expect(r.state.lifetime.buildQueue[0]!.remainingSeconds).toBe(30);
+    expect(r.state.lifetime.buildQueue[0]!.remainingSeconds).toBe(60);
     // Player slot is NOT occupied — startBuild does not append to actionQueue.
     expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });
 
   it('allows multiple concurrent in-flight builds — any combination of ids', () => {
-    let s = withSinLevel(withGold(fresh(), 1000), 'gula', 1);
+    let s = withSinLevel(withGold(fresh(), 5000), 'gula', 1);
     s = withSinLevel(s, 'luxuria', 1);
     const r1 = startBuild(s, 'gula-mercatura-1');
     expect(r1.ok).toBe(true);
@@ -128,22 +128,22 @@ describe('startBuild', () => {
     expect(r3.ok).toBe(true);
     if (!r3.ok) return;
     expect(r3.state.lifetime.buildQueue).toHaveLength(3);
-    expect(r3.state.lifetime.gold.toNumber()).toBe(700); // 3 × 100
+    expect(r3.state.lifetime.gold.toNumber()).toBe(2000); // 3 × 1000
   });
 });
 
 describe('advanceBuilds', () => {
   it('a build completes when its remainingSeconds hits 0 and the count increments', () => {
-    const s = withSinLevel(withGold(fresh(), 200), 'gula', 1);
+    const s = withSinLevel(withGold(fresh(), 2000), 'gula', 1);
     const r = startBuild(s, 'gula-mercatura-1');
     if (!r.ok) throw new Error('start should succeed');
-    const after = advanceBuilds(r.state, 30);
+    const after = advanceBuilds(r.state, 60);
     expect(after.lifetime.buildQueue).toHaveLength(0);
     expect(after.lifetime.businesses['gula-mercatura-1']).toBe(1);
   });
 
   it('multiple concurrent builds all complete in a single large (offline) delta', () => {
-    let s = withSinLevel(withGold(fresh(), 1000), 'gula', 1);
+    let s = withSinLevel(withGold(fresh(), 10000), 'gula', 1);
     for (let i = 0; i < 4; i++) {
       const r = startBuild(s, 'gula-mercatura-1');
       if (!r.ok) throw new Error('start should succeed');
@@ -155,12 +155,12 @@ describe('advanceBuilds', () => {
   });
 
   it('partial advancement leaves the remaining timer in the queue with reduced time', () => {
-    const s = withSinLevel(withGold(fresh(), 200), 'gula', 1);
+    const s = withSinLevel(withGold(fresh(), 2000), 'gula', 1);
     const r = startBuild(s, 'gula-mercatura-1');
     if (!r.ok) throw new Error('start should succeed');
     const after = advanceBuilds(r.state, 10);
     expect(after.lifetime.buildQueue).toHaveLength(1);
-    expect(after.lifetime.buildQueue[0]!.remainingSeconds).toBe(20);
+    expect(after.lifetime.buildQueue[0]!.remainingSeconds).toBe(50);
     expect(after.lifetime.businesses['gula-mercatura-1'] ?? 0).toBe(0);
   });
 
@@ -168,7 +168,7 @@ describe('advanceBuilds', () => {
     const s = fresh();
     expect(advanceBuilds(s, 30)).toBe(s);
     const built = (() => {
-      const seed = withSinLevel(withGold(fresh(), 200), 'gula', 1);
+      const seed = withSinLevel(withGold(fresh(), 2000), 'gula', 1);
       const r = startBuild(seed, 'gula-mercatura-1');
       if (!r.ok) throw new Error('start should succeed');
       return r.state;
@@ -183,24 +183,24 @@ describe('shutdownBusiness', () => {
     expect(r.ok).toBe(false);
   });
 
-  it('refunds 50% of buildCost, decrements count, removes key at 0', () => {
-    let s = withSinLevel(withGold(fresh(), 200), 'gula', 1);
+  it('refunds 25% of buildCost, decrements count, removes key at 0', () => {
+    let s = withSinLevel(withGold(fresh(), 2000), 'gula', 1);
     const built = startBuild(s, 'gula-mercatura-1');
     if (!built.ok) throw new Error('start should succeed');
-    s = advanceBuilds(built.state, 30); // 1 owned, gold = 100 (200 paid 100 to build)
+    s = advanceBuilds(built.state, 60); // 1 owned, gold = 1000 (2000 paid 1000 to build)
     expect(s.lifetime.businesses['gula-mercatura-1']).toBe(1);
 
     const sh = shutdownBusiness(s, 'gula-mercatura-1');
     expect(sh.ok).toBe(true);
     if (!sh.ok) return;
-    expect(sh.refund).toBe(50);
-    // 200 starting - 100 build cost + 50 refund = 150.
-    expect(sh.state.lifetime.gold.toNumber()).toBe(150);
+    expect(sh.refund).toBe(250); // floor(1000 * 0.25)
+    // 2000 starting - 1000 build cost + 250 refund = 1250.
+    expect(sh.state.lifetime.gold.toNumber()).toBe(1250);
     expect(sh.state.lifetime.businesses['gula-mercatura-1']).toBeUndefined();
   });
 
-  it('SHUTDOWN_REFUND_FRACTION is the documented 50%', () => {
-    expect(SHUTDOWN_REFUND_FRACTION).toBe(0.5);
+  it('SHUTDOWN_REFUND_FRACTION is the documented 25%', () => {
+    expect(SHUTDOWN_REFUND_FRACTION).toBe(0.25);
   });
 });
 
@@ -225,25 +225,25 @@ describe('tick — business gold income', () => {
         ...s.lifetime,
         businesses: {
           'gula-mercatura-1': 3, // 1 g/s × 3 = 3
-          'avaritia-mercatura-1': 2, // 2 g/s × 2 = 4
+          'avaritia-mercatura-1': 2, // 1 g/s × 2 = 2
           ghost: 99, // unknown id — ignored
         },
       },
     };
-    expect(businessGoldPerSecond(owned)).toBe(7);
+    expect(businessGoldPerSecond(owned)).toBe(5);
   });
 });
 
 describe('tick — business reprobate generation', () => {
   it('owned business contributes to the generation pool and produces unconverted reprobates', () => {
-    // 10 × gula-mercatura-1 → 0.10 reprobate gen/s. Over 12 s = 1.2 → 1 birth, pool 0.2 residual.
+    // 1 × gula-mercatura-1 → 1 reprobate gen/s. Over 1.2 s = 1.2 → 1 birth, pool 0.2 residual.
     const s = fresh();
     const owned: GameState = {
       ...s,
-      lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 10 } },
+      lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 1 } },
     };
-    expect(businessGenerationPerSecond(owned)).toBeCloseTo(0.1, 6);
-    const after = tick(owned, 12).state;
+    expect(businessGenerationPerSecond(owned)).toBe(1);
+    const after = tick(owned, 1.2).state;
     // Unconverted reprobate count goes up; possibly minus suicide / conversion, but with 1
     // population and 0.023% suicide rate over 12 s the suicide pool is tiny (1×0.00023×12 =
     // 0.00276) — far below 1. Conversion needs > 1 unconverted to fire and it consumes from
@@ -254,8 +254,9 @@ describe('tick — business reprobate generation', () => {
 
 describe('tick — Vitium-driven conversion via biasedSubtype', () => {
   it('owned business drains the conversion pool and biases the conversion toward its subtype', () => {
-    // Set up: 100 unconverted reprobates AND 10 gula-mercatura-1 businesses (0.20 conv/s).
-    // Over 50 s: pool = 10.0 → 10 conversions. With 0.85 glutton bias the bulk go to gluttons.
+    // Set up: 100 unconverted reprobates AND 10 gula-mercatura-1 businesses (0.10 conv/s).
+    // Over 50 s: conversion pool ≈ 5 → ~5 attempts; ~85% land on Glutton. (Generation also adds
+    // unconverted reprobates over the window, but conversions draw from the plentiful pool.)
     const s = fresh();
     const seeded: GameState = {
       ...s,
@@ -265,13 +266,10 @@ describe('tick — Vitium-driven conversion via biasedSubtype', () => {
         businesses: { 'gula-mercatura-1': 10 },
       },
     };
-    expect(businessConversionPerSecond(seeded)).toBeCloseTo(0.2, 6);
+    expect(businessConversionPerSecond(seeded)).toBeCloseTo(0.1, 6);
     const after = tick(seeded, 50).state;
-    // Across the 50 s some suicides happen (100 × 0.00023 × 50 = 1.15 → 1 suicide).
-    // Net non-Glutton population: ~ 100 - 10 conversions - 1 suicide = ~89 unconverted.
-    expect(after.lifetime.reprobates.glutton).toBeGreaterThanOrEqual(7);
-    expect(after.lifetime.reprobates.glutton).toBeLessThanOrEqual(10);
-    expect(after.lifetime.reprobates.reprobate).toBeLessThan(100);
+    expect(after.lifetime.reprobates.glutton).toBeGreaterThanOrEqual(2);
+    expect(after.lifetime.reprobates.glutton).toBeLessThanOrEqual(6);
   });
 
   it('biasedSubtype with no active business falls back to "reprobate" (no conversion)', () => {
@@ -301,16 +299,16 @@ describe('tick — Vitium-driven conversion via biasedSubtype', () => {
 
 describe('Katabasis — Vitium Mercatura auto-shutdown', () => {
   it('owned businesses auto-shutdown into the gold pool before the remaining-gold roll', () => {
-    // Setup: 4 owned gula-mercatura-1 = 200 gold refund. Plus 100 gold on hand = 300 at descent.
-    // No Avaritia → remaining-gold fraction is the base 0.05 → 15 gold kept.
+    // Setup: 4 owned gula-mercatura-1 = floor(1000*0.25)*4 = 1000 gold refund. Plus 100 on hand
+    // = 1100 at descent. No Avaritia → remaining-gold fraction is the base 0.05 → 55 gold kept.
     const s = withSinLevel(withGold(fresh(), 100), 'gula', 1);
     const state: GameState = {
       ...s,
       lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 4 } },
     };
     const { state: after, recap } = commitKatabasis(state);
-    expect(recap.goldKept.toNumber()).toBe(15);
-    expect(after.lifetime.gold.toNumber()).toBe(15);
+    expect(recap.goldKept.toNumber()).toBe(55);
+    expect(after.lifetime.gold.toNumber()).toBe(55);
     // All Vitium state cleared on rebirth.
     expect(Object.keys(after.lifetime.businesses)).toHaveLength(0);
     expect(after.lifetime.buildQueue).toHaveLength(0);
@@ -318,14 +316,14 @@ describe('Katabasis — Vitium Mercatura auto-shutdown', () => {
   });
 
   it('in-flight builds fizzle on Katabasis (no refund — they had not completed)', () => {
-    const s = withSinLevel(withGold(fresh(), 200), 'gula', 1);
+    const s = withSinLevel(withGold(fresh(), 2000), 'gula', 1);
     const built = startBuild(s, 'gula-mercatura-1');
     if (!built.ok) throw new Error('start should succeed');
-    // 100 gold paid; 100 gold left on hand. Build in flight (not yet completed).
+    // 1000 gold paid; 1000 gold left on hand. Build in flight (not yet completed).
     const { state: after, recap } = commitKatabasis(built.state);
-    // Only the 100 on hand carries — the 100 paid for the unfinished build is forfeit.
-    // Remaining-gold % is base 0.05 → 5 kept.
-    expect(recap.goldKept.toNumber()).toBe(5);
+    // Only the 1000 on hand carries — the 1000 paid for the unfinished build is forfeit.
+    // Remaining-gold % is base 0.05 → 50 kept.
+    expect(recap.goldKept.toNumber()).toBe(50);
     expect(after.lifetime.businesses).toEqual({});
     expect(after.lifetime.buildQueue).toEqual([]);
   });
@@ -345,9 +343,9 @@ describe('Modifiers — vitiumMercaturaOutputMul defaults to 1', () => {
     };
     const mods = computeModifiers(owned);
     const rates = reprobateRates(owned, mods);
-    // 1 × gula gen 0.01; conversion 0.02. Multiplier defaults to 1.
-    expect(rates.generationPerSecond).toBeCloseTo(0.01, 6);
-    expect(rates.conversionPerSecond).toBeCloseTo(0.02, 6);
+    // 1 × gula gen 1; conversion 0.01. Multiplier defaults to 1.
+    expect(rates.generationPerSecond).toBeCloseTo(1, 6);
+    expect(rates.conversionPerSecond).toBeCloseTo(0.01, 6);
   });
 });
 

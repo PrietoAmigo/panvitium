@@ -64,7 +64,7 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
   bacchanal: {
     id: 'bacchanal',
     sins: ['gula', 'luxuria'],
-    minLevel: 2,
+    minLevel: 1,
     costPerSecond: { gold: 50 },
     generationPerSecond: 0.05,
     conversionPerSecond: 0.04,
@@ -73,7 +73,7 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
   'loan-shark-op': {
     id: 'loan-shark-op',
     sins: ['avaritia', 'ira'],
-    minLevel: 2,
+    minLevel: 1,
     costPerSecond: { influence: 20 },
     goldPerSecond: 8,
     conversionPerSecond: 0.04,
@@ -82,7 +82,7 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
   charity: {
     id: 'charity',
     sins: ['avaritia', 'vanagloria'],
-    minLevel: 2,
+    minLevel: 1,
     costPerSecond: { influence: 30 },
     goldPerSecond: 15,
     conversionPerSecond: 0.04,
@@ -91,7 +91,7 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
   gala: {
     id: 'gala',
     sins: ['superbia', 'vanagloria'],
-    minLevel: 2,
+    minLevel: 1,
     costPerSecond: { gold: 100 },
     influencePerSecond: 5,
     conversionPerSecond: 0.04,

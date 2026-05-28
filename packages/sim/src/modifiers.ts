@@ -30,8 +30,9 @@
  */
 import { type GameState } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
-import { type TierModifiers } from './probability.js';
+import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies } from './maleficia.js';
+import { sigilModifierContributions, type ScalarModifierField } from './sigils.js';
 
 export interface Modifiers {
   /** Multiplier on the base gold-per-second rate. */
@@ -142,53 +143,64 @@ export function computeModifiers(state: GameState): Modifiers {
   const PANV_SUICIDE_MUL = 20;
   const PANV_MURDER_MUL = 20;
 
-  // Build tier-weight muls as accumulating products; missing keys mean 1 in `applyTierModifiers`.
-  // Under exactOptionalPropertyTypes we never assign `undefined`, so we assign only when ≠ 1.
+  // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
+  // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
+  // just fold the aggregated contributions in. `sc(f)` is the sigil multiplier for field f (1 if none).
+  const sig = sigilModifierContributions(state);
+  const sc = (f: ScalarModifierField): number => sig.scalar[f] ?? 1;
+
+  // Tier weights: accumulate per-tier products from every source, then apply locks LAST. Missing
+  // keys mean 1 in `applyTierModifiers`; under exactOptionalPropertyTypes we assign only when ≠ 1.
+  const tierAcc: Partial<Record<Tier, number>> = {};
+  const bumpTier = (t: Tier, mul: number): void => {
+    tierAcc[t] = (tierAcc[t] ?? 1) * mul;
+  };
+  if (gulaIntensity > 0) bumpTier('terrible', 1 / (1 + gulaIntensity)); // Insatiability damps
+  if (superbiaIntensity > 0) bumpTier('stellar', skillBonus(superbiaIntensity)); // Morning Star
+  if (behemothCount > 0) bumpTier('stellar', 1 + 0.5 * behemothCount); // each Behemoth +50%
+  if (gulaIntensity > 0) bumpTier('apocalyptic', 1 / (1 + gulaIntensity)); // Insatiability damps
+  if (hasMidas) bumpTier('apocalyptic', 100); // Midas hundredfold
+  for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Gusion #11, Foras #31, …
   const tierWeightMul: TierModifiers = {};
-  // Worst tiers: Insatiability (Gula) damps; nothing else touches `terrible` this slice.
-  if (gulaIntensity > 0) {
-    tierWeightMul.terrible = 1 / (1 + gulaIntensity);
-  }
-  // Stellar: Morning Star (Superbia skill) lifts it; each Behemoth lifts +50% on top.
-  let stellar = 1;
-  if (superbiaIntensity > 0) stellar *= skillBonus(superbiaIntensity);
-  if (behemothCount > 0) stellar *= 1 + 0.5 * behemothCount;
-  if (stellar !== 1) tierWeightMul.stellar = stellar;
-  // Apocalyptic: Insatiability damps; Midas multiplies ×100; Mark of Cain LOCKS to 0 last (wins).
-  let apocalyptic = 1;
-  if (gulaIntensity > 0) apocalyptic *= 1 / (1 + gulaIntensity);
-  if (hasMidas) apocalyptic *= 100;
-  if (apocalyptic !== 1) tierWeightMul.apocalyptic = apocalyptic;
+  for (const [t, mul] of Object.entries(tierAcc)) if (mul !== 1) tierWeightMul[t as Tier] = mul;
   if (hasMarkOfCain) {
     // Anathema lock: the sevenfold guarantee zeroes the worst draw outright — overrides all above.
     tierWeightMul.apocalyptic = 0;
   }
 
   return {
-    goldRateMul: skillBonus(avaritiaIntensity) * (hasSilver ? 3 : 1) * (hasMidas ? 3 : 1),
+    goldRateMul:
+      skillBonus(avaritiaIntensity) * (hasSilver ? 3 : 1) * (hasMidas ? 3 : 1) * sc('goldRateMul'),
     influenceRateMul:
-      1.5 ** vanagloriaLvl * (hasCodex ? 3 : 1) * 1.25 ** famaCount * (hasDoppel ? 0.5 : 1),
-    maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1),
-    playerEfficiencyMul: 2 ** gulaLvl * (hasDoppel ? 1.5 : 1),
-    suasioEfficiencyMul: skillBonus(tristitiaIntensity),
-    decimatioEfficiencyMul: skillBonus(iraIntensity),
+      1.5 ** vanagloriaLvl *
+      (hasCodex ? 3 : 1) *
+      1.25 ** famaCount *
+      (hasDoppel ? 0.5 : 1) *
+      sc('influenceRateMul'),
+    maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul'),
+    playerEfficiencyMul: 2 ** gulaLvl * (hasDoppel ? 1.5 : 1) * sc('playerEfficiencyMul'),
+    suasioEfficiencyMul: skillBonus(tristitiaIntensity) * sc('suasioEfficiencyMul'),
+    decimatioEfficiencyMul: skillBonus(iraIntensity) * sc('decimatioEfficiencyMul'),
     tierWeightMul,
-    // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies the total.
-    reprobateGenerationRateMul: panvitiumActive ? PANV_GEN_MUL : 1,
+    // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; sigils (Aamon
+    // #7 up, Zepar #16 down) compose multiplicatively.
+    reprobateGenerationRateMul:
+      (panvitiumActive ? PANV_GEN_MUL : 1) * sc('reprobateGenerationRateMul'),
     // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
-    // Panvitium multiplies the lot while active (03 §2.3 "suiciding … rates are enormous").
+    // Panvitium multiplies while active; Crocell #49 sigil composes.
     reprobateSuicideRateMul:
       skillBonus(tristitiaIntensity) *
       2 ** tristitiaLvl *
       (1 + 0.05 * nightmareCount) *
-      (panvitiumActive ? PANV_SUICIDE_MUL : 1),
-    // Murder: each Harpy lifts ×1.1; Panvitium multiplies while active ("killing rates enormous").
-    cholericMurderRateMul: 1.1 ** harpyCount * (panvitiumActive ? PANV_MURDER_MUL : 1),
-    // Vitium Mercatura output: 1× until Plutus (invocations slice) and Vapula #60 (sigils slice).
-    vitiumMercaturaOutputMul: 1,
-    // Acolyte efficiency: 0.33 baseline (02 §10). Future sources fold in multiplicatively; this
-    // slice has no source attached so it stays at the baseline.
-    acolyteEfficiencyMul: 0.33,
+      (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
+      sc('reprobateSuicideRateMul'),
+    // Murder: each Harpy lifts ×1.1; Panvitium multiplies while active; Aim #23 sigil composes.
+    cholericMurderRateMul:
+      1.1 ** harpyCount * (panvitiumActive ? PANV_MURDER_MUL : 1) * sc('cholericMurderRateMul'),
+    // Vitium Mercatura output: Vapula #60 sigil lifts it (Plutus invocation will too, later).
+    vitiumMercaturaOutputMul: sc('vitiumMercaturaOutputMul'),
+    // Acolyte efficiency: 0.33 baseline (02 §10); Bathin #18 sigil composes on top.
+    acolyteEfficiencyMul: 0.33 * sc('acolyteEfficiencyMul'),
   };
 }
 

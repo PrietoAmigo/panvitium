@@ -184,7 +184,7 @@ describe('modifier integration', () => {
 
 describe('modifier integration — per-category efficiency', () => {
   it('Leviathan (Resignation) scales Suggestion cost but not Caedis', () => {
-    // Tristitia 180 → suasioEffMul ≈ 5.1253. Suggestion influence cost = ceil(5 × 5.1253) = 26.
+    // Tristitia 180 → suasioEffMul ≈ 1.4125. Suggestion influence cost = ceil(5 × 1.4125) = 8.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -193,7 +193,7 @@ describe('modifier integration — per-category efficiency', () => {
     };
     const r1 = startAction(state, 'suggestion');
     expect(r1.ok).toBe(true);
-    if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(74); // 100 − 26
+    if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(92); // 100 − 8
 
     // Caedis on the same state pays base 100 gold (no Decimatio boost in play).
     const r2 = startAction(state, 'caedis');
@@ -202,7 +202,7 @@ describe('modifier integration — per-category efficiency', () => {
   });
 
   it('Satan (Retribution) scales Caedis cost but not Suggestion', () => {
-    // Ira 180 → decimatioEffMul ≈ 5.1253. Caedis gold cost = ceil(100 × 5.1253) = 513.
+    // Ira 180 → decimatioEffMul ≈ 1.4125. Caedis gold cost = ceil(100 × 1.4125) = 142.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -211,7 +211,7 @@ describe('modifier integration — per-category efficiency', () => {
     };
     const r1 = startAction(state, 'caedis');
     expect(r1.ok).toBe(true);
-    if (r1.ok) expect(floor(r1.state.lifetime.gold).toNumber()).toBe(487); // 1000 − 513
+    if (r1.ok) expect(floor(r1.state.lifetime.gold).toNumber()).toBe(858); // 1000 − 142
 
     const r2 = startAction(state, 'suggestion');
     expect(r2.ok).toBe(true);

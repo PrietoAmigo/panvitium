@@ -59,9 +59,9 @@ export interface ActionDef {
 const SUGGESTION_WEIGHTS: TierWeights = {
   stellar: 0.001,
   excellent: 0.149,
-  good: 0.5,
-  neutral: 0.2,
-  bad: 0.125,
+  good: 0.6,
+  neutral: 0.15,
+  bad: 0.075,
   terrible: 0.025,
   apocalyptic: 0,
 };
@@ -69,33 +69,34 @@ const SUGGESTION_WEIGHTS: TierWeights = {
 const CAEDIS_WEIGHTS: TierWeights = {
   stellar: 0.01,
   excellent: 0.04,
-  good: 0.5,
-  neutral: 0.25,
-  bad: 0.15,
-  terrible: 0.04,
+  good: 0.66,
+  neutral: 0.15,
+  bad: 0.1,
+  terrible: 0.03,
   apocalyptic: 0.01,
 };
 
 /** Indagatio (03 §2.5): mostly Good/Neutral; Stellar surfaces a profane+, Excellent a rare. */
 const INDAGATIO_WEIGHTS: TierWeights = {
-  stellar: 0.005,
-  excellent: 0.05,
-  good: 0.4,
-  neutral: 0.4,
-  bad: 0.1,
-  terrible: 0.04,
+  stellar: 0.001,
+  excellent: 0.049,
+  good: 0.2,
+  neutral: 0.5,
+  bad: 0.2,
+  terrible: 0.045,
   apocalyptic: 0.005,
 };
 
-/** Emptio (03 §2.6): biased toward success since you've already committed the gold. */
+/** Emptio (03 §2.6): biased toward success since you've already committed the gold. Good/Bad are 0
+ * in the current spreadsheet distribution — every non-failure outcome resolves the purchase. */
 const EMPTIO_WEIGHTS: TierWeights = {
-  stellar: 0.02,
-  excellent: 0.08,
-  good: 0.6,
-  neutral: 0.2,
-  bad: 0.06,
-  terrible: 0.03,
-  apocalyptic: 0.01,
+  stellar: 0.01,
+  excellent: 0.04,
+  good: 0,
+  neutral: 0.9,
+  bad: 0,
+  terrible: 0.049,
+  apocalyptic: 0.001,
 };
 
 /**
@@ -107,7 +108,7 @@ export const ACTIONS: Record<string, ActionDef> = {
   suggestion: {
     id: 'suggestion',
     category: 'suasio',
-    baseTimeSeconds: 10,
+    baseTimeSeconds: 5,
     cost: { influence: 5 },
     weights: SUGGESTION_WEIGHTS,
     efficiencyMode: 'cost-outcome',
@@ -123,7 +124,7 @@ export const ACTIONS: Record<string, ActionDef> = {
   indagatio: {
     id: 'indagatio',
     category: 'indagatio',
-    baseTimeSeconds: 1800,
+    baseTimeSeconds: 300,
     cost: {},
     weights: INDAGATIO_WEIGHTS,
     efficiencyMode: 'time',
@@ -131,7 +132,7 @@ export const ACTIONS: Record<string, ActionDef> = {
   emptio: {
     id: 'emptio',
     category: 'emptio',
-    baseTimeSeconds: 600,
+    baseTimeSeconds: 60,
     cost: {}, // per-target — startEmptio reads the maleficium's cost dynamically.
     weights: EMPTIO_WEIGHTS,
     efficiencyMode: 'time',

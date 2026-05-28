@@ -191,6 +191,17 @@ export interface GameState {
    * Additive-optional on the wire; old saves default it to their `lastTickAt` (runtime starts now).
    */
   startedAt: number;
+  /**
+   * Ids of achievements unlocked so far (03 §7). Permanent, carried across lifetimes; an unlock is
+   * one-way. Additive-optional on the wire (ADR-023); old saves default to an empty list and
+   * re-evaluate against current state on the next tick.
+   */
+  achievements: string[];
+  /**
+   * Number of Katabases completed. Permanent. Used by the "First Descent" achievement and as light
+   * telemetry. Additive-optional; defaults to 0.
+   */
+  katabasisCount: number;
 }
 
 function zeroReprobates(): Record<ReprobateSubtype, number> {
@@ -239,6 +250,8 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
     rngState: hashSeed(seed),
     lastTickAt: now,
     startedAt: now,
+    achievements: [],
+    katabasisCount: 0,
   };
 }
 

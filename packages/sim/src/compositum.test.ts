@@ -46,7 +46,7 @@ function withSin(s: GameState, sin: Sin, level: number): GameState {
   return { ...s, devotion: { ...s.devotion, [sin]: bn(180 ** level) } };
 }
 
-/** Meet the gate for a two-Sin VC at level 2. */
+/** Meet the gate for a two-Sin VC at its minLevel. */
 function unlock(s: GameState, def = COMPOSITA.bacchanal!): GameState {
   let out = s;
   for (const sin of def.sins) out = withSin(out, sin, def.minLevel);
@@ -65,10 +65,10 @@ describe('Vitium Compositum — catalog', () => {
     expect(COMPOSITUM_IDS).toEqual(['bacchanal', 'loan-shark-op', 'charity', 'gala', 'panvitium']);
   });
 
-  it('the two-Sin ceremonies are minLevel 2 over two Sins', () => {
+  it('the two-Sin ceremonies are minLevel 1 over two Sins', () => {
     for (const id of ['bacchanal', 'loan-shark-op', 'charity', 'gala']) {
       const def = compositumById(id)!;
-      expect(def.minLevel).toBe(2);
+      expect(def.minLevel).toBe(1);
       expect(def.sins.length).toBe(2);
     }
   });
@@ -105,7 +105,7 @@ describe('activateToggle / deactivateToggle', () => {
   it('rejects activation when the Sin gates are not met', () => {
     const r = activateToggle(fresh(), 'bacchanal');
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toMatch(/gula 2 \+ luxuria 2/);
+    if (!r.ok) expect(r.reason).toMatch(/gula 1 \+ luxuria 1/);
   });
 
   it('activates when both gates are met, adding to activeToggles', () => {

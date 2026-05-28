@@ -294,7 +294,7 @@ describe('builds + acolytes — both run in parallel without touching the player
     s = {
       ...s,
       devotion: { ...s.devotion, gula: bn(180) },
-      lifetime: { ...s.lifetime, gold: bn(500) },
+      lifetime: { ...s.lifetime, gold: bn(2000) },
     };
     const built = startBuild(s, 'gula-mercatura-1');
     if (!built.ok) throw new Error('build failed');

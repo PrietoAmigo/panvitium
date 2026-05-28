@@ -32,12 +32,12 @@ describe('sinLevel', () => {
 });
 
 describe('skillIntensity', () => {
-  it('is 0 for no Devotion and matches the spreadsheet sample table (ln(x)^2 / 6.537)', () => {
+  it('is 0 for no Devotion and matches the spreadsheet sample table (ln(x)^2 / 65.37)', () => {
     expect(skillIntensity(bn(0))).toBe(0);
     expect(skillIntensity(bn(1))).toBe(0); // ln(1) = 0
-    expect(skillIntensity(bn(10))).toBeCloseTo(0.8111, 3);
-    expect(skillIntensity(bn(180))).toBeCloseTo(4.1253, 3);
-    expect(skillIntensity(bn(1049760000))).toBeCloseTo(66.004, 2);
+    expect(skillIntensity(bn(10))).toBeCloseTo(0.08111, 4);
+    expect(skillIntensity(bn(180))).toBeCloseTo(0.41253, 4);
+    expect(skillIntensity(bn(1049760000))).toBeCloseTo(6.6004, 3);
   });
 
   it('increases monotonically with Devotion', () => {
