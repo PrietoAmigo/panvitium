@@ -81,10 +81,21 @@ export interface BuildTimer {
   remainingSeconds: number;
 }
 
-/** An acolyte and the action it is currently delegated to, if any. */
+/**
+ * An acolyte and the action it is currently delegated to (02 §10). When `assignedAction` is null
+ * the acolyte is idle. When set, the acolyte runs the action in its own autonomous channel; the
+ * tick decrements `remainingSeconds` and, on reaching 0, resolves the action and immediately
+ * starts the next cycle (delegation loops until the player un-assigns).
+ *
+ * `remainingSeconds` is additive-optional on the wire (per ADR-023): a save predating acolyte
+ * timers loads with the timer at null, and a freshly-assigned acolyte initialises it from the
+ * action's catalog duration divided by the acolyte's efficiency.
+ */
 export interface Acolyte {
   readonly id: number;
   assignedAction: string | null;
+  /** Seconds left in the current cycle; null when idle or between cycles waiting on resources. */
+  remainingSeconds: number | null;
 }
 
 /** State scoped to a single lifetime — reset (mostly) on Katabasis. */

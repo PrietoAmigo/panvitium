@@ -14,6 +14,8 @@ import {
   startAction,
   startBuild,
   shutdownBusiness,
+  assignAcolyteToAction,
+  unassignAcolyteFromAction,
   isSignatureTier,
   unbindAllSigils,
   offerDevotion,
@@ -64,6 +66,13 @@ interface GameStore {
    * 50% of the buildCost into gold and decrements the owned count by one.
    */
   shutdown: (businessId: string) => void;
+  /**
+   * Assign one idle acolyte to a delegatable action (02 §10). Notice on failure (e.g. all
+   * acolytes busy, or the action is not delegatable yet — Indagatio only in this slice).
+   */
+  assignAcolyte: (actionId: string) => void;
+  /** Remove one acolyte from a delegated action (LIFO — most-recently-assigned first). */
+  unassignAcolyte: (actionId: string) => void;
   /** Open the Katabasis menu (returns any bound souls to the pool first, 02 §5). */
   beginKatabasis: () => void;
   /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
@@ -137,6 +146,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     const result = shutdownBusiness(current, businessId);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  assignAcolyte: (actionId) => {
+    const current = get().state;
+    if (!current) return;
+    const result = assignAcolyteToAction(current, actionId);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  unassignAcolyte: (actionId) => {
+    const current = get().state;
+    if (!current) return;
+    const result = unassignAcolyteFromAction(current, actionId);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },

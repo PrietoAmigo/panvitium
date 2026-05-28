@@ -71,6 +71,14 @@ export interface Modifiers {
    * output), and analogous. Currently 1× — businesses contribute at catalog values.
    */
   readonly vitiumMercaturaOutputMul: number;
+  /**
+   * Per-acolyte action efficiency (02 §10). Default 0.33: an acolyte runs an action at one-third
+   * of the player's own efficiency. Future sources fold in multiplicatively: Bathin #18, Satan
+   * level (each +33%), other acolyte-tagged sigils. Read by the acolyte tick when starting a new
+   * cycle (timer duration = baseTime / acolyteEff in time mode; cost/outcome scale in cost-outcome
+   * mode, deferred to a later slice).
+   */
+  readonly acolyteEfficiencyMul: number;
 }
 
 /** No sources active — every multiplier is 1; tier shifts are absent (all default 1). */
@@ -86,6 +94,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   reprobateSuicideRateMul: 1,
   cholericMurderRateMul: 1,
   vitiumMercaturaOutputMul: 1,
+  acolyteEfficiencyMul: 0.33,
 };
 
 /** Default skill→effect coupling for a skill that "increases X": X *= (1 + intensity). */
@@ -149,6 +158,9 @@ export function computeModifiers(state: GameState): Modifiers {
     cholericMurderRateMul: 1,
     // Vitium Mercatura output: 1× until Plutus (invocations slice) and Vapula #60 (sigils slice).
     vitiumMercaturaOutputMul: 1,
+    // Acolyte efficiency: 0.33 baseline (02 §10). Future sources fold in multiplicatively; this
+    // slice has no source attached so it stays at the baseline.
+    acolyteEfficiencyMul: 0.33,
   };
 }
 

@@ -194,3 +194,38 @@ describe('gameStore — Vitium Mercatura (build/shutdown)', () => {
     expect(store().notice).toBeTruthy();
   });
 });
+
+describe('gameStore — acolyte delegation', () => {
+  it('the first tick auto-recruits one acolyte from a fresh game', () => {
+    expect(store().state?.lifetime.acolytes ?? []).toHaveLength(0);
+    store().advance(0.1);
+    expect(store().state?.lifetime.acolytes ?? []).toHaveLength(1);
+  });
+
+  it('assigns and unassigns Indagatio without occupying the player slot', () => {
+    store().advance(0.1); // recruit
+    store().assignAcolyte('indagatio');
+    const s = store().state as GameState;
+    expect(s.lifetime.acolytes[0]!.assignedAction).toBe('indagatio');
+    expect(s.lifetime.actionQueue).toHaveLength(0);
+    expect(store().notice).toBeNull();
+
+    store().unassignAcolyte('indagatio');
+    const after = store().state as GameState;
+    expect(after.lifetime.acolytes[0]!.assignedAction).toBeNull();
+    expect(after.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
+  });
+
+  it('refuses assignment when nothing delegatable is selected', () => {
+    store().advance(0.1); // recruit
+    store().assignAcolyte('caedis'); // not delegatable in this slice
+    expect(store().notice).toBeTruthy();
+  });
+
+  it('refuses assignment when all acolytes are busy', () => {
+    store().advance(0.1); // recruit (1 acolyte at base influence)
+    store().assignAcolyte('indagatio');
+    store().assignAcolyte('indagatio'); // no one left to assign
+    expect(store().notice).toMatch(/idle acolyte/i);
+  });
+});

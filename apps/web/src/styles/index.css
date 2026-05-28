@@ -1108,3 +1108,74 @@ body {
   color: var(--ash, #c8b48a);
   letter-spacing: 0.05em;
 }
+
+/* ── Acolyte delegation controls ────────────────────────────────────────── */
+.acolyte-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.5rem;
+}
+.acolyte-btn {
+  background: rgba(8, 8, 10, 0.5);
+  border: 1px solid rgba(196, 158, 74, 0.4);
+  color: var(--ash, #c8b48a);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.95rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.acolyte-btn:hover:not(:disabled) {
+  background: rgba(40, 16, 16, 0.55);
+  border-color: rgba(212, 72, 72, 0.5);
+  color: #e6c993;
+}
+.acolyte-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.acolyte-count {
+  font-family: var(--font-mono, monospace);
+  color: var(--candle);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  min-width: 2.2rem;
+  text-align: center;
+}
+.acolyte-count-sep {
+  color: var(--ash, #c8b48a);
+  margin: 0 0.05rem;
+  opacity: 0.6;
+}
+.acolyte-summary {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.acolyte-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0.55rem;
+  border-left: 2px solid rgba(196, 158, 74, 0.3);
+  background: rgba(8, 8, 10, 0.35);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+}
+.acolyte-summary-name {
+  color: var(--candle);
+  letter-spacing: 0.04em;
+}
+.acolyte-summary-time {
+  color: var(--ash, #c8b48a);
+  letter-spacing: 0.05em;
+}

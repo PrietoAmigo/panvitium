@@ -13,6 +13,8 @@ import {
   BUSINESS_IDS,
   businessById,
   SHUTDOWN_REFUND_FRACTION,
+  assignedCount,
+  isDelegatable,
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../rooms/rooms.js';
@@ -66,12 +68,15 @@ function ActionRow({
   cta,
   disabled,
   onAct,
+  delegation,
 }: {
   name: string;
   cost: string;
   cta: string;
   disabled: boolean;
   onAct: () => void;
+  /** Optional acolyte assignment controls, rendered between cost and CTA. */
+  delegation?: ReactNode;
 }): ReactElement {
   return (
     <div className="opera-action">
@@ -79,8 +84,55 @@ function ActionRow({
         <span className="opera-name">{name}</span>
         <span className="opera-cost">{cost}</span>
       </div>
+      {delegation}
       <button type="button" className="opera-btn" disabled={disabled} onClick={onAct}>
         {cta}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Acolyte assignment controls (02 §10). A pair of `-` / `+` buttons with the current assigned
+ * count between them. The `+` button disables when no idle acolyte is available; `-` disables
+ * when nothing is currently assigned to this action. The "ø / N" counter shows currently-assigned
+ * over available, so the player can see capacity at a glance.
+ */
+function AcolyteControls({ actionId }: { actionId: string }): ReactElement | null {
+  const state = useGameStore((s) => s.state);
+  const assignAcolyte = useGameStore((s) => s.assignAcolyte);
+  const unassignAcolyte = useGameStore((s) => s.unassignAcolyte);
+  if (!state || !isDelegatable(actionId)) return null;
+  const total = state.lifetime.acolytes.length;
+  if (total === 0) return null; // no acolytes yet — no controls
+  const assigned = assignedCount(state, actionId);
+  const idle = total - assigned;
+  return (
+    <div className="acolyte-controls" aria-label={strings.acolytes.delegationLabel}>
+      <button
+        type="button"
+        className="acolyte-btn"
+        disabled={assigned === 0}
+        onClick={() => unassignAcolyte(actionId)}
+        aria-label={strings.acolytes.unassign}
+        title={strings.acolytes.unassign}
+      >
+        −
+      </button>
+      <span className="acolyte-count" title={strings.acolytes.delegationLabel}>
+        {assigned}
+        <span className="acolyte-count-sep">/</span>
+        {total}
+      </span>
+      <button
+        type="button"
+        className="acolyte-btn"
+        disabled={idle === 0}
+        onClick={() => assignAcolyte(actionId)}
+        aria-label={strings.acolytes.assign}
+        title={strings.acolytes.assign}
+      >
+        +
       </button>
     </div>
   );
@@ -168,6 +220,33 @@ const PC_GROUPS: { id: PcGroupId; label: string }[] = [
   { id: 'logs', label: strings.opera.logs },
 ];
 
+/**
+ * Inline summary of acolytes delegated to a given action — shown beneath the action row so the
+ * player can see remaining cycle time per acolyte. A 5454-second Indagatio cycle is otherwise
+ * invisible until something resolves; this is the feedback channel for "yes, they're working."
+ */
+function AcolyteSummary({ actionId }: { actionId: string }): ReactElement | null {
+  const acolytes = useGameStore((s) => (s.state ? s.state.lifetime.acolytes : []));
+  const filtered = acolytes.filter((a) => a.assignedAction === actionId);
+  if (filtered.length === 0) return null;
+  return (
+    <ul className="acolyte-summary">
+      {filtered.map((a) => (
+        <li key={a.id} className="acolyte-summary-row">
+          <span className="acolyte-summary-name">
+            {strings.acolytes.acolyte} {a.id}
+          </span>
+          <span className="acolyte-summary-time">
+            {a.remainingSeconds === null
+              ? strings.acolytes.idle
+              : formatDuration(Math.max(0, Math.ceil(a.remainingSeconds)))}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Indagatio (03 §2.5): one long, no-cost search button. Duration scales with player efficiency. */
 function IndagatioGroup(): ReactElement {
   const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'indagatio') : 1));
@@ -185,7 +264,9 @@ function IndagatioGroup(): ReactElement {
         cta={strings.opera.indagatioCta}
         disabled={underway}
         onAct={() => act('indagatio')}
+        delegation={<AcolyteControls actionId="indagatio" />}
       />
+      <AcolyteSummary actionId="indagatio" />
       {underway && <p className="opera-hint">{strings.opera.underway}</p>}
       {notice !== null && <p className="opera-notice">{notice}</p>}
     </>

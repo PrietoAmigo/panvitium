@@ -13,6 +13,7 @@
  */
 import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
+import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceBuilds, businessGoldPerSecond } from './builds.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
@@ -103,6 +104,15 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   //    births / suicides / murders / conversions (02 §9). Each death mints 1 soul. The pools
   //    live on the lifetime state and persist across save/load (ADR-023 additive optional).
   working = applyReprobateDynamics(working, deltaSeconds, rng);
+
+  // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate, log10-scaled
+  //    on effective maxInfluence). Then advance each assigned acolyte's timer; completed cycles
+  //    resolve at the acolyte's efficiency and immediately start the next cycle. Acolyte events
+  //    fold into the same outcome stream as player events.
+  working = autoRecruitAcolytes(working);
+  const acoResult = advanceAcolytes(working, deltaSeconds, rng);
+  working = acoResult.state;
+  for (const ev of acoResult.events) events.push(ev);
 
   return {
     state: {

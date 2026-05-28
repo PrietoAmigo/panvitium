@@ -192,3 +192,48 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
     expect(back.lifetime.conversionPool).toBeCloseTo(0.42, 10);
   });
 });
+
+describe('Acolyte schema — additive-optional remainingSeconds', () => {
+  it('an old save where acolyte rows lack remainingSeconds loads with the timer at null', () => {
+    const fresh = createInitialState('seed', 0);
+    const serialized = serializeGameState(fresh);
+    // Inject a synthetic pre-timer acolyte row (no remainingSeconds field on the wire).
+    const lifetime = {
+      ...serialized.lifetime,
+      acolytes: [{ id: 1, assignedAction: null }],
+    };
+    const parsed = serializedGameStateSchema.safeParse({ ...serialized, lifetime });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const back = deserializeGameState(parsed.data);
+    expect(back.lifetime.acolytes).toHaveLength(1);
+    expect(back.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
+  });
+
+  it('a fresh save with no acolytes does not put remainingSeconds keys on the wire', () => {
+    const serialized = serializeGameState(createInitialState('seed', 0));
+    // No acolytes at all → array is empty → nothing to check on the entries themselves.
+    expect(serialized.lifetime.acolytes).toEqual([]);
+  });
+
+  it('an acolyte mid-cycle round-trips its timer exactly', () => {
+    const fresh = createInitialState('seed', 0);
+    const withTimer: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        acolytes: [
+          { id: 1, assignedAction: 'indagatio', remainingSeconds: 4321.5 },
+          { id: 2, assignedAction: null, remainingSeconds: null },
+        ],
+      },
+    };
+    const wire = serializeGameState(withTimer);
+    // Idle acolyte omits the timer key (additive-optional discipline).
+    expect('remainingSeconds' in wire.lifetime.acolytes[0]!).toBe(true);
+    expect('remainingSeconds' in wire.lifetime.acolytes[1]!).toBe(false);
+    const back = deserializeGameState(wire);
+    expect(back.lifetime.acolytes[0]!.remainingSeconds).toBe(4321.5);
+    expect(back.lifetime.acolytes[1]!.remainingSeconds).toBeNull();
+  });
+});

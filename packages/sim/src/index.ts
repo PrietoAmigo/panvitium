@@ -19,3 +19,4 @@ export * from './maleficia.js';
 export * from './dynamics.js';
 export * from './businesses.js';
 export * from './builds.js';
+export * from './acolytes.js';

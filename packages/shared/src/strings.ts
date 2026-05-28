@@ -67,6 +67,13 @@ export const strings = {
     'vanagloria-mercatura-1': 'Vanity Press',
     'superbia-mercatura-1': 'Solitary Spire',
   } as Record<string, string>,
+  acolytes: {
+    acolyte: 'Acolyte',
+    assign: 'Assign one more',
+    unassign: 'Recall one',
+    delegationLabel: 'Delegated acolytes',
+    idle: 'idle',
+  },
   maleficia: {
     intro:
       'What has been found, paid for, and brought home. Each item has its own price in attention.',

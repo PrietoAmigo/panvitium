@@ -34,6 +34,12 @@ function recordOf<K extends string, V extends z.ZodTypeAny>(
 const acolyteSchema = z.object({
   id: z.number().int(),
   assignedAction: z.string().nullable(),
+  /**
+   * Cycle timer for a delegated action (02 §10). Additive-optional per ADR-023: old saves
+   * without this field load with the timer at null (idle). Serialized only when non-null to
+   * keep the wire compact.
+   */
+  remainingSeconds: z.number().nullable().optional(),
 });
 
 const actionTimerSchema = z.object({
@@ -107,7 +113,13 @@ export function serializeGameState(state: GameState): SerializedGameState {
       influence: serializeBigNum(state.lifetime.influence),
       maxInfluence: serializeBigNum(state.lifetime.maxInfluence),
       reprobates,
-      acolytes: state.lifetime.acolytes.map((a) => ({ ...a })),
+      acolytes: state.lifetime.acolytes.map((a) => ({
+        id: a.id,
+        assignedAction: a.assignedAction,
+        // ADR-023: omit remainingSeconds when null so fresh-game wire matches the pre-acolyte
+        // form. When set, include it verbatim so a re-loaded save resumes mid-cycle.
+        ...(a.remainingSeconds === null ? {} : { remainingSeconds: a.remainingSeconds }),
+      })),
       invocations: { ...state.lifetime.invocations },
       maleficia: [...state.lifetime.maleficia],
       emptioList: [...state.lifetime.emptioList],
@@ -167,7 +179,11 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       influence: deserializeBigNum(s.lifetime.influence),
       maxInfluence: deserializeBigNum(s.lifetime.maxInfluence),
       reprobates,
-      acolytes: s.lifetime.acolytes.map((a) => ({ ...a })),
+      acolytes: s.lifetime.acolytes.map((a) => ({
+        id: a.id,
+        assignedAction: a.assignedAction,
+        remainingSeconds: a.remainingSeconds ?? null,
+      })),
       invocations: { ...s.lifetime.invocations },
       maleficia: [...s.lifetime.maleficia],
       emptioList: [...s.lifetime.emptioList],
