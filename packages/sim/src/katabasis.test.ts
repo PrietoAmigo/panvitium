@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { bn, eq, floor } from './bignum.js';
 import { createInitialState, totalReprobates, type GameState } from './state.js';
+import { tick } from './tick.js';
 import { sinLevel } from './progression.js';
 import {
   offerDevotion,
@@ -11,6 +12,7 @@ import {
   remainingUnconvertedFraction,
   remainingMaleficiaChance,
   commitKatabasis,
+  enterKatabasis,
 } from './katabasis.js';
 
 const fresh = (souls: number | string): GameState => ({
@@ -158,5 +160,99 @@ describe('commitKatabasis', () => {
     expect(recap.maleficiaKept.length + recap.maleficiaLost.length).toBe(5);
     expect(state.lifetime.maleficia).toEqual(recap.maleficiaKept);
     expect(state.rngState).not.toBe(s.rngState); // the rolls consumed the RNG
+  });
+});
+
+describe('enterKatabasis — teardown on descent (02 §6)', () => {
+  function loaded(): GameState {
+    const base = createInitialState('enter', 0);
+    return {
+      ...base,
+      souls: bn(5000),
+      lifetime: {
+        ...base.lifetime,
+        gold: bn(1000),
+        reprobates: { ...base.lifetime.reprobates, reprobate: 50 },
+        businesses: { 'gula-mercatura-1': 2 },
+        buildQueue: [{ businessId: 'ira-mercatura-1', remainingSeconds: 30 }],
+        activeToggles: ['bacchanal'],
+        toggleDurations: { bacchanal: 12 },
+        actionQueue: [{ actionId: 'caedis', remainingSeconds: 4 }],
+        invocations: { imp: 1 },
+        invocationRunners: { imp: 7 },
+        acolytes: [{ id: 1, assignedAction: 'caedis', remainingSeconds: 3 }],
+      },
+    };
+  }
+
+  it('shuts down businesses, folding the refund into gold, and clears the build queue', () => {
+    const before = loaded();
+    const after = enterKatabasis(before);
+    // 2 × floor(1000 × 0.25) = 500 refund folded into the 1000 gold held.
+    expect(after.lifetime.gold.toNumber()).toBe(1500);
+    expect(Object.keys(after.lifetime.businesses)).toHaveLength(0);
+    expect(after.lifetime.buildQueue).toHaveLength(0);
+  });
+
+  it('stops toggles, fizzles the action queue, and dispels invocations + their channels', () => {
+    const after = enterKatabasis(loaded());
+    expect(after.lifetime.activeToggles).toHaveLength(0);
+    expect(Object.keys(after.lifetime.toggleDurations)).toHaveLength(0);
+    expect(after.lifetime.actionQueue).toHaveLength(0);
+    expect(Object.keys(after.lifetime.invocations)).toHaveLength(0);
+    expect(Object.keys(after.lifetime.invocationRunners)).toHaveLength(0);
+  });
+
+  it('drops acolyte assignments but keeps the carry-over inputs (reprobates, maleficia) intact', () => {
+    const after = enterKatabasis(loaded());
+    expect(after.lifetime.acolytes[0]!.assignedAction).toBeNull();
+    expect(after.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
+    // Reprobates are NOT cleared here — the commit rolls them for carry-over.
+    expect(after.lifetime.reprobates.reprobate).toBe(50);
+    // Souls in the pool are untouched on entry.
+    expect(after.souls.toNumber()).toBe(5000);
+  });
+
+  it('does not double-refund: committing after entering rolls the already-folded gold once', () => {
+    const entered = enterKatabasis(loaded());
+    const { recap } = commitKatabasis(entered);
+    // Businesses already gone at entry → commit finds none to refund again. Gold kept is a fraction
+    // of the 1500 (post-refund) held, never of 1500 + another 500.
+    expect(recap.goldKept.toNumber()).toBeLessThanOrEqual(1500);
+  });
+});
+
+describe('tick — frozen while inKatabasis (02 §6)', () => {
+  function withReprobates(n: number): GameState {
+    const base = createInitialState('freeze', 0);
+    return {
+      ...base,
+      lifetime: { ...base.lifetime, reprobates: { ...base.lifetime.reprobates, reprobate: n } },
+    };
+  }
+
+  it('runs no simulation when inKatabasis — souls and reprobates are unchanged, even offline-sized', () => {
+    const frozen: GameState = { ...withReprobates(5000), inKatabasis: true };
+    const soulsBefore = frozen.souls.toNumber();
+    const r = tick(frozen, 3600); // an hour of would-be suicides
+    expect(r.state.souls.toNumber()).toBe(soulsBefore);
+    expect(totalReprobates(r.state)).toBe(5000);
+    expect(r.events).toHaveLength(0);
+    // The clock still advances so no spurious gap lingers for the next live tick.
+    expect(r.state.lastTickAt).toBe(frozen.lastTickAt + 3600 * 1000);
+  });
+
+  it('the same state simulates normally once the flag is cleared', () => {
+    const thawed = withReprobates(5000); // inKatabasis absent ⇒ false
+    const r = tick(thawed, 3600);
+    // With reprobates present, suicides mint souls over an hour — proves the freeze was the cause.
+    expect(r.state.souls.toNumber()).toBeGreaterThan(0);
+  });
+
+  it('enterKatabasis sets the flag and commitKatabasis clears it', () => {
+    const entered = enterKatabasis(createInitialState('flag', 0));
+    expect(entered.inKatabasis).toBe(true);
+    const { state } = commitKatabasis(entered);
+    expect(state.inKatabasis).toBe(false);
   });
 });

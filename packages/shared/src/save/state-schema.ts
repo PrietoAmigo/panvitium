@@ -60,6 +60,9 @@ const lifetimeSchema = z.object({
   reprobates: recordOf(REPROBATE_SUBTYPES, z.number().int().nonnegative()),
   acolytes: z.array(acolyteSchema),
   invocations: z.record(z.string(), z.number().int().nonnegative()),
+  // Autonomous-runner timers (Familiar's background Indagatio, 02 §3): invocation id -> remaining
+  // seconds. Additive-optional (ADR-023): absent in old saves → {} at runtime; omitted when empty.
+  invocationRunners: z.record(z.string(), z.number().nonnegative()).optional(),
   maleficia: z.array(z.string()),
   emptioList: z.array(z.string()),
   activeToggles: z.array(z.string()),
@@ -98,6 +101,8 @@ export const serializedGameStateSchema = z.object({
   achievements: z.array(z.string()).optional(),
   // Completed-Katabasis counter. Additive-optional; old saves default to 0.
   katabasisCount: z.number().int().nonnegative().optional(),
+  // True while mid-descent (menu open, lifetime frozen). Additive-optional; defaults to false.
+  inKatabasis: z.boolean().optional(),
 });
 
 /** The JSON-safe form of GameState. */
@@ -137,6 +142,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
         ...(a.remainingSeconds === null ? {} : { remainingSeconds: a.remainingSeconds }),
       })),
       invocations: { ...state.lifetime.invocations },
+      ...(Object.keys(state.lifetime.invocationRunners).length > 0
+        ? { invocationRunners: { ...state.lifetime.invocationRunners } }
+        : {}),
       maleficia: [...state.lifetime.maleficia],
       emptioList: [...state.lifetime.emptioList],
       activeToggles: [...state.lifetime.activeToggles],
@@ -177,6 +185,7 @@ export function serializeGameState(state: GameState): SerializedGameState {
     // Omit when empty/zero so fresh and pre-achievements saves keep the prior wire form.
     ...(state.achievements.length > 0 ? { achievements: [...state.achievements] } : {}),
     ...(state.katabasisCount > 0 ? { katabasisCount: state.katabasisCount } : {}),
+    ...(state.inKatabasis === true ? { inKatabasis: true } : {}),
   };
 }
 
@@ -212,6 +221,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
         remainingSeconds: a.remainingSeconds ?? null,
       })),
       invocations: { ...s.lifetime.invocations },
+      invocationRunners: { ...(s.lifetime.invocationRunners ?? {}) },
       maleficia: [...s.lifetime.maleficia],
       emptioList: [...s.lifetime.emptioList],
       activeToggles: [...s.lifetime.activeToggles],
@@ -241,5 +251,8 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     // Old saves predating achievements default to none / zero; the next tick re-evaluates.
     achievements: s.achievements ? [...s.achievements] : [],
     katabasisCount: s.katabasisCount ?? 0,
+    // Frozen-descent flag: present only when true (conditional spread keeps it optional). A save
+    // written mid-descent reloads frozen and the store re-opens the menu (see gameStore init).
+    ...(s.inKatabasis === true ? { inKatabasis: true } : {}),
   };
 }

@@ -276,6 +276,41 @@ describe('toggleDurations — ADR-023 additive-optional', () => {
   });
 });
 
+describe('invocationRunners — ADR-023 additive-optional', () => {
+  it('a save predating autonomous runners loads with an empty map', () => {
+    const fresh = createInitialState('seed', 0);
+    const serialized = serializeGameState(fresh);
+    const { invocationRunners, ...rest } = serialized.lifetime;
+    void invocationRunners;
+    const parsed = serializedGameStateSchema.safeParse({ ...serialized, lifetime: rest });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const back = deserializeGameState(parsed.data);
+    expect(back.lifetime.invocationRunners).toEqual({});
+  });
+
+  it('a fresh save omits invocationRunners from the wire', () => {
+    const serialized = serializeGameState(createInitialState('seed', 0));
+    expect('invocationRunners' in serialized.lifetime).toBe(false);
+  });
+
+  it('a Familiar mid-cycle round-trips its background-Indagatio timer', () => {
+    const fresh = createInitialState('seed', 0);
+    const live: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        invocations: { familiar: 1 },
+        invocationRunners: { familiar: 3120.5 },
+      },
+    };
+    const wire = serializeGameState(live);
+    expect(wire.lifetime.invocationRunners).toEqual({ familiar: 3120.5 });
+    const back = deserializeGameState(wire);
+    expect(back.lifetime.invocationRunners.familiar).toBe(3120.5);
+  });
+});
+
 describe('eternalDevotion + startedAt — ADR-023 additive-optional', () => {
   it('a pre-Eternal save without the fields loads with ZERO devotion and startedAt = lastTickAt', () => {
     const fresh = createInitialState('seed', 4_000);
@@ -344,5 +379,26 @@ describe('achievements + katabasisCount — ADR-023 additive-optional', () => {
     const back = deserializeGameState(serializeGameState(live));
     expect(back.achievements).toEqual(['first_harvest', 'semet']);
     expect(back.katabasisCount).toBe(3);
+  });
+});
+
+describe('inKatabasis — ADR-023 additive-optional freeze flag', () => {
+  it('a fresh / non-descent save omits the flag from the wire', () => {
+    const serialized = serializeGameState(createInitialState('seed', 5_000));
+    expect('inKatabasis' in serialized).toBe(false);
+  });
+
+  it('a save written mid-descent round-trips the flag as true', () => {
+    const fresh = createInitialState('seed', 5_000);
+    const mid: GameState = { ...fresh, inKatabasis: true };
+    const serialized = serializeGameState(mid);
+    expect(serialized.inKatabasis).toBe(true);
+    expect(deserializeGameState(serialized).inKatabasis).toBe(true);
+  });
+
+  it('an old save without the flag loads as not-in-Katabasis (absent ⇒ false)', () => {
+    const serialized = serializeGameState(createInitialState('seed', 5_000));
+    const back = deserializeGameState(serialized);
+    expect(back.inKatabasis).not.toBe(true);
   });
 });

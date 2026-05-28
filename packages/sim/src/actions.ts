@@ -14,7 +14,7 @@
 import { add, floor, gte, sub } from './bignum.js';
 import { type Rng } from './rng.js';
 import { type Tier, type TierWeights, applyTierModifiers, resolveTier } from './probability.js';
-import { categoryEfficiency, computeModifiers } from './modifiers.js';
+import { categoryEfficiency, categoryTierModifiers, computeModifiers } from './modifiers.js';
 import { sinLevel } from './progression.js';
 import {
   addReprobates,
@@ -253,12 +253,66 @@ export function startAction(
   return { ok: true, state: { ...state, lifetime } };
 }
 
+export interface CycleCost {
+  readonly gold: number;
+  readonly influence: number;
+}
+
+/**
+ * Per-cycle resource cost for a background runner of `actionId` at efficiency `eff`. Cost-outcome
+ * actions (Suasio/Decimatio) scale their cost by eff (ceil, matching `startAction`). Time-mode
+ * actions (Indagatio) have no per-cycle cost on the delegated path — Emptio's per-target gold is
+ * not a delegated route, so it is excluded here.
+ */
+export function actionCycleCost(actionId: string, eff: number): CycleCost {
+  const def = ACTIONS[actionId];
+  if (!def || def.efficiencyMode !== 'cost-outcome') return { gold: 0, influence: 0 };
+  return {
+    gold: Math.ceil((def.cost.gold ?? 0) * eff),
+    influence: Math.ceil((def.cost.influence ?? 0) * eff),
+  };
+}
+
+/** Whether the lifetime can afford a cycle cost (floored comparison — resources are naturals). */
+export function canAffordCycle(state: GameState, cost: CycleCost): boolean {
+  return (
+    gte(floor(state.lifetime.gold), cost.gold) &&
+    gte(floor(state.lifetime.influence), cost.influence)
+  );
+}
+
+/** Deduct a cycle cost from the lifetime resources. */
+export function payCycle(state: GameState, cost: CycleCost): GameState {
+  if (cost.gold === 0 && cost.influence === 0) return state;
+  return {
+    ...state,
+    lifetime: {
+      ...state.lifetime,
+      gold: sub(state.lifetime.gold, cost.gold),
+      influence: sub(state.lifetime.influence, cost.influence),
+    },
+  };
+}
+
+/**
+ * Fresh-cycle duration for a runner of `actionId` at efficiency `eff`. Time-mode divides the base
+ * by efficiency (floored at 1 s); cost-outcome leaves the base untouched (eff scales cost+outcome,
+ * not duration). Mirrors the duration logic in `startAction`.
+ */
+export function runnerCycleDuration(actionId: string, eff: number): number {
+  const def = ACTIONS[actionId];
+  if (!def) return Infinity;
+  return def.efficiencyMode === 'time' && eff > 0
+    ? Math.max(1, def.baseTimeSeconds / eff)
+    : def.baseTimeSeconds;
+}
+
 /** Draw the outcome tier for a completed action, apply its effect, and report what happened. */
 export function resolveAction(
   state: GameState,
   actionId: string,
   rng: Rng,
-  options: { target?: string; efficiency?: number } = {},
+  options: { target?: string; efficiency?: number; forcedTier?: Tier } = {},
 ): { state: GameState; event: OutcomeEvent | null } {
   const def = ACTIONS[actionId];
   if (!def) return { state, event: null };
@@ -273,7 +327,19 @@ export function resolveAction(
         : def.category === 'decimatio'
           ? mods.decimatioEfficiencyMul
           : 1);
-  const tier = resolveTier(applyTierModifiers(def.weights, mods.tierWeightMul), rng);
+  // A background runner may force a fixed outcome tier (the Imp's Caedis is always Good, 03 §2.4 —
+  // a passive entity must not randomly trigger an Apocalyptic that wipes the player unprompted).
+  // Otherwise: global tier multipliers (Sin skills, sigils, maleficia) THEN the per-category success
+  // shift (Resignation/Retribution/Lamia, 02 §2) — composed before renormalization in resolveTier.
+  const tier =
+    options.forcedTier ??
+    resolveTier(
+      applyTierModifiers(
+        applyTierModifiers(def.weights, mods.tierWeightMul),
+        categoryTierModifiers(state, def.category),
+      ),
+      rng,
+    );
 
   let next: GameState = state;
   let surfaced: string[] = [];

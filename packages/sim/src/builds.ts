@@ -33,11 +33,12 @@ export function startBuild(state: GameState, businessId: string): StartBuildResu
   const def = businessById(businessId);
   if (!def) return { ok: false, reason: `unknown business: ${businessId}` };
 
-  // Sin-level gate. Entry tier requires Level 1 of the matching Sin (03 §1, "Each level enables
-  // toggling Suasio actions unlocked in the previous level" — analogous for Vitium tiers).
+  // Sin-level gate. The spreadsheet's "Sin-lvl unlock" column is (tier − 1): the entry tier
+  // (level 1) unlocks at Sin level 0, tier 2 at level 1, tier 3 at level 2, tier 4 at level 3.
+  const required = def.level - 1;
   const haveLevel = sinLevel(state.devotion[def.sin]);
-  if (haveLevel < def.level) {
-    return { ok: false, reason: `requires ${def.sin} level ${def.level}` };
+  if (haveLevel < required) {
+    return { ok: false, reason: `requires ${def.sin} level ${required}` };
   }
 
   if (!gte(floor(state.lifetime.gold), def.buildCost)) {

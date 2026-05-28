@@ -15,6 +15,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   activeInvocationCount,
+  actionCycleCost,
+  advanceInvocationRunners,
   bn,
   commitKatabasis,
   computeModifiers,
@@ -27,6 +29,7 @@ import {
   invocationUnlocked,
   invocationVisible,
   invoke,
+  makeRng,
   NEUTRAL_MODIFIERS,
   type GameState,
   type Sin,
@@ -58,11 +61,18 @@ function withInvocation(s: GameState, id: string, count: number): GameState {
 describe('Invocation catalog', () => {
   it('exposes the wired subset', () => {
     expect(INVOCATION_IDS).toEqual([
+      'familiar',
+      'imp',
+      'upir',
       'fama',
       'nightmare',
       'harpy',
+      'lamia',
+      'lemure',
       'behemoth',
       'midas',
+      'plutus',
+      'succubus',
       'doppelgaenger',
     ]);
   });
@@ -222,5 +232,174 @@ describe('Katabasis dispels all invocations (02 §7)', () => {
     s = withInvocation(s, 'midas', 1);
     const { state } = commitKatabasis(s);
     expect(Object.keys(state.lifetime.invocations)).toHaveLength(0);
+  });
+
+  it('autonomous runners are cleared on rebirth too', () => {
+    const s = {
+      ...withInvocation(fresh(), 'familiar', 1),
+      lifetime: {
+        ...withInvocation(fresh(), 'familiar', 1).lifetime,
+        invocationRunners: { familiar: 1234 },
+      },
+    };
+    const { state } = commitKatabasis(s);
+    expect(Object.keys(state.lifetime.invocationRunners)).toHaveLength(0);
+  });
+});
+
+describe('Familiar — the hybrid (02 §3)', () => {
+  it('caps at 1, costs nothing, gates on invoking power only (no Sin)', () => {
+    const def = invocationById('familiar')!;
+    expect(def.maxActive).toBe(1);
+    expect(def.sin).toBeNull();
+    expect(def.autonomous).toEqual({ action: 'indagatio', efficiency: 0.05 });
+    expect(invocationSoulCost(fresh(), def).toNumber()).toBe(0);
+    expect(invocationUnlocked(withPower(fresh(), 3), def)).toBe(true);
+    expect(invocationUnlocked(withPower(fresh(), 2), def)).toBe(false);
+  });
+
+  it('lifts player efficiency by +33% while active', () => {
+    const base = computeModifiers(fresh()).playerEfficiencyMul;
+    const withFam = computeModifiers(withInvocation(fresh(), 'familiar', 1)).playerEfficiencyMul;
+    expect(withFam).toBeCloseTo(base * 1.33, 6);
+  });
+
+  it('runs Indagatio in its own channel without touching the player slot', () => {
+    const s = withInvocation(fresh(), 'familiar', 1);
+    const r = advanceInvocationRunners(s, 0.1, makeRng(1));
+    // A runner timer is lazily started; the player's action queue is untouched.
+    expect(r.state.lifetime.invocationRunners.familiar).toBeGreaterThan(0);
+    expect(r.state.lifetime.actionQueue).toHaveLength(0);
+  });
+
+  it('resolves Indagatio cycles at 5% of player efficiency over a large (offline) delta', () => {
+    const s = withInvocation(fresh(), 'familiar', 1);
+    // Cycle time = 300 / (0.05 × playerEff). playerEff = 1.33 (Familiar boost) → ~4511 s/cycle.
+    // A 24h delta should resolve ~19 cycles; assert it produced at least a handful of events.
+    const r = advanceInvocationRunners(s, 86_400, makeRng(7));
+    expect(r.events.length).toBeGreaterThanOrEqual(5);
+    expect(r.events.every((e) => e.actionId === 'indagatio')).toBe(true);
+    expect(r.state.lifetime.invocationRunners.familiar).toBeGreaterThan(0); // mid next cycle
+  });
+
+  it('drops the runner timer once the Familiar is dispelled', () => {
+    const s = {
+      ...fresh(),
+      lifetime: { ...fresh().lifetime, invocationRunners: { familiar: 1000 } },
+    };
+    // No active familiar → the stale timer is cleared on the next advance.
+    const r = advanceInvocationRunners(s, 0.1, makeRng(0));
+    expect(Object.keys(r.state.lifetime.invocationRunners)).toHaveLength(0);
+    expect(r.events).toHaveLength(0);
+  });
+});
+
+describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
+  const withGold = (s: GameState, v: number): GameState => ({
+    ...s,
+    lifetime: { ...s.lifetime, gold: bn(v) },
+  });
+  const withReprobates = (s: GameState, n: number): GameState => ({
+    ...s,
+    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: n } },
+  });
+  /** The Imp's per-cycle gold cost at its effective efficiency (0.05 × player efficiency). */
+  const impGold = (s: GameState): number =>
+    actionCycleCost('caedis', 0.05 * computeModifiers(s).playerEfficiencyMul).gold;
+
+  it('is gated on power 4 + Ira 1, caps at 1, and runs a Good-only Caedis channel', () => {
+    const def = invocationById('imp')!;
+    expect(def.sin).toBe('ira');
+    expect(def.invokingPower).toBe(4);
+    expect(def.sinLevel).toBe(1);
+    expect(def.maxActive).toBe(1);
+    expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
+    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
+  });
+
+  it('Upir is the Gula counterpart — power 3 + Gula 1, a single Good-only Caedis channel', () => {
+    const def = invocationById('upir')!;
+    expect(def.sin).toBe('gula');
+    expect(def.invokingPower).toBe(3);
+    expect(def.sinLevel).toBe(1);
+    expect(def.maxActive).toBe(1);
+    expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
+    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
+  });
+
+  it('Lamia is a stackable Luxuria modifier invocation — power 8 + Luxuria 2, no channel', () => {
+    const def = invocationById('lamia')!;
+    expect(def.sin).toBe('luxuria');
+    expect(def.invokingPower).toBe(8);
+    expect(def.sinLevel).toBe(2);
+    expect(def.maxActive).toBeUndefined(); // stackable
+    expect(def.autonomous).toBeUndefined(); // passive modifier, not a runner
+    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(25_000); // 25%
+  });
+
+  it('Plutus is a stackable Avaritia output booster — power 8 + Avaritia 2', () => {
+    const def = invocationById('plutus')!;
+    expect(def.sin).toBe('avaritia');
+    expect(def.invokingPower).toBe(8);
+    expect(def.sinLevel).toBe(2);
+    expect(def.maxActive).toBeUndefined(); // stackable
+    expect(def.autonomous).toBeUndefined();
+    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(25_000); // 25%
+  });
+
+  it('Succubus is the apex Luxuria — power 12 + Luxuria 3, capped at 1, free', () => {
+    const def = invocationById('succubus')!;
+    expect(def.sin).toBe('luxuria');
+    expect(def.invokingPower).toBe(12);
+    expect(def.sinLevel).toBe(3);
+    expect(def.maxActive).toBe(1);
+    expect(def.soulCost).toBeUndefined(); // free (apex)
+    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(0);
+  });
+
+  it('Lemure is a stackable Acedia influence source — power 7 + Acedia 1', () => {
+    const def = invocationById('lemure')!;
+    expect(def.sin).toBe('acedia');
+    expect(def.invokingPower).toBe(7);
+    expect(def.sinLevel).toBe(1);
+    expect(def.maxActive).toBeUndefined(); // stackable
+    expect(def.autonomous).toBeUndefined();
+    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
+  });
+
+  it('runs Decimatio in its own channel — pays gold, mints souls, leaves the player slot free', () => {
+    const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 1000), 100);
+    const cost = impGold(s);
+    const soulsBefore = s.souls.toNumber();
+    // 25 s ≈ 2 full 10 s cycles + a partial third (cost-outcome cycle = base 10 s).
+    const r = advanceInvocationRunners(s, 25, makeRng(3));
+    expect(r.events.length).toBeGreaterThanOrEqual(2);
+    expect(r.events.every((e) => e.actionId === 'caedis')).toBe(true);
+    expect(r.state.souls.toNumber()).toBe(soulsBefore + r.events.length); // 1 kill → 1 soul each
+    expect(r.state.lifetime.reprobates.reprobate).toBe(100 - r.events.length);
+    // Cost is paid at each cycle's START, so a paid-but-in-flight cycle means paid ≥ resolved.
+    const paid = 1000 - r.state.lifetime.gold.toNumber();
+    expect(paid % cost).toBe(0);
+    expect(paid).toBeGreaterThanOrEqual(r.events.length * cost);
+    expect(r.state.lifetime.actionQueue).toHaveLength(0);
+  });
+
+  it('Good-only: over many cycles gold drops by cost alone (never a gold-loss tier)', () => {
+    const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 1000), 1000);
+    const cost = impGold(s);
+    const soulsBefore = s.souls.toNumber();
+    const r = advanceInvocationRunners(s, 100, makeRng(9)); // 10 cycles of 10 s
+    expect(r.events).toHaveLength(10);
+    expect(r.state.lifetime.gold.toNumber()).toBe(1000 - 10 * cost); // pure cost, no Bad/Terrible
+    expect(r.state.souls.toNumber()).toBe(soulsBefore + 10);
+    expect(r.state.lifetime.reprobates.reprobate).toBe(990);
+  });
+
+  it('stalls when gold runs out — no key persisted, no further kills', () => {
+    const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 12), 1000);
+    const r = advanceInvocationRunners(s, 1000, makeRng(4)); // affords only 2 cycles (5 each)
+    expect(r.events).toHaveLength(2);
+    expect(r.state.lifetime.gold.toNumber()).toBe(2);
+    expect(r.state.lifetime.invocationRunners.imp).toBeUndefined(); // stalled ⇒ key omitted
   });
 });

@@ -9,12 +9,20 @@
  * Acolytes are not lost to outcomes (per the user's correction: no Bad-tier loss). They are
  * lost only at Katabasis, where the lifetime acolyte list is reset to empty (see `katabasis.ts`).
  *
- * This slice supports delegation of **Indagatio only**. Suasio / Decimatio (cost-outcome mode)
- * need per-cycle cost payment and fractional-outcome semantics — they land in a follow-up. The
- * `isDelegatable` predicate is the gate.
+ * Delegation covers Indagatio (time-mode, free) plus Suasio and Decimatio (cost-outcome): a
+ * cost-outcome channel pays `ceil(cost × efficiency)` each cycle and stalls when it can't afford
+ * one. The per-channel cycle logic lives in `runner.ts` (shared with invocation runners); the
+ * `isDelegatable` predicate is the gate on which actions may be assigned.
  */
-import { ACTIONS, resolveAction } from './actions.js';
+import {
+  ACTIONS,
+  actionCycleCost,
+  canAffordCycle,
+  payCycle,
+  runnerCycleDuration,
+} from './actions.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
+import { advanceRunnerCycles } from './runner.js';
 import { mul } from './bignum.js';
 import { BASE_MAX_INFLUENCE } from './constants.js';
 import { type Rng } from './rng.js';
@@ -56,9 +64,12 @@ export function autoRecruitAcolytes(state: GameState): GameState {
   };
 }
 
-/** Which actions can currently be delegated to acolytes (this slice: Indagatio only). */
+/**
+ * Which actions can currently be delegated to acolytes: Indagatio (time-mode), plus the two wired
+ * cost-outcome actions Suasio and Decimatio. Emptio is excluded — it needs a per-target maleficium.
+ */
 export function isDelegatable(actionId: string): boolean {
-  return actionId === 'indagatio';
+  return actionId === 'indagatio' || actionId === 'suggestion' || actionId === 'caedis';
 }
 
 export type AssignmentResult =
@@ -66,11 +77,12 @@ export type AssignmentResult =
   | { readonly ok: false; readonly reason: string };
 
 /**
- * Assign ONE idle acolyte (the lowest-id idle one) to `actionId`. Sets the acolyte's
- * `assignedAction` and initialises `remainingSeconds` to the action's duration scaled by the
- * acolyte's efficiency (time-mode: longer than the player's at 33%). The acolyte begins
- * ticking the next time the tick runs. Returns a failure if no acolyte is idle or the action
- * isn't delegatable.
+ * Assign ONE idle acolyte (the lowest-id idle one) to `actionId`, starting its first cycle. For a
+ * cost-outcome action this pays `ceil(cost × efficiency)` up front; if the lifetime can't afford it
+ * the acolyte is assigned **stalled** (`remainingSeconds = null`) and the tick starts+pays it once
+ * resources allow — mirroring the runner's mid-run stall semantics. Time-mode (Indagatio) is free,
+ * so the first cycle always starts at `baseTimeSeconds / efficiency`. Fails if no acolyte is idle
+ * or the action isn't delegatable.
  */
 export function assignAcolyteToAction(state: GameState, actionId: string): AssignmentResult {
   if (!isDelegatable(actionId)) {
@@ -83,17 +95,25 @@ export function assignAcolyteToAction(state: GameState, actionId: string): Assig
   const idx = acolytes.findIndex((a) => a.assignedAction === null);
   if (idx === -1) return { ok: false, reason: 'no idle acolyte available' };
 
-  const mods = computeModifiers(state);
-  const duration = startDurationFor(def.efficiencyMode, def.baseTimeSeconds, mods);
+  const eff = computeModifiers(state).acolyteEfficiencyMul;
+  const cost = actionCycleCost(actionId, eff);
+
+  // Start the first cycle if affordable; otherwise assign stalled and let the tick pay it later.
+  let working = state;
+  let remaining: number | null = null;
+  if (canAffordCycle(working, cost)) {
+    working = payCycle(working, cost);
+    remaining = runnerCycleDuration(actionId, eff);
+  }
 
   const updated: Acolyte = {
-    ...acolytes[idx]!,
+    ...working.lifetime.acolytes[idx]!,
     assignedAction: actionId,
-    remainingSeconds: duration,
+    remainingSeconds: remaining,
   };
-  const next = [...acolytes];
+  const next = [...working.lifetime.acolytes];
   next[idx] = updated;
-  return { ok: true, state: { ...state, lifetime: { ...state.lifetime, acolytes: next } } };
+  return { ok: true, state: { ...working, lifetime: { ...working.lifetime, acolytes: next } } };
 }
 
 /**
@@ -122,10 +142,16 @@ export function assignedCount(state: GameState, actionId: string): number {
 }
 
 /**
- * Advance every assigned acolyte's timer by `deltaSeconds`. Each timer that reaches 0 resolves
- * its action and immediately starts the next cycle. The resolver uses the acolyte's efficiency
- * for cost/outcome (cost-outcome mode) or just runs the resolution (time mode). Events from
- * acolyte resolutions are returned in the same shape as player events.
+ * Advance every assigned acolyte by `deltaSeconds` through the shared runner engine. Each acolyte
+ * runs its own channel at the acolyte efficiency: time-mode (Indagatio) just counts down; cost-
+ * outcome (Suasio/Decimatio) pays `ceil(cost × efficiency)` per cycle and stalls when broke. A
+ * stalled acolyte carries `remainingSeconds = null` and is retried here each tick.
+ *
+ * Acolyte tasks are ONE-SHOT (oneShot): every currently-delegatable action is a non-toggle, so once
+ * the acolyte completes its action it is retired to idle (`assignedAction = null`) rather than
+ * looping — the player re-assigns to run another. (Toggle delegation, e.g. helping run a Vitium
+ * Compositum, goes through a different path and is not subject to this.) Events from acolyte
+ * resolutions are returned in the same shape as player events.
  */
 export function advanceAcolytes(
   state: GameState,
@@ -141,65 +167,28 @@ export function advanceAcolytes(
 
   for (let i = 0; i < working.lifetime.acolytes.length; i++) {
     const a = working.lifetime.acolytes[i]!;
-    if (a.assignedAction === null || a.remainingSeconds === null) continue;
-    const def = ACTIONS[a.assignedAction];
-    if (!def) continue;
+    if (a.assignedAction === null) continue; // idle — nothing to run
 
-    let remaining = a.remainingSeconds - deltaSeconds;
+    const eff = computeModifiers(working).acolyteEfficiencyMul;
+    const r = advanceRunnerCycles(
+      working,
+      a.assignedAction,
+      eff,
+      a.remainingSeconds,
+      deltaSeconds,
+      rng,
+      undefined, // acolytes roll their own tier (no forced outcome)
+      true, // one-shot: a single non-toggle task, then retire
+    );
+    working = r.state;
+    for (const e of r.events) events.push(e);
 
-    // The acolyte may complete one or more cycles within a single delta (offline catch-up).
-    // Each completion: resolve at acolyte efficiency, then start the next cycle's duration.
-    while (remaining <= 0) {
-      const mods = computeModifiers(working);
-      const eff = mods.acolyteEfficiencyMul;
-      const { state: afterResolve, event } = resolveAction(working, a.assignedAction, rng, {
-        efficiency: eff,
-      });
-      working = afterResolve;
-      if (event) events.push(event);
-
-      // Re-assert that the acolyte is still ours after resolveAction (it doesn't touch acolytes
-      // today, but defensively re-fetch to absorb any future cross-effects).
-      const refreshed = working.lifetime.acolytes[i];
-      if (!refreshed || refreshed.assignedAction === null) break;
-
-      // Next cycle: re-derive duration from the current modifier bundle (efficiency may shift
-      // mid-loop if a source attaches in the future).
-      const nextDuration = startDurationFor(
-        def.efficiencyMode,
-        def.baseTimeSeconds,
-        computeModifiers(working),
-      );
-      remaining += nextDuration;
-    }
-
-    // Write the updated timer back to the acolyte; preserve assignment.
-    const updated: Acolyte = {
-      ...working.lifetime.acolytes[i]!,
-      remainingSeconds: remaining,
-    };
     const nextAcolytes = [...working.lifetime.acolytes];
-    nextAcolytes[i] = updated;
-    working = {
-      ...working,
-      lifetime: { ...working.lifetime, acolytes: nextAcolytes },
-    };
+    nextAcolytes[i] = r.completed
+      ? { ...working.lifetime.acolytes[i]!, assignedAction: null, remainingSeconds: null }
+      : { ...working.lifetime.acolytes[i]!, remainingSeconds: r.remaining };
+    working = { ...working, lifetime: { ...working.lifetime, acolytes: nextAcolytes } };
   }
 
   return { state: working, events };
-}
-
-/**
- * Duration of a fresh acolyte cycle, given the action's efficiency mode. Time-mode actions
- * (Indagatio/Emptio) have their duration divided by efficiency at start time — so a 0.33-eff
- * acolyte's Indagatio cycle is ~3× longer than the player's. Cost-outcome mode (Suasio/Decimatio)
- * doesn't touch duration here — the catalog `baseTimeSeconds` is used as-is.
- */
-function startDurationFor(
-  mode: 'time' | 'cost-outcome',
-  baseSeconds: number,
-  mods: Modifiers,
-): number {
-  const eff = Math.max(mods.acolyteEfficiencyMul, 1e-9);
-  return mode === 'time' ? Math.max(1, baseSeconds / eff) : baseSeconds;
 }

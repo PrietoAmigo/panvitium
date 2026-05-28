@@ -121,6 +121,13 @@ export interface LifetimeState {
   acolytes: Acolyte[];
   /** Active invocations as type -> count (most stack; the apex ones are capped at 1). */
   invocations: Record<string, number>;
+  /**
+   * Autonomous-channel runners for invocations that run an action in the background (02 §3) —
+   * keyed by invocation id, value is the remaining seconds on the current cycle. The Familiar runs
+   * Indagatio here. This does NOT occupy the player's action slot. Lazily started/cleared by the
+   * tick from the active-invocation set; additive-optional on the wire (ADR-023), empty by default.
+   */
+  invocationRunners: Record<string, number>;
   /** Equipped maleficia by id; stackable ones may repeat. */
   maleficia: string[];
   /** Maleficia surfaced by Indagatio and available to buy via Emptio. Lost on Katabasis. */
@@ -202,6 +209,14 @@ export interface GameState {
    * telemetry. Additive-optional; defaults to 0.
    */
   katabasisCount: number;
+  /**
+   * True while the player is mid-descent — the Katabasis menu is open and allocation is underway
+   * (02 §6). The lifetime is frozen: `tick` runs no simulation when this is set, so nothing accrues
+   * online OR offline (a reload mid-descent resumes the menu rather than fast-forwarding a torn-down
+   * lifetime). Set by `enterKatabasis`, cleared by `commitKatabasis`. Additive-optional; defaults to
+   * false (ADR-023).
+   */
+  inKatabasis?: boolean;
 }
 
 function zeroReprobates(): Record<ReprobateSubtype, number> {
@@ -235,6 +250,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       reprobates: zeroReprobates(),
       acolytes: [],
       invocations: {},
+      invocationRunners: {},
       maleficia: [],
       emptioList: [],
       activeToggles: [],

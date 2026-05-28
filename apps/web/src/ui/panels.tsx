@@ -33,6 +33,7 @@ import {
 import { type PanelId } from '../rooms/rooms.js';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
+import { actionName } from '../game/labels.js';
 
 interface PanelProps {
   title: string;
@@ -57,14 +58,9 @@ export function Panel({ title, onClose, children }: PanelProps): ReactElement {
   );
 }
 
-const ACTION_NAME: Record<string, string> = {
-  suggestion: strings.opera.suggestion,
-  caedis: strings.opera.caedis,
-};
-
 /** A single outcome rendered as a terminal log line: "Caedis · Good — +1 Souls, -1 Reprobates". */
 function describeOutcome(e: OutcomeEvent): string {
-  const name = ACTION_NAME[e.actionId] ?? e.actionId;
+  const name = actionName(e.actionId);
   const parts: string[] = [];
   const sign = (n: number): string => (n > 0 ? `+${n}` : `${n}`);
   if (e.soulsDelta !== 0) parts.push(`${sign(e.soulsDelta)} ${strings.resources.souls}`);
@@ -178,6 +174,7 @@ function SuasioPanel(): ReactElement {
         cta={strings.opera.tempt}
         disabled={underway || influence < cost}
         onAct={() => act('suggestion')}
+        delegation={<AcolyteControls actionId="suggestion" />}
       />
       {underway && <p className="opera-hint">{strings.opera.underway}</p>}
       {notice !== null && <p className="opera-notice">{notice}</p>}
@@ -216,6 +213,7 @@ function DecimatioGroup(): ReactElement {
         cta={strings.opera.cull}
         disabled={underway || gold < cost}
         onAct={() => act('caedis')}
+        delegation={<AcolyteControls actionId="caedis" />}
       />
       {underway && <p className="opera-hint">{strings.opera.underway}</p>}
       {notice !== null && <p className="opera-notice">{notice}</p>}
@@ -410,12 +408,32 @@ function DepraedatioGroup(): ReactElement {
   return (
     <>
       <p className="opera-intro">{strings.opera.depraedatioIntro}</p>
+      {buildQueue.length > 0 && (
+        <section className="vitium-inflight" aria-label={strings.opera.inFlight}>
+          <h3 className="vitium-heading">{strings.opera.inFlight}</h3>
+          <ul className="vitium-queue">
+            {buildQueue.map((t, idx) => {
+              const def = businessById(t.businessId);
+              const name = def ? (strings.businesses[t.businessId] ?? t.businessId) : t.businessId;
+              return (
+                <li key={`${idx}-${t.businessId}`} className="vitium-queue-row">
+                  <span className="vitium-queue-name">{name}</span>
+                  <span className="vitium-queue-time">
+                    {formatDuration(Math.max(0, Math.ceil(t.remainingSeconds)))}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       <ul className="vitium-list">
         {BUSINESS_IDS.map((id) => {
           const def = businessById(id);
           if (!def) return null;
           const have = sinLevel(state.devotion[def.sin]);
-          const unlocked = have >= def.level;
+          const required = def.level - 1; // spreadsheet "Sin-lvl unlock" column is (tier − 1)
+          const unlocked = have >= required;
           const ownedCount = owned[id] ?? 0;
           const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION);
           const name = strings.businesses[id] ?? id;
@@ -425,7 +443,8 @@ function DepraedatioGroup(): ReactElement {
               <div className="vitium-meta">
                 <span className="vitium-name">{name}</span>
                 <span className="vitium-sub">
-                  {def.sin} L{def.level}
+                  {def.sin}
+                  {required > 0 ? ` L${required}` : ''}
                   {ownedCount > 0 ? ` · ${ownedCount} ${strings.opera.owned}` : ''}
                 </span>
               </div>
@@ -439,7 +458,7 @@ function DepraedatioGroup(): ReactElement {
                 >
                   {unlocked
                     ? `${strings.opera.build} · ${buildCostLabel}`
-                    : `${strings.opera.sinLocked} · ${def.sin} L${def.level}`}
+                    : `${strings.opera.sinLocked} · ${def.sin} L${required}`}
                 </button>
                 {ownedCount > 0 && (
                   <button
@@ -456,25 +475,6 @@ function DepraedatioGroup(): ReactElement {
           );
         })}
       </ul>
-      {buildQueue.length > 0 && (
-        <>
-          <h3 className="vitium-heading">{strings.opera.inFlight}</h3>
-          <ul className="vitium-queue">
-            {buildQueue.map((t, idx) => {
-              const def = businessById(t.businessId);
-              const name = def ? (strings.businesses[t.businessId] ?? t.businessId) : t.businessId;
-              return (
-                <li key={`${idx}-${t.businessId}`} className="vitium-queue-row">
-                  <span className="vitium-queue-name">{name}</span>
-                  <span className="vitium-queue-time">
-                    {formatDuration(Math.max(0, Math.ceil(t.remainingSeconds)))}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
       <CompositumSection />
       {notice !== null && <p className="opera-notice">{notice}</p>}
     </>
@@ -573,6 +573,8 @@ function PanvitiumRow(): ReactElement {
   if (!state || !def) return <></>;
   const unlocked = compositumUnlocked(state, def);
   const active = isToggleActive(state, 'panvitium');
+  // Hidden until unlocked (all eight Sins ≥ 3). Sin levels never decrease, so once shown it stays.
+  if (!unlocked) return <></>;
   const name = strings.compositum.names.panvitium ?? 'Panvitium';
   return (
     <div className={`panvitium-row${active ? ' panvitium-row--active' : ''}`}>

@@ -73,15 +73,19 @@ export interface ReprobateRates {
 export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRates {
   const population = totalReprobates(state);
   const cholerics = state.lifetime.reprobates.choleric;
+  // Vitium Mercatura output multiplier (Plutus, Vapula #60) scales the BUSINESS contributions to
+  // generation and conversion — not the base or Vitium Compositum terms.
+  const vmMul = mods.vitiumMercaturaOutputMul;
   const baseGen =
     BASE_REPROBATE_GENERATION_PER_SECOND +
-    businessGenerationPerSecond(state) +
+    businessGenerationPerSecond(state) * vmMul +
     compositumGenerationPerSecond(state);
   return {
     generationPerSecond: baseGen * mods.reprobateGenerationRateMul,
     suicidePerSecond: BASE_SUICIDE_RATE_PER_SECOND * population * mods.reprobateSuicideRateMul,
     murderPerSecond: BASE_CHOLERIC_MURDER_RATE_PER_SECOND * cholerics * mods.cholericMurderRateMul,
-    conversionPerSecond: businessConversionPerSecond(state) + compositumConversionPerSecond(state),
+    conversionPerSecond:
+      businessConversionPerSecond(state) * vmMul + compositumConversionPerSecond(state),
   };
 }
 

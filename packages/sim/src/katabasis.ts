@@ -115,6 +115,50 @@ export function bindSigil(
   return { ...state, souls: sub(available, target), sigilBindings };
 }
 
+// ── Enter (teardown on descent) ──────────────────────────────────────────────
+
+/**
+ * Begin the descent (02 §6): the moment the player commits to Katabasis, the lifetime's *productive*
+ * systems are torn down — NOT later when they rise. Businesses shut down (their refund folded into
+ * gold so it rides the later carry-over roll), in-flight builds fizzle, toggles stop, the action
+ * queue clears, invocations are dispelled and their autonomous channels stop, and acolytes drop
+ * their assignments. What the commit will roll for carry-over (gold, reprobates, maleficia) is left
+ * intact and frozen; the store suspends ticking while the menu is open, so nothing accrues during
+ * allocation. `commitKatabasis` finishes the descent (the carry-over rolls + lifetime reset) when
+ * the player confirms.
+ */
+export function enterKatabasis(state: GameState): GameState {
+  let gold = state.lifetime.gold;
+  for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
+    if (!count) continue;
+    const def = businessById(bid);
+    if (!def) continue;
+    const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION) * count;
+    if (refund > 0) gold = add(gold, refund);
+  }
+  const acolytes = state.lifetime.acolytes.map((a) => ({
+    ...a,
+    assignedAction: null,
+    remainingSeconds: null,
+  }));
+  return {
+    ...state,
+    inKatabasis: true, // freeze the lifetime in `tick` (online + offline) until commit
+    lifetime: {
+      ...state.lifetime,
+      gold, // includes business shutdown refunds (rolled by the remaining-gold % at commit)
+      businesses: {}, // shut down now, not on rise
+      buildQueue: [], // in-flight builds fizzle (no refund — they hadn't completed)
+      activeToggles: [], // toggles stop
+      toggleDurations: {},
+      actionQueue: [], // uncompleted player actions fizzle
+      invocations: {}, // all invocations dispelled (02 §7)
+      invocationRunners: {}, // …and their autonomous channels stop
+      acolytes, // followers drop their tasks (the list itself clears at commit)
+    },
+  };
+}
+
 // ── Commit ───────────────────────────────────────────────────────────────────
 
 /** What the player comes back with, for the recap screen (01 "The Katabasis recap", 02 §6). */
@@ -190,6 +234,7 @@ export function commitKatabasis(
     reprobates,
     acolytes: [], // re-grow from influence
     invocations: {}, // all invocations dispelled (02 §7)
+    invocationRunners: {}, // …and their autonomous channels stop
     maleficia: maleficiaKept,
     emptioList: [], // lost track of them (02 §6)
     activeToggles: [], // toggles stop
@@ -207,6 +252,7 @@ export function commitKatabasis(
     state: {
       ...state,
       lifetime,
+      inKatabasis: false, // descent complete — the new lifetime ticks again
       rngState: rng.state,
       lastTickAt: now,
       katabasisCount: state.katabasisCount + 1,

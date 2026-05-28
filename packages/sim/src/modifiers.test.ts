@@ -5,8 +5,10 @@ import {
   computeModifiers,
   playerEfficiency,
   categoryEfficiency,
+  categoryTierModifiers,
   NEUTRAL_MODIFIERS,
 } from './modifiers.js';
+import { skillIntensity } from './progression.js';
 
 const fresh = (): GameState => createInitialState('modifier-seed', 0);
 
@@ -183,5 +185,121 @@ describe('computeModifiers — reprobate-dynamics rate multipliers (02 §9)', ()
     const mul = computeModifiers(state).reprobateSuicideRateMul;
     expect(mul).toBeGreaterThan(1);
     expect(mul).toBeLessThan(1.2);
+  });
+});
+
+describe('categoryTierModifiers — per-category success shift (02 §2)', () => {
+  const withInvocation = (id: string, n: number): GameState => {
+    const s = fresh();
+    return {
+      ...s,
+      lifetime: { ...s.lifetime, invocations: { ...s.lifetime.invocations, [id]: n } },
+    };
+  };
+
+  it('is empty with no source (no Tristitia/Ira Devotion, no Lamia)', () => {
+    expect(categoryTierModifiers(fresh(), 'suasio')).toEqual({});
+    expect(categoryTierModifiers(fresh(), 'decimatio')).toEqual({});
+  });
+
+  it('Resignation (Tristitia) lifts Suasio Stellar+Excellent+Good by (1 + intensity), equally', () => {
+    const s = withDevotion({ tristitia: bn(180) });
+    const expected = 1 + skillIntensity(s.devotion.tristitia);
+    const m = categoryTierModifiers(s, 'suasio');
+    expect(m.stellar).toBeCloseTo(expected, 6);
+    expect(m.excellent).toBeCloseTo(expected, 6);
+    expect(m.good).toBeCloseTo(expected, 6);
+    // Failure tiers are untouched (renormalization redistributes against them).
+    expect(m.neutral).toBeUndefined();
+    expect(m.terrible).toBeUndefined();
+    // Tristitia does NOT shift Decimatio.
+    expect(categoryTierModifiers(s, 'decimatio')).toEqual({});
+  });
+
+  it('Retribution (Ira) lifts Decimatio success the same way, and not Suasio', () => {
+    const s = withDevotion({ ira: bn(180) });
+    const expected = 1 + skillIntensity(s.devotion.ira);
+    const m = categoryTierModifiers(s, 'decimatio');
+    expect(m.good).toBeCloseTo(expected, 6);
+    expect(categoryTierModifiers(s, 'suasio')).toEqual({});
+  });
+
+  it('each Lamia lifts Suasio success multiplicatively on top of Resignation', () => {
+    const base = categoryTierModifiers(withDevotion({ tristitia: bn(180) }), 'suasio').good!;
+    const s = {
+      ...withDevotion({ tristitia: bn(180) }),
+      lifetime: { ...fresh().lifetime, invocations: { lamia: 2 } },
+    };
+    const withLamia = categoryTierModifiers(s, 'suasio').good!;
+    expect(withLamia).toBeCloseTo(base * (1 + 0.25 * 2), 6);
+  });
+
+  it('Indagatio / Emptio have no success-shift source yet', () => {
+    const s = withDevotion({ tristitia: bn(180), ira: bn(180) });
+    expect(categoryTierModifiers(s, 'indagatio')).toEqual({});
+    expect(categoryTierModifiers(s, 'emptio')).toEqual({});
+  });
+
+  it('each Lamia also lifts the reprobate generation multiplier', () => {
+    expect(computeModifiers(fresh()).reprobateGenerationRateMul).toBe(1);
+    expect(computeModifiers(withInvocation('lamia', 1)).reprobateGenerationRateMul).toBeCloseTo(
+      1.5,
+      6,
+    );
+    expect(computeModifiers(withInvocation('lamia', 3)).reprobateGenerationRateMul).toBeCloseTo(
+      2.5,
+      6,
+    );
+  });
+});
+
+describe('computeModifiers — production invocations (Plutus, Succubus)', () => {
+  const withInvocation = (id: string, n: number): GameState => {
+    const s = fresh();
+    return {
+      ...s,
+      lifetime: { ...s.lifetime, invocations: { ...s.lifetime.invocations, [id]: n } },
+    };
+  };
+
+  it('each Plutus lifts the Vitium Mercatura output multiplier (+100% per copy)', () => {
+    expect(computeModifiers(fresh()).vitiumMercaturaOutputMul).toBe(1);
+    expect(computeModifiers(withInvocation('plutus', 1)).vitiumMercaturaOutputMul).toBe(2);
+    expect(computeModifiers(withInvocation('plutus', 3)).vitiumMercaturaOutputMul).toBe(4);
+  });
+
+  it('Succubus dramatically multiplies generation and cuts gold to 1%', () => {
+    const m = computeModifiers(withInvocation('succubus', 1));
+    expect(m.reprobateGenerationRateMul).toBe(10);
+    expect(m.goldRateMul).toBeCloseTo(0.01, 6);
+    // Apex: capped at one, so a stray second copy can't be summoned, but the flag is boolean anyway.
+  });
+
+  it('Succubus gold cut composes with other gold sources (Silver ×3 → ×0.03)', () => {
+    const s = withInvocation('succubus', 1);
+    const withSilver: GameState = {
+      ...s,
+      lifetime: { ...s.lifetime, maleficia: ['thirty_pieces_of_silver'] },
+    };
+    expect(computeModifiers(withSilver).goldRateMul).toBeCloseTo(0.03, 6);
+  });
+
+  it('Lemure contributes flat influence/s scaling with Husk count and Lemure count', () => {
+    expect(computeModifiers(fresh()).flatInfluencePerSecond).toBe(0); // no Lemure
+    const withHusks = (husks: number, lemures: number): GameState => {
+      const s = fresh();
+      return {
+        ...s,
+        lifetime: {
+          ...s.lifetime,
+          reprobates: { ...s.lifetime.reprobates, husk: husks },
+          invocations: { lemure: lemures },
+        },
+      };
+    };
+    expect(computeModifiers(withHusks(50, 0)).flatInfluencePerSecond).toBe(0); // Husks but no Lemure
+    expect(computeModifiers(withHusks(0, 2)).flatInfluencePerSecond).toBe(0); // Lemure but no Husks
+    expect(computeModifiers(withHusks(50, 1)).flatInfluencePerSecond).toBeCloseTo(5, 6); // 0.1×50×1
+    expect(computeModifiers(withHusks(50, 3)).flatInfluencePerSecond).toBeCloseTo(15, 6); // 0.1×50×3
   });
 });

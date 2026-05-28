@@ -230,3 +230,37 @@ describe('reprobate dynamics — murder pool (dormant without Cholerics)', () =>
     expect(after.lifetime.murderPool).toBeCloseTo(2.0, 4);
   });
 });
+
+describe('reprobate dynamics — Vitium Mercatura output multiplier (Plutus / Vapula)', () => {
+  /** A state owning one entry-tier business (1 reprobate/s generation at catalog values). */
+  function withBusiness(): GameState {
+    const s = createInitialState('vm-test', 0);
+    return {
+      ...s,
+      lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 1 } },
+    };
+  }
+
+  it('business generation scales with the VM-output multiplier (Plutus doubles it)', () => {
+    const base = withBusiness();
+    const baseRate = reprobateRates(base, computeModifiers(base)).generationPerSecond;
+    expect(baseRate).toBeGreaterThan(0);
+
+    const withPlutus: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, plutus: 1 } },
+    };
+    const plutusRate = reprobateRates(withPlutus, computeModifiers(withPlutus)).generationPerSecond;
+    expect(plutusRate).toBeCloseTo(baseRate * 2, 6); // one Plutus = +100% VM output
+  });
+
+  it('the multiplier does not touch the base generation rate (no business → unchanged)', () => {
+    const noBiz = createInitialState('vm-empty', 0);
+    const withPlutus: GameState = {
+      ...noBiz,
+      lifetime: { ...noBiz.lifetime, invocations: { plutus: 3 } },
+    };
+    // Base generation is 0 and there is no business contribution to scale.
+    expect(reprobateRates(withPlutus, computeModifiers(withPlutus)).generationPerSecond).toBe(0);
+  });
+});

@@ -23,6 +23,11 @@
  * generation) attach as their target systems land — same module, same signature, just a new line
  * per source.
  *
+ * PER-CATEGORY tier shifts (02 §2) are NOT part of the global bundle: a source that lifts one
+ * category's success probability (Resignation → Suasio, Retribution → Decimatio, Lamia → Suasio)
+ * is returned by `categoryTierModifiers(state, category)` and composed by `resolveAction` at
+ * resolution time, since it targets a single category's distribution rather than all Opera.
+ *
  * Skill→effect coupling for now: a skill that "increases X" multiplies X by (1 + intensity); a
  * skill that "decreases X" divides by the same (asymptotic to 0, never negative). The
  * spreadsheet's `SKILL_INTENSITY_DIVISOR` already sets the intensity curve; per-Sin coefficients on
@@ -39,6 +44,13 @@ export interface Modifiers {
   readonly goldRateMul: number;
   /** Multiplier on the proportional influence-per-second rate. */
   readonly influenceRateMul: number;
+  /**
+   * Additive flat influence-per-second from invocations (Lemure's per-Husk bonus; the Decarabia #69
+   * sigil attaches here once sigil flat-contributions land). Added to the influence accrual in the
+   * tick alongside Vitium Compositum influence, scaled by `influenceRateMul`, capped at maxInfluence.
+   * 0 when no source is active.
+   */
+  readonly flatInfluencePerSecond: number;
   /** Multiplier on the lifetime `maxInfluence` (raises the cap). */
   readonly maxInfluenceMul: number;
   /** Multiplier on the player's own action efficiency (Gula). Stacks with category eff. */
@@ -86,6 +98,7 @@ export interface Modifiers {
 export const NEUTRAL_MODIFIERS: Modifiers = {
   goldRateMul: 1,
   influenceRateMul: 1,
+  flatInfluencePerSecond: 0,
   maxInfluenceMul: 1,
   playerEfficiencyMul: 1,
   suasioEfficiencyMul: 1,
@@ -127,11 +140,16 @@ export function computeModifiers(state: GameState): Modifiers {
   // live here alongside the other effect coefficients (the catalog in invocations.ts owns the
   // gates and costs, this module owns what each does — mirroring how maleficia effects are coded).
   const inv = state.lifetime.invocations;
+  const hasFamiliar = (inv.familiar ?? 0) > 0; // +33% player efficiency (02 §3 hybrid)
   const famaCount = inv.fama ?? 0; // each: influence gain ×1.25
   const nightmareCount = inv.nightmare ?? 0; // each: +5% suicide rate (additive)
   const harpyCount = inv.harpy ?? 0; // each: Choleric murder ×1.1
+  const lamiaCount = inv.lamia ?? 0; // each: Suasio success up (per-category) + generation up
   const behemothCount = inv.behemoth ?? 0; // each: +50% Stellar weight
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
+  const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (flat factor)
+  const lemureCount = inv.lemure ?? 0; // each: + flat influence/s per Husk
+  const hasSuccubus = (inv.succubus ?? 0) > 0; // generation ×, gold → 1%
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
 
   // Panvitium (03 §2.3): the endgame ritual. While active it drives the whole population at once —
@@ -142,6 +160,10 @@ export function computeModifiers(state: GameState): Modifiers {
   const PANV_GEN_MUL = 10;
   const PANV_SUICIDE_MUL = 20;
   const PANV_MURDER_MUL = 20;
+  // Invocation effect magnitudes (placeholders; spreadsheet owns final tuning, like the others).
+  const SUCCUBUS_GEN_MUL = 10; // apex Luxuria: generation ×10 (gold cut to 1% handled in goldRateMul)
+  const PLUTUS_OUTPUT = 1; // each Plutus: +100% Vitium Mercatura output
+  const LEMURE_INFLUENCE_PER_HUSK = 0.1; // each Lemure: +0.1 influence/s per Husk reprobate
 
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
@@ -170,7 +192,11 @@ export function computeModifiers(state: GameState): Modifiers {
 
   return {
     goldRateMul:
-      skillBonus(avaritiaIntensity) * (hasSilver ? 3 : 1) * (hasMidas ? 3 : 1) * sc('goldRateMul'),
+      skillBonus(avaritiaIntensity) *
+      (hasSilver ? 3 : 1) *
+      (hasMidas ? 3 : 1) *
+      (hasSuccubus ? 0.01 : 1) *
+      sc('goldRateMul'),
     influenceRateMul:
       1.5 ** vanagloriaLvl *
       (hasCodex ? 3 : 1) *
@@ -178,14 +204,22 @@ export function computeModifiers(state: GameState): Modifiers {
       (hasDoppel ? 0.5 : 1) *
       sc('influenceRateMul'),
     maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul'),
-    playerEfficiencyMul: 2 ** gulaLvl * (hasDoppel ? 1.5 : 1) * sc('playerEfficiencyMul'),
+    // Flat influence/s: each Lemure adds a per-Husk amount (additive; scaled by influenceRateMul +
+    // capped at maxInfluence in the tick). Decarabia #69 will add to this once sigil flats land.
+    flatInfluencePerSecond:
+      LEMURE_INFLUENCE_PER_HUSK * state.lifetime.reprobates.husk * lemureCount,
+    playerEfficiencyMul:
+      2 ** gulaLvl * (hasDoppel ? 1.5 : 1) * (hasFamiliar ? 1.33 : 1) * sc('playerEfficiencyMul'),
     suasioEfficiencyMul: skillBonus(tristitiaIntensity) * sc('suasioEfficiencyMul'),
     decimatioEfficiencyMul: skillBonus(iraIntensity) * sc('decimatioEfficiencyMul'),
     tierWeightMul,
-    // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; sigils (Aamon
-    // #7 up, Zepar #16 down) compose multiplicatively.
+    // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; each Lamia
+    // lifts it; Succubus multiplies it dramatically; sigils (Aamon #7 up, Zepar #16 down) compose.
     reprobateGenerationRateMul:
-      (panvitiumActive ? PANV_GEN_MUL : 1) * sc('reprobateGenerationRateMul'),
+      (panvitiumActive ? PANV_GEN_MUL : 1) *
+      (1 + LAMIA_GENERATION * lamiaCount) *
+      (hasSuccubus ? SUCCUBUS_GEN_MUL : 1) *
+      sc('reprobateGenerationRateMul'),
     // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
     // Panvitium multiplies while active; Crocell #49 sigil composes.
     reprobateSuicideRateMul:
@@ -197,8 +231,9 @@ export function computeModifiers(state: GameState): Modifiers {
     // Murder: each Harpy lifts ×1.1; Panvitium multiplies while active; Aim #23 sigil composes.
     cholericMurderRateMul:
       1.1 ** harpyCount * (panvitiumActive ? PANV_MURDER_MUL : 1) * sc('cholericMurderRateMul'),
-    // Vitium Mercatura output: Vapula #60 sigil lifts it (Plutus invocation will too, later).
-    vitiumMercaturaOutputMul: sc('vitiumMercaturaOutputMul'),
+    // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
+    // multiplier scales business gold + generation + conversion at the tick/dynamics call sites.
+    vitiumMercaturaOutputMul: (1 + PLUTUS_OUTPUT * plutusCount) * sc('vitiumMercaturaOutputMul'),
     // Acolyte efficiency: 0.33 baseline (02 §10); Bathin #18 sigil composes on top.
     acolyteEfficiencyMul: 0.33 * sc('acolyteEfficiencyMul'),
   };
@@ -207,6 +242,41 @@ export function computeModifiers(state: GameState): Modifiers {
 /** Player efficiency only (Gula). The HUD shows this; per-action eff combines with category. */
 export function playerEfficiency(state: GameState): number {
   return computeModifiers(state).playerEfficiencyMul;
+}
+
+/** Tiers counted as "success" for the per-category success-probability effects (03 §1). */
+const SUCCESS_TIERS: readonly Tier[] = ['stellar', 'excellent', 'good'];
+/** Each Lamia lifts Suasio success-tier weights (placeholder magnitude; spreadsheet owns final). */
+const LAMIA_SUASIO_SUCCESS = 0.25;
+/** Each Lamia lifts unconverted reprobate generation (placeholder magnitude; spreadsheet owns final). */
+const LAMIA_GENERATION = 0.5;
+
+/**
+ * Per-CATEGORY tier shift, applied at action-resolution time (02 §2) — kept distinct from the global
+ * `tierWeightMul` bundle because it targets a single category's distribution. "Increase overall
+ * success" effects lift the Stellar + Excellent + Good weights by the same factor (03 §1); on
+ * renormalization that pulls probability off the failure tiers. Wired sources:
+ *   - Suasio:    Resignation (Tristitia skill) and each Lamia invocation.
+ *   - Decimatio: Retribution (Ira skill).
+ * Indagatio / Emptio have no success-shift source yet (their tier-success sigils attach later).
+ * `resolveAction` composes this on top of the global tier multipliers before resolving the tier.
+ */
+export function categoryTierModifiers(
+  state: GameState,
+  category: 'suasio' | 'decimatio' | 'indagatio' | 'emptio',
+): TierModifiers {
+  let successMul = 1;
+  if (category === 'suasio') {
+    successMul *= skillBonus(skillIntensity(state.devotion.tristitia)); // Resignation
+    const lamia = state.lifetime.invocations.lamia ?? 0;
+    if (lamia > 0) successMul *= 1 + LAMIA_SUASIO_SUCCESS * lamia;
+  } else if (category === 'decimatio') {
+    successMul *= skillBonus(skillIntensity(state.devotion.ira)); // Retribution
+  }
+  if (successMul === 1) return {};
+  const out: TierModifiers = {};
+  for (const t of SUCCESS_TIERS) out[t] = successMul;
+  return out;
 }
 
 /**

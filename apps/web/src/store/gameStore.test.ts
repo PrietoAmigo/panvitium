@@ -131,33 +131,59 @@ describe('gameStore — Katabasis', () => {
     expect(floor(st.souls).toNumber()).toBe(0);
   });
 
-  it('confirm resets the lifetime, shows the recap, then closes', () => {
-    patchSouls(500);
+  it('freezes the lifetime while the menu is open — souls do not accrue during the descent', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
-      state: { ...s0, lifetime: { ...s0.lifetime, gold: bn(1000), influence: bn(70) } },
+      state: {
+        ...s0,
+        lifetime: { ...s0.lifetime, reprobates: { ...s0.lifetime.reprobates, reprobate: 5000 } },
+      },
     });
     store().beginKatabasis();
-    store().confirmKatabasis();
-    expect(store().katabasisPhase).toBe('recap');
-    expect(store().recap).not.toBeNull();
+    const soulsAtEntry = floor((store().state as GameState).souls).toNumber();
+    store().advance(3600); // an hour of would-be suicides
+    expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtEntry);
+  });
+
+  it('entering Katabasis tears down businesses, toggles, and invocations immediately', () => {
+    const s0 = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s0,
+        lifetime: {
+          ...s0.lifetime,
+          businesses: { 'gula-mercatura-1': 1 },
+          activeToggles: ['bacchanal'],
+          invocations: { imp: 1 },
+        },
+      },
+    });
+    store().beginKatabasis();
     const st = store().state as GameState;
-    expect(floor(st.lifetime.influence).toNumber()).toBe(0);
-    expect(floor(st.lifetime.gold).toNumber()).toBe(50); // base 5% of 1000
-    expect(floor(st.souls).toNumber()).toBe(500); // carried over
-    store().closeRecap();
-    expect(store().katabasisPhase).toBeNull();
-    expect(store().recap).toBeNull();
+    expect(Object.keys(st.lifetime.businesses)).toHaveLength(0);
+    expect(st.lifetime.activeToggles).toHaveLength(0);
+    expect(Object.keys(st.lifetime.invocations)).toHaveLength(0);
+  });
+
+  it('a reload mid-descent re-opens the allocation menu (frozen flag persisted)', () => {
+    store().beginKatabasis();
+    expect((store().state as GameState).inKatabasis).toBe(true);
+    store().persist(); // write the frozen save to localStorage
+    // Simulate a reload: forget we are ready and which screen was open, then re-init from the save.
+    useGameStore.setState({ ready: false, katabasisPhase: null });
+    store().init();
+    expect(store().katabasisPhase).toBe('menu');
+    expect((store().state as GameState).inKatabasis).toBe(true);
   });
 });
 
 describe('gameStore — Vitium Mercatura (build/shutdown)', () => {
-  it('refuses to build when below the gating Sin level (sets a notice)', () => {
-    patchGold(500);
-    // Devotion is 0 → gula L0 → can't build gula-mercatura-1 (requires L1).
+  it('builds the entry tier at Sin level 0 (gated at tier − 1)', () => {
+    patchGold(1000);
+    // Devotion is 0; the entry tier unlocks at Sin level 0, so a fresh player can build it.
     store().build('gula-mercatura-1');
-    expect(store().state?.lifetime.buildQueue ?? []).toHaveLength(0);
-    expect(store().notice).toMatch(/gula level/i);
+    expect(store().state?.lifetime.buildQueue ?? []).toHaveLength(1);
+    expect(store().notice).toBeNull();
   });
 
   it('refuses to build when gold is insufficient', () => {
@@ -223,9 +249,9 @@ describe('gameStore — acolyte delegation', () => {
     expect(after.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
   });
 
-  it('refuses assignment when nothing delegatable is selected', () => {
+  it('refuses assignment of a non-delegatable action', () => {
     store().advance(0.1); // recruit
-    store().assignAcolyte('caedis'); // not delegatable in this slice
+    store().assignAcolyte('emptio'); // Emptio needs a per-target maleficium — not delegatable
     expect(store().notice).toBeTruthy();
   });
 

@@ -240,3 +240,38 @@ describe('modifier integration — tier weight shifts reach resolveAction', () =
     expect(differing).toBeGreaterThan(5);
   });
 });
+
+describe('resolveAction — per-category success shift (Resignation/Retribution, 02 §2)', () => {
+  /** Roll `n` outcomes of `actionId` against a fixed seed and count success tiers (Good+). */
+  function successesOf(state: GameState, actionId: string, n: number): number {
+    const r = makeRng(hashSeed('shift-test'));
+    let succ = 0;
+    for (let i = 0; i < n; i++) {
+      const { event } = resolveAction(state, actionId, r, {});
+      if (
+        event &&
+        (event.tier === 'stellar' || event.tier === 'excellent' || event.tier === 'good')
+      )
+        succ++;
+    }
+    return succ;
+  }
+
+  it('high Tristitia yields more Suasio successes than none (same seed)', () => {
+    const base = successesOf(fresh(), 'suggestion', 400);
+    const withResignation = successesOf(
+      { ...fresh(), devotion: { ...fresh().devotion, tristitia: bn(1_000_000) } },
+      'suggestion',
+      400,
+    );
+    expect(withResignation).toBeGreaterThan(base);
+  });
+
+  it('high Ira yields more Decimatio successes', () => {
+    const baseDec = successesOf(fresh(), 'caedis', 400);
+    const ira = { ...fresh(), devotion: { ...fresh().devotion, ira: bn(1_000_000) } };
+    expect(successesOf(ira, 'caedis', 400)).toBeGreaterThan(baseDec);
+    // (That Ira leaves Suasio's tier weights untouched is proven deterministically in
+    // modifiers.test.ts via categoryTierModifiers(ira, 'suasio') === {}.)
+  });
+});

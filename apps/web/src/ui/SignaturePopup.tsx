@@ -1,11 +1,7 @@
 import { useEffect, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import { useGameStore } from '../store/gameStore.js';
-
-const ACTION_NAME: Record<string, string> = {
-  suggestion: strings.opera.suggestion,
-  caedis: strings.opera.caedis,
-};
+import { actionName } from '../game/labels.js';
 
 /**
  * The Stellar / Apocalyptic pop-up (02 §2): a small black notice in the upper half of the screen
@@ -23,7 +19,7 @@ export function SignaturePopup(): ReactElement | null {
   }, [signature, dismiss]);
 
   if (!signature) return null;
-  const name = ACTION_NAME[signature.actionId] ?? signature.actionId;
+  const name = actionName(signature.actionId);
   const variant = signature.tier === 'stellar' ? 'signature-stellar' : 'signature-apocalyptic';
   return (
     <div className={`signature-popup ${variant}`} role="status" onClick={dismiss}>

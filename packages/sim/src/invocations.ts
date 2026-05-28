@@ -26,6 +26,11 @@ import { floor, gte, max, mul, sub, ZERO, type BigNum } from './bignum.js';
 import { totalInvokingPower } from './maleficia.js';
 import { sinLevel } from './progression.js';
 import { type GameState, type Sin } from './state.js';
+import { computeModifiers } from './modifiers.js';
+import { advanceRunnerCycles } from './runner.js';
+import { type Tier } from './probability.js';
+import { type Rng } from './rng.js';
+import { type OutcomeEvent } from './events.js';
 
 export interface InvocationDef {
   readonly id: string;
@@ -39,10 +44,57 @@ export interface InvocationDef {
   readonly soulCost?: { readonly fraction: number; readonly minimum: number };
   /** Maximum simultaneously active (the apex entities cap at 1). Default unlimited (stackable). */
   readonly maxActive?: number;
+  /**
+   * Autonomous background runner (02 §3): this invocation runs `action` in its own channel at
+   * `efficiency` × the player's efficiency, without occupying the player's action slot. The Familiar
+   * runs Indagatio (time-mode, free); the Imp runs Decimatio (cost-outcome) — its channel pays
+   * `ceil(cost × efficiency)` per cycle and stalls when the lifetime can't afford one. `forcedTier`
+   * pins the outcome tier so a passive runner can't roll a catastrophic result (the Imp is Good-only,
+   * 03 §2.4).
+   */
+  readonly autonomous?: {
+    readonly action: string;
+    readonly efficiency: number;
+    readonly forcedTier?: Tier;
+  };
 }
 
 /** The wired subset of the invocation catalog (03 §2.4). Keyed by id. */
 export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
+  familiar: {
+    id: 'familiar',
+    sin: null,
+    invokingPower: 3,
+    maxActive: 1,
+    // Hybrid (02 §3): a flat +33% to player efficiency (applied in modifiers.ts alongside the other
+    // invocation magnitudes) AND a background Indagatio runner at 5% of the player's efficiency.
+    autonomous: { action: 'indagatio', efficiency: 0.05 },
+  },
+  imp: {
+    id: 'imp',
+    sin: 'ira',
+    invokingPower: 4,
+    sinLevel: 1,
+    soulCost: { fraction: 0.1, minimum: 100 },
+    maxActive: 1,
+    // Background Decimatio (cost-outcome): each cycle pays ceil(caedisCost × 0.05×playerEff) and
+    // resolves a Good kill. Good-only so a passive entity can never roll Apocalyptic and gut the
+    // player's gold/reprobates unprompted (03 §2.4).
+    autonomous: { action: 'caedis', efficiency: 0.05, forcedTier: 'good' },
+  },
+  upir: {
+    id: 'upir',
+    sin: 'gula',
+    invokingPower: 3,
+    sinLevel: 1,
+    soulCost: { fraction: 0.1, minimum: 100 },
+    maxActive: 1,
+    // Gula's background culler. The spreadsheet frames Upir as a Caedis runner at 0.05 (the doc's
+    // "kills 1 / 30 s" was the older mechanic); per the spreadsheet-wins-on-numbers rule we model it
+    // as the engine's cost-outcome runner, Good-only like the Imp. Single channel (maxActive 1) —
+    // the runner model is one channel per id, so stacking wouldn't multiply throughput anyway.
+    autonomous: { action: 'caedis', efficiency: 0.05, forcedTier: 'good' },
+  },
   fama: {
     id: 'fama',
     sin: 'vanagloria',
@@ -64,6 +116,23 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 2,
     soulCost: { fraction: 0.25, minimum: 1500 },
   },
+  lamia: {
+    id: 'lamia',
+    sin: 'luxuria',
+    invokingPower: 8,
+    sinLevel: 2,
+    soulCost: { fraction: 0.25, minimum: 1500 },
+    // Stackable. Effect (modifiers.ts): lifts Suasio success-tier weights and unconverted reprobate
+    // generation. No autonomous channel — a passive modifier source like Fama/Nightmare/Harpy.
+  },
+  lemure: {
+    id: 'lemure',
+    sin: 'acedia',
+    invokingPower: 7,
+    sinLevel: 1,
+    soulCost: { fraction: 0.1, minimum: 100 },
+    // Stackable. Effect (modifiers.ts): adds flat influence/s scaling with the Husk population.
+  },
   behemoth: {
     id: 'behemoth',
     sin: 'superbia',
@@ -77,6 +146,24 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 11,
     sinLevel: 3,
     maxActive: 1,
+  },
+  plutus: {
+    id: 'plutus',
+    sin: 'avaritia',
+    invokingPower: 8,
+    sinLevel: 2,
+    soulCost: { fraction: 0.25, minimum: 1500 },
+    // Stackable. Effect (modifiers.ts): lifts Vitium Mercatura output (gold + generation +
+    // conversion) by a flat factor per copy. A passive modifier source, no autonomous channel.
+  },
+  succubus: {
+    id: 'succubus',
+    sin: 'luxuria',
+    invokingPower: 12,
+    sinLevel: 3,
+    maxActive: 1,
+    // Apex Luxuria (free). Effect (modifiers.ts): dramatically multiplies reprobate generation, but
+    // cuts gold gain to 1% of total — a generation-at-all-costs ritual.
   },
   doppelgaenger: {
     id: 'doppelgaenger',
@@ -173,5 +260,69 @@ export function dispel(state: GameState, id: string): InvokeResult {
   return {
     ok: true,
     state: { ...state, lifetime: { ...state.lifetime, invocations } },
+  };
+}
+
+/** Invocation ids that run an autonomous background action and are currently active (count ≥ 1). */
+function activeRunnerIds(state: GameState): string[] {
+  const out: string[] = [];
+  for (const id of INVOCATION_IDS) {
+    const def = INVOCATIONS[id];
+    if (def?.autonomous && (state.lifetime.invocations[id] ?? 0) > 0) out.push(id);
+  }
+  return out;
+}
+
+/**
+ * Advance every active autonomous-runner invocation (the Familiar's background Indagatio, the Imp's
+ * background Decimatio — 02 §3) by `deltaSeconds`, each in its own channel, never touching the
+ * player's action slot. Per runner the effective efficiency is `autonomous.efficiency × the player's
+ * efficiency`. Cost-outcome runners (Imp) pay per cycle and may STALL when the lifetime can't afford
+ * one — a stalled runner stores no timer (its key is omitted) and is retried next tick. Timers for
+ * invocations no longer active are dropped. Events fold into the same outcome stream.
+ */
+export function advanceInvocationRunners(
+  state: GameState,
+  deltaSeconds: number,
+  rng: Rng,
+): { state: GameState; events: OutcomeEvent[] } {
+  const active = activeRunnerIds(state);
+  const existing = state.lifetime.invocationRunners;
+  const hasStaleTimers = Object.keys(existing).some((id) => !active.includes(id));
+  if (active.length === 0) {
+    // Nothing runs; clear any leftover timers so dispelled runners don't linger in the save.
+    return hasStaleTimers
+      ? { state: { ...state, lifetime: { ...state.lifetime, invocationRunners: {} } }, events: [] }
+      : { state, events: [] };
+  }
+
+  const events: OutcomeEvent[] = [];
+  let working = state;
+  const runners: Record<string, number> = {};
+
+  for (const id of active) {
+    const def = INVOCATIONS[id]!;
+    const auto = def.autonomous!;
+    const eff = auto.efficiency * computeModifiers(working).playerEfficiencyMul;
+    // Absent key (undefined) ⇒ null: a fresh or previously-stalled channel the engine will (re)start.
+    const prev = existing[id] ?? null;
+    const r = advanceRunnerCycles(
+      working,
+      auto.action,
+      eff,
+      prev,
+      deltaSeconds,
+      rng,
+      auto.forcedTier,
+    );
+    working = r.state;
+    for (const e of r.events) events.push(e);
+    // Only persist a numeric timer; a stalled channel (null) leaves its key out of the record.
+    if (r.remaining !== null) runners[id] = r.remaining;
+  }
+
+  return {
+    state: { ...working, lifetime: { ...working.lifetime, invocationRunners: runners } },
+    events,
   };
 }

@@ -1383,6 +1383,17 @@ body {
   color: var(--ash, #c8b48a);
   letter-spacing: 0.05em;
 }
+/* In-flight builds sit in their own block above the business list (separated, not inline). */
+.vitium-inflight {
+  margin: 0 0 0.9rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(196, 158, 74, 0.22);
+  border-left: 3px solid var(--candle);
+  background: rgba(8, 8, 10, 0.3);
+}
+.vitium-inflight .vitium-heading {
+  margin-top: 0;
+}
 
 /* ── Acolyte delegation controls ────────────────────────────────────────── */
 .acolyte-controls {

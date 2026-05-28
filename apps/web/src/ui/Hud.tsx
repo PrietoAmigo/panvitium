@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
+import { actionName } from '../game/labels.js';
 import {
   ACTIONS,
   ZERO,
@@ -42,7 +43,7 @@ function ActiveActions(): ReactElement {
       {queue.map((t, i) => {
         const total = ACTIONS[t.actionId]?.baseTimeSeconds ?? 1;
         const pct = Math.max(0, Math.min(1, 1 - t.remainingSeconds / total));
-        const name = t.actionId === 'caedis' ? strings.opera.caedis : strings.opera.suggestion;
+        const name = actionName(t.actionId);
         return (
           <div className="action-progress" key={`${i}-${t.actionId}`}>
             <span className="action-progress-label">

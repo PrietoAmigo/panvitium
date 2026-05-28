@@ -27,6 +27,7 @@ import {
   offerEternal as offerEternalSim,
   eternalSinRevealed,
   commitKatabasis,
+  enterKatabasis,
   bn,
   add,
   sub,
@@ -162,12 +163,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
   init: () => {
     if (get().ready) return;
     const loaded = loadGame(Date.now());
-    set({ ...loaded, ready: true });
+    // A save written mid-descent (inKatabasis) reloads frozen; resume the allocation menu so the
+    // player picks up where they left off rather than landing in a torn-down lifetime.
+    const phasePatch = loaded.state.inKatabasis === true ? { katabasisPhase: 'menu' as const } : {};
+    set({ ...loaded, ...phasePatch, ready: true });
   },
 
   advance: (deltaSeconds) => {
     const current = get().state;
     if (!current) return;
+    // During the descent (menu open) and the recap the lifetime is frozen — the soul is in trance.
+    // Skip the sim entirely so nothing accrues (no suicides, no business gold, no soul minting).
+    // The RAF accumulator drains harmlessly through these no-op calls, so there is no catch-up
+    // burst when the screen closes.
+    if (get().katabasisPhase !== null) return;
     const { state, events, notices, achievementsUnlocked } = tick(current, deltaSeconds);
     // A toggle that auto-deactivated this tick surfaces as the transient notice (02 §3). The
     // sim has already removed it; this just tells the player. Latest wins if several fired.
@@ -264,8 +273,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   beginKatabasis: () => {
     const current = get().state;
     if (!current) return;
-    // Bound souls return to the pool to be re-allocated (02 §5); no-op until binding exists.
-    set({ state: unbindAllSigils(current), katabasisPhase: 'menu', notice: null });
+    // Entering Katabasis tears down the lifetime's productive systems immediately (businesses,
+    // toggles, actions, invocations — 02 §6) and returns bound souls to the pool for re-allocation
+    // (02 §5). The store then freezes ticking (see `advance`) so nothing accrues while the player
+    // allocates. The carry-over rolls + lifetime reset happen at `confirmKatabasis`.
+    set({
+      state: unbindAllSigils(enterKatabasis(current)),
+      katabasisPhase: 'menu',
+      notice: null,
+    });
   },
 
   offer: (sin, amount) => {

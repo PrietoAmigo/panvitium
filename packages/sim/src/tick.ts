@@ -14,6 +14,7 @@
 import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
+import { advanceInvocationRunners } from './invocations.js';
 import { advanceBuilds, businessGoldPerSecond } from './builds.js';
 import {
   advanceToggles,
@@ -55,6 +56,19 @@ export interface TickResult {
 export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {}): TickResult {
   if (deltaSeconds <= 0) return { state, events: [], notices: [], achievementsUnlocked: [] };
 
+  // Frozen during the descent (02 §6): while the Katabasis menu is open the lifetime is in trance.
+  // Absorb the elapsed time (advance the clock) but run NO simulation — no income, no reprobate
+  // dynamics, no soul minting — for online ticks and offline catch-up alike. Cleared at commit, so a
+  // reload mid-descent resumes the allocation menu instead of fast-forwarding a torn-down lifetime.
+  if (state.inKatabasis === true) {
+    return {
+      state: { ...state, lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000) },
+      events: [],
+      notices: [],
+      achievementsUnlocked: [],
+    };
+  }
+
   const rng = makeRng(state.rngState);
 
   // 0. Vitium Compositum upkeep (02 §3). Deduct each active toggle's per-second cost BEFORE any
@@ -81,7 +95,9 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   //    only at display/spend/comparison boundary.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const goldPerSecond =
-    (BASE_GOLD_PER_SECOND + businessGoldPerSecond(state) + compositumGoldPerSecond(state)) *
+    (BASE_GOLD_PER_SECOND +
+      businessGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
+      compositumGoldPerSecond(state)) *
     mods.goldRateMul;
   const proportionalInfluence = mul(
     effectiveMax,
@@ -91,11 +107,14 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
     compositumInfluencePerSecond(state) * mods.influenceRateMul,
     deltaSeconds,
   );
+  // Flat influence/s from invocations (Lemure). Additive, scaled by the influence-rate multiplier
+  // like the Vitium Compositum term, and folded under the same maxInfluence cap below.
+  const flatInfluence = mul(mods.flatInfluencePerSecond * mods.influenceRateMul, deltaSeconds);
   const lifetime = {
     ...state.lifetime,
     gold: add(state.lifetime.gold, mul(goldPerSecond, deltaSeconds)),
     influence: min(
-      add(add(state.lifetime.influence, proportionalInfluence), vcInfluence),
+      add(add(add(state.lifetime.influence, proportionalInfluence), vcInfluence), flatInfluence),
       effectiveMax,
     ),
   };
@@ -152,6 +171,12 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   const acoResult = advanceAcolytes(working, deltaSeconds, rng);
   working = acoResult.state;
   for (const ev of acoResult.events) events.push(ev);
+
+  // 5b. Autonomous invocation runners (02 §3). The Familiar runs Indagatio in its own channel at a
+  //     fraction of the player's efficiency — separate from the player slot and the acolytes.
+  const runResult = advanceInvocationRunners(working, deltaSeconds, rng);
+  working = runResult.state;
+  for (const ev of runResult.events) events.push(ev);
 
   // 6. Achievements (03 §7). Evaluate the catalog against the fully-advanced state; fold any newly-
   //    earned ids into state.achievements and surface them for a toast. Last step, so every change

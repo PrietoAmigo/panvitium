@@ -88,11 +88,10 @@ describe('startBuild', () => {
     expect(r.ok).toBe(false);
   });
 
-  it('rejects when the player has not reached the gating Sin level', () => {
-    const s = withGold(fresh(), 1000);
+  it('allows the entry tier at Sin level 0 (gated at tier − 1, per the spreadsheet)', () => {
+    const s = withGold(fresh(), 1000); // fresh = every Sin at level 0
     const r = startBuild(s, 'gula-mercatura-1');
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toMatch(/gula level/);
+    expect(r.ok).toBe(true);
   });
 
   it('rejects when the player has not got enough gold', () => {

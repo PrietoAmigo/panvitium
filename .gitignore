@@ -33,3 +33,13 @@ coverage/
 
 # libreoffice lock files
 .~lock.*#
+
+# Overlay tarballs (delivered builds, not source)
+*.tar
+*.tar.gz
+# LibreOffice lock files
+.~lock.*#
+# Node / build artifacts (in case they slipped in)
+node_modules/
+dist/
+.env

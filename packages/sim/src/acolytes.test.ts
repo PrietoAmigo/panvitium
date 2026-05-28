@@ -6,16 +6,17 @@
  *   - unassignAcolyteFromAction takes the HIGHEST-id assigned (LIFO)
  *   - assignedCount accurately reflects current assignments
  *   - tick advances acolyte timers and resolves their action at acolyte efficiency
- *   - assignments LOOP — the acolyte restarts its action on completion
+ *   - a non-toggle delegated task runs ONCE, then the acolyte retires to idle (no looping)
  *   - acolyte work does NOT occupy the player's actionQueue
  *   - Indagatio at 33% takes ~3× the player duration (1800/0.33 ≈ 5454 s)
- *   - Suasio/Decimatio/Emptio are NOT delegatable in this slice
+ *   - Suasio/Decimatio are delegatable (cost-outcome, pay per cycle); Emptio is not
  *   - Acolytes reset to empty on Katabasis
  *   - acolyteEfficiencyMul defaults to 0.33
  */
 import { describe, expect, it } from 'vitest';
 import {
   ACTIONS,
+  actionCycleCost,
   advanceAcolytes,
   assignAcolyteToAction,
   assignedCount,
@@ -96,13 +97,13 @@ describe('autoRecruitAcolytes', () => {
 });
 
 describe('isDelegatable (slice scope)', () => {
-  it('Indagatio is delegatable in this slice', () => {
+  it('Indagatio, Suasio and Decimatio are delegatable', () => {
     expect(isDelegatable('indagatio')).toBe(true);
+    expect(isDelegatable('suggestion')).toBe(true);
+    expect(isDelegatable('caedis')).toBe(true);
   });
 
-  it('Suasio/Decimatio/Emptio are NOT delegatable yet', () => {
-    expect(isDelegatable('suggestion')).toBe(false);
-    expect(isDelegatable('caedis')).toBe(false);
+  it('Emptio is NOT delegatable (needs a per-target maleficium)', () => {
     expect(isDelegatable('emptio')).toBe(false);
   });
 });
@@ -110,7 +111,7 @@ describe('isDelegatable (slice scope)', () => {
 describe('assignAcolyteToAction', () => {
   it('refuses non-delegatable actions', () => {
     const s = autoRecruitAcolytes(fresh());
-    const r = assignAcolyteToAction(s, 'caedis');
+    const r = assignAcolyteToAction(s, 'emptio');
     expect(r.ok).toBe(false);
   });
 
@@ -194,7 +195,7 @@ describe('assignedCount', () => {
   });
 });
 
-describe('advanceAcolytes — Indagatio loop (one acolyte)', () => {
+describe('advanceAcolytes — Indagatio (one-shot, one acolyte)', () => {
   it('idle acolytes are no-ops', () => {
     const s = autoRecruitAcolytes(fresh());
     const result = advanceAcolytes(s, 100, makeRng(0));
@@ -213,36 +214,34 @@ describe('advanceAcolytes — Indagatio loop (one acolyte)', () => {
     expect(after.state.lifetime.acolytes[0]!.remainingSeconds).toBeCloseTo(before - 100, 3);
   });
 
-  it('resolves the action when the timer hits 0 and immediately restarts the next cycle', () => {
+  it('resolves the action once the timer hits 0, then retires the acolyte to idle', () => {
     let s = autoRecruitAcolytes(fresh());
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
     const dur = s.lifetime.acolytes[0]!.remainingSeconds!;
-    // Advance just past one full cycle.
+    // Advance well past one full cycle — a non-toggle task runs ONCE, it does not loop.
     const after = advanceAcolytes(s, dur + 10, makeRng(0));
-    expect(after.events.length).toBeGreaterThanOrEqual(1);
+    expect(after.events).toHaveLength(1);
     expect(after.events[0]!.actionId).toBe('indagatio');
-    // Timer reset to a fresh cycle minus the leftover delta.
     const a = after.state.lifetime.acolytes[0]!;
-    expect(a.assignedAction).toBe('indagatio');
-    expect(a.remainingSeconds).not.toBeNull();
-    expect(a.remainingSeconds!).toBeCloseTo(dur - 10, 3);
+    expect(a.assignedAction).toBeNull(); // retired back to idle
+    expect(a.remainingSeconds).toBeNull();
   });
 
-  it('handles offline catch-up — multiple completions within one large delta', () => {
+  it('does a single task even across a large delta, then retires (no looping)', () => {
     let s = autoRecruitAcolytes(fresh());
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
     const dur = s.lifetime.acolytes[0]!.remainingSeconds!;
-    // Three cycles worth of time.
+    // Three cycles' worth of time would once have produced three events; one-shot yields exactly one.
     const after = advanceAcolytes(s, dur * 3 + 5, makeRng(0));
-    expect(after.events.length).toBe(3);
-    for (const e of after.events) expect(e.actionId).toBe('indagatio');
-    // Timer reset partway into the fourth cycle.
+    expect(after.events).toHaveLength(1);
+    expect(after.events[0]!.actionId).toBe('indagatio');
     const a = after.state.lifetime.acolytes[0]!;
-    expect(a.remainingSeconds!).toBeCloseTo(dur - 5, 3);
+    expect(a.assignedAction).toBeNull();
+    expect(a.remainingSeconds).toBeNull();
   });
 });
 
@@ -305,5 +304,91 @@ describe('builds + acolytes — both run in parallel without touching the player
     expect(s.lifetime.buildQueue).toHaveLength(1);
     expect(s.lifetime.acolytes[0]!.assignedAction).toBe('indagatio');
     expect(s.lifetime.actionQueue).toHaveLength(0); // player slot free
+  });
+});
+
+function withGold(s: GameState, v: number): GameState {
+  return { ...s, lifetime: { ...s.lifetime, gold: bn(v) } };
+}
+function withInfluence(s: GameState, v: number): GameState {
+  return { ...s, lifetime: { ...s.lifetime, influence: bn(v) } };
+}
+function withReprobates(s: GameState, n: number): GameState {
+  return {
+    ...s,
+    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: n } },
+  };
+}
+
+describe('cost-outcome delegation (Suasio / Decimatio)', () => {
+  it('assigning Decimatio pays the first cycle up front', () => {
+    const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
+    const cost = actionCycleCost('caedis', eff).gold;
+    const s = withGold(autoRecruitAcolytes(fresh()), 1000);
+    const r = assignAcolyteToAction(s, 'caedis');
+    if (!r.ok) throw new Error('assign caedis failed');
+    expect(r.state.lifetime.gold.toNumber()).toBe(1000 - cost);
+    expect(r.state.lifetime.acolytes[0]!.assignedAction).toBe('caedis');
+    expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(ACTIONS.caedis!.baseTimeSeconds);
+  });
+
+  it('assigning Suasio pays influence up front', () => {
+    const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
+    const cost = actionCycleCost('suggestion', eff).influence;
+    const s = withInfluence(autoRecruitAcolytes(fresh()), 100);
+    const r = assignAcolyteToAction(s, 'suggestion');
+    if (!r.ok) throw new Error('assign suasio failed');
+    expect(r.state.lifetime.influence.toNumber()).toBe(100 - cost);
+    expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(
+      ACTIONS.suggestion!.baseTimeSeconds,
+    );
+  });
+
+  it('a delegated Decimatio pays at assign, runs ONE task, then retires the acolyte', () => {
+    const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
+    const cost = actionCycleCost('caedis', eff).gold;
+    let s = withReprobates(withGold(autoRecruitAcolytes(fresh()), 1000), 100);
+    const r = assignAcolyteToAction(s, 'caedis'); // pays cycle 1 up front
+    if (!r.ok) throw new Error('assign');
+    s = r.state;
+    expect(s.lifetime.gold.toNumber()).toBe(1000 - cost); // first (and only) cycle paid at assign
+    // Past one full cycle: the acolyte resolves its single task and retires — no second payment.
+    const adv = advanceAcolytes(s, 20, makeRng(11));
+    expect(adv.events).toHaveLength(1);
+    expect(adv.events[0]!.actionId).toBe('caedis');
+    expect(adv.state.lifetime.gold.toNumber()).toBe(1000 - cost); // not charged again (one-shot)
+    expect(adv.state.lifetime.reprobates.reprobate).toBeLessThanOrEqual(100); // Caedis never adds
+    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBeNull(); // retired to idle
+    expect(adv.state.lifetime.actionQueue).toHaveLength(0);
+  });
+
+  it('an acolyte assigned while broke is stalled, then runs once funded and retires', () => {
+    let s = withReprobates(withGold(autoRecruitAcolytes(fresh()), 0), 100);
+    const r = assignAcolyteToAction(s, 'caedis');
+    if (!r.ok) throw new Error('assign should still succeed (stalled)');
+    s = r.state;
+    expect(s.lifetime.acolytes[0]!.assignedAction).toBe('caedis');
+    expect(s.lifetime.acolytes[0]!.remainingSeconds).toBeNull(); // stalled — nothing paid
+    expect(s.lifetime.gold.toNumber()).toBe(0);
+    // A stalled acolyte does nothing on a tick while still broke.
+    const idle = advanceAcolytes(s, 10, makeRng(12));
+    expect(idle.events).toHaveLength(0);
+    expect(idle.state.lifetime.gold.toNumber()).toBe(0);
+    expect(idle.state.lifetime.acolytes[0]!.assignedAction).toBe('caedis'); // still waiting
+
+    const cost = actionCycleCost('caedis', computeModifiers(s).acolyteEfficiencyMul).gold;
+    s = withGold(idle.state, 500);
+    const adv = advanceAcolytes(s, 10, makeRng(12));
+    expect(adv.events).toHaveLength(1);
+    // The cycle was paid (gold dropped by at least the cost); any extra is a tier outcome.
+    expect(500 - adv.state.lifetime.gold.toNumber()).toBeGreaterThanOrEqual(cost);
+    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBeNull(); // retired after the task
+  });
+
+  it('a stalled Decimatio acolyte does not occupy the player action slot', () => {
+    const s = withGold(autoRecruitAcolytes(fresh()), 0);
+    const r = assignAcolyteToAction(s, 'caedis');
+    if (!r.ok) throw new Error('assign');
+    expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });
 });
