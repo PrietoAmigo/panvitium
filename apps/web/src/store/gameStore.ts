@@ -22,10 +22,15 @@ import {
   unassignAcolyteFromAction,
   isSignatureTier,
   unbindAllSigils,
+  bindSigil as bindSigilSim,
   offerDevotion,
   offerEternal as offerEternalSim,
   eternalSinRevealed,
   commitKatabasis,
+  bn,
+  add,
+  sub,
+  gte,
   type BigNum,
   type GameState,
   type OutcomeEvent,
@@ -48,6 +53,8 @@ interface GameStore {
   /** Recent outcomes, newest first (transient; not persisted). */
   log: OutcomeEvent[];
   /** The latest Stellar/Apocalyptic outcome awaiting its pop-up, or null. */
+  /** The id of the most recently unlocked achievement (03 §7), for a toast; null when dismissed. */
+  achievementToast: string | null;
   signature: OutcomeEvent | null;
   /** A transient message for a refused action (e.g. "not enough gold"), or null. */
   notice: string | null;
@@ -104,6 +111,17 @@ interface GameStore {
   /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
   offer: (sin: Sin, amount: BigNum | number) => void;
   /**
+   * Bind a sigil to an absolute target soul count (recoverable, 02 §5). The delta moves to/from the
+   * unspent pool; clamped to (current binding + pool). Binding 0 clears it.
+   */
+  bind: (sigilId: number, targetAmount: BigNum | number) => void;
+  /** Unbind a sigil entirely, returning its souls to the pool. */
+  unbind: (sigilId: number) => void;
+  /** Lock `delta` more souls onto a sigil (relative; clamped to the available pool). */
+  bindMore: (sigilId: number, delta: BigNum | number) => void;
+  /** Release `delta` souls from a sigil back to the pool (relative; clamped to what is bound). */
+  bindLess: (sigilId: number, delta: BigNum | number) => void;
+  /**
    * Offer souls to the Eternal Sin (03 §8). No-op until every Cardinal Sin is maxed. Crossing the
    * reveal threshold raises `eternalReveal` to trigger the credits screen.
    */
@@ -120,6 +138,8 @@ interface GameStore {
   persist: () => void;
   /** Dismiss the active signature pop-up. */
   dismissSignature: () => void;
+  /** Clear the achievement toast. */
+  dismissAchievementToast: () => void;
   /** Clear the active notice. */
   dismissNotice: () => void;
   /** Wipe the save and start a fresh game. */
@@ -134,6 +154,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   log: [],
   signature: null,
   notice: null,
+  achievementToast: null,
   katabasisPhase: null,
   recap: null,
   eternalReveal: false,
@@ -147,19 +168,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
   advance: (deltaSeconds) => {
     const current = get().state;
     if (!current) return;
-    const { state, events, notices } = tick(current, deltaSeconds);
+    const { state, events, notices, achievementsUnlocked } = tick(current, deltaSeconds);
     // A toggle that auto-deactivated this tick surfaces as the transient notice (02 §3). The
     // sim has already removed it; this just tells the player. Latest wins if several fired.
     const noticePatch = notices.length > 0 ? { notice: notices[notices.length - 1]! } : {};
+    // A newly-unlocked achievement raises a toast (latest wins if several fired this tick).
+    const achievementPatch =
+      achievementsUnlocked.length > 0
+        ? { achievementToast: achievementsUnlocked[achievementsUnlocked.length - 1]! }
+        : {};
     if (events.length === 0) {
-      set({ state, ...noticePatch });
+      set({ state, ...noticePatch, ...achievementPatch });
       return;
     }
     set((s) => {
       const log = [...events].reverse().concat(s.log).slice(0, LOG_CAP);
       let signature = s.signature;
       for (const e of events) if (isSignatureTier(e.tier)) signature = e;
-      return { state, log, signature, ...noticePatch };
+      return { state, log, signature, ...noticePatch, ...achievementPatch };
     });
   },
 
@@ -250,6 +276,36 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ state: offerDevotion(current, sin, amount), notice: null });
   },
 
+  bind: (sigilId, targetAmount) => {
+    const current = get().state;
+    if (!current) return;
+    set({ state: bindSigilSim(current, sigilId, targetAmount), notice: null });
+  },
+
+  unbind: (sigilId) => {
+    const current = get().state;
+    if (!current) return;
+    set({ state: bindSigilSim(current, sigilId, 0), notice: null });
+  },
+
+  bindMore: (sigilId, delta) => {
+    const current = get().state;
+    if (!current) return;
+    const bound = current.sigilBindings[sigilId] ?? bn(0);
+    const d = typeof delta === 'number' ? bn(delta) : delta;
+    // bindSigil clamps the absolute target to (bound + pool), so over-asking simply pours in all.
+    set({ state: bindSigilSim(current, sigilId, add(bound, d)), notice: null });
+  },
+
+  bindLess: (sigilId, delta) => {
+    const current = get().state;
+    if (!current) return;
+    const bound = current.sigilBindings[sigilId] ?? bn(0);
+    const d = typeof delta === 'number' ? bn(delta) : delta;
+    const target = gte(bound, d) ? sub(bound, d) : bn(0);
+    set({ state: bindSigilSim(current, sigilId, target), notice: null });
+  },
+
   offerEternal: (amount) => {
     const current = get().state;
     if (!current) return;
@@ -281,6 +337,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   dismissSignature: () => set({ signature: null }),
+  dismissAchievementToast: () => set({ achievementToast: null }),
   dismissNotice: () => set({ notice: null }),
 
   hardReset: () => {

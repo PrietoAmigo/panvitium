@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   SINS,
@@ -8,7 +8,6 @@ import {
   floor,
   sub,
   div,
-  gte,
   isZero,
   MAX_SIN_LEVEL,
   ETERNAL_SIN_THRESHOLD,
@@ -16,6 +15,10 @@ import {
   eternalSinRevealed,
   eternalProgress,
   gameRuntimeMs,
+  SIGIL_IDS,
+  sigilById,
+  sigilVisible,
+  sigilStrength,
   bn,
   type GameState,
   type Sin,
@@ -26,17 +29,90 @@ import { formatBigNum, formatDuration } from '../game/format.js';
 /** Four pips, `level` of them filled — the Sin's 0..4 progress at a glance. */
 function levelPips(level: number): string {
   let out = '';
-  for (let i = 0; i < MAX_SIN_LEVEL; i++) out += i < level ? '●' : '○';
+  for (let i = 0; i < MAX_SIN_LEVEL; i++) out += i < level ? '\u25CF' : '\u25CB';
   return out;
 }
 
-/** Fixed quick-offer amounts; players can stack these to reach any total, down to a single soul. */
-const QUICK_AMOUNTS: { label: string; amount: number }[] = [
-  { label: '+1', amount: 1 },
-  { label: '+10', amount: 10 },
-  { label: '+100', amount: 100 },
-  { label: '+1K', amount: 1000 },
-];
+// ── Press-and-hold offering ──────────────────────────────────────────────────
+// One button, held down, pours souls in at an exponentially rising rate: a quick tap moves a single
+// soul; the longer the hold, the larger each step. Each step reads fresh state through the store
+// action, so it naturally clamps to the available pool (offering) or to what is bound (freeing).
+const HOLD_BASE = 1; // souls on the first step (a tap)
+const HOLD_GROWTH = 8; // multiply the per-step amount…
+const HOLD_RAMP_MS = 1000; // …for every second the button stays down
+const HOLD_STEP_MS = 80; // ~12 steps a second
+const HOLD_MAX_STEP = 1e15; // keep a single step well under MAX_SAFE_INTEGER
+
+function HoldButton({
+  onStep,
+  disabled = false,
+  className = '',
+  children,
+  ariaLabel,
+}: {
+  onStep: (delta: number) => void;
+  disabled?: boolean;
+  className?: string;
+  children: ReactNode;
+  ariaLabel?: string;
+}): ReactElement {
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef(0);
+  const lastRef = useRef(0);
+  const onStepRef = useRef(onStep);
+  onStepRef.current = onStep;
+
+  const stop = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    window.removeEventListener('pointerup', stop);
+    window.removeEventListener('pointercancel', stop);
+  }, []);
+
+  const frame = useCallback((now: number) => {
+    if (now - lastRef.current >= HOLD_STEP_MS) {
+      lastRef.current = now;
+      const held = now - startRef.current;
+      const amt = Math.min(
+        HOLD_MAX_STEP,
+        Math.max(HOLD_BASE, Math.floor(HOLD_BASE * Math.pow(HOLD_GROWTH, held / HOLD_RAMP_MS))),
+      );
+      onStepRef.current(amt);
+    }
+    rafRef.current = requestAnimationFrame(frame);
+  }, []);
+
+  const begin = useCallback(() => {
+    if (disabled) return;
+    stop();
+    const now = performance.now();
+    startRef.current = now;
+    lastRef.current = now - HOLD_STEP_MS; // fire one step immediately on press
+    rafRef.current = requestAnimationFrame(frame);
+    // Anchor release on the window: a button that becomes disabled mid-hold (pool drained) would
+    // not itself fire pointerup, which would otherwise leave the loop spinning on no-op steps.
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+  }, [disabled, frame, stop]);
+
+  // Tidy up if the component unmounts mid-hold (e.g. page flip or descent).
+  useEffect(() => stop, [stop]);
+
+  return (
+    <button
+      type="button"
+      className={`hold-btn ${className}`}
+      disabled={disabled}
+      onPointerDown={begin}
+      onPointerLeave={stop}
+      {...(ariaLabel ? { 'aria-label': ariaLabel } : {})}
+    >
+      {children}
+    </button>
+  );
+}
 
 /**
  * One Prince's offering card. Offering is continuous: any amount raises the skill intensity, and a
@@ -88,27 +164,14 @@ function PrinceCard({ sin, state }: { sin: Sin; state: GameState }): ReactElemen
               style={{ width: `${(ratio * 100).toFixed(1)}%` }}
             />
           </div>
-          <div className="prince-offer-row">
-            {QUICK_AMOUNTS.map((q) => (
-              <button
-                key={q.label}
-                type="button"
-                className="offer-chip"
-                disabled={!gte(pool, q.amount)}
-                onClick={() => offer(sin, q.amount)}
-              >
-                {q.label}
-              </button>
-            ))}
-            <button
-              type="button"
-              className="offer-chip offer-all"
-              disabled={isZero(pool)}
-              onClick={() => offer(sin, state.souls)}
-            >
-              {strings.katabasis.offerAll}
-            </button>
-          </div>
+          <HoldButton
+            className="offer-hold"
+            disabled={isZero(pool)}
+            onStep={(d) => offer(sin, d)}
+            ariaLabel={`${strings.katabasis.holdOffer} — ${info.prince}`}
+          >
+            {strings.katabasis.holdOffer}
+          </HoldButton>
         </>
       )}
     </div>
@@ -147,36 +210,86 @@ function EternalSinCard({ state }: { state: GameState }): ReactElement {
       {revealed ? (
         <div className="prince-mastered eternal-mastered">{strings.eternal.complete}</div>
       ) : (
-        <div className="prince-offer-row">
-          {QUICK_AMOUNTS.map((q) => (
-            <button
-              key={q.label}
-              type="button"
-              className="offer-chip"
-              disabled={!gte(pool, q.amount)}
-              onClick={() => offerEternal(q.amount)}
-            >
-              {q.label}
-            </button>
-          ))}
-          <button
-            type="button"
-            className="offer-chip offer-all"
-            disabled={isZero(pool)}
-            onClick={() => offerEternal(state.souls)}
-          >
-            {strings.katabasis.offerAll}
-          </button>
-        </div>
+        <HoldButton
+          className="offer-hold eternal-hold"
+          disabled={isZero(pool)}
+          onStep={(d) => offerEternal(d)}
+          ariaLabel={strings.katabasis.holdOffer}
+        >
+          {strings.katabasis.holdOffer}
+        </HoldButton>
       )}
     </div>
   );
 }
 
+/**
+ * One bound sigil's row: name, current bound souls + live effect strength, and the two hold buttons.
+ * Binding is recoverable (02 §5) — holding Bind pours souls in, holding Free draws them back out,
+ * both at the exponential hold rate.
+ */
+function SigilRow({ id, state }: { id: number; state: GameState }): ReactElement | null {
+  const bindMore = useGameStore((s) => s.bindMore);
+  const bindLess = useGameStore((s) => s.bindLess);
+  const def = sigilById(id);
+  if (!def || !sigilVisible(state, def)) return null;
+  const current = state.sigilBindings[id] ?? bn(0);
+  const pool = floor(state.souls);
+  const strength = sigilStrength(def, current);
+  const name = strings.sigils.names[id] ?? def.name;
+  return (
+    <div className="sigil-row">
+      <div className="sigil-meta">
+        <span className="sigil-name">{name}</span>
+        <span className="sigil-effect">{strings.sigils.descriptions[id] ?? ''}</span>
+      </div>
+      <div className="sigil-bound">
+        {formatBigNum(current)}
+        {strength > 0 ? <span className="sigil-strength"> · +{strength.toFixed(2)}</span> : null}
+      </div>
+      <div className="sigil-actions">
+        <HoldButton
+          className="sigil-lock"
+          disabled={isZero(pool)}
+          onStep={(d) => bindMore(id, d)}
+          ariaLabel={`${strings.sigils.lock} — ${name}`}
+        >
+          {strings.sigils.lock}
+        </HoldButton>
+        <HoldButton
+          className="sigil-unlock"
+          disabled={isZero(current)}
+          onStep={(d) => bindLess(id, d)}
+          ariaLabel={`${strings.sigils.unlock} — ${name}`}
+        >
+          {strings.sigils.unlock}
+        </HoldButton>
+      </div>
+    </div>
+  );
+}
+
+/** The sigil-binding page (02 §5) — the recoverable prestige axis. */
+function SigilPanel({ state }: { state: GameState }): ReactElement {
+  return (
+    <div className="sigil-panel">
+      <h2 className="sigil-heading">{strings.sigils.heading}</h2>
+      <p className="sigil-intro">{strings.sigils.intro}</p>
+      <div className="sigil-list">
+        {SIGIL_IDS.map((id) => (
+          <SigilRow key={id} id={id} state={state} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type KatabasisPage = 'sins' | 'sigils';
+
 function KatabasisMenu(): ReactElement {
   const state = useGameStore((s) => s.state);
   const confirm = useGameStore((s) => s.confirmKatabasis);
-  const close = useGameStore((s) => s.closeKatabasis);
+  const [page, setPage] = useState<KatabasisPage>('sins');
   if (!state) return <div className="katabasis" />;
 
   return (
@@ -187,24 +300,68 @@ function KatabasisMenu(): ReactElement {
         <div className="katabasis-pool">
           {strings.katabasis.pool}: <strong>{formatBigNum(state.souls)}</strong>
         </div>
-        <div className="prince-grid">
-          {SINS.map((sin) => (
-            <PrinceCard key={sin} sin={sin} state={state} />
-          ))}
+
+        <div className="kat-pager" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={page === 'sins'}
+            className={`kat-tab${page === 'sins' ? ' kat-tab--active' : ''}`}
+            onClick={() => setPage('sins')}
+          >
+            {strings.katabasis.pageSins}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={page === 'sigils'}
+            className={`kat-tab${page === 'sigils' ? ' kat-tab--active' : ''}`}
+            onClick={() => setPage('sigils')}
+          >
+            {strings.katabasis.pageSigils}
+          </button>
         </div>
-        {eternalSinVisible(state) && (
+
+        {page === 'sins' ? (
           <>
-            <p className="eternal-herald">{strings.eternal.herald}</p>
-            <EternalSinCard state={state} />
+            <div className="prince-grid">
+              {SINS.map((sin) => (
+                <PrinceCard key={sin} sin={sin} state={state} />
+              ))}
+            </div>
+            {eternalSinVisible(state) && (
+              <>
+                <p className="eternal-herald">{strings.eternal.herald}</p>
+                <EternalSinCard state={state} />
+              </>
+            )}
           </>
+        ) : (
+          <SigilPanel state={state} />
         )}
-        <p className="katabasis-deferred">{strings.katabasis.sigilsDeferred}</p>
+
+        <div className="kat-nav">
+          <button
+            type="button"
+            className="kat-arrow"
+            disabled={page === 'sins'}
+            onClick={() => setPage('sins')}
+          >
+            ‹ {strings.katabasis.prev}
+          </button>
+          <button
+            type="button"
+            className="kat-arrow"
+            disabled={page === 'sigils'}
+            onClick={() => setPage('sigils')}
+          >
+            {strings.katabasis.next} ›
+          </button>
+        </div>
+
         <div className="katabasis-actions">
           <button type="button" className="opera-btn" onClick={() => confirm()}>
             {strings.katabasis.confirm}
-          </button>
-          <button type="button" className="opera-btn error-reset" onClick={() => close()}>
-            {strings.katabasis.notYet}
           </button>
         </div>
       </div>

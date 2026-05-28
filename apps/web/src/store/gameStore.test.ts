@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { bn, floor, sinLevel, SINS, ETERNAL_SIN_THRESHOLD, type GameState } from '@panvitium/sim';
+import {
+  bn,
+  floor,
+  sinLevel,
+  SINS,
+  ETERNAL_SIN_THRESHOLD,
+  computeModifiers,
+  type GameState,
+} from '@panvitium/sim';
 import { useGameStore } from './gameStore.js';
 
 const store = (): ReturnType<typeof useGameStore.getState> => useGameStore.getState();
@@ -162,30 +170,29 @@ describe('gameStore — Vitium Mercatura (build/shutdown)', () => {
 
   it('queues a build when gated and paid, leaving the player slot free', () => {
     patchDevotion('gula', 180);
-    patchGold(500);
+    patchGold(2000);
     store().build('gula-mercatura-1');
     const s = store().state as GameState;
     expect(s.lifetime.buildQueue).toHaveLength(1);
     expect(s.lifetime.actionQueue).toHaveLength(0); // doesn't occupy the player slot
-    expect(floor(s.lifetime.gold).toNumber()).toBe(400);
+    expect(floor(s.lifetime.gold).toNumber()).toBe(1000);
     expect(store().notice).toBeNull();
   });
 
-  it('completes a build via advance and lets the player shut it down for a 50% refund', () => {
+  it('completes a build via advance and lets the player shut it down for a 25% refund', () => {
     patchDevotion('gula', 180);
-    patchGold(200);
+    patchGold(2000);
     store().build('gula-mercatura-1');
-    store().advance(30); // build completes in 30s
+    store().advance(60); // build completes in 60s
     const built = store().state as GameState;
     expect(built.lifetime.buildQueue).toHaveLength(0);
     expect(built.lifetime.businesses['gula-mercatura-1']).toBe(1);
-    // Advance produced 30 s × 1 g/s of business gold ON TOP of base 10 g/s → 100 + 30 + base.
-    // Don't over-specify the exact number; just check the shutdown delta.
+    // Don't over-specify business/base gold accrued during the advance; check the shutdown delta.
     const goldBefore = floor(built.lifetime.gold).toNumber();
     store().shutdown('gula-mercatura-1');
     const after = store().state as GameState;
     expect(after.lifetime.businesses['gula-mercatura-1']).toBeUndefined();
-    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 50);
+    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 250); // floor(1000 * 0.25)
   });
 
   it('refuses shutdown when nothing owned', () => {
@@ -243,7 +250,7 @@ describe('gameStore — Vitium Compositum ceremonies', () => {
 
   it('refuses activation when the Sin gates are not met', () => {
     store().activateCeremony('bacchanal');
-    expect(store().notice).toMatch(/gula 2 \+ luxuria 2/);
+    expect(store().notice).toMatch(/gula 1 \+ luxuria 1/);
   });
 
   it('activates a ceremony when gated, adding it to activeToggles', () => {
@@ -386,5 +393,41 @@ describe('gameStore — Eternal Sin', () => {
     expect(store().eternalReveal).toBe(false);
     store().offerEternal(50);
     expect(store().eternalReveal).toBe(false);
+  });
+});
+
+describe('gameStore — sigil binding', () => {
+  it('binds souls to a sigil, moving them out of the pool', () => {
+    patchSouls(10_000);
+    store().bind(6, 4000); // Valefor
+    const s = store().state as GameState;
+    expect(s.sigilBindings[6]?.toNumber()).toBe(4000);
+    expect(floor(s.souls).toNumber()).toBe(6000);
+  });
+
+  it('rebinds to an absolute target (delta returns to the pool)', () => {
+    patchSouls(10_000);
+    store().bind(6, 4000);
+    store().bind(6, 1000); // lower the binding → 3000 returns
+    const s = store().state as GameState;
+    expect(s.sigilBindings[6]?.toNumber()).toBe(1000);
+    expect(floor(s.souls).toNumber()).toBe(9000);
+  });
+
+  it('unbinds entirely, returning all souls', () => {
+    patchSouls(10_000);
+    store().bind(6, 4000);
+    store().unbind(6);
+    const s = store().state as GameState;
+    expect(s.sigilBindings[6]).toBeUndefined();
+    expect(floor(s.souls).toNumber()).toBe(10_000);
+  });
+
+  it('a bound sigil changes the modifier bundle', () => {
+    patchSouls(10_000);
+    const before = computeModifiers(store().state as GameState).goldRateMul;
+    store().bind(6, 10_000); // Valefor: gold rate up
+    const after = computeModifiers(store().state as GameState).goldRateMul;
+    expect(after).toBeGreaterThan(before);
   });
 });

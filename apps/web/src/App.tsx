@@ -5,6 +5,7 @@ import { RoomView } from './rooms/RoomView.js';
 import { Hud } from './ui/Hud.js';
 import { Panel, PANELS } from './ui/panels.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
+import { AchievementToast } from './ui/AchievementToast.js';
 import { KatabasisModal } from './ui/KatabasisModal.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
@@ -46,6 +47,7 @@ export function App(): ReactElement {
         <div className="room-name">{ROOMS[room].title}</div>
       </main>
       <SignaturePopup />
+      <AchievementToast />
       <KatabasisModal />
       {activePanel && (
         <Panel title={activePanel.title} onClose={closePanel}>

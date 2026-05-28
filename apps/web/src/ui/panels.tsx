@@ -1,4 +1,4 @@
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useState, useEffect, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   floor,
@@ -26,6 +26,8 @@ import {
   currentInvokingPower,
   assignedCount,
   isDelegatable,
+  ACHIEVEMENTS,
+  isUnlocked,
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../rooms/rooms.js';
@@ -221,13 +223,14 @@ function DecimatioGroup(): ReactElement {
   );
 }
 
-type PcGroupId = 'depraedatio' | 'decimatio' | 'indagatio' | 'emptio' | 'logs';
+type PcGroupId = 'depraedatio' | 'decimatio' | 'indagatio' | 'emptio' | 'achievements' | 'logs';
 
 const PC_GROUPS: { id: PcGroupId; label: string }[] = [
   { id: 'depraedatio', label: strings.opera.depraedatio },
   { id: 'decimatio', label: strings.opera.decimatio },
   { id: 'indagatio', label: strings.opera.indagatio },
   { id: 'emptio', label: strings.opera.emptio },
+  { id: 'achievements', label: strings.achievements.ledger },
   { id: 'logs', label: strings.opera.logs },
 ];
 
@@ -621,12 +624,47 @@ function PanvitiumRow(): ReactElement {
   );
 }
 
+/** Achievements ledger (03 §7): the catalog with unlocked rows lit and locked rows dimmed. */
+function AchievementsGroup(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const unlockedCount = state
+    ? ACHIEVEMENTS.reduce((n, a) => (isUnlocked(state, a.id) ? n + 1 : n), 0)
+    : 0;
+  return (
+    <>
+      <p className="opera-intro">{strings.achievements.intro}</p>
+      <p className="achievement-count">
+        {unlockedCount} / {ACHIEVEMENTS.length}
+      </p>
+      <ul className="achievement-list">
+        {ACHIEVEMENTS.map((a) => {
+          const got = state ? isUnlocked(state, a.id) : false;
+          return (
+            <li key={a.id} className={`achievement-row${got ? ' achievement-unlocked' : ''}`}>
+              <span className="achievement-mark" aria-hidden="true">
+                {got ? '◆' : '◇'}
+              </span>
+              <span className="achievement-meta">
+                <span className="achievement-name">
+                  {got ? strings.achievements.names[a.id] : strings.achievements.hiddenName}
+                </span>
+                <span className="achievement-desc">{strings.achievements.descriptions[a.id]}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 /** Body for a selected PC group. */
 function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
   if (group === 'depraedatio') return <DepraedatioGroup />;
   if (group === 'decimatio') return <DecimatioGroup />;
   if (group === 'indagatio') return <IndagatioGroup />;
   if (group === 'emptio') return <EmptioGroup />;
+  if (group === 'achievements') return <AchievementsGroup />;
   if (group === 'logs') return <OutcomeLog />;
   return <p className="pc-empty">{strings.opera.notYet}.</p>;
 }
@@ -684,6 +722,14 @@ function altarPips(level: number): string {
 function AltarPanel(): ReactElement {
   const state = useGameStore((s) => s.state);
   const begin = useGameStore((s) => s.beginKatabasis);
+  // Descent is now committal — there is no climbing back out of the Katabasis menu (02 §6). Arm the
+  // button on the first tap and only descend on the second, so it can't be triggered by a misclick.
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = window.setTimeout(() => setArmed(false), 4000);
+    return () => window.clearTimeout(t);
+  }, [armed]);
   if (!state) return <p>{strings.altar.intro}</p>;
   return (
     <div className="altar">
@@ -703,8 +749,20 @@ function AltarPanel(): ReactElement {
         })}
       </ul>
       <p className="altar-sigils">{strings.altar.sigilsNone}</p>
-      <button type="button" className="opera-btn descend-btn" onClick={() => begin()}>
-        {strings.altar.descend}
+      {armed && <p className="descend-warning">{strings.altar.descendArm}</p>}
+      <button
+        type="button"
+        className={`opera-btn descend-btn${armed ? ' descend-btn--armed' : ''}`}
+        onClick={() => {
+          if (armed) {
+            setArmed(false);
+            begin();
+          } else {
+            setArmed(true);
+          }
+        }}
+      >
+        {armed ? strings.altar.descendConfirm : strings.altar.descend}
       </button>
     </div>
   );
