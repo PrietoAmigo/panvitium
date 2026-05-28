@@ -84,11 +84,15 @@ const lifetimeSchema = z.object({
 export const serializedGameStateSchema = z.object({
   souls: bigNumString,
   devotion: recordOf(SINS, bigNumString),
+  // Cumulative Eternal-Sin devotion (03 §8). Additive-optional (ADR-023): absent → ZERO at load.
+  eternalDevotion: bigNumString.optional(),
   // sigil id -> bound souls. JSON object keys are strings; parsed back to numbers on load.
   sigilBindings: z.record(z.string(), bigNumString),
   lifetime: lifetimeSchema,
   rngState: z.number().int(),
   lastTickAt: z.number().int(),
+  // Game-start clock for the runtime score. Additive-optional; old saves default to lastTickAt.
+  startedAt: z.number().int().optional(),
 });
 
 /** The JSON-safe form of GameState. */
@@ -110,6 +114,10 @@ export function serializeGameState(state: GameState): SerializedGameState {
   return {
     souls: serializeBigNum(state.souls),
     devotion,
+    // Omit eternalDevotion when zero so fresh / pre-Eternal saves keep the prior wire form.
+    ...(state.eternalDevotion.gt(0)
+      ? { eternalDevotion: serializeBigNum(state.eternalDevotion) }
+      : {}),
     sigilBindings,
     lifetime: {
       gold: serializeBigNum(state.lifetime.gold),
@@ -160,6 +168,7 @@ export function serializeGameState(state: GameState): SerializedGameState {
     },
     rngState: state.rngState,
     lastTickAt: state.lastTickAt,
+    startedAt: state.startedAt,
   };
 }
 
@@ -179,6 +188,10 @@ export function deserializeGameState(s: SerializedGameState): GameState {
   return {
     souls: deserializeBigNum(s.souls),
     devotion,
+    // Additive-optional: absent → ZERO. (Decimal from string; deserializeBigNum handles it.)
+    eternalDevotion: s.eternalDevotion
+      ? deserializeBigNum(s.eternalDevotion)
+      : deserializeBigNum('0'),
     sigilBindings,
     lifetime: {
       gold: deserializeBigNum(s.lifetime.gold),
@@ -215,5 +228,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     },
     rngState: s.rngState,
     lastTickAt: s.lastTickAt,
+    // Old saves predating the runtime score default startedAt to lastTickAt (runtime starts now).
+    startedAt: s.startedAt ?? s.lastTickAt,
   };
 }

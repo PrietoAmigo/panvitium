@@ -275,3 +275,40 @@ describe('toggleDurations — ADR-023 additive-optional', () => {
     expect(back.lifetime.toggleDurations.panvitium).toBe(42.5);
   });
 });
+
+describe('eternalDevotion + startedAt — ADR-023 additive-optional', () => {
+  it('a pre-Eternal save without the fields loads with ZERO devotion and startedAt = lastTickAt', () => {
+    const fresh = createInitialState('seed', 4_000);
+    const serialized = serializeGameState(fresh);
+    const { eternalDevotion, startedAt, ...rest } = serialized;
+    void eternalDevotion;
+    void startedAt;
+    const parsed = serializedGameStateSchema.safeParse(rest);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const back = deserializeGameState(parsed.data);
+    expect(back.eternalDevotion.toNumber()).toBe(0);
+    expect(back.startedAt).toBe(back.lastTickAt);
+  });
+
+  it('a fresh save omits eternalDevotion but always emits startedAt', () => {
+    const serialized = serializeGameState(createInitialState('seed', 4_000));
+    expect('eternalDevotion' in serialized).toBe(false);
+    expect(serialized.startedAt).toBe(4_000);
+  });
+
+  it('round-trips a populated eternalDevotion and a distinct startedAt', () => {
+    const fresh = createInitialState('seed', 4_000);
+    const live: GameState = {
+      ...fresh,
+      eternalDevotion: bn(1_234_567),
+      lastTickAt: 4_000 + 90_000,
+    };
+    const wire = serializeGameState(live);
+    expect(wire.eternalDevotion).toBeDefined();
+    const back = deserializeGameState(wire);
+    expect(back.eternalDevotion.toNumber()).toBe(1_234_567);
+    expect(back.startedAt).toBe(4_000);
+    expect(back.lastTickAt).toBe(94_000);
+  });
+});

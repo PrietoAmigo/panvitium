@@ -11,11 +11,17 @@ import {
   gte,
   isZero,
   MAX_SIN_LEVEL,
+  ETERNAL_SIN_THRESHOLD,
+  eternalSinVisible,
+  eternalSinRevealed,
+  eternalProgress,
+  gameRuntimeMs,
+  bn,
   type GameState,
   type Sin,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
-import { formatBigNum } from '../game/format.js';
+import { formatBigNum, formatDuration } from '../game/format.js';
 
 /** Four pips, `level` of them filled — the Sin's 0..4 progress at a glance. */
 function levelPips(level: number): string {
@@ -109,6 +115,64 @@ function PrinceCard({ sin, state }: { sin: Sin; state: GameState }): ReactElemen
   );
 }
 
+/**
+ * The Eternal Sin card (03 §8). Appears below the eight Princes once every Cardinal Sin is maxed —
+ * a blacked-out ninth, offerable but unnamed, until cumulative offering reaches the threshold and
+ * Semet is revealed. Offering it raises the reveal screen the moment it crosses.
+ */
+function EternalSinCard({ state }: { state: GameState }): ReactElement {
+  const offerEternal = useGameStore((s) => s.offerEternal);
+  const revealed = eternalSinRevealed(state);
+  const progress = eternalProgress(state);
+  const pool = floor(state.souls);
+  return (
+    <div className={`prince-card eternal-card${revealed ? ' eternal-card--revealed' : ''}`}>
+      <div className="prince-head">
+        <span className="prince-name eternal-name">
+          {revealed ? strings.eternal.name : strings.eternal.unknown}
+        </span>
+        <span className="prince-sin">
+          {revealed ? strings.eternal.epithet : strings.eternal.ninth}
+        </span>
+      </div>
+      <div className="prince-devotion">
+        {formatBigNum(state.eternalDevotion)} / {formatBigNum(bn(ETERNAL_SIN_THRESHOLD))}
+      </div>
+      <div className="prince-progress eternal-progress">
+        <span
+          className="prince-progress-fill"
+          style={{ width: `${(progress * 100).toFixed(2)}%` }}
+        />
+      </div>
+      {revealed ? (
+        <div className="prince-mastered eternal-mastered">{strings.eternal.complete}</div>
+      ) : (
+        <div className="prince-offer-row">
+          {QUICK_AMOUNTS.map((q) => (
+            <button
+              key={q.label}
+              type="button"
+              className="offer-chip"
+              disabled={!gte(pool, q.amount)}
+              onClick={() => offerEternal(q.amount)}
+            >
+              {q.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="offer-chip offer-all"
+            disabled={isZero(pool)}
+            onClick={() => offerEternal(state.souls)}
+          >
+            {strings.katabasis.offerAll}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function KatabasisMenu(): ReactElement {
   const state = useGameStore((s) => s.state);
   const confirm = useGameStore((s) => s.confirmKatabasis);
@@ -128,6 +192,12 @@ function KatabasisMenu(): ReactElement {
             <PrinceCard key={sin} sin={sin} state={state} />
           ))}
         </div>
+        {eternalSinVisible(state) && (
+          <>
+            <p className="eternal-herald">{strings.eternal.herald}</p>
+            <EternalSinCard state={state} />
+          </>
+        )}
         <p className="katabasis-deferred">{strings.katabasis.sigilsDeferred}</p>
         <div className="katabasis-actions">
           <button type="button" className="opera-btn" onClick={() => confirm()}>
@@ -182,9 +252,44 @@ function KatabasisRecapView(): ReactElement {
   );
 }
 
-/** The carved-in-stone, full-screen Katabasis flow (02 §6/§10). */
+/**
+ * The Eternal-Sin reveal (03 §8, 01) — the credits roll. A black screen: the name Semet, the
+ * closing Latin verse, and the total runtime as the score. The game continues afterward; this is a
+ * milestone, not a wall. Dismissed via the store flag (revealed-ness itself persists in state).
+ */
+function EternalRevealModal(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const dismiss = useGameStore((s) => s.dismissEternalReveal);
+  const runtime = state ? gameRuntimeMs(state) : 0;
+  return (
+    <div className="eternal-reveal" role="dialog" aria-label={strings.eternal.name}>
+      <div className="eternal-reveal-inner">
+        <p className="eternal-reveal-kicker">{strings.eternal.revealKicker}</p>
+        <h1 className="eternal-reveal-name">{strings.eternal.name}</h1>
+        <p className="eternal-reveal-gloss">{strings.eternal.gloss}</p>
+        <blockquote className="eternal-reveal-verse">{strings.eternal.verse}</blockquote>
+        <div className="eternal-reveal-score">
+          <span className="eternal-reveal-score-label">{strings.eternal.scoreLabel}</span>
+          <span className="eternal-reveal-score-value">{formatDuration(runtime)}</span>
+        </div>
+        <button
+          type="button"
+          className="opera-btn eternal-reveal-dismiss"
+          onClick={() => dismiss()}
+        >
+          {strings.eternal.dismiss}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** The carved-in-stone, full-screen Katabasis flow (02 §6/§10) plus the Eternal-Sin reveal. */
 export function KatabasisModal(): ReactElement | null {
   const phase = useGameStore((s) => s.katabasisPhase);
+  const eternalReveal = useGameStore((s) => s.eternalReveal);
+  // The reveal supersedes everything the moment the threshold is crossed.
+  if (eternalReveal) return <EternalRevealModal />;
   if (phase === 'menu') return <KatabasisMenu />;
   if (phase === 'recap') return <KatabasisRecapView />;
   return null;

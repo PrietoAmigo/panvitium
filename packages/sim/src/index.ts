@@ -22,3 +22,4 @@ export * from './builds.js';
 export * from './compositum.js';
 export * from './acolytes.js';
 export * from './invocations.js';
+export * from './eternal.js';

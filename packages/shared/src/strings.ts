@@ -170,6 +170,24 @@ export const strings = {
     maleficiaLost: 'Maleficia lost',
     rise: 'Rise',
   },
+  eternal: {
+    // The blacked-out ninth Sin, shown in the Katabasis menu once all eight are mastered.
+    herald:
+      'Something stands above the eight. It has no name you can read \u2014 yet it takes what you give.',
+    unknown: '\u2588\u2588\u2588\u2588\u2588',
+    ninth: 'The Ninth',
+    complete: 'It knows your name. It was always yours.',
+    // Revealed identity.
+    name: 'Semet',
+    epithet: 'The King of All Sins',
+    // The reveal / credits screen.
+    revealKicker: 'The name beneath the ink resolves.',
+    gloss: 'Semet \u2014 "oneself." There was never another prince. There was only you.',
+    verse:
+      'Iam pridem scis te perditum esse. Quiescere non potes, sed nihil agis: nihil enim venenum acerbissimum est, ornamentum gravissimum, quod cervicem premit nec umquam deponi patitur. At inter has tenebras amor eorum iustus ignem accendit, eaque sola flamma, quamvis tenuis, viam tibi monstrat.',
+    scoreLabel: 'Time to ascend',
+    dismiss: 'Close the book',
+  },
 } as const;
 
 export type Strings = typeof strings;

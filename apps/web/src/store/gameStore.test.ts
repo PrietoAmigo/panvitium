@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { bn, floor, sinLevel, type GameState } from '@panvitium/sim';
+import { bn, floor, sinLevel, SINS, ETERNAL_SIN_THRESHOLD, type GameState } from '@panvitium/sim';
 import { useGameStore } from './gameStore.js';
 
 const store = (): ReturnType<typeof useGameStore.getState> => useGameStore.getState();
@@ -348,5 +348,43 @@ describe('gameStore — Panvitium', () => {
     store().activateCeremony('panvitium');
     expect(store().state?.lifetime.activeToggles ?? []).not.toContain('panvitium');
     expect(store().notice).toBeTruthy();
+  });
+});
+
+describe('gameStore — Eternal Sin', () => {
+  function maxAllSins(): void {
+    const s = store().state as GameState;
+    const devotion = { ...s.devotion };
+    for (const sin of SINS) devotion[sin] = bn(180 ** 4);
+    useGameStore.setState({ state: { ...s, devotion } });
+  }
+
+  it('offering is a no-op before all Sins are maxed', () => {
+    patchSouls(1_000_000);
+    store().offerEternal(1000);
+    expect(store().state?.eternalDevotion.toNumber()).toBe(0);
+    expect(store().eternalReveal).toBe(false);
+  });
+
+  it('offers to the Eternal Sin once all Sins are maxed', () => {
+    maxAllSins();
+    patchSouls(5000);
+    store().offerEternal(2000);
+    expect(store().state?.eternalDevotion.toNumber()).toBe(2000);
+    expect(floor(store().state!.souls).toNumber()).toBe(3000);
+  });
+
+  it('crossing the threshold raises the reveal flag exactly once', () => {
+    maxAllSins();
+    patchSouls(ETERNAL_SIN_THRESHOLD + 100);
+    store().offerEternal(ETERNAL_SIN_THRESHOLD - 1);
+    expect(store().eternalReveal).toBe(false); // not yet
+    store().offerEternal(1); // crosses
+    expect(store().eternalReveal).toBe(true);
+    // Dismiss, then offer more — it must not re-trigger.
+    store().dismissEternalReveal();
+    expect(store().eternalReveal).toBe(false);
+    store().offerEternal(50);
+    expect(store().eternalReveal).toBe(false);
   });
 });

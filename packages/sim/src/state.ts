@@ -171,6 +171,12 @@ export interface GameState {
   souls: BigNum;
   /** Total Devotion (souls offered, permanent) per Sin. Sin levels are derived from this. */
   devotion: Record<Sin, BigNum>;
+  /**
+   * Cumulative souls offered to the Eternal Sin (03 §8). Offerable only once every Cardinal Sin
+   * is at MAX_SIN_LEVEL; reaching ETERNAL_SIN_THRESHOLD reveals Semet. Permanent, carried across
+   * lifetimes. Additive-optional on the wire (ADR-023); ZERO by default.
+   */
+  eternalDevotion: BigNum;
   /** Souls currently bound to each sigil (recoverable). Absent key == unbound. */
   sigilBindings: Partial<Record<SigilId, BigNum>>;
   /** Current lifetime. */
@@ -179,6 +185,12 @@ export interface GameState {
   rngState: RngState;
   /** Logical clock in ms since epoch; advanced by `tick`, reconciled with wall-clock on load. */
   lastTickAt: number;
+  /**
+   * Logical clock at which this game was first created (03 §8). `lastTickAt - startedAt` is the
+   * total game runtime — the score shown on the Eternal Sin reveal. Never changes after creation.
+   * Additive-optional on the wire; old saves default it to their `lastTickAt` (runtime starts now).
+   */
+  startedAt: number;
 }
 
 function zeroReprobates(): Record<ReprobateSubtype, number> {
@@ -203,6 +215,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
   return {
     souls: ZERO,
     devotion: zeroDevotion(),
+    eternalDevotion: ZERO,
     sigilBindings: {},
     lifetime: {
       gold: ZERO,
@@ -225,6 +238,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
     },
     rngState: hashSeed(seed),
     lastTickAt: now,
+    startedAt: now,
   };
 }
 
