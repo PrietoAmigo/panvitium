@@ -64,3 +64,35 @@ export const REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL = 0.125;
 
 /** Souls offered to the Eternal Sin to end the game (Globals: 8 × 180^4). */
 export const ETERNAL_SIN_THRESHOLD = 8398080000;
+
+// ── Apex invocation per-tick effects (03 §2.4) ───────────────────────────────
+// Placeholders, spreadsheet-overridable (the `Invocations` sheet wins on numbers); the SHAPE of
+// each effect is authoritative.
+
+/**
+ * Astiwihad (apex Tristitia): per-second probability that the ENTIRE reprobate population commits
+ * suicide at once (03 §2.4: "0.01% chance all reprobates commit suicide"). Integrated exactly over
+ * a tick's span as `1 - (1 - p)^deltaSeconds`, so the online 10 Hz loop and one big offline catch-up
+ * tick agree.
+ */
+export const ASTIWIHAD_WIPE_CHANCE_PER_SECOND = 0.0001;
+
+/**
+ * Aurevora (apex Gula): an exponentially-rising gold sink paid against a similarly-rising boost to
+ * the player's action efficiency (03 §2.4). Both ramp with the seconds the invocation has been
+ * active — `base × growth^secondsActive` — mirroring Panvitium's duration-scaled cost (and guarded
+ * with `Number.isFinite` the same way, so a runaway ramp dispels rather than overflowing). Once the
+ * drain takes gold to 0 the invocation is dispelled.
+ */
+export const AUREVORA_BASE_GOLD_DRAIN_PER_SECOND = 100;
+export const AUREVORA_DRAIN_GROWTH_PER_SECOND = 1.05;
+/** Efficiency multiplier base; `growth^secondsActive` (≥ 1 at t = 0, rising "similarly"). */
+export const AUREVORA_EFFICIENCY_GROWTH_PER_SECOND = 1.05;
+
+/**
+ * Specunitas (apex Vanagloria): multiplier on the Celebrity subtype weight in the conversion-bias
+ * draw (03 §2.4 "Celebrity conversion rate is multiplied hundredfold"). Applied by
+ * `conversionBiasMul` in dynamics.ts, composed multiplicatively with future per-subtype bias
+ * sources (the Eligos #15 / Phenex #37 sigils attach to the same hook).
+ */
+export const SPECUNITAS_CELEBRITY_BIAS_MUL = 100;

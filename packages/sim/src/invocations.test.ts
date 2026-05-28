@@ -74,6 +74,11 @@ describe('Invocation catalog', () => {
       'plutus',
       'succubus',
       'doppelgaenger',
+      'astiwihad',
+      'aurevora',
+      'erinyes',
+      'morpheus',
+      'specunitas',
     ]);
   });
 
@@ -81,6 +86,21 @@ describe('Invocation catalog', () => {
     expect(invocationById('midas')!.maxActive).toBe(1);
     expect(invocationById('doppelgaenger')!.maxActive).toBe(1);
     expect(invocationById('fama')!.maxActive).toBeUndefined();
+  });
+
+  it('the new per-tick apexes carry their gates and are free, max-1', () => {
+    const astiwihad = invocationById('astiwihad')!;
+    expect(astiwihad.invokingPower).toBe(15);
+    expect(astiwihad.sin).toBe('tristitia');
+    expect(astiwihad.sinLevel).toBe(3);
+    expect(astiwihad.maxActive).toBe(1);
+    expect(astiwihad.soulCost).toBeUndefined();
+    const aurevora = invocationById('aurevora')!;
+    expect(aurevora.invokingPower).toBe(10);
+    expect(aurevora.sin).toBe('gula');
+    expect(aurevora.sinLevel).toBe(3);
+    expect(aurevora.maxActive).toBe(1);
+    expect(aurevora.soulCost).toBeUndefined();
   });
 });
 

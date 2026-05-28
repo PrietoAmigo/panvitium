@@ -15,6 +15,7 @@ import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceInvocationRunners } from './invocations.js';
+import { applyInvocationTickEffects } from './apex.js';
 import { advanceBuilds, businessGoldPerSecond } from './builds.js';
 import {
   advanceToggles,
@@ -69,6 +70,21 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
     };
   }
 
+  // Morpheus freeze (03 §2.4): while the apex Acedia is active, the lifetime is held in stillness —
+  // no income, no Opera/build progress, no dynamics, no apex per-tick effects, no Vitium toggle
+  // upkeep. Only the clock and the achievement evaluator advance (the latter so an unlock that
+  // depends on PRE-Morpheus state can still surface; nothing new can be earned mid-freeze because
+  // the underlying state isn't changing). The player can still summon other invocations from the
+  // UI — Erinyes will dispel Morpheus, restoring the normal tick.
+  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
+    const finalState: GameState = {
+      ...state,
+      lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
+    };
+    const ach = evaluateAchievements(finalState);
+    return { state: ach.state, events: [], notices: [], achievementsUnlocked: ach.unlocked };
+  }
+
   const rng = makeRng(state.rngState);
 
   // 0. Vitium Compositum upkeep (02 §3). Deduct each active toggle's per-second cost BEFORE any
@@ -120,6 +136,16 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   };
   let working: GameState = { ...state, lifetime };
   const events: OutcomeEvent[] = [];
+
+  // 1b. Apex invocation per-tick effects (03 §2.4): Aurevora's exponentially-rising gold drain paid
+  //     against its rising efficiency boost (dispels at gold 0), and Astiwihad's per-second chance
+  //     to wipe the whole reprobate population. Runs net of this tick's income; the efficiency half
+  //     of Aurevora is read from the advanced duration by computeModifiers below.
+  {
+    const apex = applyInvocationTickEffects(working, deltaSeconds, rng);
+    working = apex.state;
+    for (const n of apex.notices) notices.push(n);
+  }
 
   // 2. Resolve in-flight Opera timers. A timer whose remaining time falls to <= 0 this tick
   //    completes: its outcome is drawn from `rng` and applied, scaled by player efficiency.

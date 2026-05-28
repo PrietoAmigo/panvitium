@@ -33,6 +33,12 @@ export function startBuild(state: GameState, businessId: string): StartBuildResu
   const def = businessById(businessId);
   if (!def) return { ok: false, reason: `unknown business: ${businessId}` };
 
+  // Morpheus freeze (03 §2.4): no new Vitium Mercatura builds can be initiated under the apex
+  // Acedia. Existing builds in the queue freeze with the rest of the tick.
+  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
+    return { ok: false, reason: 'The world is held in Morpheus\u2019s stillness.' };
+  }
+
   // Sin-level gate. The spreadsheet's "Sin-lvl unlock" column is (tier − 1): the entry tier
   // (level 1) unlocks at Sin level 0, tier 2 at level 1, tier 3 at level 2, tier 4 at level 3.
   const required = def.level - 1;

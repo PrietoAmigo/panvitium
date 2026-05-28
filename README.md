@@ -50,7 +50,8 @@ pnpm --filter @panvitium/web dev   # the game alone, at http://localhost:5173
 
 The web app is fully playable on its own — it persists to `localStorage` and runs offline as a
 first-class case (ADR-006). The API and database are only required for accounts and cross-device
-cloud save, which the client does not yet call (see _Status_).
+cloud save, which the client now wires through end-to-end (sign-in, magic-link, automatic sync on
+persist, and the ADR-010 conflict chooser).
 
 ## Common scripts
 
@@ -97,9 +98,10 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 ## Status
 
-**Phases 2 (infrastructure) and 3 (gameplay) are complete.** The skeleton builds, tests,
-containerizes, and is CI-gated; the full core loop is implemented, tested, and surfaced in the
-three-room UI. The suite stands at ~338 unit tests across sim / shared / api / web.
+**Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
+skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
+and surfaced in the three-room UI. The suite stands at **~505 unit tests** across sim / shared /
+api / web.
 
 Implemented gameplay (each slice pinned with Vitest):
 
@@ -110,18 +112,26 @@ Implemented gameplay (each slice pinned with Vitest):
 - **Katabasis** — the descent flow, offering menu, recap, and unspent-soul carry-over.
 - **Reprobate dynamics** — fractional generation / suicide / murder / conversion pools (02 §9).
 - **_Depraedatio_** — _Vitium Mercatura_ businesses and _Vitium Compositum_ ceremony toggles.
-- **Acolytes**, **invocations** (invoking-power gates), and **maleficia** (_Indagatio_ / _Emptio_).
+- **Acolytes**, **invocations** (all 18 wired — autonomous-runner channel for the Familiar / Imp /
+  Upir, static modifier-bundle contributions for the demonic court, per-tick or per-invoke
+  side-effects for the apex entities), and **maleficia** (_Indagatio_ / _Emptio_).
+- **Apex entities** — Astiwihad + Aurevora (per-tick effects in `apex.ts`), Erinyes + Morpheus
+  (mutually-exclusive Katabasis-carryover apexes; Morpheus freezes the lifetime, Erinyes kills
+  every reprobate at invoke), Specunitas (conversion-bias hook).
+- **Sigils** — the 72-sigil recoverable prestige axis, with binding curves, Katabasis carry-over
+  bonuses (gold / maleficia / unconverted), and the _Semet_ gate.
+- **Achievements** — a static catalog evaluated each tick, with an unlock toast and a ledger panel.
 - **Panvitium** — the namesake endgame ritual: exponential upkeep, enormous churn, red Studio window.
 - **The Eternal Sin** — the ninth-Sin reveal (_Semet_), with the total runtime as the score.
+- **Cloud save sync** — magic-link auth, automatic push on persist, ADR-010 conflict chooser (the
+  web client now talks to the API end-to-end).
 
-Not yet built (Phase 4 candidates):
+Remaining (content, not code):
 
-- **Sigils** — the 72-sigil recoverable prestige axis (the Katabasis menu reserves a slot for it).
-- **Achievements** — the data hooks exist; the system does not.
-- **Web ↔ API save-sync client** + the ADR-010 conflict-chooser UI (the client doesn't call the API yet).
 - **Art & audio** — rooms are placeholder scenes pending the ADR-021 degraded-photoreal pipeline and
   Howler audio content.
-- Remaining invocation families (autonomous-channel, dispel-condition, Katabasis-modifying apexes).
+- **Economy tuning** — placeholder magnitudes live throughout the catalogs, flagged inline; the
+  numbers will be loaded from `Panvitium_Economy_Template.xlsx` (spreadsheet always wins).
 
 ## License
 

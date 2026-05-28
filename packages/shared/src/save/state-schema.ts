@@ -63,6 +63,9 @@ const lifetimeSchema = z.object({
   // Autonomous-runner timers (Familiar's background Indagatio, 02 §3): invocation id -> remaining
   // seconds. Additive-optional (ADR-023): absent in old saves → {} at runtime; omitted when empty.
   invocationRunners: z.record(z.string(), z.number().nonnegative()).optional(),
+  // Per-invocation active-duration counters for duration-scaled apex effects (Aurevora's ramp,
+  // 03 §2.4). Additive-optional (ADR-023): absent in old saves → {} at runtime; omitted when empty.
+  invocationDurations: z.record(z.string(), z.number().nonnegative()).optional(),
   maleficia: z.array(z.string()),
   emptioList: z.array(z.string()),
   activeToggles: z.array(z.string()),
@@ -81,6 +84,11 @@ const lifetimeSchema = z.object({
   businesses: z.record(z.string(), z.number().int().nonnegative()).optional(),
   buildQueue: z.array(buildTimerSchema).optional(),
   conversionPool: z.number().nonnegative().optional(),
+  // Apex Katabasis-modifier pending flags + Morpheus lockout (03 §2.4). Additive-optional
+  // (ADR-023): absent in old saves → false at runtime; omitted when false.
+  pendingErinyes: z.boolean().optional(),
+  pendingMorpheus: z.boolean().optional(),
+  morpheusLockedOut: z.boolean().optional(),
 });
 
 /** Zod schema for the serialized gameplay state. */
@@ -101,6 +109,9 @@ export const serializedGameStateSchema = z.object({
   achievements: z.array(z.string()).optional(),
   // Completed-Katabasis counter. Additive-optional; old saves default to 0.
   katabasisCount: z.number().int().nonnegative().optional(),
+  // Permanent ×2-per-stack player-efficiency multiplier from past Erinyes commits (03 §2.4).
+  // Additive-optional (ADR-023); old saves default to 0.
+  erinyesEfficiencyStacks: z.number().int().nonnegative().optional(),
   // True while mid-descent (menu open, lifetime frozen). Additive-optional; defaults to false.
   inKatabasis: z.boolean().optional(),
 });
@@ -145,6 +156,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(Object.keys(state.lifetime.invocationRunners).length > 0
         ? { invocationRunners: { ...state.lifetime.invocationRunners } }
         : {}),
+      ...(Object.keys(state.lifetime.invocationDurations).length > 0
+        ? { invocationDurations: { ...state.lifetime.invocationDurations } }
+        : {}),
       maleficia: [...state.lifetime.maleficia],
       emptioList: [...state.lifetime.emptioList],
       activeToggles: [...state.lifetime.activeToggles],
@@ -166,6 +180,11 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.conversionPool > 0
         ? { conversionPool: state.lifetime.conversionPool }
         : {}),
+      // Apex Katabasis-modifier flags + Morpheus lockout: omit when false so fresh / pre-apex
+      // saves keep the prior wire form (ADR-023 additive-optional discipline).
+      ...(state.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
+      ...(state.lifetime.pendingMorpheus === true ? { pendingMorpheus: true } : {}),
+      ...(state.lifetime.morpheusLockedOut === true ? { morpheusLockedOut: true } : {}),
       // Vitium Mercatura state. Omit when empty so fresh games match the pre-Vitium wire form.
       ...(Object.keys(state.lifetime.businesses).length > 0
         ? { businesses: { ...state.lifetime.businesses } }
@@ -185,6 +204,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
     // Omit when empty/zero so fresh and pre-achievements saves keep the prior wire form.
     ...(state.achievements.length > 0 ? { achievements: [...state.achievements] } : {}),
     ...(state.katabasisCount > 0 ? { katabasisCount: state.katabasisCount } : {}),
+    ...(typeof state.erinyesEfficiencyStacks === 'number' && state.erinyesEfficiencyStacks > 0
+      ? { erinyesEfficiencyStacks: state.erinyesEfficiencyStacks }
+      : {}),
     ...(state.inKatabasis === true ? { inKatabasis: true } : {}),
   };
 }
@@ -222,6 +244,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       })),
       invocations: { ...s.lifetime.invocations },
       invocationRunners: { ...(s.lifetime.invocationRunners ?? {}) },
+      invocationDurations: { ...(s.lifetime.invocationDurations ?? {}) },
       maleficia: [...s.lifetime.maleficia],
       emptioList: [...s.lifetime.emptioList],
       activeToggles: [...s.lifetime.activeToggles],
@@ -236,6 +259,11 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       suicidePool: s.lifetime.suicidePool ?? 0,
       murderPool: s.lifetime.murderPool ?? 0,
       conversionPool: s.lifetime.conversionPool ?? 0,
+      // Apex Katabasis-modifier flags + Morpheus lockout: conditional spread keeps them optional
+      // under exactOptionalPropertyTypes (assigning undefined would type-error).
+      ...(s.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
+      ...(s.lifetime.pendingMorpheus === true ? { pendingMorpheus: true } : {}),
+      ...(s.lifetime.morpheusLockedOut === true ? { morpheusLockedOut: true } : {}),
       // Vitium Mercatura: empty defaults match pre-Vitium saves; new saves round-trip whatever
       // is present. `buildQueue` entries copy verbatim — they don't carry optional payload.
       businesses: { ...(s.lifetime.businesses ?? {}) },
@@ -251,6 +279,9 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     // Old saves predating achievements default to none / zero; the next tick re-evaluates.
     achievements: s.achievements ? [...s.achievements] : [],
     katabasisCount: s.katabasisCount ?? 0,
+    ...(typeof s.erinyesEfficiencyStacks === 'number' && s.erinyesEfficiencyStacks > 0
+      ? { erinyesEfficiencyStacks: s.erinyesEfficiencyStacks }
+      : {}),
     // Frozen-descent flag: present only when true (conditional spread keeps it optional). A save
     // written mid-descent reloads frozen and the store re-opens the menu (see gameStore init).
     ...(s.inKatabasis === true ? { inKatabasis: true } : {}),

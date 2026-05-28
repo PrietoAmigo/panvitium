@@ -78,6 +78,15 @@ export function saveGame(state: GameState, saveVersion: number, deviceId: string
   localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
 }
 
+/**
+ * Write a pre-built SaveBlob to localStorage verbatim (no re-serialise). Used by the ADR-010
+ * conflict chooser when the player picks the server's save: the blob is replaced wholesale so
+ * the next `loadGame` reconstructs the state from it.
+ */
+export function writeSaveBlob(blob: SaveBlob): void {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
+}
+
 /** Erase the stored save (keeps the device id). Used by a hard reset. */
 export function clearSave(): void {
   localStorage.removeItem(SAVE_KEY);

@@ -33,6 +33,7 @@ import {
   BASE_REPROBATE_GENERATION_PER_SECOND,
   BASE_SUICIDE_RATE_PER_SECOND,
   BASE_CHOLERIC_MURDER_RATE_PER_SECOND,
+  SPECUNITAS_CELEBRITY_BIAS_MUL,
 } from './constants.js';
 import {
   businessConversionPerSecond,
@@ -114,11 +115,36 @@ function removeOneNonCholeric(state: GameState, rng: Rng): GameState {
 }
 
 /**
+ * Per-subtype multiplier on the conversion-bias weights composed by `biasedSubtype` (03 §2.4 /
+ * 03 §5). The hook lets apex invocations and sigils tilt the conversion-pool draw toward a
+ * specific subtype WITHOUT changing the underlying Vitium throughput — they reshape what a
+ * conversion attempt becomes, not how many attempts there are.
+ *
+ * Wired sources:
+ *   - Specunitas (apex Vanagloria, 03 §2.4): Celebrity weight × `SPECUNITAS_CELEBRITY_BIAS_MUL`.
+ *
+ * Future sources (sigils, ADR-022 composition is multiplicative):
+ *   - Eligos #15: Celebrity ↑.
+ *   - Phenex #37: Celebrity ↑ (separate magnitude).
+ *
+ * Returns only entries that differ from 1, so the consumer can fold them in cheaply.
+ */
+export function conversionBiasMul(state: GameState): Partial<Record<ReprobateSubtype, number>> {
+  const out: Partial<Record<ReprobateSubtype, number>> = {};
+  if ((state.lifetime.invocations.specunitas ?? 0) > 0) {
+    out.celebrity = (out.celebrity ?? 1) * SPECUNITAS_CELEBRITY_BIAS_MUL;
+  }
+  return out;
+}
+
+/**
  * Pick a converted subtype, weighted by the aggregate subtype-biases of every active Vitium
  * source (currently: owned businesses; later: Vitium Compositum toggles). The weight of subtype
- * S = Σ over active sources of (sourceContribution × source.subtypeBias[S]). The result is
- * renormalized at draw time (02 §9: "if more than 100% it is renormalized"). With no active
- * sources, falls back to `'reprobate'` — conversion no-ops (also caught at the caller anyway).
+ * S = Σ over active sources of (sourceContribution × source.subtypeBias[S]). Per-subtype hooks
+ * (Specunitas's ×100 Celebrity, future Eligos/Phenex sigils) are composed multiplicatively on
+ * top of the raw weight via `conversionBiasMul`, and the result is renormalized at draw time
+ * (02 §9: "if more than 100% it is renormalized"). With no active sources, falls back to
+ * `'reprobate'` — conversion no-ops (also caught at the caller anyway).
  *
  * Each source's contribution is currently its per-second rate × count (i.e. its "throughput").
  * This means a Sin you have ten businesses of dominates the bias proportionally — matching the
@@ -129,13 +155,18 @@ export function biasedSubtype(state: GameState, rng: Rng): ReprobateSubtype {
   for (const t of REPROBATE_SUBTYPES) weights[t] = 0;
   let total = 0;
 
+  // Per-subtype multipliers (Specunitas, future sigils). Composed BEFORE renormalisation so the
+  // boosted subtype pulls probability off the others.
+  const biasMul = conversionBiasMul(state);
+
   // Aggregate over every active Vitium source — businesses AND active Vitium Compositum toggles.
-  // Each source contributes conversionPerSecond × subtypeBias[S] to subtype S's weight.
+  // Each source contributes conversionPerSecond × subtypeBias[S] × biasMul[S] to subtype S's weight.
   const sources = [...businessConversionSources(state), ...compositumConversionSources(state)];
   for (const src of sources) {
     for (const [subtype, bias] of Object.entries(src.subtypeBias)) {
       if (bias === undefined) continue;
-      const w = src.conversionPerSecond * bias;
+      const mul = biasMul[subtype as ReprobateSubtype] ?? 1;
+      const w = src.conversionPerSecond * bias * mul;
       weights[subtype as ReprobateSubtype] += w;
       total += w;
     }

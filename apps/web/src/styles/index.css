@@ -1681,3 +1681,208 @@ body {
     opacity: 1;
   }
 }
+
+/* ── Cloud sync panel + conflict chooser (ADR-009 + ADR-010) ───────────────── */
+.sync-panel {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  font-family: var(--font-display, Georgia, serif);
+}
+.sync-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.9rem;
+  background: rgba(13, 10, 9, 0.78);
+  border: 1px solid rgba(196, 158, 74, 0.35);
+  border-radius: 4px;
+  color: var(--parchment);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.sync-toggle:hover {
+  background: rgba(13, 10, 9, 0.92);
+  border-color: rgba(196, 158, 74, 0.55);
+}
+.sync-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: rgba(196, 158, 74, 0.45);
+}
+.sync-dot--syncing {
+  background: var(--candle);
+  animation: sync-pulse 1s ease-in-out infinite;
+}
+.sync-dot--ok {
+  background: #6fa8c9;
+}
+.sync-dot--error {
+  background: var(--blood-bright);
+}
+@keyframes sync-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.sync-body {
+  min-width: 260px;
+  padding: 0.8rem 0.9rem;
+  background: #0d0a09;
+  border: 1px solid rgba(196, 158, 74, 0.35);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sync-intro {
+  margin: 0;
+  font-size: 0.78rem;
+  opacity: 0.7;
+  font-style: italic;
+}
+.sync-line {
+  margin: 0;
+  font-size: 0.85rem;
+}
+.sync-label {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+.sync-time {
+  font-variant-numeric: tabular-nums;
+}
+.sync-input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--parchment);
+  border: 1px solid rgba(196, 158, 74, 0.35);
+  border-radius: 3px;
+}
+.sync-input:focus {
+  outline: none;
+  border-color: var(--candle);
+}
+.sync-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+.sync-sent {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--candle);
+}
+.sync-error {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+  padding: 0.4rem 0.5rem;
+  background: rgba(160, 30, 34, 0.18);
+  border: 1px solid var(--blood);
+  border-radius: 3px;
+  color: var(--parchment);
+  font-size: 0.78rem;
+}
+.sync-error-dismiss {
+  background: transparent;
+  color: var(--parchment);
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.3rem;
+}
+
+/* Conflict chooser modal — sits over the room, blocking interaction with the world below. */
+.conflict-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.conflict-inner {
+  max-width: 720px;
+  width: 100%;
+  padding: 1.6rem 1.8rem;
+  background: #0d0a09;
+  border: 1px solid var(--candle);
+  border-radius: 5px;
+  box-shadow: 0 0 32px rgba(196, 158, 74, 0.25);
+}
+.conflict-title {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.4rem;
+  color: var(--candle);
+}
+.conflict-intro {
+  margin: 0 0 1.2rem;
+  font-size: 0.9rem;
+  opacity: 0.85;
+  font-style: italic;
+}
+.conflict-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 540px) {
+  .conflict-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.conflict-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem;
+  background: rgba(196, 158, 74, 0.06);
+  border: 1px solid rgba(196, 158, 74, 0.25);
+  border-radius: 4px;
+}
+.conflict-card-title {
+  margin: 0;
+  font-family: var(--font-display, Georgia, serif);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  color: var(--candle);
+}
+.conflict-stats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.6rem;
+  row-gap: 0.25rem;
+  font-size: 0.82rem;
+}
+.conflict-stats dt {
+  letter-spacing: 0.06em;
+  opacity: 0.65;
+}
+.conflict-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}

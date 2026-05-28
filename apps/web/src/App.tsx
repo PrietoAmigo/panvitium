@@ -7,6 +7,8 @@ import { Panel, PANELS } from './ui/panels.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
 import { KatabasisModal } from './ui/KatabasisModal.js';
+import { SyncPanel } from './ui/SyncPanel.js';
+import { ConflictModal } from './ui/ConflictModal.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
@@ -49,6 +51,8 @@ export function App(): ReactElement {
       <SignaturePopup />
       <AchievementToast />
       <KatabasisModal />
+      <SyncPanel />
+      <ConflictModal />
       {activePanel && (
         <Panel title={activePanel.title} onClose={closePanel}>
           {activePanel.body}

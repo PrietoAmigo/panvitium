@@ -311,6 +311,81 @@ describe('invocationRunners — ADR-023 additive-optional', () => {
   });
 });
 
+describe('invocationDurations — ADR-023 additive-optional', () => {
+  it('a save predating apex durations loads with an empty map', () => {
+    const fresh = createInitialState('seed', 0);
+    const serialized = serializeGameState(fresh);
+    const { invocationDurations, ...rest } = serialized.lifetime;
+    void invocationDurations;
+    const parsed = serializedGameStateSchema.safeParse({ ...serialized, lifetime: rest });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const back = deserializeGameState(parsed.data);
+    expect(back.lifetime.invocationDurations).toEqual({});
+  });
+
+  it('a fresh save omits invocationDurations from the wire', () => {
+    const serialized = serializeGameState(createInitialState('seed', 0));
+    expect('invocationDurations' in serialized.lifetime).toBe(false);
+  });
+
+  it('an active Aurevora round-trips its duration counter exactly', () => {
+    const fresh = createInitialState('seed', 0);
+    const live: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        invocations: { aurevora: 1 },
+        invocationDurations: { aurevora: 12.5 },
+      },
+    };
+    const wire = serializeGameState(live);
+    expect(wire.lifetime.invocationDurations).toEqual({ aurevora: 12.5 });
+    const back = deserializeGameState(wire);
+    expect(back.lifetime.invocationDurations.aurevora).toBe(12.5);
+  });
+});
+
+describe('apex Katabasis-modifier flags + Erinyes stacks — ADR-023 additive-optional', () => {
+  it('a save predating the apex Katabasis modifiers loads with falsy/zero defaults', () => {
+    const fresh = createInitialState('seed', 0);
+    const serialized = serializeGameState(fresh);
+    // No fields set on a fresh save — omitted from the wire.
+    expect('pendingErinyes' in serialized.lifetime).toBe(false);
+    expect('pendingMorpheus' in serialized.lifetime).toBe(false);
+    expect('morpheusLockedOut' in serialized.lifetime).toBe(false);
+    expect('erinyesEfficiencyStacks' in serialized).toBe(false);
+    // And the deserializer defaults them when absent.
+    const back = deserializeGameState(serialized);
+    expect(back.lifetime.pendingErinyes ?? false).toBe(false);
+    expect(back.lifetime.pendingMorpheus ?? false).toBe(false);
+    expect(back.lifetime.morpheusLockedOut ?? false).toBe(false);
+    expect(back.erinyesEfficiencyStacks ?? 0).toBe(0);
+  });
+
+  it('a mid-flight Erinyes (kill-all + lockout, pending commit) round-trips its flags', () => {
+    const fresh = createInitialState('seed', 0);
+    const live: GameState = {
+      ...fresh,
+      erinyesEfficiencyStacks: 2,
+      lifetime: {
+        ...fresh.lifetime,
+        invocations: { erinyes: 1 },
+        pendingErinyes: true,
+        morpheusLockedOut: true,
+      },
+    };
+    const wire = serializeGameState(live);
+    expect(wire.lifetime.pendingErinyes).toBe(true);
+    expect(wire.lifetime.morpheusLockedOut).toBe(true);
+    expect(wire.erinyesEfficiencyStacks).toBe(2);
+    const back = deserializeGameState(wire);
+    expect(back.lifetime.pendingErinyes).toBe(true);
+    expect(back.lifetime.morpheusLockedOut).toBe(true);
+    expect(back.erinyesEfficiencyStacks).toBe(2);
+  });
+});
+
 describe('eternalDevotion + startedAt — ADR-023 additive-optional', () => {
   it('a pre-Eternal save without the fields loads with ZERO devotion and startedAt = lastTickAt', () => {
     const fresh = createInitialState('seed', 4_000);

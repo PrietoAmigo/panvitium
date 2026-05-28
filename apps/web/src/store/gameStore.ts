@@ -38,7 +38,19 @@ import {
   type Sin,
   type KatabasisRecap,
 } from '@panvitium/sim';
-import { loadGame, saveGame, clearSave } from './persistence.js';
+import { loadGame, saveGame, clearSave, writeSaveBlob } from './persistence.js';
+import {
+  CURRENT_SCHEMA_VERSION,
+  serializeGameState,
+  type SaveBlob,
+  type User,
+} from '@panvitium/shared';
+import {
+  getCurrentUser as apiGetCurrentUser,
+  pushSave,
+  requestMagicLink,
+  signOut as apiSignOut,
+} from '../api/sync.js';
 
 /** How many recent outcomes the PC log keeps (02 §10). */
 const LOG_CAP = 100;
@@ -145,6 +157,38 @@ interface GameStore {
   dismissNotice: () => void;
   /** Wipe the save and start a fresh game. */
   hardReset: () => void;
+
+  // ── Cloud save sync (ADR-009 + ADR-010) ────────────────────────────────────
+  /** The current signed-in user, or null when signed out. Populated by `refreshUser`. */
+  user: User | null;
+  /** True once the initial `refreshUser` has resolved (we know whether the user is signed in). */
+  authReady: boolean;
+  /** Coarse status of the most recent cloud-sync attempt. */
+  syncStatus: 'idle' | 'syncing' | 'ok' | 'error';
+  /** Last sync error message (network, server, malformed), or null. */
+  syncError: string | null;
+  /** Logical clock of the last accepted server push, or null if not yet synced. */
+  lastSyncedAt: number | null;
+  /** When set, the conflict-chooser modal (ADR-010) is open. */
+  pendingConflict: { local: SaveBlob; server: SaveBlob } | null;
+  /** Ask the server who we are; sets `user` and `authReady`. Idempotent. */
+  refreshUser: () => Promise<void>;
+  /** Email magic-link sign-in (ADR-009). The user clicks the link to complete; we just request it. */
+  signIn: (email: string) => Promise<void>;
+  /** End the session; clears `user`. */
+  signOut: () => Promise<void>;
+  /**
+   * Push the current state to the server (ADR-010). No-op when signed out. On `conflict`, opens
+   * the chooser. Used internally by `persist` and surfaced as a manual "Sync now" button too.
+   */
+  syncToServer: () => Promise<void>;
+  /**
+   * Resolve an open conflict by choosing the local save (force-promote it past the server's
+   * version) or the server save (replace local state with it, then bounce the loop).
+   */
+  resolveConflict: (choice: 'local' | 'server') => Promise<void>;
+  /** Clear the last sync error from the UI. */
+  dismissSyncError: () => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -159,6 +203,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   katabasisPhase: null,
   recap: null,
   eternalReveal: false,
+  user: null,
+  authReady: false,
+  syncStatus: 'idle',
+  syncError: null,
+  lastSyncedAt: null,
+  pendingConflict: null,
 
   init: () => {
     if (get().ready) return;
@@ -350,6 +400,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const nextVersion = saveVersion + 1;
     saveGame(state, nextVersion, deviceId);
     set({ saveVersion: nextVersion });
+    // Fire-and-forget cloud sync when signed in. Errors land in syncError / syncStatus rather than
+    // throwing — local-first stays authoritative (ADR-006), the network round-trip is opportunistic.
+    if (get().user !== null && get().pendingConflict === null) {
+      void get().syncToServer();
+    }
   },
 
   dismissSignature: () => set({ signature: null }),
@@ -369,4 +424,88 @@ export const useGameStore = create<GameStore>((set, get) => ({
       recap: null,
     });
   },
+
+  // ── Cloud save sync (ADR-009 + ADR-010) ────────────────────────────────────
+  refreshUser: async () => {
+    const r = await apiGetCurrentUser();
+    if (r.ok) set({ user: r.value, authReady: true });
+    else set({ authReady: true, syncError: r.reason, syncStatus: 'error' });
+  },
+
+  signIn: async (email) => {
+    const r = await requestMagicLink(email);
+    if (!r.ok) set({ syncError: r.reason, syncStatus: 'error' });
+    else set({ syncError: null });
+    // The user clicks the link in their email/log; refreshUser is called on return.
+  },
+
+  signOut: async () => {
+    const r = await apiSignOut();
+    if (!r.ok) {
+      set({ syncError: r.reason, syncStatus: 'error' });
+      return;
+    }
+    set({ user: null, syncError: null, lastSyncedAt: null, pendingConflict: null });
+  },
+
+  syncToServer: async () => {
+    const { state, saveVersion, deviceId, user } = get();
+    if (!state) return;
+    if (user === null) return; // signed out → local-only, no error
+    set({ syncStatus: 'syncing', syncError: null });
+    const blob: SaveBlob = {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      saveVersion,
+      lastTickAt: state.lastTickAt,
+      deviceId,
+      state: serializeGameState(state),
+    };
+    const r = await pushSave(blob);
+    if (!r.ok) {
+      set({ syncStatus: 'error', syncError: r.reason });
+      return;
+    }
+    if (r.value.status === 'conflict') {
+      set({
+        syncStatus: 'idle',
+        pendingConflict: { local: blob, server: r.value.serverSave },
+      });
+      return;
+    }
+    // Accepted — the server agrees on this saveVersion; record success.
+    set({ syncStatus: 'ok', lastSyncedAt: state.lastTickAt });
+  },
+
+  resolveConflict: async (choice) => {
+    const pending = get().pendingConflict;
+    if (!pending) return;
+    if (choice === 'server') {
+      // Replace local with the server save and clear the chooser. The next reload (or hardReset's
+      // loadGame) would pick up the new localStorage payload; for an immediate effect we write it
+      // through and re-init from disk.
+      writeSaveBlob(pending.server);
+      const loaded = loadGame(Date.now());
+      set({
+        ...loaded,
+        pendingConflict: null,
+        log: [],
+        signature: null,
+        notice: null,
+        katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
+        syncStatus: 'ok',
+        lastSyncedAt: loaded.state.lastTickAt,
+      });
+      return;
+    }
+    // 'local': force-promote local past the server. Bump saveVersion above the server's, write
+    // through localStorage, and re-push.
+    const forcedVersion = Math.max(get().saveVersion, pending.server.saveVersion) + 1;
+    set({ saveVersion: forcedVersion, pendingConflict: null });
+    const { state, deviceId } = get();
+    if (!state) return;
+    saveGame(state, forcedVersion, deviceId);
+    await get().syncToServer();
+  },
+
+  dismissSyncError: () => set({ syncError: null, syncStatus: 'idle' }),
 }));

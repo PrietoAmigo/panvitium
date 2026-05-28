@@ -128,6 +128,14 @@ export interface LifetimeState {
    * tick from the active-invocation set; additive-optional on the wire (ADR-023), empty by default.
    */
   invocationRunners: Record<string, number>;
+  /**
+   * Seconds each duration-scaled invocation has been active, keyed by invocation id (mirrors
+   * `toggleDurations`). Used by apex invocations whose effect ramps with how long they have been
+   * summoned — Aurevora's exponential gold-drain ↔ rising-efficiency (03 §2.4). Accrued each tick
+   * while active, cleared on dispel and on Katabasis. Additive-optional on the wire (ADR-023),
+   * empty by default.
+   */
+  invocationDurations: Record<string, number>;
   /** Equipped maleficia by id; stackable ones may repeat. */
   maleficia: string[];
   /** Maleficia surfaced by Indagatio and available to buy via Emptio. Lost on Katabasis. */
@@ -170,6 +178,18 @@ export interface LifetimeState {
    * pool is left intact so progress isn't wasted.
    */
   conversionPool: number;
+  /**
+   * Apex-invocation pending Katabasis modifiers (03 §2.4). Set the moment Erinyes/Morpheus is
+   * summoned; consumed by `commitKatabasis` to override the carry-over rolls (Erinyes zeroes the
+   * gold + maleficia fractions and stacks a permanent player-efficiency double; Morpheus maxes both
+   * and preserves the Emptio list). Erinyes's invoke clears any prior `pendingMorpheus` and sets
+   * `morpheusLockedOut`. All additive-optional on the wire; absent / false round-trips identically
+   * to a pre-feature save (ADR-023).
+   */
+  pendingErinyes?: boolean;
+  pendingMorpheus?: boolean;
+  /** Set by an Erinyes invoke; blocks any further Morpheus invoke for the rest of the lifetime. */
+  morpheusLockedOut?: boolean;
 }
 
 /** The complete gameplay state. */
@@ -209,6 +229,12 @@ export interface GameState {
    * telemetry. Additive-optional; defaults to 0.
    */
   katabasisCount: number;
+  /**
+   * Number of Katabases on which Erinyes was pending — each one stacks a ×2 player-efficiency
+   * multiplier folded in by `computeModifiers`. Permanent, carried across lifetimes; only ever
+   * increments. Additive-optional on the wire (ADR-023), defaults to 0.
+   */
+  erinyesEfficiencyStacks?: number;
   /**
    * True while the player is mid-descent — the Katabasis menu is open and allocation is underway
    * (02 §6). The lifetime is frozen: `tick` runs no simulation when this is set, so nothing accrues
@@ -251,6 +277,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       acolytes: [],
       invocations: {},
       invocationRunners: {},
+      invocationDurations: {},
       maleficia: [],
       emptioList: [],
       activeToggles: [],

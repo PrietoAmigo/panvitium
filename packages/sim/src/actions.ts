@@ -202,6 +202,11 @@ export function startAction(
   const def = ACTIONS[actionId];
   if (!def) return { ok: false, reason: `unknown action: ${actionId}` };
 
+  // Morpheus freeze (03 §2.4): no new Opera can be started while the apex Acedia is active.
+  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
+    return { ok: false, reason: 'The world is held in Morpheus\u2019s stillness.' };
+  }
+
   // One player-driven action at a time (02 §3).
   if (state.lifetime.actionQueue.length > 0) {
     return { ok: false, reason: 'A rite is already underway.' };

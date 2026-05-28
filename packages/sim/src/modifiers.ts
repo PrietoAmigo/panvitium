@@ -37,6 +37,7 @@ import { type GameState } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies } from './maleficia.js';
+import { aurevoraEfficiencyMul } from './apex.js';
 import { sigilModifierContributions, type ScalarModifierField } from './sigils.js';
 
 export interface Modifiers {
@@ -151,6 +152,15 @@ export function computeModifiers(state: GameState): Modifiers {
   const lemureCount = inv.lemure ?? 0; // each: + flat influence/s per Husk
   const hasSuccubus = (inv.succubus ?? 0) > 0; // generation ×, gold → 1%
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
+  // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
+  // (apex.ts owns the curve and the paired gold drain). 1× when absent.
+  const aurevoraEff =
+    (inv.aurevora ?? 0) > 0
+      ? aurevoraEfficiencyMul(state.lifetime.invocationDurations.aurevora ?? 0)
+      : 1;
+  // Erinyes (apex Ira): each Katabasis on which Erinyes was pending stacks a permanent ×2 on
+  // player efficiency. Top-level, carries across lifetimes.
+  const erinyesStackMul = 2 ** (state.erinyesEfficiencyStacks ?? 0);
 
   // Panvitium (03 §2.3): the endgame ritual. While active it drives the whole population at once —
   // generation, suicide, and murder rates are enormous. The flat generation/conversion come from
@@ -209,7 +219,12 @@ export function computeModifiers(state: GameState): Modifiers {
     flatInfluencePerSecond:
       LEMURE_INFLUENCE_PER_HUSK * state.lifetime.reprobates.husk * lemureCount,
     playerEfficiencyMul:
-      2 ** gulaLvl * (hasDoppel ? 1.5 : 1) * (hasFamiliar ? 1.33 : 1) * sc('playerEfficiencyMul'),
+      2 ** gulaLvl *
+      (hasDoppel ? 1.5 : 1) *
+      (hasFamiliar ? 1.33 : 1) *
+      aurevoraEff *
+      erinyesStackMul *
+      sc('playerEfficiencyMul'),
     suasioEfficiencyMul: skillBonus(tristitiaIntensity) * sc('suasioEfficiencyMul'),
     decimatioEfficiencyMul: skillBonus(iraIntensity) * sc('decimatioEfficiencyMul'),
     tierWeightMul,

@@ -154,6 +154,7 @@ export function enterKatabasis(state: GameState): GameState {
       actionQueue: [], // uncompleted player actions fizzle
       invocations: {}, // all invocations dispelled (02 §7)
       invocationRunners: {}, // …and their autonomous channels stop
+      invocationDurations: {}, // …and any apex duration counters (Aurevora) clear
       acolytes, // followers drop their tasks (the list itself clears at commit)
     },
   };
@@ -190,6 +191,12 @@ export function commitKatabasis(
 ): { state: GameState; recap: KatabasisRecap } {
   const rng = makeRng(state.rngState);
 
+  // Apex Katabasis overrides (03 §2.4). Erinyes invoke clears any prior pendingMorpheus, so at
+  // most ONE flag is set at commit time. Erinyes zeros gold + maleficia and stacks a permanent
+  // ×2 player-efficiency multiplier; Morpheus maxes both rolls and preserves the Emptio list.
+  const pendingErinyes = state.lifetime.pendingErinyes === true;
+  const pendingMorpheus = !pendingErinyes && state.lifetime.pendingMorpheus === true;
+
   // Vitium Mercatura auto-shutdown (02 §6): every owned business shuts down and refunds a
   // fraction of its buildCost into the gold pool BEFORE the carry-over roll. This means the
   // refund participates in the remaining-gold % and not at face value — the design intent is
@@ -204,14 +211,22 @@ export function commitKatabasis(
   }
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
-  // business shutdown refunds folded in above. Sigils (Purson #20, Semet #32) lift the fraction.
-  const goldKept = floor(
-    mul(floor(goldAtDescent), remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold'))),
-  );
+  // business shutdown refunds folded in above. Sigils (Purson #20, Semet #32) lift the fraction;
+  // Erinyes/Morpheus override it outright.
+  const goldFraction = pendingErinyes
+    ? 0
+    : pendingMorpheus
+      ? 1
+      : remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold'));
+  const goldKept = floor(mul(floor(goldAtDescent), goldFraction));
 
   // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8). Sigils
-  // (Halphas #38, Semet #32) lift the chance.
-  const chance = remainingMaleficiaChance(state, sigilKatabasisBonus(state, 'maleficia'));
+  // (Halphas #38, Semet #32) lift the chance; Erinyes zeros it, Morpheus maxes it.
+  const chance = pendingErinyes
+    ? 0
+    : pendingMorpheus
+      ? 1
+      : remainingMaleficiaChance(state, sigilKatabasisBonus(state, 'maleficia'));
   const maleficiaKept: string[] = [];
   const maleficiaLost: string[] = [];
   for (const m of state.lifetime.maleficia) {
@@ -235,8 +250,11 @@ export function commitKatabasis(
     acolytes: [], // re-grow from influence
     invocations: {}, // all invocations dispelled (02 §7)
     invocationRunners: {}, // …and their autonomous channels stop
+    invocationDurations: {}, // …and any apex duration counters (Aurevora) clear
     maleficia: maleficiaKept,
-    emptioList: [], // lost track of them (02 §6)
+    // Morpheus's mercy (03 §2.4): the Emptio list survives the descent so the maleficia surfaced
+    // in this lifetime are not lost. Otherwise the list clears (02 §6).
+    emptioList: pendingMorpheus ? [...state.lifetime.emptioList] : [],
     activeToggles: [], // toggles stop
     toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle
@@ -246,6 +264,8 @@ export function commitKatabasis(
     suicidePool: 0,
     murderPool: 0,
     conversionPool: 0,
+    // pendingErinyes / pendingMorpheus / morpheusLockedOut are intentionally omitted — the new
+    // lifetime starts clean (they're additive-optional and absent ≡ false).
   };
 
   return {
@@ -256,6 +276,11 @@ export function commitKatabasis(
       rngState: rng.state,
       lastTickAt: now,
       katabasisCount: state.katabasisCount + 1,
+      // Erinyes stacks a permanent ×2 player-efficiency multiplier on every Katabasis it was
+      // pending for. Read by computeModifiers as 2 ** stacks.
+      ...(pendingErinyes
+        ? { erinyesEfficiencyStacks: (state.erinyesEfficiencyStacks ?? 0) + 1 }
+        : {}),
     },
     recap: {
       goldKept,

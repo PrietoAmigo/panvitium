@@ -17,15 +17,27 @@
  *   - Midas       (Avaritia)   — 3× gold, 100× Apocalyptic    [apex, max 1, free]
  *   - Doppelgaenger (Superbia) — +50% player efficiency, half influence [apex, max 1, free]
  *
- * Deferred to follow-ups (need new machinery): autonomous-channel invocations (Familiar, Imp),
- * periodic-kill entities (Upir, Astiwihad), dispel-condition entities (Aurevora at gold 0), and
- * the Katabasis-modifying apexes (Erinyes, Morpheus). Number magnitudes are placeholders,
- * spreadsheet-overridable; the shape is authoritative.
+ * Phase 4 close: every invocation in the catalog is wired. The three effect shapes are:
+ *   (1) autonomous-runner channel — `def.autonomous`, advanced via runner.ts (Familiar, Imp, Upir).
+ *   (2) static modifier-bundle contribution — a line in modifiers.ts (Fama, Nightmare, Harpy,
+ *       Lamia, Lemure, Behemoth, Midas, Plutus, Succubus, Doppelgänger).
+ *   (3) per-tick / per-invoke side-effects — Astiwihad + Aurevora live in apex.ts (per-tick mass
+ *       suicide + exponential gold drain); Erinyes + Morpheus are handled at invoke/commit time
+ *       in this module + katabasis.ts (kill-all + Katabasis carry-over overrides); Specunitas
+ *       feeds the per-subtype conversion-bias hook in dynamics.ts (`conversionBiasMul`).
+ * Number magnitudes are placeholders, spreadsheet-overridable; the shape is authoritative.
  */
 import { floor, gte, max, mul, sub, ZERO, type BigNum } from './bignum.js';
 import { totalInvokingPower } from './maleficia.js';
+import { mintSouls } from './population.js';
 import { sinLevel } from './progression.js';
-import { type GameState, type Sin } from './state.js';
+import {
+  REPROBATE_SUBTYPES,
+  totalReprobates,
+  type GameState,
+  type ReprobateSubtype,
+  type Sin,
+} from './state.js';
 import { computeModifiers } from './modifiers.js';
 import { advanceRunnerCycles } from './runner.js';
 import { type Tier } from './probability.js';
@@ -42,6 +54,11 @@ export interface InvocationDef {
   readonly sinLevel?: number;
   /** Soul cost: fraction of the current pool, floored, with a minimum. Omit for free apexes. */
   readonly soulCost?: { readonly fraction: number; readonly minimum: number };
+  /**
+   * Gold cost (in addition to soulCost): a fraction of the current gold pool, floored, with an
+   * optional minimum (Morpheus pays 66% of gold). Omitted for invocations that don't cost gold.
+   */
+  readonly goldCost?: { readonly fraction: number; readonly minimum?: number };
   /** Maximum simultaneously active (the apex entities cap at 1). Default unlimited (stackable). */
   readonly maxActive?: number;
   /**
@@ -172,10 +189,71 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 3,
     maxActive: 1,
   },
+  astiwihad: {
+    id: 'astiwihad',
+    sin: 'tristitia',
+    invokingPower: 15,
+    sinLevel: 3,
+    maxActive: 1,
+    // Apex Tristitia (free). Effect (apex.ts): each second a small chance the whole reprobate
+    // population suicides at once — every death mints a soul, so a wipe banks the lot.
+  },
+  aurevora: {
+    id: 'aurevora',
+    sin: 'gula',
+    invokingPower: 10,
+    sinLevel: 3,
+    maxActive: 1,
+    // Apex Gula (free). Effect (apex.ts): an exponentially-rising gold drain paid against a
+    // similarly-rising player-efficiency boost (duration tracked in invocationDurations); when the
+    // drain takes gold to 0 it dispels. The efficiency half is folded in by modifiers.ts.
+  },
+  erinyes: {
+    id: 'erinyes',
+    sin: 'ira',
+    invokingPower: 17,
+    sinLevel: 3,
+    maxActive: 1,
+    // Apex Ira (free, one-shot at the next Katabasis). Effects on invoke (see `invoke`): kills the
+    // entire reprobate population (every death mints a soul), dispels any active Morpheus and locks
+    // it out for the rest of the lifetime, and sets `pendingErinyes` for `commitKatabasis` to read
+    // (zero gold + maleficia carry-over and stack a permanent ×2 player-efficiency multiplier).
+  },
+  morpheus: {
+    id: 'morpheus',
+    sin: 'acedia',
+    invokingPower: 14,
+    sinLevel: 3,
+    soulCost: { fraction: 0.66, minimum: 0 },
+    goldCost: { fraction: 0.66 },
+    maxActive: 1,
+    // Apex Acedia (66% souls + 66% gold). Effect on invoke (see `invoke`): refused while
+    // `morpheusLockedOut` is set. Effect while active (see tick.ts): the lifetime is held in
+    // stillness — no income, no dynamics, no Opera or builds; on commit, `pendingMorpheus` overrides
+    // the Katabasis carry-over to gold 100% + maleficia 100% + Emptio-list preserved.
+  },
+  specunitas: {
+    id: 'specunitas',
+    sin: 'vanagloria',
+    invokingPower: 13,
+    sinLevel: 3,
+    maxActive: 1,
+    // Apex Vanagloria (free). Effect (dynamics.ts `conversionBiasMul`): the Celebrity subtype's
+    // weight in the conversion-bias draw is multiplied 100× — businesses already biased toward
+    // Celebrity (Vanagloria-mercatura) convert almost entirely to Celebrity while Specunitas is
+    // active. The same hook will carry Eligos #15 / Phenex #37 sigil bonuses later.
+  },
 } as const;
 
 /** All wired invocation ids in stable order. */
 export const INVOCATION_IDS: readonly string[] = Object.freeze(Object.keys(INVOCATIONS));
+
+/** A zeroed per-subtype reprobate map (used by the Erinyes kill-all). */
+function zeroReprobates(): Record<ReprobateSubtype, number> {
+  const out = {} as Record<ReprobateSubtype, number>;
+  for (const t of REPROBATE_SUBTYPES) out[t] = 0;
+  return out;
+}
 
 /** Lookup; undefined for unknown ids. */
 export function invocationById(id: string): InvocationDef | undefined {
@@ -213,18 +291,40 @@ export function invocationSoulCost(state: GameState, def: InvocationDef): BigNum
   return max(pct, def.soulCost.minimum);
 }
 
+/**
+ * The gold cost to summon `def` right now (floored). Zero for invocations that don't list a gold
+ * cost. Morpheus is the only entry with a gold cost so far (66% of the gold pool, no minimum).
+ */
+export function invocationGoldCost(state: GameState, def: InvocationDef): BigNum {
+  if (!def.goldCost) return ZERO;
+  const pct = floor(mul(state.lifetime.gold, def.goldCost.fraction));
+  const min = def.goldCost.minimum ?? 0;
+  return max(pct, min);
+}
+
 export type InvokeResult =
   | { readonly ok: true; readonly state: GameState }
   | { readonly ok: false; readonly reason: string };
 
 /**
- * Summon one of `id`. Checks: known id, gates met, under the max-active cap, soul cost affordable.
- * On success: deduct the soul cost and increment the invocation count. Persistent by default —
- * stays until dispelled or Katabasis.
+ * Summon one of `id`. Checks: known id, gates met, under the max-active cap, soul/gold cost
+ * affordable, plus the Morpheus lockout (an Erinyes-summoned lifetime can never invoke Morpheus
+ * again). On success: deduct the soul and gold costs and increment the invocation count.
+ * Persistent by default — stays until dispelled or Katabasis.
+ *
+ * The two Katabasis-modifying apexes (03 §2.4) carry side-effects at invoke time:
+ *   - Erinyes immediately kills every reprobate (each death mints one soul), dispels any active
+ *     Morpheus, clears `pendingMorpheus`, sets `morpheusLockedOut`, and sets `pendingErinyes` for
+ *     `commitKatabasis` to read.
+ *   - Morpheus refuses if `morpheusLockedOut` is set; otherwise pays its cost and sets
+ *     `pendingMorpheus`.
  */
 export function invoke(state: GameState, id: string): InvokeResult {
   const def = invocationById(id);
   if (!def) return { ok: false, reason: `unknown invocation: ${id}` };
+  if (id === 'morpheus' && state.lifetime.morpheusLockedOut === true) {
+    return { ok: false, reason: 'Morpheus has been silenced by Erinyes\u2019s wrath.' };
+  }
   if (!invocationUnlocked(state, def)) {
     const ip = `${def.invokingPower} invoking power`;
     const lvl =
@@ -235,19 +335,59 @@ export function invoke(state: GameState, id: string): InvokeResult {
   if (activeInvocationCount(state, id) >= cap) {
     return { ok: false, reason: 'already at its limit' };
   }
-  const cost = invocationSoulCost(state, def);
-  if (!gte(floor(state.souls), cost)) {
+  const soulCost = invocationSoulCost(state, def);
+  if (!gte(floor(state.souls), soulCost)) {
     return { ok: false, reason: 'not enough souls' };
   }
-  const invocations = { ...state.lifetime.invocations, [id]: activeInvocationCount(state, id) + 1 };
-  return {
-    ok: true,
-    state: {
-      ...state,
-      souls: sub(state.souls, cost),
-      lifetime: { ...state.lifetime, invocations },
+  const goldCost = invocationGoldCost(state, def);
+  if (!gte(floor(state.lifetime.gold), goldCost)) {
+    return { ok: false, reason: 'not enough gold' };
+  }
+
+  // Standard cost deduction + active-count increment.
+  let working: GameState = {
+    ...state,
+    souls: sub(state.souls, soulCost),
+    lifetime: {
+      ...state.lifetime,
+      gold: sub(state.lifetime.gold, goldCost),
+      invocations: { ...state.lifetime.invocations, [id]: activeInvocationCount(state, id) + 1 },
     },
   };
+
+  // ── Apex side-effects ────────────────────────────────────────────────────────────────────
+  if (id === 'erinyes') {
+    // Kill every reprobate at once — each death mints one soul (the 1-person-1-soul invariant).
+    // No RNG draws (a 100% wipe is deterministic) and the integer count is exact.
+    const population = totalReprobates(working);
+    if (population > 0) {
+      working = mintSouls(working, population);
+      working = {
+        ...working,
+        lifetime: { ...working.lifetime, reprobates: zeroReprobates() },
+      };
+    }
+    // Dispel any active Morpheus, cancel its pending Katabasis effect, and lock it out.
+    const invocations = { ...working.lifetime.invocations };
+    if ((invocations.morpheus ?? 0) > 0) delete invocations.morpheus;
+    working = {
+      ...working,
+      lifetime: {
+        ...working.lifetime,
+        invocations,
+        pendingErinyes: true,
+        pendingMorpheus: false,
+        morpheusLockedOut: true,
+      },
+    };
+  } else if (id === 'morpheus') {
+    working = {
+      ...working,
+      lifetime: { ...working.lifetime, pendingMorpheus: true },
+    };
+  }
+
+  return { ok: true, state: working };
 }
 
 /** Dispel one of `id` (decrement; delete the key at 0). Fails if none active. */
@@ -255,11 +395,18 @@ export function dispel(state: GameState, id: string): InvokeResult {
   const count = activeInvocationCount(state, id);
   if (count <= 0) return { ok: false, reason: 'not active' };
   const invocations = { ...state.lifetime.invocations };
-  if (count === 1) delete invocations[id];
-  else invocations[id] = count - 1;
+  let invocationDurations = state.lifetime.invocationDurations;
+  if (count === 1) {
+    delete invocations[id];
+    // No copies remain → drop any duration-scaled counter so a re-summon starts from zero.
+    if (id in invocationDurations) {
+      invocationDurations = { ...invocationDurations };
+      delete invocationDurations[id];
+    }
+  } else invocations[id] = count - 1;
   return {
     ok: true,
-    state: { ...state, lifetime: { ...state.lifetime, invocations } },
+    state: { ...state, lifetime: { ...state.lifetime, invocations, invocationDurations } },
   };
 }
 
