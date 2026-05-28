@@ -98,6 +98,19 @@ export interface Acolyte {
   remainingSeconds: number | null;
 }
 
+/**
+ * A Vitium conversion source — the unit that feeds `biasedSubtype` and the conversion pool
+ * (02 §9). Both Vitium Mercatura businesses and active Vitium Compositum toggles produce these;
+ * the dynamics layer concatenates them so conversion bias reflects the player's whole Vitium
+ * footprint, not Sin level (per the design correction). `conversionPerSecond` is the source's
+ * throughput; `subtypeBias` is its per-subtype weighting (need not sum to 1 — renormalized at
+ * draw).
+ */
+export interface VitiumConversionSource {
+  readonly conversionPerSecond: number;
+  readonly subtypeBias: Partial<Record<ReprobateSubtype, number>>;
+}
+
 /** State scoped to a single lifetime — reset (mostly) on Katabasis. */
 export interface LifetimeState {
   gold: BigNum;

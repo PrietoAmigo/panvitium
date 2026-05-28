@@ -34,8 +34,16 @@ import {
   BASE_SUICIDE_RATE_PER_SECOND,
   BASE_CHOLERIC_MURDER_RATE_PER_SECOND,
 } from './constants.js';
-import { businessConversionPerSecond, businessGenerationPerSecond } from './builds.js';
-import { businessById } from './businesses.js';
+import {
+  businessConversionPerSecond,
+  businessConversionSources,
+  businessGenerationPerSecond,
+} from './builds.js';
+import {
+  compositumConversionPerSecond,
+  compositumConversionSources,
+  compositumGenerationPerSecond,
+} from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobatesRandom } from './population.js';
 import { type Rng } from './rng.js';
@@ -65,12 +73,15 @@ export interface ReprobateRates {
 export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRates {
   const population = totalReprobates(state);
   const cholerics = state.lifetime.reprobates.choleric;
-  const baseGen = BASE_REPROBATE_GENERATION_PER_SECOND + businessGenerationPerSecond(state);
+  const baseGen =
+    BASE_REPROBATE_GENERATION_PER_SECOND +
+    businessGenerationPerSecond(state) +
+    compositumGenerationPerSecond(state);
   return {
     generationPerSecond: baseGen * mods.reprobateGenerationRateMul,
     suicidePerSecond: BASE_SUICIDE_RATE_PER_SECOND * population * mods.reprobateSuicideRateMul,
     murderPerSecond: BASE_CHOLERIC_MURDER_RATE_PER_SECOND * cholerics * mods.cholericMurderRateMul,
-    conversionPerSecond: businessConversionPerSecond(state),
+    conversionPerSecond: businessConversionPerSecond(state) + compositumConversionPerSecond(state),
   };
 }
 
@@ -114,14 +125,13 @@ export function biasedSubtype(state: GameState, rng: Rng): ReprobateSubtype {
   for (const t of REPROBATE_SUBTYPES) weights[t] = 0;
   let total = 0;
 
-  // Vitium Mercatura contributions: per-business conversionPerSecond × count × subtypeBias.
-  for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
-    const def = businessById(bid);
-    if (!def || !count) continue;
-    const sourceContrib = def.conversionPerSecond * count;
-    for (const [subtype, bias] of Object.entries(def.subtypeBias)) {
+  // Aggregate over every active Vitium source — businesses AND active Vitium Compositum toggles.
+  // Each source contributes conversionPerSecond × subtypeBias[S] to subtype S's weight.
+  const sources = [...businessConversionSources(state), ...compositumConversionSources(state)];
+  for (const src of sources) {
+    for (const [subtype, bias] of Object.entries(src.subtypeBias)) {
       if (bias === undefined) continue;
-      const w = sourceContrib * bias;
+      const w = src.conversionPerSecond * bias;
       weights[subtype as ReprobateSubtype] += w;
       total += w;
     }

@@ -229,3 +229,48 @@ describe('gameStore — acolyte delegation', () => {
     expect(store().notice).toMatch(/idle acolyte/i);
   });
 });
+
+describe('gameStore — Vitium Compositum ceremonies', () => {
+  function patchTwoSins(a: 'gula' | 'avaritia', b: 'luxuria' | 'ira', level: number): void {
+    const s = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s,
+        devotion: { ...s.devotion, [a]: bn(180 ** level), [b]: bn(180 ** level) },
+      },
+    });
+  }
+
+  it('refuses activation when the Sin gates are not met', () => {
+    store().activateCeremony('bacchanal');
+    expect(store().notice).toMatch(/gula 2 \+ luxuria 2/);
+  });
+
+  it('activates a ceremony when gated, adding it to activeToggles', () => {
+    patchTwoSins('gula', 'luxuria', 2);
+    store().activateCeremony('bacchanal');
+    const s = store().state as GameState;
+    expect(s.lifetime.activeToggles).toContain('bacchanal');
+    expect(store().notice).toBeNull();
+  });
+
+  it('deactivates a running ceremony', () => {
+    patchTwoSins('gula', 'luxuria', 2);
+    store().activateCeremony('bacchanal');
+    store().deactivateCeremony('bacchanal');
+    const s = store().state as GameState;
+    expect(s.lifetime.activeToggles).not.toContain('bacchanal');
+  });
+
+  it('auto-deactivates and surfaces a notice when upkeep cannot be paid', () => {
+    patchTwoSins('gula', 'luxuria', 2);
+    // bacchanal costs 50 gold/s; zero it out so the next tick can't pay.
+    const s0 = store().state as GameState;
+    useGameStore.setState({ state: { ...s0, lifetime: { ...s0.lifetime, gold: bn(0) } } });
+    store().activateCeremony('bacchanal');
+    store().advance(1);
+    const s = store().state as GameState;
+    expect(s.lifetime.activeToggles).not.toContain('bacchanal');
+    expect(store().notice).toMatch(/bacchanal/i);
+  });
+});

@@ -14,6 +14,8 @@ import {
   startAction,
   startBuild,
   shutdownBusiness,
+  activateToggle,
+  deactivateToggle,
   assignAcolyteToAction,
   unassignAcolyteFromAction,
   isSignatureTier,
@@ -73,6 +75,13 @@ interface GameStore {
   assignAcolyte: (actionId: string) => void;
   /** Remove one acolyte from a delegated action (LIFO — most-recently-assigned first). */
   unassignAcolyte: (actionId: string) => void;
+  /**
+   * Activate a Vitium Compositum ceremony toggle (03 §2.3). Notice on failure (gate unmet, already
+   * active). Upkeep is paid per-tick; the toggle auto-deactivates if it can't pay (02 §3).
+   */
+  activateCeremony: (vcId: string) => void;
+  /** Manually deactivate a Vitium Compositum ceremony toggle. */
+  deactivateCeremony: (vcId: string) => void;
   /** Open the Katabasis menu (returns any bound souls to the pool first, 02 §5). */
   beginKatabasis: () => void;
   /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
@@ -113,16 +122,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
   advance: (deltaSeconds) => {
     const current = get().state;
     if (!current) return;
-    const { state, events } = tick(current, deltaSeconds);
+    const { state, events, notices } = tick(current, deltaSeconds);
+    // A toggle that auto-deactivated this tick surfaces as the transient notice (02 §3). The
+    // sim has already removed it; this just tells the player. Latest wins if several fired.
+    const noticePatch = notices.length > 0 ? { notice: notices[notices.length - 1]! } : {};
     if (events.length === 0) {
-      set({ state });
+      set({ state, ...noticePatch });
       return;
     }
     set((s) => {
       const log = [...events].reverse().concat(s.log).slice(0, LOG_CAP);
       let signature = s.signature;
       for (const e of events) if (isSignatureTier(e.tier)) signature = e;
-      return { state, log, signature };
+      return { state, log, signature, ...noticePatch };
     });
   },
 
@@ -162,6 +174,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     const result = unassignAcolyteFromAction(current, actionId);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  activateCeremony: (vcId) => {
+    const current = get().state;
+    if (!current) return;
+    const result = activateToggle(current, vcId);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  deactivateCeremony: (vcId) => {
+    const current = get().state;
+    if (!current) return;
+    const result = deactivateToggle(current, vcId);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },

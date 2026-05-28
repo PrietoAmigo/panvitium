@@ -17,7 +17,7 @@
 import { add, floor, gte, sub } from './bignum.js';
 import { businessById, SHUTDOWN_REFUND_FRACTION } from './businesses.js';
 import { sinLevel } from './progression.js';
-import { type BuildTimer, type GameState } from './state.js';
+import { type BuildTimer, type GameState, type VitiumConversionSource } from './state.js';
 
 export type StartBuildResult =
   | { readonly ok: true; readonly state: GameState }
@@ -159,4 +159,18 @@ export function businessConversionPerSecond(state: GameState): number {
     s += def.conversionPerSecond * count;
   }
   return s;
+}
+
+/** Owned businesses as Vitium conversion sources (for biasedSubtype / the conversion pool). */
+export function businessConversionSources(state: GameState): VitiumConversionSource[] {
+  const out: VitiumConversionSource[] = [];
+  for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
+    const def = businessById(bid);
+    if (!def || !count) continue;
+    out.push({
+      conversionPerSecond: def.conversionPerSecond * count,
+      subtypeBias: def.subtypeBias,
+    });
+  }
+  return out;
 }

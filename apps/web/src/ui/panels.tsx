@@ -13,6 +13,10 @@ import {
   BUSINESS_IDS,
   businessById,
   SHUTDOWN_REFUND_FRACTION,
+  COMPOSITUM_IDS,
+  compositumById,
+  compositumUnlocked,
+  isToggleActive,
   assignedCount,
   isDelegatable,
   type OutcomeEvent,
@@ -461,7 +465,86 @@ function DepraedatioGroup(): ReactElement {
           </ul>
         </>
       )}
+      <CompositumSection />
       {notice !== null && <p className="opera-notice">{notice}</p>}
+    </>
+  );
+}
+
+/** Build a short "cost → effect" label for a Vitium Compositum entry. */
+function compositumSummary(id: string): string {
+  const def = compositumById(id);
+  if (!def) return '';
+  const costs: string[] = [];
+  if (def.costPerSecond.gold) costs.push(`${def.costPerSecond.gold} ${strings.resources.gold}/s`);
+  if (def.costPerSecond.influence)
+    costs.push(`${def.costPerSecond.influence} ${strings.resources.influence}/s`);
+  const effects: string[] = [];
+  if (def.goldPerSecond) effects.push(`+${def.goldPerSecond} ${strings.resources.gold}/s`);
+  if (def.influencePerSecond)
+    effects.push(`+${def.influencePerSecond} ${strings.resources.influence}/s`);
+  if (def.generationPerSecond) effects.push(strings.compositum.generates);
+  if (def.conversionPerSecond) effects.push(strings.compositum.converts);
+  const costStr = costs.length > 0 ? costs.join(' · ') : strings.compositum.noCost;
+  return `${costStr} \u2192 ${effects.join(' · ')}`;
+}
+
+/**
+ * Vitium Compositum (03 §2.3): multi-Sin ceremony toggles. Listed beneath the businesses in the
+ * Depraedatio ledger. Each shows its Sin gate, cost→effect summary, and an activate/deactivate
+ * button. Locked entries are dimmed with their gate spelled out.
+ */
+function CompositumSection(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const activate = useGameStore((s) => s.activateCeremony);
+  const deactivate = useGameStore((s) => s.deactivateCeremony);
+  if (!state) return <></>;
+  return (
+    <>
+      <h3 className="vitium-heading">{strings.compositum.heading}</h3>
+      <ul className="vitium-list">
+        {COMPOSITUM_IDS.map((id) => {
+          const def = compositumById(id);
+          if (!def) return null;
+          const unlocked = compositumUnlocked(state, def);
+          const active = isToggleActive(state, id);
+          const name = strings.compositum.names[id] ?? id;
+          const gate = def.sins.map((s) => `${s} L${def.minLevel}`).join(' + ');
+          return (
+            <li
+              key={id}
+              className={`vitium-row${unlocked ? '' : ' vitium-locked'}${active ? ' vitium-active' : ''}`}
+            >
+              <div className="vitium-meta">
+                <span className="vitium-name">{name}</span>
+                <span className="vitium-sub">{unlocked ? compositumSummary(id) : gate}</span>
+              </div>
+              <div className="vitium-actions">
+                {active ? (
+                  <button
+                    type="button"
+                    className="opera-btn opera-btn--secondary"
+                    onClick={() => deactivate(id)}
+                    aria-label={`${strings.compositum.stop} ${name}`}
+                  >
+                    {strings.compositum.stop}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="opera-btn"
+                    disabled={!unlocked}
+                    onClick={() => activate(id)}
+                    aria-label={`${strings.compositum.start} ${name}`}
+                  >
+                    {unlocked ? strings.compositum.start : `${strings.opera.sinLocked} · ${gate}`}
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }

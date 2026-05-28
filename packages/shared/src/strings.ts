@@ -74,6 +74,20 @@ export const strings = {
     delegationLabel: 'Delegated acolytes',
     idle: 'idle',
   },
+  compositum: {
+    heading: 'Vitium Compositum',
+    start: 'Begin',
+    stop: 'End',
+    noCost: 'no upkeep',
+    generates: 'breeds reprobates',
+    converts: 'converts',
+    names: {
+      bacchanal: 'Bacchanal',
+      'loan-shark-op': 'Loan Shark Op',
+      charity: 'Charity Drive',
+      gala: 'Gala',
+    } as Record<string, string>,
+  },
   maleficia: {
     intro:
       'What has been found, paid for, and brought home. Each item has its own price in attention.',

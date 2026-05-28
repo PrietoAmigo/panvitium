@@ -15,6 +15,11 @@ import { add, min, mul } from './bignum.js';
 import { resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceBuilds, businessGoldPerSecond } from './builds.js';
+import {
+  advanceToggles,
+  compositumGoldPerSecond,
+  compositumInfluencePerSecond,
+} from './compositum.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
@@ -27,36 +32,64 @@ export interface TickDeps {
   readonly _reserved?: never;
 }
 
-/** The result of advancing the game: the new state and any outcomes that resolved this tick. */
+/** The result of advancing the game: the new state, outcome events, and transient notices. */
 export interface TickResult {
   readonly state: GameState;
   readonly events: OutcomeEvent[];
+  /**
+   * Transient one-line system messages produced this tick (not part of the outcome log yet).
+   * Used for Vitium Compositum auto-deactivation ("X ended — upkeep unpaid"). The store surfaces
+   * the most recent. A future slice promotes these to proper log entries alongside Panvitium's
+   * "ended" message via a discriminated log union.
+   */
+  readonly notices: string[];
 }
 
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
 export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {}): TickResult {
-  if (deltaSeconds <= 0) return { state, events: [] };
+  if (deltaSeconds <= 0) return { state, events: [], notices: [] };
 
   const rng = makeRng(state.rngState);
+
+  // 0. Vitium Compositum upkeep (02 §3). Deduct each active toggle's per-second cost BEFORE any
+  //    income is applied, so a toggle never earns on a tick it couldn't afford. Toggles that
+  //    cannot pay auto-deactivate; collect a notice per deactivation. We reassign `state` here so
+  //    the rest of the tick (modifiers, income, dynamics) sees the post-upkeep toggle set.
+  const notices: string[] = [];
+  {
+    const toggled = advanceToggles(state, deltaSeconds);
+    state = toggled.state;
+    for (const id of toggled.deactivated) {
+      notices.push(`${id} ended \u2014 upkeep unpaid.`);
+    }
+  }
+
   const mods = computeModifiers(state);
 
   // 1. Passive generation (02 §1) with modifier bundle applied.
-  //    Gold/s = (base + Σ business goldPerSecond × count) × goldRateMul. Business income obeys
-  //    the same multiplier so Avaritia / Silver / etc. scale shop output as well as base.
-  //    Influence is gain = effectiveMax × BASE_INFLUENCE_RATE × `influenceRateMul`, capped at
-  //    `effectiveMax = base × maxInfluenceMul` (Vanagloria skill raises the cap; level its rate).
+  //    Gold/s = (base + Σ business goldPerSecond + Σ active-VC goldPerSecond) × goldRateMul.
+  //    Influence gain = (proportional base + Σ active-VC influencePerSecond) × influenceRateMul,
+  //    capped at effectiveMax = base × maxInfluenceMul. Business / VC income obeys the same
+  //    multipliers as base so Avaritia / Silver / Acclaim scale them too.
   //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
   //    only at display/spend/comparison boundary.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
-  const goldPerSecond = (BASE_GOLD_PER_SECOND + businessGoldPerSecond(state)) * mods.goldRateMul;
+  const goldPerSecond =
+    (BASE_GOLD_PER_SECOND + businessGoldPerSecond(state) + compositumGoldPerSecond(state)) *
+    mods.goldRateMul;
+  const proportionalInfluence = mul(
+    effectiveMax,
+    BASE_INFLUENCE_RATE * mods.influenceRateMul * deltaSeconds,
+  );
+  const vcInfluence = mul(
+    compositumInfluencePerSecond(state) * mods.influenceRateMul,
+    deltaSeconds,
+  );
   const lifetime = {
     ...state.lifetime,
     gold: add(state.lifetime.gold, mul(goldPerSecond, deltaSeconds)),
     influence: min(
-      add(
-        state.lifetime.influence,
-        mul(effectiveMax, BASE_INFLUENCE_RATE * mods.influenceRateMul * deltaSeconds),
-      ),
+      add(add(state.lifetime.influence, proportionalInfluence), vcInfluence),
       effectiveMax,
     ),
   };
@@ -121,5 +154,6 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
       rngState: rng.state,
     },
     events,
+    notices,
   };
 }
