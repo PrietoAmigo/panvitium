@@ -96,3 +96,35 @@ export const AUREVORA_EFFICIENCY_GROWTH_PER_SECOND = 1.05;
  * sources (the Eligos #15 / Phenex #37 sigils attach to the same hook).
  */
 export const SPECUNITAS_CELEBRITY_BIAS_MUL = 100;
+
+/**
+ * Reprobate subtype effects (03 §3). Each subtype has TWO effects: a **Sin-themed Vitium Mercatura
+ * gold output boost** (applies multiplicatively to that Sin's businesses, per-count) and a
+ * **secondary effect** on some global rate. All "increase" effects compose as `X × (1 + pct × n)`;
+ * all "decrease" effects compose as `X / (1 + pct × n)` (asymptotic to 0, never negative — same
+ * shape the Sin skills use). Magnitudes here are placeholders, spreadsheet-overridable; the
+ * SHAPES are authoritative (which subtype affects which dimension, in which direction).
+ */
+/** Per-count VM gold boost applied to the matching Sin's businesses (e.g. Gluttons → Gula VM). */
+export const SUBTYPE_VM_GOLD_BOOST_PER_COUNT = 0.01; // +1% per matched subtype, per business
+/** Glutton (Gula): per-count multiplicative slowdown on the offline catchup duration. */
+export const GLUTTON_OFFLINE_PENALTY_PER_COUNT = 0.0001;
+/** Degenerate (Luxuria): per-count multiplicative reduction in baseline suicide rate. */
+export const DEGENERATE_SUICIDE_REDUCTION_PER_COUNT = 0.001;
+/** Degenerate (Luxuria): per-count multiplicative reduction in Choleric murder rate. */
+export const DEGENERATE_MURDER_REDUCTION_PER_COUNT = 0.001;
+/** Gambler (Avaritia): per-count multiplicative reduction in reprobate generation rate. */
+export const GAMBLER_GENERATION_REDUCTION_PER_COUNT = 0.001;
+/** Nihilist (Tristitia): per-count multiplicative increase in suicide rate. */
+export const NIHILIST_SUICIDE_INCREASE_PER_COUNT = 0.001;
+/** Choleric (Ira): per-count multiplicative compounding on its OWN murder rate (in addition to
+ *  the linear `BASE × cholerics` term already in `reprobateRates`). Doc text: "by a per-Choleric
+ *  percentage", read as a second-order amplification. */
+export const CHOLERIC_MURDER_INCREASE_PER_COUNT = 0.001;
+/** Husk (Acedia): per-count multiplicative reduction on the PLAYER's action efficiency (online
+ *  only — Acedia's offline boost is a separate, future channel). */
+export const HUSK_EFFICIENCY_REDUCTION_PER_COUNT = 0.0001;
+/** Celebrity (Vanagloria): per-count multiplicative reduction on overall gold rate. */
+export const CELEBRITY_GOLD_REDUCTION_PER_COUNT = 0.0001;
+/** Sigma (Superbia): per-count multiplicative reduction on influence rate. */
+export const SIGMA_INFLUENCE_REDUCTION_PER_COUNT = 0.0001;

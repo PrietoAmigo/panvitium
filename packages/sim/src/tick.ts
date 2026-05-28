@@ -112,7 +112,7 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const goldPerSecond =
     (BASE_GOLD_PER_SECOND +
-      businessGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
+      businessGoldPerSecond(state, mods) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state)) *
     mods.goldRateMul;
   const proportionalInfluence = mul(

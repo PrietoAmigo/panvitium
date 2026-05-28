@@ -227,7 +227,9 @@ describe('reprobate dynamics — murder pool (dormant without Cholerics)', () =>
     const rng = makeRng(0);
     const after = applyReprobateDynamics(state, 200, rng);
     expect(after.lifetime.reprobates.choleric).toBe(10);
-    expect(after.lifetime.murderPool).toBeCloseTo(2.0, 4);
+    // 10 Cholerics × BASE 0.001 × 200 s × Choleric self-compounding (1 + 0.001 × 10) = 2.02.
+    // The self-compounding term is 03 §3's "Increases murder rate by per-Choleric percentage".
+    expect(after.lifetime.murderPool).toBeCloseTo(2.02, 4);
   });
 });
 

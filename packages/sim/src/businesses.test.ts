@@ -211,7 +211,7 @@ describe('tick — business gold income', () => {
       ...s,
       lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 1 } },
     };
-    expect(businessGoldPerSecond(owned)).toBe(1);
+    expect(businessGoldPerSecond(owned, computeModifiers(owned))).toBe(1);
     const after = tick(owned, 1).state;
     expect(after.lifetime.gold.toNumber()).toBeCloseTo(11, 5);
   });
@@ -229,7 +229,7 @@ describe('tick — business gold income', () => {
         },
       },
     };
-    expect(businessGoldPerSecond(owned)).toBe(5);
+    expect(businessGoldPerSecond(owned, computeModifiers(owned))).toBe(5);
   });
 });
 

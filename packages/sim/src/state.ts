@@ -58,6 +58,22 @@ export const REPROBATE_SUBTYPES: readonly ReprobateSubtype[] = [
   'sigma',
 ] as const;
 
+/**
+ * The "themed" subtype for each Cardinal Sin (03 §3): a Gula business biases conversion toward
+ * Gluttons, an Ira business toward Cholerics, and so on. Used by the conversion-bias draw and by
+ * the per-subtype Vitium Mercatura gold boost in `computeModifiers`.
+ */
+export const SUBTYPE_OF_SIN: Record<Sin, ReprobateSubtype> = {
+  gula: 'glutton',
+  luxuria: 'degenerate',
+  avaritia: 'gambler',
+  tristitia: 'nihilist',
+  ira: 'choleric',
+  acedia: 'husk',
+  vanagloria: 'celebrity',
+  superbia: 'sigma',
+} as const;
+
 /** Sigils are referenced by their canonical Goetia number, 1..72. */
 export type SigilId = number;
 

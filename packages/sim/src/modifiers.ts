@@ -33,12 +33,24 @@
  * spreadsheet's `SKILL_INTENSITY_DIVISOR` already sets the intensity curve; per-Sin coefficients on
  * top of this are a future tuning surface.
  */
-import { type GameState } from './state.js';
+import { SINS, SUBTYPE_OF_SIN, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies } from './maleficia.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import { sigilModifierContributions, type ScalarModifierField } from './sigils.js';
+import {
+  CELEBRITY_GOLD_REDUCTION_PER_COUNT,
+  CHOLERIC_MURDER_INCREASE_PER_COUNT,
+  DEGENERATE_MURDER_REDUCTION_PER_COUNT,
+  DEGENERATE_SUICIDE_REDUCTION_PER_COUNT,
+  GAMBLER_GENERATION_REDUCTION_PER_COUNT,
+  GLUTTON_OFFLINE_PENALTY_PER_COUNT,
+  HUSK_EFFICIENCY_REDUCTION_PER_COUNT,
+  NIHILIST_SUICIDE_INCREASE_PER_COUNT,
+  SIGMA_INFLUENCE_REDUCTION_PER_COUNT,
+  SUBTYPE_VM_GOLD_BOOST_PER_COUNT,
+} from './constants.js';
 
 export interface Modifiers {
   /** Multiplier on the base gold-per-second rate. */
@@ -93,6 +105,22 @@ export interface Modifiers {
    * mode, deferred to a later slice).
    */
   readonly acolyteEfficiencyMul: number;
+  /**
+   * Per-Sin multiplier on Vitium Mercatura business gold output, driven by the matching subtype
+   * count (03 §3: "Gluttons increase the gold output of Gula-related Vitium actions", etc.).
+   * Composed multiplicatively with `vitiumMercaturaOutputMul` at the per-business call site in
+   * `businessGoldPerSecond`. Defaults to 1× for every Sin when no subtype of that Sin's themed
+   * type is present. Future sources (per-Sin sigils, hypothetical maleficia) can compose into the
+   * same map.
+   */
+  readonly subtypeVitiumGoldMulBySin: Readonly<Record<Sin, number>>;
+  /**
+   * Multiplier on the duration used during offline catchup (02 §1 / 03 §1 Procrastination /
+   * 03 §3 Glutton). Default 1×. Below 1× = slower offline (Glutton); above 1× = faster offline
+   * (Acedia's Procrastination skill, future). Applied in `session.resumeGame` before the catchup
+   * `tick(state, scaledDelta)`; has no effect on online ticks.
+   */
+  readonly offlineTimeMul: number;
 }
 
 /** No sources active — every multiplier is 1; tier shifts are absent (all default 1). */
@@ -110,6 +138,17 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   cholericMurderRateMul: 1,
   vitiumMercaturaOutputMul: 1,
   acolyteEfficiencyMul: 0.33,
+  subtypeVitiumGoldMulBySin: {
+    gula: 1,
+    luxuria: 1,
+    avaritia: 1,
+    tristitia: 1,
+    ira: 1,
+    acedia: 1,
+    vanagloria: 1,
+    superbia: 1,
+  },
+  offlineTimeMul: 1,
 };
 
 /** Default skill→effect coupling for a skill that "increases X": X *= (1 + intensity). */
@@ -200,18 +239,53 @@ export function computeModifiers(state: GameState): Modifiers {
     tierWeightMul.apocalyptic = 0;
   }
 
+  // Per-subtype reprobate effects (03 §3). Each subtype carries TWO effects: a Sin-themed VM gold
+  // boost (per-business via `subtypeVitiumGoldMulBySin`) plus a secondary effect on a global rate
+  // (composed into the existing rate muls below). All "increase X" use `(1 + pct × n)`, all
+  // "decrease X" use `1 / (1 + pct × n)` (asymptotic to 0, never negative — matches skill-bonus).
+  const subs = state.lifetime.reprobates;
+  // Per-Sin Vitium Mercatura gold boost: each business of Sin S multiplies by `1 + pct ×
+  // subtype-count(SUBTYPE_OF_SIN[S])`. The composed map is consumed at the per-business call site
+  // (`businessGoldPerSecond`); we *don't* fold it into the global `vitiumMercaturaOutputMul` so
+  // builds of different Sins keep their independent boosts.
+  const subtypeVitiumGoldMulBySin = {} as Record<Sin, number>;
+  for (const sin of SINS) {
+    const themedCount = subs[SUBTYPE_OF_SIN[sin]];
+    subtypeVitiumGoldMulBySin[sin] = 1 + SUBTYPE_VM_GOLD_BOOST_PER_COUNT * themedCount;
+  }
+  // Secondary effects (composed below into the existing rate-mul expressions):
+  //   Degenerate (Luxuria): lowers suicide + Choleric murder
+  const degenerateSuicideMul = 1 / (1 + DEGENERATE_SUICIDE_REDUCTION_PER_COUNT * subs.degenerate);
+  const degenerateMurderMul = 1 / (1 + DEGENERATE_MURDER_REDUCTION_PER_COUNT * subs.degenerate);
+  //   Nihilist (Tristitia): raises suicide
+  const nihilistSuicideMul = 1 + NIHILIST_SUICIDE_INCREASE_PER_COUNT * subs.nihilist;
+  //   Gambler (Avaritia): lowers generation
+  const gamblerGenerationMul = 1 / (1 + GAMBLER_GENERATION_REDUCTION_PER_COUNT * subs.gambler);
+  //   Choleric (Ira): compounds its own murder rate (second-order on top of count × base)
+  const cholericMurderCompound = 1 + CHOLERIC_MURDER_INCREASE_PER_COUNT * subs.choleric;
+  //   Husk (Acedia): lowers online player efficiency (offline is its own channel)
+  const huskEfficiencyMul = 1 / (1 + HUSK_EFFICIENCY_REDUCTION_PER_COUNT * subs.husk);
+  //   Celebrity (Vanagloria): lowers gold rate
+  const celebrityGoldMul = 1 / (1 + CELEBRITY_GOLD_REDUCTION_PER_COUNT * subs.celebrity);
+  //   Sigma (Superbia): lowers influence rate
+  const sigmaInfluenceMul = 1 / (1 + SIGMA_INFLUENCE_REDUCTION_PER_COUNT * subs.sigma);
+  //   Glutton (Gula): slows offline catchup (consumed in session.resumeGame, NOT online ticks)
+  const gluttonOfflineMul = 1 / (1 + GLUTTON_OFFLINE_PENALTY_PER_COUNT * subs.glutton);
+
   return {
     goldRateMul:
       skillBonus(avaritiaIntensity) *
       (hasSilver ? 3 : 1) *
       (hasMidas ? 3 : 1) *
       (hasSuccubus ? 0.01 : 1) *
+      celebrityGoldMul *
       sc('goldRateMul'),
     influenceRateMul:
       1.5 ** vanagloriaLvl *
       (hasCodex ? 3 : 1) *
       1.25 ** famaCount *
       (hasDoppel ? 0.5 : 1) *
+      sigmaInfluenceMul *
       sc('influenceRateMul'),
     maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul'),
     // Flat influence/s: each Lemure adds a per-Husk amount (additive; scaled by influenceRateMul +
@@ -224,33 +298,50 @@ export function computeModifiers(state: GameState): Modifiers {
       (hasFamiliar ? 1.33 : 1) *
       aurevoraEff *
       erinyesStackMul *
+      huskEfficiencyMul *
       sc('playerEfficiencyMul'),
     suasioEfficiencyMul: skillBonus(tristitiaIntensity) * sc('suasioEfficiencyMul'),
     decimatioEfficiencyMul: skillBonus(iraIntensity) * sc('decimatioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; each Lamia
-    // lifts it; Succubus multiplies it dramatically; sigils (Aamon #7 up, Zepar #16 down) compose.
+    // lifts it; Succubus multiplies it dramatically; Gambler subtype drags it down; sigils
+    // (Aamon #7 up, Zepar #16 down) compose.
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
       (1 + LAMIA_GENERATION * lamiaCount) *
       (hasSuccubus ? SUCCUBUS_GEN_MUL : 1) *
+      gamblerGenerationMul *
       sc('reprobateGenerationRateMul'),
     // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
-    // Panvitium multiplies while active; Crocell #49 sigil composes.
+    // Panvitium multiplies while active; Degenerate subtype drags it down; Nihilist subtype lifts
+    // it; Crocell #49 sigil composes.
     reprobateSuicideRateMul:
       skillBonus(tristitiaIntensity) *
       2 ** tristitiaLvl *
       (1 + 0.05 * nightmareCount) *
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
+      degenerateSuicideMul *
+      nihilistSuicideMul *
       sc('reprobateSuicideRateMul'),
-    // Murder: each Harpy lifts ×1.1; Panvitium multiplies while active; Aim #23 sigil composes.
+    // Murder: each Harpy lifts ×1.1; Panvitium multiplies while active; Degenerate subtype drags
+    // it down; Choleric subtype compounds it on top of the linear count × base term in `dynamics`;
+    // Aim #23 sigil composes.
     cholericMurderRateMul:
-      1.1 ** harpyCount * (panvitiumActive ? PANV_MURDER_MUL : 1) * sc('cholericMurderRateMul'),
+      1.1 ** harpyCount *
+      (panvitiumActive ? PANV_MURDER_MUL : 1) *
+      degenerateMurderMul *
+      cholericMurderCompound *
+      sc('cholericMurderRateMul'),
     // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
     // multiplier scales business gold + generation + conversion at the tick/dynamics call sites.
     vitiumMercaturaOutputMul: (1 + PLUTUS_OUTPUT * plutusCount) * sc('vitiumMercaturaOutputMul'),
     // Acolyte efficiency: 0.33 baseline (02 §10); Bathin #18 sigil composes on top.
     acolyteEfficiencyMul: 0.33 * sc('acolyteEfficiencyMul'),
+    // Per-Sin Vitium Mercatura gold boost from matched subtype counts (03 §3). Read at the
+    // per-business call site so each Sin's businesses receive their own themed boost.
+    subtypeVitiumGoldMulBySin,
+    // Offline time scaling (Glutton slows; Acedia's Procrastination skill will lift, future).
+    offlineTimeMul: gluttonOfflineMul,
   };
 }
 

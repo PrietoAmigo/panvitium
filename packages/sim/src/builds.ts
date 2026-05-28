@@ -16,6 +16,7 @@
  */
 import { add, floor, gte, sub } from './bignum.js';
 import { businessById, SHUTDOWN_REFUND_FRACTION } from './businesses.js';
+import { type Modifiers } from './modifiers.js';
 import { sinLevel } from './progression.js';
 import { type BuildTimer, type GameState, type VitiumConversionSource } from './state.js';
 
@@ -135,13 +136,20 @@ export function advanceBuilds(state: GameState, deltaSeconds: number): GameState
   };
 }
 
-/** Sum of `goldPerSecond` across all owned businesses (catalog-driven; unknown ids ignored). */
-export function businessGoldPerSecond(state: GameState): number {
+/**
+ * Sum of `goldPerSecond` across all owned businesses, with the per-Sin subtype gold boost applied
+ * per-business (03 §3: a Gula business is boosted by Glutton-count; an Ira business by Cholerics;
+ * etc.). The boost composes with the global `vitiumMercaturaOutputMul` at the call site in `tick`,
+ * not here, so this returns the per-business contribution after subtype lift but before global VM
+ * lift. Unknown business ids are ignored.
+ */
+export function businessGoldPerSecond(state: GameState, mods: Modifiers): number {
   let s = 0;
   for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
     const def = businessById(bid);
     if (!def || !count) continue;
-    s += def.goldPerSecond * count;
+    const subtypeMul = mods.subtypeVitiumGoldMulBySin[def.sin];
+    s += def.goldPerSecond * count * subtypeMul;
   }
   return s;
 }

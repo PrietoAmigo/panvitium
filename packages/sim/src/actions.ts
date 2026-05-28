@@ -27,8 +27,8 @@ import {
   type ActionTimer,
   type GameState,
   type ReprobateSubtype,
-  type Sin,
   SINS,
+  SUBTYPE_OF_SIN,
   totalReprobates,
 } from './state.js';
 import { type OutcomeEvent } from './events.js';
@@ -137,17 +137,6 @@ export const ACTIONS: Record<string, ActionDef> = {
     weights: EMPTIO_WEIGHTS,
     efficiencyMode: 'time',
   },
-};
-
-const SUBTYPE_OF_SIN: Record<Sin, ReprobateSubtype> = {
-  gula: 'glutton',
-  luxuria: 'degenerate',
-  avaritia: 'gambler',
-  tristitia: 'nihilist',
-  ira: 'choleric',
-  acedia: 'husk',
-  vanagloria: 'celebrity',
-  superbia: 'sigma',
 };
 
 /** Inclusive integer in [lo, hi] from the seeded RNG. */
