@@ -427,15 +427,20 @@ export function resolveIndagatio(
   tier: Tier,
   rng: Rng,
 ): { state: GameState; surfaced: string[] } {
-  // Walks rarities best→worst, stopping at the first one with at least one findable candidate.
+  // Walks rarities best→worst from the tier's entry point, stopping at the first one with a
+  // findable candidate (Indagatio & Emptio sheet): Stellar→anathema, Excellent→profane, Good→rare,
+  // Neutral→common. Bad is a false lead (time lost, nothing surfaced); the failure tiers below bite
+  // gold instead.
   const fallbackChain: MaleficiumRarity[] =
     tier === 'stellar'
       ? ['anathema', 'profane', 'rare', 'common']
       : tier === 'excellent'
         ? ['profane', 'rare', 'common']
         : tier === 'good'
-          ? ['common']
-          : [];
+          ? ['rare', 'common']
+          : tier === 'neutral'
+            ? ['common']
+            : [];
   for (const rarity of fallbackChain) {
     const ids = findableIds(rarity, state.lifetime.maleficia, state.lifetime.emptioList);
     if (ids.length === 0) continue;
@@ -448,13 +453,13 @@ export function resolveIndagatio(
     return { state: next, surfaced: [picked] };
   }
 
-  // Negative tiers: small gold-loss bites that scale with severity. Neutral / unfindable tiers fall
-  // through with no state change.
+  // Failure tiers bite gold (Indagatio & Emptio sheet): Terrible (Church trap) −15%, Apocalyptic
+  // (Higher-Power agent) −80%. Bad (false lead) and any unfindable rarity fall through unchanged.
   if (tier === 'terrible') {
-    return { state: loseGoldFraction(state, 0.05), surfaced: [] };
+    return { state: loseGoldFraction(state, 0.15), surfaced: [] };
   }
   if (tier === 'apocalyptic') {
-    return { state: loseGoldFraction(state, 0.2), surfaced: [] };
+    return { state: loseGoldFraction(state, 0.8), surfaced: [] };
   }
   return { state, surfaced: [] };
 }

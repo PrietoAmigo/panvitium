@@ -9,11 +9,11 @@ const fresh = (): GameState => createInitialState('seed', 0);
 const rng = () => makeRng(hashSeed('test'));
 
 describe('resolveIndagatio (03 §2.5)', () => {
-  it('Good surfaces a common into the Emptio list', () => {
+  it('Good surfaces a rare into the Emptio list', () => {
     const { state, surfaced } = resolveIndagatio(fresh(), 'good', rng());
     expect(surfaced.length).toBe(1);
     const id = surfaced[0]!;
-    expect(MALEFICIA[id]!.rarity).toBe('common');
+    expect(MALEFICIA[id]!.rarity).toBe('rare');
     expect(state.lifetime.emptioList).toContain(id);
   });
 
@@ -31,17 +31,29 @@ describe('resolveIndagatio (03 §2.5)', () => {
     expect(MALEFICIA[surfaced[0]!]!.rarity).toBe('anathema');
   });
 
-  it('Neutral / Bad surface nothing and leave state untouched', () => {
-    const base = fresh();
-    expect(resolveIndagatio(base, 'neutral', rng()).surfaced).toEqual([]);
-    expect(resolveIndagatio(base, 'bad', rng()).surfaced).toEqual([]);
+  it('Neutral surfaces a common into the Emptio list', () => {
+    const { state, surfaced } = resolveIndagatio(fresh(), 'neutral', rng());
+    expect(surfaced.length).toBe(1);
+    expect(MALEFICIA[surfaced[0]!]!.rarity).toBe('common');
+    expect(state.lifetime.emptioList).toContain(surfaced[0]!);
   });
 
-  it('Terrible costs gold but never goes negative', () => {
+  it('Bad is a false lead — surfaces nothing and leaves state untouched', () => {
+    const base = fresh();
+    const r = resolveIndagatio(base, 'bad', rng());
+    expect(r.surfaced).toEqual([]);
+    expect(r.state).toBe(base);
+  });
+
+  it('Terrible bites 15% of current gold; Apocalyptic bites 80%', () => {
     const base = fresh();
     const seeded: GameState = { ...base, lifetime: { ...base.lifetime, gold: bn(1000) } };
-    const { state } = resolveIndagatio(seeded, 'terrible', rng());
-    expect(floor(state.lifetime.gold).toNumber()).toBeLessThan(1000);
+    expect(floor(resolveIndagatio(seeded, 'terrible', rng()).state.lifetime.gold).toNumber()).toBe(
+      850,
+    );
+    expect(
+      floor(resolveIndagatio(seeded, 'apocalyptic', rng()).state.lifetime.gold).toNumber(),
+    ).toBe(200);
   });
 
   it('falls back to a lower rarity when the picked one is exhausted', () => {
