@@ -205,7 +205,7 @@ describe('shutdownBusiness', () => {
 
 describe('tick — business gold income', () => {
   it('owned businesses contribute to per-tick gold gain (multiplied by goldRateMul)', () => {
-    // Fresh: BASE_GOLD_PER_SECOND = 10. Add one gula-mercatura-1 (gpsec 1) → total 11 g/s.
+    // Fresh: BASE_GOLD_PER_SECOND = 2. Add one gula-mercatura-1 (gpsec 1) → total 3 g/s.
     const s = withGold(fresh(), 0);
     const owned: GameState = {
       ...s,
@@ -213,7 +213,7 @@ describe('tick — business gold income', () => {
     };
     expect(businessGoldPerSecond(owned, computeModifiers(owned))).toBe(1);
     const after = tick(owned, 1).state;
-    expect(after.lifetime.gold.toNumber()).toBeCloseTo(11, 5);
+    expect(after.lifetime.gold.toNumber()).toBeCloseTo(3, 5);
   });
 
   it('businessGoldPerSecond scales with count and ignores unknown ids', () => {

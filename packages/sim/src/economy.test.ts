@@ -9,8 +9,8 @@ const influenceOf = (s: GameState): number => floor(s.lifetime.influence).toNumb
 describe('tick — passive generation', () => {
   it('generates base gold and influence over one second', () => {
     const { state } = tick(createInitialState('seed', 0), 1);
-    expect(eq(state.lifetime.gold, bn(10))).toBe(true); // 10/s
-    expect(eq(state.lifetime.influence, bn(2.5))).toBe(true); // 0.025 × maxInfluence(100) = 2.5/s
+    expect(eq(state.lifetime.gold, bn(2))).toBe(true); // 2/s
+    expect(eq(state.lifetime.influence, bn(1))).toBe(true); // 0.01 × maxInfluence(100) = 1/s
   });
 
   it('accumulates sub-unit gains across 100 ms ticks (online == offline)', () => {
@@ -19,15 +19,15 @@ describe('tick — passive generation', () => {
     const offline = tick(createInitialState('seed', 0), 1).state;
     expect(goldOf(online)).toBe(goldOf(offline));
     expect(influenceOf(online)).toBe(influenceOf(offline));
-    expect(goldOf(online)).toBe(10);
-    expect(influenceOf(online)).toBe(2); // floor(2.5)
+    expect(goldOf(online)).toBe(2);
+    expect(influenceOf(online)).toBe(1); // floor(1.0)
   });
 
   it('caps influence at maxInfluence but lets gold run free', () => {
-    const { state } = tick(createInitialState('seed', 0), 100); // 500 influence uncapped
+    const { state } = tick(createInitialState('seed', 0), 100); // 100 influence (reaches the cap)
     expect(eq(state.lifetime.influence, state.lifetime.maxInfluence)).toBe(true);
     expect(influenceOf(state)).toBe(100);
-    expect(goldOf(state)).toBe(1000);
+    expect(goldOf(state)).toBe(200);
   });
 
   it('advances the logical clock and is a no-op for non-positive deltas', () => {
@@ -49,20 +49,20 @@ describe('tick — passive generation', () => {
 
 describe('tick — modifiers (Sin level / Sin skill)', () => {
   it('Avaritia skill scales the passive gold rate (Golden Hand)', () => {
-    // Devotion 180 → intensity ≈ 0.41253 → goldRateMul ≈ 1.4125 → gold/s ≈ 14.13.
+    // Devotion 180 → intensity ≈ 0.41253 → goldRateMul ≈ 1.4125 → gold/s ≈ 2.825.
     const base = createInitialState('seed', 0);
     const state: GameState = { ...base, devotion: { ...base.devotion, avaritia: bn(180) } };
     const { state: after } = tick(state, 1);
-    expect(floor(after.lifetime.gold).toNumber()).toBe(14);
+    expect(floor(after.lifetime.gold).toNumber()).toBe(2);
   });
 
   it('Vanagloria scales both influence rate (level) and the effective cap (Acclaim)', () => {
     // L1 → influenceRateMul = 1.5. Skill intensity ≈ 0.41253 → maxInfluenceMul ≈ 1.4125.
-    // effectiveMax = 100 × 1.4125 = 141.25; influence/s = 141.25 × 0.025 × 1.5 ≈ 5.30.
+    // effectiveMax = 100 × 1.4125 = 141.25; influence/s = 141.25 × 0.01 × 1.5 ≈ 2.12.
     const base = createInitialState('seed', 0);
     const state: GameState = { ...base, devotion: { ...base.devotion, vanagloria: bn(180) } };
     const { state: after } = tick(state, 1);
-    expect(floor(after.lifetime.influence).toNumber()).toBe(5);
+    expect(floor(after.lifetime.influence).toNumber()).toBe(2);
   });
 });
 

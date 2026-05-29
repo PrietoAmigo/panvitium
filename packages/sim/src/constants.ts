@@ -4,15 +4,15 @@
  * a design-doc prose value disagreed with the spreadsheet, the spreadsheet wins — noted inline.
  */
 
-/** Base passive gold gain per second (Globals: 10 gold/s). */
-export const BASE_GOLD_PER_SECOND = 10;
+/** Base passive gold gain per second (Globals: 2 gold/s). */
+export const BASE_GOLD_PER_SECOND = 2;
 
 /**
  * Base passive influence gain, as a fraction of maxInfluence per second (Globals: 0.025, unit
  * "% of max infl / s"). Influence is generated as a percentage of the maximum and capped there
  * (02 §1) — so gain/s = BASE_INFLUENCE_RATE × maxInfluence. (Supersedes the doc's flat "5/s".)
  */
-export const BASE_INFLUENCE_RATE = 0.025;
+export const BASE_INFLUENCE_RATE = 0.01;
 
 /** Base maximum influence for a fresh lifetime; sin/sigil/maleficia modifiers raise it later. */
 export const BASE_MAX_INFLUENCE = 100;
