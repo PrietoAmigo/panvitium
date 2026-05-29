@@ -390,9 +390,10 @@ function formatDuration(totalSec: number): string {
 }
 
 /**
- * Depraedatio (03 §2.3): Vitium Mercatura. Eight entry-tier businesses (one per Sin, gated at
- * Level 1). Each builds via the parallel buildQueue — does NOT occupy the player slot, so the
- * player can run a Studio rite simultaneously and queue multiple builds at once.
+ * Depraedatio (03 §2.3): Vitium Mercatura. Thirty-two businesses (eight Sins × four tiers); each
+ * tier unlocks at Sin level `tier − 1`, with locked rows shown dimmed. Each builds via the parallel
+ * buildQueue — does NOT occupy the player slot, so the player can run a Studio rite simultaneously
+ * and queue multiple builds at once.
  */
 function DepraedatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);

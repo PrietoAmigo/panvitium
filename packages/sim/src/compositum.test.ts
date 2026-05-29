@@ -278,7 +278,7 @@ describe('Vitium Compositum — conversion + generation sourcing', () => {
 
 describe('Vitium Compositum + Vitium Mercatura conversion sources aggregate', () => {
   it('biasedSubtype mixes business and toggle biases (gula business + bacchanal toggle)', () => {
-    // gula-mercatura-1: glutton 0.85 / reprobate 0.15, conv 0.02.
+    // gula-mercatura-1: glutton 0.85 / reprobate 0.15, conv 0.001.
     // bacchanal: glutton 0.5 / degenerate 0.5, conv 0.04.
     // Combined the draws should include glutton, degenerate, and (occasionally) reprobate.
     let s = unlock(withGold(fresh(), 1_000_000));

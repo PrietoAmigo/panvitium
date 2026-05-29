@@ -188,8 +188,8 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
   it('shuts down businesses, folding the refund into gold, and clears the build queue', () => {
     const before = loaded();
     const after = enterKatabasis(before);
-    // 2 × floor(1000 × 0.25) = 500 refund folded into the 1000 gold held.
-    expect(after.lifetime.gold.toNumber()).toBe(1500);
+    // 2 × floor(500 × 0.25) = 250 refund folded into the 1000 gold held.
+    expect(after.lifetime.gold.toNumber()).toBe(1250);
     expect(Object.keys(after.lifetime.businesses)).toHaveLength(0);
     expect(after.lifetime.buildQueue).toHaveLength(0);
   });

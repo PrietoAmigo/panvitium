@@ -207,7 +207,7 @@ describe('gameStore — Vitium Mercatura (build/shutdown)', () => {
     const s = store().state as GameState;
     expect(s.lifetime.buildQueue).toHaveLength(1);
     expect(s.lifetime.actionQueue).toHaveLength(0); // doesn't occupy the player slot
-    expect(floor(s.lifetime.gold).toNumber()).toBe(1000);
+    expect(floor(s.lifetime.gold).toNumber()).toBe(1500); // 2000 − 500 (Gula tier-1 cost)
     expect(store().notice).toBeNull();
   });
 
@@ -224,7 +224,7 @@ describe('gameStore — Vitium Mercatura (build/shutdown)', () => {
     store().shutdown('gula-mercatura-1');
     const after = store().state as GameState;
     expect(after.lifetime.businesses['gula-mercatura-1']).toBeUndefined();
-    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 250); // floor(1000 * 0.25)
+    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 125); // floor(500 * 0.25)
   });
 
   it('refuses shutdown when nothing owned', () => {

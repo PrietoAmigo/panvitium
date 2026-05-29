@@ -234,7 +234,7 @@ describe('reprobate dynamics — murder pool (dormant without Cholerics)', () =>
 });
 
 describe('reprobate dynamics — Vitium Mercatura output multiplier (Plutus / Vapula)', () => {
-  /** A state owning one entry-tier business (1 reprobate/s generation at catalog values). */
+  /** A state owning one entry-tier business (0.05 reprobate/s generation at catalog values). */
   function withBusiness(): GameState {
     const s = createInitialState('vm-test', 0);
     return {
