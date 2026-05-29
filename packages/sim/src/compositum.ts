@@ -5,15 +5,19 @@
  * biased toward 2–3 subtypes. A toggle that cannot pay its full per-second cost AUTO-DEACTIVATES
  * on the next tick (02 §3); there's no refund and no partial application.
  *
- * THIS SLICE wires the toggle infrastructure plus four representative two-Sin entries that
- * between them exercise every common effect type (gold cost, influence cost, gold income,
- * influence income, generation, multi-subtype conversion). The remaining catalog entries and the
- * exotic effects (offline-gain, Nihilist self-destruct, suicide/murder-rate shifts) land in
- * follow-ups; Panvitium — itself a Vitium Compositum with exponential duration-scaled cost — is
- * its own slice built on this foundation.
+ * The base toggle economics — per-second gold/influence cost, gold/influence income, and standard
+ * (optionally single-subtype-restricted) conversion — are wired here and tuned to the Vitium
+ * Compositum sheet for the toggles that need only those mechanics: Outrage Cycle, Loan Shark Op,
+ * Charity, and Gala. The remaining sheet toggles each hinge on a bespoke effect not yet in the
+ * engine — population-proportional generation (Bacchanal), offline-gain scaling (Dolce Far Niente),
+ * percentage-death (Enraging Broadcast), flat murder/suicide/generation-rate shifts (Ethnocentric
+ * Revolt, Doom Gathering, No-babies Movement), and the four-Sin "subtype penalty" ceremonies
+ * (Vegas, Crusade) — and land in dedicated effect slices; Panvitium's exponential retune rides with
+ * its own slice on this foundation. Bacchanal and Panvitium below keep placeholder magnitudes until
+ * those slices.
  *
- * Number convention: placeholders, structured for spreadsheet override. Shape authoritative,
- * magnitudes not.
+ * Number convention: the four sheet-tuned toggles carry authoritative magnitudes; entries awaiting
+ * their effect slice keep placeholders (shape authoritative, magnitudes not).
  *
  * Active toggles are tracked by membership in `LifetimeState.activeToggles` (a string[] already
  * on the save schema). A VC is either on or off — no per-VC payload this slice, so no new
@@ -32,7 +36,7 @@ export interface CompositumDef {
   readonly id: string;
   /** Cardinal Sins required, each at >= `minLevel`. */
   readonly sins: readonly Sin[];
-  /** Minimum level required in EACH listed Sin (2 for two-Sin VCs, 3 for the apex three-Sin ones). */
+  /** Minimum level required in EACH listed Sin (sheet "Min sin lvl": 1 for two-Sin toggles, 2 for the four-Sin ones, 3 for Panvitium). */
   readonly minLevel: number;
   /** Per-second upkeep. A toggle auto-deactivates if it can't pay this in full (02 §3). */
   readonly costPerSecond: { readonly gold?: number; readonly influence?: number };
@@ -74,28 +78,39 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     id: 'loan-shark-op',
     sins: ['avaritia', 'ira'],
     minLevel: 1,
-    costPerSecond: { influence: 20 },
-    goldPerSecond: 8,
-    conversionPerSecond: 0.04,
+    costPerSecond: { influence: 10 },
+    goldPerSecond: 100,
+    conversionPerSecond: 0.01,
     subtypeBias: { gambler: 0.5, choleric: 0.5 },
   },
   charity: {
     id: 'charity',
     sins: ['avaritia', 'vanagloria'],
     minLevel: 1,
-    costPerSecond: { influence: 30 },
-    goldPerSecond: 15,
-    conversionPerSecond: 0.04,
+    costPerSecond: { influence: 25 },
+    goldPerSecond: 200,
+    conversionPerSecond: 0.01,
     subtypeBias: { gambler: 0.5, celebrity: 0.5 },
   },
   gala: {
     id: 'gala',
     sins: ['superbia', 'vanagloria'],
     minLevel: 1,
-    costPerSecond: { gold: 100 },
-    influencePerSecond: 5,
-    conversionPerSecond: 0.04,
+    costPerSecond: { gold: 250 },
+    influencePerSecond: 20,
+    conversionPerSecond: 0.01,
     subtypeBias: { sigma: 0.5, celebrity: 0.5 },
+  },
+  'outrage-cycle': {
+    id: 'outrage-cycle',
+    sins: ['ira', 'vanagloria'],
+    minLevel: 1,
+    costPerSecond: { gold: 50, influence: 5 },
+    conversionPerSecond: 0.01,
+    // "Conversion only applies to Choleric" (sheet effect): the toggle themes Cholerics +
+    // Celebrities, but its conversion is restricted to Choleric — representable directly as a
+    // single-subtype bias on the standard conversion pool.
+    subtypeBias: { choleric: 1 },
   },
   // The endgame ritual (03 §2.3). Gated on ALL eight Sins at level 3. Cannot be turned off by
   // hand; its cost ramps exponentially with active duration so it can't become a steady state —

@@ -62,11 +62,18 @@ function withInfluence(s: GameState, i: number): GameState {
 
 describe('Vitium Compositum — catalog', () => {
   it('exposes the four two-Sin entries plus the apex Panvitium', () => {
-    expect(COMPOSITUM_IDS).toEqual(['bacchanal', 'loan-shark-op', 'charity', 'gala', 'panvitium']);
+    expect(COMPOSITUM_IDS).toEqual([
+      'bacchanal',
+      'loan-shark-op',
+      'charity',
+      'gala',
+      'outrage-cycle',
+      'panvitium',
+    ]);
   });
 
   it('the two-Sin ceremonies are minLevel 1 over two Sins', () => {
-    for (const id of ['bacchanal', 'loan-shark-op', 'charity', 'gala']) {
+    for (const id of ['bacchanal', 'loan-shark-op', 'charity', 'gala', 'outrage-cycle']) {
       const def = compositumById(id)!;
       expect(def.minLevel).toBe(1);
       expect(def.sins.length).toBe(2);
@@ -169,19 +176,19 @@ describe('advanceToggles — upkeep and auto-deactivation (02 §3)', () => {
   });
 
   it('deducts influence upkeep for influence-cost toggles', () => {
-    // loan-shark-op costs 20 influence/s. 100 influence, 2 s → 60 left.
+    // loan-shark-op costs 10 influence/s. 100 influence, 2 s → 80 left.
     let s = unlock(withInfluence(fresh(), 100), COMPOSITA['loan-shark-op']!);
     const a = activateToggle(s, 'loan-shark-op');
     if (!a.ok) throw new Error('activate');
     s = a.state;
     const r = advanceToggles(s, 2);
     expect(r.deactivated).toHaveLength(0);
-    expect(r.state.lifetime.influence.toNumber()).toBe(60);
+    expect(r.state.lifetime.influence.toNumber()).toBe(80);
   });
 });
 
 describe('tick — Vitium Compositum income and notices', () => {
-  it('an active gold-income toggle adds its income on top of base (loan-shark-op: 8 g/s)', () => {
+  it('an active gold-income toggle adds its income on top of base (loan-shark-op: 100 g/s)', () => {
     // Reaching avaritia/ira level 2 inflates goldRateMul via the Golden Hand skill, so assert the
     // DELTA the toggle adds rather than an absolute number: gold gain with the toggle minus
     // without it should equal 8 (VC g/s) × goldRateMul over 1 s.
@@ -191,12 +198,12 @@ describe('tick — Vitium Compositum income and notices', () => {
     const goldRateMul = computeModifiers(base).goldRateMul;
     const withoutGold = tick(base, 1).state.lifetime.gold.toNumber();
     const withGoldVal = tick(a.state, 1).state.lifetime.gold.toNumber();
-    expect(withGoldVal - withoutGold).toBeCloseTo(8 * goldRateMul, 3);
+    expect(withGoldVal - withoutGold).toBeCloseTo(100 * goldRateMul, 3);
   });
 
-  it('an active influence-income toggle adds its income (gala: 5 infl/s) under the cap', () => {
+  it('an active influence-income toggle adds its income (gala: 20 infl/s) under the cap', () => {
     // Likewise gala's superbia/vanagloria gate inflates influenceRateMul + the cap. Assert the
-    // delta: influence gain with gala minus without should equal 5 (VC infl/s) × influenceRateMul,
+    // delta: influence gain with gala minus without should equal 20 (VC infl/s) × influenceRateMul,
     // provided we stay under the (now large) effective cap — start influence at 0.
     let base = unlock(withGold(fresh(), 1_000_000), COMPOSITA.gala!);
     base = withInfluence(base, 0);
@@ -205,7 +212,7 @@ describe('tick — Vitium Compositum income and notices', () => {
     const influenceRateMul = computeModifiers(base).influenceRateMul;
     const without = tick(base, 1).state.lifetime.influence.toNumber();
     const withGala = tick(a.state, 1).state.lifetime.influence.toNumber();
-    expect(withGala - without).toBeCloseTo(5 * influenceRateMul, 3);
+    expect(withGala - without).toBeCloseTo(20 * influenceRateMul, 3);
   });
 
   it('surfaces a notice when a toggle auto-deactivates mid-tick', () => {
@@ -256,6 +263,17 @@ describe('Vitium Compositum — conversion + generation sourcing', () => {
     for (let i = 0; i < 200; i++) seen.add(biasedSubtype(s, rng));
     // Only glutton/degenerate should ever be drawn (50/50 bias, no reprobate leakage here).
     expect([...seen].sort()).toEqual(['degenerate', 'glutton']);
+  });
+
+  it('Outrage Cycle restricts conversion to Choleric only (sheet effect)', () => {
+    let s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['outrage-cycle']!);
+    const a = activateToggle(s, 'outrage-cycle');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    const rng = makeRng(3);
+    const seen = new Set<string>();
+    for (let i = 0; i < 200; i++) seen.add(biasedSubtype(s, rng));
+    expect([...seen]).toEqual(['choleric']); // celebrity is themed but never converted
   });
 
   it('an active toggle converts unconverted reprobates over time through the tick', () => {

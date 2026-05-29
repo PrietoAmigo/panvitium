@@ -110,6 +110,7 @@ export const strings = {
       'loan-shark-op': 'Loan Shark Op',
       charity: 'Charity Drive',
       gala: 'Gala',
+      'outrage-cycle': 'Outrage Cycle',
       panvitium: 'Panvitium',
     } as Record<string, string>,
     panvitiumGate: 'Requires every Sin at Level 3.',
