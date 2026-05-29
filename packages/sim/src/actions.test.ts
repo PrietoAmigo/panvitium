@@ -57,18 +57,19 @@ describe('resolveSuggestion', () => {
     expect(resolveSuggestion(fresh(), 'good', rng()).lifetime.reprobates.reprobate).toBe(1);
   });
 
-  it('stellar mints a soul and adds no reprobate', () => {
+  it('stellar adds 4..8 unconverted reprobates and mints no soul', () => {
     const s = resolveSuggestion(fresh(), 'stellar', rng());
-    expect(soulsOf(s)).toBe(1);
-    expect(totalReprobates(s)).toBe(0);
+    expect(soulsOf(s)).toBe(0);
+    const n = s.lifetime.reprobates.reprobate;
+    expect(n).toBeGreaterThanOrEqual(4);
+    expect(n).toBeLessThanOrEqual(8);
+    expect(totalReprobates(s)).toBe(n); // all unconverted
   });
 
-  it('excellent stays unconverted with no Sin developed, converts toward a developed one', () => {
-    expect(resolveSuggestion(fresh(), 'excellent', rng()).lifetime.reprobates.reprobate).toBe(1);
-    const developed = { ...fresh(), devotion: { ...fresh().devotion, gula: bn(180) } }; // Gula L1
-    const s = resolveSuggestion(developed, 'excellent', rng());
-    expect(s.lifetime.reprobates.glutton).toBe(1);
-    expect(s.lifetime.reprobates.reprobate).toBe(0);
+  it('excellent mints a soul (target suicides) and adds no reprobate', () => {
+    const s = resolveSuggestion(fresh(), 'excellent', rng());
+    expect(soulsOf(s)).toBe(1);
+    expect(totalReprobates(s)).toBe(0);
   });
 
   it('bad removes a reprobate; terrible loses 9% of the population', () => {

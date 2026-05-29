@@ -15,7 +15,6 @@ import { add, floor, gte, sub } from './bignum.js';
 import { type Rng } from './rng.js';
 import { type Tier, type TierWeights, applyTierModifiers, resolveTier } from './probability.js';
 import { categoryEfficiency, categoryTierModifiers, computeModifiers } from './modifiers.js';
-import { sinLevel } from './progression.js';
 import {
   addReprobates,
   loseGoldFraction,
@@ -23,14 +22,7 @@ import {
   mintSouls,
   removeReprobatesRandom,
 } from './population.js';
-import {
-  type ActionTimer,
-  type GameState,
-  type ReprobateSubtype,
-  SINS,
-  SUBTYPE_OF_SIN,
-  totalReprobates,
-} from './state.js';
+import { type ActionTimer, type GameState, totalReprobates } from './state.js';
 import { type OutcomeEvent } from './events.js';
 import { MALEFICIA, findableIds, type MaleficiumRarity } from './maleficia.js';
 
@@ -142,29 +134,6 @@ export const ACTIONS: Record<string, ActionDef> = {
 /** Inclusive integer in [lo, hi] from the seeded RNG. */
 function randint(rng: Rng, lo: number, hi: number): number {
   return lo + rng.int(hi - lo + 1);
-}
-
-/**
- * The subtype a conversion biases toward, weighted by Sin levels (03). With no Sin developed yet,
- * there's nothing to convert toward, so the reprobate stays unconverted.
- */
-function biasedSubtype(state: GameState, rng: Rng): ReprobateSubtype {
-  const entries: { subtype: ReprobateSubtype; weight: number }[] = [];
-  let total = 0;
-  for (const sin of SINS) {
-    const level = sinLevel(state.devotion[sin]);
-    if (level > 0) {
-      entries.push({ subtype: SUBTYPE_OF_SIN[sin], weight: level });
-      total += level;
-    }
-  }
-  if (total === 0) return 'reprobate';
-  let r = rng.int(total);
-  for (const entry of entries) {
-    if (r < entry.weight) return entry.subtype;
-    r -= entry.weight;
-  }
-  return 'reprobate';
 }
 
 export type StartResult = { ok: true; state: GameState } | { ok: false; reason: string };
@@ -387,9 +356,11 @@ export function resolveSuggestion(
   const units = Math.max(1, Math.floor(efficiency));
   switch (tier) {
     case 'stellar':
-      return mintSouls(state, units); // target dies in sin → soul, no reprobate
+      // major sin → +randint(4,8) unconverted reprobates (Suasio sheet); efficiency scales the count.
+      return addReprobates(state, 'reprobate', randint(rng, 4, 8) * units);
     case 'excellent':
-      return addReprobates(state, biasedSubtype(state, rng), units);
+      // target suicides → +1 soul (Suasio sheet); efficiency scales the soul count.
+      return mintSouls(state, units);
     case 'good':
       return addReprobates(state, 'reprobate', units);
     case 'bad':
