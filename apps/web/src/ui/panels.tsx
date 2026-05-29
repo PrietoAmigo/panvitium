@@ -498,6 +498,8 @@ function compositumSummary(id: string): string {
   if (def.conversionPerSecond) effects.push(strings.compositum.converts);
   if ((def.flatGenerationPerSecond ?? 0) > 0) effects.push(strings.compositum.generates);
   if ((def.flatGenerationPerSecond ?? 0) < 0) effects.push(strings.compositum.slowsGeneration);
+  if (def.populationGeneration) effects.push(strings.compositum.generates);
+  if (def.deathFractionPerSecond) effects.push(strings.compositum.culls);
   if (def.flatBaseSuicideRatePerSecond) effects.push(strings.compositum.raisesSuicide);
   if (def.flatBaseCholericMurderRatePerSecond) effects.push(strings.compositum.raisesMurder);
   const costStr = costs.length > 0 ? costs.join(' · ') : strings.compositum.noCost;

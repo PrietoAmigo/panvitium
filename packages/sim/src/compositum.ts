@@ -70,6 +70,23 @@ export interface CompositumDef {
    */
   readonly flatBaseCholericMurderRatePerSecond?: number;
   /**
+   * Population-proportional generation while active: adds `fraction × (sum of the listed subtype
+   * counts)` unconverted reprobates per second to the generation term (Bacchanal — 10% of Gluttons
+   * + Degenerates). Folded in alongside the other generation contributions, before the generation
+   * multiplier. Default: none.
+   */
+  readonly populationGeneration?: {
+    readonly fraction: number;
+    readonly subtypes: readonly ReprobateSubtype[];
+  };
+  /**
+   * Per-second fraction of the TOTAL reprobate population that dies while active (Enraging
+   * Broadcast — "percentage death of total reprobates"). Routed through the suicide pool (random
+   * subtype, one soul per death) but NOT scaled by the suicide-rate multiplier — it is a flat
+   * percentage cull. Default 0.
+   */
+  readonly deathFractionPerSecond?: number;
+  /**
    * If true, the toggle cannot be turned off by hand — it ends only by auto-deactivation when it
    * can no longer pay upkeep (Panvitium, 03 §2.3). Default false (manually dispellable).
    */
@@ -88,10 +105,9 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     id: 'bacchanal',
     sins: ['gula', 'luxuria'],
     minLevel: 1,
-    costPerSecond: { gold: 50 },
-    generationPerSecond: 0.05,
-    conversionPerSecond: 0.04,
-    subtypeBias: { glutton: 0.5, degenerate: 0.5 },
+    costPerSecond: { gold: 100, influence: 10 },
+    // Sheet: "generates 10% of total gluttons + degenerates as unconverted reprobates per second."
+    populationGeneration: { fraction: 0.1, subtypes: ['glutton', 'degenerate'] },
   },
   'loan-shark-op': {
     id: 'loan-shark-op',
@@ -156,6 +172,15 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     costPerSecond: { gold: 100, influence: 10 },
     // Sheet: "conversion rate instead applies as a flat increase to base Choleric murder rate."
     flatBaseCholericMurderRatePerSecond: 0.001,
+  },
+  'enraging-broadcast': {
+    id: 'enraging-broadcast',
+    sins: ['ira', 'tristitia'],
+    minLevel: 1,
+    costPerSecond: { influence: 25 },
+    // Sheet: "conversion rate instead applies as percentage death of total reprobates" — 0.1% of
+    // the whole population self-destructs each second, taking random reprobates with them.
+    deathFractionPerSecond: 0.001,
   },
   // The endgame ritual (03 §2.3). Gated on ALL eight Sins at level 3. Cannot be turned off by
   // hand; its cost ramps exponentially with active duration so it can't become a steady state —
@@ -386,6 +411,27 @@ export function compositumFlatBaseCholericMurderRatePerSecond(state: GameState):
   let s = 0;
   for (const id of state.lifetime.activeToggles)
     s += compositumById(id)?.flatBaseCholericMurderRatePerSecond ?? 0;
+  return s;
+}
+
+/** Population-proportional generation across active toggles: Σ fraction × Σ(subtype counts). */
+export function compositumPopulationGenerationPerSecond(state: GameState): number {
+  let s = 0;
+  for (const id of state.lifetime.activeToggles) {
+    const def = compositumById(id);
+    if (!def?.populationGeneration) continue;
+    let pop = 0;
+    for (const t of def.populationGeneration.subtypes) pop += state.lifetime.reprobates[t];
+    s += def.populationGeneration.fraction * pop;
+  }
+  return s;
+}
+
+/** Sum of per-second total-population death fractions across active toggles (Enraging Broadcast). */
+export function compositumDeathFractionPerSecond(state: GameState): number {
+  let s = 0;
+  for (const id of state.lifetime.activeToggles)
+    s += compositumById(id)?.deathFractionPerSecond ?? 0;
   return s;
 }
 

@@ -22,9 +22,9 @@ import {
   compositumById,
   compositumConversionPerSecond,
   compositumConversionSources,
-  compositumGenerationPerSecond,
   compositumGoldPerSecond,
   compositumInfluencePerSecond,
+  compositumPopulationGenerationPerSecond,
   compositumUnlocked,
   createInitialState,
   deactivateToggle,
@@ -71,6 +71,7 @@ describe('Vitium Compositum — catalog', () => {
       'no-babies-movement',
       'doom-gathering',
       'ethnocentric-revolt',
+      'enraging-broadcast',
       'panvitium',
     ]);
   });
@@ -85,6 +86,7 @@ describe('Vitium Compositum — catalog', () => {
       'no-babies-movement',
       'doom-gathering',
       'ethnocentric-revolt',
+      'enraging-broadcast',
     ]) {
       const def = compositumById(id)!;
       expect(def.minLevel).toBe(1);
@@ -110,7 +112,9 @@ describe('Vitium Compositum — catalog', () => {
           (def.conversionPerSecond ?? 0) +
           Math.abs(def.flatGenerationPerSecond ?? 0) +
           (def.flatBaseSuicideRatePerSecond ?? 0) +
-          (def.flatBaseCholericMurderRatePerSecond ?? 0) >
+          (def.flatBaseCholericMurderRatePerSecond ?? 0) +
+          (def.populationGeneration?.fraction ?? 0) +
+          (def.deathFractionPerSecond ?? 0) >
         0;
       expect(hasEffect).toBe(true);
     }
@@ -164,19 +168,21 @@ describe('activateToggle / deactivateToggle', () => {
 
 describe('advanceToggles — upkeep and auto-deactivation (02 §3)', () => {
   it('deducts the per-second gold cost while affordable', () => {
-    // bacchanal costs 50 gold/s. With 1000 gold and 1 s delta → 950 left, still active.
-    let s = unlock(withGold(fresh(), 1000));
+    // bacchanal costs 100 gold/s + 10 influence/s. With 1000 gold + 100 influence and 1 s delta →
+    // 900 gold / 90 influence left, still active.
+    let s = unlock(withInfluence(withGold(fresh(), 1000), 100));
     const a = activateToggle(s, 'bacchanal');
     if (!a.ok) throw new Error('activate');
     s = a.state;
     const r = advanceToggles(s, 1);
     expect(r.deactivated).toHaveLength(0);
-    expect(r.state.lifetime.gold.toNumber()).toBe(950);
+    expect(r.state.lifetime.gold.toNumber()).toBe(900);
+    expect(r.state.lifetime.influence.toNumber()).toBe(90);
     expect(isToggleActive(r.state, 'bacchanal')).toBe(true);
   });
 
   it('auto-deactivates a toggle that cannot pay its upkeep, with no partial deduction', () => {
-    // bacchanal costs 50 gold/s. With only 10 gold and 1 s delta → cannot pay → deactivates,
+    // bacchanal costs 100 gold/s. With only 10 gold and 1 s delta → cannot pay → deactivates,
     // and gold is untouched (no partial application).
     let s = unlock(withGold(fresh(), 10));
     const a = activateToggle(s, 'bacchanal');
@@ -240,42 +246,66 @@ describe('tick — Vitium Compositum income and notices', () => {
 });
 
 describe('Vitium Compositum — conversion + generation sourcing', () => {
-  it('compositum aggregate helpers reflect active toggles', () => {
-    let s = unlock(withGold(fresh(), 1_000_000));
-    const a = activateToggle(s, 'bacchanal'); // gen 0.05, conv 0.04
+  it('compositum conversion helpers reflect an active standard-conversion toggle', () => {
+    // loan-shark-op: conv 0.01 (gambler+choleric), 100 gold/s income, 10 influence/s upkeep.
+    let s = unlock(
+      withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
+      COMPOSITA['loan-shark-op']!,
+    );
+    const a = activateToggle(s, 'loan-shark-op');
     if (!a.ok) throw new Error('activate');
     s = a.state;
-    expect(compositumGenerationPerSecond(s)).toBeCloseTo(0.05, 6);
-    expect(compositumConversionPerSecond(s)).toBeCloseTo(0.04, 6);
-    expect(compositumGoldPerSecond(s)).toBe(0);
+    expect(compositumConversionPerSecond(s)).toBeCloseTo(0.01, 6);
+    expect(compositumGoldPerSecond(s)).toBe(100);
     expect(compositumInfluencePerSecond(s)).toBe(0);
     expect(compositumConversionSources(s)).toHaveLength(1);
   });
 
-  it('reprobateRates folds VC generation + conversion into the totals', () => {
-    let s = unlock(withGold(fresh(), 1_000_000));
+  it('Bacchanal generation is 10% of (Gluttons + Degenerates), folded into the generation rate', () => {
+    let s = unlock(withInfluence(withGold(fresh(), 1_000_000), 1_000_000)); // gula + luxuria L1
+    s = {
+      ...s,
+      lifetime: {
+        ...s.lifetime,
+        reprobates: { ...s.lifetime.reprobates, glutton: 40, degenerate: 60 },
+      },
+    };
     const a = activateToggle(s, 'bacchanal');
     if (!a.ok) throw new Error('activate');
     s = a.state;
+    expect(compositumPopulationGenerationPerSecond(s)).toBeCloseTo(0.1 * 100, 6); // 10/s
+    expect(compositumConversionPerSecond(s)).toBe(0); // Bacchanal no longer converts
     const mods = computeModifiers(s);
-    const rates = reprobateRates(s, mods);
-    // bacchanal contributes 0.05/s to generation; unlock() set Luxuria L1, which now activates
-    // Seduction (03 §1) — the rate is multiplied by the Luxuria skill bonus. Compute against the
-    // live modifier rather than a hardcoded constant.
-    expect(rates.generationPerSecond).toBeCloseTo(0.05 * mods.reprobateGenerationRateMul, 6);
-    expect(rates.conversionPerSecond).toBeCloseTo(0.04, 6);
+    expect(reprobateRates(s, mods).generationPerSecond).toBeCloseTo(
+      10 * mods.reprobateGenerationRateMul,
+      6,
+    );
   });
 
-  it('biasedSubtype draws from the active toggle bias (bacchanal: glutton/degenerate only)', () => {
-    let s = unlock(withGold(fresh(), 1_000_000));
-    const a = activateToggle(s, 'bacchanal');
+  it('reprobateRates folds standard VC conversion into the totals', () => {
+    let s = unlock(
+      withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
+      COMPOSITA['loan-shark-op']!,
+    );
+    const a = activateToggle(s, 'loan-shark-op');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    expect(reprobateRates(s, computeModifiers(s)).conversionPerSecond).toBeCloseTo(0.01, 6);
+  });
+
+  it('biasedSubtype draws from the active toggle bias (loan-shark-op: gambler/choleric only)', () => {
+    let s = unlock(
+      withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
+      COMPOSITA['loan-shark-op']!,
+    );
+    const a = activateToggle(s, 'loan-shark-op');
     if (!a.ok) throw new Error('activate');
     s = a.state;
     const rng = makeRng(7);
     const seen = new Set<string>();
     for (let i = 0; i < 200; i++) seen.add(biasedSubtype(s, rng));
-    // Only glutton/degenerate should ever be drawn (50/50 bias, no reprobate leakage here).
-    expect([...seen].sort()).toEqual(['degenerate', 'glutton']);
+    // Only gambler/choleric should ever be drawn (50/50 bias, no reprobate leakage here).
+    expect([...seen].sort()).toEqual(['choleric', 'gambler']);
   });
 
   it('Outrage Cycle restricts conversion to Choleric only (sheet effect)', () => {
@@ -290,42 +320,46 @@ describe('Vitium Compositum — conversion + generation sourcing', () => {
   });
 
   it('an active toggle converts unconverted reprobates over time through the tick', () => {
-    // 100 unconverted + bacchanal (0.04 conv/s) over 100 s → pool 4 → ~4 conversions to
-    // glutton/degenerate. Plenty of gold so the toggle stays active.
-    let s = unlock(withGold(fresh(), 1_000_000));
+    // 100 unconverted + loan-shark-op (0.01 conv/s) over 300 s → ~3 conversions to gambler/choleric.
+    let s = unlock(
+      withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
+      COMPOSITA['loan-shark-op']!,
+    );
     s = {
       ...s,
       lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: 100 } },
     };
-    const a = activateToggle(s, 'bacchanal');
+    const a = activateToggle(s, 'loan-shark-op');
     if (!a.ok) throw new Error('activate');
     s = a.state;
-    const after = tick(s, 100).state;
-    const converted = after.lifetime.reprobates.glutton + after.lifetime.reprobates.degenerate;
-    expect(converted).toBeGreaterThanOrEqual(3);
+    const after = tick(s, 300).state;
+    const converted = after.lifetime.reprobates.gambler + after.lifetime.reprobates.choleric;
+    expect(converted).toBeGreaterThanOrEqual(1);
     expect(converted).toBeLessThanOrEqual(4);
   });
 });
 
 describe('Vitium Compositum + Vitium Mercatura conversion sources aggregate', () => {
-  it('biasedSubtype mixes business and toggle biases (gula business + bacchanal toggle)', () => {
+  it('biasedSubtype mixes business and toggle biases (gula business + loan-shark-op toggle)', () => {
     // gula-mercatura-1: glutton 0.85 / reprobate 0.15, conv 0.001.
-    // bacchanal: glutton 0.5 / degenerate 0.5, conv 0.04.
-    // Combined the draws should include glutton, degenerate, and (occasionally) reprobate.
-    let s = unlock(withGold(fresh(), 1_000_000));
+    // loan-shark-op: gambler 0.5 / choleric 0.5, conv 0.01 (dominates the mix).
+    let s = unlock(
+      withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
+      COMPOSITA['loan-shark-op']!,
+    );
     s = {
       ...s,
       lifetime: {
         ...s.lifetime,
         businesses: { 'gula-mercatura-1': 1 },
-        activeToggles: ['bacchanal'],
+        activeToggles: ['loan-shark-op'],
       },
     };
     const rng = makeRng(11);
     const seen = new Set<string>();
-    for (let i = 0; i < 400; i++) seen.add(biasedSubtype(s, rng));
-    expect(seen.has('glutton')).toBe(true);
-    expect(seen.has('degenerate')).toBe(true);
+    for (let i = 0; i < 600; i++) seen.add(biasedSubtype(s, rng));
+    expect(seen.has('glutton')).toBe(true); // from the gula business
+    expect(seen.has('gambler') || seen.has('choleric')).toBe(true); // from loan-shark-op
   });
 });
 
@@ -485,5 +519,22 @@ describe('Vitium Compositum — flat dynamics-rate ceremonies', () => {
     const a = activateToggle(s, 'no-babies-movement');
     if (!a.ok) throw new Error('activate');
     expect(reprobateRates(a.state, computeModifiers(a.state)).generationPerSecond).toBe(0);
+  });
+
+  it('Enraging Broadcast culls a flat fraction of the whole population per second', () => {
+    let s = unlock(
+      withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
+      COMPOSITA['enraging-broadcast']!,
+    );
+    s = {
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: 1000 } },
+    };
+    const off = reprobateRates(s, computeModifiers(s)).suicidePerSecond;
+    const a = activateToggle(s, 'enraging-broadcast');
+    if (!a.ok) throw new Error('activate');
+    const on = reprobateRates(a.state, computeModifiers(a.state)).suicidePerSecond;
+    // 0.1% of 1000 = 1 death/s, added on top of the rate-driven suicides (not scaled by the mul).
+    expect(on - off).toBeCloseTo(0.001 * 1000, 6);
   });
 });

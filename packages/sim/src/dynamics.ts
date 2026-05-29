@@ -47,6 +47,8 @@ import {
   compositumFlatGenerationPerSecond,
   compositumFlatBaseSuicideRatePerSecond,
   compositumFlatBaseCholericMurderRatePerSecond,
+  compositumPopulationGenerationPerSecond,
+  compositumDeathFractionPerSecond,
 } from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobatesRandom } from './population.js';
@@ -84,16 +86,20 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
     BASE_REPROBATE_GENERATION_PER_SECOND +
     businessGenerationPerSecond(state) * vmMul +
     compositumGenerationPerSecond(state) +
-    compositumFlatGenerationPerSecond(state); // toggle flat add/decrease (No-babies); clamped below
+    compositumFlatGenerationPerSecond(state) + // toggle flat add/decrease (No-babies); clamped below
+    compositumPopulationGenerationPerSecond(state); // population-proportional (Bacchanal)
   // Toggle flat additions to the BASE per-capita rates (Doom → suicide, Ethnocentric → murder),
   // applied before the ×population/×cholerics and the subtype-penalty multipliers, so the ceremony
   // raises the floor and the subtype penalties still scale it.
   const suicideBase = BASE_SUICIDE_RATE_PER_SECOND + compositumFlatBaseSuicideRatePerSecond(state);
   const murderBase =
     BASE_CHOLERIC_MURDER_RATE_PER_SECOND + compositumFlatBaseCholericMurderRatePerSecond(state);
+  // Enraging Broadcast culls a flat fraction of the WHOLE population each second (not scaled by the
+  // suicide-rate multiplier) — added on top of the rate-driven suicides, routed through the same pool.
+  const enragingDeaths = compositumDeathFractionPerSecond(state) * population;
   return {
     generationPerSecond: Math.max(0, baseGen) * mods.reprobateGenerationRateMul,
-    suicidePerSecond: suicideBase * population * mods.reprobateSuicideRateMul,
+    suicidePerSecond: suicideBase * population * mods.reprobateSuicideRateMul + enragingDeaths,
     murderPerSecond: murderBase * cholerics * mods.cholericMurderRateMul,
     conversionPerSecond:
       businessConversionPerSecond(state) * vmMul + compositumConversionPerSecond(state),
