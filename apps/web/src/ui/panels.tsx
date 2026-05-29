@@ -496,6 +496,10 @@ function compositumSummary(id: string): string {
     effects.push(`+${def.influencePerSecond} ${strings.resources.influence}/s`);
   if (def.generationPerSecond) effects.push(strings.compositum.generates);
   if (def.conversionPerSecond) effects.push(strings.compositum.converts);
+  if ((def.flatGenerationPerSecond ?? 0) > 0) effects.push(strings.compositum.generates);
+  if ((def.flatGenerationPerSecond ?? 0) < 0) effects.push(strings.compositum.slowsGeneration);
+  if (def.flatBaseSuicideRatePerSecond) effects.push(strings.compositum.raisesSuicide);
+  if (def.flatBaseCholericMurderRatePerSecond) effects.push(strings.compositum.raisesMurder);
   const costStr = costs.length > 0 ? costs.join(' · ') : strings.compositum.noCost;
   return `${costStr} \u2192 ${effects.join(' · ')}`;
 }

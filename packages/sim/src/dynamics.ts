@@ -44,6 +44,9 @@ import {
   compositumConversionPerSecond,
   compositumConversionSources,
   compositumGenerationPerSecond,
+  compositumFlatGenerationPerSecond,
+  compositumFlatBaseSuicideRatePerSecond,
+  compositumFlatBaseCholericMurderRatePerSecond,
 } from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobatesRandom } from './population.js';
@@ -80,11 +83,18 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
   const baseGen =
     BASE_REPROBATE_GENERATION_PER_SECOND +
     businessGenerationPerSecond(state) * vmMul +
-    compositumGenerationPerSecond(state);
+    compositumGenerationPerSecond(state) +
+    compositumFlatGenerationPerSecond(state); // toggle flat add/decrease (No-babies); clamped below
+  // Toggle flat additions to the BASE per-capita rates (Doom → suicide, Ethnocentric → murder),
+  // applied before the ×population/×cholerics and the subtype-penalty multipliers, so the ceremony
+  // raises the floor and the subtype penalties still scale it.
+  const suicideBase = BASE_SUICIDE_RATE_PER_SECOND + compositumFlatBaseSuicideRatePerSecond(state);
+  const murderBase =
+    BASE_CHOLERIC_MURDER_RATE_PER_SECOND + compositumFlatBaseCholericMurderRatePerSecond(state);
   return {
-    generationPerSecond: baseGen * mods.reprobateGenerationRateMul,
-    suicidePerSecond: BASE_SUICIDE_RATE_PER_SECOND * population * mods.reprobateSuicideRateMul,
-    murderPerSecond: BASE_CHOLERIC_MURDER_RATE_PER_SECOND * cholerics * mods.cholericMurderRateMul,
+    generationPerSecond: Math.max(0, baseGen) * mods.reprobateGenerationRateMul,
+    suicidePerSecond: suicideBase * population * mods.reprobateSuicideRateMul,
+    murderPerSecond: murderBase * cholerics * mods.cholericMurderRateMul,
     conversionPerSecond:
       businessConversionPerSecond(state) * vmMul + compositumConversionPerSecond(state),
   };

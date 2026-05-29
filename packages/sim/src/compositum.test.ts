@@ -68,12 +68,24 @@ describe('Vitium Compositum — catalog', () => {
       'charity',
       'gala',
       'outrage-cycle',
+      'no-babies-movement',
+      'doom-gathering',
+      'ethnocentric-revolt',
       'panvitium',
     ]);
   });
 
   it('the two-Sin ceremonies are minLevel 1 over two Sins', () => {
-    for (const id of ['bacchanal', 'loan-shark-op', 'charity', 'gala', 'outrage-cycle']) {
+    for (const id of [
+      'bacchanal',
+      'loan-shark-op',
+      'charity',
+      'gala',
+      'outrage-cycle',
+      'no-babies-movement',
+      'doom-gathering',
+      'ethnocentric-revolt',
+    ]) {
       const def = compositumById(id)!;
       expect(def.minLevel).toBe(1);
       expect(def.sins.length).toBe(2);
@@ -88,17 +100,18 @@ describe('Vitium Compositum — catalog', () => {
     expect(p.costGrowthPerSecond).toBeGreaterThan(1);
   });
 
-  it('every entry has a cost and at least one effect', () => {
+  it('every entry has at least one effect (some ceremonies are free of upkeep)', () => {
     for (const id of COMPOSITUM_IDS) {
       const def = compositumById(id)!;
-      const hasCost = (def.costPerSecond.gold ?? 0) + (def.costPerSecond.influence ?? 0) > 0;
       const hasEffect =
         (def.goldPerSecond ?? 0) +
           (def.influencePerSecond ?? 0) +
           (def.generationPerSecond ?? 0) +
-          (def.conversionPerSecond ?? 0) >
+          (def.conversionPerSecond ?? 0) +
+          Math.abs(def.flatGenerationPerSecond ?? 0) +
+          (def.flatBaseSuicideRatePerSecond ?? 0) +
+          (def.flatBaseCholericMurderRatePerSecond ?? 0) >
         0;
-      expect(hasCost).toBe(true);
       expect(hasEffect).toBe(true);
     }
   });
@@ -416,5 +429,61 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     const { state } = commitKatabasis(s);
     expect(Object.keys(state.lifetime.toggleDurations)).toHaveLength(0);
     expect(state.lifetime.activeToggles).toHaveLength(0);
+  });
+});
+
+describe('Vitium Compositum — flat dynamics-rate ceremonies', () => {
+  it('Doom Gathering adds a flat increase to the base suicide rate', () => {
+    let s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['doom-gathering']!);
+    s = {
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: 100 } },
+    };
+    const off = reprobateRates(s, computeModifiers(s)).suicidePerSecond;
+    const a = activateToggle(s, 'doom-gathering');
+    if (!a.ok) throw new Error('activate');
+    const on = reprobateRates(a.state, computeModifiers(a.state)).suicidePerSecond;
+    const mul = computeModifiers(s).reprobateSuicideRateMul;
+    expect(on - off).toBeCloseTo(0.001 * 100 * mul, 6); // flat 0.001 added to the base per-capita rate
+  });
+
+  it('Ethnocentric Revolt adds a flat increase to the base Choleric murder rate', () => {
+    let s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['ethnocentric-revolt']!);
+    s = {
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, choleric: 50 } },
+    };
+    const off = reprobateRates(s, computeModifiers(s)).murderPerSecond;
+    const a = activateToggle(s, 'ethnocentric-revolt');
+    if (!a.ok) throw new Error('activate');
+    const on = reprobateRates(a.state, computeModifiers(a.state)).murderPerSecond;
+    const mul = computeModifiers(s).cholericMurderRateMul;
+    expect(on - off).toBeCloseTo(0.001 * 50 * mul, 6);
+  });
+
+  it('No-babies Movement flatly decreases generation and never charges upkeep', () => {
+    let s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['no-babies-movement']!);
+    s = { ...s, lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 1 } } }; // 0.05 gen/s
+    const genMul = computeModifiers(s).reprobateGenerationRateMul;
+    const off = reprobateRates(s, computeModifiers(s)).generationPerSecond;
+    const a = activateToggle(s, 'no-babies-movement');
+    if (!a.ok) throw new Error('activate');
+    const on = reprobateRates(a.state, computeModifiers(a.state)).generationPerSecond;
+    expect(on - off).toBeCloseTo(-0.01 * genMul, 6);
+
+    // Free upkeep: stays active with 0 gold and 0 influence.
+    const broke = activateToggle(
+      withGold(unlock(fresh(), COMPOSITA['no-babies-movement']!), 0),
+      'no-babies-movement',
+    );
+    if (!broke.ok) throw new Error('activate broke');
+    expect(advanceToggles(broke.state, 1).deactivated).not.toContain('no-babies-movement');
+  });
+
+  it('generation never goes negative — No-babies on a state with no births clamps at 0', () => {
+    const s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['no-babies-movement']!);
+    const a = activateToggle(s, 'no-babies-movement');
+    if (!a.ok) throw new Error('activate');
+    expect(reprobateRates(a.state, computeModifiers(a.state)).generationPerSecond).toBe(0);
   });
 });

@@ -51,6 +51,25 @@ export interface CompositumDef {
   /** Per-subtype conversion bias; need not sum to 1 — renormalized at draw (02 §9). */
   readonly subtypeBias?: Partial<Record<ReprobateSubtype, number>>;
   /**
+   * Flat additive contribution to the per-second reprobate GENERATION rate while active (folded
+   * into the generation term alongside business/Compositum generation, before the generation
+   * multiplier; the total is clamped at ≥ 0). Negative for ceremonies that suppress births
+   * (No-babies Movement). Default 0.
+   */
+  readonly flatGenerationPerSecond?: number;
+  /**
+   * Flat additive increase to the BASE per-capita suicide rate while active (added to
+   * `BASE_SUICIDE_RATE_PER_SECOND` before the ×population×mul, so it composes with the
+   * Nihilist/Degenerate subtype penalties). Doom Gathering. Default 0.
+   */
+  readonly flatBaseSuicideRatePerSecond?: number;
+  /**
+   * Flat additive increase to the BASE per-Choleric murder rate while active (added to
+   * `BASE_CHOLERIC_MURDER_RATE_PER_SECOND` before the ×cholerics×mul). Ethnocentric Revolt.
+   * Default 0.
+   */
+  readonly flatBaseCholericMurderRatePerSecond?: number;
+  /**
    * If true, the toggle cannot be turned off by hand — it ends only by auto-deactivation when it
    * can no longer pay upkeep (Panvitium, 03 §2.3). Default false (manually dispellable).
    */
@@ -111,6 +130,32 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     // Celebrities, but its conversion is restricted to Choleric — representable directly as a
     // single-subtype bias on the standard conversion pool.
     subtypeBias: { choleric: 1 },
+  },
+  'no-babies-movement': {
+    id: 'no-babies-movement',
+    sins: ['luxuria', 'acedia'],
+    minLevel: 1,
+    costPerSecond: {},
+    goldPerSecond: 100,
+    influencePerSecond: 10,
+    // Sheet: "conversion rate instead applies as a flat decrease to unconverted reprobate generation."
+    flatGenerationPerSecond: -0.01,
+  },
+  'doom-gathering': {
+    id: 'doom-gathering',
+    sins: ['tristitia', 'acedia'],
+    minLevel: 1,
+    costPerSecond: { gold: 100, influence: 10 },
+    // Sheet: "conversion rate instead applies as a flat increase to base reprobate suicide rate."
+    flatBaseSuicideRatePerSecond: 0.001,
+  },
+  'ethnocentric-revolt': {
+    id: 'ethnocentric-revolt',
+    sins: ['superbia', 'ira'],
+    minLevel: 1,
+    costPerSecond: { gold: 100, influence: 10 },
+    // Sheet: "conversion rate instead applies as a flat increase to base Choleric murder rate."
+    flatBaseCholericMurderRatePerSecond: 0.001,
   },
   // The endgame ritual (03 §2.3). Gated on ALL eight Sins at level 3. Cannot be turned off by
   // hand; its cost ramps exponentially with active duration so it can't become a steady state —
@@ -317,6 +362,30 @@ export function compositumGenerationPerSecond(state: GameState): number {
 export function compositumConversionPerSecond(state: GameState): number {
   let s = 0;
   for (const id of state.lifetime.activeToggles) s += compositumById(id)?.conversionPerSecond ?? 0;
+  return s;
+}
+
+/** Sum of `flatGenerationPerSecond` across active toggles (may be negative; caller clamps total). */
+export function compositumFlatGenerationPerSecond(state: GameState): number {
+  let s = 0;
+  for (const id of state.lifetime.activeToggles)
+    s += compositumById(id)?.flatGenerationPerSecond ?? 0;
+  return s;
+}
+
+/** Sum of flat additive increases to the BASE suicide rate across active toggles. */
+export function compositumFlatBaseSuicideRatePerSecond(state: GameState): number {
+  let s = 0;
+  for (const id of state.lifetime.activeToggles)
+    s += compositumById(id)?.flatBaseSuicideRatePerSecond ?? 0;
+  return s;
+}
+
+/** Sum of flat additive increases to the BASE Choleric murder rate across active toggles. */
+export function compositumFlatBaseCholericMurderRatePerSecond(state: GameState): number {
+  let s = 0;
+  for (const id of state.lifetime.activeToggles)
+    s += compositumById(id)?.flatBaseCholericMurderRatePerSecond ?? 0;
   return s;
 }
 
