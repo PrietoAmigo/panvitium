@@ -1,6 +1,7 @@
 /**
  * Acolyte system tests (02 §10). Pins:
- *   - maxAcolytes is log10-scaled on effective maxInfluence: 1 at base, +1 per 10×
+ *   - maxAcolytes follows the ×2.2 effective-maxInfluence threshold series (Acolytes sheet):
+ *     0 at base, first acolyte at 242, then 532 / 1170 / 2574 / …
  *   - autoRecruitAcolytes appends idle acolytes up to the target, never removes
  *   - assignAcolyteToAction takes the LOWEST-id idle acolyte and starts its timer
  *   - unassignAcolyteFromAction takes the HIGHEST-id assigned (LIFO)
@@ -43,56 +44,73 @@ function withMaxInfluence(s: GameState, v: number): GameState {
   return { ...s, lifetime: { ...s.lifetime, maxInfluence: bn(v) } };
 }
 
+/** Fresh lifetime with max influence raised to unlock exactly `n` acolytes, then auto-recruited. */
+function recruited(n = 1): GameState {
+  const thresholds = [242, 532, 1170, 2574]; // Acolytes sheet ×2.2 series (1..4 acolytes)
+  const infl = thresholds[n - 1] ?? thresholds[thresholds.length - 1]!;
+  return autoRecruitAcolytes(withMaxInfluence(fresh(), infl));
+}
+
 describe('maxAcolytes', () => {
-  it('is 1 at base maxInfluence (100)', () => {
-    expect(maxAcolytes(fresh())).toBe(1);
+  it('is 0 at base maxInfluence (100) — below the first threshold', () => {
+    expect(maxAcolytes(fresh())).toBe(0);
   });
 
-  it('is 2 at 10× base (1000)', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 1000))).toBe(2);
+  it('unlocks the Nth acolyte at the Nth ×2.2 threshold (242 / 532 / 1170 / 2574)', () => {
+    expect(maxAcolytes(withMaxInfluence(fresh(), 242))).toBe(1);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 532))).toBe(2);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 1170))).toBe(3);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 2574))).toBe(4);
   });
 
-  it('is 3 at 100× base (10000)', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 10_000))).toBe(3);
+  it('does not advance until the next threshold is reached', () => {
+    expect(maxAcolytes(withMaxInfluence(fresh(), 241))).toBe(0);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 531))).toBe(1);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 2573))).toBe(3);
   });
 
-  it('is 4 at 1000× base (100000)', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 100_000))).toBe(4);
+  it('keeps climbing past the visual cap (5th at 5663)', () => {
+    expect(maxAcolytes(withMaxInfluence(fresh(), 5663))).toBe(5); // round(2574 × 2.2)
   });
 
-  it('never drops below 1 — even pathologically low maxInfluence still gives 1', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 1))).toBe(1);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 0))).toBe(1);
+  it('is 0 below the first threshold — no minimum-of-1 floor anymore', () => {
+    expect(maxAcolytes(withMaxInfluence(fresh(), 1))).toBe(0);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 0))).toBe(0);
   });
 });
 
 describe('autoRecruitAcolytes', () => {
-  it('brings a fresh lifetime up to 1 acolyte', () => {
+  it('leaves a fresh base-influence lifetime with 0 acolytes (below the first threshold)', () => {
     const s = autoRecruitAcolytes(fresh());
+    expect(s.lifetime.acolytes).toHaveLength(0);
+  });
+
+  it('recruits the first acolyte once influence reaches the first threshold (242)', () => {
+    const s = autoRecruitAcolytes(withMaxInfluence(fresh(), 242));
     expect(s.lifetime.acolytes).toHaveLength(1);
     expect(s.lifetime.acolytes[0]!.assignedAction).toBeNull();
     expect(s.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
   });
 
-  it('appends one more when maxInfluence crosses 1000', () => {
-    let s = autoRecruitAcolytes(fresh()); // 1 acolyte
-    s = withMaxInfluence(s, 1000);
+  it('appends one more when maxInfluence crosses the next threshold (242 → 532)', () => {
+    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 242)); // 1 acolyte
+    s = withMaxInfluence(s, 532);
     s = autoRecruitAcolytes(s);
     expect(s.lifetime.acolytes).toHaveLength(2);
     expect(s.lifetime.acolytes[1]!.id).toBe(2); // sequential ids
   });
 
   it('does nothing when the count already meets the target', () => {
-    const s = autoRecruitAcolytes(fresh());
+    const s = autoRecruitAcolytes(withMaxInfluence(fresh(), 242));
     const same = autoRecruitAcolytes(s);
     expect(same).toBe(s); // reference equality — no churn
   });
 
   it('never removes existing acolytes when maxInfluence drops', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 1000)); // 2 acolytes
-    s = withMaxInfluence(s, 50); // back below base
+    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 1170)); // 3 acolytes
+    s = withMaxInfluence(s, 50); // back below the first threshold
     const after = autoRecruitAcolytes(s);
-    expect(after.lifetime.acolytes).toHaveLength(2); // no demotion
+    expect(after.lifetime.acolytes).toHaveLength(3); // no demotion
   });
 });
 
@@ -110,20 +128,20 @@ describe('isDelegatable (slice scope)', () => {
 
 describe('assignAcolyteToAction', () => {
   it('refuses non-delegatable actions', () => {
-    const s = autoRecruitAcolytes(fresh());
+    const s = recruited();
     const r = assignAcolyteToAction(s, 'emptio');
     expect(r.ok).toBe(false);
   });
 
   it('refuses when no idle acolyte is available', () => {
-    const s = assignAcolyteToAction(autoRecruitAcolytes(fresh()), 'indagatio');
+    const s = assignAcolyteToAction(recruited(), 'indagatio');
     if (!s.ok) throw new Error('expected first assign to succeed');
     const r = assignAcolyteToAction(s.state, 'indagatio');
     expect(r.ok).toBe(false);
   });
 
   it('assigns the LOWEST-id idle acolyte and starts the timer at baseTime / acolyteEff', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 10_000)); // 3 acolytes
+    let s = recruited(3); // 3 acolytes
     const r1 = assignAcolyteToAction(s, 'indagatio');
     if (!r1.ok) throw new Error('first assign failed');
     s = r1.state;
@@ -139,7 +157,7 @@ describe('assignAcolyteToAction', () => {
   });
 
   it('a delegated acolyte does NOT block the player from running an action', () => {
-    let s = autoRecruitAcolytes(fresh());
+    let s = recruited();
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign failed');
     s = r.state;
@@ -156,7 +174,7 @@ describe('assignAcolyteToAction', () => {
 
 describe('unassignAcolyteFromAction', () => {
   it('removes the LIFO acolyte (highest-id-assigned-to-this-action)', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 10_000)); // 3 acolytes
+    let s = recruited(3); // 3 acolytes
     const r1 = assignAcolyteToAction(s, 'indagatio');
     if (!r1.ok) throw new Error('first assign');
     s = r1.state;
@@ -175,7 +193,7 @@ describe('unassignAcolyteFromAction', () => {
   });
 
   it('refuses when nothing is assigned to the action', () => {
-    const s = autoRecruitAcolytes(fresh());
+    const s = recruited();
     const r = unassignAcolyteFromAction(s, 'indagatio');
     expect(r.ok).toBe(false);
   });
@@ -183,7 +201,7 @@ describe('unassignAcolyteFromAction', () => {
 
 describe('assignedCount', () => {
   it('counts acolytes assigned to a given action across the lifetime', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 10_000)); // 3 acolytes
+    let s = recruited(3); // 3 acolytes
     expect(assignedCount(s, 'indagatio')).toBe(0);
     const r1 = assignAcolyteToAction(s, 'indagatio');
     if (!r1.ok) throw new Error('a1');
@@ -197,14 +215,14 @@ describe('assignedCount', () => {
 
 describe('advanceAcolytes — Indagatio (one-shot, one acolyte)', () => {
   it('idle acolytes are no-ops', () => {
-    const s = autoRecruitAcolytes(fresh());
+    const s = recruited();
     const result = advanceAcolytes(s, 100, makeRng(0));
     expect(result.state).toBe(s);
     expect(result.events).toHaveLength(0);
   });
 
   it('decrements the timer by deltaSeconds without resolving early', () => {
-    let s = autoRecruitAcolytes(fresh());
+    let s = recruited();
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
@@ -215,7 +233,7 @@ describe('advanceAcolytes — Indagatio (one-shot, one acolyte)', () => {
   });
 
   it('resolves the action once the timer hits 0, then retires the acolyte to idle', () => {
-    let s = autoRecruitAcolytes(fresh());
+    let s = recruited();
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
@@ -230,7 +248,7 @@ describe('advanceAcolytes — Indagatio (one-shot, one acolyte)', () => {
   });
 
   it('does a single task even across a large delta, then retires (no looping)', () => {
-    let s = autoRecruitAcolytes(fresh());
+    let s = recruited();
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
@@ -246,15 +264,20 @@ describe('advanceAcolytes — Indagatio (one-shot, one acolyte)', () => {
 });
 
 describe('tick — acolyte system end-to-end', () => {
-  it('auto-recruits the first acolyte at fresh-game tick', () => {
-    const s = fresh();
+  it('a fresh base-influence game recruits no acolyte on tick', () => {
+    const after = tick(fresh(), 0.1).state;
+    expect(after.lifetime.acolytes).toHaveLength(0);
+  });
+
+  it('auto-recruits the first acolyte on tick once influence reaches the first threshold', () => {
+    const s = withMaxInfluence(fresh(), 242);
     expect(s.lifetime.acolytes).toHaveLength(0);
     const after = tick(s, 0.1).state;
     expect(after.lifetime.acolytes).toHaveLength(1);
   });
 
   it('a delegated Indagatio runs through tick to produce an outcome event over a long delta', () => {
-    let s = autoRecruitAcolytes(fresh());
+    let s = recruited();
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
@@ -266,15 +289,17 @@ describe('tick — acolyte system end-to-end', () => {
 });
 
 describe('Katabasis — acolytes reset to empty', () => {
-  it('rebirth wipes acolytes; auto-recruit re-seeds on the next tick', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 10_000)); // 3 acolytes
+  it('rebirth wipes acolytes; auto-recruit re-seeds once influence is regrown', () => {
+    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 1170)); // 3 acolytes
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
     const { state: after } = commitKatabasis(s);
     expect(after.lifetime.acolytes).toHaveLength(0);
-    // Next tick re-recruits because maxInfluence reset to BASE (1 acolyte target).
-    const ticked = tick(after, 0.1).state;
+    // maxInfluence reset to BASE (100), still below the first threshold → no acolyte yet.
+    expect(tick(after, 0.1).state.lifetime.acolytes).toHaveLength(0);
+    // Regrow influence past the first threshold and the next tick re-seeds one.
+    const ticked = tick(withMaxInfluence(after, 242), 0.1).state;
     expect(ticked.lifetime.acolytes).toHaveLength(1);
     expect(ticked.lifetime.acolytes[0]!.assignedAction).toBeNull();
   });
@@ -289,7 +314,7 @@ describe('Modifiers — acolyteEfficiencyMul defaults to 0.33', () => {
 // Smoke: builds and acolytes don't trip over each other (separate channels).
 describe('builds + acolytes — both run in parallel without touching the player slot', () => {
   it('one build and one acolyte work concurrently with no shared queue', () => {
-    let s = autoRecruitAcolytes(fresh());
+    let s = recruited();
     s = {
       ...s,
       devotion: { ...s.devotion, gula: bn(180) },
@@ -324,7 +349,7 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   it('assigning Decimatio pays the first cycle up front', () => {
     const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
     const cost = actionCycleCost('caedis', eff).gold;
-    const s = withGold(autoRecruitAcolytes(fresh()), 1000);
+    const s = withGold(recruited(), 1000);
     const r = assignAcolyteToAction(s, 'caedis');
     if (!r.ok) throw new Error('assign caedis failed');
     expect(r.state.lifetime.gold.toNumber()).toBe(1000 - cost);
@@ -335,7 +360,7 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   it('assigning Suasio pays influence up front', () => {
     const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
     const cost = actionCycleCost('suggestion', eff).influence;
-    const s = withInfluence(autoRecruitAcolytes(fresh()), 100);
+    const s = withInfluence(recruited(), 100);
     const r = assignAcolyteToAction(s, 'suggestion');
     if (!r.ok) throw new Error('assign suasio failed');
     expect(r.state.lifetime.influence.toNumber()).toBe(100 - cost);
@@ -347,7 +372,7 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   it('a delegated Decimatio pays at assign, runs ONE task, then retires the acolyte', () => {
     const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
     const cost = actionCycleCost('caedis', eff).gold;
-    let s = withReprobates(withGold(autoRecruitAcolytes(fresh()), 1000), 100);
+    let s = withReprobates(withGold(recruited(), 1000), 100);
     const r = assignAcolyteToAction(s, 'caedis'); // pays cycle 1 up front
     if (!r.ok) throw new Error('assign');
     s = r.state;
@@ -363,7 +388,7 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   });
 
   it('an acolyte assigned while broke is stalled, then runs once funded and retires', () => {
-    let s = withReprobates(withGold(autoRecruitAcolytes(fresh()), 0), 100);
+    let s = withReprobates(withGold(recruited(), 0), 100);
     const r = assignAcolyteToAction(s, 'caedis');
     if (!r.ok) throw new Error('assign should still succeed (stalled)');
     s = r.state;
@@ -386,7 +411,7 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   });
 
   it('a stalled Decimatio acolyte does not occupy the player action slot', () => {
-    const s = withGold(autoRecruitAcolytes(fresh()), 0);
+    const s = withGold(recruited(), 0);
     const r = assignAcolyteToAction(s, 'caedis');
     if (!r.ok) throw new Error('assign');
     expect(r.state.lifetime.actionQueue).toHaveLength(0);

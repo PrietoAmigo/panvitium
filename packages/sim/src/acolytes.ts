@@ -23,22 +23,36 @@ import {
 } from './actions.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { advanceRunnerCycles } from './runner.js';
-import { mul } from './bignum.js';
-import { BASE_MAX_INFLUENCE } from './constants.js';
+import { mul, floor } from './bignum.js';
+import { ACOLYTE_THRESHOLD_BASE, ACOLYTE_THRESHOLD_GROWTH } from './constants.js';
 import { type Rng } from './rng.js';
 import type { Acolyte, GameState } from './state.js';
 import type { OutcomeEvent } from './events.js';
 
 /**
  * Maximum acolytes given the current state, using the EFFECTIVE max influence (post-modifier).
- * `max(1, 1 + floor(log10(effectiveMax / BASE_MAX_INFLUENCE)))` per 02 §10. Single acolyte at
- * base; +1 per 10× of effective cap. Always at least 1 (the player has someone).
+ * Per the Acolytes sheet, the Nth acolyte unlocks once effective max influence reaches the Nth
+ * threshold, where thresholds form a ×2.2 geometric series anchored at `ACOLYTE_THRESHOLD_BASE`
+ * and each step is rounded to the nearest integer, compounding off the rounded previous value
+ * (110 → 242 → 532 → 1170 → 2574 → …). A fresh lifetime (base 100 influence) has 0 acolytes; the
+ * first unlocks at 242. Influence is floored before the integer comparison (resources are natural
+ * numbers; `break_infinity` is a float bignum — ADR-005). The loop self-terminates: each threshold
+ * grows ×2.2, so it exits as soon as one exceeds the (finite) influence, and a non-finite influence
+ * exits when the threshold itself overflows to Infinity.
  */
 export function maxAcolytes(state: GameState, mods: Modifiers = computeModifiers(state)): number {
-  const effective = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul).toNumber();
-  if (effective <= 0) return 1;
-  const ratio = effective / BASE_MAX_INFLUENCE;
-  return Math.max(1, 1 + Math.floor(Math.log10(Math.max(ratio, 1))));
+  const effective = Math.floor(
+    floor(mul(state.lifetime.maxInfluence, mods.maxInfluenceMul)).toNumber(),
+  );
+  if (!(effective > 0)) return 0;
+  let count = 0;
+  let threshold = ACOLYTE_THRESHOLD_BASE;
+  while (Number.isFinite(threshold)) {
+    threshold = Math.round(threshold * ACOLYTE_THRESHOLD_GROWTH);
+    if (effective >= threshold) count++;
+    else break;
+  }
+  return count;
 }
 
 /**

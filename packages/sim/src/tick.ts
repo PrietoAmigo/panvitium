@@ -189,8 +189,9 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   //    live on the lifetime state and persist across save/load (ADR-023 additive optional).
   working = applyReprobateDynamics(working, deltaSeconds, rng);
 
-  // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate, log10-scaled
-  //    on effective maxInfluence). Then advance each assigned acolyte's timer; completed cycles
+  // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; unlocks on a
+  //    ×2.2 effective-maxInfluence threshold series — 0 at base, first at 242). Then advance each
+  //    assigned acolyte's timer; completed cycles
   //    resolve at the acolyte's efficiency and immediately start the next cycle. Acolyte events
   //    fold into the same outcome stream as player events.
   working = autoRecruitAcolytes(working);

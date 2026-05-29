@@ -27,6 +27,12 @@ function patchDevotion(sin: 'gula', value: number): void {
   useGameStore.setState({ state: { ...s, devotion: { ...s.devotion, [sin]: bn(value) } } });
 }
 
+/** Raise max influence so acolytes can be recruited (first acolyte unlocks at 242). */
+function patchMaxInfluence(v: number): void {
+  const s = store().state as GameState;
+  useGameStore.setState({ state: { ...s, lifetime: { ...s.lifetime, maxInfluence: bn(v) } } });
+}
+
 beforeEach(() => {
   localStorage.clear();
   useGameStore.setState({
@@ -229,13 +235,17 @@ describe('gameStore — Vitium Mercatura (build/shutdown)', () => {
 });
 
 describe('gameStore — acolyte delegation', () => {
-  it('the first tick auto-recruits one acolyte from a fresh game', () => {
+  it('the first tick auto-recruits one acolyte once influence reaches the first threshold', () => {
     expect(store().state?.lifetime.acolytes ?? []).toHaveLength(0);
+    store().advance(0.1);
+    expect(store().state?.lifetime.acolytes ?? []).toHaveLength(0); // base influence: still none
+    patchMaxInfluence(242);
     store().advance(0.1);
     expect(store().state?.lifetime.acolytes ?? []).toHaveLength(1);
   });
 
   it('assigns and unassigns Indagatio without occupying the player slot', () => {
+    patchMaxInfluence(242);
     store().advance(0.1); // recruit
     store().assignAcolyte('indagatio');
     const s = store().state as GameState;
@@ -256,7 +266,8 @@ describe('gameStore — acolyte delegation', () => {
   });
 
   it('refuses assignment when all acolytes are busy', () => {
-    store().advance(0.1); // recruit (1 acolyte at base influence)
+    patchMaxInfluence(242);
+    store().advance(0.1); // recruit (1 acolyte at this influence)
     store().assignAcolyte('indagatio');
     store().assignAcolyte('indagatio'); // no one left to assign
     expect(store().notice).toMatch(/idle acolyte/i);

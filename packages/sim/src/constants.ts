@@ -17,6 +17,16 @@ export const BASE_INFLUENCE_RATE = 0.01;
 /** Base maximum influence for a fresh lifetime; sin/sigil/maleficia modifiers raise it later. */
 export const BASE_MAX_INFLUENCE = 100;
 
+/**
+ * Acolyte count thresholds (Acolytes sheet). The Nth acolyte unlocks once effective max influence
+ * reaches the Nth threshold; the thresholds form a ×2.2 geometric series anchored at the base,
+ * each step rounded to the nearest integer and compounding off the rounded previous value (matching
+ * the sheet's `=prev*2.2` columns: 110 → 242 → 532 → 1170 → 2574 → …). A fresh lifetime (base 100
+ * influence) therefore has 0 acolytes; the first unlocks at 242.
+ */
+export const ACOLYTE_THRESHOLD_BASE = 110;
+export const ACOLYTE_THRESHOLD_GROWTH = 2.2;
+
 /** Base reprobate suicide chance per second, applied to the whole population (Globals: 0.00023). */
 export const BASE_SUICIDE_RATE_PER_SECOND = 0.00023;
 
