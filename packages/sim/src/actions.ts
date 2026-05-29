@@ -533,8 +533,12 @@ export function resolveEmptio(
       };
       return { state: next, acquired: [target], lostFromList: [] };
     }
-    case 'good': {
-      // Straight purchase: item enters the inventory, cost as paid.
+    case 'good':
+    case 'neutral': {
+      // Purchase at the listed price (Indagatio & Emptio sheet): the item enters the inventory,
+      // cost as paid (already deducted at startAction), and the list entry is consumed. Neutral is
+      // the common successful purchase; Good — currently zero-weight in the spreadsheet — resolves
+      // identically as a straight buy.
       const next: GameState = {
         ...state,
         lifetime: {
@@ -544,14 +548,6 @@ export function resolveEmptio(
         },
       };
       return { state: next, acquired: [target], lostFromList: [] };
-    }
-    case 'neutral': {
-      // Deal falls through; refund cost; item stays on the list for another attempt.
-      const next: GameState = {
-        ...state,
-        lifetime: { ...state.lifetime, gold: add(state.lifetime.gold, def.cost) },
-      };
-      return { state: next, acquired: [], lostFromList: [] };
     }
     case 'bad': {
       // Gold lost (already paid), item stays on the list — try again with more.
@@ -566,8 +562,8 @@ export function resolveEmptio(
       return { state: next, acquired: [], lostFromList: [target] };
     }
     case 'apocalyptic': {
-      // Gold lost, item gone, plus a punishing additional gold bite.
-      const punished = loseGoldFraction(state, 0.3);
+      // Bait (Indagatio & Emptio sheet): gold already lost, item gone, plus a 50%-of-total bite.
+      const punished = loseGoldFraction(state, 0.5);
       const next: GameState = {
         ...punished,
         lifetime: { ...punished.lifetime, emptioList: trimmedList },

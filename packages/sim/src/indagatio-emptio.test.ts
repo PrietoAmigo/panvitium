@@ -97,12 +97,14 @@ describe('resolveEmptio (03 §2.6)', () => {
     );
   });
 
-  it('Neutral refunds the cost; the item stays on the list', () => {
-    const state = listedWith('black_robe', 0);
+  it('Neutral acquires the item at the listed price — no refund, list entry consumed', () => {
+    const state = listedWith('black_robe', 500);
     const r = resolveEmptio(state, 'neutral', 'black_robe');
-    expect(r.state.lifetime.maleficia).not.toContain('black_robe');
-    expect(r.state.lifetime.emptioList).toContain('black_robe');
-    expect(floor(r.state.lifetime.gold).toNumber()).toBe(MALEFICIA.black_robe!.cost);
+    expect(r.acquired).toEqual(['black_robe']);
+    expect(r.state.lifetime.maleficia).toContain('black_robe');
+    expect(r.state.lifetime.emptioList).not.toContain('black_robe');
+    // Cost was already paid at startAction; Neutral neither refunds nor charges again.
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(500);
   });
 
   it('Bad: cost stays gone, item stays on the list', () => {
@@ -121,11 +123,11 @@ describe('resolveEmptio (03 §2.6)', () => {
     expect(r.state.lifetime.maleficia).not.toContain('black_robe');
   });
 
-  it('Apocalyptic snatches the item AND applies an extra gold bite', () => {
+  it('Apocalyptic snatches the item AND bites 50% of total gold (bait)', () => {
     const state = listedWith('black_robe', 1000);
     const r = resolveEmptio(state, 'apocalyptic', 'black_robe');
     expect(r.lostFromList).toEqual(['black_robe']);
-    expect(floor(r.state.lifetime.gold).toNumber()).toBeLessThan(1000);
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(500); // 1000 → lose 50%
   });
 
   it('refuses to act on an item not on the list', () => {
