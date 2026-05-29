@@ -37,6 +37,7 @@ import { SINS, SUBTYPE_OF_SIN, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies } from './maleficia.js';
+import { compositumPenaltyIncreaseBySubtype, compositumOfflineGainBoost } from './compositum.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import { sigilModifierContributions, type ScalarModifierField } from './sigils.js';
 import {
@@ -266,23 +267,34 @@ export function computeModifiers(state: GameState): Modifiers {
     subtypeVitiumGoldMulBySin[sin] = 1 + SUBTYPE_VM_GOLD_BOOST_PER_COUNT * themedCount;
   }
   // Secondary effects (composed below into the existing rate-mul expressions):
+  // Vegas/Crusade flatly raise the per-count penalty coefficient of their targeted subtypes while
+  // active; `pen[subtype]` is added to each subtype's base `*_PER_COUNT` constant before ×count.
+  const pen = compositumPenaltyIncreaseBySubtype(state);
   //   Degenerate (Luxuria): lowers suicide + Choleric murder
-  const degenerateSuicideMul = 1 / (1 + DEGENERATE_SUICIDE_REDUCTION_PER_COUNT * subs.degenerate);
-  const degenerateMurderMul = 1 / (1 + DEGENERATE_MURDER_REDUCTION_PER_COUNT * subs.degenerate);
+  const degenerateSuicideMul =
+    1 / (1 + (DEGENERATE_SUICIDE_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) * subs.degenerate);
+  const degenerateMurderMul =
+    1 / (1 + (DEGENERATE_MURDER_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) * subs.degenerate);
   //   Nihilist (Tristitia): raises suicide
   const nihilistSuicideMul = 1 + NIHILIST_SUICIDE_INCREASE_PER_COUNT * subs.nihilist;
   //   Gambler (Avaritia): lowers generation
-  const gamblerGenerationMul = 1 / (1 + GAMBLER_GENERATION_REDUCTION_PER_COUNT * subs.gambler);
+  const gamblerGenerationMul =
+    1 / (1 + (GAMBLER_GENERATION_REDUCTION_PER_COUNT + (pen.gambler ?? 0)) * subs.gambler);
   //   Choleric (Ira): compounds its own murder rate (second-order on top of count × base)
-  const cholericMurderCompound = 1 + CHOLERIC_MURDER_INCREASE_PER_COUNT * subs.choleric;
+  const cholericMurderCompound =
+    1 + (CHOLERIC_MURDER_INCREASE_PER_COUNT + (pen.choleric ?? 0)) * subs.choleric;
   //   Husk (Acedia): lowers online player efficiency (offline is its own channel)
-  const huskEfficiencyMul = 1 / (1 + HUSK_EFFICIENCY_REDUCTION_PER_COUNT * subs.husk);
+  const huskEfficiencyMul =
+    1 / (1 + (HUSK_EFFICIENCY_REDUCTION_PER_COUNT + (pen.husk ?? 0)) * subs.husk);
   //   Celebrity (Vanagloria): lowers gold rate
-  const celebrityGoldMul = 1 / (1 + CELEBRITY_GOLD_REDUCTION_PER_COUNT * subs.celebrity);
+  const celebrityGoldMul =
+    1 / (1 + (CELEBRITY_GOLD_REDUCTION_PER_COUNT + (pen.celebrity ?? 0)) * subs.celebrity);
   //   Sigma (Superbia): lowers influence rate
-  const sigmaInfluenceMul = 1 / (1 + SIGMA_INFLUENCE_REDUCTION_PER_COUNT * subs.sigma);
+  const sigmaInfluenceMul =
+    1 / (1 + (SIGMA_INFLUENCE_REDUCTION_PER_COUNT + (pen.sigma ?? 0)) * subs.sigma);
   //   Glutton (Gula): slows offline catchup (consumed in session.resumeGame, NOT online ticks)
-  const gluttonOfflineMul = 1 / (1 + GLUTTON_OFFLINE_PENALTY_PER_COUNT * subs.glutton);
+  const gluttonOfflineMul =
+    1 / (1 + (GLUTTON_OFFLINE_PENALTY_PER_COUNT + (pen.glutton ?? 0)) * subs.glutton);
 
   return {
     goldRateMul:
@@ -360,9 +372,10 @@ export function computeModifiers(state: GameState): Modifiers {
     // per-business call site so each Sin's businesses receive their own themed boost.
     subtypeVitiumGoldMulBySin,
     // Offline time scaling: Glutton slows; Acedia's Procrastination skill lifts (03 §1, continuous);
-    // Acedia's per-level effect compounds on top dynamically in `session.resumeGame` (it depends
-    // on the offline duration itself and can't be expressed as a static scalar).
-    offlineTimeMul: gluttonOfflineMul * skillBonus(acediaIntensity),
+    // Dolce Far Niente lifts it ×(1 + boost) while active; Acedia's per-level effect compounds on top
+    // dynamically in `session.resumeGame` (it depends on the offline duration itself).
+    offlineTimeMul:
+      gluttonOfflineMul * skillBonus(acediaIntensity) * (1 + compositumOfflineGainBoost(state)),
   };
 }
 

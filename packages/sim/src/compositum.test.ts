@@ -72,6 +72,9 @@ describe('Vitium Compositum — catalog', () => {
       'doom-gathering',
       'ethnocentric-revolt',
       'enraging-broadcast',
+      'dolce-far-niente',
+      'vegas',
+      'crusade',
       'panvitium',
     ]);
   });
@@ -87,6 +90,7 @@ describe('Vitium Compositum — catalog', () => {
       'doom-gathering',
       'ethnocentric-revolt',
       'enraging-broadcast',
+      'dolce-far-niente',
     ]) {
       const def = compositumById(id)!;
       expect(def.minLevel).toBe(1);
@@ -114,7 +118,9 @@ describe('Vitium Compositum — catalog', () => {
           (def.flatBaseSuicideRatePerSecond ?? 0) +
           (def.flatBaseCholericMurderRatePerSecond ?? 0) +
           (def.populationGeneration?.fraction ?? 0) +
-          (def.deathFractionPerSecond ?? 0) >
+          (def.deathFractionPerSecond ?? 0) +
+          (def.offlineGainBoost ?? 0) +
+          (def.penaltyIncrease?.amount ?? 0) >
         0;
       expect(hasEffect).toBe(true);
     }
@@ -536,5 +542,51 @@ describe('Vitium Compositum — flat dynamics-rate ceremonies', () => {
     const on = reprobateRates(a.state, computeModifiers(a.state)).suicidePerSecond;
     // 0.1% of 1000 = 1 death/s, added on top of the rate-driven suicides (not scaled by the mul).
     expect(on - off).toBeCloseTo(0.001 * 1000, 6);
+  });
+});
+
+describe('Vitium Compositum — penalty & offline ceremonies (Vegas/Crusade/Dolce)', () => {
+  function withSubs(s: GameState, counts: Record<string, number>): GameState {
+    return {
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, ...counts } },
+    };
+  }
+  function withActive(s: GameState, id: string): GameState {
+    return { ...s, lifetime: { ...s.lifetime, activeToggles: [id] } };
+  }
+
+  it('Vegas sharpens the Choleric, Sigma and Celebrity penalties while active', () => {
+    const base = withSubs(fresh(), { choleric: 100, sigma: 100, celebrity: 100 });
+    const off = computeModifiers(base);
+    const on = computeModifiers(withActive(base, 'vegas'));
+    expect(on.cholericMurderRateMul).toBeGreaterThan(off.cholericMurderRateMul); // Choleric penalty ↑
+    expect(on.influenceRateMul).toBeLessThan(off.influenceRateMul); // Sigma penalty ↑ (more drag)
+    expect(on.goldRateMul).toBeLessThan(off.goldRateMul); // Celebrity penalty ↑
+  });
+
+  it('Crusade sharpens the Degenerate, Gambler, Glutton and Husk penalties while active', () => {
+    const base = withSubs(fresh(), { degenerate: 100, gambler: 100, glutton: 100, husk: 100 });
+    const off = computeModifiers(base);
+    const on = computeModifiers(withActive(base, 'crusade'));
+    expect(on.reprobateGenerationRateMul).toBeLessThan(off.reprobateGenerationRateMul); // Gambler ↑
+    expect(on.reprobateSuicideRateMul).toBeLessThan(off.reprobateSuicideRateMul); // Degenerate ↑
+    expect(on.playerEfficiencyMul).toBeLessThan(off.playerEfficiencyMul); // Husk ↑
+    expect(on.offlineTimeMul).toBeLessThan(off.offlineTimeMul); // Glutton ↑
+  });
+
+  it('Vegas leaves the OTHER faction (Degenerate/Gambler/Glutton/Husk) untouched', () => {
+    const base = withSubs(fresh(), { gambler: 100, husk: 100 });
+    const off = computeModifiers(base);
+    const on = computeModifiers(withActive(base, 'vegas'));
+    expect(on.reprobateGenerationRateMul).toBeCloseTo(off.reprobateGenerationRateMul, 12);
+    expect(on.playerEfficiencyMul).toBeCloseTo(off.playerEfficiencyMul, 12);
+  });
+
+  it('Dolce Far Niente lifts the offline-gain rate by 1% while active', () => {
+    const base = fresh();
+    const off = computeModifiers(base).offlineTimeMul;
+    const on = computeModifiers(withActive(base, 'dolce-far-niente')).offlineTimeMul;
+    expect(on).toBeCloseTo(off * 1.01, 9);
   });
 });

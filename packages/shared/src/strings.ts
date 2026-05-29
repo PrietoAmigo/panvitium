@@ -109,6 +109,8 @@ export const strings = {
     raisesSuicide: 'drives them to despair',
     raisesMurder: 'incites slaughter',
     culls: 'culls the throng',
+    sharpensVices: 'sharpens their vices',
+    idleGains: 'sweetens idleness',
     names: {
       bacchanal: 'Bacchanal',
       'loan-shark-op': 'Loan Shark Op',
@@ -119,6 +121,9 @@ export const strings = {
       'doom-gathering': 'Doom Gathering',
       'ethnocentric-revolt': 'Ethnocentric Revolt',
       'enraging-broadcast': 'Enraging Broadcast',
+      'dolce-far-niente': 'Dolce Far Niente',
+      vegas: 'Vegas',
+      crusade: 'Crusade',
       panvitium: 'Panvitium',
     } as Record<string, string>,
     panvitiumGate: 'Requires every Sin at Level 3.',

@@ -502,6 +502,8 @@ function compositumSummary(id: string): string {
   if (def.deathFractionPerSecond) effects.push(strings.compositum.culls);
   if (def.flatBaseSuicideRatePerSecond) effects.push(strings.compositum.raisesSuicide);
   if (def.flatBaseCholericMurderRatePerSecond) effects.push(strings.compositum.raisesMurder);
+  if (def.penaltyIncrease) effects.push(strings.compositum.sharpensVices);
+  if (def.offlineGainBoost) effects.push(strings.compositum.idleGains);
   const costStr = costs.length > 0 ? costs.join(' · ') : strings.compositum.noCost;
   return `${costStr} \u2192 ${effects.join(' · ')}`;
 }

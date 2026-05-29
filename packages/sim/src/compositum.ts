@@ -87,6 +87,22 @@ export interface CompositumDef {
    */
   readonly deathFractionPerSecond?: number;
   /**
+   * While active, flatly increases the per-count PENALTY coefficient of each listed reprobate
+   * subtype by `amount` (Vegas → Choleric/Sigma/Celebrity; Crusade → Degenerate/Gambler/Glutton/
+   * Husk — sheet authoritative; each ceremony sharpens the *opposite* faction's vices). Folded into
+   * the per-count penalty terms in `modifiers.ts`. Default: none.
+   */
+  readonly penaltyIncrease?: {
+    readonly subtypes: readonly ReprobateSubtype[];
+    readonly amount: number;
+  };
+  /**
+   * While active, multiplies the offline-gain rate by `(1 + offlineGainBoost)` (Dolce Far Niente —
+   * "the conversion rate instead applies to offline gain rate"). Folded into `offlineTimeMul`.
+   * Default 0.
+   */
+  readonly offlineGainBoost?: number;
+  /**
    * If true, the toggle cannot be turned off by hand — it ends only by auto-deactivation when it
    * can no longer pay upkeep (Panvitium, 03 §2.3). Default false (manually dispellable).
    */
@@ -181,6 +197,32 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     // Sheet: "conversion rate instead applies as percentage death of total reprobates" — 0.1% of
     // the whole population self-destructs each second, taking random reprobates with them.
     deathFractionPerSecond: 0.001,
+  },
+  'dolce-far-niente': {
+    id: 'dolce-far-niente',
+    sins: ['gula', 'acedia'],
+    minLevel: 1,
+    costPerSecond: {},
+    // Sheet: "the conversion rate instead applies to offline gain rate" — +1% offline gain while active.
+    offlineGainBoost: 0.01,
+  },
+  vegas: {
+    id: 'vegas',
+    sins: ['luxuria', 'avaritia', 'gula', 'acedia'],
+    minLevel: 2,
+    costPerSecond: { gold: 1000 },
+    influencePerSecond: 100,
+    // Sheet: "flat increase to base Choleric, Sigma and Celebrity penalties."
+    penaltyIncrease: { subtypes: ['choleric', 'sigma', 'celebrity'], amount: 0.01 },
+  },
+  crusade: {
+    id: 'crusade',
+    sins: ['superbia', 'ira', 'vanagloria', 'tristitia'],
+    minLevel: 2,
+    costPerSecond: { influence: 100 },
+    goldPerSecond: 1000,
+    // Sheet: "flat increase to base Degenerate, Gambler, Glutton and Husk penalties."
+    penaltyIncrease: { subtypes: ['degenerate', 'gambler', 'glutton', 'husk'], amount: 0.01 },
   },
   // The endgame ritual (03 §2.3). Gated on ALL eight Sins at level 3. Cannot be turned off by
   // hand; its cost ramps exponentially with active duration so it can't become a steady state —
@@ -432,6 +474,29 @@ export function compositumDeathFractionPerSecond(state: GameState): number {
   let s = 0;
   for (const id of state.lifetime.activeToggles)
     s += compositumById(id)?.deathFractionPerSecond ?? 0;
+  return s;
+}
+
+/**
+ * Aggregate per-subtype increase to the per-count PENALTY coefficient from active toggles
+ * (Vegas/Crusade). Consumed in `modifiers.ts`, added to each subtype's base `*_PER_COUNT` constant.
+ */
+export function compositumPenaltyIncreaseBySubtype(
+  state: GameState,
+): Partial<Record<ReprobateSubtype, number>> {
+  const out: Partial<Record<ReprobateSubtype, number>> = {};
+  for (const id of state.lifetime.activeToggles) {
+    const pen = compositumById(id)?.penaltyIncrease;
+    if (!pen) continue;
+    for (const t of pen.subtypes) out[t] = (out[t] ?? 0) + pen.amount;
+  }
+  return out;
+}
+
+/** Sum of offline-gain boosts across active toggles (Dolce Far Niente). */
+export function compositumOfflineGainBoost(state: GameState): number {
+  let s = 0;
+  for (const id of state.lifetime.activeToggles) s += compositumById(id)?.offlineGainBoost ?? 0;
   return s;
 }
 
