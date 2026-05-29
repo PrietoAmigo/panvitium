@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   MALEFICIA,
   MALEFICIUM_IDS,
+  MALEFICIUM_PRICE_RANGE,
   canSurface,
   countCopies,
   findableIds,
@@ -44,6 +45,51 @@ describe('maleficia catalog', () => {
   });
 });
 
+describe('maleficia catalog — sheet parity (25 items)', () => {
+  it('has the full 25-item roster', () => {
+    expect(MALEFICIUM_IDS.length).toBe(25);
+  });
+
+  it('pins the sheet invoking-power values for the power sources', () => {
+    const ip = (id: string) => MALEFICIA[id]!.invokingPower;
+    expect(ip('voynich_manuscript')).toBe(6);
+    expect(ip('obsidian_mirror')).toBe(8);
+    expect(ip('blood_chalk')).toBe(4);
+    expect(ip('blackthorn_wand')).toBe(4);
+    expect(ip('dybbuk_box')).toBe(3);
+    expect(ip('witch_bottle')).toBe(2);
+    expect(ip('mandrake_root')).toBe(2);
+    expect(ip('iron_nails')).toBe(1);
+    // The anathema enhancers and the targeted/enhancer items carry no invoking power.
+    for (const id of [
+      'spear_of_longinus',
+      'solomons_ring',
+      'black_candles',
+      'defixio',
+      'hand_of_glory',
+    ]) {
+      expect(ip(id)).toBe(0);
+    }
+  });
+
+  it('pins the stack caps: ∞ for the unbounded items, 5 for Black Candles, single for the rest', () => {
+    for (const id of ['black_salt_pouch', 'defixio', 'hand_of_glory', 'iron_nails']) {
+      expect(MALEFICIA[id]!.stackMax).toBe(Number.POSITIVE_INFINITY);
+    }
+    expect(MALEFICIA.black_candles!.stackMax).toBe(5);
+    expect(MALEFICIA.black_robe!.stackMax).toBeUndefined();
+  });
+
+  it('every cost sits within its rarity price band', () => {
+    for (const id of MALEFICIUM_IDS) {
+      const def = MALEFICIA[id]!;
+      const band = MALEFICIUM_PRICE_RANGE[def.rarity];
+      expect(def.cost).toBeGreaterThanOrEqual(band.min);
+      expect(def.cost).toBeLessThanOrEqual(band.max);
+    }
+  });
+});
+
 describe('canSurface — stack rules (03 §2.5)', () => {
   it('non-stackable items: owned OR listed blocks re-surfacing', () => {
     expect(canSurface('black_robe', [], [])).toBe(true);
@@ -52,16 +98,21 @@ describe('canSurface — stack rules (03 §2.5)', () => {
   });
 
   it('stackable items: blocked only once owned + listed reaches stackMax', () => {
-    // Black Salt Pouch: stackMax = 5.
-    expect(canSurface('black_salt_pouch', [], [])).toBe(true);
-    expect(canSurface('black_salt_pouch', ['black_salt_pouch'], ['black_salt_pouch'])).toBe(true); // 2/5
+    // Black Candles: stackMax = 5.
+    expect(canSurface('black_candles', [], [])).toBe(true);
+    expect(canSurface('black_candles', ['black_candles'], ['black_candles'])).toBe(true); // 2/5
     expect(
       canSurface(
-        'black_salt_pouch',
-        ['black_salt_pouch', 'black_salt_pouch'],
-        ['black_salt_pouch', 'black_salt_pouch', 'black_salt_pouch'],
+        'black_candles',
+        ['black_candles', 'black_candles'],
+        ['black_candles', 'black_candles', 'black_candles'],
       ),
     ).toBe(false); // 5/5
+  });
+
+  it('unbounded (∞) stacks never saturate — Black Salt Pouch', () => {
+    const many = Array.from({ length: 50 }, () => 'black_salt_pouch');
+    expect(canSurface('black_salt_pouch', many, many)).toBe(true);
   });
 
   it('unknown ids are not findable', () => {

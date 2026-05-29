@@ -59,11 +59,12 @@ describe('resolveIndagatio (03 §2.5)', () => {
   it('falls back to a lower rarity when the picked one is exhausted', () => {
     // Owning every anathema item locks the Stellar pick away — it falls back to profane.
     const base = fresh();
+    const allAnathema = Object.keys(MALEFICIA).filter((id) => MALEFICIA[id]!.rarity === 'anathema');
     const seeded: GameState = {
       ...base,
       lifetime: {
         ...base.lifetime,
-        maleficia: ['spear_of_longinus', 'codex_gigas', 'thirty_pieces_of_silver', 'mark_of_cain'],
+        maleficia: allAnathema,
       },
     };
     const { surfaced } = resolveIndagatio(seeded, 'stellar', rng());
@@ -96,7 +97,7 @@ describe('resolveEmptio (03 §2.6)', () => {
     const state = listedWith('blackthorn_wand', 1000);
     const r = resolveEmptio(state, 'stellar', 'blackthorn_wand');
     expect(r.state.lifetime.maleficia).toContain('blackthorn_wand');
-    // The 5000-cost item is refunded into the 1000 base → 6000 gold after.
+    // The item's cost is refunded into the 1000 base.
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(1000 + MALEFICIA.blackthorn_wand!.cost);
   });
 
