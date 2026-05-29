@@ -113,6 +113,14 @@ export interface CompositumDef {
    * in `LifetimeState.toggleDurations`. Default: flat cost (no growth).
    */
   readonly costGrowthPerSecond?: number;
+  /**
+   * If set, the toggle's conversion rate (and the Panvitium effects derived from it — all-subtype
+   * conversion, souls/s ∝ current souls, and flat generation) is multiplied by
+   * `conversionGrowthBase ** secondsActive`, the same exponential time-ramp as the cost (Panvitium,
+   * sheet: conversion `= base × eᵗ`). Duration is read from `LifetimeState.toggleDurations`.
+   * Default: flat (no growth).
+   */
+  readonly conversionGrowthBase?: number;
 }
 
 /** The wired subset of the Vitium Compositum catalog (03 §2.3). Keyed by id. */
@@ -233,9 +241,13 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     id: 'panvitium',
     sins: ['gula', 'luxuria', 'avaritia', 'tristitia', 'ira', 'acedia', 'vanagloria', 'superbia'],
     minLevel: 3,
-    costPerSecond: { gold: 10000, influence: 100 },
-    generationPerSecond: 10,
-    conversionPerSecond: 5,
+    // Sheet: gold 10×(Base VC gold cost 100)=1000, influence 10×(Base VC influence cost 10)=100,
+    // each × eᵗ; conversion 1×(Base VC conversion rate 0.01)=0.01 × eᵗ. t = seconds active.
+    costPerSecond: { gold: 1000, influence: 100 },
+    conversionPerSecond: 0.01,
+    // The single conversion rate R(t) = 0.01·eᵗ drives THREE coupled effects (sheet): conversion
+    // across ALL subtypes (uniform bias below), souls/s ∝ current souls (tick), and a flat increase
+    // to unconverted generation (dynamics). Growth base e is shared with the cost ramp.
     subtypeBias: {
       glutton: 1,
       degenerate: 1,
@@ -247,7 +259,8 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
       sigma: 1,
     },
     manualDeactivateForbidden: true,
-    costGrowthPerSecond: 1.03,
+    costGrowthPerSecond: Math.E,
+    conversionGrowthBase: Math.E,
   },
 } as const;
 
@@ -426,9 +439,24 @@ export function compositumGenerationPerSecond(state: GameState): number {
 }
 
 /** Sum of `conversionPerSecond` across active toggles. */
+/**
+ * Effective conversion rate of a toggle this instant: its base `conversionPerSecond`, scaled by
+ * `conversionGrowthBase ** secondsActive` when the toggle ramps exponentially (Panvitium). Duration
+ * is read from the tracked `toggleDurations`.
+ */
+function toggleConversionRate(def: CompositumDef, state: GameState): number {
+  const base = def.conversionPerSecond ?? 0;
+  if (!def.conversionGrowthBase) return base;
+  const dur = state.lifetime.toggleDurations[def.id] ?? 0;
+  return base * Math.pow(def.conversionGrowthBase, dur);
+}
+
 export function compositumConversionPerSecond(state: GameState): number {
   let s = 0;
-  for (const id of state.lifetime.activeToggles) s += compositumById(id)?.conversionPerSecond ?? 0;
+  for (const id of state.lifetime.activeToggles) {
+    const def = compositumById(id);
+    if (def) s += toggleConversionRate(def, state);
+  }
   return s;
 }
 
@@ -505,8 +533,20 @@ export function compositumConversionSources(state: GameState): VitiumConversionS
   const out: VitiumConversionSource[] = [];
   for (const id of state.lifetime.activeToggles) {
     const def = compositumById(id);
-    if (!def || !def.conversionPerSecond || !def.subtypeBias) continue;
-    out.push({ conversionPerSecond: def.conversionPerSecond, subtypeBias: def.subtypeBias });
+    if (!def || !def.subtypeBias) continue;
+    const rate = toggleConversionRate(def, state);
+    if (rate <= 0) continue;
+    out.push({ conversionPerSecond: rate, subtypeBias: def.subtypeBias });
   }
   return out;
+}
+
+/**
+ * Panvitium's instantaneous conversion rate R(t) = 0.01·eᵗ (0 if inactive). The single rate the
+ * sheet reuses for Panvitium's all-subtype conversion, its soul income (× current souls), and its
+ * flat generation increase.
+ */
+export function panvitiumConversionRate(state: GameState): number {
+  if (!state.lifetime.activeToggles.includes('panvitium')) return 0;
+  return toggleConversionRate(COMPOSITA.panvitium!, state);
 }

@@ -49,6 +49,7 @@ import {
   compositumFlatBaseCholericMurderRatePerSecond,
   compositumPopulationGenerationPerSecond,
   compositumDeathFractionPerSecond,
+  panvitiumConversionRate,
 } from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobatesRandom } from './population.js';
@@ -87,7 +88,8 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
     businessGenerationPerSecond(state) * vmMul +
     compositumGenerationPerSecond(state) +
     compositumFlatGenerationPerSecond(state) + // toggle flat add/decrease (No-babies); clamped below
-    compositumPopulationGenerationPerSecond(state); // population-proportional (Bacchanal)
+    compositumPopulationGenerationPerSecond(state) + // population-proportional (Bacchanal)
+    panvitiumConversionRate(state); // Panvitium: R(t) = 0.01·eᵗ also a flat generation increase
   // Toggle flat additions to the BASE per-capita rates (Doom → suicide, Ethnocentric → murder),
   // applied before the ×population/×cholerics and the subtype-penalty multipliers, so the ceremony
   // raises the floor and the subtype penalties still scale it.

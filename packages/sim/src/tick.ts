@@ -21,6 +21,7 @@ import {
   advanceToggles,
   compositumGoldPerSecond,
   compositumInfluencePerSecond,
+  panvitiumConversionRate,
 } from './compositum.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
@@ -188,6 +189,20 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   //    births / suicides / murders / conversions (02 §9). Each death mints 1 soul. The pools
   //    live on the lifetime state and persist across save/load (ADR-023 additive optional).
   working = applyReprobateDynamics(working, deltaSeconds, rng);
+
+  // 4b. Panvitium soul harvest (03 §2.3): while the ritual burns, it mints souls each second in
+  //     proportion to the current soul total — R(t) × souls — compounding the hoard for as long as
+  //     the exponential upkeep can be sustained. Accrued fractionally on `souls` (BigNum), floored
+  //     only at display/spend per ADR-005. R(t) reads the post-upkeep duration set at step 0.
+  {
+    const panvRate = panvitiumConversionRate(working);
+    if (panvRate > 0) {
+      working = {
+        ...working,
+        souls: add(working.souls, mul(working.souls, panvRate * deltaSeconds)),
+      };
+    }
+  }
 
   // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; unlocks on a
   //    ×2.2 effective-maxInfluence threshold series — 0 at base, first at 242). Then advance each

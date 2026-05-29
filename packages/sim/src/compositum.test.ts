@@ -397,9 +397,9 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     expect(isToggleActive(s, 'panvitium')).toBe(true);
   });
 
-  it('cost ramps exponentially with active duration', () => {
-    // First tick at base (~10000 g/s); a later tick costs strictly more for the same delta.
-    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e12), 1e12));
+  it('cost ramps exponentially (eᵗ) with active duration', () => {
+    // Base ~1000 g/s; eᵗ growth means a few seconds later the same 1 s delta costs far more.
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e18), 1e18));
     const a = activateToggle(s, 'panvitium');
     if (!a.ok) throw new Error('activate');
     s = a.state;
@@ -407,13 +407,15 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     const r1 = advanceToggles(s, 1);
     const firstCost = goldStart - r1.state.lifetime.gold.toNumber();
     expect(r1.state.lifetime.toggleDurations.panvitium).toBeCloseTo(1, 6);
-    // Advance the duration substantially, then a single 1s tick should cost more than the first.
+    // Advance a few seconds (still affordable on a huge reserve), then one more 1 s tick costs far
+    // more than the first: at duration ~6, growth is e^6 ≈ 403×.
     let later = r1.state;
-    for (let i = 0; i < 30; i++) later = advanceToggles(later, 1).state;
+    for (let i = 0; i < 5; i++) later = advanceToggles(later, 1).state;
+    expect(isToggleActive(later, 'panvitium')).toBe(true);
     const beforeLate = later.lifetime.gold.toNumber();
     const rLate = advanceToggles(later, 1);
     const lateCost = beforeLate - rLate.state.lifetime.gold.toNumber();
-    expect(lateCost).toBeGreaterThan(firstCost);
+    expect(lateCost).toBeGreaterThan(firstCost * 50);
   });
 
   it('auto-deactivates once upkeep outgrows reserves; duration clears', () => {
@@ -444,6 +446,36 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     expect(live.cholericMurderRateMul).toBeGreaterThan(base.cholericMurderRateMul);
   });
 
+  it('conversion rate grows as 0.01·eᵗ and converts uniformly across all eight subtypes', () => {
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e18), 1e18));
+    const a = activateToggle(s, 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    expect(compositumConversionPerSecond(s)).toBeCloseTo(0.01, 6); // duration 0 → eᵗ = 1
+    s = advanceToggles(s, 3).state; // duration 3
+    expect(compositumConversionPerSecond(s)).toBeCloseTo(0.01 * Math.exp(3), 4);
+    // Uniform bias over all eight converted subtypes (the unconverted 'reprobate' is the source).
+    s = {
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: 1000 } },
+    };
+    const rng = makeRng(5);
+    const seen = new Set<string>();
+    for (let i = 0; i < 400; i++) seen.add(biasedSubtype(s, rng));
+    for (const t of [
+      'glutton',
+      'degenerate',
+      'gambler',
+      'nihilist',
+      'choleric',
+      'husk',
+      'celebrity',
+      'sigma',
+    ]) {
+      expect(seen.has(t)).toBe(true);
+    }
+  });
+
   it('through the tick, a brief Panvitium burst mints souls', () => {
     let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e12), 1e12));
     // Seed some unconverted reprobates so suicides/murders have fuel immediately.
@@ -458,6 +490,19 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     // Run a few seconds of burst.
     for (let i = 0; i < 50; i++) s = tick(s, 0.1).state;
     expect(s.souls.toNumber()).toBeGreaterThan(soulsBefore);
+  });
+
+  it('soul harvest compounds the existing soul hoard (souls/s ∝ current souls)', () => {
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e18), 1e18));
+    // Seed a soul hoard so the harvest term R(t) × souls is non-trivial. With ~1e6 souls the first
+    // 0.1 s alone mints 0.01 × 1e6 × 0.1 = 1000 souls — far beyond any incidental death souls.
+    s = { ...s, souls: bn(1_000_000) };
+    const a = activateToggle(s, 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    const before = s.souls.toNumber();
+    for (let i = 0; i < 20; i++) s = tick(s, 0.1).state; // ~2 s burst
+    expect(s.souls.toNumber()).toBeGreaterThan(before + 1000);
   });
 
   it('Katabasis clears toggleDurations', () => {
