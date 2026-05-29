@@ -98,10 +98,16 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 ## Status
 
+> **This section is the authoritative progress log** — what has shipped, the current test count,
+> and what remains. It is updated with **every release tarball** (the README ships in the overlay
+> whenever progress moves). The engineering skill intentionally does **not** track progress, to
+> avoid drift; this is the single source of truth for "what's done / what's next."
+
+**Current test count: 549** (sim 411 · shared 48 · api 11 · web 79).
+
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
-and surfaced in the three-room UI. The suite stands at **~505 unit tests** across sim / shared /
-api / web.
+and surfaced in the three-room UI.
 
 Implemented gameplay (each slice pinned with Vitest):
 
@@ -121,17 +127,46 @@ Implemented gameplay (each slice pinned with Vitest):
 - **Sigils** — the 72-sigil recoverable prestige axis, with binding curves, Katabasis carry-over
   bonuses (gold / maleficia / unconverted), and the _Semet_ gate.
 - **Achievements** — a static catalog evaluated each tick, with an unlock toast and a ledger panel.
-- **Panvitium** — the namesake endgame ritual: exponential upkeep, enormous churn, red Studio window.
+- **Panvitium** — the namesake endgame ritual.
 - **The Eternal Sin** — the ninth-Sin reveal (_Semet_), with the total runtime as the score.
-- **Cloud save sync** — magic-link auth, automatic push on persist, ADR-010 conflict chooser (the
-  web client now talks to the API end-to-end).
+- **Cloud save sync** — magic-link auth, automatic push on persist, ADR-010 conflict chooser.
 
-Remaining (content, not code):
+### Economy-parity pass — `Panvitium_Economy_Template.xlsx`
+
+Bringing each system's placeholder magnitudes and mechanics into exact agreement with the
+spreadsheet, one gate-green slice per tarball. **Vitium Compositum is complete** (every named
+ceremony plus the apex now matches the sheet):
+
+| #   | Slice                      | Summary                                                                                               |
+| --- | -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 1   | Globals base rates         | `BASE_GOLD_PER_SECOND` 10→2, `BASE_INFLUENCE_RATE` 0.025→0.01.                                        |
+| 2   | Acolyte curve              | `maxAcolytes` ×2.2 threshold series anchored at 110; fresh game starts at 0 acolytes.                 |
+| 3   | Emptio outcomes            | Neutral merged with Good (purchase at listed price); Apocalyptic bite 0.3→0.5.                        |
+| 4   | Caedis Apocalyptic         | No-op → lose 66% gold + 50% reprobates.                                                               |
+| 5   | Suggestion effects         | Stellar mints reprobates; Excellent mints souls.                                                      |
+| 6   | Indagatio ladder           | Good→rare+common, Neutral→common; Terrible loss 0.05→0.15, Apocalyptic 0.2→0.8.                       |
+| 7   | Vitium Mercatura           | Full 32-business catalog (8 sins × 4 tiers) generated from tier specs + sheet costs/rates.            |
+| 8   | Compositum base            | Outrage Cycle added; Loan Shark / Charity / Gala retuned to gold-income + conversion.                 |
+| 9   | Compositum flat-rate       | No-babies (flat −generation), Doom (flat +suicide), Ethnocentric (flat +Choleric-murder).             |
+| 10  | Compositum population      | Bacchanal → 10% of (Glutton+Degenerate)/s generation; Enraging Broadcast → % cull of population.      |
+| 11  | Compositum penalty/offline | Vegas / Crusade flatly raise the opposite faction's subtype penalties; Dolce ×1.01 offline gain.      |
+| 12  | Panvitium ritual           | Exponential `eᵗ` cost/conversion; conversion across all subtypes + soul harvest (∝ souls) + flat gen. |
+
+### Remaining
+
+Economy-parity tracks still to reconcile against the spreadsheet:
+
+- **Invocation effects** — Succubus / Harpy / Lamia / Lemure / Behemoth and the apex set vs. the sheet.
+- **Sigils** — most of the 72 are still inert; wiring their modifier / tier / katabasis contributions.
+- **Maleficia** — missing catalog entries plus their effects and invoking-power values.
+- **Missing Opera actions** — _logismoi_, _imperium_, _pogrom_, _purgatio_.
+
+Blocked on inputs that don't live in a coding session (independent of the above):
 
 - **Art & audio** — rooms are placeholder scenes pending the ADR-021 degraded-photoreal pipeline and
-  Howler audio content.
-- **Economy tuning** — placeholder magnitudes live throughout the catalogs, flagged inline; the
-  numbers will be loaded from `Panvitium_Economy_Template.xlsx` (spreadsheet always wins).
+  Howler audio content (needs the `assets/` directory).
+- **Final economy tuning** — any magnitudes not yet pinned to the sheet remain placeholders, flagged
+  inline; the numbers are loaded from `Panvitium_Economy_Template.xlsx` (spreadsheet always wins).
 
 ## License
 
