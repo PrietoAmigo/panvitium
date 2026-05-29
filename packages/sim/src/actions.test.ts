@@ -110,6 +110,14 @@ describe('resolveCaedis', () => {
     expect(goldOf(resolveCaedis(withGold(fresh(), 1000), 'bad', rng()))).toBe(950);
     expect(goldOf(resolveCaedis(withGold(fresh(), 1000), 'terrible', rng()))).toBe(850);
   });
+
+  it('apocalyptic loses 66% gold and 50% of all reprobates, minting no souls', () => {
+    const s0 = withGold(addReprobates(fresh(), 'reprobate', 100), 1000);
+    const s = resolveCaedis(s0, 'apocalyptic', rng());
+    expect(goldOf(s)).toBe(340); // 1000 → keep 34%
+    expect(totalReprobates(s)).toBe(50); // 100 → lose 50%
+    expect(soulsOf(s)).toBe(0); // taken by the Higher Power, not harvested
+  });
 });
 
 describe('tick — action resolution and events', () => {

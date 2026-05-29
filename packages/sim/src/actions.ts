@@ -431,11 +431,16 @@ export function resolveCaedis(state: GameState, tier: Tier, rng: Rng, efficiency
       return loseGoldFraction(state, 0.05);
     case 'terrible':
       return loseGoldFraction(state, 0.15);
+    case 'apocalyptic': {
+      // A Higher Power stops the assassination and campaigns against you (Decimatio sheet):
+      // 66% current gold loss and 50% of all reprobates lost — taken from you, not harvested,
+      // so no souls are minted (mirrors the Suggestion "Church" loss).
+      const afterGold = loseGoldFraction(state, 0.66);
+      return loseReprobatesFraction(afterGold, 0.5, rng).state;
+    }
     case 'neutral':
-    case 'apocalyptic':
     default:
-      // neutral: the kill fails, gold already spent. apocalyptic: a Higher Power stops it.
-      // TODO: apocalyptic should freeze influence regen for 300 s — needs a freeze field on state.
+      // The kill fails; gold was already spent, nothing else happens.
       return state;
   }
 }
