@@ -12,7 +12,7 @@
  * the existing modifier bundle (computeModifiers reads `state.lifetime.invocations`):
  *   - Fama        (Vanagloria) — influence gain rate up      [stackable]
  *   - Nightmare   (Tristitia)  — reprobate suicide rate up   [stackable]
- *   - Harpy       (Ira)        — Choleric murder rate up      [stackable]
+ *   - Harpy       (Ira)        — Decimatio efficiency up       [stackable]
  *   - Behemoth    (Superbia)   — Stellar outcome chance up    [stackable]
  *   - Midas       (Avaritia)   — 3× gold, 100× Apocalyptic    [apex, max 1, free]
  *   - Doppelgaenger (Superbia) — +50% player efficiency, half influence [apex, max 1, free]

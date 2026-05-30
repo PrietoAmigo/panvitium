@@ -144,6 +144,32 @@ describe('computeModifiers — maleficia effects (anathema)', () => {
     expect(computeModifiers(state).tierWeightMul.apocalyptic).toBe(0);
   });
 
+  it('Ars Serpens lifts Suasio efficiency by 33%', () => {
+    const base = computeModifiers(fresh()).suasioEfficiencyMul;
+    const m = computeModifiers(equipped(['ars_serpens'])).suasioEfficiencyMul;
+    expect(m).toBeCloseTo(base * 1.33, 6);
+  });
+
+  it('The Voynich Manuscript lifts Suasio efficiency by 66%', () => {
+    const base = computeModifiers(fresh()).suasioEfficiencyMul;
+    const m = computeModifiers(equipped(['voynich_manuscript'])).suasioEfficiencyMul;
+    expect(m).toBeCloseTo(base * 1.66, 6);
+  });
+
+  it('Suasio enhancers compose multiplicatively when both are equipped', () => {
+    const base = computeModifiers(fresh()).suasioEfficiencyMul;
+    const m = computeModifiers(equipped(['ars_serpens', 'voynich_manuscript'])).suasioEfficiencyMul;
+    expect(m).toBeCloseTo(base * 1.33 * 1.66, 6);
+  });
+
+  it('Ritual Dagger lifts Decimatio efficiency by 33% and leaves Suasio untouched', () => {
+    const baseDec = computeModifiers(fresh()).decimatioEfficiencyMul;
+    const baseSua = computeModifiers(fresh()).suasioEfficiencyMul;
+    const m = computeModifiers(equipped(['ritual_dagger']));
+    expect(m.decimatioEfficiencyMul).toBeCloseTo(baseDec * 1.33, 6);
+    expect(m.suasioEfficiencyMul).toBeCloseTo(baseSua, 6); // Suasio enhancers are independent
+  });
+
   it('Maleficia effects stack multiplicatively with Sin skills', () => {
     // Avaritia 180 → goldRateMul ≈ 1.4125; + Silver triples it → ≈ 4.2376.
     const s = fresh();
@@ -262,26 +288,60 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     };
   };
 
-  it('each Plutus lifts the Vitium Mercatura output multiplier (+100% per copy)', () => {
+  it('each Plutus lifts the Vitium Mercatura output multiplier (efficiency-scaled, 0.05/copy baseline)', () => {
     expect(computeModifiers(fresh()).vitiumMercaturaOutputMul).toBe(1);
-    expect(computeModifiers(withInvocation('plutus', 1)).vitiumMercaturaOutputMul).toBe(2);
-    expect(computeModifiers(withInvocation('plutus', 3)).vitiumMercaturaOutputMul).toBe(4);
+    expect(computeModifiers(withInvocation('plutus', 1)).vitiumMercaturaOutputMul).toBeCloseTo(
+      1.05,
+      6,
+    );
+    expect(computeModifiers(withInvocation('plutus', 3)).vitiumMercaturaOutputMul).toBeCloseTo(
+      1.15,
+      6,
+    );
   });
 
-  it('Succubus dramatically multiplies generation and cuts gold to 1%', () => {
+  it('Succubus lifts Suasio efficiency and cuts gold (not generation), scaled by player efficiency', () => {
     const m = computeModifiers(withInvocation('succubus', 1));
-    expect(m.reprobateGenerationRateMul).toBe(10);
-    expect(m.goldRateMul).toBeCloseTo(0.01, 6);
-    // Apex: capped at one, so a stray second copy can't be summoned, but the flag is boolean anyway.
+    // Baseline playerEff = invEff = 1, factor 0.99.
+    expect(m.suasioEfficiencyMul).toBeCloseTo(1 + 0.99, 6);
+    expect(m.goldRateMul).toBeCloseTo(1 / (1 + 0.99), 6);
+    expect(m.reprobateGenerationRateMul).toBe(NEUTRAL_MODIFIERS.reprobateGenerationRateMul); // no longer touched
   });
 
-  it('Succubus gold cut composes with other gold sources (Silver ×3 → ×0.03)', () => {
+  it('Succubus gold cut composes with other gold sources (Silver ×3)', () => {
     const s = withInvocation('succubus', 1);
     const withSilver: GameState = {
       ...s,
       lifetime: { ...s.lifetime, maleficia: ['thirty_pieces_of_silver'] },
     };
-    expect(computeModifiers(withSilver).goldRateMul).toBeCloseTo(0.03, 6);
+    expect(computeModifiers(withSilver).goldRateMul).toBeCloseTo(3 / (1 + 0.99), 6);
+  });
+
+  it('invocation effects scale with player efficiency (Model 1)', () => {
+    const plain = computeModifiers(withInvocation('plutus', 1)).vitiumMercaturaOutputMul; // playerEff 1 → 1.05
+    const s = fresh();
+    const withDoppel = computeModifiers({
+      ...s,
+      lifetime: { ...s.lifetime, invocations: { plutus: 1, doppelgaenger: 1 } },
+    }).vitiumMercaturaOutputMul;
+    // Doppelgänger lifts playerEff to 1.5, so the Plutus bonus grows to 0.05 × 1.5.
+    expect(withDoppel).toBeGreaterThan(plain);
+    expect(withDoppel).toBeCloseTo(1 + 0.05 * 1.5, 6);
+  });
+
+  it('Black Candles raise the invocation-effect multiplier (+5% each) and amplify effects', () => {
+    expect(computeModifiers(fresh()).invocationEfficiencyMul).toBe(1);
+    const s = fresh();
+    const two = computeModifiers({
+      ...s,
+      lifetime: {
+        ...s.lifetime,
+        maleficia: ['black_candles', 'black_candles'],
+        invocations: { plutus: 1 },
+      },
+    });
+    expect(two.invocationEfficiencyMul).toBeCloseTo(1.1, 6); // 1 + 0.05 × 2
+    expect(two.vitiumMercaturaOutputMul).toBeCloseTo(1 + 0.05 * 1.1, 6); // Plutus bonus × invEff
   });
 
   it('Lemure contributes flat influence/s scaling with Husk count and Lemure count', () => {

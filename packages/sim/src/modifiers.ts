@@ -231,8 +231,15 @@ export function computeModifiers(state: GameState): Modifiers {
   const PANV_SUICIDE_MUL = 20;
   const PANV_MURDER_MUL = 20;
   // Invocation effect magnitudes (placeholders; spreadsheet owns final tuning, like the others).
-  const SUCCUBUS_GEN_MUL = 10; // apex Luxuria: generation ×10 (gold cut to 1% handled in goldRateMul)
-  const PLUTUS_OUTPUT = 1; // each Plutus: +100% Vitium Mercatura output
+  // Invocation effect magnitudes (Invocatio sheet). Each invocation's "action efficiency" (its
+  // per-copy factor) applies × the player's current action efficiency (`playerEff`) × the
+  // invocation-effect multiplier (`invEff`), so the demonic court scales with the build (Model 1).
+  const FAMA_INFLUENCE_FACTOR = 0.05; // additive increase to influence rate
+  const HARPY_DECIMATIO_FACTOR = 0.05; // multiplicative increase to Decimatio efficiency
+  const PLUTUS_VM_FACTOR = 0.05; // increase to Vitium Mercatura output
+  const SUCCUBUS_SUASIO_FACTOR = 0.99; // multiplicative increase to Suasio efficiency
+  const SUCCUBUS_GOLD_FACTOR = 0.99; // multiplicative decrease to overall gold gain
+  const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const LEMURE_INFLUENCE_PER_HUSK = 0.1; // each Lemure: +0.1 influence/s per Husk reprobate
 
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
@@ -304,18 +311,35 @@ export function computeModifiers(state: GameState): Modifiers {
   const gluttonOfflineMul =
     1 / (1 + (GLUTTON_OFFLINE_PENALTY_PER_COUNT + (pen.glutton ?? 0)) * subs.glutton);
 
+  // Player action efficiency (the value actions multiply by, and the base the invocation factors
+  // scale against — Model 1). Lifted to a local so the efficiency-scaled invocation effects below
+  // can read it. Invocation-effect multiplier: Ira's Retribution per level × Black Candles (+5%
+  // each, stack-capped at 5 by the catalog). Both runner and passive invocation effects use it.
+  const blackCandles = countCopies(owned, 'black_candles');
+  const invEff =
+    IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl *
+    (1 + BLACK_CANDLES_INVOCATION_BONUS * blackCandles);
+  const playerEff =
+    2 ** gulaLvl *
+    (hasDoppel ? 1.5 : 1) *
+    (hasFamiliar ? 1.33 : 1) *
+    aurevoraEff *
+    erinyesStackMul *
+    huskEfficiencyMul *
+    sc('playerEfficiencyMul');
+
   return {
     goldRateMul:
       skillBonus(avaritiaIntensity) *
       (hasSilver ? 3 : 1) *
       (hasMidas ? 3 : 1) *
-      (hasSuccubus ? 0.01 : 1) *
+      (hasSuccubus ? 1 / (1 + SUCCUBUS_GOLD_FACTOR * playerEff * invEff) : 1) *
       celebrityGoldMul *
       sc('goldRateMul'),
     influenceRateMul:
       1.5 ** vanagloriaLvl *
       (hasCodex ? 3 : 1) *
-      1.25 ** famaCount *
+      (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEff * famaCount) *
       (hasDoppel ? 0.5 : 1) *
       sigmaInfluenceMul *
       sc('influenceRateMul'),
@@ -324,32 +348,26 @@ export function computeModifiers(state: GameState): Modifiers {
     // capped at maxInfluence in the tick). Decarabia #69 will add to this once sigil flats land.
     flatInfluencePerSecond:
       LEMURE_INFLUENCE_PER_HUSK * state.lifetime.reprobates.husk * lemureCount,
-    playerEfficiencyMul:
-      2 ** gulaLvl *
-      (hasDoppel ? 1.5 : 1) *
-      (hasFamiliar ? 1.33 : 1) *
-      aurevoraEff *
-      erinyesStackMul *
-      huskEfficiencyMul *
-      sc('playerEfficiencyMul'),
+    playerEfficiencyMul: playerEff,
     suasioEfficiencyMul:
       skillBonus(tristitiaIntensity) *
       (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
       (1 + VOYNICH_SUASIO_BONUS * voynich) *
+      (hasSuccubus ? 1 + SUCCUBUS_SUASIO_FACTOR * playerEff * invEff : 1) *
       sc('suasioEfficiencyMul'),
     decimatioEfficiencyMul:
       skillBonus(iraIntensity) *
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
+      (1 + HARPY_DECIMATIO_FACTOR * playerEff * invEff * harpyCount) *
       sc('decimatioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; each Lamia
-    // lifts it; Succubus multiplies it dramatically; Luxuria's Seduction skill lifts it
+    // lifts it (until reclassified as a Suasio runner); Luxuria's Seduction skill lifts it
     // continuously (03 §1); Gambler subtype drags it down; sigils (Aamon #7 up, Zepar #16 down)
     // compose.
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
       (1 + LAMIA_GENERATION * lamiaCount) *
-      (hasSuccubus ? SUCCUBUS_GEN_MUL : 1) *
       skillBonus(luxuriaIntensity) *
       gamblerGenerationMul *
       sc('reprobateGenerationRateMul'),
@@ -364,25 +382,25 @@ export function computeModifiers(state: GameState): Modifiers {
       degenerateSuicideMul *
       nihilistSuicideMul *
       sc('reprobateSuicideRateMul'),
-    // Murder: each Harpy lifts ×1.1; Panvitium multiplies while active; Degenerate subtype drags
-    // it down; Choleric subtype compounds it on top of the linear count × base term in `dynamics`;
-    // Aim #23 sigil composes.
+    // Murder: Panvitium multiplies while active; Degenerate subtype drags it down; Choleric subtype
+    // compounds it on top of the linear count × base term in `dynamics`; Aim #23 sigil composes.
+    // (Harpy now lifts Decimatio efficiency, not murder — Invocatio sheet.)
     cholericMurderRateMul:
-      1.1 ** harpyCount *
       (panvitiumActive ? PANV_MURDER_MUL : 1) *
       degenerateMurderMul *
       cholericMurderCompound *
       sc('cholericMurderRateMul'),
     // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
     // multiplier scales business gold + generation + conversion at the tick/dynamics call sites.
-    vitiumMercaturaOutputMul: (1 + PLUTUS_OUTPUT * plutusCount) * sc('vitiumMercaturaOutputMul'),
+    vitiumMercaturaOutputMul:
+      (1 + PLUTUS_VM_FACTOR * playerEff * invEff * plutusCount) * sc('vitiumMercaturaOutputMul'),
     // Acolyte efficiency: 0.33 baseline (02 §10); Ira level lifts ×1.33/level (03 §1 Retribution);
     // Bathin #18 sigil composes on top.
     acolyteEfficiencyMul:
       0.33 * IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl * sc('acolyteEfficiencyMul'),
     // Invocation efficiency: 1× baseline; Ira level lifts ×1.33/level (03 §1 Retribution shared
     // with acolytes). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
-    invocationEfficiencyMul: IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl,
+    invocationEfficiencyMul: invEff,
     // Per-Sin Vitium Mercatura gold boost from matched subtype counts (03 §3). Read at the
     // per-business call site so each Sin's businesses receive their own themed boost.
     subtypeVitiumGoldMulBySin,

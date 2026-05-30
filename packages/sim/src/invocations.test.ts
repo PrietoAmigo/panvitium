@@ -7,7 +7,7 @@
  *   - invoke deducts souls and increments the count; dispel decrements / deletes
  *   - maxActive cap on apex entities (Midas, Doppelgaenger)
  *   - modifier effects: Midas (3× gold, 100× apoc), Doppelgaenger (1.5× eff, ½ infl),
- *     Fama (1.25× infl/stack), Nightmare (+5% suicide/stack), Harpy (1.1× murder/stack),
+ *     Fama (+infl/stack), Nightmare (+5% suicide/stack), Harpy (+Decimatio eff/stack),
  *     Behemoth (+50% stellar/stack)
  *   - Mark of Cain still wins the apocalyptic lock over Midas
  *   - Katabasis dispels everything
@@ -218,9 +218,10 @@ describe('Invocation modifier effects', () => {
     expect(dop.influenceRateMul).toBeCloseTo(base.influenceRateMul * 0.5, 6);
   });
 
-  it('Fama: influence ×1.25 per stack', () => {
+  it('Fama: additive influence increase scaled by player efficiency (0.05/stack at baseline)', () => {
     const two = computeModifiers(withInvocation(fresh(), 'fama', 2));
-    expect(two.influenceRateMul).toBeCloseTo(1.25 ** 2, 6);
+    // Baseline playerEff = invEff = 1, so each Fama adds 0.05 to the influence-rate multiplier.
+    expect(two.influenceRateMul).toBeCloseTo(1 + 0.05 * 2, 6);
   });
 
   it('Nightmare: +5% suicide rate per stack (additive)', () => {
@@ -228,9 +229,10 @@ describe('Invocation modifier effects', () => {
     expect(three.reprobateSuicideRateMul).toBeCloseTo(1 + 0.05 * 3, 6);
   });
 
-  it('Harpy: Choleric murder ×1.1 per stack', () => {
+  it('Harpy: lifts Decimatio efficiency (not murder), scaled by player efficiency', () => {
     const two = computeModifiers(withInvocation(fresh(), 'harpy', 2));
-    expect(two.cholericMurderRateMul).toBeCloseTo(1.1 ** 2, 6);
+    expect(two.decimatioEfficiencyMul).toBeCloseTo(1 + 0.05 * 2, 6); // baseline playerEff/invEff = 1
+    expect(two.cholericMurderRateMul).toBe(NEUTRAL_MODIFIERS.cholericMurderRateMul); // murder untouched
   });
 
   it('Behemoth: +50% Stellar weight per stack', () => {

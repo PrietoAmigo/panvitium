@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 562** (sim 424 · shared 48 · api 11 · web 79).
+**Current test count: 564** (sim 426 · shared 48 · api 11 · web 79).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -160,17 +160,26 @@ ceremony plus the apex now matches the sheet):
 | M2  | Opera enhancers  | Ars Serpens (+33% Suasio), The Voynich Manuscript (+66% Suasio), Ritual Dagger (+33% Decimatio) folded into the efficiency muls as multiplicative `(1 + bonus)` factors.                                                            |
 | M3  | Sigil enhancers  | Solomon's Ring (+50%) and Iron Nails (+1%/copy) scale every sigil's effect strength via `sigilEffectMultiplier`, threaded into `sigilModifierContributions` (modifier + tier sigils) and `sigilKatabasisBonus` (carry-over sigils). |
 
+**Invocation effects** — in progress (reconciling to the Invocatio sheet's Model: each invocation's
+factor × the player's current action efficiency × the invocation-effect multiplier):
+
+| #   | Slice                              | Summary                                                                                                                                                                                                                                                                                                                                                                         |
+| --- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I1  | Multiplier effects + Black Candles | Fama (influence), Harpy (→ Decimatio efficiency, retargeted off murder), Plutus (VM output) and Succubus (→ Suasio efficiency + gold cut, retargeted off generation) reworked to `factor × playerEff × invEff`. Black Candles (+5%/candle) folded into `invocationEfficiencyMul`, so it boosts every invocation that reads it (runners already; these passive effects now too). |
+
 ### Remaining
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Invocation effects** — Succubus / Harpy / Lamia / Lemure / Behemoth and the apex set vs. the sheet.
+- **Invocation effects** — the multiplier-type effects (Fama, Harpy, Plutus, Succubus) and Black
+  Candles are reconciled to the sheet's Model-1 scaling. Still to do: the additive-to-base effects
+  (Nightmare → base suicide rate, Behemoth → Stellar chance, Lemure → offline gain) and reclassifying
+  Lamia from a generation modifier to a Suasio runner.
 - **Sigils** — most of the 72 are still inert; wiring their modifier / tier / katabasis contributions.
 - **Maleficia effects** — roster, invoking power, stack caps, the Opera-efficiency enhancers
-  (Ars Serpens / Voynich / Ritual Dagger), and the sigil-effect amplifiers (Solomon's Ring / Iron
-  Nails) are done. Still to wire: the invocation-effect multiplier (Black Candles — needs an
-  invocation effect-magnitude scalar), the oracular reveals, the targeted single-use items
-  (Defixio / Hand of Glory), and the rolled-at-purchase pricing.
+  (Ars Serpens / Voynich / Ritual Dagger), the sigil-effect amplifiers (Solomon's Ring / Iron Nails),
+  and the invocation-effect multiplier (Black Candles) are done. Still to wire: the oracular reveals,
+  the targeted single-use items (Defixio / Hand of Glory), and the rolled-at-purchase pricing.
 - **Missing Opera actions** — _logismoi_, _imperium_, _pogrom_, _purgatio_.
 
 Blocked on inputs that don't live in a coding session (independent of the above):

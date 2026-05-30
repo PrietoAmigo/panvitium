@@ -243,7 +243,7 @@ describe('reprobate dynamics — Vitium Mercatura output multiplier (Plutus / Va
     };
   }
 
-  it('business generation scales with the VM-output multiplier (Plutus doubles it)', () => {
+  it('business generation scales with the VM-output multiplier (Plutus lifts it)', () => {
     const base = withBusiness();
     const baseRate = reprobateRates(base, computeModifiers(base)).generationPerSecond;
     expect(baseRate).toBeGreaterThan(0);
@@ -252,8 +252,10 @@ describe('reprobate dynamics — Vitium Mercatura output multiplier (Plutus / Va
       ...base,
       lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, plutus: 1 } },
     };
+    const vmMul = computeModifiers(withPlutus).vitiumMercaturaOutputMul;
+    expect(vmMul).toBeGreaterThan(1); // one Plutus lifts VM output (efficiency-scaled per the sheet)
     const plutusRate = reprobateRates(withPlutus, computeModifiers(withPlutus)).generationPerSecond;
-    expect(plutusRate).toBeCloseTo(baseRate * 2, 6); // one Plutus = +100% VM output
+    expect(plutusRate).toBeCloseTo(baseRate * vmMul, 6);
   });
 
   it('the multiplier does not touch the base generation rate (no business → unchanged)', () => {
