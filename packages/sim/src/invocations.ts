@@ -29,7 +29,8 @@
  * Number magnitudes are placeholders, spreadsheet-overridable; the shape is authoritative.
  */
 import { floor, gte, max, mul, sub, ZERO, type BigNum } from './bignum.js';
-import { totalInvokingPower } from './maleficia.js';
+import { sigilInvokingPower } from './sigils.js';
+import { totalInvokingPower, sigilEffectMultiplier } from './maleficia.js';
 import { mintSouls } from './population.js';
 import { sinLevel } from './progression.js';
 import {
@@ -264,9 +265,12 @@ export function invocationById(id: string): InvocationDef | undefined {
   return INVOCATIONS[id];
 }
 
-/** Current invoking power: sum of equipped maleficia (sigils add here once they land, 02 §7). */
+/** Current invoking power: equipped maleficia + Andrealphus #65 sigil (02 §7). */
 export function currentInvokingPower(state: GameState): number {
-  return totalInvokingPower(state.lifetime.maleficia);
+  return (
+    totalInvokingPower(state.lifetime.maleficia) +
+    sigilInvokingPower(state, sigilEffectMultiplier(state.lifetime.maleficia))
+  );
 }
 
 /** How many of `id` are currently active. */

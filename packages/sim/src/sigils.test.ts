@@ -18,9 +18,11 @@ import {
   categoryTierModifiers,
   computeModifiers,
   createInitialState,
+  currentInvokingPower,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
   sigilById,
+  sigilInvokingPower,
   sigilKatabasisBonus,
   sigilModifierContributions,
   sigilStrength,
@@ -388,5 +390,19 @@ describe('Flat-generator sigils (S6)', () => {
     const after = tick(s, 1).state.lifetime.gold.toNumber();
     // One second of base gold + Haagenti's ~46.15/s (both × goldRateMul = 1 at baseline).
     expect(after - before).toBeGreaterThan(40);
+  });
+});
+
+describe('Flat invoking-power sigil (S7)', () => {
+  it('Andrealphus #65 adds rounded invoking power, counting toward the invocation gates', () => {
+    expect(sigilInvokingPower(fresh())).toBe(0);
+    // 0.001 × sqrt(1e6) = 1 → +1 invoking power.
+    expect(sigilInvokingPower(bound(65, 1_000_000))).toBe(1);
+    // 0.001 × sqrt(4e6) = 2 → +2.
+    expect(sigilInvokingPower(bound(65, 4_000_000))).toBe(2);
+    // Small bindings round down to 0.
+    expect(sigilInvokingPower(bound(65, 100))).toBe(0);
+    // Folds into the gate total (no maleficia here, so it is the whole of it).
+    expect(currentInvokingPower(bound(65, 1_000_000))).toBe(1);
   });
 });

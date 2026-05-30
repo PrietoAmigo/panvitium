@@ -74,6 +74,7 @@ export type SigilEffect =
   | { readonly kind: 'invocationSin'; readonly sin: Sin }
   | { readonly kind: 'penaltyReduction'; readonly channel: PenaltyChannel }
   | { readonly kind: 'flatGen'; readonly resource: 'gold' | 'influence' }
+  | { readonly kind: 'invokingPower' }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -376,6 +377,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'categoryTier', category: 'emptio', tiers: ['stellar'], direction: 'increase' },
   },
+  65: {
+    id: 65,
+    name: 'Andrealphus',
+    coefficient: 0.001,
+    effect: { kind: 'invokingPower' },
+  },
   66: {
     id: 66,
     name: 'Cimejes',
@@ -565,6 +572,22 @@ export function sigilFlatGeneration(
     else influence += s;
   }
   return { gold, influence };
+}
+
+/**
+ * Flat invoking power contributed by bound sigils (Andrealphus #65), rounded to an integer per the
+ * sheet ("+invoking power, round to int"). Added to the maleficia total in `currentInvokingPower`,
+ * so it counts toward the invocation gates. `effectMul` carries the sigil enhancers.
+ */
+export function sigilInvokingPower(state: GameState, effectMul = 1): number {
+  let total = 0;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'invokingPower') continue;
+    total += sigilStrength(def, bound) * effectMul;
+  }
+  return Math.round(total);
 }
 
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {
