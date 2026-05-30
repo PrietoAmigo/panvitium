@@ -7,6 +7,7 @@
 // components compile and render in isolation.
 
 import type {
+  RoomId,
   RoomDef,
   Sin,
   Invocation,
@@ -19,7 +20,7 @@ import type {
 // All art is served from apps/web/public/assets/panvitium/ (Vite serves public/ at root).
 export const ASSET_BASE = '/assets/panvitium';
 
-export const ROOMS: Record<string, RoomDef> = {
+export const ROOMS: Record<RoomId, RoomDef> = {
   invocation: {
     id: 'invocation',
     title: 'The Invocation Room',

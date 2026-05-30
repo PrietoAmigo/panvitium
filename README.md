@@ -195,11 +195,19 @@ extensions, `import type`, Prettier):
   textures, served by Vite at the runtime URL `/assets/panvitium/...`.
 - `docs/frontend/` — the handoff's `INTEGRATION.md` wiring map and `Playspace.example.tsx`
   orchestration reference (kept out of `src`, so neither is typechecked or linted).
-- **Not yet wired into the live app** (the handoff's "Step 4 — the actual work"): the components
-  still render from the `menus.data.ts` mock catalogs (each seam marked `TODO(wire)`) and
-  `menus.css` is not imported into the running tree, so current behaviour is unchanged. Next is
-  repointing the mocks at store / `packages/sim` selectors and swapping the placeholder `rooms/`
-  shell for the designed `menus/` layer.
+- **Wiring (the handoff's "Step 4") — in progress, one slice at a time:**
+  - _W1 — room layer live._ `menus.css` is imported (after `index.css`, which it cleanly
+    supersedes for the shared shell classes); `App` now renders the designed `menus/RoomView`
+    driven by the store — door navigation, hotspot → panel, the Studio `panvitium` red glow
+    (`activeToggles`), and the summoned creatures in the Invocation circle (active `invocations`,
+    selected via a stable key so the room re-renders only when the set changes). The placeholder
+    `apps/web/src/rooms/` shell is retired; `PanelId` now comes from `menus/types`. The existing
+    HUD, panels and modals are untouched.
+  - _Remaining._ The diegetic **panels** still render from the `menus.data.ts` mock catalogs (each
+    seam marked `TODO(wire)`): `ArsGoetiaBook` ↔ invocation gates / summon / dispel; `AltarPanel`
+    - `Katabasis` ↔ devotion / sigils / descent-commit; `MaleficiaCabinet` / `SuasioPanel` /
+      `PcWindow` ↔ owned maleficia / Suasio action / PC programs. Each later slice repoints one panel
+      at real selectors and deletes its stand-in arrays.
 
 ### Remaining
 

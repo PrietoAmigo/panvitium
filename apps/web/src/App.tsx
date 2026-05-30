@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useGameLoop } from './game/useGameLoop.js';
-import { ROOMS, type RoomId, type PanelId, type HotspotAction } from './rooms/rooms.js';
-import { RoomView } from './rooms/RoomView.js';
+import { ROOMS } from './menus/menus.data.js';
+import { RoomView } from './menus/RoomView.js';
+import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { Hud } from './ui/Hud.js';
 import { Panel, PANELS } from './ui/panels.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
@@ -18,6 +19,23 @@ export function App(): ReactElement {
   const [room, setRoom] = useState<RoomId>('altar');
   const [panel, setPanel] = useState<PanelId | null>(null);
   const katabasisPhase = useGameStore((s) => s.katabasisPhase);
+
+  // The Studio's red "panvitium" glow while that ritual runs (03 §2.3).
+  const signature = useGameStore(
+    (s) => s.state?.lifetime.activeToggles.includes('panvitium') ?? false,
+  );
+  // The bound invocations standing in the Invocation circle. Select a stable primitive key (the
+  // sorted set of active ids) so the room only re-renders when the summoned set actually changes,
+  // not every 10 Hz tick; SummonedCreatures skips any id without art.
+  const summonedKey = useGameStore((s) => {
+    const inv = s.state?.lifetime.invocations;
+    if (!inv) return '';
+    return Object.keys(inv)
+      .filter((id) => (inv[id] ?? 0) > 0)
+      .sort()
+      .join(',');
+  });
+  const summoned = useMemo(() => (summonedKey ? summonedKey.split(',') : []), [summonedKey]);
 
   // The descent takes the full screen; close any grimoire panel when it opens.
   useEffect(() => {
@@ -45,7 +63,12 @@ export function App(): ReactElement {
     <div className="app">
       <Hud />
       <main className="stage">
-        <RoomView room={ROOMS[room]} onAction={handleAction} />
+        <RoomView
+          room={ROOMS[room]}
+          signature={signature}
+          summoned={summoned}
+          onAction={handleAction}
+        />
         <div className="room-name">{ROOMS[room].title}</div>
       </main>
       <SignaturePopup />

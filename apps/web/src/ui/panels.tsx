@@ -30,7 +30,7 @@ import {
   isUnlocked,
   type OutcomeEvent,
 } from '@panvitium/sim';
-import { type PanelId } from '../rooms/rooms.js';
+import { type PanelId } from '../menus/types.js';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
 import { actionName } from '../game/labels.js';
