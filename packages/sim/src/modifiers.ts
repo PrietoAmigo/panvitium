@@ -39,7 +39,11 @@ import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier } from './maleficia.js';
 import { compositumPenaltyIncreaseBySubtype, compositumOfflineGainBoost } from './compositum.js';
 import { aurevoraEfficiencyMul } from './apex.js';
-import { sigilModifierContributions, type ScalarModifierField } from './sigils.js';
+import {
+  sigilModifierContributions,
+  sigilCategoryTierContributions,
+  type ScalarModifierField,
+} from './sigils.js';
 import {
   ARS_SERPENS_SUASIO_BONUS,
   CELEBRITY_GOLD_REDUCTION_PER_COUNT,
@@ -452,15 +456,22 @@ export function categoryTierModifiers(
   state: GameState,
   category: 'suasio' | 'decimatio' | 'indagatio' | 'emptio',
 ): TierModifiers {
+  const out: TierModifiers = {};
   let successMul = 1;
   if (category === 'suasio') {
     successMul *= skillBonus(skillIntensity(state.devotion.tristitia)); // Resignation
   } else if (category === 'decimatio') {
     successMul *= skillBonus(skillIntensity(state.devotion.ira)); // Retribution
   }
-  if (successMul === 1) return {};
-  const out: TierModifiers = {};
-  for (const t of SUCCESS_TIERS) out[t] = successMul;
+  if (successMul !== 1) for (const t of SUCCESS_TIERS) out[t] = successMul;
+  // Per-category sigil contributions (Agares/Beleth/Botis/Ipos/Astaroth/Andras/Andromalius/Naberius),
+  // scaled by the sigil-effect enhancers (Solomon's Ring / Iron Nails); compose onto `out`.
+  const sigCat = sigilCategoryTierContributions(
+    state,
+    category,
+    sigilEffectMultiplier(state.lifetime.maleficia),
+  );
+  for (const [t, mul] of Object.entries(sigCat)) out[t as Tier] = (out[t as Tier] ?? 1) * mul;
   return out;
 }
 

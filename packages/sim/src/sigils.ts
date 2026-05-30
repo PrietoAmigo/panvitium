@@ -63,7 +63,16 @@ export type SigilEffect =
       readonly direction: 'increase' | 'decrease';
     }
   | { readonly kind: 'tier'; readonly tier: Tier; readonly direction: 'increase' | 'decrease' }
+  | {
+      readonly kind: 'categoryTier';
+      readonly category: SigilCategory;
+      readonly tiers: readonly Tier[];
+      readonly direction: 'increase' | 'decrease';
+    }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
+
+/** The four Opera action categories a per-category tier sigil can target. */
+export type SigilCategory = 'suasio' | 'decimatio' | 'indagatio' | 'emptio';
 
 export interface SigilDef {
   readonly id: SigilId;
@@ -82,6 +91,17 @@ export interface SigilDef {
 
 /** The wired subset of the 72 (03 §5). Curve defaults to √ unless noted. */
 export const SIGILS: Readonly<Record<number, SigilDef>> = {
+  2: {
+    id: 2,
+    name: 'Agares',
+    coefficient: 0.001,
+    effect: {
+      kind: 'categoryTier',
+      category: 'indagatio',
+      tiers: ['stellar', 'excellent', 'good'],
+      direction: 'increase',
+    },
+  },
   5: {
     id: 5,
     name: 'Marbas',
@@ -106,11 +126,33 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'tier', tier: 'terrible', direction: 'decrease' },
   },
+  13: {
+    id: 13,
+    name: 'Beleth',
+    coefficient: 0.001,
+    effect: {
+      kind: 'categoryTier',
+      category: 'decimatio',
+      tiers: ['stellar', 'excellent', 'good'],
+      direction: 'increase',
+    },
+  },
   16: {
     id: 16,
     name: 'Zepar',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'reprobateGenerationRateMul', direction: 'decrease' },
+  },
+  17: {
+    id: 17,
+    name: 'Botis',
+    coefficient: 0.001,
+    effect: {
+      kind: 'categoryTier',
+      category: 'suasio',
+      tiers: ['bad', 'terrible'],
+      direction: 'decrease',
+    },
   },
   18: {
     id: 18,
@@ -130,11 +172,45 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'offlineTimeMul', direction: 'increase' },
   },
+  22: {
+    id: 22,
+    name: 'Ipos',
+    coefficient: 0.001,
+    effect: {
+      kind: 'categoryTier',
+      category: 'decimatio',
+      tiers: ['bad', 'terrible'],
+      direction: 'decrease',
+    },
+  },
   23: {
     id: 23,
     name: 'Aim',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'cholericMurderRateMul', direction: 'increase' },
+  },
+  24: {
+    id: 24,
+    name: 'Naberius',
+    coefficient: 0.001,
+    // "+Suggestion/Logismoi base success" — Suggestion is the Suasio action; lifts Suasio success.
+    effect: {
+      kind: 'categoryTier',
+      category: 'suasio',
+      tiers: ['stellar', 'excellent', 'good'],
+      direction: 'increase',
+    },
+  },
+  29: {
+    id: 29,
+    name: 'Astaroth',
+    coefficient: 0.001,
+    effect: {
+      kind: 'categoryTier',
+      category: 'indagatio',
+      tiers: ['stellar'],
+      direction: 'increase',
+    },
   },
   31: {
     id: 31,
@@ -193,6 +269,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'vitiumMercaturaOutputMul', direction: 'increase' },
   },
+  63: {
+    id: 63,
+    name: 'Andras',
+    coefficient: 0.001,
+    effect: { kind: 'categoryTier', category: 'emptio', tiers: ['stellar'], direction: 'increase' },
+  },
   66: {
     id: 66,
     name: 'Cimejes',
@@ -204,6 +286,17 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Belial',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'influenceRateMul', direction: 'increase' },
+  },
+  72: {
+    id: 72,
+    name: 'Andromalius',
+    coefficient: 0.001,
+    effect: {
+      kind: 'categoryTier',
+      category: 'emptio',
+      tiers: ['stellar', 'excellent', 'good'],
+      direction: 'increase',
+    },
   },
   71: {
     id: 71,
@@ -268,6 +361,30 @@ export function sigilModifierContributions(state: GameState, effectMul = 1): Sig
     }
   }
   return { scalar, tier };
+}
+
+/**
+ * Per-CATEGORY tier-weight contributions from bound sigils (Agares/Beleth/Botis/Ipos/Astaroth/Andras/
+ * Andromalius/Naberius). Distinct from the global `tier` contributions in `sigilModifierContributions`
+ * because these target a single Opera category's distribution. Composed by `categoryTierModifiers`
+ * alongside the Resignation/Retribution success shifts. `effectMul` carries the sigil-effect enhancers.
+ */
+export function sigilCategoryTierContributions(
+  state: GameState,
+  category: SigilCategory,
+  effectMul = 1,
+): Partial<Record<Tier, number>> {
+  const out: Partial<Record<Tier, number>> = {};
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'categoryTier' || def.effect.category !== category) continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    const mul = def.effect.direction === 'increase' ? 1 + s : 1 / (1 + s);
+    for (const t of def.effect.tiers) out[t] = (out[t] ?? 1) * mul;
+  }
+  return out;
 }
 
 /** Summed additive bonus to one Katabasis carry-over roll from all bound sigils that feed it. */

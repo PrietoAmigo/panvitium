@@ -14,6 +14,7 @@ import {
   bindingMagnitude,
   bindSigil,
   bn,
+  categoryTierModifiers,
   computeModifiers,
   createInitialState,
   NEUTRAL_MODIFIERS,
@@ -219,5 +220,46 @@ describe('Sigil contributions structure', () => {
     const { scalar, tier } = sigilModifierContributions(fresh());
     expect(Object.keys(scalar)).toHaveLength(0);
     expect(Object.keys(tier)).toHaveLength(0);
+  });
+});
+
+describe('Per-category tier sigils (S2)', () => {
+  it('Agares #2 lifts Indagatio success tiers and does not leak to other categories', () => {
+    const s = bound(2, 10_000);
+    const strength = sigilStrength(sigilById(2)!, bn(10_000));
+    const m = categoryTierModifiers(s, 'indagatio');
+    expect(m.good).toBeCloseTo(1 + strength, 6);
+    expect(m.stellar).toBeCloseTo(1 + strength, 6);
+    expect(categoryTierModifiers(s, 'suasio')).toEqual({}); // category-scoped
+  });
+
+  it('Botis #17 damps only the Suasio bad-outcome tiers', () => {
+    const s = bound(17, 10_000);
+    const strength = sigilStrength(sigilById(17)!, bn(10_000));
+    const m = categoryTierModifiers(s, 'suasio');
+    expect(m.terrible).toBeCloseTo(1 / (1 + strength), 6);
+    expect(m.bad).toBeCloseTo(1 / (1 + strength), 6);
+    expect(m.good).toBeUndefined();
+  });
+
+  it('Astaroth #29 lifts only the Stellar weight for Indagatio', () => {
+    const s = bound(29, 10_000);
+    const strength = sigilStrength(sigilById(29)!, bn(10_000));
+    const m = categoryTierModifiers(s, 'indagatio');
+    expect(m.stellar).toBeCloseTo(1 + strength, 6);
+    expect(m.good).toBeUndefined();
+  });
+
+  it('Andromalius #72 lifts the Emptio success tiers', () => {
+    const s = bound(72, 10_000);
+    const strength = sigilStrength(sigilById(72)!, bn(10_000));
+    expect(categoryTierModifiers(s, 'emptio').good).toBeCloseTo(1 + strength, 6);
+  });
+
+  it('Naberius #24 composes onto the Suasio success shift', () => {
+    const base = bound(24, 10_000);
+    const strength = sigilStrength(sigilById(24)!, bn(10_000));
+    // No Devotion here, so the success multiplier is Naberius alone.
+    expect(categoryTierModifiers(base, 'suasio').good).toBeCloseTo(1 + strength, 6);
   });
 });
