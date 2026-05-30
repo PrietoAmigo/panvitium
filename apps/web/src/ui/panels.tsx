@@ -1,10 +1,8 @@
-import { useState, useEffect, type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   floor,
-  SINS,
   sinLevel,
-  MAX_SIN_LEVEL,
   ACTIONS,
   categoryEfficiency,
   MALEFICIA,
@@ -31,8 +29,9 @@ import {
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../menus/types.js';
+import { AltarPanel as DesignedAltar } from '../menus/AltarPanel.js';
+import { buildAltar } from '../game/altar.js';
 import { useGameStore } from '../store/gameStore.js';
-import { formatBigNum } from '../game/format.js';
 import { actionName } from '../game/labels.js';
 
 interface PanelProps {
@@ -722,61 +721,15 @@ interface PanelContent {
   body: ReactNode;
 }
 
-/** Four pips, `level` filled — a Sin's 0..4 progress. */
-function altarPips(level: number): string {
-  let out = '';
-  for (let i = 0; i < MAX_SIN_LEVEL; i++) out += i < level ? '●' : '○';
-  return out;
-}
-
-/** The altar menu (02 §10): Devotion and level per Prince, plus the descent trigger. */
+/** The altar menu (02 §10): Devotion and level per Prince, bound sigils, plus the descent trigger.
+ * Renders the designed Altar ledger fed by the real `buildAltar` view-model; the designed component
+ * owns the two-tap arm/confirm and calls `beginKatabasis` on commit. */
 function AltarPanel(): ReactElement {
   const state = useGameStore((s) => s.state);
   const begin = useGameStore((s) => s.beginKatabasis);
-  // Descent is now committal — there is no climbing back out of the Katabasis menu (02 §6). Arm the
-  // button on the first tap and only descend on the second, so it can't be triggered by a misclick.
-  const [armed, setArmed] = useState(false);
-  useEffect(() => {
-    if (!armed) return;
-    const t = window.setTimeout(() => setArmed(false), 4000);
-    return () => window.clearTimeout(t);
-  }, [armed]);
   if (!state) return <p>{strings.altar.intro}</p>;
-  return (
-    <div className="altar">
-      <p className="altar-intro">{strings.altar.intro}</p>
-      <ul className="devotion-list">
-        {SINS.map((sin) => {
-          const info = strings.sins[sin];
-          return (
-            <li className="devotion-row" key={sin}>
-              <span className="devotion-name">
-                {info.prince} · {info.latin}
-              </span>
-              <span className="devotion-pips">{altarPips(sinLevel(state.devotion[sin]))}</span>
-              <span className="devotion-total">{formatBigNum(state.devotion[sin])}</span>
-            </li>
-          );
-        })}
-      </ul>
-      <p className="altar-sigils">{strings.altar.sigilsNone}</p>
-      {armed && <p className="descend-warning">{strings.altar.descendArm}</p>}
-      <button
-        type="button"
-        className={`opera-btn descend-btn${armed ? ' descend-btn--armed' : ''}`}
-        onClick={() => {
-          if (armed) {
-            setArmed(false);
-            begin();
-          } else {
-            setArmed(true);
-          }
-        }}
-      >
-        {armed ? strings.altar.descendConfirm : strings.altar.descend}
-      </button>
-    </div>
-  );
+  const { sins, boundSigils } = buildAltar(state);
+  return <DesignedAltar sins={sins} boundSigils={boundSigils} onDescend={begin} />;
 }
 
 /**

@@ -1,15 +1,25 @@
 import { useState, type ReactElement } from 'react';
-import { SINS, pips } from './menus.data.js';
+import { pips } from './menus.data.js';
+import type { Sin } from './types.js';
+
+interface BoundSigil {
+  id: number;
+  name: string;
+  bound: string;
+}
 
 interface AltarPanelProps {
+  /** Per-Prince devotion ledger (real, from `buildAltar`). */
+  sins: Sin[];
+  /** Sigils with souls bound to them, named from the catalog. */
+  boundSigils: BoundSigil[];
   /** Called when the player commits to the descent — open <Katabasis/> in response. */
   onDescend: () => void;
 }
 
-// The Altar devotion ledger. Rendered inside <PanelShell variant="stone" hideHeader/>.
-// TODO(wire): replace SINS/pips with your real per-Prince devotion + level selectors,
-// and surface actually-bound sigils where "No sigils bound" is shown.
-export function AltarPanel({ onDescend }: AltarPanelProps): ReactElement {
+// The Altar devotion ledger. Rendered inside <PanelShell variant="stone" hideHeader/>. Driven by
+// real state via the `buildAltar` adapter; the descend button arms on first tap, descends on second.
+export function AltarPanel({ sins, boundSigils, onDescend }: AltarPanelProps): ReactElement {
   const [armed, setArmed] = useState(false);
   return (
     <div>
@@ -18,7 +28,7 @@ export function AltarPanel({ onDescend }: AltarPanelProps): ReactElement {
         bite.
       </p>
       <ul className="devotion-list">
-        {SINS.map((s) => (
+        {sins.map((s) => (
           <li className="devotion-row" key={s.latin}>
             <span className="devotion-name">
               {s.prince} · {s.latin}
@@ -28,7 +38,11 @@ export function AltarPanel({ onDescend }: AltarPanelProps): ReactElement {
           </li>
         ))}
       </ul>
-      <p className="altar-sigils">No sigils bound.</p>
+      <p className="altar-sigils">
+        {boundSigils.length === 0
+          ? 'No sigils bound.'
+          : boundSigils.map((g) => `${g.name} (${g.bound})`).join(' · ')}
+      </p>
       {armed && (
         <p className="descend-warning">
           Once you descend there is no climbing back — tap again to commit

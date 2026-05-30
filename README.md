@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 594** (sim 452 · shared 48 · api 11 · web 83).
+**Current test count: 598** (sim 452 · shared 48 · api 11 · web 87).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -211,8 +211,14 @@ extensions, `import type`, Prettier):
     strings; the design's art/lore is reused for the six illustrated entries with a graceful
     fallback (the Ars Goetia plate + a computed rank, omitted effect/lore) for the rest — nothing
     fabricated. Pinned by an adapter unit test.
+  - _W3 — the Altar live._ The designed Altar ledger is now the `altar-menu` panel, fed by a real
+    `buildAltar` view-model (`apps/web/src/game/altar.ts`): per-Prince Devotion totals + Sin levels
+    (via `sinLevel`) and — newly surfaced — the **bound-sigils** list read from `state.sigilBindings`
+    and named from the sigil catalog. The two-tap descend calls the store's `beginKatabasis`, which
+    still opens the existing `KatabasisModal` (the designed full-screen descent is W4). Pinned by an
+    adapter unit test.
   - _Remaining._ The other diegetic **panels** still render from the `menus.data.ts` mock catalogs
-    (each seam marked `TODO(wire)`): `AltarPanel` + `Katabasis` (devotion / sigils / descent-commit);
+    (each seam marked `TODO(wire)`): `Katabasis` (the full-screen descent commit — pour + bind);
     `MaleficiaCabinet` / `SuasioPanel` / `PcWindow` (owned maleficia / Suasio action / PC programs).
     Each later slice repoints one panel at real selectors and deletes its stand-in arrays. The old
     text `ArsGoetiaPanel` stays in `PANELS` but is no longer rendered (later cleanup).
