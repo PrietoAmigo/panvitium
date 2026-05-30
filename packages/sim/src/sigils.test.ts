@@ -130,6 +130,32 @@ describe('In-lifetime modifier contributions', () => {
     expect(computeModifiers(s).goldRateMul).toBeGreaterThan(without);
   });
 
+  it('Belial #68 lifts the influence rate', () => {
+    const strength = sigilStrength(sigilById(68)!, bn(100_000));
+    expect(computeModifiers(bound(68, 100_000)).influenceRateMul).toBeCloseTo(1 + strength, 6);
+  });
+
+  it('Marax #21 lifts the offline time multiplier', () => {
+    const strength = sigilStrength(sigilById(21)!, bn(10_000));
+    expect(computeModifiers(bound(21, 10_000)).offlineTimeMul).toBeCloseTo(1 + strength, 6);
+  });
+
+  it('Murmur #54 lifts the overall invocation-effect multiplier', () => {
+    const strength = sigilStrength(sigilById(54)!, bn(10_000));
+    expect(computeModifiers(bound(54, 10_000)).invocationEfficiencyMul).toBeCloseTo(
+      1 + strength,
+      6,
+    );
+  });
+
+  it('Balam #51 damps the Terrible tier weight', () => {
+    const strength = sigilStrength(sigilById(51)!, bn(10_000));
+    expect(computeModifiers(bound(51, 10_000)).tierWeightMul.terrible).toBeCloseTo(
+      1 / (1 + strength),
+      6,
+    );
+  });
+
   it('no bindings → the affected fields match the neutral baseline', () => {
     const m = computeModifiers(fresh());
     expect(m.goldRateMul).toBe(NEUTRAL_MODIFIERS.goldRateMul);
@@ -158,6 +184,12 @@ describe('Katabasis carry-over bonuses', () => {
 
   it('Halphas #38 feeds only the maleficia roll', () => {
     const s = bound(38, 10_000);
+    expect(sigilKatabasisBonus(s, 'maleficia')).toBeGreaterThan(0);
+    expect(sigilKatabasisBonus(s, 'gold')).toBe(0);
+  });
+
+  it('Cimejes #66 also feeds only the maleficia roll', () => {
+    const s = bound(66, 10_000);
     expect(sigilKatabasisBonus(s, 'maleficia')).toBeGreaterThan(0);
     expect(sigilKatabasisBonus(s, 'gold')).toBe(0);
   });

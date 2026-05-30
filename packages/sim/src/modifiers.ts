@@ -324,7 +324,8 @@ export function computeModifiers(state: GameState): Modifiers {
   const blackCandles = countCopies(owned, 'black_candles');
   const invEff =
     IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl *
-    (1 + BLACK_CANDLES_INVOCATION_BONUS * blackCandles);
+    (1 + BLACK_CANDLES_INVOCATION_BONUS * blackCandles) *
+    sc('invocationEfficiencyMul');
   const playerEff =
     2 ** gulaLvl *
     (hasDoppel ? 1.5 : 1) *
@@ -424,7 +425,8 @@ export function computeModifiers(state: GameState): Modifiers {
       gluttonOfflineMul *
       skillBonus(acediaIntensity) *
       (1 + compositumOfflineGainBoost(state)) *
-      (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEff * lemureCount),
+      (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEff * lemureCount) *
+      sc('offlineTimeMul'),
   };
 }
 

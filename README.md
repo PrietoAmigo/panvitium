@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 563** (sim 425 · shared 48 · api 11 · web 79).
+**Current test count: 568** (sim 430 · shared 48 · api 11 · web 79).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -169,11 +169,26 @@ factor × the player's current action efficiency × the invocation-effect multip
 | I2  | Additive-to-base effects           | Nightmare → additive to base suicide rate (new `flatBaseSuicideRatePerSecond` bundle field, added in `dynamics` alongside the Doom toggle); Behemoth → additive Stellar weight (factor 0.0005, deferred past the tierAcc block for its `playerEff` dependency); Lemure → offline gain rate, retargeted off the wrong influence/Husk target (`flatInfluencePerSecond` now reserved for the Decarabia #69 sigil). All efficiency-scaled. |
 | I3  | Lamia runner                       | Reclassified Lamia from a generation + Suasio-success modifier into an autonomous Suasio runner (`autonomous: { action: 'suggestion', efficiency: 0.05 }`), advanced by `runner.ts` like Familiar/Upir/Imp. Removed its `reprobateGenerationRateMul` and `categoryTierModifiers` contributions (and the dead `LAMIA_*` constants).                                                                                                     |
 
+**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~21 of 72 now
+bindable, the rest pending their effect mechanics):
+
+| #   | Slice                 | Summary                                                                                                                                                                                                                                                                                                                                                                                          |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S1  | Existing-field wiring | Wired the sigils expressible via the existing modifier bundle with no new mechanic: Belial #68 (influence rate), Marax #21 (offline time mul), Murmur #54 (overall invocation effectiveness), Balam #51 (−Terrible weight), Cimejes #66 (maleficia Katabasis roll). Added `invocationEfficiencyMul` + `offlineTimeMul` to the sigil-targetable fields (both already in the bundle and consumed). |
+
 ### Remaining
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Sigils** — most of the 72 are still inert; wiring their modifier / tier / katabasis contributions.
+- **Sigils** — ~21 of 72 are wired. The rest are grouped by the mechanic each needs: per-category
+  tier/success shifts (Agares/Beleth/Botis/Ipos/Astaroth/Andras/Andromalius/Naberius), per-category
+  action efficiency (Indagatio/Emptio muls — Bifrons/Seere), per-Sin invocation effectiveness
+  (Samigina/Barbatos/Bune/Berith/Furfur/Vepar/Shax/Alloces), subtype-targeted murder
+  (Glasya-Labolas/Sabnock/Camio/Haures/Amdusias), subtype penalty reductions
+  (Gaap/Malphas/Vual/Gremory/Volac), cost reductions (Paimon/Orobas/Amy), per-resource offline
+  (Sallos/Forneus), Indagatio discovery odds (Vassago/Stolas/Furcas), conversion (Bael/Eligos/Phenex/
+  Ose/Orias), the flat generators (Haagenti gold/s #48, Decarabia influence/s #69), and flat invoking
+  power (Andrealphus #65).
 - **Maleficia effects** — roster, invoking power, stack caps, the Opera-efficiency enhancers
   (Ars Serpens / Voynich / Ritual Dagger), the sigil-effect amplifiers (Solomon's Ring / Iron Nails),
   and the invocation-effect multiplier (Black Candles) are done. Still to wire: the oracular reveals,

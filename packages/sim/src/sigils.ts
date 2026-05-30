@@ -44,7 +44,9 @@ export type ScalarModifierField =
   | 'reprobateSuicideRateMul'
   | 'cholericMurderRateMul'
   | 'vitiumMercaturaOutputMul'
-  | 'acolyteEfficiencyMul';
+  | 'acolyteEfficiencyMul'
+  | 'invocationEfficiencyMul'
+  | 'offlineTimeMul';
 
 /** Which Katabasis carry-over roll a sigil's bonus feeds. */
 export type KatabasisRoll = 'gold' | 'unconverted' | 'maleficia';
@@ -122,6 +124,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'katabasis', rolls: ['gold'] },
   },
+  21: {
+    id: 21,
+    name: 'Marax',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'offlineTimeMul', direction: 'increase' },
+  },
   23: {
     id: 23,
     name: 'Aim',
@@ -167,11 +175,35 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'reprobateSuicideRateMul', direction: 'increase' },
   },
+  51: {
+    id: 51,
+    name: 'Balam',
+    coefficient: 0.001,
+    effect: { kind: 'tier', tier: 'terrible', direction: 'decrease' },
+  },
+  54: {
+    id: 54,
+    name: 'Murmur',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'invocationEfficiencyMul', direction: 'increase' },
+  },
   60: {
     id: 60,
     name: 'Vapula',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'vitiumMercaturaOutputMul', direction: 'increase' },
+  },
+  66: {
+    id: 66,
+    name: 'Cimejes',
+    coefficient: 0.001,
+    effect: { kind: 'katabasis', rolls: ['maleficia'] },
+  },
+  68: {
+    id: 68,
+    name: 'Belial',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'influenceRateMul', direction: 'increase' },
   },
   71: {
     id: 71,
