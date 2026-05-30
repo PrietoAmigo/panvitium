@@ -217,11 +217,19 @@ extensions, `import type`, Prettier):
     and named from the sigil catalog. The two-tap descend calls the store's `beginKatabasis`, which
     still opens the existing `KatabasisModal` (the designed full-screen descent is W4). Pinned by an
     adapter unit test.
-  - _Remaining._ The other diegetic **panels** still render from the `menus.data.ts` mock catalogs
-    (each seam marked `TODO(wire)`): `Katabasis` (the full-screen descent commit — pour + bind);
-    `MaleficiaCabinet` / `SuasioPanel` / `PcWindow` (owned maleficia / Suasio action / PC programs).
-    Each later slice repoints one panel at real selectors and deletes its stand-in arrays. The old
-    text `ArsGoetiaPanel` stays in `PANELS` but is no longer rendered (later cleanup).
+  - _W4 — the descent live._ The designed full-screen two-page `menus/Katabasis` is now the descent
+    `menu` phase (replacing the old `KatabasisMenu` markup), wired to the **real live model**:
+    offering pours Devotion straight into `state.devotion` via `offer`, binding moves souls to seals
+    via `bindMore`/`bindLess` (both recoverable until you rise), the Eternal-Sin card appears once
+    every Cardinal Sin is maxed, and Ascend commits the lifetime via `confirmKatabasis`. The hold
+    buttons ramp the per-step _amount_ (souls are BigNum, so a +1/tick hold can't scale). The recap
+    and Eternal-Sin reveal remain their own views. `KatabasisModal` is slimmed to the phase
+    orchestrator + those two views.
+  - _Remaining._ Three diegetic **panels** still render from the `menus.data.ts` mock catalogs
+    (each seam marked `TODO(wire)`): `MaleficiaCabinet` / `SuasioPanel` / `PcWindow` (owned maleficia
+    / Suasio action / PC programs). Each later slice repoints one panel at real selectors and deletes
+    its stand-in arrays. The old text `ArsGoetiaPanel` stays in `PANELS` but is no longer rendered
+    (later cleanup).
 
 ### Remaining
 
