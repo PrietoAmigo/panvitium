@@ -278,3 +278,42 @@ describe('Per-category tier sigils (S2)', () => {
     expect(categoryTierModifiers(base, 'suasio').good).toBeCloseTo(1 + strength, 6);
   });
 });
+
+describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
+  // Helper: a state with one invocation active and (optionally) a per-Sin sigil bound.
+  const withInv = (id: string, n: number, base = fresh()): GameState => ({
+    ...base,
+    lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, [id]: n } },
+  });
+
+  it('Bune #26 (Vanagloria) amplifies Fama, leaving other-Sin invocations untouched', () => {
+    const fama = withInv('fama', 2);
+    const base = computeModifiers(fama).influenceRateMul;
+    const boosted = computeModifiers(bound(26, 100_000, fama)).influenceRateMul;
+    expect(boosted).toBeGreaterThan(base);
+    // Harpy (Ira) is unaffected by a Vanagloria sigil.
+    const harpy = withInv('harpy', 2);
+    const harpyBase = computeModifiers(harpy).decimatioEfficiencyMul;
+    expect(computeModifiers(bound(26, 100_000, harpy)).decimatioEfficiencyMul).toBeCloseTo(
+      harpyBase,
+      6,
+    );
+  });
+
+  it('exposes a per-Sin effectiveness map defaulting to 1', () => {
+    const m = computeModifiers(fresh());
+    expect(m.invocationSinEffectivenessMul.ira).toBe(1);
+    const strength = sigilStrength(sigilById(42)!, bn(100_000)); // Vepar → Ira
+    expect(computeModifiers(bound(42, 100_000)).invocationSinEffectivenessMul.ira).toBeCloseTo(
+      1 + strength,
+      6,
+    );
+  });
+
+  it('Furfur #34 (Luxuria) amplifies the Succubus Suasio effect', () => {
+    const succ = withInv('succubus', 1);
+    const base = computeModifiers(succ).suasioEfficiencyMul;
+    const boosted = computeModifiers(bound(34, 100_000, succ)).suasioEfficiencyMul;
+    expect(boosted).toBeGreaterThan(base);
+  });
+});

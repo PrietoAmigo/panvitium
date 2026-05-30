@@ -14,7 +14,7 @@
 import { type BigNum, floor, lte, ZERO } from './bignum.js';
 import { MAX_SIN_LEVEL } from './constants.js';
 import { sinLevel } from './progression.js';
-import { SINS, type GameState, type SigilId } from './state.js';
+import { SINS, type GameState, type SigilId, type Sin } from './state.js';
 import { type Tier } from './probability.js';
 
 export type BindingCurve = 'sqrt' | 'linear' | 'log';
@@ -71,6 +71,7 @@ export type SigilEffect =
       readonly tiers: readonly Tier[];
       readonly direction: 'increase' | 'decrease';
     }
+  | { readonly kind: 'invocationSin'; readonly sin: Sin }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -104,6 +105,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       direction: 'increase',
     },
   },
+  4: {
+    id: 4,
+    name: 'Samigina',
+    coefficient: 0.001,
+    effect: { kind: 'invocationSin', sin: 'tristitia' },
+  },
   5: {
     id: 5,
     name: 'Marbas',
@@ -121,6 +128,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Aamon',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'reprobateGenerationRateMul', direction: 'increase' },
+  },
+  8: {
+    id: 8,
+    name: 'Barbatos',
+    coefficient: 0.001,
+    effect: { kind: 'invocationSin', sin: 'gula' },
   },
   11: {
     id: 11,
@@ -203,6 +216,18 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       direction: 'increase',
     },
   },
+  26: {
+    id: 26,
+    name: 'Bune',
+    coefficient: 0.001,
+    effect: { kind: 'invocationSin', sin: 'vanagloria' },
+  },
+  28: {
+    id: 28,
+    name: 'Berith',
+    coefficient: 0.001,
+    effect: { kind: 'invocationSin', sin: 'superbia' },
+  },
   29: {
     id: 29,
     name: 'Astaroth',
@@ -219,6 +244,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Foras',
     coefficient: 0.001,
     effect: { kind: 'tier', tier: 'apocalyptic', direction: 'decrease' },
+  },
+  34: {
+    id: 34,
+    name: 'Furfur',
+    coefficient: 0.001,
+    effect: { kind: 'invocationSin', sin: 'luxuria' },
   },
   // Semet — the Eternal Sin's sigil. Gated on every Cardinal Sin ≥ 2 (03 §5/§8). Feeds all three
   // Katabasis rolls: a player binding it does not yet know the connection to the ninth Sin.
@@ -253,6 +284,18 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'indagatioEfficiencyMul', direction: 'increase' },
   },
+  42: {
+    id: 42,
+    name: 'Vepar',
+    coefficient: 0.001,
+    effect: { kind: 'invocationSin', sin: 'ira' },
+  },
+  44: {
+    id: 44,
+    name: 'Shax',
+    coefficient: 0.001,
+    effect: { kind: 'invocationSin', sin: 'avaritia' },
+  },
   49: {
     id: 49,
     name: 'Crocell',
@@ -264,6 +307,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Balam',
     coefficient: 0.001,
     effect: { kind: 'tier', tier: 'terrible', direction: 'decrease' },
+  },
+  52: {
+    id: 52,
+    name: 'Alloces',
+    coefficient: 0.001,
+    effect: { kind: 'invocationSin', sin: 'acedia' },
   },
   54: {
     id: 54,
@@ -401,7 +450,27 @@ export function sigilCategoryTierContributions(
   return out;
 }
 
-/** Summed additive bonus to one Katabasis carry-over roll from all bound sigils that feed it. */
+/**
+ * Per-Sin invocation-effectiveness multipliers from bound sigils (Samigina/Barbatos/Bune/Berith/
+ * Furfur/Vepar/Shax/Alloces). Each is a `(1 + strength)` factor on the effectiveness of invocations
+ * belonging to that Sin; consumed by `computeModifiers` (passive magnitudes) and the runner engine
+ * (autonomous channels) via `invocationSinEffectivenessMul`. `effectMul` carries the sigil enhancers.
+ */
+export function sigilInvocationSinContributions(
+  state: GameState,
+  effectMul = 1,
+): Partial<Record<Sin, number>> {
+  const out: Partial<Record<Sin, number>> = {};
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'invocationSin') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    out[def.effect.sin] = (out[def.effect.sin] ?? 1) * (1 + s);
+  }
+  return out;
+}
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {
   let bonus = 0;
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {

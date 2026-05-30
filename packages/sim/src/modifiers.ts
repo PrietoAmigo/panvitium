@@ -42,6 +42,7 @@ import { aurevoraEfficiencyMul } from './apex.js';
 import {
   sigilModifierContributions,
   sigilCategoryTierContributions,
+  sigilInvocationSinContributions,
   type ScalarModifierField,
 } from './sigils.js';
 import {
@@ -131,6 +132,13 @@ export interface Modifiers {
    */
   readonly invocationEfficiencyMul: number;
   /**
+   * Per-Sin multiplier on the effectiveness of invocations belonging to that Sin (the eight
+   * Sin-themed sigils: Samigina/Barbatos/Bune/Berith/Furfur/Vepar/Shax/Alloces). Applied to every
+   * efficiency-derived invocation effect (the passive magnitudes and the autonomous runners) on top
+   * of the global `invocationEfficiencyMul`. Default 1× for every Sin.
+   */
+  readonly invocationSinEffectivenessMul: Record<Sin, number>;
+  /**
    * Per-Sin multiplier on Vitium Mercatura business gold output, driven by the matching subtype
    * count (03 §3: "Gluttons increase the gold output of Gula-related Vitium actions", etc.).
    * Composed multiplicatively with `vitiumMercaturaOutputMul` at the per-business call site in
@@ -167,6 +175,16 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   vitiumMercaturaOutputMul: 1,
   acolyteEfficiencyMul: 0.33,
   invocationEfficiencyMul: 1,
+  invocationSinEffectivenessMul: {
+    gula: 1,
+    luxuria: 1,
+    avaritia: 1,
+    tristitia: 1,
+    ira: 1,
+    acedia: 1,
+    vanagloria: 1,
+    superbia: 1,
+  },
   subtypeVitiumGoldMulBySin: {
     gula: 1,
     luxuria: 1,
@@ -344,13 +362,20 @@ export function computeModifiers(state: GameState): Modifiers {
     erinyesStackMul *
     huskEfficiencyMul *
     sc('playerEfficiencyMul');
-  // Behemoth: additive increase to the Stellar weight, efficiency-scaled (Model 1). Deferred to here
-  // (rather than the tierAcc block above) because it depends on `playerEff`/`invEff`; folded into the
-  // already-built `tierWeightMul` so it composes with Morning Star and any Stellar sigils.
+  // Per-Sin invocation effectiveness (the eight Sin-themed sigils). `invEffFor(sin)` is the global
+  // invocation-effect multiplier × that Sin's sigil boost; every efficiency-derived invocation effect
+  // below uses it in place of the bare `invEff`, keyed by the invocation's own Sin.
+  const invSinContrib = sigilInvocationSinContributions(state, sigilEffectMultiplier(owned));
+  const invSinEff = {} as Record<Sin, number>;
+  for (const s of SINS) invSinEff[s] = invSinContrib[s] ?? 1;
+  const invEffFor = (sin: Sin): number => invEff * invSinEff[sin];
+  // Behemoth (Superbia): additive increase to the Stellar weight, efficiency-scaled (Model 1).
+  // Deferred to here (rather than the tierAcc block above) because it depends on `playerEff`/`invEff`;
+  // folded into the already-built `tierWeightMul` so it composes with Morning Star and Stellar sigils.
   if (behemothCount > 0) {
     tierWeightMul.stellar =
       (tierWeightMul.stellar ?? 1) *
-      (1 + BEHEMOTH_STELLAR_FACTOR * playerEff * invEff * behemothCount);
+      (1 + BEHEMOTH_STELLAR_FACTOR * playerEff * invEffFor('superbia') * behemothCount);
   }
 
   return {
@@ -358,13 +383,13 @@ export function computeModifiers(state: GameState): Modifiers {
       skillBonus(avaritiaIntensity) *
       (hasSilver ? 3 : 1) *
       (hasMidas ? 3 : 1) *
-      (hasSuccubus ? 1 / (1 + SUCCUBUS_GOLD_FACTOR * playerEff * invEff) : 1) *
+      (hasSuccubus ? 1 / (1 + SUCCUBUS_GOLD_FACTOR * playerEff * invEffFor('luxuria')) : 1) *
       celebrityGoldMul *
       sc('goldRateMul'),
     influenceRateMul:
       1.5 ** vanagloriaLvl *
       (hasCodex ? 3 : 1) *
-      (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEff * famaCount) *
+      (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
       (hasDoppel ? 0.5 : 1) *
       sigmaInfluenceMul *
       sc('influenceRateMul'),
@@ -374,18 +399,19 @@ export function computeModifiers(state: GameState): Modifiers {
     flatInfluencePerSecond: 0,
     // Additive increase to the base reprobate suicide rate (added to the per-capita base in
     // `dynamics`, alongside the Doom toggle). Each Nightmare contributes its efficiency-scaled factor.
-    flatBaseSuicideRatePerSecond: NIGHTMARE_SUICIDE_FACTOR * playerEff * invEff * nightmareCount,
+    flatBaseSuicideRatePerSecond:
+      NIGHTMARE_SUICIDE_FACTOR * playerEff * invEffFor('tristitia') * nightmareCount,
     playerEfficiencyMul: playerEff,
     suasioEfficiencyMul:
       skillBonus(tristitiaIntensity) *
       (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
       (1 + VOYNICH_SUASIO_BONUS * voynich) *
-      (hasSuccubus ? 1 + SUCCUBUS_SUASIO_FACTOR * playerEff * invEff : 1) *
+      (hasSuccubus ? 1 + SUCCUBUS_SUASIO_FACTOR * playerEff * invEffFor('luxuria') : 1) *
       sc('suasioEfficiencyMul'),
     decimatioEfficiencyMul:
       skillBonus(iraIntensity) *
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
-      (1 + HARPY_DECIMATIO_FACTOR * playerEff * invEff * harpyCount) *
+      (1 + HARPY_DECIMATIO_FACTOR * playerEff * invEffFor('ira') * harpyCount) *
       sc('decimatioEfficiencyMul'),
     indagatioEfficiencyMul: sc('indagatioEfficiencyMul'),
     emptioEfficiencyMul: sc('emptioEfficiencyMul'),
@@ -419,7 +445,8 @@ export function computeModifiers(state: GameState): Modifiers {
     // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
     // multiplier scales business gold + generation + conversion at the tick/dynamics call sites.
     vitiumMercaturaOutputMul:
-      (1 + PLUTUS_VM_FACTOR * playerEff * invEff * plutusCount) * sc('vitiumMercaturaOutputMul'),
+      (1 + PLUTUS_VM_FACTOR * playerEff * invEffFor('avaritia') * plutusCount) *
+      sc('vitiumMercaturaOutputMul'),
     // Acolyte efficiency: 0.33 baseline (02 §10); Ira level lifts ×1.33/level (03 §1 Retribution);
     // Bathin #18 sigil composes on top.
     acolyteEfficiencyMul:
@@ -427,6 +454,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // Invocation efficiency: 1× baseline; Ira level lifts ×1.33/level (03 §1 Retribution shared
     // with acolytes). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
     invocationEfficiencyMul: invEff,
+    invocationSinEffectivenessMul: invSinEff,
     // Per-Sin Vitium Mercatura gold boost from matched subtype counts (03 §3). Read at the
     // per-business call site so each Sin's businesses receive their own themed boost.
     subtypeVitiumGoldMulBySin,
@@ -437,7 +465,7 @@ export function computeModifiers(state: GameState): Modifiers {
       gluttonOfflineMul *
       skillBonus(acediaIntensity) *
       (1 + compositumOfflineGainBoost(state)) *
-      (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEff * lemureCount) *
+      (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEffFor('acedia') * lemureCount) *
       sc('offlineTimeMul'),
   };
 }

@@ -455,8 +455,11 @@ export function advanceInvocationRunners(
     const def = INVOCATIONS[id]!;
     const auto = def.autonomous!;
     const mods = computeModifiers(working);
-    // Per-invocation auto.efficiency × player's own × any invocation-wide boost (Ira level, 03 §1).
-    const eff = auto.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul;
+    // Per-invocation auto.efficiency × player's own × invocation-wide boost (Ira level / Black
+    // Candles / Murmur) × the runner's own Sin effectiveness (the Sin-themed sigils). Familiar has
+    // no Sin, so it takes no per-Sin boost.
+    const sinMul = def.sin ? mods.invocationSinEffectivenessMul[def.sin] : 1;
+    const eff = auto.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul * sinMul;
     // Absent key (undefined) ⇒ null: a fresh or previously-stalled channel the engine will (re)start.
     const prev = existing[id] ?? null;
     const r = advanceRunnerCycles(
