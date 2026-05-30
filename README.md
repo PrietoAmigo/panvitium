@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 586** (sim 448 · shared 48 · api 11 · web 79).
+**Current test count: 590** (sim 452 · shared 48 · api 11 · web 79).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -169,7 +169,7 @@ factor × the player's current action efficiency × the invocation-effect multip
 | I2  | Additive-to-base effects           | Nightmare → additive to base suicide rate (new `flatBaseSuicideRatePerSecond` bundle field, added in `dynamics` alongside the Doom toggle); Behemoth → additive Stellar weight (factor 0.0005, deferred past the tierAcc block for its `playerEff` dependency); Lemure → offline gain rate, retargeted off the wrong influence/Husk target (`flatInfluencePerSecond` now reserved for the Decarabia #69 sigil). All efficiency-scaled. |
 | I3  | Lamia runner                       | Reclassified Lamia from a generation + Suasio-success modifier into an autonomous Suasio runner (`autonomous: { action: 'suggestion', efficiency: 0.05 }`), advanced by `runner.ts` like Familiar/Upir/Imp. Removed its `reprobateGenerationRateMul` and `categoryTierModifiers` contributions (and the dead `LAMIA_*` constants).                                                                                                     |
 
-**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~46 of 72 now
+**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~49 of 72 now
 bindable, the rest pending their effect mechanics):
 
 | #   | Slice                            | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -181,16 +181,17 @@ bindable, the rest pending their effect mechanics):
 | S5  | Subtype penalty reductions       | New `penaltyReduction` SigilEffect variant + `sigilPenaltyReductionByChannel`, dividing a penalty channel's per-count coefficient by `(1 + strength)` (never into a bonus). Wired Gaap #33 (Sigma influence), Malphas #39 (Celebrity gold), Gremory #56 (Degenerate suicide) and Volac #62 (Gambler generation). Vual #47 (−Degenerate gold) deferred — no such penalty in the model yet.                                                                                                                 |
 | S6  | Flat generators                  | New `flatGen` SigilEffect variant + `sigilFlatGeneration`, feeding flat per-second resource into `flatGoldPerSecond` / `flatInfluencePerSecond` (accrued in the tick, scaled by the rate muls). Wired Haagenti #48 (gold/s) and Decarabia #69 (influence/s). Corrected the `log` binding curve from `log10` to `ln(1 + N)` to match the sheet yields exactly (only these two log sigils use it).                                                                                                          |
 | S7  | Flat invoking power              | New `invokingPower` SigilEffect variant + `sigilInvokingPower` (rounded to int), added to `currentInvokingPower` on top of the maleficia total so it counts toward the invocation gates. Wired Andrealphus #65.                                                                                                                                                                                                                                                                                           |
+| S8  | Cost reductions                  | New `costReduction` SigilEffect variant + `CostChannel` + `sigilCostReductionByChannel`, dividing a cost by `(1 + strength)` at its site (never an increase). Wired Paimon #9 (action influence costs), Amy #58 (Emptio gold), and Orobas #55 (invocation soul cost — discount may pierce the nominal minimum).                                                                                                                                                                                           |
 
 ### Remaining
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Sigils** — ~46 of 72 are wired. The rest are grouped by the mechanic each needs: subtype-targeted
-  murder (Glasya-Labolas/Sabnock/Camio/Haures/Amdusias), cost reductions (Paimon/Orobas/Amy),
-  per-resource offline (Sallos/Forneus), Indagatio discovery odds (Vassago/Stolas/Furcas), and
-  conversion (Bael/Eligos/Phenex/Ose/Orias). Vual #47 (−Degenerate gold penalty) is deferred — the
-  model has no Degenerate gold penalty; it needs the subtype-penalty assignment reconciled first.
+- **Sigils** — ~49 of 72 are wired. The rest are grouped by the mechanic each needs: subtype-targeted
+  murder (Glasya-Labolas/Sabnock/Camio/Haures/Amdusias), per-resource offline (Sallos/Forneus),
+  Indagatio discovery odds (Vassago/Stolas/Furcas), and conversion (Bael/Eligos/Phenex/Ose/Orias).
+  Vual #47 (−Degenerate gold penalty) is deferred — the model has no Degenerate gold penalty; it
+  needs the subtype-penalty assignment reconciled first.
 - **Maleficia effects** — roster, invoking power, stack caps, the Opera-efficiency enhancers
   (Ars Serpens / Voynich / Ritual Dagger), the sigil-effect amplifiers (Solomon's Ring / Iron Nails),
   and the invocation-effect multiplier (Black Candles) are done. Still to wire: the oracular reveals,

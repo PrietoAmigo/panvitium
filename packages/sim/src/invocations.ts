@@ -28,8 +28,8 @@
  *       feeds the per-subtype conversion-bias hook in dynamics.ts (`conversionBiasMul`).
  * Number magnitudes are placeholders, spreadsheet-overridable; the shape is authoritative.
  */
-import { floor, gte, max, mul, sub, ZERO, type BigNum } from './bignum.js';
-import { sigilInvokingPower } from './sigils.js';
+import { div, floor, gte, max, mul, sub, ZERO, type BigNum } from './bignum.js';
+import { sigilInvokingPower, sigilCostReductionByChannel } from './sigils.js';
 import { totalInvokingPower, sigilEffectMultiplier } from './maleficia.js';
 import { mintSouls } from './population.js';
 import { sinLevel } from './progression.js';
@@ -296,7 +296,14 @@ export function invocationUnlocked(state: GameState, def: InvocationDef): boolea
 export function invocationSoulCost(state: GameState, def: InvocationDef): BigNum {
   if (!def.soulCost) return ZERO;
   const pct = floor(mul(state.souls, def.soulCost.fraction));
-  return max(pct, def.soulCost.minimum);
+  const base = max(pct, def.soulCost.minimum);
+  // Orobas #55 softens the soul price (divides by `(1 + strength)`; can pierce the nominal minimum
+  // since it is a genuine discount). Floor keeps souls whole.
+  const red = sigilCostReductionByChannel(
+    state,
+    sigilEffectMultiplier(state.lifetime.maleficia),
+  ).invocationSoul;
+  return red && red > 1 ? floor(div(base, red)) : base;
 }
 
 /**

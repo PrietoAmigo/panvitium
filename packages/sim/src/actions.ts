@@ -24,7 +24,13 @@ import {
 } from './population.js';
 import { type ActionTimer, type GameState, totalReprobates } from './state.js';
 import { type OutcomeEvent } from './events.js';
-import { MALEFICIA, findableIds, type MaleficiumRarity } from './maleficia.js';
+import {
+  MALEFICIA,
+  findableIds,
+  sigilEffectMultiplier,
+  type MaleficiumRarity,
+} from './maleficia.js';
+import { sigilCostReductionByChannel } from './sigils.js';
 
 export interface ActionCost {
   readonly gold?: number;
@@ -177,6 +183,11 @@ export function startAction(
   let goldCost = def.cost.gold ?? 0;
   let influenceCost = def.cost.influence ?? 0;
   let target: string | undefined;
+  // Sigil cost reductions (Paimon influence, Amy Emptio gold, Orobas soul — soul applied elsewhere).
+  const costRed = sigilCostReductionByChannel(
+    state,
+    sigilEffectMultiplier(state.lifetime.maleficia),
+  );
   if (actionId === 'emptio') {
     if (!options.target) return { ok: false, reason: 'No maleficium chosen.' };
     if (!state.lifetime.emptioList.includes(options.target)) {
@@ -184,13 +195,15 @@ export function startAction(
     }
     const malef = MALEFICIA[options.target];
     if (!malef) return { ok: false, reason: 'Unknown maleficium.' };
-    goldCost = malef.cost;
+    goldCost = costRed.emptioGold ? Math.ceil(malef.cost / costRed.emptioGold) : malef.cost;
     target = options.target;
   }
   if (def.efficiencyMode === 'cost-outcome') {
     goldCost = Math.ceil(goldCost * eff);
     influenceCost = Math.ceil(influenceCost * eff);
   }
+  // Paimon #9 softens action influence costs (after any efficiency scaling), never increasing them.
+  if (costRed.influence) influenceCost = Math.ceil(influenceCost / costRed.influence);
 
   if (!gte(floor(state.lifetime.gold), goldCost)) return { ok: false, reason: 'not enough gold' };
   if (!gte(floor(state.lifetime.influence), influenceCost)) {

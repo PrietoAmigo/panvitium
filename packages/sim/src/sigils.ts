@@ -75,6 +75,7 @@ export type SigilEffect =
   | { readonly kind: 'penaltyReduction'; readonly channel: PenaltyChannel }
   | { readonly kind: 'flatGen'; readonly resource: 'gold' | 'influence' }
   | { readonly kind: 'invokingPower' }
+  | { readonly kind: 'costReduction'; readonly channel: CostChannel }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -90,6 +91,13 @@ export type PenaltyChannel =
   | 'celebrityGold'
   | 'degenerateSuicide'
   | 'gamblerGeneration';
+
+/**
+ * A cost a sigil can soften (Paimon/Orobas/Amy). `influence` = action influence costs, `invocationSoul`
+ * = the per-invoke soul price, `emptioGold` = the Emptio purchase gold. Each sigil divides its cost by
+ * `(1 + strength)` (never below zero, never an increase).
+ */
+export type CostChannel = 'influence' | 'invocationSoul' | 'emptioGold';
 
 export interface SigilDef {
   readonly id: SigilId;
@@ -148,6 +156,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Barbatos',
     coefficient: 0.001,
     effect: { kind: 'invocationSin', sin: 'gula' },
+  },
+  9: {
+    id: 9,
+    name: 'Paimon',
+    coefficient: 0.001,
+    effect: { kind: 'costReduction', channel: 'influence' },
   },
   11: {
     id: 11,
@@ -353,11 +367,23 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'invocationEfficiencyMul', direction: 'increase' },
   },
+  55: {
+    id: 55,
+    name: 'Orobas',
+    coefficient: 0.001,
+    effect: { kind: 'costReduction', channel: 'invocationSoul' },
+  },
   56: {
     id: 56,
     name: 'Gremory',
     coefficient: 0.001,
     effect: { kind: 'penaltyReduction', channel: 'degenerateSuicide' },
+  },
+  58: {
+    id: 58,
+    name: 'Amy',
+    coefficient: 0.001,
+    effect: { kind: 'costReduction', channel: 'emptioGold' },
   },
   60: {
     id: 60,
@@ -588,6 +614,27 @@ export function sigilInvokingPower(state: GameState, effectMul = 1): number {
     total += sigilStrength(def, bound) * effectMul;
   }
   return Math.round(total);
+}
+
+/**
+ * Per-channel cost-reduction divisors from bound sigils (Paimon/Orobas/Amy). Each value is a
+ * `(1 + strength)` factor (≥ 1; default 1 = no reduction) that the corresponding cost site divides by.
+ * `effectMul` carries the sigil enhancers.
+ */
+export function sigilCostReductionByChannel(
+  state: GameState,
+  effectMul = 1,
+): Partial<Record<CostChannel, number>> {
+  const out: Partial<Record<CostChannel, number>> = {};
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'costReduction') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    out[def.effect.channel] = (out[def.effect.channel] ?? 1) * (1 + s);
+  }
+  return out;
 }
 
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {

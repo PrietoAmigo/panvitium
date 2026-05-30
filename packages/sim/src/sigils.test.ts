@@ -19,9 +19,12 @@ import {
   computeModifiers,
   createInitialState,
   currentInvokingPower,
+  invocationById,
+  invocationSoulCost,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
   sigilById,
+  sigilCostReductionByChannel,
   sigilInvokingPower,
   sigilKatabasisBonus,
   sigilModifierContributions,
@@ -29,6 +32,7 @@ import {
   sigilVisible,
   SIGIL_IDS,
   SINS,
+  startAction,
   tick,
   type GameState,
 } from './index.js';
@@ -404,5 +408,46 @@ describe('Flat invoking-power sigil (S7)', () => {
     expect(sigilInvokingPower(bound(65, 100))).toBe(0);
     // Folds into the gate total (no maleficia here, so it is the whole of it).
     expect(currentInvokingPower(bound(65, 1_000_000))).toBe(1);
+  });
+});
+
+describe('Cost-reduction sigils (S8)', () => {
+  it('sigilCostReductionByChannel yields per-channel (1 + strength) divisors', () => {
+    expect(sigilCostReductionByChannel(fresh())).toEqual({});
+    // 0.001 × sqrt(1e6) = 1 → factor 2 on each channel.
+    expect(sigilCostReductionByChannel(bound(9, 1_000_000)).influence).toBeCloseTo(2, 6);
+    expect(sigilCostReductionByChannel(bound(55, 1_000_000)).invocationSoul).toBeCloseTo(2, 6);
+    expect(sigilCostReductionByChannel(bound(58, 1_000_000)).emptioGold).toBeCloseTo(2, 6);
+  });
+
+  it('Paimon #9 softens action influence costs (never increasing them)', () => {
+    const seed = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, influence: bn(100) },
+    });
+    const base = startAction(seed(fresh()), 'suggestion', { efficiency: 1 });
+    const paimon = startAction(seed(bound(9, 1_000_000)), 'suggestion', { efficiency: 1 });
+    if (!base.ok || !paimon.ok) throw new Error('start failed');
+    expect(100 - base.state.lifetime.influence.toNumber()).toBe(5); // ceil(5 × 1)
+    expect(100 - paimon.state.lifetime.influence.toNumber()).toBe(3); // ceil(5 / 2)
+  });
+
+  it('Amy #58 softens Emptio gold cost', () => {
+    const seed = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, gold: bn(5000), emptioList: ['ars_serpens'] },
+    });
+    const base = startAction(seed(fresh()), 'emptio', { target: 'ars_serpens' });
+    const amy = startAction(seed(bound(58, 1_000_000)), 'emptio', { target: 'ars_serpens' });
+    if (!base.ok || !amy.ok) throw new Error('start failed');
+    expect(5000 - base.state.lifetime.gold.toNumber()).toBe(2000); // full cost
+    expect(5000 - amy.state.lifetime.gold.toNumber()).toBe(1000); // ceil(2000 / 2)
+  });
+
+  it('Orobas #55 softens invocation soul cost (piercing the nominal minimum)', () => {
+    const imp = invocationById('imp');
+    expect(imp).toBeDefined();
+    expect(invocationSoulCost(fresh(), imp!).toNumber()).toBe(100); // minimum
+    expect(invocationSoulCost(bound(55, 1_000_000), imp!).toNumber()).toBe(50); // halved
   });
 });
