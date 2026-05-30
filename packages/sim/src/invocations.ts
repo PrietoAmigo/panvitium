@@ -18,9 +18,10 @@
  *   - Doppelgaenger (Superbia) — +50% player efficiency, half influence [apex, max 1, free]
  *
  * Phase 4 close: every invocation in the catalog is wired. The three effect shapes are:
- *   (1) autonomous-runner channel — `def.autonomous`, advanced via runner.ts (Familiar, Imp, Upir).
+ *   (1) autonomous-runner channel — `def.autonomous`, advanced via runner.ts (Familiar, Imp, Upir,
+ *       Lamia → Suasio).
  *   (2) static modifier-bundle contribution — a line in modifiers.ts (Fama, Nightmare, Harpy,
- *       Lamia, Lemure, Behemoth, Midas, Plutus, Succubus, Doppelgänger).
+ *       Lemure, Behemoth, Midas, Plutus, Succubus, Doppelgänger).
  *   (3) per-tick / per-invoke side-effects — Astiwihad + Aurevora live in apex.ts (per-tick mass
  *       suicide + exponential gold drain); Erinyes + Morpheus are handled at invoke/commit time
  *       in this module + katabasis.ts (kill-all + Katabasis carry-over overrides); Specunitas
@@ -139,8 +140,11 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 8,
     sinLevel: 2,
     soulCost: { fraction: 0.25, minimum: 1500 },
-    // Stackable. Effect (modifiers.ts): lifts Suasio success-tier weights and unconverted reprobate
-    // generation. No autonomous channel — a passive modifier source like Fama/Nightmare/Harpy.
+    // Stackable. A background Suasio runner at `efficiency × the player's efficiency` (Invocatio
+    // sheet: "action efficiency applies to Suasio") — like the Familiar/Upir/Imp channels, without
+    // occupying the player's action slot. `suggestion` is the Suasio-category action. Natural tier
+    // rolls (no forced tier).
+    autonomous: { action: 'suggestion', efficiency: 0.05 },
   },
   lemure: {
     id: 'lemure',

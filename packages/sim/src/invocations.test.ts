@@ -351,14 +351,22 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
   });
 
-  it('Lamia is a stackable Luxuria modifier invocation — power 8 + Luxuria 2, no channel', () => {
+  it('Lamia is a stackable Luxuria Suasio runner — power 8 + Luxuria 2', () => {
     const def = invocationById('lamia')!;
     expect(def.sin).toBe('luxuria');
     expect(def.invokingPower).toBe(8);
     expect(def.sinLevel).toBe(2);
     expect(def.maxActive).toBeUndefined(); // stackable
-    expect(def.autonomous).toBeUndefined(); // passive modifier, not a runner
+    expect(def.autonomous).toEqual({ action: 'suggestion', efficiency: 0.05 }); // background Suasio runner
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(25_000); // 25%
+  });
+
+  it('Lamia runs a background Suasio (suggestion) channel without touching the player slot', () => {
+    let s = withInvocation(fresh(), 'lamia', 1);
+    s = { ...s, lifetime: { ...s.lifetime, influence: bn(1000) } }; // afford the suggestion cost
+    const r = advanceInvocationRunners(s, 0.1, makeRng(1));
+    expect(r.state.lifetime.invocationRunners.lamia).toBeGreaterThan(0); // a runner timer started
+    expect(r.state.lifetime.actionQueue).toHaveLength(0); // player action slot untouched
   });
 
   it('Plutus is a stackable Avaritia output booster — power 8 + Avaritia 2', () => {

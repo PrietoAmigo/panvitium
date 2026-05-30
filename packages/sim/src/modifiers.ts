@@ -211,7 +211,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const famaCount = inv.fama ?? 0; // each: additive influence increase (× playerEff × invEff)
   const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× playerEff × invEff)
   const harpyCount = inv.harpy ?? 0; // each: Decimatio efficiency up (× playerEff × invEff)
-  const lamiaCount = inv.lamia ?? 0; // each: Suasio success up (per-category) + generation up
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× playerEff × invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (× playerEff × invEff)
@@ -378,13 +377,11 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + HARPY_DECIMATIO_FACTOR * playerEff * invEff * harpyCount) *
       sc('decimatioEfficiencyMul'),
     tierWeightMul,
-    // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; each Lamia
-    // lifts it (until reclassified as a Suasio runner); Luxuria's Seduction skill lifts it
-    // continuously (03 §1); Gambler subtype drags it down; sigils (Aamon #7 up, Zepar #16 down)
-    // compose.
+    // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; Luxuria's
+    // Seduction skill lifts it continuously (03 §1); Gambler subtype drags it down; sigils (Aamon #7
+    // up, Zepar #16 down) compose. (Lamia is now a Suasio runner, no longer a generation source.)
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
-      (1 + LAMIA_GENERATION * lamiaCount) *
       skillBonus(luxuriaIntensity) *
       gamblerGenerationMul *
       sc('reprobateGenerationRateMul'),
@@ -438,10 +435,6 @@ export function playerEfficiency(state: GameState): number {
 
 /** Tiers counted as "success" for the per-category success-probability effects (03 §1). */
 const SUCCESS_TIERS: readonly Tier[] = ['stellar', 'excellent', 'good'];
-/** Each Lamia lifts Suasio success-tier weights (placeholder magnitude; spreadsheet owns final). */
-const LAMIA_SUASIO_SUCCESS = 0.25;
-/** Each Lamia lifts unconverted reprobate generation (placeholder magnitude; spreadsheet owns final). */
-const LAMIA_GENERATION = 0.5;
 
 /**
  * Per-CATEGORY tier shift, applied at action-resolution time (02 §2) — kept distinct from the global
@@ -460,8 +453,6 @@ export function categoryTierModifiers(
   let successMul = 1;
   if (category === 'suasio') {
     successMul *= skillBonus(skillIntensity(state.devotion.tristitia)); // Resignation
-    const lamia = state.lifetime.invocations.lamia ?? 0;
-    if (lamia > 0) successMul *= 1 + LAMIA_SUASIO_SUCCESS * lamia;
   } else if (category === 'decimatio') {
     successMul *= skillBonus(skillIntensity(state.devotion.ira)); // Retribution
   }

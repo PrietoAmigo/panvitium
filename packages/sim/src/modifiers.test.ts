@@ -250,14 +250,14 @@ describe('categoryTierModifiers — per-category success shift (02 §2)', () => 
     expect(categoryTierModifiers(s, 'suasio')).toEqual({});
   });
 
-  it('each Lamia lifts Suasio success multiplicatively on top of Resignation', () => {
+  it('Lamia no longer shifts Suasio success (reclassified as a Suasio runner)', () => {
     const base = categoryTierModifiers(withDevotion({ tristitia: bn(180) }), 'suasio').good!;
     const s = {
       ...withDevotion({ tristitia: bn(180) }),
       lifetime: { ...fresh().lifetime, invocations: { lamia: 2 } },
     };
-    const withLamia = categoryTierModifiers(s, 'suasio').good!;
-    expect(withLamia).toBeCloseTo(base * (1 + 0.25 * 2), 6);
+    // Only Resignation (Tristitia) shifts Suasio success now; Lamia acts through its runner instead.
+    expect(categoryTierModifiers(s, 'suasio').good!).toBeCloseTo(base, 6);
   });
 
   it('Indagatio / Emptio have no success-shift source yet', () => {
@@ -266,15 +266,10 @@ describe('categoryTierModifiers — per-category success shift (02 §2)', () => 
     expect(categoryTierModifiers(s, 'emptio')).toEqual({});
   });
 
-  it('each Lamia also lifts the reprobate generation multiplier', () => {
+  it('Lamia no longer lifts the reprobate generation multiplier (reclassified as a runner)', () => {
     expect(computeModifiers(fresh()).reprobateGenerationRateMul).toBe(1);
-    expect(computeModifiers(withInvocation('lamia', 1)).reprobateGenerationRateMul).toBeCloseTo(
-      1.5,
-      6,
-    );
-    expect(computeModifiers(withInvocation('lamia', 3)).reprobateGenerationRateMul).toBeCloseTo(
-      2.5,
-      6,
+    expect(computeModifiers(withInvocation('lamia', 3)).reprobateGenerationRateMul).toBe(
+      NEUTRAL_MODIFIERS.reprobateGenerationRateMul,
     );
   });
 });
