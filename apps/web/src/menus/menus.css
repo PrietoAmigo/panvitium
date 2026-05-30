@@ -1,0 +1,2013 @@
+/* Panvitium menu + room styles — ported from the prototype's styles.css.
+   Texture url()s point at apps/web/public/assets/panvitium/. Room backgrounds are
+   appended at the bottom referencing the real PNGs (clean + .furnished variants).
+   The prototype used inlined data-URIs (backgrounds.css) — not needed here. */
+
+/* Panvitium — playspace styling, ported from the app's grimoire-baroque system.
+   Real photoreal room art now drives the .scene backdrops (ADR-021 fulfilled). */
+
+:root {
+  --void: #0a0807;
+  --void-2: #120d0a;
+  --ink: #2a1d12;
+  --candle: #e6a23c;
+  --candle-soft: #c9822f;
+  --blood: #7c1417;
+  --blood-bright: #a01e22;
+  --gold: #c9a227;
+  --gold-leaf: #d8b658;
+  --parchment: #e7d8b4;
+  --parchment-shadow: #c9b489;
+
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at 50% 30%, var(--void-2) 0%, var(--void) 70%, #050403 100%);
+  color: var(--parchment);
+  font-family: var(--font-body);
+  font-size: 18px;
+  overflow: hidden;
+}
+
+.app {
+  position: relative;
+  height: 100%;
+  display: flex;
+}
+
+/* ---------- HUD ---------- */
+
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  padding: 1.4rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  animation: fade-in 1.4s ease 0.2s both;
+  pointer-events: none;
+}
+
+.hud-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+  color: var(--gold-leaf);
+  text-shadow:
+    0 0 12px rgba(201, 162, 39, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.8);
+  margin-bottom: 0.6rem;
+}
+
+.resource {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.resource-label {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--candle-soft);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.resource-value {
+  font-size: 1.4rem;
+  color: var(--parchment);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+.population .resource-value {
+  color: var(--blood-bright);
+}
+
+.vigil {
+  margin-top: 0.8rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: rgba(231, 216, 180, 0.55);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.vigil-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--blood-bright);
+  box-shadow: 0 0 8px var(--blood-bright);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+/* ---------- Stage & rooms ---------- */
+
+.stage {
+  position: relative;
+  flex: 1;
+  margin: auto;
+  width: min(100%, 1280px);
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  overflow: hidden;
+  box-shadow: inset 0 0 240px 40px rgba(0, 0, 0, 0.78);
+  animation: fade-in 1.8s ease both;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  background-color: #0a0807;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: filter 0.6s ease;
+}
+
+/* Real photoreal backdrops live in backgrounds.css (clean + furnished, inlined). */
+/* Panvitium visual signature (03 §2.3): the Studio window burns red while the ritual runs. */
+.scene-studio.panvitium-active {
+  filter: saturate(1.15) contrast(1.04);
+}
+.scene-studio.panvitium-active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 42%, rgba(196, 26, 30, 0.5), transparent 46%),
+    linear-gradient(180deg, rgba(120, 14, 18, 0.22), rgba(60, 6, 8, 0.34));
+  mix-blend-mode: screen;
+  animation: ember 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ember {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Soft vignette to seat any plate into the candlelit mood */
+.scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 180px 30px rgba(0, 0, 0, 0.55);
+}
+
+.room-name {
+  position: absolute;
+  bottom: 1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(231, 216, 180, 0.72);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* ---------- Hotspots (diegetic click regions) ---------- */
+
+.hotspot {
+  position: absolute;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+  z-index: 5;
+}
+
+.hotspot.is-door {
+  align-items: center;
+}
+
+.hotspot:hover,
+.hotspot:focus-visible {
+  border-color: rgba(216, 182, 88, 0.55);
+  background: radial-gradient(ellipse at center, rgba(230, 162, 60, 0.16), transparent 70%);
+  box-shadow:
+    0 0 30px rgba(230, 162, 60, 0.22),
+    inset 0 0 24px rgba(230, 162, 60, 0.1);
+  outline: none;
+}
+
+.hotspot.is-door:hover,
+.hotspot.is-door:focus-visible {
+  border-color: rgba(216, 182, 88, 0.45);
+  background: linear-gradient(180deg, transparent, rgba(230, 162, 60, 0.14));
+}
+
+.hotspot-label {
+  margin-bottom: 0.5rem;
+  padding: 0.2rem 0.7rem;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--parchment);
+  background: rgba(10, 8, 7, 0.82);
+  border: 1px solid rgba(216, 182, 88, 0.35);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.hotspot.is-door .hotspot-label {
+  margin-bottom: 0;
+}
+
+.hotspot:hover .hotspot-label,
+.hotspot:focus-visible .hotspot-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.door-glyph {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: rgba(216, 182, 88, 0);
+  transition:
+    color 0.25s ease,
+    text-shadow 0.25s ease;
+  text-shadow: 0 0 0 transparent;
+  pointer-events: none;
+}
+.hotspot.is-door:hover .door-glyph,
+.hotspot.is-door:focus-visible .door-glyph {
+  color: rgba(230, 196, 120, 0.92);
+  text-shadow: 0 0 16px rgba(230, 162, 60, 0.7);
+}
+
+/* Reveal-all affordance hint */
+.peek .hotspot {
+  border-color: rgba(216, 182, 88, 0.28);
+}
+.peek .hotspot .hotspot-label {
+  opacity: 0.85;
+  transform: translateY(0);
+}
+
+/* ---------- Summoned creatures (Invocation Room circle) ---------- */
+
+.summon-creature {
+  position: absolute;
+  transform: translateX(-50%);
+  transform-origin: bottom center;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 12px rgba(0, 0, 0, 0.6));
+  animation: summon-rise 0.7s cubic-bezier(0.2, 0.7, 0.25, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes summon-rise {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px) scale(0.92);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* Always-on diegetic props overlaid on a clean plate (book, PC, scroll). */
+.scene-prop {
+  position: absolute;
+  pointer-events: none;
+  z-index: 3;
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.7));
+}
+
+.panel-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 3, 3, 0.72);
+  animation: fade-in 0.25s ease both;
+}
+
+.panel {
+  width: min(540px, 86vw);
+  max-height: 82vh;
+  overflow: auto;
+  padding: 2rem 2.4rem;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 250, 235, 0.5), transparent 60%),
+    linear-gradient(160deg, var(--parchment), var(--parchment-shadow));
+  border: 1px solid #7a6740;
+  box-shadow:
+    0 0 0 6px rgba(10, 8, 7, 0.6),
+    0 24px 60px rgba(0, 0, 0, 0.7);
+  animation: panel-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* Old-scroll variant — real parchment plate + manuscript type (all panels but the Altar). */
+.panel--scroll {
+  color: #3a2914;
+  font-family: 'IM Fell English', 'EB Garamond', serif;
+  background: url('/assets/panvitium/parchment.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #5e4a28;
+  box-shadow:
+    0 0 0 6px rgba(10, 8, 7, 0.6),
+    inset 0 0 70px rgba(86, 56, 24, 0.3),
+    0 24px 60px rgba(0, 0, 0, 0.72);
+}
+.panel--scroll .panel-body {
+  font-size: 1.14rem;
+  line-height: 1.62;
+}
+.panel--scroll .panel-header {
+  border-bottom-color: rgba(90, 64, 30, 0.45);
+}
+.panel--scroll .panel-title {
+  font-family: 'IM Fell English SC', 'IM Fell English', serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: #7c1417;
+}
+.panel--scroll .panel-close {
+  color: #3a2914;
+}
+/* Item labels become manuscript small-caps; ink-brown rules between rows. */
+.panel--scroll .opera-name,
+.panel--scroll .vitium-name,
+.panel--scroll .maleficium-name,
+.panel--scroll .devotion-name,
+.panel--scroll .pc-heading,
+.panel--scroll .invocations-power,
+.panel--scroll .maleficia-power {
+  font-family: 'IM Fell English SC', serif;
+  letter-spacing: 0.01em;
+}
+.panel--scroll .opera-action,
+.panel--scroll .vitium-row,
+.panel--scroll .maleficium-row,
+.panel--scroll .devotion-row {
+  border-top-color: rgba(108, 80, 40, 0.4);
+}
+.panel--scroll .opera-cost,
+.panel--scroll .vitium-sub,
+.panel--scroll .maleficium-desc,
+.panel--scroll .opera-intro {
+  color: #50391d;
+}
+
+/* Engraved-stone variant — tombstone slab + incised inscriptional lettering (Altar). */
+.panel--stone {
+  position: relative;
+  width: min(600px, 90vw);
+  max-height: none;
+  overflow: visible;
+  padding: 3rem 3.4rem 2.7rem;
+  color: #1c1c1e;
+  font-family: 'Cinzel', Georgia, serif;
+  text-shadow: 0 1px 0 rgba(248, 246, 240, 0.5);
+  background:
+    linear-gradient(rgba(210, 207, 200, 0.42), rgba(190, 187, 180, 0.42)),
+    url('/assets/panvitium/altar-stone.png');
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  border: none;
+  box-shadow: inset 0 0 80px rgba(24, 22, 19, 0.4);
+  filter: drop-shadow(0 22px 42px rgba(0, 0, 0, 0.8));
+  /* Smooth, organic river-pebble silhouette — rounded, not jagged. */
+  border-radius: 160px 185px 150px 195px / 140px 150px 135px 125px;
+}
+.panel--stone .panel-body {
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+}
+/* Floating close (no title bar — the menu reads as carved straight into the stone). */
+.panel--stone .panel-close--float {
+  position: absolute;
+  top: 1.1rem;
+  right: 1.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #2a2a2e;
+  opacity: 0.78;
+  text-shadow: 0 1px 0 rgba(248, 246, 240, 0.5);
+  transition: opacity 0.2s ease;
+}
+.panel--stone .panel-close--float:hover {
+  opacity: 1;
+}
+.panel--stone .altar-intro {
+  margin: 0 0 0.8rem;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #242426;
+  opacity: 1;
+}
+.panel--stone .devotion-list {
+  margin: 0 0 0.6rem;
+}
+.panel--stone .devotion-row {
+  padding: 0.22rem 0;
+  border-top: 1px solid rgba(30, 28, 24, 0.35);
+}
+.panel--stone .devotion-name {
+  color: #161618;
+  font-size: 0.92rem;
+}
+.panel--stone .devotion-pips {
+  color: #232326;
+  letter-spacing: 0.14em;
+}
+.panel--stone .devotion-total {
+  color: #2c2c30;
+}
+.panel--stone .altar-sigils {
+  color: #34343a;
+  font-size: 0.8rem;
+  font-style: italic;
+  margin: 0 0 0.7rem;
+  opacity: 1;
+}
+/* The descend action — a carved command. */
+.panel--stone .descend-btn {
+  font-family: 'Cinzel', serif;
+  color: #161618;
+  margin-top: 0.3rem;
+  background: rgba(238, 236, 230, 0.3);
+  border: 1px solid rgba(54, 52, 48, 0.4);
+  text-shadow: 0 1px 0 rgba(244, 242, 236, 0.5);
+}
+.panel--stone .descend-btn:hover:not(:disabled) {
+  background: rgba(238, 236, 230, 0.5);
+  border-color: rgba(54, 52, 48, 0.6);
+}
+.panel--stone .descend-btn--armed {
+  color: #f3e7d4;
+  background: var(--blood);
+  border-color: var(--blood-bright);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.panel--stone .descend-warning {
+  color: #7c1417;
+  text-shadow: 0 1px 0 rgba(244, 242, 236, 0.4);
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+}
+
+/* Shared floating close (used by header-less variants). */
+.panel-close--float {
+  position: absolute;
+  top: 0.95rem;
+  right: 1.3rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 3;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: opacity 0.2s ease;
+}
+
+/* Dim wooden display-case variant (Maleficia). */
+.panel--cabinet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-height: 82vh;
+  overflow: hidden;
+  color: #e7d8b4;
+  background:
+    radial-gradient(ellipse at 50% -12%, rgba(150, 110, 60, 0.3), transparent 58%),
+    url('/assets/panvitium/wood-case.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #120b06;
+  box-shadow:
+    0 0 0 6px rgba(10, 8, 7, 0.62),
+    inset 0 0 70px rgba(0, 0, 0, 0.72),
+    0 24px 60px rgba(0, 0, 0, 0.78);
+}
+/* The body scrolls internally; its scrollbar is hidden (not visible, not clickable). */
+.panel--cabinet .panel-body {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.panel--cabinet .panel-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+.panel--cabinet .panel-close--float {
+  color: #e7d8b4;
+  opacity: 0.72;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+.panel--cabinet .panel-close--float:hover {
+  opacity: 1;
+}
+.panel--cabinet .mal-cabinet {
+  margin-top: 1.2rem;
+}
+/* Close-up text reads light against the dark wood. */
+.panel--cabinet .mal-back {
+  color: #d8b658;
+}
+.panel--cabinet .mal-detail-name {
+  color: #ece0c2;
+}
+.panel--cabinet .mal-detail-desc {
+  color: #c9b78c;
+  font-family: 'IM Fell English', serif;
+}
+.panel--cabinet .mal-detail-effect {
+  color: #e6a23c;
+  border-top-color: rgba(216, 182, 88, 0.3);
+}
+.panel--cabinet .rarity-common {
+  color: #b59a6a;
+}
+.panel--cabinet .rarity-rare {
+  color: #5fb6b0;
+}
+.panel--cabinet .rarity-profane {
+  color: #d4787b;
+}
+.panel--cabinet .rarity-anathema {
+  color: #b48fd6;
+}
+
+.panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(122, 103, 64, 0.5);
+  padding-bottom: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.panel-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--blood);
+  letter-spacing: 0.04em;
+}
+.panel-title::first-letter {
+  font-size: 1.6em;
+  line-height: 0;
+}
+
+.panel-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: var(--ink);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+.panel-close:hover {
+  opacity: 1;
+}
+
+.panel-body {
+  font-size: 1.06rem;
+  line-height: 1.6;
+}
+
+.opera-intro {
+  font-style: italic;
+  opacity: 0.85;
+  margin-top: 0;
+}
+
+.opera-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--parchment-shadow);
+}
+.opera-meta {
+  display: flex;
+  flex-direction: column;
+}
+.opera-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+}
+.opera-cost {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.opera-btn {
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  color: var(--parchment);
+  background: var(--blood);
+  border: 1px solid var(--blood-bright);
+  border-radius: 3px;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.05s ease;
+}
+.opera-btn:hover:not(:disabled) {
+  background: var(--blood-bright);
+}
+.opera-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.opera-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.opera-btn--secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: #7a6740;
+}
+.opera-notice {
+  color: var(--blood-bright);
+  font-style: italic;
+  font-size: 0.9rem;
+  margin: 0.6rem 0 0;
+}
+
+/* Altar devotion */
+.altar-intro {
+  font-style: italic;
+  opacity: 0.85;
+  margin-top: 0;
+}
+.devotion-list {
+  list-style: none;
+  margin: 0 0 0.8rem;
+  padding: 0;
+}
+.devotion-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.34rem 0;
+  border-top: 1px solid var(--parchment-shadow);
+}
+.devotion-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  font-size: 0.96rem;
+}
+.devotion-pips {
+  letter-spacing: 0.15em;
+  color: var(--blood-bright);
+}
+.devotion-total {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+  min-width: 4ch;
+  text-align: right;
+}
+.altar-sigils {
+  opacity: 0.55;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+.descend-btn {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.7rem;
+  letter-spacing: 0.1em;
+}
+.descend-btn--armed {
+  background: var(--blood);
+  border-color: var(--blood-bright);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+.descend-warning {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--blood-bright);
+  text-align: center;
+}
+
+/* Lists shared by Ars Goetia / Maleficia / ledgers */
+.vitium-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+}
+.vitium-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--parchment-shadow);
+}
+.vitium-row.is-locked {
+  opacity: 0.45;
+}
+.vitium-row.is-active .vitium-name {
+  color: var(--blood);
+}
+.vitium-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.vitium-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+}
+.vitium-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.05em;
+}
+.vitium-sub {
+  font-size: 0.82rem;
+  opacity: 0.72;
+}
+.invocations-power {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  color: var(--blood);
+  margin: 0 0 0.4rem;
+}
+
+.maleficia-power {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  color: var(--blood);
+  margin: 0.2rem 0 0.4rem;
+}
+.maleficium-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.7rem;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--parchment-shadow);
+}
+.maleficium-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+}
+.maleficium-desc {
+  grid-column: 2;
+  font-size: 0.85rem;
+  opacity: 0.72;
+}
+.rarity-badge {
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+.rarity-common {
+  color: #6b5a3a;
+}
+.rarity-rare {
+  color: #2f6d6a;
+}
+.rarity-profane {
+  color: #7c1417;
+}
+.rarity-anathema {
+  color: #5a2d82;
+}
+
+/* ---------- Maleficia — glass display cabinet ---------- */
+.mal-cabinet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 10px;
+  margin-top: 0.2rem;
+}
+.mal-case {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 9px;
+  border: 1px solid #5d4d30;
+  border-radius: 5px;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(70, 60, 48, 0.5), transparent 70%),
+    linear-gradient(160deg, #272320 0%, #15120e 55%, #0c0a07 100%);
+  box-shadow:
+    inset 0 0 16px rgba(0, 0, 0, 0.75),
+    0 2px 5px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+/* Glass front reflection */
+.mal-case::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    132deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.05) 20%,
+    transparent 44%
+  );
+  pointer-events: none;
+}
+.mal-case:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold-leaf);
+  box-shadow:
+    inset 0 0 16px rgba(0, 0, 0, 0.6),
+    0 0 18px rgba(216, 182, 88, 0.35);
+}
+.mal-case-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.65));
+}
+
+/* Close-up detail */
+.mal-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.mal-back {
+  align-self: flex-start;
+  font-family: 'IM Fell English', serif;
+  font-size: 0.95rem;
+  color: #7c1417;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0.4rem;
+  cursor: pointer;
+}
+.mal-back:hover {
+  text-decoration: underline;
+}
+.mal-case--big {
+  width: 210px;
+  height: 250px;
+  aspect-ratio: auto;
+  margin: 0.2rem 0 1.1rem;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mal-detail-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.7));
+}
+.mal-detail-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+.mal-detail-name {
+  font-family: 'IM Fell English SC', serif;
+  font-weight: 400;
+  font-size: 1.5rem;
+  margin: 0;
+  color: #4a2d10;
+  letter-spacing: 0.01em;
+}
+.mal-detail-desc {
+  font-style: italic;
+  color: #50391d;
+  margin: 0;
+  max-width: 36ch;
+}
+.mal-detail-effect {
+  font-family: 'IM Fell English SC', serif;
+  color: #7c1417;
+  font-size: 1.02rem;
+  margin: 0.2rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(108, 80, 40, 0.4);
+  max-width: 36ch;
+}
+
+.pc-empty {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* ---------- The PC — Ubuntu-style file-manager window ---------- */
+.pc-window {
+  width: min(700px, 93vw);
+  height: min(560px, 85vh);
+  display: flex;
+  flex-direction: column;
+  background: #fbfbfb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(0, 0, 0, 0.45);
+  font-family:
+    'Ubuntu',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  animation: panel-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.pc-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  flex: 0 0 auto;
+  padding: 0 10px 0 12px;
+  background: linear-gradient(#f7f7f7, #efeeef);
+  border-bottom: 1px solid #d9d8da;
+  color: #2c2c2c;
+}
+.pc-tb-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pc-tb-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #e7e6e8;
+  color: #555;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.pc-tb-nav--off {
+  opacity: 0.4;
+}
+.pc-location {
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 0.95rem;
+  color: #3a3a3a;
+  margin-left: 10px;
+}
+.pc-winbtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: #e3e2e4;
+  color: #444;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.pc-winbtn:hover {
+  background: #e95420;
+  color: #fff;
+}
+
+.pc-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.pc-sidebar {
+  width: 152px;
+  flex: 0 0 auto;
+  background: #ededed;
+  border-right: 1px solid #dcdbdd;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pc-side-head {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9a9a9a;
+  padding: 4px 10px 6px;
+}
+.pc-side-item {
+  font-size: 0.9rem;
+  color: #444;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.pc-side-item--active {
+  background: #d8d7d9;
+  color: #111;
+  font-weight: 500;
+}
+
+.pc-files {
+  flex: 1;
+  padding: 20px;
+  overflow: auto;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  grid-auto-rows: min-content;
+  gap: 12px 4px;
+  align-content: start;
+}
+.pc-file {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 6px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+.pc-file:hover {
+  background: #eef3fb;
+  border-color: #cfe0f5;
+}
+.pc-file:active {
+  background: #e1ebf8;
+}
+.pc-file-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 1.7rem;
+  font-weight: 700;
+  box-shadow:
+    inset 0 -3px 7px rgba(0, 0, 0, 0.2),
+    inset 0 2px 4px rgba(255, 255, 255, 0.25),
+    0 5px 12px rgba(0, 0, 0, 0.22);
+}
+.pc-file-name {
+  font-size: 0.86rem;
+  color: #333;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Program window (an executable running over the desktop) */
+.pc-titlebar--app {
+  background: linear-gradient(#34343a, #2b2b30);
+  border-bottom: 1px solid #18181b;
+  color: #eaeaea;
+}
+.pc-titlebar--app .pc-location {
+  color: #cfcfcf;
+}
+.pc-titlebar--app .pc-winbtn {
+  background: #47474c;
+  color: #ddd;
+}
+.pc-titlebar--app .pc-winbtn:hover {
+  background: #e95420;
+  color: #fff;
+}
+.pc-tb-back {
+  font-family: 'Ubuntu', sans-serif;
+  font-size: 0.88rem;
+  color: #ededed;
+  background: #47474c;
+  border: none;
+  border-radius: 7px;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.pc-tb-back:hover {
+  background: #56565c;
+}
+
+.pc-app {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 26px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background:
+    radial-gradient(circle at 28% 18%, rgba(233, 84, 32, 0.22), transparent 45%),
+    radial-gradient(circle at 75% 80%, rgba(119, 41, 83, 0.4), transparent 55%),
+    linear-gradient(150deg, #3a0f30 0%, #2c001e 55%, #1a0411 100%);
+}
+.pc-app-card {
+  width: 100%;
+  max-width: 560px;
+  background: rgba(28, 24, 30, 0.93);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  padding: 20px 22px;
+  color: #e8e6ea;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+}
+.pc-app-title {
+  font-family: 'Ubuntu', sans-serif;
+  font-weight: 500;
+  font-size: 1.2rem;
+  margin: 0 0 0.7rem;
+  color: #fff;
+}
+.pc-app-intro {
+  color: #b9b4be;
+  font-size: 0.92rem;
+  margin: 0 0 0.8rem;
+}
+.pc-app-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pc-app-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.pc-app-row.is-locked {
+  opacity: 0.5;
+}
+.pc-app-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pc-app-name {
+  font-family: 'Ubuntu', sans-serif;
+  font-weight: 500;
+}
+.pc-app-sub {
+  font-size: 0.8rem;
+  color: #9a95a0;
+}
+.pc-app-btn {
+  font-family: 'Ubuntu', sans-serif;
+  font-size: 0.82rem;
+  color: #fff;
+  background: #e95420;
+  border: none;
+  border-radius: 6px;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex: 0 0 auto;
+}
+.pc-app-btn:hover:not(:disabled) {
+  background: #c7431a;
+}
+.pc-app-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #56525c;
+}
+.pc-app-empty {
+  text-align: center;
+  color: #b9b4be;
+  padding: 2.2rem 1rem;
+}
+.pc-app-empty-glyph {
+  font-size: 2.6rem;
+  display: block;
+  opacity: 0.5;
+  margin-bottom: 0.5rem;
+}
+.pc-app-empty-sub {
+  font-family: 'Ubuntu Mono', monospace;
+  font-size: 0.82rem;
+  opacity: 0.6;
+  margin-top: 0.3rem;
+}
+.pc-app .pc-log {
+  max-height: 340px;
+  font-family: 'Ubuntu Mono', monospace;
+}
+
+/* Emptio rarity tags + Achievements ledger inside the dark app card */
+.pc-app-sub.rarity-common {
+  color: #b59a6a;
+}
+.pc-app-sub.rarity-rare {
+  color: #5fb6b0;
+}
+.pc-app-sub.rarity-profane {
+  color: #d4787b;
+}
+.pc-app-sub.rarity-anathema {
+  color: #b48fd6;
+}
+.pc-app-count {
+  font-family: 'Ubuntu', sans-serif;
+  color: #e95420;
+  font-weight: 500;
+  margin: 0 0 0.7rem;
+}
+.pc-app-ach {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.pc-ach-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  opacity: 0.55;
+}
+.pc-ach-row.is-got {
+  opacity: 1;
+  border-color: rgba(233, 84, 32, 0.35);
+  background: rgba(233, 84, 32, 0.08);
+}
+.pc-ach-mark {
+  color: #e95420;
+  flex: 0 0 auto;
+}
+.pc-ach-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pc-ach-name {
+  font-family: 'Ubuntu', sans-serif;
+  font-weight: 500;
+  color: #f0eef2;
+}
+.pc-ach-desc {
+  font-size: 0.8rem;
+  color: #9a95a0;
+}
+
+.pc-log {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #050807;
+  border: 1px solid var(--ink);
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  color: #6fae6f;
+}
+.pc-log-line {
+  padding: 0.1rem 0;
+}
+.pc-log-line.tier-stellar {
+  color: #d97a7d;
+}
+.pc-log-line.tier-excellent {
+  color: var(--candle);
+}
+
+/* ---------- Katabasis — the demonic descent ---------- */
+.katabasis {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  padding: 3rem 1.5rem 3.5rem;
+  color: #c9c4bc;
+  background:
+    radial-gradient(ellipse at 50% 22%, rgba(150, 14, 14, 0.42), transparent 52%),
+    radial-gradient(ellipse at 50% 118%, rgba(120, 10, 10, 0.5), transparent 60%), #060304;
+  animation: fade-in 0.5s ease both;
+}
+.kat-embers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 82%, rgba(255, 60, 30, 0.1), transparent 30%),
+    radial-gradient(circle at 82% 28%, rgba(255, 40, 20, 0.08), transparent 35%);
+  mix-blend-mode: screen;
+  animation: kat-flicker 5s ease-in-out infinite;
+}
+@keyframes kat-flicker {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.kat-inner {
+  width: min(960px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.kat-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3rem);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  margin: 0;
+  color: #ff3b2a;
+  text-shadow:
+    0 0 28px rgba(255, 46, 26, 0.75),
+    0 0 8px rgba(255, 90, 50, 0.9),
+    0 2px 4px #000;
+  animation: kat-title-glow 3.2s ease-in-out infinite;
+}
+@keyframes kat-title-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 22px rgba(255, 46, 26, 0.6),
+      0 0 8px rgba(255, 90, 50, 0.8),
+      0 2px 4px #000;
+  }
+  50% {
+    text-shadow:
+      0 0 42px rgba(255, 46, 26, 0.95),
+      0 0 15px rgba(255, 110, 60, 1),
+      0 2px 4px #000;
+  }
+}
+.kat-intro {
+  text-align: center;
+  font-style: italic;
+  color: #8f8780;
+  max-width: 54ch;
+  margin: 0.8rem 0 0.4rem;
+}
+.kat-pool {
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+  color: #b8b4ac;
+  margin: 0.3rem 0 1.4rem;
+}
+.kat-pool strong {
+  color: #ff5a3a;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25em;
+  margin-left: 0.45rem;
+  text-shadow: 0 0 14px rgba(255, 60, 30, 0.7);
+}
+
+.kat-pager {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.6rem;
+}
+.kat-tab {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9a8f88;
+  background: linear-gradient(#1a1413, #100b0b);
+  border: 1px solid #3a1414;
+  border-radius: 4px;
+  padding: 0.6rem 1.6rem;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.kat-tab:hover {
+  color: #d8cfc8;
+  border-color: #6e1114;
+}
+.kat-tab--active {
+  color: #ff5a3a;
+  border-color: #a01e22;
+  background: linear-gradient(#2a0e0e, #160808);
+  box-shadow:
+    0 0 18px rgba(160, 30, 34, 0.5),
+    inset 0 0 16px rgba(120, 10, 10, 0.4);
+  text-shadow: 0 0 12px rgba(255, 60, 30, 0.7);
+}
+
+.prince-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
+  gap: 0.9rem;
+  width: 100%;
+}
+.prince-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: linear-gradient(155deg, #1a1413, #0c0807);
+  border: 1px solid #2c1412;
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 24px rgba(0, 0, 0, 0.7),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.prince-card:hover {
+  border-color: #6e1114;
+  box-shadow:
+    inset 0 0 24px rgba(60, 6, 6, 0.6),
+    0 0 16px rgba(120, 10, 10, 0.4);
+}
+.prince-head {
+  display: flex;
+  flex-direction: column;
+}
+.prince-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  color: #d6cfc6;
+}
+.prince-sin {
+  font-size: 0.74rem;
+  color: #7e756e;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.prince-pips {
+  letter-spacing: 0.22em;
+  color: #ff3b2a;
+  text-shadow: 0 0 12px rgba(255, 50, 28, 0.7);
+}
+.prince-devotion {
+  font-variant-numeric: tabular-nums;
+  color: #9a928a;
+  font-size: 0.84rem;
+}
+
+.kat-hold {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #e8ddd6;
+  background: linear-gradient(#7c1417, #4e0c0e);
+  border: 1px solid #a01e22;
+  border-radius: 4px;
+  padding: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition:
+    background 0.12s ease,
+    transform 0.06s ease,
+    box-shadow 0.12s ease;
+}
+.kat-hold:hover:not(:disabled) {
+  background: linear-gradient(#a01e22, #6e1013);
+}
+.kat-hold:active:not(:disabled) {
+  transform: scale(0.97);
+  background: linear-gradient(#ff3b2a, #a01e22);
+  color: #fff;
+  box-shadow:
+    0 0 22px rgba(255, 50, 28, 0.8),
+    inset 0 0 12px rgba(0, 0, 0, 0.4);
+}
+.kat-hold:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+.offer-hold {
+  margin-top: auto;
+}
+
+.sigil-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 0.8rem;
+  width: 100%;
+}
+.sigil-card {
+  padding: 0.9rem;
+  background: linear-gradient(155deg, #161312, #0b0807);
+  border: 1px solid #241c1a;
+  border-radius: 6px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+}
+.sigil-card--bound {
+  border-color: #a01e22;
+  box-shadow:
+    inset 0 0 20px rgba(60, 6, 6, 0.5),
+    0 0 14px rgba(160, 30, 34, 0.35);
+}
+.sigil-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.6rem;
+}
+.sigil-seal {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  color: #ff5a3a;
+  background: #0a0505;
+  border: 1px solid #6e1114;
+  text-shadow: 0 0 10px rgba(255, 60, 30, 0.7);
+  box-shadow: inset 0 0 10px rgba(120, 10, 10, 0.5);
+}
+.sigil-meta {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.sigil-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  color: #cfc7be;
+}
+.sigil-desc {
+  font-size: 0.78rem;
+  color: #857c74;
+}
+.sigil-bound {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  color: #ff5a3a;
+  min-width: 2ch;
+  text-align: right;
+}
+.sigil-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.sigil-bind,
+.sigil-free {
+  flex: 1 1 0;
+}
+.sigil-free {
+  background: linear-gradient(#2a201e, #181210);
+  border-color: #4a3a36;
+  color: #bdb2aa;
+}
+.sigil-free:hover:not(:disabled) {
+  background: linear-gradient(#3a2c28, #221a18);
+}
+.sigil-free:active:not(:disabled) {
+  background: linear-gradient(#5a4640, #33271f);
+  box-shadow: none;
+  color: #e8ddd6;
+}
+
+.kat-ascend {
+  margin-top: 2rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffd9cf;
+  background: linear-gradient(#7c1417, #4a0a0c);
+  border: 1px solid #a01e22;
+  border-radius: 5px;
+  padding: 0.9rem 2.4rem;
+  cursor: pointer;
+  box-shadow: 0 0 24px rgba(160, 30, 34, 0.4);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.kat-ascend:hover {
+  background: linear-gradient(#a01e22, #6e1013);
+  box-shadow: 0 0 34px rgba(200, 30, 30, 0.6);
+}
+
+/* ---------- Ars Goetia — full-screen open book ---------- */
+.goetia-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5vh 1vw;
+  background: radial-gradient(ellipse at center, rgba(22, 13, 7, 0.86), rgba(2, 1, 1, 0.96));
+  animation: fade-in 0.4s ease both;
+}
+.goetia-close {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.4rem;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(20, 14, 9, 0.7);
+  border: 1px solid rgba(216, 182, 88, 0.4);
+  color: #d8b658;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.goetia-close:hover {
+  background: rgba(124, 20, 23, 0.7);
+  color: #f0e3d0;
+}
+
+.goetia-spread {
+  position: relative;
+  width: min(97vw, calc(94vh * 1.436));
+  aspect-ratio: 599 / 417;
+  background: url('/assets/panvitium/open-book.png') center / contain no-repeat;
+  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.85));
+  container-type: size;
+  animation: panel-rise 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* Two page text columns seated on the open leaves. */
+.gb-page {
+  position: absolute;
+  top: 11%;
+  height: 78%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #271c12;
+  font-family: 'IM Fell English', Georgia, serif;
+}
+.gb-page--left {
+  left: 9.5%;
+  width: 33%;
+}
+.gb-page--right {
+  left: 57.5%;
+  width: 33%;
+}
+
+.gb-title {
+  font-family: 'IM Fell English SC', serif;
+  font-weight: 400;
+  font-size: 5.6cqh;
+  line-height: 1.05;
+  margin: 1cqh 0 0;
+  color: #3a2412;
+  letter-spacing: 0.01em;
+}
+.gb-subtitle {
+  font-family: 'IM Fell English SC', serif;
+  font-weight: 400;
+  font-size: 4.4cqh;
+  margin: 1cqh 0 1.6cqh;
+  color: #3a2412;
+}
+.gb-rule {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(58, 36, 18, 0.6) 20%,
+    rgba(58, 36, 18, 0.6) 80%,
+    transparent
+  );
+  margin: 1.4cqh 0;
+}
+.gb-power {
+  font-size: 2.5cqh;
+  font-style: italic;
+  color: #5a3d1f;
+  margin: 0 0 1.6cqh;
+}
+.gb-intro {
+  font-size: 2.7cqh;
+  line-height: 1.5;
+  color: #2c2014;
+  margin: 0;
+  text-align: justify;
+}
+.gb-folio {
+  margin-top: auto;
+  text-align: center;
+  font-size: 2.3cqh;
+  color: #6a4d2a;
+  font-style: italic;
+}
+
+.gb-index {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6cqh;
+}
+.gb-entry {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 0.7em;
+  background: none;
+  border: none;
+  padding: 0.7cqh 0;
+  cursor: pointer;
+  font-family: 'IM Fell English', serif;
+  color: #271c12;
+  text-align: left;
+  border-bottom: 1px dotted rgba(90, 61, 31, 0.35);
+}
+.gb-entry:hover {
+  color: #7c1417;
+}
+.gb-entry:hover .gb-name {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.gb-entry.is-locked {
+  color: #8a7458;
+  cursor: pointer;
+}
+.gb-rank {
+  font-size: 2.7cqh;
+  min-width: 2.4em;
+  color: #6a4d2a;
+}
+.gb-name {
+  font-size: 3.4cqh;
+  font-variant: small-caps;
+  letter-spacing: 0.02em;
+}
+.gb-dots {
+  flex: 1 1 auto;
+}
+.gb-hint {
+  font-size: 2.2cqh;
+  font-style: italic;
+  color: #7c1417;
+}
+.gb-entry.is-locked .gb-hint {
+  color: #8a7458;
+}
+
+/* Detail leaf */
+.gb-illus-page {
+  align-items: center;
+  justify-content: center;
+}
+.gb-illus-img {
+  max-width: 94%;
+  max-height: 82%;
+  object-fit: contain;
+  filter: drop-shadow(0 1cqh 1.4cqh rgba(0, 0, 0, 0.5));
+}
+.gb-illus-cap {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 3.4cqh;
+  color: #3a2412;
+  margin: 1.4cqh 0 0;
+}
+.gb-back {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: 'IM Fell English', serif;
+  font-size: 2.4cqh;
+  font-style: italic;
+  color: #7c1417;
+}
+.gb-back:hover {
+  text-decoration: underline;
+}
+.gb-rank-big {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 2.6cqh;
+  color: #6a4d2a;
+  margin: 1.2cqh 0 0;
+  letter-spacing: 0.1em;
+}
+.gb-detail-name {
+  font-family: 'IM Fell English SC', serif;
+  font-weight: 400;
+  font-size: 5.2cqh;
+  margin: 0;
+  color: #3a2412;
+}
+.gb-stats {
+  margin: 1.4cqh 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5cqh 1em;
+  font-size: 2.6cqh;
+}
+.gb-stats dt {
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  color: #6a4d2a;
+}
+.gb-stats dd {
+  margin: 0;
+  color: #271c12;
+}
+.gb-stats dd.gb-effect {
+  color: #7c1417;
+  font-style: italic;
+}
+.gb-lore {
+  font-size: 2.6cqh;
+  line-height: 1.5;
+  color: #2c2014;
+  font-style: italic;
+  text-align: justify;
+  margin: 0;
+}
+.gb-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 0.8em;
+}
+.gb-summon,
+.gb-dispel {
+  font-family: 'IM Fell English SC', serif;
+  font-size: 2.6cqh;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 0.7cqh 1.6em;
+  border-radius: 2px;
+}
+.gb-summon {
+  color: #f3e7d4;
+  background: #7c1417;
+  border: 1px solid #5a0e10;
+}
+.gb-summon:hover:not(:disabled) {
+  background: #a01e22;
+}
+.gb-summon:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #6a5a44;
+  border-color: #5a4c38;
+}
+.gb-dispel {
+  color: #3a2412;
+  background: transparent;
+  border: 1px solid #6a4d2a;
+}
+.gb-dispel:hover {
+  background: rgba(90, 61, 31, 0.15);
+}
+
+/* ---------- Motion ---------- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ---------- Room backdrops (real files; prototype inlined these as data-URIs) ---------- */
+.scene-invocation {
+  background-image: url('/assets/panvitium/backgrounds/invocation.png');
+}
+.scene-altar {
+  background-image: url('/assets/panvitium/backgrounds/altar.jpg');
+}
+.scene-studio {
+  background-image: url('/assets/panvitium/backgrounds/studio.png');
+}
+.furnished .scene-invocation {
+  background-image: url('/assets/panvitium/backgrounds/invocation_complete.png');
+}
+.furnished .scene-altar {
+  background-image: url('/assets/panvitium/backgrounds/altar_complete.png');
+}
+.furnished .scene-studio {
+  background-image: url('/assets/panvitium/backgrounds/studio_complete.png');
+}

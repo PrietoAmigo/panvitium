@@ -183,6 +183,24 @@ bindable, the rest pending their effect mechanics):
 | S7  | Flat invoking power              | New `invokingPower` SigilEffect variant + `sigilInvokingPower` (rounded to int), added to `currentInvokingPower` on top of the maleficia total so it counts toward the invocation gates. Wired Andrealphus #65.                                                                                                                                                                                                                                                                                           |
 | S8  | Cost reductions                  | New `costReduction` SigilEffect variant + `CostChannel` + `sigilCostReductionByChannel`, dividing a cost by `(1 + strength)` at its site (never an increase). Wired Paimon #9 (action influence costs), Amy #58 (Emptio gold), and Orobas #55 (invocation soul cost — discount may pierce the nominal minimum).                                                                                                                                                                                           |
 
+**Frontend — room & menu layer (design handoff integrated).** The Claude Design handoff has been
+folded in as a compiling foundation, aligned to repo conventions (strict TS, explicit `.js` import
+extensions, `import type`, Prettier):
+
+- `apps/web/src/menus/` — the ported TypeScript menu layer: `RoomView`, `SummonedCreatures`,
+  `PanelShell`, `AltarPanel`, `MaleficiaCabinet`, `SuasioPanel`, `PcWindow`, `ArsGoetiaBook`,
+  `Katabasis`, the `useHold` ramp hook, the `types.ts` presentation shapes, the `menus.data.ts`
+  **mock** catalogs, and `menus.css`. Typechecks under the workspace gate.
+- `apps/web/public/assets/panvitium/` — the designed backdrops, invocation / maleficia art and
+  textures, served by Vite at the runtime URL `/assets/panvitium/...`.
+- `docs/frontend/` — the handoff's `INTEGRATION.md` wiring map and `Playspace.example.tsx`
+  orchestration reference (kept out of `src`, so neither is typechecked or linted).
+- **Not yet wired into the live app** (the handoff's "Step 4 — the actual work"): the components
+  still render from the `menus.data.ts` mock catalogs (each seam marked `TODO(wire)`) and
+  `menus.css` is not imported into the running tree, so current behaviour is unchanged. Next is
+  repointing the mocks at store / `packages/sim` selectors and swapping the placeholder `rooms/`
+  shell for the designed `menus/` layer.
+
 ### Remaining
 
 Economy-parity tracks still to reconcile against the spreadsheet:
@@ -200,8 +218,9 @@ Economy-parity tracks still to reconcile against the spreadsheet:
 
 Blocked on inputs that don't live in a coding session (independent of the above):
 
-- **Art & audio** — rooms are placeholder scenes pending the ADR-021 degraded-photoreal pipeline and
-  Howler audio content (needs the `assets/` directory).
+- **Art & audio** — the designed room/menu layer and its plates have landed (`apps/web/src/menus/`
+  - `public/assets/panvitium/`); what remains is wiring that layer to the store and any further art
+    via the ADR-021 degraded-photoreal pipeline plus Howler audio content.
 - **Final economy tuning** — any magnitudes not yet pinned to the sheet remain placeholders, flagged
   inline; the numbers are loaded from `Panvitium_Economy_Template.xlsx` (spreadsheet always wins).
 
