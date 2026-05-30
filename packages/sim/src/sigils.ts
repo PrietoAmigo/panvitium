@@ -72,10 +72,22 @@ export type SigilEffect =
       readonly direction: 'increase' | 'decrease';
     }
   | { readonly kind: 'invocationSin'; readonly sin: Sin }
+  | { readonly kind: 'penaltyReduction'; readonly channel: PenaltyChannel }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
 export type SigilCategory = 'suasio' | 'decimatio' | 'indagatio' | 'emptio';
+
+/**
+ * A subtype-penalty channel a sigil can soften (Gaap/Malphas/Gremory/Volac). Each names one existing
+ * per-count penalty coefficient; the sigil divides that coefficient by `(1 + strength)` (asymptotic
+ * to no penalty, never an outright bonus).
+ */
+export type PenaltyChannel =
+  | 'sigmaInfluence'
+  | 'celebrityGold'
+  | 'degenerateSuicide'
+  | 'gamblerGeneration';
 
 export interface SigilDef {
   readonly id: SigilId;
@@ -245,6 +257,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'tier', tier: 'apocalyptic', direction: 'decrease' },
   },
+  33: {
+    id: 33,
+    name: 'Gaap',
+    coefficient: 0.001,
+    effect: { kind: 'penaltyReduction', channel: 'sigmaInfluence' },
+  },
   34: {
     id: 34,
     name: 'Furfur',
@@ -271,6 +289,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Halphas',
     coefficient: 0.001,
     effect: { kind: 'katabasis', rolls: ['maleficia'] },
+  },
+  39: {
+    id: 39,
+    name: 'Malphas',
+    coefficient: 0.001,
+    effect: { kind: 'penaltyReduction', channel: 'celebrityGold' },
   },
   40: {
     id: 40,
@@ -320,11 +344,23 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'invocationEfficiencyMul', direction: 'increase' },
   },
+  56: {
+    id: 56,
+    name: 'Gremory',
+    coefficient: 0.001,
+    effect: { kind: 'penaltyReduction', channel: 'degenerateSuicide' },
+  },
   60: {
     id: 60,
     name: 'Vapula',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'vitiumMercaturaOutputMul', direction: 'increase' },
+  },
+  62: {
+    id: 62,
+    name: 'Volac',
+    coefficient: 0.001,
+    effect: { kind: 'penaltyReduction', channel: 'gamblerGeneration' },
   },
   63: {
     id: 63,
@@ -471,6 +507,27 @@ export function sigilInvocationSinContributions(
   }
   return out;
 }
+/**
+ * Per-channel subtype-penalty reduction factors from bound sigils (Gaap/Malphas/Gremory/Volac). Each
+ * value is a `(1 + strength)` divisor (≥ 1) applied to that penalty channel's per-count coefficient in
+ * `computeModifiers`, softening the penalty toward zero. `effectMul` carries the sigil enhancers.
+ */
+export function sigilPenaltyReductionByChannel(
+  state: GameState,
+  effectMul = 1,
+): Partial<Record<PenaltyChannel, number>> {
+  const out: Partial<Record<PenaltyChannel, number>> = {};
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'penaltyReduction') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    out[def.effect.channel] = (out[def.effect.channel] ?? 1) * (1 + s);
+  }
+  return out;
+}
+
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {
   let bonus = 0;
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {

@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 578** (sim 440 · shared 48 · api 11 · web 79).
+**Current test count: 582** (sim 444 · shared 48 · api 11 · web 79).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -169,7 +169,7 @@ factor × the player's current action efficiency × the invocation-effect multip
 | I2  | Additive-to-base effects           | Nightmare → additive to base suicide rate (new `flatBaseSuicideRatePerSecond` bundle field, added in `dynamics` alongside the Doom toggle); Behemoth → additive Stellar weight (factor 0.0005, deferred past the tierAcc block for its `playerEff` dependency); Lemure → offline gain rate, retargeted off the wrong influence/Husk target (`flatInfluencePerSecond` now reserved for the Decarabia #69 sigil). All efficiency-scaled. |
 | I3  | Lamia runner                       | Reclassified Lamia from a generation + Suasio-success modifier into an autonomous Suasio runner (`autonomous: { action: 'suggestion', efficiency: 0.05 }`), advanced by `runner.ts` like Familiar/Upir/Imp. Removed its `reprobateGenerationRateMul` and `categoryTierModifiers` contributions (and the dead `LAMIA_*` constants).                                                                                                     |
 
-**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~39 of 72 now
+**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~43 of 72 now
 bindable, the rest pending their effect mechanics):
 
 | #   | Slice                            | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -178,17 +178,18 @@ bindable, the rest pending their effect mechanics):
 | S2  | Per-category tier/success        | New `categoryTier` SigilEffect variant (`{ category, tiers, direction }`) folded into `categoryTierModifiers` via `sigilCategoryTierContributions` (scaled by the Solomon's Ring / Iron Nails enhancers). Wired Agares #2 / Beleth #13 (Indagatio / Decimatio success), Botis #17 / Ipos #22 (−Suasio / −Decimatio bad outcomes), Astaroth #29 / Andras #63 (+Stellar for Indagatio / Emptio), Andromalius #72 (Emptio success) and Naberius #24 (Suasio success).                                        |
 | S3  | Per-category action efficiency   | Added `indagatioEfficiencyMul` + `emptioEfficiencyMul` to the bundle and `categoryEfficiency`, completing the four-category Opera-efficiency surface (these are time-mode, so they scale action speed). Wired Bifrons #46 (Indagatio) and Seere #70 (Emptio).                                                                                                                                                                                                                                             |
 | S4  | Per-Sin invocation effectiveness | New `invocationSin` SigilEffect variant + `sigilInvocationSinContributions` feeding a per-Sin `invocationSinEffectivenessMul` bundle map. `invEffFor(sin)` applies it to every efficiency-derived invocation effect (Fama/Harpy/Plutus/Succubus/Nightmare/Behemoth/Lemure) and the autonomous runners (via `def.sin`). Wired Samigina #4 (Tristitia), Barbatos #8 (Gula), Bune #26 (Vanagloria), Berith #28 (Superbia), Furfur #34 (Luxuria), Vepar #42 (Ira), Shax #44 (Avaritia), Alloces #52 (Acedia). |
+| S5  | Subtype penalty reductions       | New `penaltyReduction` SigilEffect variant + `sigilPenaltyReductionByChannel`, dividing a penalty channel's per-count coefficient by `(1 + strength)` (never into a bonus). Wired Gaap #33 (Sigma influence), Malphas #39 (Celebrity gold), Gremory #56 (Degenerate suicide) and Volac #62 (Gambler generation). Vual #47 (−Degenerate gold) deferred — no such penalty in the model yet.                                                                                                                 |
 
 ### Remaining
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Sigils** — ~39 of 72 are wired. The rest are grouped by the mechanic each needs: subtype-targeted
-  murder (Glasya-Labolas/Sabnock/Camio/Haures/Amdusias), subtype penalty reductions
-  (Gaap/Malphas/Vual/Gremory/Volac), cost reductions (Paimon/Orobas/Amy), per-resource offline
-  (Sallos/Forneus), Indagatio discovery odds (Vassago/Stolas/Furcas), conversion (Bael/Eligos/Phenex/
-  Ose/Orias), the flat generators (Haagenti gold/s #48, Decarabia influence/s #69), and flat invoking
-  power (Andrealphus #65).
+- **Sigils** — ~43 of 72 are wired. The rest are grouped by the mechanic each needs: subtype-targeted
+  murder (Glasya-Labolas/Sabnock/Camio/Haures/Amdusias), cost reductions (Paimon/Orobas/Amy),
+  per-resource offline (Sallos/Forneus), Indagatio discovery odds (Vassago/Stolas/Furcas), conversion
+  (Bael/Eligos/Phenex/Ose/Orias), the flat generators (Haagenti gold/s #48, Decarabia influence/s
+  #69), and flat invoking power (Andrealphus #65). Vual #47 (−Degenerate gold penalty) is deferred —
+  the model has no Degenerate gold penalty; it needs the subtype-penalty assignment reconciled first.
 - **Maleficia effects** — roster, invoking power, stack caps, the Opera-efficiency enhancers
   (Ars Serpens / Voynich / Ritual Dagger), the sigil-effect amplifiers (Solomon's Ring / Iron Nails),
   and the invocation-effect multiplier (Black Candles) are done. Still to wire: the oracular reveals,

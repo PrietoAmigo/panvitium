@@ -43,6 +43,7 @@ import {
   sigilModifierContributions,
   sigilCategoryTierContributions,
   sigilInvocationSinContributions,
+  sigilPenaltyReductionByChannel,
   type ScalarModifierField,
 } from './sigils.js';
 import {
@@ -319,16 +320,27 @@ export function computeModifiers(state: GameState): Modifiers {
   // Vegas/Crusade flatly raise the per-count penalty coefficient of their targeted subtypes while
   // active; `pen[subtype]` is added to each subtype's base `*_PER_COUNT` constant before ×count.
   const pen = compositumPenaltyIncreaseBySubtype(state);
+  // Sigil penalty reductions (Gaap/Malphas/Gremory/Volac): each divides its channel's per-count
+  // coefficient by `(1 + strength)` (≥ 1; default 1 = no reduction), softening the penalty.
+  const penRed = sigilPenaltyReductionByChannel(state, sigilEffectMultiplier(owned));
   //   Degenerate (Luxuria): lowers suicide + Choleric murder
   const degenerateSuicideMul =
-    1 / (1 + (DEGENERATE_SUICIDE_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) * subs.degenerate);
+    1 /
+    (1 +
+      ((DEGENERATE_SUICIDE_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) /
+        (penRed.degenerateSuicide ?? 1)) *
+        subs.degenerate);
   const degenerateMurderMul =
     1 / (1 + (DEGENERATE_MURDER_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) * subs.degenerate);
   //   Nihilist (Tristitia): raises suicide
   const nihilistSuicideMul = 1 + NIHILIST_SUICIDE_INCREASE_PER_COUNT * subs.nihilist;
   //   Gambler (Avaritia): lowers generation
   const gamblerGenerationMul =
-    1 / (1 + (GAMBLER_GENERATION_REDUCTION_PER_COUNT + (pen.gambler ?? 0)) * subs.gambler);
+    1 /
+    (1 +
+      ((GAMBLER_GENERATION_REDUCTION_PER_COUNT + (pen.gambler ?? 0)) /
+        (penRed.gamblerGeneration ?? 1)) *
+        subs.gambler);
   //   Choleric (Ira): compounds its own murder rate (second-order on top of count × base)
   const cholericMurderCompound =
     1 + (CHOLERIC_MURDER_INCREASE_PER_COUNT + (pen.choleric ?? 0)) * subs.choleric;
@@ -337,10 +349,16 @@ export function computeModifiers(state: GameState): Modifiers {
     1 / (1 + (HUSK_EFFICIENCY_REDUCTION_PER_COUNT + (pen.husk ?? 0)) * subs.husk);
   //   Celebrity (Vanagloria): lowers gold rate
   const celebrityGoldMul =
-    1 / (1 + (CELEBRITY_GOLD_REDUCTION_PER_COUNT + (pen.celebrity ?? 0)) * subs.celebrity);
+    1 /
+    (1 +
+      ((CELEBRITY_GOLD_REDUCTION_PER_COUNT + (pen.celebrity ?? 0)) / (penRed.celebrityGold ?? 1)) *
+        subs.celebrity);
   //   Sigma (Superbia): lowers influence rate
   const sigmaInfluenceMul =
-    1 / (1 + (SIGMA_INFLUENCE_REDUCTION_PER_COUNT + (pen.sigma ?? 0)) * subs.sigma);
+    1 /
+    (1 +
+      ((SIGMA_INFLUENCE_REDUCTION_PER_COUNT + (pen.sigma ?? 0)) / (penRed.sigmaInfluence ?? 1)) *
+        subs.sigma);
   //   Glutton (Gula): slows offline catchup (consumed in session.resumeGame, NOT online ticks)
   const gluttonOfflineMul =
     1 / (1 + (GLUTTON_OFFLINE_PENALTY_PER_COUNT + (pen.glutton ?? 0)) * subs.glutton);

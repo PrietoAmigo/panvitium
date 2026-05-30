@@ -317,3 +317,47 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     expect(boosted).toBeGreaterThan(base);
   });
 });
+
+describe('Subtype penalty-reduction sigils (S5)', () => {
+  const withSubtype = (subtype: 'sigma' | 'celebrity' | 'degenerate' | 'gambler', n: number) => {
+    const s = fresh();
+    return {
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, [subtype]: n } },
+    };
+  };
+
+  it('Gaap #33 softens the Sigma influence penalty (never into a bonus)', () => {
+    const s = withSubtype('sigma', 1000);
+    const base = computeModifiers(s).influenceRateMul;
+    const softened = computeModifiers(bound(33, 1_000_000, s)).influenceRateMul;
+    expect(base).toBeLessThan(1); // penalty present
+    expect(softened).toBeGreaterThan(base); // softened toward 1
+    expect(softened).toBeLessThanOrEqual(1); // but never an outright bonus
+  });
+
+  it('Malphas #39 softens the Celebrity gold penalty', () => {
+    const s = withSubtype('celebrity', 1000);
+    const base = computeModifiers(s).goldRateMul;
+    const softened = computeModifiers(bound(39, 1_000_000, s)).goldRateMul;
+    expect(softened).toBeGreaterThan(base);
+    expect(softened).toBeLessThanOrEqual(1);
+  });
+
+  it('Gremory #56 softens the Degenerate suicide penalty (and only suicide)', () => {
+    const s = withSubtype('degenerate', 1000);
+    const base = computeModifiers(s).reprobateSuicideRateMul;
+    const m = computeModifiers(bound(56, 1_000_000, s));
+    expect(m.reprobateSuicideRateMul).toBeGreaterThan(base); // suicide penalty eased
+    // The Degenerate murder penalty is a different channel — untouched by Gremory.
+    expect(m.cholericMurderRateMul).toBeCloseTo(computeModifiers(s).cholericMurderRateMul, 6);
+  });
+
+  it('Volac #62 softens the Gambler generation penalty', () => {
+    const s = withSubtype('gambler', 1000);
+    const base = computeModifiers(s).reprobateGenerationRateMul;
+    const softened = computeModifiers(bound(62, 1_000_000, s)).reprobateGenerationRateMul;
+    expect(softened).toBeGreaterThan(base);
+    expect(softened).toBeLessThanOrEqual(1);
+  });
+});
