@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 554** (sim 416 · shared 48 · api 11 · web 79).
+**Current test count: 562** (sim 424 · shared 48 · api 11 · web 79).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -154,9 +154,11 @@ ceremony plus the apex now matches the sheet):
 
 **Maleficia** — in progress (roster + gating done; effects pending):
 
-| #   | Slice            | Summary                                                                                                                                                                                                         |
-| --- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1  | Maleficia roster | Full 25-item catalog with sheet rarity / invoking power / stack caps (∞ where unbounded); costs normalized into per-rarity price bands (`MALEFICIUM_PRICE_RANGE`, exported for the later rolled-pricing slice). |
+| #   | Slice            | Summary                                                                                                                                                                                                                             |
+| --- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1  | Maleficia roster | Full 25-item catalog with sheet rarity / invoking power / stack caps (∞ where unbounded); costs normalized into per-rarity price bands (`MALEFICIUM_PRICE_RANGE`, exported for the later rolled-pricing slice).                     |
+| M2  | Opera enhancers  | Ars Serpens (+33% Suasio), The Voynich Manuscript (+66% Suasio), Ritual Dagger (+33% Decimatio) folded into the efficiency muls as multiplicative `(1 + bonus)` factors.                                                            |
+| M3  | Sigil enhancers  | Solomon's Ring (+50%) and Iron Nails (+1%/copy) scale every sigil's effect strength via `sigilEffectMultiplier`, threaded into `sigilModifierContributions` (modifier + tier sigils) and `sigilKatabasisBonus` (carry-over sigils). |
 
 ### Remaining
 
@@ -164,9 +166,11 @@ Economy-parity tracks still to reconcile against the spreadsheet:
 
 - **Invocation effects** — Succubus / Harpy / Lamia / Lemure / Behemoth and the apex set vs. the sheet.
 - **Sigils** — most of the 72 are still inert; wiring their modifier / tier / katabasis contributions.
-- **Maleficia effects** — roster, invoking power and stack caps are done; still to wire: the enhancer
-  multipliers (Suasio / Decimatio / invocation / sigil), the oracular reveals, the targeted single-use
-  items (Defixio / Hand of Glory), and the rolled-at-purchase per-rarity pricing.
+- **Maleficia effects** — roster, invoking power, stack caps, the Opera-efficiency enhancers
+  (Ars Serpens / Voynich / Ritual Dagger), and the sigil-effect amplifiers (Solomon's Ring / Iron
+  Nails) are done. Still to wire: the invocation-effect multiplier (Black Candles — needs an
+  invocation effect-magnitude scalar), the oracular reveals, the targeted single-use items
+  (Defixio / Hand of Glory), and the rolled-at-purchase pricing.
 - **Missing Opera actions** — _logismoi_, _imperium_, _pogrom_, _purgatio_.
 
 Blocked on inputs that don't live in a coding session (independent of the above):

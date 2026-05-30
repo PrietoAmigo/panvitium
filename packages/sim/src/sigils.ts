@@ -218,14 +218,14 @@ export interface SigilContributions {
  * multiplier (`1 + strength` / `1 / (1 + strength)`); multiple sigils on the same field compose
  * multiplicatively. Returns 1-valued (absent) entries omitted so computeModifiers can fold cleanly.
  */
-export function sigilModifierContributions(state: GameState): SigilContributions {
+export function sigilModifierContributions(state: GameState, effectMul = 1): SigilContributions {
   const scalar: Partial<Record<ScalarModifierField, number>> = {};
   const tier: Partial<Record<Tier, number>> = {};
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
     if (bound === undefined) continue;
     const def = sigilById(Number(idStr));
     if (!def) continue;
-    const s = sigilStrength(def, bound);
+    const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
     if (def.effect.kind === 'modifier') {
       const mul = def.effect.direction === 'increase' ? 1 + s : 1 / (1 + s);
@@ -239,7 +239,7 @@ export function sigilModifierContributions(state: GameState): SigilContributions
 }
 
 /** Summed additive bonus to one Katabasis carry-over roll from all bound sigils that feed it. */
-export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll): number {
+export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {
   let bonus = 0;
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
     if (bound === undefined) continue;
@@ -247,7 +247,7 @@ export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll): numb
     if (!def || def.effect.kind !== 'katabasis') continue;
     if (def.effect.rolls.includes(roll)) bonus += sigilStrength(def, bound);
   }
-  return bonus;
+  return bonus * effectMul;
 }
 
 /** Convenience for tests/UI: the maximum Sin level any gate could require. */

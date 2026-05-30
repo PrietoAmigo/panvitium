@@ -7,6 +7,7 @@ import {
   countCopies,
   findableIds,
   isStackable,
+  sigilEffectMultiplier,
   totalInvokingPower,
 } from './maleficia.js';
 
@@ -87,6 +88,13 @@ describe('maleficia catalog — sheet parity (25 items)', () => {
       expect(def.cost).toBeGreaterThanOrEqual(band.min);
       expect(def.cost).toBeLessThanOrEqual(band.max);
     }
+  });
+
+  it("sigilEffectMultiplier reflects Solomon's Ring (+50%) and Iron Nails (+1% each)", () => {
+    expect(sigilEffectMultiplier([])).toBe(1);
+    expect(sigilEffectMultiplier(['solomons_ring'])).toBeCloseTo(1.5, 9);
+    expect(sigilEffectMultiplier(['iron_nails', 'iron_nails', 'iron_nails'])).toBeCloseTo(1.03, 9);
+    expect(sigilEffectMultiplier(['solomons_ring', 'iron_nails'])).toBeCloseTo(1.51, 9);
   });
 });
 

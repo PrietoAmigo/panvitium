@@ -36,11 +36,12 @@
 import { SINS, SUBTYPE_OF_SIN, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
-import { countCopies } from './maleficia.js';
+import { countCopies, sigilEffectMultiplier } from './maleficia.js';
 import { compositumPenaltyIncreaseBySubtype, compositumOfflineGainBoost } from './compositum.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import { sigilModifierContributions, type ScalarModifierField } from './sigils.js';
 import {
+  ARS_SERPENS_SUASIO_BONUS,
   CELEBRITY_GOLD_REDUCTION_PER_COUNT,
   CHOLERIC_MURDER_INCREASE_PER_COUNT,
   DEGENERATE_MURDER_REDUCTION_PER_COUNT,
@@ -50,8 +51,10 @@ import {
   HUSK_EFFICIENCY_REDUCTION_PER_COUNT,
   IRA_ACOLYTE_INVOCATION_PER_LEVEL,
   NIHILIST_SUICIDE_INCREASE_PER_COUNT,
+  RITUAL_DAGGER_DECIMATIO_BONUS,
   SIGMA_INFLUENCE_REDUCTION_PER_COUNT,
   SUBTYPE_VM_GOLD_BOOST_PER_COUNT,
+  VOYNICH_SUASIO_BONUS,
 } from './constants.js';
 
 export interface Modifiers {
@@ -188,6 +191,11 @@ export function computeModifiers(state: GameState): Modifiers {
   const hasCodex = countCopies(owned, 'codex_gigas') > 0;
   const hasSilver = countCopies(owned, 'thirty_pieces_of_silver') > 0;
   const hasMarkOfCain = countCopies(owned, 'mark_of_cain') > 0;
+  // Opera-efficiency enhancers (Maleficia sheet): each a separate multiplicative `(1 + bonus)`
+  // factor on its category's efficiency mul. Non-stackable, so the count is 0 or 1.
+  const arsSerpens = countCopies(owned, 'ars_serpens');
+  const voynich = countCopies(owned, 'voynich_manuscript');
+  const ritualDagger = countCopies(owned, 'ritual_dagger');
 
   // Active invocations (03 §2.4). Counts read straight from the lifetime map; effect magnitudes
   // live here alongside the other effect coefficients (the catalog in invocations.ts owns the
@@ -230,7 +238,7 @@ export function computeModifiers(state: GameState): Modifiers {
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
   // just fold the aggregated contributions in. `sc(f)` is the sigil multiplier for field f (1 if none).
-  const sig = sigilModifierContributions(state);
+  const sig = sigilModifierContributions(state, sigilEffectMultiplier(owned));
   const sc = (f: ScalarModifierField): number => sig.scalar[f] ?? 1;
 
   // Tier weights: accumulate per-tier products from every source, then apply locks LAST. Missing
@@ -324,8 +332,15 @@ export function computeModifiers(state: GameState): Modifiers {
       erinyesStackMul *
       huskEfficiencyMul *
       sc('playerEfficiencyMul'),
-    suasioEfficiencyMul: skillBonus(tristitiaIntensity) * sc('suasioEfficiencyMul'),
-    decimatioEfficiencyMul: skillBonus(iraIntensity) * sc('decimatioEfficiencyMul'),
+    suasioEfficiencyMul:
+      skillBonus(tristitiaIntensity) *
+      (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
+      (1 + VOYNICH_SUASIO_BONUS * voynich) *
+      sc('suasioEfficiencyMul'),
+    decimatioEfficiencyMul:
+      skillBonus(iraIntensity) *
+      (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
+      sc('decimatioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; each Lamia
     // lifts it; Succubus multiplies it dramatically; Luxuria's Seduction skill lifts it

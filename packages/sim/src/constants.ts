@@ -154,3 +154,15 @@ export const IRA_ACOLYTE_INVOCATION_PER_LEVEL = 1.33;
  * exponential in `X · L²`) is authoritative.
  */
 export const ACEDIA_OFFLINE_COMPOUND_BASE = 1.00002;
+
+/**
+ * Maleficia enhancer magnitudes (03 §4 / Maleficia sheet). Each is an Opera-efficiency multiplier
+ * applied as a separate `(1 + bonus)` factor (multiplicative composition, ADR-022). Items are
+ * non-stackable, so the count is 0 or 1.
+ */
+export const ARS_SERPENS_SUASIO_BONUS = 0.33;
+export const VOYNICH_SUASIO_BONUS = 0.66;
+export const RITUAL_DAGGER_DECIMATIO_BONUS = 0.33;
+/** Solomon's Ring: +50% to all sigil effect strength (mult). Iron Nails: +1% per equipped copy. */
+export const SOLOMON_RING_SIGIL_BONUS = 0.5;
+export const IRON_NAILS_SIGIL_BONUS = 0.01;

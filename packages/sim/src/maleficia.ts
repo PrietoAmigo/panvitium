@@ -16,6 +16,8 @@
  * surfaced again; a stackable one cannot be surfaced once owned + listed reaches its `stackMax`.
  * Stackable items live in the array as duplicates (one entry per copy); `countOwned` reads them.
  */
+import { SOLOMON_RING_SIGIL_BONUS, IRON_NAILS_SIGIL_BONUS } from './constants.js';
+
 export type MaleficiumRarity = 'common' | 'rare' | 'profane' | 'anathema';
 
 export interface MaleficiumDef {
@@ -322,4 +324,18 @@ export function totalInvokingPower(owned: readonly string[]): number {
     if (def) p += def.invokingPower;
   }
   return p;
+}
+
+/**
+ * Multiplier applied to every sigil's effect strength from equipped sigil-enhancer maleficia
+ * (Solomon's Ring +50%, Iron Nails +1% per copy). 1 when none are equipped. Consumed by
+ * `sigilModifierContributions` and `sigilKatabasisBonus` so it scales modifier, tier, and
+ * Katabasis-carryover sigils alike.
+ */
+export function sigilEffectMultiplier(owned: readonly string[]): number {
+  return (
+    1 +
+    SOLOMON_RING_SIGIL_BONUS * countCopies(owned, 'solomons_ring') +
+    IRON_NAILS_SIGIL_BONUS * countCopies(owned, 'iron_nails')
+  );
 }

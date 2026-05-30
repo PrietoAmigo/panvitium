@@ -14,6 +14,7 @@
 import { add, clamp, floor, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
 import { businessById, SHUTDOWN_REFUND_FRACTION } from './businesses.js';
 import { sigilKatabasisBonus } from './sigils.js';
+import { sigilEffectMultiplier } from './maleficia.js';
 import {
   BASE_MAX_INFLUENCE,
   BASE_REMAINING_GOLD,
@@ -212,12 +213,14 @@ export function commitKatabasis(
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
   // business shutdown refunds folded in above. Sigils (Purson #20, Semet #32) lift the fraction;
-  // Erinyes/Morpheus override it outright.
+  // Erinyes/Morpheus override it outright. Sigil-enhancer maleficia (Solomon's Ring, Iron Nails)
+  // scale every sigil's carry-over strength.
+  const sigilEffectMul = sigilEffectMultiplier(state.lifetime.maleficia);
   const goldFraction = pendingErinyes
     ? 0
     : pendingMorpheus
       ? 1
-      : remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold'));
+      : remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold', sigilEffectMul));
   const goldKept = floor(mul(floor(goldAtDescent), goldFraction));
 
   // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8). Sigils
@@ -226,7 +229,7 @@ export function commitKatabasis(
     ? 0
     : pendingMorpheus
       ? 1
-      : remainingMaleficiaChance(state, sigilKatabasisBonus(state, 'maleficia'));
+      : remainingMaleficiaChance(state, sigilKatabasisBonus(state, 'maleficia', sigilEffectMul));
   const maleficiaKept: string[] = [];
   const maleficiaLost: string[] = [];
   for (const m of state.lifetime.maleficia) {
@@ -239,7 +242,10 @@ export function commitKatabasis(
   const reprobates = emptyReprobates();
   reprobates.reprobate = Math.floor(
     state.lifetime.reprobates.reprobate *
-      remainingUnconvertedFraction(state, sigilKatabasisBonus(state, 'unconverted')),
+      remainingUnconvertedFraction(
+        state,
+        sigilKatabasisBonus(state, 'unconverted', sigilEffectMul),
+      ),
   );
 
   const lifetime: LifetimeState = {

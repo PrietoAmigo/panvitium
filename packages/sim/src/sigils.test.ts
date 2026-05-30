@@ -116,6 +116,20 @@ describe('In-lifetime modifier contributions', () => {
     expect(computeModifiers(s).reprobateGenerationRateMul).toBeCloseTo(expected, 5);
   });
 
+  it('the sigil-effect multiplier scales a contribution strength', () => {
+    const s = bound(6, 10_000); // Valefor: gold up
+    const strength = sigilStrength(sigilById(6)!, bn(10_000));
+    const sig = sigilModifierContributions(s, 1.5);
+    expect(sig.scalar.goldRateMul).toBeCloseTo(1 + 1.5 * strength, 6);
+  });
+
+  it("Solomon's Ring amplifies a bound sigil's effect through computeModifiers", () => {
+    let s = bound(6, 10_000); // Valefor: gold up
+    const without = computeModifiers(s).goldRateMul;
+    s = { ...s, lifetime: { ...s.lifetime, maleficia: ['solomons_ring'] } };
+    expect(computeModifiers(s).goldRateMul).toBeGreaterThan(without);
+  });
+
   it('no bindings → the affected fields match the neutral baseline', () => {
     const m = computeModifiers(fresh());
     expect(m.goldRateMul).toBe(NEUTRAL_MODIFIERS.goldRateMul);
@@ -146,6 +160,12 @@ describe('Katabasis carry-over bonuses', () => {
     const s = bound(38, 10_000);
     expect(sigilKatabasisBonus(s, 'maleficia')).toBeGreaterThan(0);
     expect(sigilKatabasisBonus(s, 'gold')).toBe(0);
+  });
+
+  it('the sigil-effect multiplier scales the Katabasis bonus', () => {
+    const s = bound(20, 10_000); // Purson: gold roll
+    const base = sigilKatabasisBonus(s, 'gold');
+    expect(sigilKatabasisBonus(s, 'gold', 1.5)).toBeCloseTo(base * 1.5, 6);
   });
 });
 
