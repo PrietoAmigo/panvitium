@@ -1,27 +1,30 @@
 import { useState, type ReactElement } from 'react';
-import { INVOCATIONS, INVOCATION_BY_ID } from './menus.data.js';
+import type { Invocation } from './types.js';
 
 interface ArsGoetiaBookProps {
-  summoned?: string[];
-  onSummon?: (id: string) => void;
-  onDispel?: (id: string) => void;
+  entries: Invocation[];
+  power: number;
+  counts: Record<string, number>;
+  onSummon: (id: string) => void;
+  onDispel: (id: string) => void;
   onClose: () => void;
 }
 
-// Ars Goetia — a full-screen open grimoire. Left page: title. Right page: the
-// index of names. Clicking a name turns to that demon's leaf (illustration +
-// cost + effect + lore). No scrolling. Full-screen shell (no PanelShell).
-// TODO(wire): drive `unlocked`/gates and the bound count from real state;
-// Summon/Dispel call the same actions the Invocation circle uses.
+// Ars Goetia — a full-screen open grimoire. Left page: title + live invoking power. Right page: the
+// index of visible names. Clicking a name turns to that demon's leaf (illustration + cost + effect +
+// lore). No scrolling. Full-screen shell (no PanelShell). Driven entirely by real state via the
+// `buildGoetia` adapter — Summon/Dispel call the same store actions the Invocation circle reflects.
 export function ArsGoetiaBook({
-  summoned = [],
+  entries,
+  power,
+  counts,
   onSummon,
   onDispel,
   onClose,
 }: ArsGoetiaBookProps): ReactElement {
   const [openId, setOpenId] = useState<string | null>(null);
-  const it = openId ? INVOCATION_BY_ID[openId] : null;
-  const boundOf = (id: string) => summoned.filter((s) => s === id).length;
+  const it = openId ? (entries.find((e) => e.id === openId) ?? null) : null;
+  const boundOf = (id: string): number => counts[id] ?? 0;
 
   return (
     <div className="goetia-overlay" role="dialog" aria-label="Ars Goetia">
@@ -34,7 +37,7 @@ export function ArsGoetiaBook({
             <div className="gb-page gb-page--left">
               <h1 className="gb-title">Ars Goetia</h1>
               <div className="gb-rule" aria-hidden="true" />
-              <p className="gb-power">Invoking power &middot; vi</p>
+              <p className="gb-power">Invoking power &middot; {power}</p>
               <p className="gb-intro">
                 Names called up from below. Each asks a price in souls and stands within the circle
                 until dispelled &mdash; and is banished when you leave the room. Turn to a name to
@@ -45,7 +48,7 @@ export function ArsGoetiaBook({
             <div className="gb-page gb-page--right">
               <h2 className="gb-subtitle">The Names</h2>
               <ul className="gb-index">
-                {INVOCATIONS.map((iv) => {
+                {entries.map((iv) => {
                   const b = boundOf(iv.id);
                   return (
                     <li key={iv.id}>
@@ -90,25 +93,25 @@ export function ArsGoetiaBook({
                     <dd>{it.gate}</dd>
                   </>
                 )}
-                <dt>Effect</dt>
-                <dd className="gb-effect">{it.effect}</dd>
+                {it.effect && (
+                  <>
+                    <dt>Effect</dt>
+                    <dd className="gb-effect">{it.effect}</dd>
+                  </>
+                )}
               </dl>
-              <p className="gb-lore">{it.lore}</p>
+              {it.lore && <p className="gb-lore">{it.lore}</p>}
               <div className="gb-actions">
                 <button
                   type="button"
                   className="gb-summon"
                   disabled={!it.unlocked}
-                  onClick={() => onSummon && onSummon(it.id)}
+                  onClick={() => onSummon(it.id)}
                 >
                   {it.unlocked ? 'Summon' : 'Sealed'}
                 </button>
                 {boundOf(it.id) > 0 && (
-                  <button
-                    type="button"
-                    className="gb-dispel"
-                    onClick={() => onDispel && onDispel(it.id)}
-                  >
+                  <button type="button" className="gb-dispel" onClick={() => onDispel(it.id)}>
                     Dispel
                   </button>
                 )}

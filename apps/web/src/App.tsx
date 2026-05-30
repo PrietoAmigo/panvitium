@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useGameLoop } from './game/useGameLoop.js';
 import { ROOMS } from './menus/menus.data.js';
 import { RoomView } from './menus/RoomView.js';
+import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
+import { buildGoetia } from './game/invocations.js';
 import { Hud } from './ui/Hud.js';
 import { Panel, PANELS } from './ui/panels.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
@@ -12,6 +14,27 @@ import { SyncPanel } from './ui/SyncPanel.js';
 import { ConflictModal } from './ui/ConflictModal.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
+
+/**
+ * The full-screen Ars Goetia grimoire, wired to real state. Kept as its own subscriber so its
+ * per-tick re-render (soul cost tracks the pool) stays local and doesn't re-render the room shell.
+ */
+function GoetiaBook({ onClose }: { onClose: () => void }): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const summon = useGameStore((s) => s.summon);
+  const banish = useGameStore((s) => s.banish);
+  const view = state ? buildGoetia(state) : { power: 0, entries: [], counts: {} };
+  return (
+    <ArsGoetiaBook
+      entries={view.entries}
+      power={view.power}
+      counts={view.counts}
+      onSummon={summon}
+      onDispel={banish}
+      onClose={onClose}
+    />
+  );
+}
 
 export function App(): ReactElement {
   useGameLoop();
@@ -57,7 +80,8 @@ export function App(): ReactElement {
     audio.play('panel-close');
   };
 
-  const activePanel = panel ? PANELS[panel] : null;
+  // Ars Goetia is its own full-screen overlay (the designed grimoire), not a framed Panel.
+  const activePanel = panel && panel !== 'ars-goetia' ? PANELS[panel] : null;
 
   return (
     <div className="app">
@@ -76,6 +100,7 @@ export function App(): ReactElement {
       <KatabasisModal />
       <SyncPanel />
       <ConflictModal />
+      {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
       {activePanel && (
         <Panel title={activePanel.title} onClose={closePanel}>
           {activePanel.body}

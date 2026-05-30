@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 590** (sim 452 · shared 48 · api 11 · web 79).
+**Current test count: 594** (sim 452 · shared 48 · api 11 · web 83).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -203,11 +203,19 @@ extensions, `import type`, Prettier):
     selected via a stable key so the room re-renders only when the set changes). The placeholder
     `apps/web/src/rooms/` shell is retired; `PanelId` now comes from `menus/types`. The existing
     HUD, panels and modals are untouched.
-  - _Remaining._ The diegetic **panels** still render from the `menus.data.ts` mock catalogs (each
-    seam marked `TODO(wire)`): `ArsGoetiaBook` ↔ invocation gates / summon / dispel; `AltarPanel`
-    - `Katabasis` ↔ devotion / sigils / descent-commit; `MaleficiaCabinet` / `SuasioPanel` /
-      `PcWindow` ↔ owned maleficia / Suasio action / PC programs. Each later slice repoints one panel
-      at real selectors and deletes its stand-in arrays.
+  - _W2 — Ars Goetia live._ The designed full-screen `ArsGoetiaBook` is now the `ars-goetia` panel,
+    fed by a real `buildGoetia` view-model (`apps/web/src/game/invocations.ts`) mapping the sim
+    invocation catalog + live state onto the presentation shape: invoking power, per-entry gate,
+    soul cost, unlocked and bound count are all real, and Summon/Dispel call the store's
+    `summon`/`banish` (so the W1 Invocation circle reflects them). Names come from the canonical
+    strings; the design's art/lore is reused for the six illustrated entries with a graceful
+    fallback (the Ars Goetia plate + a computed rank, omitted effect/lore) for the rest — nothing
+    fabricated. Pinned by an adapter unit test.
+  - _Remaining._ The other diegetic **panels** still render from the `menus.data.ts` mock catalogs
+    (each seam marked `TODO(wire)`): `AltarPanel` + `Katabasis` (devotion / sigils / descent-commit);
+    `MaleficiaCabinet` / `SuasioPanel` / `PcWindow` (owned maleficia / Suasio action / PC programs).
+    Each later slice repoints one panel at real selectors and deletes its stand-in arrays. The old
+    text `ArsGoetiaPanel` stays in `PANELS` but is no longer rendered (later cleanup).
 
 ### Remaining
 
