@@ -11,7 +11,7 @@
  * Effect magnitudes are placeholders; the spreadsheet `Sigils` sheet is authoritative. Unwired
  * sigils simply have no catalog entry yet — binding them is harmless and does nothing until added.
  */
-import { type BigNum, floor, lte, ZERO } from './bignum.js';
+import { type BigNum, add, floor, lte, ZERO } from './bignum.js';
 import { MAX_SIN_LEVEL } from './constants.js';
 import { sinLevel } from './progression.js';
 import { SINS, type GameState, type SigilId, type Sin } from './state.js';
@@ -28,7 +28,7 @@ export function bindingMagnitude(curve: BindingCurve, boundSouls: BigNum): numbe
   const x = floor(boundSouls);
   if (lte(x, ZERO)) return 0;
   if (curve === 'linear') return x.toNumber();
-  if (curve === 'log') return Math.max(0, x.log10());
+  if (curve === 'log') return Math.max(0, add(x, 1).ln());
   return x.sqrt().toNumber(); // 'sqrt' — the default
 }
 
@@ -73,6 +73,7 @@ export type SigilEffect =
     }
   | { readonly kind: 'invocationSin'; readonly sin: Sin }
   | { readonly kind: 'penaltyReduction'; readonly channel: PenaltyChannel }
+  | { readonly kind: 'flatGen'; readonly resource: 'gold' | 'influence' }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -320,6 +321,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'invocationSin', sin: 'avaritia' },
   },
+  48: {
+    id: 48,
+    name: 'Haagenti',
+    curve: 'log',
+    coefficient: 10,
+    effect: { kind: 'flatGen', resource: 'gold' },
+  },
   49: {
     id: 49,
     name: 'Crocell',
@@ -379,6 +387,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Belial',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'influenceRateMul', direction: 'increase' },
+  },
+  69: {
+    id: 69,
+    name: 'Decarabia',
+    curve: 'log',
+    coefficient: 1,
+    effect: { kind: 'flatGen', resource: 'influence' },
   },
   70: {
     id: 70,
@@ -526,6 +541,30 @@ export function sigilPenaltyReductionByChannel(
     out[def.effect.channel] = (out[def.effect.channel] ?? 1) * (1 + s);
   }
   return out;
+}
+
+/**
+ * Flat per-second resource generation from the log-curve generator sigils (Haagenti #48 → gold,
+ * Decarabia #69 → influence). Each contributes its `coefficient × ln(1 + souls)` directly (additive,
+ * not a multiplier). Consumed by `computeModifiers` → `flatGoldPerSecond` / `flatInfluencePerSecond`,
+ * which the tick accrues. `effectMul` carries the sigil enhancers.
+ */
+export function sigilFlatGeneration(
+  state: GameState,
+  effectMul = 1,
+): { gold: number; influence: number } {
+  let gold = 0;
+  let influence = 0;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'flatGen') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    if (def.effect.resource === 'gold') gold += s;
+    else influence += s;
+  }
+  return { gold, influence };
 }
 
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {

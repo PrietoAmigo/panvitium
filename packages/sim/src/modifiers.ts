@@ -44,6 +44,7 @@ import {
   sigilCategoryTierContributions,
   sigilInvocationSinContributions,
   sigilPenaltyReductionByChannel,
+  sigilFlatGeneration,
   type ScalarModifierField,
 } from './sigils.js';
 import {
@@ -74,6 +75,11 @@ export interface Modifiers {
    * influence, scaled by `influenceRateMul`, capped at maxInfluence. 0 when no source is active.
    */
   readonly flatInfluencePerSecond: number;
+  /**
+   * Additive flat gold-per-second from the Haagenti #48 generator sigil (log curve). Accrued in the
+   * tick alongside the other gold sources, scaled by `goldRateMul`. 0 when no source is active.
+   */
+  readonly flatGoldPerSecond: number;
   /**
    * Additive increase to the base reprobate suicide rate (per-second, per-capita), from invocations
    * (each Nightmare, efficiency-scaled). Added to the base in `dynamics` alongside the Doom toggle,
@@ -163,6 +169,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   influenceRateMul: 1,
   flatInfluencePerSecond: 0,
   flatBaseSuicideRatePerSecond: 0,
+  flatGoldPerSecond: 0,
   maxInfluenceMul: 1,
   playerEfficiencyMul: 1,
   suasioEfficiencyMul: 1,
@@ -283,6 +290,8 @@ export function computeModifiers(state: GameState): Modifiers {
   // just fold the aggregated contributions in. `sc(f)` is the sigil multiplier for field f (1 if none).
   const sig = sigilModifierContributions(state, sigilEffectMultiplier(owned));
   const sc = (f: ScalarModifierField): number => sig.scalar[f] ?? 1;
+  // Flat per-second generators (Haagenti #48 gold, Decarabia #69 influence), scaled by enhancers.
+  const flatGen = sigilFlatGeneration(state, sigilEffectMultiplier(owned));
 
   // Tier weights: accumulate per-tier products from every source, then apply locks LAST. Missing
   // keys mean 1 in `applyTierModifiers`; under exactOptionalPropertyTypes we assign only when ≠ 1.
@@ -412,9 +421,10 @@ export function computeModifiers(state: GameState): Modifiers {
       sigmaInfluenceMul *
       sc('influenceRateMul'),
     maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul'),
-    // Flat influence/s: reserved for the Decarabia #69 sigil (sigil flats). Lemure was retargeted off
-    // this onto the offline gain rate per the Invocatio sheet, so there is no contributor yet.
-    flatInfluencePerSecond: 0,
+    // Flat influence/s from the Decarabia #69 generator sigil (log curve).
+    flatInfluencePerSecond: flatGen.influence,
+    // Flat gold/s from the Haagenti #48 generator sigil (log curve).
+    flatGoldPerSecond: flatGen.gold,
     // Additive increase to the base reprobate suicide rate (added to the per-capita base in
     // `dynamics`, alongside the Doom toggle). Each Nightmare contributes its efficiency-scaled factor.
     flatBaseSuicideRatePerSecond:

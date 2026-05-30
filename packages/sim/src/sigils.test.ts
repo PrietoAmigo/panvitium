@@ -27,6 +27,7 @@ import {
   sigilVisible,
   SIGIL_IDS,
   SINS,
+  tick,
   type GameState,
 } from './index.js';
 
@@ -56,9 +57,9 @@ describe('Binding curves (02 §5)', () => {
   });
 
   it('log is a splash curve, never negative', () => {
-    expect(bindingMagnitude('log', bn(1000))).toBeCloseTo(3, 6);
+    expect(bindingMagnitude('log', bn(1000))).toBeCloseTo(Math.log(1001), 6);
     expect(bindingMagnitude('log', bn(0))).toBe(0);
-    expect(bindingMagnitude('log', bn(1))).toBe(0);
+    expect(bindingMagnitude('log', bn(1))).toBeCloseTo(Math.log(2), 6);
   });
 });
 
@@ -359,5 +360,33 @@ describe('Subtype penalty-reduction sigils (S5)', () => {
     const softened = computeModifiers(bound(62, 1_000_000, s)).reprobateGenerationRateMul;
     expect(softened).toBeGreaterThan(base);
     expect(softened).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('Flat-generator sigils (S6)', () => {
+  it('Haagenti #48 generates gold/s on a log curve matching the sheet', () => {
+    // Sheet: base coeff 10, N=100 → 10 × ln(101) ≈ 46.151 gold/s.
+    const strength = sigilStrength(sigilById(48)!, bn(100));
+    expect(strength).toBeCloseTo(10 * Math.log(101), 6);
+    const m = computeModifiers(bound(48, 100));
+    expect(m.flatGoldPerSecond).toBeCloseTo(10 * Math.log(101), 6);
+    expect(m.flatInfluencePerSecond).toBe(0);
+  });
+
+  it('Decarabia #69 generates influence/s on a log curve matching the sheet', () => {
+    // Sheet: base coeff 1, N=100000 → ln(100001) ≈ 11.513 influence/s.
+    const strength = sigilStrength(sigilById(69)!, bn(100_000));
+    expect(strength).toBeCloseTo(Math.log(100_001), 6);
+    const m = computeModifiers(bound(69, 100_000));
+    expect(m.flatInfluencePerSecond).toBeCloseTo(Math.log(100_001), 6);
+    expect(m.flatGoldPerSecond).toBe(0);
+  });
+
+  it('Haagenti gold flows into the tick (scaled by goldRateMul)', () => {
+    const s = bound(48, 100);
+    const before = fresh().lifetime.gold.toNumber();
+    const after = tick(s, 1).state.lifetime.gold.toNumber();
+    // One second of base gold + Haagenti's ~46.15/s (both × goldRateMul = 1 at baseline).
+    expect(after - before).toBeGreaterThan(40);
   });
 });
