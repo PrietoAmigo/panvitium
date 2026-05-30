@@ -224,9 +224,11 @@ describe('Invocation modifier effects', () => {
     expect(two.influenceRateMul).toBeCloseTo(1 + 0.05 * 2, 6);
   });
 
-  it('Nightmare: +5% suicide rate per stack (additive)', () => {
+  it('Nightmare: additive increase to base suicide rate, not the multiplier', () => {
     const three = computeModifiers(withInvocation(fresh(), 'nightmare', 3));
-    expect(three.reprobateSuicideRateMul).toBeCloseTo(1 + 0.05 * 3, 6);
+    // Baseline playerEff = invEff = 1, so each Nightmare adds 0.05 to the per-capita base rate.
+    expect(three.flatBaseSuicideRatePerSecond).toBeCloseTo(0.05 * 3, 6);
+    expect(three.reprobateSuicideRateMul).toBe(NEUTRAL_MODIFIERS.reprobateSuicideRateMul); // mul untouched
   });
 
   it('Harpy: lifts Decimatio efficiency (not murder), scaled by player efficiency', () => {
@@ -235,9 +237,9 @@ describe('Invocation modifier effects', () => {
     expect(two.cholericMurderRateMul).toBe(NEUTRAL_MODIFIERS.cholericMurderRateMul); // murder untouched
   });
 
-  it('Behemoth: +50% Stellar weight per stack', () => {
+  it('Behemoth: additive increase to Stellar weight (efficiency-scaled, 0.0005/stack baseline)', () => {
     const two = computeModifiers(withInvocation(fresh(), 'behemoth', 2));
-    expect(two.tierWeightMul.stellar).toBeCloseTo(1 + 0.5 * 2, 6);
+    expect(two.tierWeightMul.stellar).toBeCloseTo(1 + 0.0005 * 2, 6); // baseline playerEff/invEff = 1
   });
 
   it('no invocations → bundle matches the neutral baseline for the affected fields', () => {

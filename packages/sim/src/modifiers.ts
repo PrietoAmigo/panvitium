@@ -63,12 +63,17 @@ export interface Modifiers {
   /** Multiplier on the proportional influence-per-second rate. */
   readonly influenceRateMul: number;
   /**
-   * Additive flat influence-per-second from invocations (Lemure's per-Husk bonus; the Decarabia #69
-   * sigil attaches here once sigil flat-contributions land). Added to the influence accrual in the
-   * tick alongside Vitium Compositum influence, scaled by `influenceRateMul`, capped at maxInfluence.
-   * 0 when no source is active.
+   * Additive flat influence-per-second (the Decarabia #69 sigil attaches here once sigil
+   * flat-contributions land). Added to the influence accrual in the tick alongside Vitium Compositum
+   * influence, scaled by `influenceRateMul`, capped at maxInfluence. 0 when no source is active.
    */
   readonly flatInfluencePerSecond: number;
+  /**
+   * Additive increase to the base reprobate suicide rate (per-second, per-capita), from invocations
+   * (each Nightmare, efficiency-scaled). Added to the base in `dynamics` alongside the Doom toggle,
+   * then multiplied by population × `reprobateSuicideRateMul`. 0 when no source is active.
+   */
+  readonly flatBaseSuicideRatePerSecond: number;
   /** Multiplier on the lifetime `maxInfluence` (raises the cap). */
   readonly maxInfluenceMul: number;
   /** Multiplier on the player's own action efficiency (Gula). Stacks with category eff. */
@@ -140,6 +145,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   goldRateMul: 1,
   influenceRateMul: 1,
   flatInfluencePerSecond: 0,
+  flatBaseSuicideRatePerSecond: 0,
   maxInfluenceMul: 1,
   playerEfficiencyMul: 1,
   suasioEfficiencyMul: 1,
@@ -202,15 +208,15 @@ export function computeModifiers(state: GameState): Modifiers {
   // gates and costs, this module owns what each does — mirroring how maleficia effects are coded).
   const inv = state.lifetime.invocations;
   const hasFamiliar = (inv.familiar ?? 0) > 0; // +33% player efficiency (02 §3 hybrid)
-  const famaCount = inv.fama ?? 0; // each: influence gain ×1.25
-  const nightmareCount = inv.nightmare ?? 0; // each: +5% suicide rate (additive)
-  const harpyCount = inv.harpy ?? 0; // each: Choleric murder ×1.1
+  const famaCount = inv.fama ?? 0; // each: additive influence increase (× playerEff × invEff)
+  const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× playerEff × invEff)
+  const harpyCount = inv.harpy ?? 0; // each: Decimatio efficiency up (× playerEff × invEff)
   const lamiaCount = inv.lamia ?? 0; // each: Suasio success up (per-category) + generation up
-  const behemothCount = inv.behemoth ?? 0; // each: +50% Stellar weight
+  const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× playerEff × invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
-  const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (flat factor)
-  const lemureCount = inv.lemure ?? 0; // each: + flat influence/s per Husk
-  const hasSuccubus = (inv.succubus ?? 0) > 0; // generation ×, gold → 1%
+  const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (× playerEff × invEff)
+  const lemureCount = inv.lemure ?? 0; // each: additive offline gain rate (× playerEff × invEff)
+  const hasSuccubus = (inv.succubus ?? 0) > 0; // Suasio efficiency up + gold cut (× playerEff × invEff)
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
   // (apex.ts owns the curve and the paired gold drain). 1× when absent.
@@ -240,7 +246,9 @@ export function computeModifiers(state: GameState): Modifiers {
   const SUCCUBUS_SUASIO_FACTOR = 0.99; // multiplicative increase to Suasio efficiency
   const SUCCUBUS_GOLD_FACTOR = 0.99; // multiplicative decrease to overall gold gain
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
-  const LEMURE_INFLUENCE_PER_HUSK = 0.1; // each Lemure: +0.1 influence/s per Husk reprobate
+  const NIGHTMARE_SUICIDE_FACTOR = 0.05; // additive increase to base reprobate suicide rate
+  const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
+  const LEMURE_OFFLINE_FACTOR = 0.025; // additive increase to offline gain rate
 
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
@@ -256,7 +264,6 @@ export function computeModifiers(state: GameState): Modifiers {
   };
   if (gulaIntensity > 0) bumpTier('terrible', 1 / (1 + gulaIntensity)); // Insatiability damps
   if (superbiaIntensity > 0) bumpTier('stellar', skillBonus(superbiaIntensity)); // Morning Star
-  if (behemothCount > 0) bumpTier('stellar', 1 + 0.5 * behemothCount); // each Behemoth +50%
   if (gulaIntensity > 0) bumpTier('apocalyptic', 1 / (1 + gulaIntensity)); // Insatiability damps
   if (hasMidas) bumpTier('apocalyptic', 100); // Midas hundredfold
   for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Gusion #11, Foras #31, …
@@ -327,6 +334,14 @@ export function computeModifiers(state: GameState): Modifiers {
     erinyesStackMul *
     huskEfficiencyMul *
     sc('playerEfficiencyMul');
+  // Behemoth: additive increase to the Stellar weight, efficiency-scaled (Model 1). Deferred to here
+  // (rather than the tierAcc block above) because it depends on `playerEff`/`invEff`; folded into the
+  // already-built `tierWeightMul` so it composes with Morning Star and any Stellar sigils.
+  if (behemothCount > 0) {
+    tierWeightMul.stellar =
+      (tierWeightMul.stellar ?? 1) *
+      (1 + BEHEMOTH_STELLAR_FACTOR * playerEff * invEff * behemothCount);
+  }
 
   return {
     goldRateMul:
@@ -344,10 +359,12 @@ export function computeModifiers(state: GameState): Modifiers {
       sigmaInfluenceMul *
       sc('influenceRateMul'),
     maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul'),
-    // Flat influence/s: each Lemure adds a per-Husk amount (additive; scaled by influenceRateMul +
-    // capped at maxInfluence in the tick). Decarabia #69 will add to this once sigil flats land.
-    flatInfluencePerSecond:
-      LEMURE_INFLUENCE_PER_HUSK * state.lifetime.reprobates.husk * lemureCount,
+    // Flat influence/s: reserved for the Decarabia #69 sigil (sigil flats). Lemure was retargeted off
+    // this onto the offline gain rate per the Invocatio sheet, so there is no contributor yet.
+    flatInfluencePerSecond: 0,
+    // Additive increase to the base reprobate suicide rate (added to the per-capita base in
+    // `dynamics`, alongside the Doom toggle). Each Nightmare contributes its efficiency-scaled factor.
+    flatBaseSuicideRatePerSecond: NIGHTMARE_SUICIDE_FACTOR * playerEff * invEff * nightmareCount,
     playerEfficiencyMul: playerEff,
     suasioEfficiencyMul:
       skillBonus(tristitiaIntensity) *
@@ -377,7 +394,6 @@ export function computeModifiers(state: GameState): Modifiers {
     reprobateSuicideRateMul:
       skillBonus(tristitiaIntensity) *
       2 ** tristitiaLvl *
-      (1 + 0.05 * nightmareCount) *
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
       degenerateSuicideMul *
       nihilistSuicideMul *
@@ -408,7 +424,10 @@ export function computeModifiers(state: GameState): Modifiers {
     // Dolce Far Niente lifts it ×(1 + boost) while active; Acedia's per-level effect compounds on top
     // dynamically in `session.resumeGame` (it depends on the offline duration itself).
     offlineTimeMul:
-      gluttonOfflineMul * skillBonus(acediaIntensity) * (1 + compositumOfflineGainBoost(state)),
+      gluttonOfflineMul *
+      skillBonus(acediaIntensity) *
+      (1 + compositumOfflineGainBoost(state)) *
+      (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEff * lemureCount),
   };
 }
 

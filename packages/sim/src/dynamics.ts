@@ -93,7 +93,10 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
   // Toggle flat additions to the BASE per-capita rates (Doom → suicide, Ethnocentric → murder),
   // applied before the ×population/×cholerics and the subtype-penalty multipliers, so the ceremony
   // raises the floor and the subtype penalties still scale it.
-  const suicideBase = BASE_SUICIDE_RATE_PER_SECOND + compositumFlatBaseSuicideRatePerSecond(state);
+  const suicideBase =
+    BASE_SUICIDE_RATE_PER_SECOND +
+    compositumFlatBaseSuicideRatePerSecond(state) +
+    mods.flatBaseSuicideRatePerSecond;
   const murderBase =
     BASE_CHOLERIC_MURDER_RATE_PER_SECOND + compositumFlatBaseCholericMurderRatePerSecond(state);
   // Enraging Broadcast culls a flat fraction of the WHOLE population each second (not scaled by the

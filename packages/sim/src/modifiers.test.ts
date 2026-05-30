@@ -344,22 +344,16 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     expect(two.vitiumMercaturaOutputMul).toBeCloseTo(1 + 0.05 * 1.1, 6); // Plutus bonus × invEff
   });
 
-  it('Lemure contributes flat influence/s scaling with Husk count and Lemure count', () => {
-    expect(computeModifiers(fresh()).flatInfluencePerSecond).toBe(0); // no Lemure
-    const withHusks = (husks: number, lemures: number): GameState => {
+  it('Lemure lifts the offline gain rate (efficiency-scaled), not flat influence', () => {
+    expect(computeModifiers(fresh()).flatInfluencePerSecond).toBe(0);
+    const withLemure = (lemures: number): GameState => {
       const s = fresh();
-      return {
-        ...s,
-        lifetime: {
-          ...s.lifetime,
-          reprobates: { ...s.lifetime.reprobates, husk: husks },
-          invocations: { lemure: lemures },
-        },
-      };
+      return { ...s, lifetime: { ...s.lifetime, invocations: { lemure: lemures } } };
     };
-    expect(computeModifiers(withHusks(50, 0)).flatInfluencePerSecond).toBe(0); // Husks but no Lemure
-    expect(computeModifiers(withHusks(0, 2)).flatInfluencePerSecond).toBe(0); // Lemure but no Husks
-    expect(computeModifiers(withHusks(50, 1)).flatInfluencePerSecond).toBeCloseTo(5, 6); // 0.1×50×1
-    expect(computeModifiers(withHusks(50, 3)).flatInfluencePerSecond).toBeCloseTo(15, 6); // 0.1×50×3
+    // Retargeted off influence/Husk: no flat-influence contribution any more.
+    expect(computeModifiers(withLemure(3)).flatInfluencePerSecond).toBe(0);
+    // Baseline playerEff = invEff = 1, factor 0.025 per copy, multiplicative on the offline mul.
+    expect(computeModifiers(withLemure(0)).offlineTimeMul).toBeCloseTo(1, 6);
+    expect(computeModifiers(withLemure(2)).offlineTimeMul).toBeCloseTo(1 + 0.025 * 2, 6);
   });
 });

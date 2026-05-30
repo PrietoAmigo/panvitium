@@ -66,45 +66,23 @@ describe('tick — modifiers (Sin level / Sin skill)', () => {
   });
 });
 
-describe('tick — Lemure flat influence (per-Husk)', () => {
-  /** Fresh state with Husks, a raised maxInfluence (headroom), and `n` Lemures active. */
+describe('tick — Lemure retargeted to offline gain (no flat influence)', () => {
   function withLemure(huskCount: number, lemures: number): GameState {
     const s = createInitialState('lemure', 0);
     return {
       ...s,
       lifetime: {
         ...s.lifetime,
-        maxInfluence: bn(1_000_000), // generous headroom so we measure the gain, not the cap
+        maxInfluence: bn(1_000_000),
         reprobates: { ...s.lifetime.reprobates, husk: huskCount },
         invocations: { ...s.lifetime.invocations, lemure: lemures },
       },
     };
   }
 
-  it('adds a per-Husk flat amount per Lemure on top of the proportional base', () => {
-    const base = tick(withLemure(50, 0), 1).state; // no Lemure: proportional gain only
-    const withOne = tick(withLemure(50, 1), 1).state; // +0.1 × 50 Husks = +5 influence/s
-    const gain = withOne.lifetime.influence.toNumber() - base.lifetime.influence.toNumber();
-    expect(gain).toBeCloseTo(5, 6);
-  });
-
-  it('scales with both Husk count and Lemure count', () => {
-    const base = tick(withLemure(100, 0), 1).state.lifetime.influence.toNumber();
-    const two = tick(withLemure(100, 2), 1).state.lifetime.influence.toNumber();
-    expect(two - base).toBeCloseTo(0.1 * 100 * 2, 6); // 20/s
-  });
-
-  it('is still capped at maxInfluence', () => {
-    const s = createInitialState('lemure-cap', 0);
-    const capped: GameState = {
-      ...s,
-      lifetime: {
-        ...s.lifetime,
-        reprobates: { ...s.lifetime.reprobates, husk: 10_000 },
-        invocations: { ...s.lifetime.invocations, lemure: 5 },
-      },
-    };
-    const out = tick(capped, 100).state;
-    expect(eq(out.lifetime.influence, out.lifetime.maxInfluence)).toBe(true);
+  it('no longer adds flat influence in the tick (Lemure now boosts the offline gain rate)', () => {
+    const base = tick(withLemure(50, 0), 1).state.lifetime.influence.toNumber();
+    const withFive = tick(withLemure(50, 5), 1).state.lifetime.influence.toNumber();
+    expect(withFive).toBeCloseTo(base, 6);
   });
 });
