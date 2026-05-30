@@ -14,6 +14,7 @@ import {
   bindingMagnitude,
   bindSigil,
   bn,
+  categoryEfficiency,
   categoryTierModifiers,
   computeModifiers,
   createInitialState,
@@ -155,6 +156,20 @@ describe('In-lifetime modifier contributions', () => {
       1 / (1 + strength),
       6,
     );
+  });
+
+  it('Bifrons #46 lifts Indagatio efficiency (folds onto player efficiency)', () => {
+    const s = bound(46, 10_000);
+    const strength = sigilStrength(sigilById(46)!, bn(10_000));
+    expect(computeModifiers(s).indagatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+    expect(categoryEfficiency(s, 'indagatio')).toBeCloseTo(1 + strength, 6); // baseline playerEff = 1
+  });
+
+  it('Seere #70 lifts Emptio efficiency', () => {
+    const s = bound(70, 10_000);
+    const strength = sigilStrength(sigilById(70)!, bn(10_000));
+    expect(computeModifiers(s).emptioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+    expect(categoryEfficiency(s, 'emptio')).toBeCloseTo(1 + strength, 6);
   });
 
   it('no bindings → the affected fields match the neutral baseline', () => {

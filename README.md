@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 573** (sim 435 · shared 48 · api 11 · web 79).
+**Current test count: 575** (sim 437 · shared 48 · api 11 · web 79).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -169,22 +169,22 @@ factor × the player's current action efficiency × the invocation-effect multip
 | I2  | Additive-to-base effects           | Nightmare → additive to base suicide rate (new `flatBaseSuicideRatePerSecond` bundle field, added in `dynamics` alongside the Doom toggle); Behemoth → additive Stellar weight (factor 0.0005, deferred past the tierAcc block for its `playerEff` dependency); Lemure → offline gain rate, retargeted off the wrong influence/Husk target (`flatInfluencePerSecond` now reserved for the Decarabia #69 sigil). All efficiency-scaled. |
 | I3  | Lamia runner                       | Reclassified Lamia from a generation + Suasio-success modifier into an autonomous Suasio runner (`autonomous: { action: 'suggestion', efficiency: 0.05 }`), advanced by `runner.ts` like Familiar/Upir/Imp. Removed its `reprobateGenerationRateMul` and `categoryTierModifiers` contributions (and the dead `LAMIA_*` constants).                                                                                                     |
 
-**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~29 of 72 now
+**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~31 of 72 now
 bindable, the rest pending their effect mechanics):
 
-| #   | Slice                     | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| --- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| S1  | Existing-field wiring     | Wired the sigils expressible via the existing modifier bundle with no new mechanic: Belial #68 (influence rate), Marax #21 (offline time mul), Murmur #54 (overall invocation effectiveness), Balam #51 (−Terrible weight), Cimejes #66 (maleficia Katabasis roll). Added `invocationEfficiencyMul` + `offlineTimeMul` to the sigil-targetable fields (both already in the bundle and consumed).                                                                   |
-| S2  | Per-category tier/success | New `categoryTier` SigilEffect variant (`{ category, tiers, direction }`) folded into `categoryTierModifiers` via `sigilCategoryTierContributions` (scaled by the Solomon's Ring / Iron Nails enhancers). Wired Agares #2 / Beleth #13 (Indagatio / Decimatio success), Botis #17 / Ipos #22 (−Suasio / −Decimatio bad outcomes), Astaroth #29 / Andras #63 (+Stellar for Indagatio / Emptio), Andromalius #72 (Emptio success) and Naberius #24 (Suasio success). |
+| #   | Slice                          | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| S1  | Existing-field wiring          | Wired the sigils expressible via the existing modifier bundle with no new mechanic: Belial #68 (influence rate), Marax #21 (offline time mul), Murmur #54 (overall invocation effectiveness), Balam #51 (−Terrible weight), Cimejes #66 (maleficia Katabasis roll). Added `invocationEfficiencyMul` + `offlineTimeMul` to the sigil-targetable fields (both already in the bundle and consumed).                                                                   |
+| S2  | Per-category tier/success      | New `categoryTier` SigilEffect variant (`{ category, tiers, direction }`) folded into `categoryTierModifiers` via `sigilCategoryTierContributions` (scaled by the Solomon's Ring / Iron Nails enhancers). Wired Agares #2 / Beleth #13 (Indagatio / Decimatio success), Botis #17 / Ipos #22 (−Suasio / −Decimatio bad outcomes), Astaroth #29 / Andras #63 (+Stellar for Indagatio / Emptio), Andromalius #72 (Emptio success) and Naberius #24 (Suasio success). |
+| S3  | Per-category action efficiency | Added `indagatioEfficiencyMul` + `emptioEfficiencyMul` to the bundle and `categoryEfficiency`, completing the four-category Opera-efficiency surface (these are time-mode, so they scale action speed). Wired Bifrons #46 (Indagatio) and Seere #70 (Emptio).                                                                                                                                                                                                      |
 
 ### Remaining
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Sigils** — ~29 of 72 are wired. The rest are grouped by the mechanic each needs: per-category
-  action efficiency (Indagatio/Emptio muls — Bifrons/Seere), per-Sin invocation effectiveness
-  (Samigina/Barbatos/Bune/Berith/Furfur/Vepar/Shax/Alloces), subtype-targeted murder
-  (Glasya-Labolas/Sabnock/Camio/Haures/Amdusias), subtype penalty reductions
+- **Sigils** — ~31 of 72 are wired. The rest are grouped by the mechanic each needs: per-Sin
+  invocation effectiveness (Samigina/Barbatos/Bune/Berith/Furfur/Vepar/Shax/Alloces), subtype-targeted
+  murder (Glasya-Labolas/Sabnock/Camio/Haures/Amdusias), subtype penalty reductions
   (Gaap/Malphas/Vual/Gremory/Volac), cost reductions (Paimon/Orobas/Amy), per-resource offline
   (Sallos/Forneus), Indagatio discovery odds (Vassago/Stolas/Furcas), conversion (Bael/Eligos/Phenex/
   Ose/Orias), the flat generators (Haagenti gold/s #48, Decarabia influence/s #69), and flat invoking

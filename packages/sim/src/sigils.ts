@@ -40,6 +40,8 @@ export type ScalarModifierField =
   | 'playerEfficiencyMul'
   | 'suasioEfficiencyMul'
   | 'decimatioEfficiencyMul'
+  | 'indagatioEfficiencyMul'
+  | 'emptioEfficiencyMul'
   | 'reprobateGenerationRateMul'
   | 'reprobateSuicideRateMul'
   | 'cholericMurderRateMul'
@@ -245,6 +247,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'increase' },
   },
+  46: {
+    id: 46,
+    name: 'Bifrons',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'indagatioEfficiencyMul', direction: 'increase' },
+  },
   49: {
     id: 49,
     name: 'Crocell',
@@ -286,6 +294,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Belial',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'influenceRateMul', direction: 'increase' },
+  },
+  70: {
+    id: 70,
+    name: 'Seere',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'emptioEfficiencyMul', direction: 'increase' },
   },
   72: {
     id: 72,

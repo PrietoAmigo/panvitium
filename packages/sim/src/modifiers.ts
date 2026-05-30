@@ -86,6 +86,10 @@ export interface Modifiers {
   readonly suasioEfficiencyMul: number;
   /** Multiplier on Decimatio-category action efficiency (Satan / Retribution). */
   readonly decimatioEfficiencyMul: number;
+  /** Multiplier on Indagatio-category action efficiency (time-mode → scales speed). Bifrons #46. */
+  readonly indagatioEfficiencyMul: number;
+  /** Multiplier on Emptio-category action efficiency (time-mode → scales speed). Seere #70. */
+  readonly emptioEfficiencyMul: number;
   /** Per-tier multipliers applied to action weights before renormalization (resolveAction). */
   readonly tierWeightMul: TierModifiers;
   /**
@@ -154,6 +158,8 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   playerEfficiencyMul: 1,
   suasioEfficiencyMul: 1,
   decimatioEfficiencyMul: 1,
+  indagatioEfficiencyMul: 1,
+  emptioEfficiencyMul: 1,
   tierWeightMul: {},
   reprobateGenerationRateMul: 1,
   reprobateSuicideRateMul: 1,
@@ -381,6 +387,8 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
       (1 + HARPY_DECIMATIO_FACTOR * playerEff * invEff * harpyCount) *
       sc('decimatioEfficiencyMul'),
+    indagatioEfficiencyMul: sc('indagatioEfficiencyMul'),
+    emptioEfficiencyMul: sc('emptioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; Luxuria's
     // Seduction skill lifts it continuously (03 §1); Gambler subtype drags it down; sigils (Aamon #7
@@ -476,9 +484,9 @@ export function categoryTierModifiers(
 }
 
 /**
- * Player × category efficiency for an action category (03 §2.1/§2.2). Unknown / future categories
- * (indagatio, emptio, depraedatio, invocatio) currently return just the player multiplier; a
- * per-category mul attaches here as those sigils/skills land.
+ * Player × category efficiency for an action category (03 §2.1/§2.2). Suasio/Decimatio scale the
+ * outcome of cost-outcome actions; Indagatio/Emptio are time-mode, so their mul scales speed (shorter
+ * duration) via `startAction`. Each per-category mul currently carries Sin skills + sigils.
  */
 export function categoryEfficiency(
   state: GameState,
@@ -488,5 +496,7 @@ export function categoryEfficiency(
   let categoryMul = 1;
   if (category === 'suasio') categoryMul = m.suasioEfficiencyMul;
   else if (category === 'decimatio') categoryMul = m.decimatioEfficiencyMul;
+  else if (category === 'indagatio') categoryMul = m.indagatioEfficiencyMul;
+  else if (category === 'emptio') categoryMul = m.emptioEfficiencyMul;
   return m.playerEfficiencyMul * categoryMul;
 }
