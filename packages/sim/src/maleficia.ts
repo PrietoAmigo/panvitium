@@ -356,22 +356,42 @@ export type ActivateResult =
  * this way. Defixio's single-use cull is deferred — its sheet "exp ramp" magnitude is unspecified.
  */
 export function activateMaleficium(state: GameState, id: string): ActivateResult {
-  if (id !== 'hand_of_glory') return { ok: false, reason: 'This maleficium cannot be used.' };
-  const idx = state.lifetime.maleficia.indexOf('hand_of_glory');
-  if (idx === -1) return { ok: false, reason: 'You hold no Hand of Glory.' };
-  const maleficia = [
+  const removeOne = (idx: number): string[] => [
     ...state.lifetime.maleficia.slice(0, idx),
     ...state.lifetime.maleficia.slice(idx + 1),
   ];
-  return {
-    ok: true,
-    state: {
-      ...state,
-      lifetime: {
-        ...state.lifetime,
-        maleficia,
-        handOfGloryRemaining: state.lifetime.handOfGloryRemaining + HAND_OF_GLORY_DURATION_SECONDS,
+  if (id === 'hand_of_glory') {
+    const idx = state.lifetime.maleficia.indexOf('hand_of_glory');
+    if (idx === -1) return { ok: false, reason: 'You hold no Hand of Glory.' };
+    return {
+      ok: true,
+      state: {
+        ...state,
+        lifetime: {
+          ...state.lifetime,
+          maleficia: removeOne(idx),
+          handOfGloryRemaining:
+            state.lifetime.handOfGloryRemaining + HAND_OF_GLORY_DURATION_SECONDS,
+        },
       },
-    },
-  };
+    };
+  }
+  if (id === 'defixio') {
+    if (state.lifetime.defixio) return { ok: false, reason: 'A defixio is already at work.' };
+    const idx = state.lifetime.maleficia.indexOf('defixio');
+    if (idx === -1) return { ok: false, reason: 'You hold no Defixio.' };
+    // Target is rolled on the next tick (inside the RNG-managed flow); null marks it pending.
+    return {
+      ok: true,
+      state: {
+        ...state,
+        lifetime: {
+          ...state.lifetime,
+          maleficia: removeOne(idx),
+          defixio: { target: null, elapsed: 0 },
+        },
+      },
+    };
+  }
+  return { ok: false, reason: 'This maleficium cannot be used.' };
 }

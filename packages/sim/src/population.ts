@@ -93,6 +93,23 @@ export function cullSubtypeFraction(
 }
 
 /**
+ * Cull up to `n` (floored) reprobates of a single subtype — Defixio's absolute-count hex. Clamped
+ * to the subtype's current count; returns the new state and how many were removed (caller mints
+ * the souls).
+ */
+export function cullSubtypeCount(
+  state: GameState,
+  subtype: ReprobateSubtype,
+  n: number,
+): { state: GameState; removed: number } {
+  const count = state.lifetime.reprobates[subtype];
+  const removed = Math.min(count, Math.max(0, Math.floor(n)));
+  if (removed <= 0) return { state, removed: 0 };
+  const reprobates = { ...state.lifetime.reprobates, [subtype]: count - removed };
+  return { state: { ...state, lifetime: { ...state.lifetime, reprobates } }, removed };
+}
+
+/**
  * Lose a fraction (per-subtype, floored) of the *converted* reprobates only — every subtype except
  * the unconverted `reprobate` base. Used for the "Church seizes converts" Decimatio losses; no
  * souls are minted (they are taken from you, not harvested).

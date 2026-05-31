@@ -27,8 +27,9 @@ import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
 import { computeModifiers } from './modifiers.js';
+import { cullSubtypeCount, mintSouls } from './population.js';
 import { makeRng } from './rng.js';
-import { type ActionTimer, type GameState } from './state.js';
+import { REPROBATE_SUBTYPES, type ActionTimer, type GameState } from './state.js';
 import { evaluateAchievements } from './achievements.js';
 
 /** Injected dependencies for a tick (tuning tables / per-call flags not part of the state). */
@@ -58,6 +59,13 @@ export interface TickResult {
    * `state.achievements` already; returned so the UI can raise a toast. Empty on most ticks.
    */
   readonly achievementsUnlocked: string[];
+}
+
+/** Drop the optional Defixio curse from a state's lifetime (EOPT-safe: omits, never sets undefined). */
+function clearDefixio(state: GameState): GameState {
+  if (!state.lifetime.defixio) return state;
+  const { defixio: _drop, ...rest } = state.lifetime;
+  return { ...state, lifetime: rest };
 }
 
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
@@ -228,6 +236,46 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
         handOfGloryRemaining: Math.max(0, working.lifetime.handOfGloryRemaining - deltaSeconds),
       },
     };
+  }
+
+  // 4d. Defixio curse (Maleficia): a single-use hex on a random subtype. The first tick after it is
+  //     cast rolls the target uniformly among the present subtypes (the only Defixio RNG draw —
+  //     gated, so an uncast game leaves the stream untouched); thereafter it culls that subtype at
+  //     eᵗ per second (t = seconds the curse has run, read at the start of the interval), minting a
+  //     soul per death, until the subtype is exterminated — then the curse lifts.
+  if (working.lifetime.defixio) {
+    if (working.lifetime.defixio.target === null) {
+      const present = REPROBATE_SUBTYPES.filter((t) => working.lifetime.reprobates[t] > 0);
+      working =
+        present.length === 0
+          ? clearDefixio(working) // nothing left to curse; it fizzles
+          : {
+              ...working,
+              lifetime: {
+                ...working.lifetime,
+                defixio: { target: present[rng.int(present.length)]!, elapsed: 0 },
+              },
+            };
+    }
+    const curse = working.lifetime.defixio;
+    if (curse && curse.target !== null) {
+      const culled = cullSubtypeCount(
+        working,
+        curse.target,
+        Math.exp(curse.elapsed) * deltaSeconds,
+      );
+      working = mintSouls(culled.state, culled.removed);
+      working =
+        working.lifetime.reprobates[curse.target] <= 0
+          ? clearDefixio(working) // subtype exterminated — the curse lifts
+          : {
+              ...working,
+              lifetime: {
+                ...working.lifetime,
+                defixio: { target: curse.target, elapsed: curse.elapsed + deltaSeconds },
+              },
+            };
+    }
   }
 
   // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; unlocks on a

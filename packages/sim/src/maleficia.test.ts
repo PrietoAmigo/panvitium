@@ -16,6 +16,7 @@ import {
 import { createInitialState, type GameState } from './state.js';
 import { computeModifiers } from './modifiers.js';
 import { tick } from './tick.js';
+import { floor } from './bignum.js';
 
 describe('maleficia catalog', () => {
   it('exposes a non-empty id list and every entry has a coherent shape', () => {
@@ -193,5 +194,55 @@ describe('Hand of Glory (single-use generation buff)', () => {
     };
     expect(tick(active, 10).state.lifetime.handOfGloryRemaining).toBe(20);
     expect(tick(active, 50).state.lifetime.handOfGloryRemaining).toBe(0); // floors at 0
+  });
+});
+
+describe('Defixio (sustained random-subtype curse)', () => {
+  // Only gluttons are present, so the tick's uniform roll is forced to that subtype.
+  const cursed = (): GameState => {
+    const s = createInitialState('dfx', 0);
+    return {
+      ...s,
+      lifetime: {
+        ...s.lifetime,
+        reprobates: { ...s.lifetime.reprobates, glutton: 100 },
+        maleficia: ['defixio'],
+      },
+    };
+  };
+
+  it('activation consumes the item and marks a pending curse; refuses a second while one runs', () => {
+    const r = activateMaleficium(cursed(), 'defixio');
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.state.lifetime.defixio).toEqual({ target: null, elapsed: 0 });
+      expect(countCopies(r.state.lifetime.maleficia, 'defixio')).toBe(0);
+      const holdingAnother = {
+        ...r.state,
+        lifetime: { ...r.state.lifetime, maleficia: ['defixio'] },
+      };
+      expect(activateMaleficium(holdingAnother, 'defixio').ok).toBe(false); // one curse at a time
+    }
+  });
+
+  it('the curse rolls the present subtype, culls it at eᵗ minting souls, and lifts when it is dead', () => {
+    let s = (activateMaleficium(cursed(), 'defixio') as { ok: true; state: GameState }).state;
+    s = tick(s, 1).state; // first tick rolls the target (the only present subtype) and starts culling
+    expect(s.lifetime.defixio?.target).toBe('glutton');
+    expect(s.lifetime.reprobates.glutton).toBeLessThan(100);
+    // The exponential ramp exterminates the subtype within a short span.
+    for (let i = 0; i < 30 && s.lifetime.defixio; i++) s = tick(s, 1).state;
+    expect(s.lifetime.defixio).toBeUndefined(); // curse has lifted
+    expect(s.lifetime.reprobates.glutton).toBe(0);
+    expect(floor(s.souls).toNumber()).toBeGreaterThanOrEqual(100); // a soul per culled glutton
+  });
+
+  it('fizzles when there is no subtype to curse', () => {
+    const empty = (() => {
+      const s = createInitialState('dfx', 0);
+      return { ...s, lifetime: { ...s.lifetime, maleficia: ['defixio'] } }; // all subtypes at 0
+    })();
+    const cast = (activateMaleficium(empty, 'defixio') as { ok: true; state: GameState }).state;
+    expect(tick(cast, 1).state.lifetime.defixio).toBeUndefined();
   });
 });

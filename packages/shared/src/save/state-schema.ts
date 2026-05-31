@@ -86,6 +86,9 @@ const lifetimeSchema = z.object({
   buildQueue: z.array(buildTimerSchema).optional(),
   conversionPool: z.number().nonnegative().optional(),
   handOfGloryRemaining: z.number().nonnegative().optional(),
+  defixio: z
+    .object({ target: z.string().nullable(), elapsed: z.number().nonnegative() })
+    .optional(),
   // Apex Katabasis-modifier pending flags + Morpheus lockout (03 §2.4). Additive-optional
   // (ADR-023): absent in old saves → false at runtime; omitted when false.
   pendingErinyes: z.boolean().optional(),
@@ -188,6 +191,14 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.handOfGloryRemaining > 0
         ? { handOfGloryRemaining: state.lifetime.handOfGloryRemaining }
         : {}),
+      ...(state.lifetime.defixio
+        ? {
+            defixio: {
+              target: state.lifetime.defixio.target,
+              elapsed: state.lifetime.defixio.elapsed,
+            },
+          }
+        : {}),
       // Apex Katabasis-modifier flags + Morpheus lockout: omit when false so fresh / pre-apex
       // saves keep the prior wire form (ADR-023 additive-optional discipline).
       ...(state.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
@@ -269,6 +280,14 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       murderPool: s.lifetime.murderPool ?? 0,
       conversionPool: s.lifetime.conversionPool ?? 0,
       handOfGloryRemaining: s.lifetime.handOfGloryRemaining ?? 0,
+      ...(s.lifetime.defixio
+        ? {
+            defixio: {
+              target: s.lifetime.defixio.target as ReprobateSubtype | null,
+              elapsed: s.lifetime.defixio.elapsed,
+            },
+          }
+        : {}),
       // Apex Katabasis-modifier flags + Morpheus lockout: conditional spread keeps them optional
       // under exactOptionalPropertyTypes (assigning undefined would type-error).
       ...(s.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),

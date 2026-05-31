@@ -207,6 +207,13 @@ export interface LifetimeState {
    */
   handOfGloryRemaining: number;
   /**
+   * Active Defixio curse (Maleficia), or absent when none runs. Cast single-use; the first tick
+   * rolls `target` uniformly among present subtypes (null until then), after which it culls that
+   * subtype at eᵗ per second (`elapsed` = seconds the curse has run) until the subtype is gone, then
+   * the field is dropped. Additive-optional (ADR-023); one curse at a time.
+   */
+  defixio?: { target: ReprobateSubtype | null; elapsed: number };
+  /**
    * Apex-invocation pending Katabasis modifiers (03 §2.4). Set the moment Erinyes/Morpheus is
    * summoned; consumed by `commitKatabasis` to override the carry-over rolls (Erinyes zeroes the
    * gold + maleficia fractions and stacks a permanent player-efficiency double; Morpheus maxes both
