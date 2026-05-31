@@ -54,7 +54,7 @@ import {
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobatesRandom } from './population.js';
 import { type Rng } from './rng.js';
-import { sigilConversionBiasContributions } from './sigils.js';
+import { sigilConversionBiasContributions, sigilMurderBiasContributions } from './sigils.js';
 import {
   type GameState,
   type ReprobateSubtype,
@@ -120,18 +120,47 @@ function nonCholericCount(state: GameState): number {
 }
 
 /** Remove one non-Choleric reprobate at random, weighted by subtype counts. */
-function removeOneNonCholeric(state: GameState, rng: Rng): GameState {
+function removeOneNonCholeric(
+  state: GameState,
+  rng: Rng,
+  bias?: Partial<Record<ReprobateSubtype, number>>,
+): GameState {
   const counts = { ...state.lifetime.reprobates };
   const total = nonCholericCount(state);
   if (total <= 0) return state;
-  let r = rng.int(total);
+
+  // No murder-bias sigils bound → the original uniform-by-count integer draw, untouched. This keeps
+  // the RNG stream (and every test that binds no murder-bias sigil) byte-identical.
+  if (bias === undefined || Object.keys(bias).length === 0) {
+    let r = rng.int(total);
+    for (const t of REPROBATE_SUBTYPES) {
+      if (t === 'choleric') continue;
+      if (r < counts[t]) {
+        counts[t] -= 1;
+        return { ...state, lifetime: { ...state.lifetime, reprobates: counts } };
+      }
+      r -= counts[t];
+    }
+    return state;
+  }
+
+  // Biased (Glasya-Labolas/Sabnock/Camio): weight each non-Choleric subtype by count × bias and draw
+  // against the float total — redistributing which non-Choleric dies, not the total murder count.
+  const w = {} as Record<ReprobateSubtype, number>;
+  let totalW = 0;
+  for (const t of REPROBATE_SUBTYPES) {
+    w[t] = t === 'choleric' ? 0 : counts[t] * (bias[t] ?? 1);
+    totalW += w[t];
+  }
+  if (totalW <= 0) return state;
+  let draw = rng.float() * totalW;
   for (const t of REPROBATE_SUBTYPES) {
     if (t === 'choleric') continue;
-    if (r < counts[t]) {
+    if (draw < w[t]) {
       counts[t] -= 1;
       return { ...state, lifetime: { ...state.lifetime, reprobates: counts } };
     }
-    r -= counts[t];
+    draw -= w[t];
   }
   return state;
 }
@@ -285,8 +314,11 @@ export function applyReprobateDynamics(
 
   // 3. Murders. Cholerics kill non-Cholerics; each kill yields 1 soul. If no non-Cholerics exist,
   //    we leave the pool alone so progress isn't lost — they'll resolve once a target appears.
+  //    Murder-victim bias (Glasya-Labolas/Sabnock/Camio) is constant across the loop — bindings
+  //    don't change mid-tick — so compute it once.
+  const murderBias = sigilMurderBiasContributions(working);
   while (working.lifetime.murderPool >= 1 && nonCholericCount(working) > 0) {
-    const after = removeOneNonCholeric(working, rng);
+    const after = removeOneNonCholeric(working, rng, murderBias);
     if (after === working) break;
     const withSoul = mintSouls(after, 1);
     working = {

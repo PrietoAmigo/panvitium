@@ -77,6 +77,7 @@ export type SigilEffect =
   | { readonly kind: 'invokingPower' }
   | { readonly kind: 'costReduction'; readonly channel: CostChannel }
   | { readonly kind: 'conversionBias'; readonly subtype: ReprobateSubtype }
+  | { readonly kind: 'murderBias'; readonly subtype: ReprobateSubtype }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -251,6 +252,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       direction: 'increase',
     },
   },
+  25: {
+    id: 25,
+    name: 'Glasya-Labolas',
+    coefficient: 0.001,
+    effect: { kind: 'murderBias', subtype: 'celebrity' },
+  },
   26: {
     id: 26,
     name: 'Bune',
@@ -343,6 +350,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'invocationSin', sin: 'ira' },
   },
+  43: {
+    id: 43,
+    name: 'Sabnock',
+    coefficient: 0.001,
+    effect: { kind: 'murderBias', subtype: 'glutton' },
+  },
   44: {
     id: 44,
     name: 'Shax',
@@ -373,6 +386,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Alloces',
     coefficient: 0.001,
     effect: { kind: 'invocationSin', sin: 'acedia' },
+  },
+  53: {
+    id: 53,
+    name: 'Camio',
+    coefficient: 0.001,
+    effect: { kind: 'murderBias', subtype: 'degenerate' },
   },
   54: {
     id: 54,
@@ -427,6 +446,16 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Cimejes',
     coefficient: 0.001,
     effect: { kind: 'katabasis', rolls: ['maleficia'] },
+  },
+  67: {
+    id: 67,
+    name: 'Amdusias',
+    coefficient: 0.001,
+    // "Murder rate of non-Choleric reprobate types" — all murders already target non-Cholerics,
+    // so this is an overall Choleric-murder-rate boost (composes with Aim #23). Haures #64
+    // ("of Choleric reprobate type") stays deferred: the model has Cholerics as murderers, not
+    // victims, so there is no Choleric-murder channel to lift.
+    effect: { kind: 'modifier', field: 'cholericMurderRateMul', direction: 'increase' },
   },
   68: {
     id: 68,
@@ -666,6 +695,29 @@ export function sigilConversionBiasContributions(
     if (bound === undefined) continue;
     const def = sigilById(Number(idStr));
     if (!def || def.effect.kind !== 'conversionBias') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    out[def.effect.subtype] = (out[def.effect.subtype] ?? 1) * (1 + s);
+  }
+  return out;
+}
+
+/**
+ * Per-subtype murder-victim bias from bound sigils (Glasya-Labolas #25 → Celebrity, Sabnock #43 →
+ * Glutton, Camio #53 → Degenerate). Each is a `(1 + strength)` factor on that subtype's weight when
+ * a Choleric murder picks its victim (see `removeOneNonCholeric` in `dynamics.ts`) — redistributing
+ * which non-Choleric dies, not the total murder count. Composed multiplicatively. `effectMul` carries
+ * the sigil enhancers.
+ */
+export function sigilMurderBiasContributions(
+  state: GameState,
+  effectMul = 1,
+): Partial<Record<ReprobateSubtype, number>> {
+  const out: Partial<Record<ReprobateSubtype, number>> = {};
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'murderBias') continue;
     const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
     out[def.effect.subtype] = (out[def.effect.subtype] ?? 1) * (1 + s);

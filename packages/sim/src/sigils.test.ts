@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  applyReprobateDynamics,
   bindingMagnitude,
   bindSigil,
   bn,
@@ -22,6 +23,7 @@ import {
   currentInvokingPower,
   invocationById,
   invocationSoulCost,
+  makeRng,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
   sigilById,
@@ -30,6 +32,7 @@ import {
   sigilInvokingPower,
   sigilKatabasisBonus,
   sigilModifierContributions,
+  sigilMurderBiasContributions,
   sigilStrength,
   sigilVisible,
   SIGIL_IDS,
@@ -480,5 +483,51 @@ describe('Conversion-bias sigils (S9)', () => {
   it('conversionBiasMul folds the bound sigil bias into the draw seam', () => {
     expect(conversionBiasMul(fresh()).celebrity).toBeUndefined();
     expect(conversionBiasMul(bound(15, 1_000_000)).celebrity).toBeCloseTo(2, 6);
+  });
+});
+
+describe('Subtype-targeted murder-rate sigils (S10)', () => {
+  it('Glasya-Labolas #25 / Sabnock #43 / Camio #53 are murder-bias sigils; #67 boosts the rate', () => {
+    expect(sigilById(25)!.effect).toEqual({ kind: 'murderBias', subtype: 'celebrity' });
+    expect(sigilById(43)!.effect).toEqual({ kind: 'murderBias', subtype: 'glutton' });
+    expect(sigilById(53)!.effect).toEqual({ kind: 'murderBias', subtype: 'degenerate' });
+    expect(sigilById(25)!.name).toBe('Glasya-Labolas');
+    // Amdusias #67 (non-Choleric types) lifts the overall Choleric murder rate.
+    expect(sigilById(67)!.effect).toEqual({
+      kind: 'modifier',
+      field: 'cholericMurderRateMul',
+      direction: 'increase',
+    });
+    // Haures #64 (Choleric victims) is deferred — the model has no Choleric-murder channel.
+    expect(SIGIL_IDS).not.toContain(64);
+  });
+
+  it('a bound murder-bias sigil raises only its subtype weight by (1 + strength)', () => {
+    expect(sigilMurderBiasContributions(fresh())).toEqual({});
+    const c = sigilMurderBiasContributions(bound(25, 1_000_000));
+    expect(c.celebrity).toBeCloseTo(2, 6); // 0.001 × sqrt(1e6) = 1 → factor 2
+    expect(Object.keys(c)).toEqual(['celebrity']);
+  });
+
+  it('Amdusias #67 lifts the Choleric murder-rate modifier', () => {
+    const { scalar } = sigilModifierContributions(bound(67, 1_000_000));
+    expect(scalar.cholericMurderRateMul).toBeCloseTo(2, 6);
+  });
+
+  it('a bound murder-bias sigil culls its subtype harder (weighted victim draw)', () => {
+    // ≈ 11× Celebrity weight; equal Celebrity/Glutton counts; a pre-filled murder pool to resolve.
+    const base = bound(25, 100_000_000);
+    const seeded: GameState = {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        reprobates: { ...base.lifetime.reprobates, celebrity: 50, glutton: 50, choleric: 10 },
+        murderPool: 80,
+      },
+    };
+    // Tiny delta → only the pre-filled murders resolve (no meaningful births/suicides/conversions).
+    const after = applyReprobateDynamics(seeded, 1e-6, makeRng(7));
+    expect(after.lifetime.reprobates.celebrity).toBeLessThan(after.lifetime.reprobates.glutton);
+    expect(after.lifetime.reprobates.choleric).toBe(10); // Cholerics are never murder victims
   });
 });
