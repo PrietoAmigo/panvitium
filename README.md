@@ -340,6 +340,22 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   and similar reactive mail. The intent is to let the player _feel_ the impact of what they are doing
   rather than read it only as numbers. Scope, triggers and presentation still to be specified.
 
+**UI work — to be built with Claude Design.** The sim/mechanic side of each item below is complete
+and tested; what remains is the player-facing surface, which will be designed and built in Claude
+Design (presentation/interaction decisions only):
+
+- **Hand of Glory — "Use" affordance.** A Use button plus an active-buff (remaining-time) indicator
+  in the Maleficia specimen-cabinet detail view, wired to the existing `activateMaleficium` sim
+  action (Maleficia M5).
+- **Oracular reveals.** When the player owns Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads
+  Dirt / Crow Feather, surface the relevant Opera tier distribution as an info readout (Suasio /
+  Decimatio / Indagatio / Emptio respectively; Obsidian Mirror reveals all).
+- **Decimatio on the scroll.** A _Purgatio_ row and a _Pogrom_ **subtype picker** (how the player
+  chooses which subtype to purge), surfacing the already-implemented Pogrom/Purgatio sim
+  (economy-parity 14).
+- **Emails (Opera menu).** The impact-feedback correspondence system described above — its scope,
+  triggers and presentation are a Claude Design topic.
+
 Blocked on inputs that don't live in a coding session (independent of the above):
 
 - **Art & audio** — the designed room/menu layer and its plates have landed (`apps/web/src/menus/`
