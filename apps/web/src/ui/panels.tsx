@@ -4,6 +4,7 @@ import {
   floor,
   sinLevel,
   ACTIONS,
+  actionUnlocked,
   categoryEfficiency,
   MALEFICIA,
   BUSINESS_IDS,
@@ -158,21 +159,36 @@ function useUnderway(): boolean {
  * fed by the real action/cost, with acolyte delegation preserved beneath it. (Resolved outcomes
  * live in the PC's Logs program, not on the scroll.) */
 function SuasioPanel(): ReactElement {
-  const influence = useGameStore((s) =>
-    s.state ? floor(s.state.lifetime.influence).toNumber() : 0,
-  );
-  const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'suasio') : 1));
+  const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
   const underway = useUnderway();
-  const cost = Math.ceil((ACTIONS.suggestion?.cost.influence ?? 0) * eff);
-  const costLabel = `${cost} ${strings.resources.influence} · 10s`;
+  if (!state) return <div className="opera" />;
+  const influence = floor(state.lifetime.influence).toNumber();
+  const eff = categoryEfficiency(state, 'suasio');
+  const cap = (w: string): string => w.charAt(0).toUpperCase() + w.slice(1);
+  const names: Record<string, string> = {
+    suggestion: strings.opera.suggestion,
+    logismoi: strings.opera.logismoi,
+    imperium: strings.opera.imperium,
+  };
+  // All three temptations live on the one scroll; locked ones show their Luxuria gate (02 §2.1).
+  const actions = (['suggestion', 'logismoi', 'imperium'] as const).map((id) => {
+    const def = ACTIONS[id]!;
+    const influenceCost = Math.ceil((def.cost.influence ?? 0) * eff);
+    const locked = !actionUnlocked(state, def);
+    return {
+      id,
+      name: names[id] ?? def.id,
+      cost: `${influenceCost} ${strings.resources.influence} · ${def.baseTimeSeconds}s`,
+      locked,
+      disabled: underway || locked || influence < influenceCost,
+      ...(def.unlock ? { lockLabel: `${cap(def.unlock.sin)} ${def.unlock.level}` } : {}),
+      onTempt: () => act(id),
+    };
+  });
   return (
     <div className="opera">
-      <DesignedSuasio
-        cost={costLabel}
-        disabled={underway || influence < cost}
-        onTempt={() => act('suggestion')}
-      />
+      <DesignedSuasio intro={strings.opera.suasioIntro} actions={actions} />
       <AcolyteControls actionId="suggestion" />
       {underway && <p className="opera-hint">{strings.opera.underway}</p>}
     </div>

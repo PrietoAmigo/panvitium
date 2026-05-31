@@ -1,29 +1,43 @@
 import { type ReactElement } from 'react';
 
-interface SuasioPanelProps {
-  /** Display cost label, e.g. "5 Influence · 10s" (already efficiency-scaled). */
+/** One temptation as shown on the scroll. Locked actions render their Sin gate instead of a cost. */
+export interface SuasioActionView {
+  id: string;
+  name: string;
+  /** Efficiency-scaled cost label, e.g. "5 Influence · 5s". */
   cost: string;
-  /** True while a rite is underway or the player can't afford it. */
+  /** True while a rite is underway, the player can't afford it, or it is still locked. */
   disabled: boolean;
-  /** Fire the real Suasio (Suggestion) action. */
+  /** Not yet unlocked at the required Sin level. */
+  locked: boolean;
+  /** Gate label for a locked action, e.g. "Luxuria 2". */
+  lockLabel?: string;
+  /** Fire the real action. */
   onTempt: () => void;
 }
 
-// The Suasio scroll — fire a temptation. Rendered inside <PanelShell variant="scroll"/>.
-// Driven by the real Suasio action; resolved outcomes surface in the PC's Logs program, not here.
-export function SuasioPanel({ cost, disabled, onTempt }: SuasioPanelProps): ReactElement {
+interface SuasioPanelProps {
+  intro: string;
+  actions: readonly SuasioActionView[];
+}
+
+// The Suasio scroll — the three temptations, written to be spoken. Rendered inside
+// <PanelShell variant="scroll"/>. Driven by the real actions; outcomes surface in the PC's Logs.
+export function SuasioPanel({ intro, actions }: SuasioPanelProps): ReactElement {
   return (
     <div>
-      <p className="opera-intro">The temptations, written to be spoken. Whisper one and wait.</p>
-      <div className="opera-action">
-        <div className="opera-meta">
-          <span className="opera-name">Suggestion</span>
-          <span className="opera-cost">{cost}</span>
+      <p className="opera-intro">{intro}</p>
+      {actions.map((a) => (
+        <div key={a.id} className={'opera-action' + (a.locked ? ' opera-action--locked' : '')}>
+          <div className="opera-meta">
+            <span className="opera-name">{a.name}</span>
+            <span className="opera-cost">{a.locked ? (a.lockLabel ?? 'Locked') : a.cost}</span>
+          </div>
+          <button type="button" className="opera-btn" disabled={a.disabled} onClick={a.onTempt}>
+            {a.locked ? 'Locked' : 'Tempt'}
+          </button>
         </div>
-        <button type="button" className="opera-btn" disabled={disabled} onClick={onTempt}>
-          Tempt
-        </button>
-      </div>
+      ))}
     </div>
   );
 }

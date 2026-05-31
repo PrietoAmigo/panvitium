@@ -657,6 +657,13 @@ body {
   opacity: 0.7;
   font-variant-numeric: tabular-nums;
 }
+.opera-action--locked .opera-name {
+  opacity: 0.55;
+}
+.opera-action--locked .opera-cost {
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
 
 .opera-btn {
   font-family: var(--font-display);

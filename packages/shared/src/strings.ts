@@ -24,6 +24,8 @@ export const strings = {
     indagatio: 'Indagatio',
     emptio: 'Emptio',
     suggestion: 'Suggestion',
+    logismoi: 'Logismoi',
+    imperium: 'Imperium',
     caedis: 'Caedis',
     tempt: 'Tempt',
     cull: 'Cull',
