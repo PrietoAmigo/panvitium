@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 598** (sim 452 · shared 48 · api 11 · web 87).
+**Current test count: 602** (sim 452 · shared 48 · api 11 · web 91).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -225,11 +225,18 @@ extensions, `import type`, Prettier):
     buttons ramp the per-step _amount_ (souls are BigNum, so a +1/tick hold can't scale). The recap
     and Eternal-Sin reveal remain their own views. `KatabasisModal` is slimmed to the phase
     orchestrator + those two views.
-  - _Remaining._ Three diegetic **panels** still render from the `menus.data.ts` mock catalogs
-    (each seam marked `TODO(wire)`): `MaleficiaCabinet` / `SuasioPanel` / `PcWindow` (owned maleficia
-    / Suasio action / PC programs). Each later slice repoints one panel at real selectors and deletes
-    its stand-in arrays. The old text `ArsGoetiaPanel` stays in `PANELS` but is no longer rendered
-    (later cleanup).
+  - _W5 — Maleficia cabinet + Suasio scroll live._ `MaleficiaCabinet` now shows the player's **owned**
+    maleficia (a `buildCabinet` view-model collapsing duplicate stackables into ×N), each merged from
+    the sim catalog (name/rarity/description) with the design's specimen art + split flavour/effect;
+    art-less items fall back to a text label. `SuasioPanel` fires the real **Suggestion** action via
+    the store (`act`), with the live efficiency-scaled cost and a log of resolved Suggestion outcomes
+    (filtered from the store log, described via `describeOutcome`); acolyte delegation to Suasio is
+    preserved beneath it. Pinned by a cabinet adapter unit test.
+  - _Remaining._ One diegetic **panel** still renders from the `menus.data.ts` mock catalogs (seam
+    marked `TODO(wire)`): `PcWindow` — the Studio's file-manager of ritual programs (Depraedatio
+    businesses, Decimatio / Indagatio, the Emptio market, achievements, the log feed), which fans out
+    to several systems. The old text `ArsGoetiaPanel` (and now the old Suasio/Maleficia list markup)
+    in `PANELS`/`panels.tsx` is superseded; a later cleanup can remove the dead helpers.
 
 ### Remaining
 

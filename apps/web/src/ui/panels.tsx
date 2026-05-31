@@ -6,8 +6,6 @@ import {
   ACTIONS,
   categoryEfficiency,
   MALEFICIA,
-  countCopies,
-  totalInvokingPower,
   BUSINESS_IDS,
   businessById,
   SHUTDOWN_REFUND_FRACTION,
@@ -30,7 +28,10 @@ import {
 } from '@panvitium/sim';
 import { type PanelId } from '../menus/types.js';
 import { AltarPanel as DesignedAltar } from '../menus/AltarPanel.js';
+import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
+import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
 import { buildAltar } from '../game/altar.js';
+import { buildCabinet } from '../game/maleficia.js';
 import { useGameStore } from '../store/gameStore.js';
 import { actionName } from '../game/labels.js';
 
@@ -152,31 +153,32 @@ function useUnderway(): boolean {
   return useGameStore((s) => (s.state ? s.state.lifetime.actionQueue.length > 0 : false));
 }
 
-/** The Suasio scroll (Studio): tempt ordinary humans into reprobates. */
+/** The Suasio scroll (Studio): tempt ordinary humans into reprobates. Renders the designed scroll
+ * fed by the real action/cost/log, with acolyte delegation preserved beneath it. */
 function SuasioPanel(): ReactElement {
   const influence = useGameStore((s) =>
     s.state ? floor(s.state.lifetime.influence).toNumber() : 0,
   );
   const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'suasio') : 1));
-  const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
+  const log = useGameStore((s) => s.log);
   const underway = useUnderway();
-  // Efficiency scales cost and outcome the same percentage (03 §2.1). Display the actual cost the
-  // player will pay so the bump from Gula levels never silently surprises them.
   const cost = Math.ceil((ACTIONS.suggestion?.cost.influence ?? 0) * eff);
+  const costLabel = `${cost} ${strings.resources.influence} · 10s`;
+  const lines = log
+    .filter((e) => e.actionId === 'suggestion')
+    .slice(0, 8)
+    .map((e) => ({ tier: e.tier as string, text: describeOutcome(e) }));
   return (
     <div className="opera">
-      <p className="opera-intro">{strings.opera.suasioIntro}</p>
-      <ActionRow
-        name={strings.opera.suggestion}
-        cost={`${cost} ${strings.resources.influence} · 10s`}
-        cta={strings.opera.tempt}
+      <DesignedSuasio
+        log={lines}
+        cost={costLabel}
         disabled={underway || influence < cost}
-        onAct={() => act('suggestion')}
-        delegation={<AcolyteControls actionId="suggestion" />}
+        onTempt={() => act('suggestion')}
       />
+      <AcolyteControls actionId="suggestion" />
       {underway && <p className="opera-hint">{strings.opera.underway}</p>}
-      {notice !== null && <p className="opera-notice">{notice}</p>}
     </div>
   );
 }
@@ -335,47 +337,11 @@ function EmptioGroup(): ReactElement {
 
 /** Maleficia shelf: groups owned items by id; stackables show their count. */
 function MaleficiaShelf(): ReactElement {
-  const owned = useGameStore((s) => (s.state ? s.state.lifetime.maleficia : []));
-  if (owned.length === 0) {
+  const items = useGameStore((s) => (s.state ? buildCabinet(s.state) : []));
+  if (items.length === 0) {
     return <p className="pc-empty">{strings.maleficia.empty}</p>;
   }
-  // Preserve first-acquired order while collapsing duplicates into counts.
-  const order: string[] = [];
-  const seen = new Set<string>();
-  for (const id of owned) {
-    if (!seen.has(id)) {
-      seen.add(id);
-      order.push(id);
-    }
-  }
-  const totalPower = totalInvokingPower(owned);
-  return (
-    <div className="maleficia-shelf">
-      <p className="opera-intro">{strings.maleficia.intro}</p>
-      <p className="maleficia-power">
-        {totalPower} {strings.maleficia.invokingPower}
-      </p>
-      <ul className="maleficia-list">
-        {order.map((id) => {
-          const def = MALEFICIA[id];
-          if (!def) return null;
-          const count = countCopies(owned, id);
-          return (
-            <li key={id} className="maleficium-row">
-              <span className={`rarity-badge rarity-${def.rarity}`}>
-                {strings.maleficia.rarity[def.rarity]}
-              </span>
-              <span className="maleficium-name">
-                {def.name}
-                {count > 1 ? ` ×${count}` : ''}
-              </span>
-              <span className="maleficium-desc">{def.description}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
+  return <DesignedCabinet items={items} />;
 }
 
 /** Format a duration in seconds as HH:MM:SS or MMm SS, etc. */
