@@ -340,10 +340,18 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   newsletter emails, messages from people affected by the player's businesses (e.g. class actions),
   and similar reactive mail. The intent is to let the player _feel_ the impact of what they are doing
   rather than read it only as numbers. Scope, triggers and presentation still to be specified.
+- **Smartphone code terminal (studio desk) — [pending design].** A smartphone prop resting on the
+  desk in the studio. Tapping it opens a dial-pad where the player enters codes formatted as
+  telephone numbers; a recognised number triggers an effect — an easter egg, bonus/extra content, a
+  snippet of additional game information or lore, or a gameplay **buff**. The code table and its
+  effects are still to be specified. Engineering note: purely informational / easter-egg codes are
+  UI-only, but any code that grants a buff or other gameplay effect needs a sim hook (and, if it
+  should persist across ticks or sessions, an additive-optional save field per ADR-023).
 
-**UI work — to be built with Claude Design.** The sim/mechanic side of each item below is complete
-and tested; what remains is the player-facing surface, which will be designed and built in Claude
-Design (presentation/interaction decisions only):
+**UI work — to be built with Claude Design.** Designed and built in Claude Design. The first three
+items below have a complete, tested sim/mechanic side and need only their player-facing surface; the
+last two — Emails and the smartphone code terminal — are new in-world features whose scope is still
+being specified (and may carry a small sim hook of their own):
 
 - **Single-use activation — "Use" affordance.** A Use button plus a status indicator in the
   Maleficia specimen-cabinet detail view, wired to the existing `activateMaleficium` sim action, for the
@@ -357,6 +365,9 @@ Design (presentation/interaction decisions only):
   (economy-parity 14).
 - **Emails (Opera menu).** The impact-feedback correspondence system described above — its scope,
   triggers and presentation are a Claude Design topic.
+- **Smartphone code terminal.** The studio-desk dial-pad described above — its presentation and the
+  telephone-number code-entry interaction are a Claude Design topic; buff-granting codes additionally
+  need a small sim hook.
 
 **Needs a spreadsheet / model decision (not a coding or design task).** Each item below is blocked
 only on a number or mechanic being settled on the sheet; once it is, each is a straightforward slice:
