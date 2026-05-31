@@ -531,3 +531,37 @@ describe('Subtype-targeted murder-rate sigils (S10)', () => {
     expect(after.lifetime.reprobates.choleric).toBe(10); // Cholerics are never murder victims
   });
 });
+
+describe('Nihilist suicide-rate sigils (S11)', () => {
+  const withNihilists = (s: GameState, n = 100): GameState => ({
+    ...s,
+    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, nihilist: n } },
+  });
+
+  it('Ronove #27 and Focalor #41 amplify the Nihilist suicide multiplier', () => {
+    for (const id of [27, 41]) {
+      expect(sigilById(id)!.effect).toEqual({
+        kind: 'modifier',
+        field: 'nihilistSuicideMul',
+        direction: 'increase',
+      });
+    }
+    expect(sigilById(27)!.name).toBe('Ronove');
+    // 0.001 × sqrt(1e6) = 1 → ×2 on the field's sigil contribution.
+    expect(sigilModifierContributions(bound(27, 1_000_000)).scalar.nihilistSuicideMul).toBeCloseTo(
+      2,
+      6,
+    );
+  });
+
+  it('raises the suicide rate when Nihilists are present, and is inert when they are not', () => {
+    const baseRate = computeModifiers(withNihilists(fresh())).reprobateSuicideRateMul;
+    const boosted = computeModifiers(withNihilists(bound(27, 1_000_000))).reprobateSuicideRateMul;
+    expect(boosted).toBeGreaterThan(baseRate);
+    // No Nihilists → the per-count term is zero, so the sigil cannot lift the rate.
+    expect(computeModifiers(bound(27, 1_000_000)).reprobateSuicideRateMul).toBeCloseTo(
+      computeModifiers(fresh()).reprobateSuicideRateMul,
+      9,
+    );
+  });
+});

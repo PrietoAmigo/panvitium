@@ -44,6 +44,7 @@ export type ScalarModifierField =
   | 'emptioEfficiencyMul'
   | 'reprobateGenerationRateMul'
   | 'reprobateSuicideRateMul'
+  | 'nihilistSuicideMul'
   | 'cholericMurderRateMul'
   | 'vitiumMercaturaOutputMul'
   | 'acolyteEfficiencyMul'
@@ -264,6 +265,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'invocationSin', sin: 'vanagloria' },
   },
+  27: {
+    id: 27,
+    name: 'Ronove',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'nihilistSuicideMul', direction: 'increase' },
+  },
   28: {
     id: 28,
     name: 'Berith',
@@ -343,6 +350,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Bifrons',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'indagatioEfficiencyMul', direction: 'increase' },
+  },
+  41: {
+    id: 41,
+    name: 'Focalor',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'nihilistSuicideMul', direction: 'increase' },
   },
   42: {
     id: 42,

@@ -341,8 +341,10 @@ export function computeModifiers(state: GameState): Modifiers {
         subs.degenerate);
   const degenerateMurderMul =
     1 / (1 + (DEGENERATE_MURDER_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) * subs.degenerate);
-  //   Nihilist (Tristitia): raises suicide
-  const nihilistSuicideMul = 1 + NIHILIST_SUICIDE_INCREASE_PER_COUNT * subs.nihilist;
+  //   Nihilist (Tristitia): raises suicide. Ronove #27 / Focalor #41 amplify the per-count term
+  //   (so they do nothing when no Nihilists are present).
+  const nihilistSuicideMul =
+    1 + NIHILIST_SUICIDE_INCREASE_PER_COUNT * subs.nihilist * sc('nihilistSuicideMul');
   //   Gambler (Avaritia): lowers generation
   const gamblerGenerationMul =
     1 /
