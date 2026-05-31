@@ -36,6 +36,7 @@ import {
   sigilKatabasisBonus,
   sigilModifierContributions,
   sigilMurderBiasContributions,
+  sigilOfflineResourceMul,
   sigilStrength,
   sigilVisible,
   SIGIL_IDS,
@@ -605,5 +606,39 @@ describe('Indagatio find-quality sigils (S12)', () => {
   it('a bound Furcas surfaces two maleficia where one would be found', () => {
     expect(resolveIndagatio(fresh(), 'stellar', makeRng(3)).surfaced).toHaveLength(1);
     expect(resolveIndagatio(bound(50, 1_000_000), 'stellar', makeRng(3)).surfaced).toHaveLength(2);
+  });
+});
+
+describe('Offline resource-rate sigils (S13)', () => {
+  it('Sallos #19 (gold) and Forneus #30 (influence) give offline-only income multipliers', () => {
+    expect(sigilById(19)!.effect).toEqual({ kind: 'offlineResource', resource: 'gold' });
+    expect(sigilById(30)!.effect).toEqual({ kind: 'offlineResource', resource: 'influence' });
+    expect(sigilOfflineResourceMul(fresh())).toEqual({ gold: 1, influence: 1 });
+    // 0.001 × sqrt(1e6) = 1 → ×2 on the matching resource only.
+    const g = sigilOfflineResourceMul(bound(19, 1_000_000));
+    expect(g.gold).toBeCloseTo(2, 6);
+    expect(g.influence).toBe(1);
+    const i = sigilOfflineResourceMul(bound(30, 1_000_000));
+    expect(i.influence).toBeCloseTo(2, 6);
+    expect(i.gold).toBe(1);
+  });
+
+  it('the tick honours the offline income multipliers (online ticks pass nothing)', () => {
+    const s = fresh();
+    const baseGoldGain = (dt: number, mul?: number): number => {
+      const after = tick(s, dt, mul === undefined ? {} : { offlineGoldMul: mul }).state;
+      return after.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
+    };
+    expect(baseGoldGain(10, 2)).toBeCloseTo(baseGoldGain(10) * 2, 6);
+
+    // Influence: a short span so the maxInfluence cap isn't reached; the boost doubles the gain.
+    const infGain = (mul?: number): number =>
+      tick(
+        s,
+        0.001,
+        mul === undefined ? {} : { offlineInfluenceMul: mul },
+      ).state.lifetime.influence.toNumber() - s.lifetime.influence.toNumber();
+    expect(infGain()).toBeGreaterThan(0);
+    expect(infGain(2)).toBeCloseTo(infGain() * 2, 6);
   });
 });

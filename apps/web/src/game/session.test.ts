@@ -46,4 +46,20 @@ describe('session', () => {
     expect(r.lifetime.gold.toNumber()).toBe(0);
     expect(r.lastTickAt).toBe(0);
   });
+
+  it('Sallos #19 lifts offline gold gain specifically, without touching influence', () => {
+    const offlineMs = 3600 * 1000; // 1 hour
+    const base = startNewGame(0);
+    const sallos: GameState = {
+      ...base,
+      sigilBindings: { ...base.sigilBindings, 19: bn(1_000_000) }, // ≈ ×2 offline gold
+    };
+    const goldBase = resumeGame(base, offlineMs).lifetime.gold.toNumber();
+    const goldSallos = resumeGame(sallos, offlineMs).lifetime.gold.toNumber();
+    expect(goldSallos).toBeGreaterThan(goldBase);
+    // Sallos is gold-only — influence (Forneus's channel) is unchanged.
+    const infBase = resumeGame(base, offlineMs).lifetime.influence.toNumber();
+    const infSallos = resumeGame(sallos, offlineMs).lifetime.influence.toNumber();
+    expect(infSallos).toBeCloseTo(infBase, 6);
+  });
 });

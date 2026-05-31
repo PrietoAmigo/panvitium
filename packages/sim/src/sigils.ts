@@ -80,6 +80,7 @@ export type SigilEffect =
   | { readonly kind: 'conversionBias'; readonly subtype: ReprobateSubtype }
   | { readonly kind: 'murderBias'; readonly subtype: ReprobateSubtype }
   | { readonly kind: 'indagatioDoubleFind' }
+  | { readonly kind: 'offlineResource'; readonly resource: 'gold' | 'influence' }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -225,6 +226,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'acolyteEfficiencyMul', direction: 'increase' },
   },
+  19: {
+    id: 19,
+    name: 'Sallos',
+    coefficient: 0.001,
+    effect: { kind: 'offlineResource', resource: 'gold' },
+  },
   20: {
     id: 20,
     name: 'Purson',
@@ -300,6 +307,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       tiers: ['stellar'],
       direction: 'increase',
     },
+  },
+  30: {
+    id: 30,
+    name: 'Forneus',
+    coefficient: 0.001,
+    effect: { kind: 'offlineResource', resource: 'influence' },
   },
   31: {
     id: 31,
@@ -778,6 +791,30 @@ export function sigilIndagatioDoubleFindChance(state: GameState, effectMul = 1):
     p += sigilStrength(def, bound) * effectMul;
   }
   return Math.min(1, Math.max(0, p));
+}
+
+/**
+ * Offline-only income multipliers from bound sigils (Sallos #19 → gold, Forneus #30 → influence).
+ * Each is a `(1 + strength)` factor applied to that resource's income during the `resumeGame` offline
+ * catch-up only (threaded through `TickDeps`); online ticks are unaffected. `effectMul` carries the
+ * sigil enhancers.
+ */
+export function sigilOfflineResourceMul(
+  state: GameState,
+  effectMul = 1,
+): { gold: number; influence: number } {
+  let gold = 1;
+  let influence = 1;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'offlineResource') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    if (def.effect.resource === 'gold') gold *= 1 + s;
+    else influence *= 1 + s;
+  }
+  return { gold, influence };
 }
 
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {

@@ -8,6 +8,7 @@ import {
   ACEDIA_OFFLINE_COMPOUND_BASE,
   computeModifiers,
   createInitialState,
+  sigilOfflineResourceMul,
   sinLevel,
   tick,
   type GameState,
@@ -47,5 +48,11 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
   const acediaCompound =
     acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (offlineMinutes * acediaLvl * acediaLvl) : 1;
   const scaled = capped * offlineMul * acediaCompound;
-  return tick(saved, scaled).state;
+  // Sallos #19 / Forneus #30 lift offline gold / influence income specifically (online ticks pass
+  // nothing, so these apply only to this catch-up).
+  const offlineRes = sigilOfflineResourceMul(saved);
+  return tick(saved, scaled, {
+    offlineGoldMul: offlineRes.gold,
+    offlineInfluenceMul: offlineRes.influence,
+  }).state;
 }

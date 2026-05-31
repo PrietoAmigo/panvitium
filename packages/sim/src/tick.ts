@@ -31,9 +31,15 @@ import { makeRng } from './rng.js';
 import { type ActionTimer, type GameState } from './state.js';
 import { evaluateAchievements } from './achievements.js';
 
-/** Injected dependencies for a tick (tuning tables that aren't part of the state). Empty for now. */
+/** Injected dependencies for a tick (tuning tables / per-call flags not part of the state). */
 export interface TickDeps {
-  readonly _reserved?: never;
+  /**
+   * Offline-only income multipliers, applied to this tick's gold / influence income (Sallos #19 /
+   * Forneus #30). Default 1 (online ticks pass nothing, so behaviour is unchanged); `resumeGame`
+   * passes the sigil-derived values for the single offline catch-up tick.
+   */
+  readonly offlineGoldMul?: number;
+  readonly offlineInfluenceMul?: number;
 }
 
 /** The result of advancing the game: the new state, outcome events, and transient notices. */
@@ -55,7 +61,7 @@ export interface TickResult {
 }
 
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
-export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {}): TickResult {
+export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}): TickResult {
   if (deltaSeconds <= 0) return { state, events: [], notices: [], achievementsUnlocked: [] };
 
   // Frozen during the descent (02 §6): while the Katabasis menu is open the lifetime is in trance.
@@ -111,23 +117,30 @@ export function tick(state: GameState, deltaSeconds: number, _deps: TickDeps = {
   //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
   //    only at display/spend/comparison boundary.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
+  // Offline-only income multipliers (Sallos #19 gold, Forneus #30 influence). 1× online.
+  const offlineGoldMul = deps.offlineGoldMul ?? 1;
+  const offlineInfluenceMul = deps.offlineInfluenceMul ?? 1;
   const goldPerSecond =
     (BASE_GOLD_PER_SECOND +
       businessGoldPerSecond(state, mods) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state) +
       mods.flatGoldPerSecond) *
-    mods.goldRateMul;
+    mods.goldRateMul *
+    offlineGoldMul;
   const proportionalInfluence = mul(
     effectiveMax,
-    BASE_INFLUENCE_RATE * mods.influenceRateMul * deltaSeconds,
+    BASE_INFLUENCE_RATE * mods.influenceRateMul * offlineInfluenceMul * deltaSeconds,
   );
   const vcInfluence = mul(
-    compositumInfluencePerSecond(state) * mods.influenceRateMul,
+    compositumInfluencePerSecond(state) * mods.influenceRateMul * offlineInfluenceMul,
     deltaSeconds,
   );
   // Flat influence/s from invocations (Lemure). Additive, scaled by the influence-rate multiplier
   // like the Vitium Compositum term, and folded under the same maxInfluence cap below.
-  const flatInfluence = mul(mods.flatInfluencePerSecond * mods.influenceRateMul, deltaSeconds);
+  const flatInfluence = mul(
+    mods.flatInfluencePerSecond * mods.influenceRateMul * offlineInfluenceMul,
+    deltaSeconds,
+  );
   const lifetime = {
     ...state.lifetime,
     gold: add(state.lifetime.gold, mul(goldPerSecond, deltaSeconds)),
