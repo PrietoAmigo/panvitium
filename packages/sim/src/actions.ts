@@ -30,7 +30,7 @@ import {
   sigilEffectMultiplier,
   type MaleficiumRarity,
 } from './maleficia.js';
-import { sigilCostReductionByChannel } from './sigils.js';
+import { sigilCostReductionByChannel, sigilIndagatioDoubleFindChance } from './sigils.js';
 
 export interface ActionCost {
   readonly gold?: number;
@@ -454,16 +454,39 @@ export function resolveIndagatio(
           : tier === 'neutral'
             ? ['common']
             : [];
-  for (const rarity of fallbackChain) {
-    const ids = findableIds(rarity, state.lifetime.maleficia, state.lifetime.emptioList);
-    if (ids.length === 0) continue;
-    const picked = ids[rng.int(ids.length)];
-    if (!picked) continue; // defensive: rng.int could (in theory) land out of range
-    const next: GameState = {
-      ...state,
-      lifetime: { ...state.lifetime, emptioList: [...state.lifetime.emptioList, picked] },
-    };
-    return { state: next, surfaced: [picked] };
+  // Find one item along the chain; returns the updated state + picked id, or null if none findable.
+  const findOne = (st: GameState): { state: GameState; picked: string } | null => {
+    for (const rarity of fallbackChain) {
+      const ids = findableIds(rarity, st.lifetime.maleficia, st.lifetime.emptioList);
+      if (ids.length === 0) continue;
+      const picked = ids[rng.int(ids.length)];
+      if (!picked) continue; // defensive: rng.int could (in theory) land out of range
+      return {
+        state: {
+          ...st,
+          lifetime: { ...st.lifetime, emptioList: [...st.lifetime.emptioList, picked] },
+        },
+        picked,
+      };
+    }
+    return null;
+  };
+
+  const first = findOne(state);
+  if (first) {
+    let working = first.state;
+    const surfaced = [first.picked];
+    // Furcas #50: a chance to surface a SECOND item in the same search. The float is drawn only when
+    // the chance is live, so an unbound roster leaves the RNG stream (and existing tests) untouched.
+    const chance = sigilIndagatioDoubleFindChance(state);
+    if (chance > 0 && rng.float() < chance) {
+      const second = findOne(working);
+      if (second) {
+        working = second.state;
+        surfaced.push(second.picked);
+      }
+    }
+    return { state: working, surfaced };
   }
 
   // Failure tiers bite gold (Indagatio & Emptio sheet): Terrible (Church trap) −15%, Apocalyptic

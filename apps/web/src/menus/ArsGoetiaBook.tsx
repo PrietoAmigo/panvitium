@@ -101,7 +101,7 @@ export function ArsGoetiaBook({
               <p className="gb-intro">
                 Every novice can recite the seventy-two kings, princes and presidents of the
                 descent, their names are half the trade in any grimoire. Yet a crown seldom stoops
-                to honest labour.
+                to labour.
               </p>
             </div>
           </>

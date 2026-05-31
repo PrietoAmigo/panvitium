@@ -26,9 +26,12 @@ import {
   makeRng,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
+  resolveIndagatio,
   sigilById,
+  sigilCategoryTierContributions,
   sigilConversionBiasContributions,
   sigilCostReductionByChannel,
+  sigilIndagatioDoubleFindChance,
   sigilInvokingPower,
   sigilKatabasisBonus,
   sigilModifierContributions,
@@ -563,5 +566,44 @@ describe('Nihilist suicide-rate sigils (S11)', () => {
       computeModifiers(fresh()).reprobateSuicideRateMul,
       9,
     );
+  });
+});
+
+describe('Indagatio find-quality sigils (S12)', () => {
+  it('Vassago #3 and Stolas #36 bias Indagatio rarity through the tier distribution', () => {
+    expect(sigilById(3)!.effect).toEqual({
+      kind: 'categoryTier',
+      category: 'indagatio',
+      tiers: ['stellar', 'excellent'],
+      direction: 'increase',
+    });
+    expect(sigilById(36)!.effect).toEqual({
+      kind: 'categoryTier',
+      category: 'indagatio',
+      tiers: ['good'],
+      direction: 'increase',
+    });
+    // Vassago lifts the profane/anathema entry tiers, and only on Indagatio.
+    const v = sigilCategoryTierContributions(bound(3, 1_000_000), 'indagatio');
+    expect(v.stellar).toBeGreaterThan(1);
+    expect(v.excellent).toBeGreaterThan(1);
+    expect(v.good).toBeUndefined();
+    expect(sigilCategoryTierContributions(bound(3, 1_000_000), 'decimatio')).toEqual({});
+    // Stolas lifts the Good (rare) entry.
+    expect(sigilCategoryTierContributions(bound(36, 1_000_000), 'indagatio').good).toBeGreaterThan(
+      1,
+    );
+  });
+
+  it('Furcas #50 gives a clamped second-find probability', () => {
+    expect(sigilById(50)!.effect).toEqual({ kind: 'indagatioDoubleFind' });
+    expect(sigilIndagatioDoubleFindChance(fresh())).toBe(0);
+    expect(sigilIndagatioDoubleFindChance(bound(50, 1_000_000))).toBe(1); // 0.001×sqrt(1e6)=1, clamped
+    expect(sigilIndagatioDoubleFindChance(bound(50, 250_000))).toBeCloseTo(0.5, 6); // 0.001×500
+  });
+
+  it('a bound Furcas surfaces two maleficia where one would be found', () => {
+    expect(resolveIndagatio(fresh(), 'stellar', makeRng(3)).surfaced).toHaveLength(1);
+    expect(resolveIndagatio(bound(50, 1_000_000), 'stellar', makeRng(3)).surfaced).toHaveLength(2);
   });
 });

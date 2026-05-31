@@ -79,6 +79,7 @@ export type SigilEffect =
   | { readonly kind: 'costReduction'; readonly channel: CostChannel }
   | { readonly kind: 'conversionBias'; readonly subtype: ReprobateSubtype }
   | { readonly kind: 'murderBias'; readonly subtype: ReprobateSubtype }
+  | { readonly kind: 'indagatioDoubleFind' }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -127,6 +128,18 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       kind: 'categoryTier',
       category: 'indagatio',
       tiers: ['stellar', 'excellent', 'good'],
+      direction: 'increase',
+    },
+  },
+  3: {
+    id: 3,
+    name: 'Vassago',
+    coefficient: 0.001,
+    // Higher chance of profane + anathema finds = boost the Indagatio tiers that surface them.
+    effect: {
+      kind: 'categoryTier',
+      category: 'indagatio',
+      tiers: ['stellar', 'excellent'],
       direction: 'increase',
     },
   },
@@ -321,6 +334,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'maxInfluenceMul', direction: 'increase' },
   },
+  36: {
+    id: 36,
+    name: 'Stolas',
+    coefficient: 0.001,
+    // Higher chance of rare finds = boost the Good Indagatio tier (its rarity entry point).
+    effect: { kind: 'categoryTier', category: 'indagatio', tiers: ['good'], direction: 'increase' },
+  },
   37: {
     id: 37,
     name: 'Phenex',
@@ -387,6 +407,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Crocell',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'reprobateSuicideRateMul', direction: 'increase' },
+  },
+  50: {
+    id: 50,
+    name: 'Furcas',
+    coefficient: 0.001,
+    effect: { kind: 'indagatioDoubleFind' },
   },
   51: {
     id: 51,
@@ -736,6 +762,22 @@ export function sigilMurderBiasContributions(
     out[def.effect.subtype] = (out[def.effect.subtype] ?? 1) * (1 + s);
   }
   return out;
+}
+
+/**
+ * Probability that an Indagatio search surfaces a SECOND maleficium (Furcas #50). Sums each bound
+ * such sigil's strength, clamped to [0, 1]; consumed by `resolveIndagatio` in `actions.ts`. `effectMul`
+ * carries the sigil enhancers.
+ */
+export function sigilIndagatioDoubleFindChance(state: GameState, effectMul = 1): number {
+  let p = 0;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'indagatioDoubleFind') continue;
+    p += sigilStrength(def, bound) * effectMul;
+  }
+  return Math.min(1, Math.max(0, p));
 }
 
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {
