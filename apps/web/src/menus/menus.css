@@ -1781,14 +1781,6 @@ body {
   margin: 0;
   text-align: justify;
 }
-.gb-folio {
-  margin-top: auto;
-  text-align: center;
-  font-size: 2.3cqh;
-  color: rgba(216, 182, 88, 0.6);
-  font-style: italic;
-}
-
 .gb-index {
   list-style: none;
   margin: 0;

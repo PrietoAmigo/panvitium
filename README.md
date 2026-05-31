@@ -281,6 +281,11 @@ extensions, `import type`, Prettier):
     from there, and the dead `GOETIA_PREVIEW` fixture was removed. The component itself is byte-
     identical to the prior version (only the type-import path differs) and reuses the existing
     `.goetia-*` / `.gb-*` CSS — so this is a pure refactor with no visual/behavioral change.
+  - _Ars Goetia copy + Familiar fixes._ The **Familiar** is the base creature, not a ranked seal,
+    so it now carries no roman numeral (index and leaf). Removed the decorative “— turn the
+    leaf —” line from the index. Rewrote the book's intro so it nods to the conceit that everyone
+    can name the famous kings, princes and presidents, but it is the unsung lesser spirits — the
+    foot-soldiers and familiars — who actually do the daily work.
   - _Ars Goetia retouch._ A pass over the dark grimoire: the overlay is **blacker** (less of the
     room bleeds through). On the **index**, effect copy is gone — unlocked seals show just their
     name, locked seals show their **requirement in red**, so available vs. blocked reads at a

@@ -72,7 +72,8 @@ export function buildGoetia(state: GameState): GoetiaView {
     entries.push({
       id,
       name: strings.invocations.names[id] ?? flavour?.name ?? id,
-      rank: flavour?.rank ?? roman(i + 1),
+      // The Familiar is the base creature, not one of the ranked seals — it carries no numeral.
+      rank: id === 'familiar' ? '' : (flavour?.rank ?? roman(i + 1)),
       cost: cost > 0 ? `${cost} ${strings.resources.souls}` : strings.invocations.free,
       unlocked,
       // Optional fields omitted (not set to undefined) per exactOptionalPropertyTypes: a locked

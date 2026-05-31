@@ -99,11 +99,12 @@ export function ArsGoetiaBook({
               <div className="gb-rule" />
               <p className="gb-power">Invoking power · {invokingPower}</p>
               <p className="gb-intro">
-                Seventy-two kings and presidents of the descent, each bound to a seal. Summon what
-                your station can hold; dispel what it cannot. The circle on the floor keeps only as
-                many as the seals permit.
+                Every novice can recite the seventy-two kings, princes and presidents of the descent
+                — their names are half the trade in any grimoire. Yet a crown seldom stoops to
+                honest labour; it is the lesser things, the foot-soldiers and familiars of the pit,
+                who answer when there is daily work to be done. Summon what your station can hold,
+                and the unsung ranks will serve you best of all.
               </p>
-              <p className="gb-folio">— turn the leaf —</p>
             </div>
           </>
         )}
@@ -116,7 +117,7 @@ export function ArsGoetiaBook({
                 </span>
                 back to index
               </button>
-              <p className="gb-rank-big">{entry.rank}</p>
+              {entry.rank ? <p className="gb-rank-big">{entry.rank}</p> : null}
               <h2 className="gb-detail-name">{entry.name}</h2>
               <dl className="gb-stats">
                 <dt>Cost</dt>
