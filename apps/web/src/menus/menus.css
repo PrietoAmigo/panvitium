@@ -220,20 +220,20 @@ body {
   align-items: center;
 }
 
+/* Hotspots stay boxless: hovering (or focusing) reveals the label and, for doors, the glyph —
+   without a bordered/glowing highlight box around the hotspot. */
 .hotspot:hover,
 .hotspot:focus-visible {
-  border-color: rgba(216, 182, 88, 0.55);
-  background: radial-gradient(ellipse at center, rgba(230, 162, 60, 0.16), transparent 70%);
-  box-shadow:
-    0 0 30px rgba(230, 162, 60, 0.22),
-    inset 0 0 24px rgba(230, 162, 60, 0.1);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
   outline: none;
 }
 
 .hotspot.is-door:hover,
 .hotspot.is-door:focus-visible {
-  border-color: rgba(216, 182, 88, 0.45);
-  background: linear-gradient(180deg, transparent, rgba(230, 162, 60, 0.14));
+  border-color: transparent;
+  background: transparent;
 }
 
 .hotspot-label {
@@ -2000,7 +2000,9 @@ body {
   background-image: url('/assets/panvitium/backgrounds/altar.jpg');
 }
 .scene-studio {
-  background-image: url('/assets/panvitium/backgrounds/studio.png');
+  /* Use the complete plate so the desk PC and the Suasio scroll are actually drawn — the clean plate
+     left the PC and scroll hotspots sitting over empty space. */
+  background-image: url('/assets/panvitium/backgrounds/studio_complete.png');
 }
 .furnished .scene-invocation {
   background-image: url('/assets/panvitium/backgrounds/invocation_complete.png');

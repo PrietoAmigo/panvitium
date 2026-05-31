@@ -253,9 +253,13 @@ extensions, `import type`, Prettier):
     arrays, not fresh ones.)
   - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
     Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state in their designed
-    shells. Known unwired bits, pending a design call: the `*_complete.png` **furnished** room plates
-    ship and are styled (`.furnished .scene-*`) but `RoomView` has no furnish trigger yet — rooms
-    show the clean plate until we define when each becomes furnished. Optional cleanup: the orphaned
+    shells. Backdrops: the **Studio** uses its `studio_complete.png` plate as its base so the desk PC
+    and Suasio scroll are drawn under their hotspots; the Invocation room and Altar use their clean
+    plates. The remaining `*_complete.png` furnished plates ship and are styled (`.furnished
+.scene-*`) but there's no furnish trigger for those two yet — turning them on as the player
+    progresses is a design call. Hotspots are boxless: hovering reveals the label (and door glyph)
+    without a highlight box. Note runtime art is served from `apps/web/public/assets/panvitium/`; the
+    repo-root `assets/` tree is source/staging and unused at runtime. Optional cleanup: the orphaned
     `useHold` export, the superseded text panels, and the unused `menus.data.ts` mock arrays. Plus
     the content backlog (art/lore for the un-illustrated invocations & maleficia, audio).
 
