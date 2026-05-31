@@ -268,6 +268,13 @@ extensions, `import type`, Prettier):
     dropped by the new design); `buildGoetia` now yields `GoetiaEntry[]` + `invokingPower`, omitting
     `gate`/`effect`/`lore`/`illus` where absent so un-illustrated seals degrade to a text leaf.
     Orphaned by this pass (cleanup): `SummonedCreatures.tsx`.
+  - _PC/Suasio polish._ Confirmed acolyte **delegation works inside the PC**: Decimatio (`caedis`)
+    and Indagatio (`indagatio`) render the `+`/− `AcolyteControls` (shown once you hold ≥1 acolyte)
+    via `ActionRow`'s delegation slot. Removed the outcome **log from the Suasio scroll** (outcomes
+    live in the PC's Logs program). Split the PC's **Depraedatio** program into three tabs — Vitium
+    Mercatura (the businesses), Vitium Compositum (the ceremonies), and In Flight (builds under
+    construction); the in-flight tab collapses identical builds into one counted row (“6× Street
+    food stand”) showing the soonest completion, and the tab carries a live count.
   - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
     Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state in their designed
     shells. Backdrops: the **Studio** uses its `studio_complete.png` plate as its base so the desk PC

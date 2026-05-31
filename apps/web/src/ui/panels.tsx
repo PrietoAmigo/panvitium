@@ -155,25 +155,20 @@ function useUnderway(): boolean {
 }
 
 /** The Suasio scroll (Studio): tempt ordinary humans into reprobates. Renders the designed scroll
- * fed by the real action/cost/log, with acolyte delegation preserved beneath it. */
+ * fed by the real action/cost, with acolyte delegation preserved beneath it. (Resolved outcomes
+ * live in the PC's Logs program, not on the scroll.) */
 function SuasioPanel(): ReactElement {
   const influence = useGameStore((s) =>
     s.state ? floor(s.state.lifetime.influence).toNumber() : 0,
   );
   const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'suasio') : 1));
   const act = useGameStore((s) => s.act);
-  const log = useGameStore((s) => s.log);
   const underway = useUnderway();
   const cost = Math.ceil((ACTIONS.suggestion?.cost.influence ?? 0) * eff);
   const costLabel = `${cost} ${strings.resources.influence} · 10s`;
-  const lines = log
-    .filter((e) => e.actionId === 'suggestion')
-    .slice(0, 8)
-    .map((e) => ({ tier: e.tier as string, text: describeOutcome(e) }));
   return (
     <div className="opera">
       <DesignedSuasio
-        log={lines}
         cost={costLabel}
         disabled={underway || influence < cost}
         onTempt={() => act('suggestion')}
@@ -362,88 +357,136 @@ function formatDuration(totalSec: number): string {
  * buildQueue — does NOT occupy the player slot, so the player can run a Studio rite simultaneously
  * and queue multiple builds at once.
  */
+/** The Vitium Mercatura businesses — build / shut down, gated by Sin level. */
+function MercaturaList(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const build = useGameStore((s) => s.build);
+  const shutdown = useGameStore((s) => s.shutdown);
+  if (!state) return <></>;
+  const gold = floor(state.lifetime.gold).toNumber();
+  const owned = state.lifetime.businesses;
+  return (
+    <ul className="vitium-list">
+      {BUSINESS_IDS.map((id) => {
+        const def = businessById(id);
+        if (!def) return null;
+        const have = sinLevel(state.devotion[def.sin]);
+        const required = def.level - 1; // spreadsheet "Sin-lvl unlock" column is (tier − 1)
+        const unlocked = have >= required;
+        const ownedCount = owned[id] ?? 0;
+        const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION);
+        const name = strings.businesses[id] ?? id;
+        const buildCostLabel = `${def.buildCost} ${strings.resources.gold} · ${formatDuration(def.buildTimeSeconds)}`;
+        return (
+          <li key={id} className={`vitium-row${unlocked ? '' : ' vitium-locked'}`}>
+            <div className="vitium-meta">
+              <span className="vitium-name">{name}</span>
+              <span className="vitium-sub">
+                {def.sin}
+                {required > 0 ? ` L${required}` : ''}
+                {ownedCount > 0 ? ` · ${ownedCount} ${strings.opera.owned}` : ''}
+              </span>
+            </div>
+            <div className="vitium-actions">
+              <button
+                type="button"
+                className="opera-btn"
+                disabled={!unlocked || gold < def.buildCost}
+                onClick={() => build(id)}
+                aria-label={`${strings.opera.build} ${name}`}
+              >
+                {unlocked
+                  ? `${strings.opera.build} · ${buildCostLabel}`
+                  : `${strings.opera.sinLocked} · ${def.sin} L${required}`}
+              </button>
+              {ownedCount > 0 && (
+                <button
+                  type="button"
+                  className="opera-btn opera-btn--secondary"
+                  onClick={() => shutdown(id)}
+                  aria-label={`${strings.opera.shutdown} ${name}`}
+                >
+                  {strings.opera.shutdown} · +{refund} {strings.resources.gold}
+                </button>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
+ * Businesses currently under construction. Identical builds are collapsed into one row with a count
+ * ("6× Street food stand") rather than six separate rows; the time shown is the soonest to finish.
+ */
+function InFlightList(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  if (!state) return <></>;
+  const buildQueue = state.lifetime.buildQueue;
+  if (buildQueue.length === 0) {
+    return <p className="pc-empty">{strings.opera.depraedatioEmpty}</p>;
+  }
+  const groups = new Map<string, { count: number; soonest: number }>();
+  for (const t of buildQueue) {
+    const g = groups.get(t.businessId);
+    if (g) {
+      g.count += 1;
+      g.soonest = Math.min(g.soonest, t.remainingSeconds);
+    } else {
+      groups.set(t.businessId, { count: 1, soonest: t.remainingSeconds });
+    }
+  }
+  return (
+    <ul className="vitium-queue">
+      {[...groups.entries()].map(([id, g]) => {
+        const name = strings.businesses[id] ?? id;
+        return (
+          <li key={id} className="vitium-queue-row">
+            <span className="vitium-queue-name">
+              {g.count > 1 ? `${g.count}\u00D7 ${name}` : name}
+            </span>
+            <span className="vitium-queue-time">
+              {formatDuration(Math.max(0, Math.ceil(g.soonest)))}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+type DepraedatioTab = 'mercatura' | 'compositum' | 'inflight';
+
 function DepraedatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);
   const notice = useGameStore((s) => s.notice);
-  const build = useGameStore((s) => s.build);
-  const shutdown = useGameStore((s) => s.shutdown);
+  const [tab, setTab] = useState<DepraedatioTab>('mercatura');
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-
-  const gold = floor(state.lifetime.gold).toNumber();
-  const buildQueue = state.lifetime.buildQueue;
-  const owned = state.lifetime.businesses;
-
+  const inFlight = state.lifetime.buildQueue.length;
+  const tab_ = (id: DepraedatioTab, label: string): ReactElement => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={tab === id}
+      className={'kat-tab' + (tab === id ? ' kat-tab--active' : '')}
+      onClick={() => setTab(id)}
+    >
+      {label}
+    </button>
+  );
   return (
     <>
       <p className="opera-intro">{strings.opera.depraedatioIntro}</p>
-      {buildQueue.length > 0 && (
-        <section className="vitium-inflight" aria-label={strings.opera.inFlight}>
-          <h3 className="vitium-heading">{strings.opera.inFlight}</h3>
-          <ul className="vitium-queue">
-            {buildQueue.map((t, idx) => {
-              const def = businessById(t.businessId);
-              const name = def ? (strings.businesses[t.businessId] ?? t.businessId) : t.businessId;
-              return (
-                <li key={`${idx}-${t.businessId}`} className="vitium-queue-row">
-                  <span className="vitium-queue-name">{name}</span>
-                  <span className="vitium-queue-time">
-                    {formatDuration(Math.max(0, Math.ceil(t.remainingSeconds)))}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
-      <ul className="vitium-list">
-        {BUSINESS_IDS.map((id) => {
-          const def = businessById(id);
-          if (!def) return null;
-          const have = sinLevel(state.devotion[def.sin]);
-          const required = def.level - 1; // spreadsheet "Sin-lvl unlock" column is (tier − 1)
-          const unlocked = have >= required;
-          const ownedCount = owned[id] ?? 0;
-          const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION);
-          const name = strings.businesses[id] ?? id;
-          const buildCostLabel = `${def.buildCost} ${strings.resources.gold} · ${formatDuration(def.buildTimeSeconds)}`;
-          return (
-            <li key={id} className={`vitium-row${unlocked ? '' : ' vitium-locked'}`}>
-              <div className="vitium-meta">
-                <span className="vitium-name">{name}</span>
-                <span className="vitium-sub">
-                  {def.sin}
-                  {required > 0 ? ` L${required}` : ''}
-                  {ownedCount > 0 ? ` · ${ownedCount} ${strings.opera.owned}` : ''}
-                </span>
-              </div>
-              <div className="vitium-actions">
-                <button
-                  type="button"
-                  className="opera-btn"
-                  disabled={!unlocked || gold < def.buildCost}
-                  onClick={() => build(id)}
-                  aria-label={`${strings.opera.build} ${name}`}
-                >
-                  {unlocked
-                    ? `${strings.opera.build} · ${buildCostLabel}`
-                    : `${strings.opera.sinLocked} · ${def.sin} L${required}`}
-                </button>
-                {ownedCount > 0 && (
-                  <button
-                    type="button"
-                    className="opera-btn opera-btn--secondary"
-                    onClick={() => shutdown(id)}
-                    aria-label={`${strings.opera.shutdown} ${name}`}
-                  >
-                    {strings.opera.shutdown} · +{refund} {strings.resources.gold}
-                  </button>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-      <CompositumSection />
+      <div className="kat-pager" role="tablist">
+        {tab_('mercatura', 'Vitium Mercatura')}
+        {tab_('compositum', strings.compositum.heading)}
+        {tab_('inflight', `${strings.opera.inFlight}${inFlight > 0 ? ` · ${inFlight}` : ''}`)}
+      </div>
+      {tab === 'mercatura' && <MercaturaList />}
+      {tab === 'compositum' && <CompositumSection />}
+      {tab === 'inflight' && <InFlightList />}
       {notice !== null && <p className="opera-notice">{notice}</p>}
     </>
   );
