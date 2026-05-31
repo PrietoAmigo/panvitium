@@ -1,0 +1,41 @@
+/* Ars Goetia — presentation types. Self-contained: this menu no longer depends
+   on the degradation-layer types.ts, so it can be integrated on its own.
+
+   One GoetiaEntry is design FLAVOUR (rank numeral, lore, illustration) merged
+   with sim MECHANICS (name, cost, gate, effect, unlocked) by invocation id.
+   All numeric/gated values arrive PRE-FORMATTED as strings — never format raw
+   bignums in the component (DESIGNING_FOR_PANVITIUM §5). */
+
+export interface GoetiaEntry {
+  /** Invocation id (imp, upir, harpy, fama, nightmare, behemoth, …). */
+  id: string;
+  /** Canonical display name. REAL (from the strings table). */
+  name: string;
+  /** Rank numeral. FLAVOUR. */
+  rank: string;
+  /** Pre-formatted soul/power cost, e.g. '12 Souls'. REAL. */
+  cost: string;
+  /** Pre-formatted gate label, e.g. 'Gula L3'. REAL. Omit if ungated. */
+  gate?: string;
+  /** Effect copy. REAL string where one exists, else omit. */
+  effect?: string;
+  /** Lore prose. FLAVOUR. */
+  lore?: string;
+  /** Illustration url. Omit → the book falls back to a text plate gracefully. */
+  illus?: string;
+  /** Whether the entry can be summoned now. REAL (from the gate check). */
+  unlocked: boolean;
+}
+
+export interface ArsGoetiaBookProps {
+  /** The roster, in book order. Un-illustrated entries degrade gracefully. */
+  entries: GoetiaEntry[];
+  /** Pre-formatted current invoking power, e.g. '14'. REAL. */
+  invokingPower: string;
+  /** Bind an entry (Summon). */
+  onSummon: (id: string) => void;
+  /** Unbind an entry (Dispel). */
+  onDispel: (id: string) => void;
+  /** Close the overlay. */
+  onClose: () => void;
+}

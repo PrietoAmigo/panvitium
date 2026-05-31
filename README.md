@@ -275,6 +275,12 @@ extensions, `import type`, Prettier):
     Mercatura (the businesses), Vitium Compositum (the ceremonies), and In Flight (builds under
     construction); the in-flight tab collapses identical builds into one counted row (“6× Street
     food stand”) showing the soonest completion, and the tab carries a live count.
+  - _Ars Goetia types decoupled (no visual change)._ Per the focused Ars-Goetia export, moved
+    `GoetiaEntry` / `ArsGoetiaBookProps` into a self-contained `ars-goetia.types.ts` so the grimoire
+    no longer depends on the degradation layer's `types.ts`; `ArsGoetiaBook` and `buildGoetia` import
+    from there, and the dead `GOETIA_PREVIEW` fixture was removed. The component itself is byte-
+    identical to the prior version (only the type-import path differs) and reuses the existing
+    `.goetia-*` / `.gb-*` CSS — so this is a pure refactor with no visual/behavioral change.
   - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
     Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state in their designed
     shells. Backdrops: the **Studio** uses its `studio_complete.png` plate as its base so the desk PC

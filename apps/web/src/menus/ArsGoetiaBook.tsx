@@ -10,7 +10,7 @@
    text plate, so the book renders correctly for ids it has never seen. */
 
 import { useState } from 'react';
-import type { ArsGoetiaBookProps } from './types.js';
+import type { ArsGoetiaBookProps } from './ars-goetia.types.js';
 
 export function ArsGoetiaBook({
   entries,

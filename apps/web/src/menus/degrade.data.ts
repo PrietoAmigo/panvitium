@@ -9,7 +9,7 @@
 
    ⚠️  Components must never import this file. Props in, callbacks out. */
 
-import type { RoomId, SceneSprite, GoetiaEntry } from './types.js';
+import type { RoomId, SceneSprite } from './types.js';
 
 export const ASSET_BASE = '/assets/panvitium';
 
@@ -39,39 +39,3 @@ export function spriteFor(id: string): SceneSprite | null {
   if (!l) return null;
   return { id, src: `${ASSET_BASE}/invocations/${id}.png`, x: l.x, y: l.y, w: l.w };
 }
-
-/* ---- FIXTURE: a slice of the roster to preview ArsGoetiaBook in isolation.
-   Replace with the real view-model (buildGoetia) on integration. ---- */
-export const GOETIA_PREVIEW: GoetiaEntry[] = [
-  {
-    id: 'imp',
-    name: 'Imp',
-    rank: 'I',
-    cost: 'No soul cost',
-    effect: '+10% reprobate generation while bound.',
-    lore: 'A minor familiar, eager and spiteful. It scuttles where it is told and bites what it is shown.',
-    illus: `${ASSET_BASE}/invocations/imp.png`,
-    unlocked: true,
-  },
-  {
-    id: 'upir',
-    name: 'Upir',
-    rank: 'II',
-    cost: '12 Souls',
-    effect: '+25% Decimatio yield.',
-    lore: 'A revenant that feeds in the dark and does not tire. It thins the herd cleanly, and asks only that you look away.',
-    illus: `${ASSET_BASE}/invocations/upir.png`,
-    unlocked: true,
-  },
-  {
-    id: 'behemoth',
-    name: 'Behemoth',
-    rank: 'VI',
-    cost: '30 invoking power',
-    gate: 'Gula L3',
-    effect: '×2 reprobate generation.',
-    lore: 'The glutton-beast, first of the appetites. Where it treads, the ground is never sated and neither are they.',
-    illus: `${ASSET_BASE}/invocations/behemoth.png`,
-    unlocked: false,
-  },
-];

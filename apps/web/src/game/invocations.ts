@@ -16,7 +16,7 @@ import {
   type InvocationDef,
 } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
-import type { GoetiaEntry } from '../menus/types.js';
+import type { GoetiaEntry } from '../menus/ars-goetia.types.js';
 import { INVOCATION_BY_ID } from '../menus/menus.data.js';
 
 const ROMAN = [

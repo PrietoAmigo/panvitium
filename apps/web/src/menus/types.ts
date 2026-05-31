@@ -81,9 +81,10 @@ export interface LogLine {
   text: string;
 }
 
-// ── Degradation layer + reworked Ars Goetia (degradation-pass handoff) ───────
-// Presentation shapes for the canvas degradation pass and the prop-driven
-// grimoire. RoomId above is shared. DegradeSettings/Engine* come from the engine.
+// ── Degradation layer (degradation-pass handoff) ────────────────────────────
+// Presentation shapes for the canvas degradation pass. RoomId above is shared.
+// DegradeSettings/Engine* come from the engine. (The Ars Goetia book's types live
+// in ./ars-goetia.types.ts — decoupled from this layer.)
 import type { DegradeSettings } from './degrade.js';
 export type { DegradeSettings, EngineSprite, EngineScene } from './degrade.js';
 
@@ -104,26 +105,4 @@ export interface DegradedSceneProps {
   signature?: boolean;
   settings?: Partial<DegradeSettings>;
   className?: string;
-}
-
-/** One Ars Goetia entry: sim mechanics (name/cost/gate/effect/unlocked) + design flavour (rank/lore/illus). */
-export interface GoetiaEntry {
-  id: string;
-  name: string;
-  rank: string;
-  cost: string;
-  gate?: string;
-  effect?: string;
-  lore?: string;
-  illus?: string;
-  unlocked: boolean;
-}
-
-/** Props for the full-screen Ars Goetia grimoire overlay. */
-export interface ArsGoetiaBookProps {
-  entries: GoetiaEntry[];
-  invokingPower: string;
-  onSummon: (id: string) => void;
-  onDispel: (id: string) => void;
-  onClose: () => void;
 }

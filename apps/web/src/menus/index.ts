@@ -8,6 +8,7 @@ export { MaleficiaCabinet } from './MaleficiaCabinet.js';
 export { SuasioPanel } from './SuasioPanel.js';
 export { PcWindow } from './PcWindow.js';
 export { ArsGoetiaBook } from './ArsGoetiaBook.js';
+export type { GoetiaEntry, ArsGoetiaBookProps } from './ars-goetia.types.js';
 export { DegradedScene } from './DegradedScene.js';
 export { DegradePass, DEFAULT_DEGRADE } from './degrade.js';
 export { Katabasis } from './Katabasis.js';
