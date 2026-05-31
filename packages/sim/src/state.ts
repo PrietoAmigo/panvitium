@@ -156,6 +156,12 @@ export interface LifetimeState {
   maleficia: string[];
   /** Maleficia surfaced by Indagatio and available to buy via Emptio. Lost on Katabasis. */
   emptioList: string[];
+  /**
+   * Rolled Emptio price (gold) per surfaced maleficium id (Maleficia sheet: `Randint(band)` per
+   * rarity, rolled at discovery so the price is fixed before purchase). Additive-optional (ADR-023);
+   * Emptio falls back to the catalog `cost` for any id without a rolled price.
+   */
+  maleficiaPrices: Record<string, number>;
   /** Toggle actions currently active (e.g. 'panvitium', 'bacchanal'). */
   activeToggles: string[];
   /**
@@ -296,6 +302,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       invocationDurations: {},
       maleficia: [],
       emptioList: [],
+      maleficiaPrices: {},
       activeToggles: [],
       toggleDurations: {},
       actionQueue: [],

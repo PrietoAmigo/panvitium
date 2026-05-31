@@ -168,6 +168,21 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
     expect('businesses' in serialized.lifetime).toBe(false);
     expect('buildQueue' in serialized.lifetime).toBe(false);
     expect('conversionPool' in serialized.lifetime).toBe(false);
+    expect('maleficiaPrices' in serialized.lifetime).toBe(false);
+  });
+
+  it('rolled maleficiaPrices round-trip through the wire; absent → empty default', () => {
+    const fresh = createInitialState('seed', 0);
+    const withPrices: GameState = {
+      ...fresh,
+      lifetime: { ...fresh.lifetime, maleficiaPrices: { obsidian_mirror: 14210, black_robe: 640 } },
+    };
+    const back = deserializeGameState(serializeGameState(withPrices));
+    expect(back.lifetime.maleficiaPrices).toEqual({ obsidian_mirror: 14210, black_robe: 640 });
+    // A save that predates rolled pricing deserializes to an empty map.
+    const wire = serializeGameState(fresh);
+    expect(back.lifetime).toBeDefined();
+    expect(deserializeGameState(wire).lifetime.maleficiaPrices).toEqual({});
   });
 
   it('non-empty Vitium state round-trips through the wire', () => {

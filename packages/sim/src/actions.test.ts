@@ -12,9 +12,11 @@ import {
   resolveImperium,
   resolvePogrom,
   resolvePurgatio,
+  resolveIndagatio,
   actionUnlocked,
   ACTIONS,
 } from './actions.js';
+import { MALEFICIA, MALEFICIUM_PRICE_RANGE } from './maleficia.js';
 import { tick } from './tick.js';
 
 const fresh = (): GameState => createInitialState('seed', 0);
@@ -420,5 +422,29 @@ describe('resolvePurgatio', () => {
     expect(goldOf(s)).toBe(50); // 1000 * 0.05
     expect(s.lifetime.reprobates.gambler).toBe(75); // converts: lose 25%
     expect(s.lifetime.reprobates.reprobate).toBe(100); // unconverted untouched
+  });
+});
+
+describe('rolled Emptio pricing (Maleficia sheet)', () => {
+  it('rolls and stores an in-band price for each surfaced maleficium', () => {
+    const r = resolveIndagatio(fresh(), 'stellar', makeRng(5)); // stellar → anathema chain
+    expect(r.surfaced.length).toBeGreaterThan(0);
+    for (const id of r.surfaced) {
+      const price = r.state.lifetime.maleficiaPrices[id]!;
+      const band = MALEFICIUM_PRICE_RANGE[MALEFICIA[id]!.rarity];
+      expect(price).toBeGreaterThanOrEqual(band.min);
+      expect(price).toBeLessThanOrEqual(band.max);
+    }
+  });
+
+  it('Emptio charges the rolled price, not the catalog cost', () => {
+    let s = resolveIndagatio(fresh(), 'good', makeRng(9)).state; // good → rare/common
+    const id = Object.keys(s.lifetime.maleficiaPrices)[0]!;
+    const price = s.lifetime.maleficiaPrices[id]!;
+    s = withGold(s, price + 5000);
+    const before = goldOf(s);
+    const r = startAction(s, 'emptio', { target: id });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(before - goldOf(r.state)).toBe(price); // time-mode: cost paid up front, unscaled
   });
 });

@@ -68,6 +68,7 @@ const lifetimeSchema = z.object({
   invocationDurations: z.record(z.string(), z.number().nonnegative()).optional(),
   maleficia: z.array(z.string()),
   emptioList: z.array(z.string()),
+  maleficiaPrices: z.record(z.string(), z.number().int().nonnegative()).optional(),
   activeToggles: z.array(z.string()),
   // Per-toggle active-duration counters for duration-scaled cost (Panvitium). Additive-optional
   // (ADR-023): absent in old saves → {} at runtime; omitted from the wire when empty.
@@ -161,6 +162,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
         : {}),
       maleficia: [...state.lifetime.maleficia],
       emptioList: [...state.lifetime.emptioList],
+      ...(Object.keys(state.lifetime.maleficiaPrices).length > 0
+        ? { maleficiaPrices: { ...state.lifetime.maleficiaPrices } }
+        : {}),
       activeToggles: [...state.lifetime.activeToggles],
       ...(Object.keys(state.lifetime.toggleDurations).length > 0
         ? { toggleDurations: { ...state.lifetime.toggleDurations } }
@@ -247,6 +251,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       invocationDurations: { ...(s.lifetime.invocationDurations ?? {}) },
       maleficia: [...s.lifetime.maleficia],
       emptioList: [...s.lifetime.emptioList],
+      maleficiaPrices: { ...(s.lifetime.maleficiaPrices ?? {}) },
       activeToggles: [...s.lifetime.activeToggles],
       toggleDurations: { ...(s.lifetime.toggleDurations ?? {}) },
       actionQueue: s.lifetime.actionQueue.map((t) =>

@@ -263,6 +263,7 @@ export function commitKatabasis(
     // Morpheus's mercy (03 §2.4): the Emptio list survives the descent so the maleficia surfaced
     // in this lifetime are not lost. Otherwise the list clears (02 §6).
     emptioList: pendingMorpheus ? [...state.lifetime.emptioList] : [],
+    maleficiaPrices: pendingMorpheus ? { ...state.lifetime.maleficiaPrices } : {},
     activeToggles: [], // toggles stop
     toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle

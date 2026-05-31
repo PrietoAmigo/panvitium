@@ -301,6 +301,7 @@ function IndagatioGroup(): ReactElement {
 /** Emptio (03 §2.6): the listed maleficia, each with a buy button at the listed gold cost. */
 function EmptioGroup(): ReactElement {
   const list = useGameStore((s) => (s.state ? s.state.lifetime.emptioList : []));
+  const prices = useGameStore((s) => s.state?.lifetime.maleficiaPrices);
   const gold = useGameStore((s) => (s.state ? floor(s.state.lifetime.gold).toNumber() : 0));
   const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
@@ -320,6 +321,7 @@ function EmptioGroup(): ReactElement {
         {list.map((id, idx) => {
           const def = MALEFICIA[id];
           if (!def) return null;
+          const price = prices?.[id] ?? def.cost;
           return (
             <li key={`${idx}-${id}`} className="emptio-row">
               <span className={`rarity-badge rarity-${def.rarity}`}>
@@ -327,12 +329,12 @@ function EmptioGroup(): ReactElement {
               </span>
               <span className="emptio-name">{def.name}</span>
               <span className="emptio-cost">
-                {def.cost} {strings.resources.gold}
+                {price} {strings.resources.gold}
               </span>
               <button
                 type="button"
                 className="opera-btn emptio-buy"
-                disabled={underway || gold < def.cost}
+                disabled={underway || gold < price}
                 onClick={() => act('emptio', id)}
               >
                 {strings.opera.buy}

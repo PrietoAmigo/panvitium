@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 642** (sim 490 · shared 48 · api 11 · web 93).
+**Current test count: 645** (sim 492 · shared 49 · api 11 · web 93).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -157,11 +157,12 @@ ceremony plus the apex now matches the sheet):
 
 **Maleficia** — in progress (roster + gating done; effects pending):
 
-| #   | Slice            | Summary                                                                                                                                                                                                                             |
-| --- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| M1  | Maleficia roster | Full 25-item catalog with sheet rarity / invoking power / stack caps (∞ where unbounded); costs normalized into per-rarity price bands (`MALEFICIUM_PRICE_RANGE`, exported for the later rolled-pricing slice).                     |
-| M2  | Opera enhancers  | Ars Serpens (+33% Suasio), The Voynich Manuscript (+66% Suasio), Ritual Dagger (+33% Decimatio) folded into the efficiency muls as multiplicative `(1 + bonus)` factors.                                                            |
-| M3  | Sigil enhancers  | Solomon's Ring (+50%) and Iron Nails (+1%/copy) scale every sigil's effect strength via `sigilEffectMultiplier`, threaded into `sigilModifierContributions` (modifier + tier sigils) and `sigilKatabasisBonus` (carry-over sigils). |
+| #   | Slice                 | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1  | Maleficia roster      | Full 25-item catalog with sheet rarity / invoking power / stack caps (∞ where unbounded); costs normalized into per-rarity price bands (`MALEFICIUM_PRICE_RANGE`, exported for the later rolled-pricing slice).                                                                                                                                                                                                                                                             |
+| M2  | Opera enhancers       | Ars Serpens (+33% Suasio), The Voynich Manuscript (+66% Suasio), Ritual Dagger (+33% Decimatio) folded into the efficiency muls as multiplicative `(1 + bonus)` factors.                                                                                                                                                                                                                                                                                                    |
+| M3  | Sigil enhancers       | Solomon's Ring (+50%) and Iron Nails (+1%/copy) scale every sigil's effect strength via `sigilEffectMultiplier`, threaded into `sigilModifierContributions` (modifier + tier sigils) and `sigilKatabasisBonus` (carry-over sigils).                                                                                                                                                                                                                                         |
+| M4  | Rolled Emptio pricing | Each maleficium's price is rolled within its rarity band (`MALEFICIUM_PRICE_RANGE`) the moment it is surfaced by Indagatio, and persisted in a new additive-optional `lifetime.maleficiaPrices`; the draws are appended after the find logic so which items surface stays byte-identical. Emptio (and its UI) charge the rolled price, falling back to the catalog cost for pre-pricing saves; the map resets with the emptio list on Katabasis (preserved under Morpheus). |
 
 **Invocation effects** — done (reconciled to the Invocatio sheet's Model: each invocation's
 factor × the player's current action efficiency × the invocation-effect multiplier):
@@ -330,10 +331,7 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   gold penalty — no such penalty exists in the model yet), and Haures #64 (Choleric-on-Choleric
   murder — Cholerics are murderers, not victims). Each needs a number or a mechanic settled on the
   spreadsheet before it can be wired without guessing.
-- **Maleficia effects** — roster, invoking power, stack caps, the Opera-efficiency enhancers
-  (Ars Serpens / Voynich / Ritual Dagger), the sigil-effect amplifiers (Solomon's Ring / Iron Nails),
-  and the invocation-effect multiplier (Black Candles) are done. Still to wire: the oracular reveals,
-  the targeted single-use items (Defixio / Hand of Glory), and the rolled-at-purchase pricing.
+- **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers: Spear of Longinus ×3 max influence, Codex Gigas ×3 influence rate, Thirty Pieces of Silver ×3 gold rate, Mark of Cain → Apocalyptic 0), invoking power, stack caps, and **rolled Emptio pricing** are all done. Deliberately left for later: **(a)** the **oracular reveals** (Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather — surface the relevant Opera tier distribution in the UI; an info-display feature, needs a UI readout decision); **(b)** the **targeted single-use items** — Hand of Glory (+100% base generation for 1h — needs a timed-buff + item-activation mechanic) and Defixio (single-use subtype cull with an "exp ramp" the sheet leaves unspecified, so its magnitude is design-blocked).
 - **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll. Deliberately left for later: **(a)** the _Decimatio_ UI — a _Purgatio_ row (trivial) and a _Pogrom_ **subtype picker** (the player chooses which subtype to purge; a small design element); **(b)** **placeholder magnitudes** — Imperium's action time and the Pogrom/Purgatio gold costs are flagged placeholders (the sheet leaves them as "Fill Time" / "high" / "very high gold") pending the economy pass.
 - **Emails (Opera menu) — impact-feedback system [pending design].** A new Opera-menu item that
   surfaces the in-world consequences of the player's actions as incoming correspondence: subscribed

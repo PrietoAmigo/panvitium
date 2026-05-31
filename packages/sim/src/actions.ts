@@ -36,6 +36,7 @@ import { sinLevel } from './progression.js';
 import { type OutcomeEvent } from './events.js';
 import {
   MALEFICIA,
+  MALEFICIUM_PRICE_RANGE,
   findableIds,
   sigilEffectMultiplier,
   type MaleficiumRarity,
@@ -319,7 +320,10 @@ export function startAction(
     }
     const malef = MALEFICIA[options.target];
     if (!malef) return { ok: false, reason: 'Unknown maleficium.' };
-    goldCost = costRed.emptioGold ? Math.ceil(malef.cost / costRed.emptioGold) : malef.cost;
+    // The price was rolled within the rarity band when the item was discovered; fall back to the
+    // catalog cost for any item surfaced before rolled pricing landed (older saves).
+    const rolled = state.lifetime.maleficiaPrices[options.target] ?? malef.cost;
+    goldCost = costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled;
     target = options.target;
   }
   if (actionId === 'pogrom') {
@@ -723,6 +727,23 @@ export function resolveIndagatio(
     return null;
   };
 
+  // Roll the Emptio price for any newly-surfaced item that lacks one (Maleficia sheet: Randint per
+  // rarity band). Drawn AFTER all find logic so which items surface stays byte-identical to the
+  // pre-pricing RNG stream; only never-before-priced ids draw.
+  const priceSurfaced = (st: GameState, ids: readonly string[]): GameState => {
+    const prices = { ...st.lifetime.maleficiaPrices };
+    let changed = false;
+    for (const id of ids) {
+      if (prices[id] !== undefined) continue;
+      const def = MALEFICIA[id];
+      if (!def) continue;
+      const band = MALEFICIUM_PRICE_RANGE[def.rarity];
+      prices[id] = randint(rng, band.min, band.max);
+      changed = true;
+    }
+    return changed ? { ...st, lifetime: { ...st.lifetime, maleficiaPrices: prices } } : st;
+  };
+
   const first = findOne(state);
   if (first) {
     let working = first.state;
@@ -737,7 +758,7 @@ export function resolveIndagatio(
         surfaced.push(second.picked);
       }
     }
-    return { state: working, surfaced };
+    return { state: priceSurfaced(working, surfaced), surfaced };
   }
 
   // Failure tiers bite gold (Indagatio & Emptio sheet): Terrible (Church trap) −15%, Apocalyptic
