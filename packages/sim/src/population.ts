@@ -75,3 +75,44 @@ export function loseReprobatesFraction(
   const n = Math.floor(total * Math.min(1, Math.max(0, fraction)));
   return removeReprobatesRandom(state, n, rng);
 }
+
+/**
+ * Cull a fraction (floored, clamped to [0,1]) of a single subtype — Pogrom's targeted purge
+ * (Decimatio sheet). Returns the new state and how many were removed; the caller mints the souls.
+ */
+export function cullSubtypeFraction(
+  state: GameState,
+  subtype: ReprobateSubtype,
+  fraction: number,
+): { state: GameState; removed: number } {
+  const count = state.lifetime.reprobates[subtype];
+  const removed = Math.floor(count * Math.min(1, Math.max(0, fraction)));
+  if (removed <= 0) return { state, removed: 0 };
+  const reprobates = { ...state.lifetime.reprobates, [subtype]: count - removed };
+  return { state: { ...state, lifetime: { ...state.lifetime, reprobates } }, removed };
+}
+
+/**
+ * Lose a fraction (per-subtype, floored) of the *converted* reprobates only — every subtype except
+ * the unconverted `reprobate` base. Used for the "Church seizes converts" Decimatio losses; no
+ * souls are minted (they are taken from you, not harvested).
+ */
+export function loseConvertedReprobatesFraction(
+  state: GameState,
+  fraction: number,
+): { state: GameState; removed: number } {
+  const f = Math.min(1, Math.max(0, fraction));
+  if (f <= 0) return { state, removed: 0 };
+  const reprobates = { ...state.lifetime.reprobates };
+  let removed = 0;
+  for (const t of REPROBATE_SUBTYPES) {
+    if (t === 'reprobate') continue;
+    const lose = Math.floor(reprobates[t] * f);
+    if (lose > 0) {
+      reprobates[t] -= lose;
+      removed += lose;
+    }
+  }
+  if (removed === 0) return { state, removed: 0 };
+  return { state: { ...state, lifetime: { ...state.lifetime, reprobates } }, removed };
+}

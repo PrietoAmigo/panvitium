@@ -10,6 +10,8 @@ import {
   resolveCaedis,
   resolveLogismoi,
   resolveImperium,
+  resolvePogrom,
+  resolvePurgatio,
   actionUnlocked,
   ACTIONS,
 } from './actions.js';
@@ -26,6 +28,10 @@ const withGold = (s: GameState, g: number): GameState => ({
 const withLuxuria = (s: GameState, level: number): GameState => ({
   ...s,
   devotion: { ...s.devotion, luxuria: bn(180 ** level) },
+});
+const withIra = (s: GameState, level: number): GameState => ({
+  ...s,
+  devotion: { ...s.devotion, ira: bn(180 ** level) },
 });
 
 describe('startAction', () => {
@@ -345,5 +351,74 @@ describe('resolveAction — per-category success shift (Resignation/Retribution,
     expect(successesOf(ira, 'caedis', 400)).toBeGreaterThan(baseDec);
     // (That Ira leaves Suasio's tier weights untouched is proven deterministically in
     // modifiers.test.ts via categoryTierModifiers(ira, 'suasio') === {}.)
+  });
+});
+
+describe('Decimatio gating + Pogrom target', () => {
+  it('gates Pogrom at Ira 2 and Purgatio at Ira 3', () => {
+    expect(actionUnlocked(fresh(), ACTIONS.pogrom!)).toBe(false);
+    expect(actionUnlocked(withIra(fresh(), 2), ACTIONS.pogrom!)).toBe(true);
+    expect(actionUnlocked(withIra(fresh(), 2), ACTIONS.purgatio!)).toBe(false);
+    expect(actionUnlocked(withIra(fresh(), 3), ACTIONS.purgatio!)).toBe(true);
+    expect(actionUnlocked(fresh(), ACTIONS.caedis!)).toBe(true); // ungated
+  });
+
+  it('Pogrom needs a valid subtype target to start', () => {
+    const ready = withGold(withIra(fresh(), 2), 100_000);
+    expect(startAction(ready, 'pogrom').ok).toBe(false); // no target
+    expect(startAction(ready, 'pogrom', { target: 'not-a-subtype' }).ok).toBe(false);
+    const ok = startAction(ready, 'pogrom', { target: 'gambler' });
+    expect(ok.ok).toBe(true);
+    if (ok.ok) expect(goldOf(ok.state)).toBeLessThan(100_000); // gold was charged
+  });
+});
+
+describe('resolvePogrom', () => {
+  const seed = (): GameState => {
+    let s = addReprobates(fresh(), 'gambler', 100);
+    s = addReprobates(s, 'choleric', 100);
+    return withGold(s, 1000);
+  };
+  it('Good culls 5% of the chosen subtype and harvests a soul per death', () => {
+    const s = resolvePogrom(seed(), 'good', rng(), 'gambler');
+    expect(s.lifetime.reprobates.gambler).toBe(95); // 100 - floor(100*0.05)
+    expect(s.lifetime.reprobates.choleric).toBe(100); // untouched
+    expect(soulsOf(s)).toBe(5);
+  });
+  it('Terrible lets the Church seize 15% of converts (no souls); Apocalyptic burns 65% gold', () => {
+    const terrible = resolvePogrom(seed(), 'terrible', rng(), 'gambler');
+    expect(terrible.lifetime.reprobates.gambler).toBe(85);
+    expect(terrible.lifetime.reprobates.choleric).toBe(85);
+    expect(soulsOf(terrible)).toBe(0);
+    expect(goldOf(resolvePogrom(seed(), 'apocalyptic', rng(), 'gambler'))).toBe(350);
+  });
+  it('Neutral does nothing', () => {
+    const s = resolvePogrom(seed(), 'neutral', rng(), 'gambler');
+    expect(totalReprobates(s)).toBe(200);
+    expect(goldOf(s)).toBe(1000);
+  });
+});
+
+describe('resolvePurgatio', () => {
+  const seed = (): GameState => {
+    let s = addReprobates(fresh(), 'gambler', 100);
+    s = addReprobates(s, 'reprobate', 100);
+    return withGold(s, 1000);
+  };
+  it('Stellar kills every reprobate and harvests a soul each', () => {
+    const s = resolvePurgatio(seed(), 'stellar', rng());
+    expect(totalReprobates(s)).toBe(0);
+    expect(soulsOf(s)).toBe(200);
+  });
+  it('Good culls a third of all reprobates', () => {
+    const s = resolvePurgatio(seed(), 'good', rng());
+    expect(totalReprobates(s)).toBe(134); // 200 - floor(200*0.33)
+    expect(soulsOf(s)).toBe(66);
+  });
+  it('Apocalyptic burns 95% gold and seizes 25% of converts', () => {
+    const s = resolvePurgatio(seed(), 'apocalyptic', rng());
+    expect(goldOf(s)).toBe(50); // 1000 * 0.05
+    expect(s.lifetime.reprobates.gambler).toBe(75); // converts: lose 25%
+    expect(s.lifetime.reprobates.reprobate).toBe(100); // unconverted untouched
   });
 });
