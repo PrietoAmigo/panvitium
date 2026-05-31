@@ -281,6 +281,14 @@ extensions, `import type`, Prettier):
     from there, and the dead `GOETIA_PREVIEW` fixture was removed. The component itself is byte-
     identical to the prior version (only the type-import path differs) and reuses the existing
     `.goetia-*` / `.gb-*` CSS — so this is a pure refactor with no visual/behavioral change.
+  - _Ars Goetia retouch._ A pass over the dark grimoire: the overlay is **blacker** (less of the
+    room bleeds through). On the **index**, effect copy is gone — unlocked seals show just their
+    name, locked seals show their **requirement in red**, so available vs. blocked reads at a
+    glance; the list **paginates** at 10 per leaf with ‹ / › page-turners (hidden when it all fits).
+    On the **detail leaf**, illustrations now load from `public/assets/panvitium/invocations-ars-
+goetia/<id>.png` (book drawings, not the photorealistic creature art) with a text-plate fallback
+    for any seal not yet drawn; the Effect value is no longer red; the duplicate name caption under
+    the picture is removed; and the back control is a visible gold-outline **‹ back to index** pill.
   - _Ars Goetia dark restyle._ Reworked the grimoire's look to match the design screenshots: it no
     longer renders as a bright parchment open-book — it floats **light-on-dark** over the degraded
     room. Dropped the `open-book.png` plate, lightened the `.goetia-overlay` so the degraded room

@@ -17,7 +17,7 @@ import {
 } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import type { GoetiaEntry } from '../menus/ars-goetia.types.js';
-import { INVOCATION_BY_ID } from '../menus/menus.data.js';
+import { INVOCATION_BY_ID, ASSET_BASE } from '../menus/menus.data.js';
 
 const ROMAN = [
   'I',
@@ -76,11 +76,13 @@ export function buildGoetia(state: GameState): GoetiaView {
       cost: cost > 0 ? `${cost} ${strings.resources.souls}` : strings.invocations.free,
       unlocked,
       // Optional fields omitted (not set to undefined) per exactOptionalPropertyTypes: a locked
-      // entry carries its real gate; illustrated entries carry art; the rest degrade to a text leaf.
+      // entry carries its real gate; the effect/lore lines degrade to absent for un-flavoured seals.
       ...(unlocked ? {} : { gate: gateLabel(def) }),
       ...(effect ? { effect } : {}),
       ...(lore ? { lore } : {}),
-      ...(flavour?.img ? { illus: flavour.img } : {}),
+      // Book drawings (not the photorealistic creature art) live in their own folder, keyed by id.
+      // A seal without a drawing yet 404s and the book shows a text plate (handled in the component).
+      illus: `${ASSET_BASE}/invocations-ars-goetia/${id}.png`,
     });
   });
   return { invokingPower: String(power), entries };

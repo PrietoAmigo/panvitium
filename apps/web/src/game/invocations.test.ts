@@ -10,8 +10,6 @@ function richState() {
   return { ...s, lifetime: { ...s.lifetime, maleficia: Object.keys(MALEFICIA) } };
 }
 
-const DESIGN_ILLUSTRATED = ['imp', 'upir', 'harpy', 'fama', 'nightmare', 'behemoth'];
-
 describe('buildGoetia view-model adapter', () => {
   it('reports the real invoking power, pre-formatted as a string', () => {
     const state = richState();
@@ -32,9 +30,9 @@ describe('buildGoetia view-model adapter', () => {
       // Unlocked → no gate shown (omitted); locked → the gate carries the real requirement.
       if (e.unlocked) expect(e.gate).toBeUndefined();
       else expect(typeof e.gate).toBe('string');
-      // Illustrated entries carry the design art; the rest omit illus and degrade to a text leaf.
-      if (DESIGN_ILLUSTRATED.includes(e.id)) expect(e.illus).toContain('/invocations/');
-      else expect(e.illus).toBeUndefined();
+      // Every seal points its book drawing at the dedicated folder, keyed by id; a missing
+      // drawing 404s at runtime and the book falls back to a text plate (handled in the component).
+      expect(e.illus).toBe(`/assets/panvitium/invocations-ars-goetia/${e.id}.png`);
     }
   });
 });

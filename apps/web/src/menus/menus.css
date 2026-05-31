@@ -1686,7 +1686,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1.5vh 1vw;
-  background: radial-gradient(ellipse at center, rgba(12, 8, 4, 0.6), rgba(2, 1, 1, 0.86));
+  background: radial-gradient(ellipse at center, rgba(5, 3, 2, 0.94), rgba(0, 0, 0, 0.99));
   animation: fade-in 0.4s ease both;
 }
 .goetia-close {
@@ -1840,7 +1840,37 @@ body {
   font-style: italic;
   color: #c0453c;
 }
-.gb-entry.is-locked .gb-hint {
+
+/* Index pager — turn between leaves when the roster overflows a page. */
+.gb-pager {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2em;
+  padding-top: 1.2cqh;
+}
+.gb-pager-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gold-leaf);
+  font-family: 'IM Fell English SC', serif;
+  font-size: 3.4cqh;
+  line-height: 1;
+  padding: 0 0.3em;
+}
+.gb-pager-btn:hover:not(:disabled) {
+  color: var(--parchment);
+}
+.gb-pager-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.gb-pager-label {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 2.2cqh;
   color: var(--parchment-shadow);
 }
 
@@ -1855,25 +1885,28 @@ body {
   object-fit: contain;
   filter: drop-shadow(0 1cqh 1.4cqh rgba(0, 0, 0, 0.6));
 }
-.gb-illus-cap {
-  font-family: 'IM Fell English SC', serif;
-  font-size: 3.4cqh;
-  color: var(--gold-leaf);
-  margin: 1.4cqh 0 0;
-}
 .gb-back {
   align-self: flex-start;
-  background: none;
-  border: none;
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  background: rgba(216, 182, 88, 0.08);
+  border: 1px solid rgba(216, 182, 88, 0.45);
+  border-radius: 3px;
+  padding: 0.5cqh 0.9em;
   cursor: pointer;
-  font-family: 'IM Fell English', serif;
-  font-size: 2.4cqh;
-  font-style: italic;
-  color: #c0453c;
+  font-family: 'IM Fell English SC', serif;
+  font-size: 2.3cqh;
+  letter-spacing: 0.05em;
+  color: var(--gold-leaf);
+}
+.gb-back-arrow {
+  font-size: 2.8cqh;
+  line-height: 1;
 }
 .gb-back:hover {
-  text-decoration: underline;
+  background: rgba(216, 182, 88, 0.18);
+  color: var(--parchment);
 }
 .gb-rank-big {
   font-family: 'IM Fell English SC', serif;
@@ -1906,7 +1939,7 @@ body {
   color: var(--parchment);
 }
 .gb-stats dd.gb-effect {
-  color: #c0453c;
+  color: var(--parchment);
   font-style: italic;
 }
 .gb-lore {
