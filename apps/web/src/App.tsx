@@ -6,7 +6,7 @@ import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
 import { Hud } from './ui/Hud.js';
-import { Panel, PANELS } from './ui/panels.js';
+import { Panel, PANELS, PcDesk } from './ui/panels.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
 import { KatabasisModal } from './ui/KatabasisModal.js';
@@ -81,7 +81,7 @@ export function App(): ReactElement {
   };
 
   // Ars Goetia is its own full-screen overlay (the designed grimoire), not a framed Panel.
-  const activePanel = panel && panel !== 'ars-goetia' ? PANELS[panel] : null;
+  const activePanel = panel && panel !== 'ars-goetia' && panel !== 'pc' ? PANELS[panel] : null;
 
   return (
     <div className="app">
@@ -101,6 +101,7 @@ export function App(): ReactElement {
       <SyncPanel />
       <ConflictModal />
       {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
+      {panel === 'pc' && <PcDesk onClose={closePanel} />}
       {activePanel && (
         <Panel title={activePanel.title} onClose={closePanel}>
           {activePanel.body}

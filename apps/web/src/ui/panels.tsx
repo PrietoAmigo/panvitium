@@ -30,6 +30,7 @@ import { type PanelId } from '../menus/types.js';
 import { AltarPanel as DesignedAltar } from '../menus/AltarPanel.js';
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
 import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
+import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { buildAltar } from '../game/altar.js';
 import { buildCabinet } from '../game/maleficia.js';
 import { useGameStore } from '../store/gameStore.js';
@@ -643,6 +644,20 @@ function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
   if (group === 'achievements') return <AchievementsGroup />;
   if (group === 'logs') return <OutcomeLog />;
   return <p className="pc-empty">{strings.opera.notYet}.</p>;
+}
+
+/**
+ * The Studio desk PC (02 §10): the designed Ubuntu-style file manager whose "files" are the ritual
+ * programs, each launching the real system body via `PcGroupBody`. A full-screen overlay (rendered
+ * by App, not framed in a Panel). The designed program id ("Depraedatio") lower-cases to the group.
+ */
+export function PcDesk({ onClose }: { onClose: () => void }): ReactElement {
+  return (
+    <DesignedPc
+      onClose={onClose}
+      renderProgram={(id) => <PcGroupBody group={id.toLowerCase() as PcGroupId} />}
+    />
+  );
 }
 
 /**

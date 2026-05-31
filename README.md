@@ -232,11 +232,18 @@ extensions, `import type`, Prettier):
     the store (`act`), with the live efficiency-scaled cost and a log of resolved Suggestion outcomes
     (filtered from the store log, described via `describeOutcome`); acolyte delegation to Suasio is
     preserved beneath it. Pinned by a cabinet adapter unit test.
-  - _Remaining._ One diegetic **panel** still renders from the `menus.data.ts` mock catalogs (seam
-    marked `TODO(wire)`): `PcWindow` — the Studio's file-manager of ritual programs (Depraedatio
-    businesses, Decimatio / Indagatio, the Emptio market, achievements, the log feed), which fans out
-    to several systems. The old text `ArsGoetiaPanel` (and now the old Suasio/Maleficia list markup)
-    in `PANELS`/`panels.tsx` is superseded; a later cleanup can remove the dead helpers.
+  - _W6 — the PC live (menu-layer wiring complete)._ The designed `PcWindow` file-manager is now the
+    full-screen `pc` overlay; each “executable” launches the **real** system body via the existing
+    `PcGroupBody` (Depraedatio businesses + build queue, Decimatio / Indagatio actions, the Emptio
+    market, the achievements ledger, and the global outcome log). The designed chrome wraps the
+    real group components unchanged. With this, every diegetic panel and room is wired to real
+    state; the `menus.data.ts` stand-ins survive only as design flavour (art/lore/rank) merged by
+    the view-models, plus its now-unused PC/Sin/Sigil mock arrays and the superseded text panels
+    (`PcPanel`, `ArsGoetiaPanel`, the old Suasio/Maleficia markup), which a later cleanup can drop.
+  - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
+    Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state. What remains is
+    optional cleanup (removing the superseded text panels and the unused `menus.data.ts` mock arrays)
+    and the content backlog (art/lore for the un-illustrated invocations & maleficia, audio).
 
 ### Remaining
 
