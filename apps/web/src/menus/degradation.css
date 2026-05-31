@@ -1,0 +1,19 @@
+/* Degradation layer — NEW classes only.
+   Import once, AFTER the base stylesheet and menus.css (it adds, never renames).
+   Everything else the layer needs — the Ars Goetia .goetia-* / .gb-* classes,
+   the .stage / .hotspot / .hud vocabulary — already lives in menus.css. */
+
+/* The canvas IS the room scene. It renders 1280x720 internally; nearest-
+   neighbour CSS upscale keeps the degraded blocks crisp at any stage size.
+   Place it where the `.scene` CSS background used to sit (first child of the
+   stage / room group), with hotspots layered above it. */
+.scene-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  z-index: 0;
+}

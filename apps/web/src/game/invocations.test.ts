@@ -12,15 +12,14 @@ function richState() {
 
 const DESIGN_ILLUSTRATED = ['imp', 'upir', 'harpy', 'fama', 'nightmare', 'behemoth'];
 
-describe('buildGoetia view-model adapter (W2)', () => {
-  it('reports the real invoking power', () => {
+describe('buildGoetia view-model adapter', () => {
+  it('reports the real invoking power, pre-formatted as a string', () => {
     const state = richState();
     const view = buildGoetia(state);
-    expect(view.power).toBe(currentInvokingPower(state));
-    expect(view.power).toBeGreaterThan(0);
+    expect(view.invokingPower).toBe(String(currentInvokingPower(state)));
   });
 
-  it('surfaces visible invocations as presentation rows', () => {
+  it('surfaces visible invocations as grimoire entries', () => {
     const view = buildGoetia(richState());
     expect(view.entries.length).toBeGreaterThanOrEqual(6);
   });
@@ -30,24 +29,12 @@ describe('buildGoetia view-model adapter (W2)', () => {
     for (const e of view.entries) {
       // Name always comes from the canonical strings table, never fabricated.
       expect(e.name).toBe(strings.invocations.names[e.id]);
-      // Unlocked → no Seal shown; locked → the Seal carries the real requirement.
-      if (e.unlocked) expect(e.gate).toBeNull();
+      // Unlocked → no gate shown (omitted); locked → the gate carries the real requirement.
+      if (e.unlocked) expect(e.gate).toBeUndefined();
       else expect(typeof e.gate).toBe('string');
-      // Illustrated entries use the design art; the rest fall back to the Ars Goetia plate.
-      if (DESIGN_ILLUSTRATED.includes(e.id)) expect(e.img).toContain('/invocations/');
-      else expect(e.img).toContain('ars_goetia.png');
-      // A real active count is always present for the "N bound" hint.
-      expect(typeof view.counts[e.id]).toBe('number');
+      // Illustrated entries carry the design art; the rest omit illus and degrade to a text leaf.
+      if (DESIGN_ILLUSTRATED.includes(e.id)) expect(e.illus).toContain('/invocations/');
+      else expect(e.illus).toBeUndefined();
     }
-  });
-
-  it('reflects an active invocation in the bound counts', () => {
-    const base = richState();
-    const state = {
-      ...base,
-      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, imp: 2 } },
-    };
-    const view = buildGoetia(state);
-    expect(view.counts.imp).toBe(2);
   });
 });

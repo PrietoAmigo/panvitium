@@ -80,3 +80,50 @@ export interface LogLine {
   tier: 'good' | 'excellent' | 'stellar' | 'neutral' | 'bad';
   text: string;
 }
+
+// ── Degradation layer + reworked Ars Goetia (degradation-pass handoff) ───────
+// Presentation shapes for the canvas degradation pass and the prop-driven
+// grimoire. RoomId above is shared. DegradeSettings/Engine* come from the engine.
+import type { DegradeSettings } from './degrade.js';
+export type { DegradeSettings, EngineSprite, EngineScene } from './degrade.js';
+
+/** A diegetic sprite laid into the room scene; positions are stage fractions 0..1. */
+export interface SceneSprite {
+  id: string;
+  src: string;
+  x: number;
+  y: number;
+  w: number;
+}
+
+/** Props for the room scene layer (degraded backdrop + sprites). */
+export interface DegradedSceneProps {
+  roomId: RoomId;
+  backdrop: string;
+  sprites?: SceneSprite[];
+  signature?: boolean;
+  settings?: Partial<DegradeSettings>;
+  className?: string;
+}
+
+/** One Ars Goetia entry: sim mechanics (name/cost/gate/effect/unlocked) + design flavour (rank/lore/illus). */
+export interface GoetiaEntry {
+  id: string;
+  name: string;
+  rank: string;
+  cost: string;
+  gate?: string;
+  effect?: string;
+  lore?: string;
+  illus?: string;
+  unlocked: boolean;
+}
+
+/** Props for the full-screen Ars Goetia grimoire overlay. */
+export interface ArsGoetiaBookProps {
+  entries: GoetiaEntry[];
+  invokingPower: string;
+  onSummon: (id: string) => void;
+  onDispel: (id: string) => void;
+  onClose: () => void;
+}

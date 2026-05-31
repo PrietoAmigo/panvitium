@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 602** (sim 452 · shared 48 · api 11 · web 91).
+**Current test count: 601** (sim 452 · shared 48 · api 11 · web 90).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -251,6 +251,23 @@ extensions, `import type`, Prettier):
     selects the stable `state` and builds in the render body. Guarded by an e2e step that opens the
     cabinet. (Other inline selectors were already safe — they return the actual `state.lifetime.*`
     arrays, not fresh ones.)
+  - _Degradation pass + Ars Goetia rework._ The defining visual constraint (01) is in: each room's
+    backdrop is now a `<canvas>` (`DegradedScene` over the framework-free `DegradePass` engine) that
+    composites the plate, its baked props, and any summoned creatures through one uniform degradation
+    recipe — so the whole diegetic frame reads at a single fidelity, while the chrome (hotspots, HUD,
+    panels) layers above it and stays crisp. `DEFAULT_DEGRADE` is dialled to the shipped “Cursed
+    CD-ROM” recipe (block 3 · levels 6 · dither · grade 0.12 · contrast 1.2 · black 0.08 · vignette
+    0.1 · grain 0.03 · flicker 0.06 · scanlines 0.25 · aberration 1 · 24fps · uniform · idle bob);
+    pass `settings` to override any knob. Room changes play the engine's fade-to-black curtain;
+    creature idle motion is composited before the pass. `RoomView` feeds it `ROOM_PLATES` (the
+    `*_complete.png` plates, props baked in) and `spriteFor` (summoned ids → canvas sprites), which
+    settles the earlier furnish question — every room degrades its complete plate. The DOM
+    `SummonedCreatures` and the crisp `ars_goetia` prop are retired (composited / baked in); the
+    `.scene` CSS backdrop is superseded by the canvas. The **Ars Goetia** grimoire is the reworked
+    prop-driven `ArsGoetiaBook` (takes a pre-formatted `invokingPower`; the bound-count display was
+    dropped by the new design); `buildGoetia` now yields `GoetiaEntry[]` + `invokingPower`, omitting
+    `gate`/`effect`/`lore`/`illus` where absent so un-illustrated seals degrade to a text leaf.
+    Orphaned by this pass (cleanup): `SummonedCreatures.tsx`.
   - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
     Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state in their designed
     shells. Backdrops: the **Studio** uses its `studio_complete.png` plate as its base so the desk PC

@@ -1,11 +1,11 @@
 import { type ReactElement } from 'react';
-import type { RoomDef, HotspotAction } from './types.js';
-import { ASSET_BASE } from './menus.data.js';
-import { SummonedCreatures } from './SummonedCreatures.js';
+import type { RoomDef, HotspotAction, SceneSprite } from './types.js';
+import { DegradedScene } from './DegradedScene.js';
+import { ROOM_PLATES, spriteFor } from './degrade.data.js';
 
 interface RoomViewProps {
   room: RoomDef;
-  signature: boolean; // Studio "panvitium" red glow while a ritual runs
+  signature: boolean; // Studio "panvitium" ritual glow (handled inside the pass)
   summoned: string[];
   onAction: (action: HotspotAction) => void;
 }
@@ -16,22 +16,22 @@ function doorGlyph(id: string): string {
   return '\u2756';
 }
 
-// One room: the photoreal backdrop (via sceneClass), the baked scene prop + any
-// summoned creatures (Invocation only), and the clickable hotspots.
+// One room. The backdrop, its baked props, and any summoned creatures are composited onto a single
+// <canvas> through the uniform degradation pass (DegradedScene), so the whole frame reads at one
+// fidelity. The chrome — hotspots (and the HUD/panels above) — layers over it and stays crisp.
 export function RoomView({ room, signature, summoned, onAction }: RoomViewProps): ReactElement {
-  let sceneClass = 'scene ' + room.sceneClass;
-  if (room.id === 'studio' && signature) sceneClass += ' panvitium-active';
+  const sprites: SceneSprite[] =
+    room.id === 'invocation'
+      ? summoned.map(spriteFor).filter((s): s is SceneSprite => s !== null)
+      : [];
   return (
-    <div className={sceneClass} role="group" aria-label={room.title}>
-      {room.id === 'invocation' && (
-        <img
-          className="scene-prop"
-          src={`${ASSET_BASE}/items/ars_goetia.png`}
-          alt="The Ars Goetia"
-          style={{ left: '55.5%', bottom: '1.5%', width: '38%' }}
-        />
-      )}
-      {room.id === 'invocation' && <SummonedCreatures summoned={summoned} />}
+    <div className={'scene ' + room.sceneClass} role="group" aria-label={room.title}>
+      <DegradedScene
+        roomId={room.id}
+        backdrop={ROOM_PLATES[room.id]}
+        sprites={sprites}
+        signature={room.id === 'studio' && signature}
+      />
       {room.hotspots.map((h) => {
         const isDoor = h.action.type === 'door';
         return (

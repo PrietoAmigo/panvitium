@@ -35,12 +35,11 @@ function GoetiaBook({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
   const summon = useGameStore((s) => s.summon);
   const banish = useGameStore((s) => s.banish);
-  const view = state ? buildGoetia(state) : { power: 0, entries: [], counts: {} };
+  const view = state ? buildGoetia(state) : { invokingPower: '0', entries: [] };
   return (
     <ArsGoetiaBook
       entries={view.entries}
-      power={view.power}
-      counts={view.counts}
+      invokingPower={view.invokingPower}
       onSummon={summon}
       onDispel={banish}
       onClose={onClose}

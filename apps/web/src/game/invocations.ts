@@ -10,15 +10,14 @@ import {
   invocationVisible,
   invocationUnlocked,
   invocationSoulCost,
-  activeInvocationCount,
   currentInvokingPower,
   floor,
   type GameState,
   type InvocationDef,
 } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
-import type { Invocation } from '../menus/types.js';
-import { INVOCATION_BY_ID, ASSET_BASE } from '../menus/menus.data.js';
+import type { GoetiaEntry } from '../menus/types.js';
+import { INVOCATION_BY_ID } from '../menus/menus.data.js';
 
 const ROMAN = [
   'I',
@@ -40,8 +39,6 @@ const ROMAN = [
   'XVII',
   'XVIII',
 ];
-const FALLBACK_IMG = `${ASSET_BASE}/items/ars_goetia.png`;
-
 function roman(n: number): string {
   return ROMAN[n - 1] ?? String(n);
 }
@@ -54,38 +51,37 @@ function gateLabel(def: InvocationDef): string {
 }
 
 export interface GoetiaView {
-  /** Current invoking power (maleficia + Andrealphus sigil). */
-  readonly power: number;
-  /** Visible invocations (≥ half their invoking-power requirement, 02 §12), as presentation rows. */
-  readonly entries: Invocation[];
-  /** Active count per invocation id, for the "N bound" hint and the Dispel button. */
-  readonly counts: Record<string, number>;
+  /** Current invoking power (maleficia + Andrealphus sigil), pre-formatted for display. */
+  readonly invokingPower: string;
+  /** Visible invocations (≥ half their invoking-power requirement, 02 §12), as grimoire entries. */
+  readonly entries: GoetiaEntry[];
 }
 
 /** Build the grimoire's presentation view from authoritative sim state. */
 export function buildGoetia(state: GameState): GoetiaView {
   const power = currentInvokingPower(state);
-  const counts: Record<string, number> = {};
-  const entries: Invocation[] = [];
+  const entries: GoetiaEntry[] = [];
   INVOCATION_IDS.forEach((id, i) => {
     const def = invocationById(id);
     if (!def || !invocationVisible(state, def)) return;
     const unlocked = invocationUnlocked(state, def);
     const cost = floor(invocationSoulCost(state, def)).toNumber();
-    counts[id] = activeInvocationCount(state, def.id);
     const flavour = INVOCATION_BY_ID[id]; // design art/lore for the illustrated entries
+    const effect = flavour?.effect ?? '';
+    const lore = flavour?.lore ?? '';
     entries.push({
       id,
       name: strings.invocations.names[id] ?? flavour?.name ?? id,
       rank: flavour?.rank ?? roman(i + 1),
-      sub: '',
       cost: cost > 0 ? `${cost} ${strings.resources.souls}` : strings.invocations.free,
-      gate: unlocked ? null : gateLabel(def),
       unlocked,
-      img: flavour?.img ?? FALLBACK_IMG,
-      effect: flavour?.effect ?? '',
-      lore: flavour?.lore ?? '',
+      // Optional fields omitted (not set to undefined) per exactOptionalPropertyTypes: a locked
+      // entry carries its real gate; illustrated entries carry art; the rest degrade to a text leaf.
+      ...(unlocked ? {} : { gate: gateLabel(def) }),
+      ...(effect ? { effect } : {}),
+      ...(lore ? { lore } : {}),
+      ...(flavour?.img ? { illus: flavour.img } : {}),
     });
   });
-  return { power, entries, counts };
+  return { invokingPower: String(power), entries };
 }

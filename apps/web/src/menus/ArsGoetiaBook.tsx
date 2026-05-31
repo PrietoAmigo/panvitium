@@ -1,121 +1,121 @@
-import { useState, type ReactElement } from 'react';
-import type { Invocation } from './types.js';
+/* ArsGoetiaBook — the diegetic grimoire of invocations.
 
-interface ArsGoetiaBookProps {
-  entries: Invocation[];
-  power: number;
-  counts: Record<string, number>;
-  onSummon: (id: string) => void;
-  onDispel: (id: string) => void;
-  onClose: () => void;
-}
+   Archetype: FULL-SCREEN OVERLAY. Renders its own shell (.goetia-overlay) and
+   close affordance; does NOT use PanelShell. Reuses the existing goetia-* / gb-*
+   classes already in the app stylesheet — no new CSS.
 
-// Ars Goetia — a full-screen open grimoire. Left page: title + live invoking power. Right page: the
-// index of visible names. Clicking a name turns to that demon's leaf (illustration + cost + effect +
-// lore). No scrolling. Full-screen shell (no PanelShell). Driven entirely by real state via the
-// `buildGoetia` adapter — Summon/Dispel call the same store actions the Invocation circle reflects.
+   Presentational + prop-driven: `entries` and `invokingPower` come from the sim
+   (merged with design flavour by id); Summon/Dispel are callbacks. The only
+   local state is which entry leaf is open. Un-illustrated entries fall back to a
+   text plate, so the book renders correctly for ids it has never seen. */
+
+import { useState } from 'react';
+import type { ArsGoetiaBookProps } from './types.js';
+
 export function ArsGoetiaBook({
   entries,
-  power,
-  counts,
+  invokingPower,
   onSummon,
   onDispel,
   onClose,
-}: ArsGoetiaBookProps): ReactElement {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const it = openId ? (entries.find((e) => e.id === openId) ?? null) : null;
-  const boundOf = (id: string): number => counts[id] ?? 0;
+}: ArsGoetiaBookProps): JSX.Element {
+  const [sel, setSel] = useState<string | null>(null);
+  const entry = sel !== null ? entries.find((e) => e.id === sel) : undefined;
 
   return (
-    <div className="goetia-overlay" role="dialog" aria-label="Ars Goetia">
-      <button type="button" className="goetia-close" onClick={onClose} aria-label="Close the book">
-        {'\u2715'}
+    <div
+      className="goetia-overlay"
+      role="dialog"
+      aria-label="Ars Goetia"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <button className="goetia-close" onClick={onClose} aria-label="Close the Ars Goetia">
+        ✕
       </button>
-      <div className="goetia-spread">
-        {!it ? (
+      <div className="goetia-spread" onClick={(e) => e.stopPropagation()}>
+        {!entry && (
           <>
             <div className="gb-page gb-page--left">
-              <h1 className="gb-title">Ars Goetia</h1>
-              <div className="gb-rule" aria-hidden="true" />
-              <p className="gb-power">Invoking power &middot; {power}</p>
-              <p className="gb-intro">
-                Names called up from below. Each asks a price in souls and stands within the circle
-                until dispelled &mdash; and is banished when you leave the room. Turn to a name to
-                read its bargain.
-              </p>
-              <p className="gb-folio">&mdash; i &mdash;</p>
+              <ul className="gb-index">
+                {entries.map((g) => (
+                  <li key={g.id}>
+                    <button
+                      className={'gb-entry' + (g.unlocked ? '' : ' is-locked')}
+                      onClick={() => setSel(g.id)}
+                    >
+                      <span className="gb-rank">{g.rank}</span>
+                      <span className="gb-name">{g.name}</span>
+                      <span className="gb-dots" />
+                      <span className="gb-hint">
+                        {g.unlocked ? (g.effect ?? '').replace(/\.$/, '') : (g.gate ?? 'Sealed')}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
             <div className="gb-page gb-page--right">
-              <h2 className="gb-subtitle">The Names</h2>
-              <ul className="gb-index">
-                {entries.map((iv) => {
-                  const b = boundOf(iv.id);
-                  return (
-                    <li key={iv.id}>
-                      <button
-                        type="button"
-                        className={'gb-entry' + (iv.unlocked ? '' : ' is-locked')}
-                        onClick={() => setOpenId(iv.id)}
-                      >
-                        <span className="gb-rank">{iv.rank}.</span>
-                        <span className="gb-name">{iv.name}</span>
-                        <span className="gb-dots" aria-hidden="true" />
-                        <span className="gb-hint">
-                          {iv.unlocked ? (b > 0 ? `${b} bound` : '') : '\u2020'}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              <p className="gb-folio">&mdash; ii &mdash;</p>
+              <h2 className="gb-title">Ars Goetia</h2>
+              <p className="gb-subtitle">The Lesser Key</p>
+              <div className="gb-rule" />
+              <p className="gb-power">Invoking power · {invokingPower}</p>
+              <p className="gb-intro">
+                Seventy-two kings and presidents of the descent, each bound to a seal. Summon what
+                your station can hold; dispel what it cannot. The circle on the floor keeps only as
+                many as the seals permit.
+              </p>
+              <p className="gb-folio">— turn the leaf —</p>
             </div>
           </>
-        ) : (
+        )}
+        {entry && (
           <>
-            <div className="gb-page gb-page--left gb-illus-page">
-              <img className="gb-illus-img" src={it.img} alt={it.name} />
-              <p className="gb-illus-cap">{it.name}</p>
-            </div>
-            <div className="gb-page gb-page--right">
-              <button type="button" className="gb-back" onClick={() => setOpenId(null)}>
-                &lsaquo; back to the index
+            <div className="gb-page gb-page--left">
+              <button className="gb-back" onClick={() => setSel(null)}>
+                ‹ the index
               </button>
-              <p className="gb-rank-big">{it.rank}</p>
-              <h2 className="gb-detail-name">{it.name}</h2>
-              <div className="gb-rule" aria-hidden="true" />
+              <p className="gb-rank-big">{entry.rank}</p>
+              <h2 className="gb-detail-name">{entry.name}</h2>
               <dl className="gb-stats">
                 <dt>Cost</dt>
-                <dd>{it.cost}</dd>
-                {it.gate && (
+                <dd>{entry.cost}</dd>
+                {entry.gate ? (
                   <>
-                    <dt>Seal</dt>
-                    <dd>{it.gate}</dd>
+                    <dt>Gate</dt>
+                    <dd>{entry.gate}</dd>
                   </>
-                )}
-                {it.effect && (
+                ) : null}
+                {entry.effect ? (
                   <>
                     <dt>Effect</dt>
-                    <dd className="gb-effect">{it.effect}</dd>
+                    <dd className="gb-effect">{entry.effect}</dd>
                   </>
-                )}
+                ) : null}
               </dl>
-              {it.lore && <p className="gb-lore">{it.lore}</p>}
+              {entry.lore ? <p className="gb-lore">{entry.lore}</p> : null}
               <div className="gb-actions">
                 <button
-                  type="button"
                   className="gb-summon"
-                  disabled={!it.unlocked}
-                  onClick={() => onSummon(it.id)}
+                  disabled={!entry.unlocked}
+                  onClick={() => onSummon(entry.id)}
                 >
-                  {it.unlocked ? 'Summon' : 'Sealed'}
+                  {entry.unlocked ? 'Summon' : 'Sealed'}
                 </button>
-                {boundOf(it.id) > 0 && (
-                  <button type="button" className="gb-dispel" onClick={() => onDispel(it.id)}>
-                    Dispel
-                  </button>
-                )}
+                <button className="gb-dispel" onClick={() => onDispel(entry.id)}>
+                  Dispel
+                </button>
               </div>
+            </div>
+            <div className="gb-page gb-page--right gb-illus-page">
+              {entry.illus ? (
+                <img className="gb-illus-img" src={entry.illus} alt={entry.name} />
+              ) : (
+                <p className="gb-lore" style={{ textAlign: 'center' }}>
+                  No plate has been drawn for this seal.
+                </p>
+              )}
+              <p className="gb-illus-cap">{entry.name}</p>
             </div>
           </>
         )}
