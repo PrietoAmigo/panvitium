@@ -245,6 +245,12 @@ extensions, `import type`, Prettier):
     via `PanelShell` with the right variant: the Altar in engraved **stone** (`altar-stone.png`,
     header-less), the Maleficia **cabinet** in wood, and the Suasio **scroll** in parchment. Ars
     Goetia, the PC and Katabasis keep their own full-screen shells.
+  - _W8 — render-loop fix._ The Maleficia shelf selected `buildCabinet(state)` _inside_ a Zustand
+    selector, returning a fresh array each call — which makes `useSyncExternalStore` see an
+    ever-changing snapshot and loop (“Maximum update depth exceeded”) when the cabinet mounts. Now it
+    selects the stable `state` and builds in the render body. Guarded by an e2e step that opens the
+    cabinet. (Other inline selectors were already safe — they return the actual `state.lifetime.*`
+    arrays, not fresh ones.)
   - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
     Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state in their designed
     shells. Known unwired bits, pending a design call: the `*_complete.png` **furnished** room plates

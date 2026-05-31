@@ -338,7 +338,8 @@ function EmptioGroup(): ReactElement {
 
 /** Maleficia shelf: groups owned items by id; stackables show their count. */
 function MaleficiaShelf(): ReactElement {
-  const items = useGameStore((s) => (s.state ? buildCabinet(s.state) : []));
+  const state = useGameStore((s) => s.state);
+  const items = state ? buildCabinet(state) : [];
   if (items.length === 0) {
     return <p className="pc-empty">{strings.maleficia.empty}</p>;
   }

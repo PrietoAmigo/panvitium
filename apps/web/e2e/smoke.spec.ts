@@ -45,6 +45,17 @@ test('opens and closes a diegetic panel', async ({ page }) => {
   await expect(dialog).toBeHidden();
 });
 
+test('opens the Maleficia cabinet without crashing (no render loop)', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'To the Invocation Room' }).click();
+  await page.getByRole('button', { name: 'Maleficia Shelf' }).click();
+  // If a selector returned a fresh reference, this panel would loop and the app would collapse.
+  const cabinet = page.getByRole('dialog', { name: 'The Maleficia Shelf' });
+  await expect(cabinet).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(cabinet).toBeHidden();
+});
+
 test('keeps vigil — the tick loop advances', async ({ page }) => {
   await page.goto('/');
   const vigil = page.locator('.vigil');
