@@ -6,7 +6,8 @@ import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
 import { Hud } from './ui/Hud.js';
-import { Panel, PANELS, PcDesk } from './ui/panels.js';
+import { PANELS, PcDesk } from './ui/panels.js';
+import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
 import { KatabasisModal } from './ui/KatabasisModal.js';
@@ -14,6 +15,17 @@ import { SyncPanel } from './ui/SyncPanel.js';
 import { ConflictModal } from './ui/ConflictModal.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
+
+/**
+ * The themed shell each framed panel wears: the Altar's engraved stone, the Maleficia cabinet's
+ * wood, the Suasio scroll's parchment (Ars Goetia, the PC and Katabasis are their own full-screen
+ * overlays and don't appear here). The stone and cabinet hide the header in favour of a float close.
+ */
+const PANEL_SHELL: Partial<Record<PanelId, { variant: PanelVariant; hideHeader?: boolean }>> = {
+  'altar-menu': { variant: 'stone', hideHeader: true },
+  maleficia: { variant: 'cabinet', hideHeader: true },
+  suasio: { variant: 'scroll' },
+};
 
 /**
  * The full-screen Ars Goetia grimoire, wired to real state. Kept as its own subscriber so its
@@ -82,6 +94,7 @@ export function App(): ReactElement {
 
   // Ars Goetia is its own full-screen overlay (the designed grimoire), not a framed Panel.
   const activePanel = panel && panel !== 'ars-goetia' && panel !== 'pc' ? PANELS[panel] : null;
+  const shell = panel ? PANEL_SHELL[panel] : undefined;
 
   return (
     <div className="app">
@@ -102,10 +115,15 @@ export function App(): ReactElement {
       <ConflictModal />
       {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
-      {activePanel && (
-        <Panel title={activePanel.title} onClose={closePanel}>
+      {activePanel && shell && (
+        <PanelShell
+          title={activePanel.title}
+          variant={shell.variant}
+          onClose={closePanel}
+          {...(shell.hideHeader ? { hideHeader: true } : {})}
+        >
           {activePanel.body}
-        </Panel>
+        </PanelShell>
       )}
     </div>
   );

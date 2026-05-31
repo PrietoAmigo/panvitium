@@ -240,10 +240,18 @@ extensions, `import type`, Prettier):
     state; the `menus.data.ts` stand-ins survive only as design flavour (art/lore/rank) merged by
     the view-models, plus its now-unused PC/Sin/Sigil mock arrays and the superseded text panels
     (`PcPanel`, `ArsGoetiaPanel`, the old Suasio/Maleficia markup), which a later cleanup can drop.
+  - _W7 — themed panel shells (fix)._ The three framed panels were rendering in the generic frame
+    rather than the designed `PanelShell`, so they had lost their themed backgrounds. They now render
+    via `PanelShell` with the right variant: the Altar in engraved **stone** (`altar-stone.png`,
+    header-less), the Maleficia **cabinet** in wood, and the Suasio **scroll** in parchment. Ars
+    Goetia, the PC and Katabasis keep their own full-screen shells.
   - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
-    Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state. What remains is
-    optional cleanup (removing the superseded text panels and the unused `menus.data.ts` mock arrays)
-    and the content backlog (art/lore for the un-illustrated invocations & maleficia, audio).
+    Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state in their designed
+    shells. Known unwired bits, pending a design call: the `*_complete.png` **furnished** room plates
+    ship and are styled (`.furnished .scene-*`) but `RoomView` has no furnish trigger yet — rooms
+    show the clean plate until we define when each becomes furnished. Optional cleanup: the orphaned
+    `useHold` export, the superseded text panels, and the unused `menus.data.ts` mock arrays. Plus
+    the content backlog (art/lore for the un-illustrated invocations & maleficia, audio).
 
 ### Remaining
 
