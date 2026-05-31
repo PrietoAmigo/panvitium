@@ -32,6 +32,7 @@ import {
   sigilConversionBiasContributions,
   sigilCostReductionByChannel,
   sigilIndagatioDoubleFindChance,
+  sigilInvocationEffectContributions,
   sigilInvokingPower,
   sigilKatabasisBonus,
   sigilModifierContributions,
@@ -674,5 +675,40 @@ describe('Vitium Compositum output sigil (S14)', () => {
     const zagan = gain(withToggle(bound(61, 1_000_000)));
     // Compositum's 100 gold/s doubles; the BASE_GOLD_PER_SECOND term is unaffected.
     expect(zagan).toBeCloseTo(base + 100, 6);
+  });
+});
+
+describe('Per-invocation effectiveness sigils (S15)', () => {
+  const withInv = (s: GameState, id: string, n = 1): GameState => ({
+    ...s,
+    lifetime: { ...s.lifetime, invocations: { ...s.lifetime.invocations, [id]: n } },
+  });
+
+  it('Buer #10 (familiar) and Sitri #12 (succubus) scale a named invocation by id', () => {
+    expect(sigilById(10)!.effect).toEqual({ kind: 'invocationEffect', invocation: 'familiar' });
+    expect(sigilById(12)!.effect).toEqual({ kind: 'invocationEffect', invocation: 'succubus' });
+    const c = sigilInvocationEffectContributions(bound(10, 1_000_000));
+    expect(c.familiar).toBeCloseTo(2, 6); // 0.001 × sqrt(1e6) = 1 → ×2
+    expect(Object.keys(c)).toEqual(['familiar']);
+  });
+
+  it('Buer lifts player efficiency only when a familiar is present', () => {
+    const base = computeModifiers(withInv(fresh(), 'familiar')).playerEfficiencyMul;
+    const buer = computeModifiers(withInv(bound(10, 1_000_000), 'familiar')).playerEfficiencyMul;
+    expect(buer).toBeGreaterThan(base);
+    expect(computeModifiers(bound(10, 1_000_000)).playerEfficiencyMul).toBeCloseTo(
+      computeModifiers(fresh()).playerEfficiencyMul,
+      9,
+    );
+  });
+
+  it('Sitri lifts Suasio efficiency only when a succubus is present', () => {
+    const base = computeModifiers(withInv(fresh(), 'succubus')).suasioEfficiencyMul;
+    const sitri = computeModifiers(withInv(bound(12, 1_000_000), 'succubus')).suasioEfficiencyMul;
+    expect(sitri).toBeGreaterThan(base);
+    expect(computeModifiers(bound(12, 1_000_000)).suasioEfficiencyMul).toBeCloseTo(
+      computeModifiers(fresh()).suasioEfficiencyMul,
+      9,
+    );
   });
 });

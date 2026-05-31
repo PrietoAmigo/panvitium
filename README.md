@@ -169,7 +169,7 @@ factor × the player's current action efficiency × the invocation-effect multip
 | I2  | Additive-to-base effects           | Nightmare → additive to base suicide rate (new `flatBaseSuicideRatePerSecond` bundle field, added in `dynamics` alongside the Doom toggle); Behemoth → additive Stellar weight (factor 0.0005, deferred past the tierAcc block for its `playerEff` dependency); Lemure → offline gain rate, retargeted off the wrong influence/Husk target (`flatInfluencePerSecond` now reserved for the Decarabia #69 sigil). All efficiency-scaled. |
 | I3  | Lamia runner                       | Reclassified Lamia from a generation + Suasio-success modifier into an autonomous Suasio runner (`autonomous: { action: 'suggestion', efficiency: 0.05 }`), advanced by `runner.ts` like Familiar/Upir/Imp. Removed its `reprobateGenerationRateMul` and `categoryTierModifiers` contributions (and the dead `LAMIA_*` constants).                                                                                                     |
 
-**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~63 of 72 now
+**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~65 of 72 now
 bindable, the rest pending their effect mechanics):
 
 | #   | Slice                            | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -321,16 +321,22 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Sigils** — ~49 of 72 are wired. The rest are grouped by the mechanic each needs: subtype-targeted
-  murder (Glasya-Labolas/Sabnock/Camio/Haures/Amdusias), per-resource offline (Sallos/Forneus),
-  Indagatio discovery odds (Vassago/Stolas/Furcas), and conversion (Bael/Eligos/Phenex/Ose/Orias).
-  Vual #47 (−Degenerate gold penalty) is deferred — the model has no Degenerate gold penalty; it
-  needs the subtype-penalty assignment reconciled first.
+- **Sigils** — ~65 of 72 are wired (see the per-slice S1–S15 table under Status). Still open:
+  Bael #1 (Vitium conversion rate), Leraie #14 (Choleric-murder gold bonus) and Vine #45 (business
+  shutdown gold recovery) — each a small one-off hook. Deferred pending design/model decisions:
+  Ose #57 / Orias #59 (per-second subtype rebalancing — needs sub-1/tick accrual pools + a sheet
+  move-rate), Vual #47 (−Degenerate gold penalty — no such penalty in the model yet), and
+  Haures #64 (Choleric-on-Choleric murder — Cholerics are murderers, not victims).
 - **Maleficia effects** — roster, invoking power, stack caps, the Opera-efficiency enhancers
   (Ars Serpens / Voynich / Ritual Dagger), the sigil-effect amplifiers (Solomon's Ring / Iron Nails),
   and the invocation-effect multiplier (Black Candles) are done. Still to wire: the oracular reveals,
   the targeted single-use items (Defixio / Hand of Glory), and the rolled-at-purchase pricing.
 - **Missing Opera actions** — _logismoi_, _imperium_, _pogrom_, _purgatio_.
+- **Emails (Opera menu) — impact-feedback system [pending design].** A new Opera-menu item that
+  surfaces the in-world consequences of the player's actions as incoming correspondence: subscribed
+  newsletter emails, messages from people affected by the player's businesses (e.g. class actions),
+  and similar reactive mail. The intent is to let the player _feel_ the impact of what they are doing
+  rather than read it only as numbers. Scope, triggers and presentation still to be specified.
 
 Blocked on inputs that don't live in a coding session (independent of the above):
 

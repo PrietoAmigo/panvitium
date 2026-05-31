@@ -43,6 +43,7 @@ import {
   sigilModifierContributions,
   sigilCategoryTierContributions,
   sigilInvocationSinContributions,
+  sigilInvocationEffectContributions,
   sigilPenaltyReductionByChannel,
   sigilFlatGeneration,
   type ScalarModifierField,
@@ -389,10 +390,14 @@ export function computeModifiers(state: GameState): Modifiers {
     IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl *
     (1 + BLACK_CANDLES_INVOCATION_BONUS * blackCandles) *
     sc('invocationEfficiencyMul');
+  // Per-INVOCATION effectiveness (Buer #10 → familiar, Sitri #12 → succubus), keyed by id. Scales a
+  // specific invocation's effect coefficient; 1× when no such sigil is bound.
+  const invInvContrib = sigilInvocationEffectContributions(state, sigilEffectMultiplier(owned));
+  const invEffForInv = (id: string): number => invInvContrib[id] ?? 1;
   const playerEff =
     2 ** gulaLvl *
     (hasDoppel ? 1.5 : 1) *
-    (hasFamiliar ? 1.33 : 1) *
+    (hasFamiliar ? 1 + 0.33 * invEffForInv('familiar') : 1) *
     aurevoraEff *
     erinyesStackMul *
     huskEfficiencyMul *
@@ -418,7 +423,10 @@ export function computeModifiers(state: GameState): Modifiers {
       skillBonus(avaritiaIntensity) *
       (hasSilver ? 3 : 1) *
       (hasMidas ? 3 : 1) *
-      (hasSuccubus ? 1 / (1 + SUCCUBUS_GOLD_FACTOR * playerEff * invEffFor('luxuria')) : 1) *
+      (hasSuccubus
+        ? 1 /
+          (1 + SUCCUBUS_GOLD_FACTOR * playerEff * invEffFor('luxuria') * invEffForInv('succubus'))
+        : 1) *
       celebrityGoldMul *
       sc('goldRateMul'),
     influenceRateMul:
@@ -442,7 +450,9 @@ export function computeModifiers(state: GameState): Modifiers {
       skillBonus(tristitiaIntensity) *
       (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
       (1 + VOYNICH_SUASIO_BONUS * voynich) *
-      (hasSuccubus ? 1 + SUCCUBUS_SUASIO_FACTOR * playerEff * invEffFor('luxuria') : 1) *
+      (hasSuccubus
+        ? 1 + SUCCUBUS_SUASIO_FACTOR * playerEff * invEffFor('luxuria') * invEffForInv('succubus')
+        : 1) *
       sc('suasioEfficiencyMul'),
     decimatioEfficiencyMul:
       skillBonus(iraIntensity) *

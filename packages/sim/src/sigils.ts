@@ -82,6 +82,7 @@ export type SigilEffect =
   | { readonly kind: 'murderBias'; readonly subtype: ReprobateSubtype }
   | { readonly kind: 'indagatioDoubleFind' }
   | { readonly kind: 'offlineResource'; readonly resource: 'gold' | 'influence' }
+  | { readonly kind: 'invocationEffect'; readonly invocation: string }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -181,11 +182,23 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'costReduction', channel: 'influence' },
   },
+  10: {
+    id: 10,
+    name: 'Buer',
+    coefficient: 0.001,
+    effect: { kind: 'invocationEffect', invocation: 'familiar' },
+  },
   11: {
     id: 11,
     name: 'Gusion',
     coefficient: 0.001,
     effect: { kind: 'tier', tier: 'terrible', direction: 'decrease' },
+  },
+  12: {
+    id: 12,
+    name: 'Sitri',
+    coefficient: 0.001,
+    effect: { kind: 'invocationEffect', invocation: 'succubus' },
   },
   13: {
     id: 13,
@@ -822,6 +835,28 @@ export function sigilOfflineResourceMul(
     else influence *= 1 + s;
   }
   return { gold, influence };
+}
+
+/**
+ * Per-invocation effectiveness multipliers from bound sigils (Buer #10 → Familiar, Sitri #12 →
+ * Succubus). Each is a `(1 + strength)` factor on that specific invocation's effect coefficient,
+ * keyed by invocation id (distinct from the per-Sin `invocationSin` sigils). Consumed in
+ * `computeModifiers` via `invEffForInv(id)`. `effectMul` carries the sigil enhancers.
+ */
+export function sigilInvocationEffectContributions(
+  state: GameState,
+  effectMul = 1,
+): Partial<Record<string, number>> {
+  const out: Partial<Record<string, number>> = {};
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'invocationEffect') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    out[def.effect.invocation] = (out[def.effect.invocation] ?? 1) * (1 + s);
+  }
+  return out;
 }
 
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {
