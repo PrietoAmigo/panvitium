@@ -34,6 +34,7 @@ import {
   tick,
   unassignAcolyteFromAction,
   type GameState,
+  type Sin,
 } from './index.js';
 
 function fresh(seed = 'acolyte', t = 0): GameState {
@@ -49,6 +50,17 @@ function recruited(n = 1): GameState {
   const thresholds = [242, 532, 1170, 2574]; // Acolytes sheet ×2.2 series (1..4 acolytes)
   const infl = thresholds[n - 1] ?? thresholds[thresholds.length - 1]!;
   return autoRecruitAcolytes(withMaxInfluence(fresh(), infl));
+}
+
+/** Recruited + the Sin toggle levels (Luxuria 1 / Ira 1) that enable Suasio/Decimatio delegation. */
+function delegatable(n = 1): GameState {
+  const s = recruited(n);
+  return { ...s, devotion: { ...s.devotion, luxuria: bn(180), ira: bn(180) } };
+}
+
+/** Set a single Sin to a given level (180^level cumulative Devotion). */
+function setSin(s: GameState, sin: Sin, level: number): GameState {
+  return { ...s, devotion: { ...s.devotion, [sin]: bn(180 ** level) } };
 }
 
 describe('maxAcolytes', () => {
@@ -114,15 +126,23 @@ describe('autoRecruitAcolytes', () => {
   });
 });
 
-describe('isDelegatable (slice scope)', () => {
-  it('Indagatio, Suasio and Decimatio are delegatable', () => {
-    expect(isDelegatable('indagatio')).toBe(true);
-    expect(isDelegatable('suggestion')).toBe(true);
-    expect(isDelegatable('caedis')).toBe(true);
+describe('isDelegatable (toggle Sin-level gate)', () => {
+  it('Indagatio is always delegatable; the Opera rites gate on their toggle Sin level', () => {
+    expect(isDelegatable(fresh(), 'indagatio')).toBe(true);
+    // Suggestion / Caedis toggle at Luxuria / Ira 1.
+    expect(isDelegatable(fresh(), 'suggestion')).toBe(false);
+    expect(isDelegatable(setSin(fresh(), 'luxuria', 1), 'suggestion')).toBe(true);
+    expect(isDelegatable(fresh(), 'caedis')).toBe(false);
+    expect(isDelegatable(setSin(fresh(), 'ira', 1), 'caedis')).toBe(true);
+    // The higher rites toggle at 3 / 4.
+    expect(isDelegatable(setSin(fresh(), 'luxuria', 2), 'logismoi')).toBe(false);
+    expect(isDelegatable(setSin(fresh(), 'luxuria', 3), 'logismoi')).toBe(true);
+    expect(isDelegatable(setSin(fresh(), 'ira', 3), 'purgatio')).toBe(false);
+    expect(isDelegatable(setSin(fresh(), 'ira', 4), 'purgatio')).toBe(true);
   });
 
   it('Emptio is NOT delegatable (needs a per-target maleficium)', () => {
-    expect(isDelegatable('emptio')).toBe(false);
+    expect(isDelegatable(setSin(fresh(), 'luxuria', 4), 'emptio')).toBe(false);
   });
 });
 
@@ -346,10 +366,16 @@ function withReprobates(s: GameState, n: number): GameState {
 }
 
 describe('cost-outcome delegation (Suasio / Decimatio)', () => {
+  it('refuses to delegate a rite below its toggle Sin level', () => {
+    // recruited() leaves Ira at 0, so Caedis (toggle Ira 1) cannot be delegated yet.
+    const r = assignAcolyteToAction(withGold(recruited(), 1000), 'caedis');
+    expect(r.ok).toBe(false);
+  });
+
   it('assigning Decimatio pays the first cycle up front', () => {
-    const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
+    const s = withGold(delegatable(), 1000);
+    const eff = computeModifiers(s).acolyteEfficiencyMul;
     const cost = actionCycleCost('caedis', eff).gold;
-    const s = withGold(recruited(), 1000);
     const r = assignAcolyteToAction(s, 'caedis');
     if (!r.ok) throw new Error('assign caedis failed');
     expect(r.state.lifetime.gold.toNumber()).toBe(1000 - cost);
@@ -358,9 +384,9 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   });
 
   it('assigning Suasio pays influence up front', () => {
-    const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
+    const s = withInfluence(delegatable(), 100);
+    const eff = computeModifiers(s).acolyteEfficiencyMul;
     const cost = actionCycleCost('suggestion', eff).influence;
-    const s = withInfluence(recruited(), 100);
     const r = assignAcolyteToAction(s, 'suggestion');
     if (!r.ok) throw new Error('assign suasio failed');
     expect(r.state.lifetime.influence.toNumber()).toBe(100 - cost);
@@ -370,9 +396,9 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   });
 
   it('a delegated Decimatio pays at assign, runs ONE task, then retires the acolyte', () => {
-    const eff = computeModifiers(fresh()).acolyteEfficiencyMul;
+    let s = withReprobates(withGold(delegatable(), 1000), 100);
+    const eff = computeModifiers(s).acolyteEfficiencyMul;
     const cost = actionCycleCost('caedis', eff).gold;
-    let s = withReprobates(withGold(recruited(), 1000), 100);
     const r = assignAcolyteToAction(s, 'caedis'); // pays cycle 1 up front
     if (!r.ok) throw new Error('assign');
     s = r.state;
@@ -388,7 +414,7 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   });
 
   it('an acolyte assigned while broke is stalled, then runs once funded and retires', () => {
-    let s = withReprobates(withGold(recruited(), 0), 100);
+    let s = withReprobates(withGold(delegatable(), 0), 100);
     const r = assignAcolyteToAction(s, 'caedis');
     if (!r.ok) throw new Error('assign should still succeed (stalled)');
     s = r.state;
@@ -411,7 +437,7 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   });
 
   it('a stalled Decimatio acolyte does not occupy the player action slot', () => {
-    const s = withGold(recruited(), 0);
+    const s = withGold(delegatable(), 0);
     const r = assignAcolyteToAction(s, 'caedis');
     if (!r.ok) throw new Error('assign');
     expect(r.state.lifetime.actionQueue).toHaveLength(0);

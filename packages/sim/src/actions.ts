@@ -68,6 +68,13 @@ export interface ActionDef {
    * not availability). Logismoi/Imperium gate on Luxuria, Pogrom/Purgatio on Ira.
    */
   readonly unlock?: { readonly sin: Sin; readonly level: number };
+  /**
+   * Sin-level gate that enables *delegation* of this action — acolyte assignment / automation (the
+   * Suasio/Decimatio sheets' "toggle" level). Distinct from `unlock` (mere availability): an action
+   * can be playable by hand before it can be automated. Absent on Indagatio/Emptio (handled
+   * separately). Suggestion/Caedis toggle at Luxuria/Ira 1; the higher rites at 3/4.
+   */
+  readonly delegateUnlock?: { readonly sin: Sin; readonly level: number };
 }
 
 /** Whether `def` is available to start: no gate, or the gating Sin has reached the unlock level. */
@@ -176,6 +183,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { influence: 5 },
     weights: SUGGESTION_WEIGHTS,
     efficiencyMode: 'cost-outcome',
+    delegateUnlock: { sin: 'luxuria', level: 1 },
   },
   logismoi: {
     id: 'logismoi',
@@ -185,6 +193,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     weights: LOGISMOI_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'luxuria', level: 2 },
+    delegateUnlock: { sin: 'luxuria', level: 3 },
   },
   imperium: {
     id: 'imperium',
@@ -196,6 +205,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     weights: IMPERIUM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'luxuria', level: 3 },
+    delegateUnlock: { sin: 'luxuria', level: 4 },
   },
   caedis: {
     id: 'caedis',
@@ -204,6 +214,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { gold: 100 },
     weights: CAEDIS_WEIGHTS,
     efficiencyMode: 'cost-outcome',
+    delegateUnlock: { sin: 'ira', level: 1 },
   },
   pogrom: {
     id: 'pogrom',
@@ -214,6 +225,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     weights: POGROM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'ira', level: 2 },
+    delegateUnlock: { sin: 'ira', level: 3 },
   },
   purgatio: {
     id: 'purgatio',
@@ -224,6 +236,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     weights: PURGATIO_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'ira', level: 3 },
+    delegateUnlock: { sin: 'ira', level: 4 },
   },
   indagatio: {
     id: 'indagatio',

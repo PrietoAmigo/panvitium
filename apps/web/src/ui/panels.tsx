@@ -113,7 +113,7 @@ function AcolyteControls({ actionId }: { actionId: string }): ReactElement | nul
   const state = useGameStore((s) => s.state);
   const assignAcolyte = useGameStore((s) => s.assignAcolyte);
   const unassignAcolyte = useGameStore((s) => s.unassignAcolyte);
-  if (!state || !isDelegatable(actionId)) return null;
+  if (!state || !isDelegatable(state, actionId)) return null;
   const total = state.lifetime.acolytes.length;
   if (total === 0) return null; // no acolytes yet — no controls
   const assigned = assignedCount(state, actionId);

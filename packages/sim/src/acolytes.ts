@@ -22,6 +22,7 @@ import {
   runnerCycleDuration,
 } from './actions.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
+import { sinLevel } from './progression.js';
 import { advanceRunnerCycles } from './runner.js';
 import { mul, floor } from './bignum.js';
 import { ACOLYTE_THRESHOLD_BASE, ACOLYTE_THRESHOLD_GROWTH } from './constants.js';
@@ -79,11 +80,16 @@ export function autoRecruitAcolytes(state: GameState): GameState {
 }
 
 /**
- * Which actions can currently be delegated to acolytes: Indagatio (time-mode), plus the two wired
- * cost-outcome actions Suasio and Decimatio. Emptio is excluded — it needs a per-target maleficium.
+ * Which actions can currently be delegated to acolytes. Indagatio (time-mode) is always available;
+ * Emptio never (it needs a per-target maleficium). The Suasio/Decimatio rites become delegatable
+ * only once their Sin reaches the sheet's "toggle" level (`def.delegateUnlock`), e.g. Suggestion at
+ * Luxuria 1, Purgatio at Ira 4 — automating a rite is gated above merely being able to cast it.
  */
-export function isDelegatable(actionId: string): boolean {
-  return actionId === 'indagatio' || actionId === 'suggestion' || actionId === 'caedis';
+export function isDelegatable(state: GameState, actionId: string): boolean {
+  if (actionId === 'indagatio') return true;
+  const def = ACTIONS[actionId];
+  if (!def || !def.delegateUnlock) return false;
+  return sinLevel(state.devotion[def.delegateUnlock.sin]) >= def.delegateUnlock.level;
 }
 
 export type AssignmentResult =
@@ -99,7 +105,7 @@ export type AssignmentResult =
  * or the action isn't delegatable.
  */
 export function assignAcolyteToAction(state: GameState, actionId: string): AssignmentResult {
-  if (!isDelegatable(actionId)) {
+  if (!isDelegatable(state, actionId)) {
     return { ok: false, reason: `${actionId} cannot be delegated yet` };
   }
   const def = ACTIONS[actionId];
