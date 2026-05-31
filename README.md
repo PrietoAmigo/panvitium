@@ -332,8 +332,8 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   gold penalty — no such penalty exists in the model yet), and Haures #64 (Choleric-on-Choleric
   murder — Cholerics are murderers, not victims). Each needs a number or a mechanic settled on the
   spreadsheet before it can be wired without guessing.
-- **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, and the **Hand of Glory generation buff** (sim mechanic) are all done. Deliberately left for later: **(a)** the **Hand of Glory activation UI** — the sim `activateMaleficium` action and the buff exist and are tested, but the cabinet needs a "Use" affordance + an active-buff indicator wired to a store action (a UI decision: where the Use button and the remaining-time readout live in the specimen-cabinet detail view); **(b)** the **oracular reveals** (Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather — surface the relevant Opera tier distribution; an info-display feature needing a UI readout decision); **(c)** **Defixio** (single-use subtype cull whose sheet "exp ramp" magnitude is unspecified, so it is design-blocked).
-- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll. Deliberately left for later: **(a)** the _Decimatio_ UI — a _Purgatio_ row (trivial) and a _Pogrom_ **subtype picker** (the player chooses which subtype to purge; a small design element); **(b)** **placeholder magnitudes** — Imperium's action time and the Pogrom/Purgatio gold costs are flagged placeholders (the sheet leaves them as "Fill Time" / "high" / "very high gold") pending the economy pass.
+- **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, and the **Hand of Glory generation buff** (sim mechanic) are all done. Deliberately left for later: **(a)** the **Hand of Glory activation UI** — the sim `activateMaleficium` action and the buff exist and are tested, but the cabinet needs a "Use" affordance + an active-buff indicator wired to a store action (a UI decision: where the Use button and the remaining-time readout live in the specimen-cabinet detail view); **(b)** the **oracular reveals** (Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather — surface the relevant Opera tier distribution; an info-display feature needing a UI readout decision); **(c)** **Defixio** — the ramp _shape_ is now known (the cull scales exponentially with time, eᵗ), but wiring it without guessing still needs three specifics, listed in the model-decision section below: what "t" is (a single-use item has no toggle duration to read, unlike Panvitium's eᵗ — most likely lifetime-elapsed time), the base + time-scale constants (raw seconds inside eᵗ overflow immediately, so a scale is required), and how the random subtype is drawn (activation is a direct store action outside the tick's RNG-managed flow, so the RNG source/advance must be settled).
+- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll. Deliberately left for later: **(a)** the _Decimatio_ UI — a _Purgatio_ row (trivial) and a _Pogrom_ **subtype picker** (the player chooses which subtype to purge; a small design element); **(b)** one **placeholder magnitude** remains — Imperium's action time (the Suasio sheet leaves it as "Fill Time"; currently a flagged 60s). The Pogrom (1000) and Purgatio (10000) gold costs are now sheet-pinned.
 - **Emails (Opera menu) — impact-feedback system [pending design].** A new Opera-menu item that
   surfaces the in-world consequences of the player's actions as incoming correspondence: subscribed
   newsletter emails, messages from people affected by the player's businesses (e.g. class actions),
@@ -355,6 +355,17 @@ Design (presentation/interaction decisions only):
   (economy-parity 14).
 - **Emails (Opera menu).** The impact-feedback correspondence system described above — its scope,
   triggers and presentation are a Claude Design topic.
+
+**Needs a spreadsheet / model decision (not a coding or design task).** Each item below is blocked
+only on a number or mechanic being settled on the sheet; once it is, each is a straightforward slice:
+
+- **The last 4 sigils** (detail in the Sigils bullet above): Ose #57 / Orias #59 (per-second subtype
+  rebalancing — need sub-1/tick accrual pools + a sheet-pinned move-rate), Vual #47 (−Degenerate
+  gold penalty — no such penalty exists in the model), and Haures #64 (Choleric-on-Choleric murder —
+  Cholerics are murderers, not victims).
+- **Defixio's remaining specifics** (detail in the Maleficia bullet above): the eᵗ ramp's "t"
+  definition, its base + time-scale constants, and the random-subtype draw / RNG handling.
+- **Imperium's action time** — the Suasio sheet leaves it as "Fill Time" (currently a flagged 60s).
 
 Blocked on inputs that don't live in a coding session (independent of the above):
 

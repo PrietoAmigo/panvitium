@@ -221,8 +221,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     id: 'pogrom',
     category: 'decimatio',
     baseTimeSeconds: 60, // sheet: "~60s"
-    // PLACEHOLDER cost: the sheet says "high gold" without a figure (Caedis is 100). Flagged until pinned.
-    cost: { gold: 1000 },
+    cost: { gold: 1000 }, // sheet-pinned
     weights: POGROM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'ira', level: 2 },
@@ -232,8 +231,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     id: 'purgatio',
     category: 'decimatio',
     baseTimeSeconds: 3600, // sheet: "~3600s"
-    // PLACEHOLDER cost: the sheet says "very high gold" without a figure. Flagged until pinned.
-    cost: { gold: 10000 },
+    cost: { gold: 10000 }, // sheet-pinned
     weights: PURGATIO_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'ira', level: 3 },
