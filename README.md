@@ -281,6 +281,14 @@ extensions, `import type`, Prettier):
     from there, and the dead `GOETIA_PREVIEW` fixture was removed. The component itself is byte-
     identical to the prior version (only the type-import path differs) and reuses the existing
     `.goetia-*` / `.gb-*` CSS — so this is a pure refactor with no visual/behavioral change.
+  - _Ars Goetia dark restyle._ Reworked the grimoire's look to match the design screenshots: it no
+    longer renders as a bright parchment open-book — it floats **light-on-dark** over the degraded
+    room. Dropped the `open-book.png` plate, lightened the `.goetia-overlay` so the degraded room
+    shows through, and recoloured every `.goetia-*` / `.gb-*` rule onto the palette: titles / names /
+    intro / lore in parchment, ranks / stat-labels / illustration caption in gold, and the effect
+    hints, the Effect value, the back link and the Summon button in blood-red (Dispel an outline).
+    Layout, sizes and the prop-driven component are unchanged — this is the visual change the
+    component/CSS exports never actually carried.
   - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
     Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state in their designed
     shells. Backdrops: the **Studio** uses its `studio_complete.png` plate as its base so the desk PC

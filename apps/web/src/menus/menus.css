@@ -1686,7 +1686,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 1.5vh 1vw;
-  background: radial-gradient(ellipse at center, rgba(22, 13, 7, 0.86), rgba(2, 1, 1, 0.96));
+  background: radial-gradient(ellipse at center, rgba(12, 8, 4, 0.6), rgba(2, 1, 1, 0.86));
   animation: fade-in 0.4s ease both;
 }
 .goetia-close {
@@ -1715,13 +1715,13 @@ body {
   position: relative;
   width: min(97vw, calc(94vh * 1.436));
   aspect-ratio: 599 / 417;
-  background: url('/assets/panvitium/open-book.png') center / contain no-repeat;
-  filter: drop-shadow(0 30px 60px rgba(0, 0, 0, 0.85));
+  /* The grimoire floats over the degraded room — no parchment plate behind the text. */
+  background: none;
   container-type: size;
   animation: panel-rise 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
-/* Two page text columns seated on the open leaves. */
+/* Two page text columns, light on the dark descent. */
 .gb-page {
   position: absolute;
   top: 11%;
@@ -1729,7 +1729,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  color: #271c12;
+  color: var(--parchment);
   font-family: 'IM Fell English', Georgia, serif;
 }
 .gb-page--left {
@@ -1747,7 +1747,7 @@ body {
   font-size: 5.6cqh;
   line-height: 1.05;
   margin: 1cqh 0 0;
-  color: #3a2412;
+  color: var(--parchment);
   letter-spacing: 0.01em;
 }
 .gb-subtitle {
@@ -1755,15 +1755,15 @@ body {
   font-weight: 400;
   font-size: 4.4cqh;
   margin: 1cqh 0 1.6cqh;
-  color: #3a2412;
+  color: var(--parchment);
 }
 .gb-rule {
   height: 1px;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(58, 36, 18, 0.6) 20%,
-    rgba(58, 36, 18, 0.6) 80%,
+    rgba(216, 182, 88, 0.5) 20%,
+    rgba(216, 182, 88, 0.5) 80%,
     transparent
   );
   margin: 1.4cqh 0;
@@ -1771,13 +1771,13 @@ body {
 .gb-power {
   font-size: 2.5cqh;
   font-style: italic;
-  color: #5a3d1f;
+  color: var(--parchment-shadow);
   margin: 0 0 1.6cqh;
 }
 .gb-intro {
   font-size: 2.7cqh;
   line-height: 1.5;
-  color: #2c2014;
+  color: var(--parchment);
   margin: 0;
   text-align: justify;
 }
@@ -1785,7 +1785,7 @@ body {
   margin-top: auto;
   text-align: center;
   font-size: 2.3cqh;
-  color: #6a4d2a;
+  color: rgba(216, 182, 88, 0.6);
   font-style: italic;
 }
 
@@ -1807,25 +1807,25 @@ body {
   padding: 0.7cqh 0;
   cursor: pointer;
   font-family: 'IM Fell English', serif;
-  color: #271c12;
+  color: var(--parchment);
   text-align: left;
-  border-bottom: 1px dotted rgba(90, 61, 31, 0.35);
+  border-bottom: 1px dotted rgba(216, 182, 88, 0.22);
 }
 .gb-entry:hover {
-  color: #7c1417;
+  color: var(--gold-leaf);
 }
 .gb-entry:hover .gb-name {
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 .gb-entry.is-locked {
-  color: #8a7458;
+  color: var(--parchment-shadow);
   cursor: pointer;
 }
 .gb-rank {
   font-size: 2.7cqh;
   min-width: 2.4em;
-  color: #6a4d2a;
+  color: rgba(216, 182, 88, 0.7);
 }
 .gb-name {
   font-size: 3.4cqh;
@@ -1838,10 +1838,10 @@ body {
 .gb-hint {
   font-size: 2.2cqh;
   font-style: italic;
-  color: #7c1417;
+  color: #c0453c;
 }
 .gb-entry.is-locked .gb-hint {
-  color: #8a7458;
+  color: var(--parchment-shadow);
 }
 
 /* Detail leaf */
@@ -1853,12 +1853,12 @@ body {
   max-width: 94%;
   max-height: 82%;
   object-fit: contain;
-  filter: drop-shadow(0 1cqh 1.4cqh rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 1cqh 1.4cqh rgba(0, 0, 0, 0.6));
 }
 .gb-illus-cap {
   font-family: 'IM Fell English SC', serif;
   font-size: 3.4cqh;
-  color: #3a2412;
+  color: var(--gold-leaf);
   margin: 1.4cqh 0 0;
 }
 .gb-back {
@@ -1870,7 +1870,7 @@ body {
   font-family: 'IM Fell English', serif;
   font-size: 2.4cqh;
   font-style: italic;
-  color: #7c1417;
+  color: #c0453c;
 }
 .gb-back:hover {
   text-decoration: underline;
@@ -1878,7 +1878,7 @@ body {
 .gb-rank-big {
   font-family: 'IM Fell English SC', serif;
   font-size: 2.6cqh;
-  color: #6a4d2a;
+  color: rgba(216, 182, 88, 0.7);
   margin: 1.2cqh 0 0;
   letter-spacing: 0.1em;
 }
@@ -1887,7 +1887,7 @@ body {
   font-weight: 400;
   font-size: 5.2cqh;
   margin: 0;
-  color: #3a2412;
+  color: var(--parchment);
 }
 .gb-stats {
   margin: 1.4cqh 0;
@@ -1899,20 +1899,20 @@ body {
 .gb-stats dt {
   font-variant: small-caps;
   letter-spacing: 0.04em;
-  color: #6a4d2a;
+  color: rgba(216, 182, 88, 0.7);
 }
 .gb-stats dd {
   margin: 0;
-  color: #271c12;
+  color: var(--parchment);
 }
 .gb-stats dd.gb-effect {
-  color: #7c1417;
+  color: #c0453c;
   font-style: italic;
 }
 .gb-lore {
   font-size: 2.6cqh;
   line-height: 1.5;
-  color: #2c2014;
+  color: var(--parchment-shadow);
   font-style: italic;
   text-align: justify;
   margin: 0;
@@ -1933,25 +1933,25 @@ body {
 }
 .gb-summon {
   color: #f3e7d4;
-  background: #7c1417;
+  background: var(--blood);
   border: 1px solid #5a0e10;
 }
 .gb-summon:hover:not(:disabled) {
-  background: #a01e22;
+  background: var(--blood-bright);
 }
 .gb-summon:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-  background: #6a5a44;
-  border-color: #5a4c38;
+  background: #4a3b2a;
+  border-color: #3a2e20;
 }
 .gb-dispel {
-  color: #3a2412;
+  color: var(--parchment);
   background: transparent;
-  border: 1px solid #6a4d2a;
+  border: 1px solid rgba(216, 182, 88, 0.5);
 }
 .gb-dispel:hover {
-  background: rgba(90, 61, 31, 0.15);
+  background: rgba(216, 182, 88, 0.12);
 }
 
 /* ---------- Motion ---------- */
