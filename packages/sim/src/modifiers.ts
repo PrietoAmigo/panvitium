@@ -36,7 +36,7 @@
 import { SINS, SUBTYPE_OF_SIN, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
-import { countCopies, sigilEffectMultiplier } from './maleficia.js';
+import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
 import { compositumPenaltyIncreaseBySubtype, compositumOfflineGainBoost } from './compositum.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import {
@@ -475,6 +475,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // up, Zepar #16 down) compose. (Lamia is now a Suasio runner, no longer a generation source.)
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
+      (state.lifetime.handOfGloryRemaining > 0 ? HAND_OF_GLORY_GENERATION_MUL : 1) *
       skillBonus(luxuriaIntensity) *
       gamblerGenerationMul *
       sc('reprobateGenerationRateMul'),

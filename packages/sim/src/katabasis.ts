@@ -264,6 +264,7 @@ export function commitKatabasis(
     // in this lifetime are not lost. Otherwise the list clears (02 §6).
     emptioList: pendingMorpheus ? [...state.lifetime.emptioList] : [],
     maleficiaPrices: pendingMorpheus ? { ...state.lifetime.maleficiaPrices } : {},
+    handOfGloryRemaining: 0,
     activeToggles: [], // toggles stop
     toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle

@@ -17,6 +17,7 @@
  * Stackable items live in the array as duplicates (one entry per copy); `countOwned` reads them.
  */
 import { SOLOMON_RING_SIGIL_BONUS, IRON_NAILS_SIGIL_BONUS } from './constants.js';
+import type { GameState } from './state.js';
 
 export type MaleficiumRarity = 'common' | 'rare' | 'profane' | 'anathema';
 
@@ -338,4 +339,39 @@ export function sigilEffectMultiplier(owned: readonly string[]): number {
     SOLOMON_RING_SIGIL_BONUS * countCopies(owned, 'solomons_ring') +
     IRON_NAILS_SIGIL_BONUS * countCopies(owned, 'iron_nails')
   );
+}
+
+/** Hand of Glory: one use grants +100% reprobate generation for an hour (Maleficia sheet). */
+export const HAND_OF_GLORY_DURATION_SECONDS = 3600;
+export const HAND_OF_GLORY_GENERATION_MUL = 2; // +100% base generation while the buff is live
+
+export type ActivateResult =
+  | { readonly ok: true; readonly state: GameState }
+  | { readonly ok: false; readonly reason: string };
+
+/**
+ * Activate a single-use maleficium from the owned inventory. Currently only Hand of Glory is
+ * activatable: it consumes one copy and adds an hour to the generation buff (repeat activations
+ * extend the timer; the multiplier stays +100% while any time remains). Other items can't be used
+ * this way. Defixio's single-use cull is deferred — its sheet "exp ramp" magnitude is unspecified.
+ */
+export function activateMaleficium(state: GameState, id: string): ActivateResult {
+  if (id !== 'hand_of_glory') return { ok: false, reason: 'This maleficium cannot be used.' };
+  const idx = state.lifetime.maleficia.indexOf('hand_of_glory');
+  if (idx === -1) return { ok: false, reason: 'You hold no Hand of Glory.' };
+  const maleficia = [
+    ...state.lifetime.maleficia.slice(0, idx),
+    ...state.lifetime.maleficia.slice(idx + 1),
+  ];
+  return {
+    ok: true,
+    state: {
+      ...state,
+      lifetime: {
+        ...state.lifetime,
+        maleficia,
+        handOfGloryRemaining: state.lifetime.handOfGloryRemaining + HAND_OF_GLORY_DURATION_SECONDS,
+      },
+    },
+  };
 }

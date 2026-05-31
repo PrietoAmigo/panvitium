@@ -169,6 +169,7 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
     expect('buildQueue' in serialized.lifetime).toBe(false);
     expect('conversionPool' in serialized.lifetime).toBe(false);
     expect('maleficiaPrices' in serialized.lifetime).toBe(false);
+    expect('handOfGloryRemaining' in serialized.lifetime).toBe(false);
   });
 
   it('rolled maleficiaPrices round-trip through the wire; absent → empty default', () => {
@@ -197,6 +198,7 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
           { businessId: 'gula-mercatura-1', remainingSeconds: 27 },
         ],
         conversionPool: 0.42,
+        handOfGloryRemaining: 1234,
       },
     };
     const back = deserializeGameState(serializeGameState(withVitium));
@@ -205,6 +207,7 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
     expect(back.lifetime.buildQueue[0]!.businessId).toBe('luxuria-mercatura-1');
     expect(back.lifetime.buildQueue[0]!.remainingSeconds).toBe(12.5);
     expect(back.lifetime.conversionPool).toBeCloseTo(0.42, 10);
+    expect(back.lifetime.handOfGloryRemaining).toBe(1234);
   });
 });
 

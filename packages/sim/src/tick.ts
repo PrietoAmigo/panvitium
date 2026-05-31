@@ -218,6 +218,18 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
     }
   }
 
+  // 4c. Hand of Glory buff decays in real time (it lifted this tick's generation via the modifier,
+  //     evaluated at the start of the interval like the apex durations); expires at 0.
+  if (working.lifetime.handOfGloryRemaining > 0) {
+    working = {
+      ...working,
+      lifetime: {
+        ...working.lifetime,
+        handOfGloryRemaining: Math.max(0, working.lifetime.handOfGloryRemaining - deltaSeconds),
+      },
+    };
+  }
+
   // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; unlocks on a
   //    ×2.2 effective-maxInfluence threshold series — 0 at base, first at 242). Then advance each
   //    assigned acolyte's timer; completed cycles

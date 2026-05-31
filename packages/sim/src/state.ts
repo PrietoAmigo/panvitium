@@ -201,6 +201,12 @@ export interface LifetimeState {
    */
   conversionPool: number;
   /**
+   * Seconds remaining on the Hand of Glory buff (+100% reprobate generation while > 0; Maleficia
+   * sheet). Refilled by activating a Hand of Glory; decays in real time each tick. Additive-optional
+   * (ADR-023), default 0.
+   */
+  handOfGloryRemaining: number;
+  /**
    * Apex-invocation pending Katabasis modifiers (03 §2.4). Set the moment Erinyes/Morpheus is
    * summoned; consumed by `commitKatabasis` to override the carry-over rolls (Erinyes zeroes the
    * gold + maleficia fractions and stacks a permanent player-efficiency double; Morpheus maxes both
@@ -312,6 +318,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       suicidePool: 0,
       murderPool: 0,
       conversionPool: 0,
+      handOfGloryRemaining: 0,
     },
     rngState: hashSeed(seed),
     lastTickAt: now,

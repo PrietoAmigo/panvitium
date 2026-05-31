@@ -3,13 +3,19 @@ import {
   MALEFICIA,
   MALEFICIUM_IDS,
   MALEFICIUM_PRICE_RANGE,
+  activateMaleficium,
   canSurface,
   countCopies,
   findableIds,
   isStackable,
   sigilEffectMultiplier,
   totalInvokingPower,
+  HAND_OF_GLORY_DURATION_SECONDS,
+  HAND_OF_GLORY_GENERATION_MUL,
 } from './maleficia.js';
+import { createInitialState, type GameState } from './state.js';
+import { computeModifiers } from './modifiers.js';
+import { tick } from './tick.js';
 
 describe('maleficia catalog', () => {
   it('exposes a non-empty id list and every entry has a coherent shape', () => {
@@ -141,5 +147,51 @@ describe('findableIds — by rarity, honouring stack rules', () => {
     expect(before).toContain('ritual_dagger');
     const after = findableIds('rare', ['ritual_dagger'], []);
     expect(after).not.toContain('ritual_dagger');
+  });
+});
+
+describe('Hand of Glory (single-use generation buff)', () => {
+  const withItem = (n = 1): GameState => {
+    const s = createInitialState('hog', 0);
+    return { ...s, lifetime: { ...s.lifetime, maleficia: Array(n).fill('hand_of_glory') } };
+  };
+
+  it('activation consumes one copy and grants an hour of buff', () => {
+    const r = activateMaleficium(withItem(2), 'hand_of_glory');
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(countCopies(r.state.lifetime.maleficia, 'hand_of_glory')).toBe(1); // one consumed
+      expect(r.state.lifetime.handOfGloryRemaining).toBe(HAND_OF_GLORY_DURATION_SECONDS);
+    }
+  });
+
+  it('repeat activations stack the timer; refuses when none held or item not usable', () => {
+    let s = withItem(2);
+    s = (activateMaleficium(s, 'hand_of_glory') as { ok: true; state: GameState }).state;
+    s = (activateMaleficium(s, 'hand_of_glory') as { ok: true; state: GameState }).state;
+    expect(s.lifetime.handOfGloryRemaining).toBe(2 * HAND_OF_GLORY_DURATION_SECONDS);
+    expect(activateMaleficium(s, 'hand_of_glory').ok).toBe(false); // inventory now empty
+    expect(activateMaleficium(withItem(1), 'black_robe').ok).toBe(false); // not activatable
+  });
+
+  it('doubles reprobate generation while live, and is 1× when expired', () => {
+    const active = {
+      ...withItem(),
+      lifetime: { ...withItem().lifetime, handOfGloryRemaining: 100 },
+    };
+    const base = computeModifiers(withItem()).reprobateGenerationRateMul;
+    expect(computeModifiers(active).reprobateGenerationRateMul).toBeCloseTo(
+      base * HAND_OF_GLORY_GENERATION_MUL,
+      6,
+    );
+  });
+
+  it('the buff decays in real time and expires', () => {
+    const active: GameState = {
+      ...createInitialState('hog', 0),
+      lifetime: { ...createInitialState('hog', 0).lifetime, handOfGloryRemaining: 30 },
+    };
+    expect(tick(active, 10).state.lifetime.handOfGloryRemaining).toBe(20);
+    expect(tick(active, 50).state.lifetime.handOfGloryRemaining).toBe(0); // floors at 0
   });
 });
