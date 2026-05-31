@@ -134,6 +134,8 @@ interface GameStore {
   bindMore: (sigilId: number, delta: BigNum | number) => void;
   /** Release `delta` souls from a sigil back to the pool (relative; clamped to what is bound). */
   bindLess: (sigilId: number, delta: BigNum | number) => void;
+  /** Unbind every sigil at once, returning all bound souls to the pool. */
+  unbindAll: () => void;
   /**
    * Offer souls to the Eternal Sin (03 §8). No-op until every Cardinal Sin is maxed. Crossing the
    * reveal threshold raises `eternalReveal` to trigger the credits screen.
@@ -324,11 +326,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     // Entering Katabasis tears down the lifetime's productive systems immediately (businesses,
-    // toggles, actions, invocations — 02 §6) and returns bound souls to the pool for re-allocation
-    // (02 §5). The store then freezes ticking (see `advance`) so nothing accrues while the player
-    // allocates. The carry-over rolls + lifetime reset happen at `confirmKatabasis`.
+    // toggles, actions, invocations — 02 §6). Sigil bindings PERSIST across the descent: bound souls
+    // stay bound and must be released manually (the "unbind all" control or each seal's release).
+    // The store then freezes ticking (see `advance`) so nothing accrues while the player allocates.
+    // The carry-over rolls + lifetime reset happen at `confirmKatabasis`.
     set({
-      state: unbindAllSigils(enterKatabasis(current)),
+      state: enterKatabasis(current),
       katabasisPhase: 'menu',
       notice: null,
     });
@@ -370,6 +373,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const d = typeof delta === 'number' ? bn(delta) : delta;
     const target = gte(bound, d) ? sub(bound, d) : bn(0);
     set({ state: bindSigilSim(current, sigilId, target), notice: null });
+  },
+
+  unbindAll: () => {
+    const current = get().state;
+    if (!current) return;
+    set({ state: unbindAllSigils(current), notice: null });
   },
 
   offerEternal: (amount) => {

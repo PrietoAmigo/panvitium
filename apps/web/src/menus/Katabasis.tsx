@@ -7,6 +7,7 @@ import {
   SIGIL_IDS,
   sigilById,
   sigilVisible,
+  totalBound,
   eternalSinVisible,
   eternalSinRevealed,
   eternalProgress,
@@ -180,7 +181,7 @@ function EternalSinCard({ state }: { state: GameState }): ReactElement {
   );
 }
 
-/** One visible sigil's card — bind/free souls live (recoverable, 02 §5). */
+/** One visible sigil's card — bind/unbind souls live (recoverable, 02 §5). */
 function SigilCard({ id, state }: { id: number; state: GameState }): ReactElement | null {
   const bindMore = useGameStore((s) => s.bindMore);
   const bindLess = useGameStore((s) => s.bindLess);
@@ -211,7 +212,7 @@ function SigilCard({ id, state }: { id: number; state: GameState }): ReactElemen
           {strings.sigils.lock}
         </HoldButton>
         <HoldButton
-          className="sigil-free"
+          className="sigil-unbind"
           disabled={isZero(current)}
           onStep={(d) => bindLess(id, d)}
           ariaLabel={`${strings.sigils.unlock} — ${name}`}
@@ -232,6 +233,7 @@ function SigilCard({ id, state }: { id: number; state: GameState }): ReactElemen
 export function Katabasis(): ReactElement {
   const state = useGameStore((s) => s.state);
   const confirm = useGameStore((s) => s.confirmKatabasis);
+  const unbindAll = useGameStore((s) => s.unbindAll);
   const [page, setPage] = useState<'sins' | 'goetia'>('sins');
   if (!state) return <div className="katabasis" />;
 
@@ -278,6 +280,16 @@ export function Katabasis(): ReactElement {
             {SIGIL_IDS.map((id) => (
               <SigilCard key={id} id={id} state={state} />
             ))}
+            <div className="sigil-bar">
+              <button
+                type="button"
+                className="sigil-unbind-all"
+                disabled={isZero(totalBound(state))}
+                onClick={() => unbindAll()}
+              >
+                {strings.sigils.unbindAll}
+              </button>
+            </div>
           </div>
         )}
 

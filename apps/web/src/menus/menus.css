@@ -1638,21 +1638,45 @@ body {
   gap: 0.5rem;
 }
 .sigil-bind,
-.sigil-free {
+.sigil-unbind {
   flex: 1 1 0;
 }
-.sigil-free {
+.sigil-unbind {
   background: linear-gradient(#2a201e, #181210);
   border-color: #4a3a36;
   color: #bdb2aa;
 }
-.sigil-free:hover:not(:disabled) {
+.sigil-unbind:hover:not(:disabled) {
   background: linear-gradient(#3a2c28, #221a18);
 }
-.sigil-free:active:not(:disabled) {
+.sigil-unbind:active:not(:disabled) {
   background: linear-gradient(#5a4640, #33271f);
   box-shadow: none;
   color: #e8ddd6;
+}
+.sigil-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+.sigil-unbind-all {
+  padding: 0.45rem 1.4rem;
+  background: linear-gradient(#2a201e, #181210);
+  border: 1px solid #4a3a36;
+  border-radius: 0.3rem;
+  color: #bdb2aa;
+  font: inherit;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.sigil-unbind-all:hover:not(:disabled) {
+  background: linear-gradient(#3a2c28, #221a18);
+  color: #e8ddd6;
+}
+.sigil-unbind-all:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .kat-ascend {

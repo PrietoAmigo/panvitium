@@ -217,7 +217,7 @@ export const strings = {
     next: 'Onward',
     holdOffer: 'Hold to offer',
     holdLock: 'Hold to bind',
-    holdUnlock: 'Hold to free',
+    holdUnlock: 'Hold to unbind',
     recapTitle: 'You rise',
     soulsCarried: 'Souls carried',
     goldKept: 'Gold remaining',
@@ -229,10 +229,11 @@ export const strings = {
   sigils: {
     heading: 'The Goetia',
     intro:
-      'Bind souls to a seal for a passive boon \u2014 recoverable on any descent. Spread them, or pour them into one.',
-    unbind: 'Free',
+      'Bind souls to a seal for a passive boon. Bindings persist through every descent \u2014 unbind a seal to reclaim its souls.',
+    unbind: 'Unbind',
+    unbindAll: 'Unbind all',
     lock: 'Bind',
-    unlock: 'Free',
+    unlock: 'Unbind',
     names: {
       5: 'Marbas',
       6: 'Valefor',

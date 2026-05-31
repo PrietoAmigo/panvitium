@@ -2,8 +2,9 @@
  * Katabasis — the prestige loop (01, 02 §6). On Katabasis the player allocates the unspent soul
  * pool along two axes that are deliberately in tension:
  *   - Devotion offering (permanent, irreversible): raises a Sin's total → Sin levels/skills.
- *   - Sigil binding (recoverable): souls bound to a sigil grant a passive effect, re-allocatable
- *     every Katabasis — so on entering the menu, bound souls return to the pool (02 §5).
+ *   - Sigil binding (recoverable): souls bound to a sigil grant a passive effect. Bindings PERSIST
+ *     across descents; souls return to the pool only when the player unbinds a seal (or "unbind
+ *     all") — `unbindAllSigils`/`bindSigil` are the manual levers (02 §5).
  * Whatever is left over carries into the next lifetime. Committing resets the lifetime, keeping a
  * fraction of gold / unconverted reprobates / maleficia per the carry-over rolls.
  *

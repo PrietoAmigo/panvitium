@@ -460,6 +460,28 @@ describe('gameStore — sigil binding', () => {
     expect(floor(s.souls).toNumber()).toBe(10_000);
   });
 
+  it('bindings persist across a descent (no auto-unbind on beginKatabasis)', () => {
+    patchSouls(10_000);
+    store().bind(6, 4000);
+    store().bind(7, 1000); // Aamon
+    store().beginKatabasis();
+    const s = store().state as GameState;
+    expect(s.sigilBindings[6]?.toNumber()).toBe(4000);
+    expect(s.sigilBindings[7]?.toNumber()).toBe(1000);
+    expect(floor(s.souls).toNumber()).toBe(5000); // pool untouched by entering
+  });
+
+  it('unbindAll returns every bound soul to the pool at once', () => {
+    patchSouls(10_000);
+    store().bind(6, 4000);
+    store().bind(7, 1000);
+    store().unbindAll();
+    const s = store().state as GameState;
+    expect(s.sigilBindings[6]).toBeUndefined();
+    expect(s.sigilBindings[7]).toBeUndefined();
+    expect(floor(s.souls).toNumber()).toBe(10_000);
+  });
+
   it('a bound sigil changes the modifier bundle', () => {
     patchSouls(10_000);
     const before = computeModifiers(store().state as GameState).goldRateMul;
