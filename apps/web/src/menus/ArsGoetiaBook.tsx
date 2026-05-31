@@ -99,11 +99,9 @@ export function ArsGoetiaBook({
               <div className="gb-rule" />
               <p className="gb-power">Invoking power · {invokingPower}</p>
               <p className="gb-intro">
-                Every novice can recite the seventy-two kings, princes and presidents of the descent
-                — their names are half the trade in any grimoire. Yet a crown seldom stoops to
-                honest labour; it is the lesser things, the foot-soldiers and familiars of the pit,
-                who answer when there is daily work to be done. Summon what your station can hold,
-                and the unsung ranks will serve you best of all.
+                Every novice can recite the seventy-two kings, princes and presidents of the
+                descent, their names are half the trade in any grimoire. Yet a crown seldom stoops
+                to honest labour.
               </p>
             </div>
           </>

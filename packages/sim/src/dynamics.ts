@@ -54,6 +54,7 @@ import {
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobatesRandom } from './population.js';
 import { type Rng } from './rng.js';
+import { sigilConversionBiasContributions } from './sigils.js';
 import {
   type GameState,
   type ReprobateSubtype,
@@ -154,6 +155,10 @@ export function conversionBiasMul(state: GameState): Partial<Record<ReprobateSub
   const out: Partial<Record<ReprobateSubtype, number>> = {};
   if ((state.lifetime.invocations.specunitas ?? 0) > 0) {
     out.celebrity = (out.celebrity ?? 1) * SPECUNITAS_CELEBRITY_BIAS_MUL;
+  }
+  // Conversion-bias sigils (Eligos #15, Phenex #37 → Celebrity) compose multiplicatively on top.
+  for (const [subtype, mul] of Object.entries(sigilConversionBiasContributions(state))) {
+    out[subtype as ReprobateSubtype] = (out[subtype as ReprobateSubtype] ?? 1) * mul;
   }
   return out;
 }

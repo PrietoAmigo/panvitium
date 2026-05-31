@@ -14,7 +14,7 @@
 import { type BigNum, add, floor, lte, ZERO } from './bignum.js';
 import { MAX_SIN_LEVEL } from './constants.js';
 import { sinLevel } from './progression.js';
-import { SINS, type GameState, type SigilId, type Sin } from './state.js';
+import { SINS, type GameState, type ReprobateSubtype, type SigilId, type Sin } from './state.js';
 import { type Tier } from './probability.js';
 
 export type BindingCurve = 'sqrt' | 'linear' | 'log';
@@ -76,6 +76,7 @@ export type SigilEffect =
   | { readonly kind: 'flatGen'; readonly resource: 'gold' | 'influence' }
   | { readonly kind: 'invokingPower' }
   | { readonly kind: 'costReduction'; readonly channel: CostChannel }
+  | { readonly kind: 'conversionBias'; readonly subtype: ReprobateSubtype }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -179,6 +180,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       tiers: ['stellar', 'excellent', 'good'],
       direction: 'increase',
     },
+  },
+  15: {
+    id: 15,
+    name: 'Eligos',
+    coefficient: 0.001,
+    effect: { kind: 'conversionBias', subtype: 'celebrity' },
   },
   16: {
     id: 16,
@@ -299,6 +306,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Marchosias',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'maxInfluenceMul', direction: 'increase' },
+  },
+  37: {
+    id: 37,
+    name: 'Phenex',
+    coefficient: 0.001,
+    effect: { kind: 'conversionBias', subtype: 'celebrity' },
   },
   38: {
     id: 38,
@@ -633,6 +646,29 @@ export function sigilCostReductionByChannel(
     const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
     out[def.effect.channel] = (out[def.effect.channel] ?? 1) * (1 + s);
+  }
+  return out;
+}
+
+/**
+ * Per-subtype conversion-bias multipliers from bound sigils (Eligos #15, Phenex #37 → Celebrity).
+ * Each is a `(1 + strength)` factor on that subtype's weight in `biasedSubtype`, composed
+ * multiplicatively with each other and with the apex Specunitas bias (the shared `conversionBiasMul`
+ * seam in `dynamics.ts`). Strictly multiplicative on existing weights — these cannot manufacture a
+ * conversion from a subtype with zero active source. `effectMul` carries the sigil enhancers.
+ */
+export function sigilConversionBiasContributions(
+  state: GameState,
+  effectMul = 1,
+): Partial<Record<ReprobateSubtype, number>> {
+  const out: Partial<Record<ReprobateSubtype, number>> = {};
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'conversionBias') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    out[def.effect.subtype] = (out[def.effect.subtype] ?? 1) * (1 + s);
   }
   return out;
 }

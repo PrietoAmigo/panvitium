@@ -17,6 +17,7 @@ import {
   categoryEfficiency,
   categoryTierModifiers,
   computeModifiers,
+  conversionBiasMul,
   createInitialState,
   currentInvokingPower,
   invocationById,
@@ -24,6 +25,7 @@ import {
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
   sigilById,
+  sigilConversionBiasContributions,
   sigilCostReductionByChannel,
   sigilInvokingPower,
   sigilKatabasisBonus,
@@ -449,5 +451,34 @@ describe('Cost-reduction sigils (S8)', () => {
     expect(imp).toBeDefined();
     expect(invocationSoulCost(fresh(), imp!).toNumber()).toBe(100); // minimum
     expect(invocationSoulCost(bound(55, 1_000_000), imp!).toNumber()).toBe(50); // halved
+  });
+});
+
+describe('Conversion-bias sigils (S9)', () => {
+  it('Eligos #15 and Phenex #37 are named Celebrity-bias sigils', () => {
+    expect(SIGIL_IDS).toContain(15);
+    expect(SIGIL_IDS).toContain(37);
+    expect(sigilById(15)!.name).toBe('Eligos');
+    expect(sigilById(37)!.name).toBe('Phenex');
+    expect(sigilById(15)!.effect).toEqual({ kind: 'conversionBias', subtype: 'celebrity' });
+    expect(sigilById(37)!.effect).toEqual({ kind: 'conversionBias', subtype: 'celebrity' });
+  });
+
+  it('a bound conversion-bias sigil raises only its subtype weight by (1 + strength)', () => {
+    expect(sigilConversionBiasContributions(fresh())).toEqual({});
+    // 0.001 × sqrt(1e6) = 1 → factor 2 on Celebrity; no other subtype touched.
+    const c = sigilConversionBiasContributions(bound(15, 1_000_000));
+    expect(c.celebrity).toBeCloseTo(2, 6);
+    expect(Object.keys(c)).toEqual(['celebrity']);
+  });
+
+  it('Eligos and Phenex compose multiplicatively on Celebrity', () => {
+    const st = bound(37, 1_000_000, bound(15, 1_000_000));
+    expect(sigilConversionBiasContributions(st).celebrity).toBeCloseTo(4, 6); // 2 × 2
+  });
+
+  it('conversionBiasMul folds the bound sigil bias into the draw seam', () => {
+    expect(conversionBiasMul(fresh()).celebrity).toBeUndefined();
+    expect(conversionBiasMul(bound(15, 1_000_000)).celebrity).toBeCloseTo(2, 6);
   });
 });
