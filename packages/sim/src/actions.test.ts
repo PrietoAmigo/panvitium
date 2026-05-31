@@ -3,7 +3,16 @@ import { bn, floor } from './bignum.js';
 import { hashSeed, makeRng } from './rng.js';
 import { createInitialState, totalReprobates, type GameState } from './state.js';
 import { addReprobates } from './population.js';
-import { startAction, resolveAction, resolveSuggestion, resolveCaedis } from './actions.js';
+import {
+  startAction,
+  resolveAction,
+  resolveSuggestion,
+  resolveCaedis,
+  resolveLogismoi,
+  resolveImperium,
+  actionUnlocked,
+  ACTIONS,
+} from './actions.js';
 import { tick } from './tick.js';
 
 const fresh = (): GameState => createInitialState('seed', 0);
@@ -13,6 +22,10 @@ const goldOf = (s: GameState): number => floor(s.lifetime.gold).toNumber();
 const withGold = (s: GameState, g: number): GameState => ({
   ...s,
   lifetime: { ...s.lifetime, gold: bn(g) },
+});
+const withLuxuria = (s: GameState, level: number): GameState => ({
+  ...s,
+  devotion: { ...s.devotion, luxuria: bn(180 ** level) },
 });
 
 describe('startAction', () => {
@@ -49,6 +62,56 @@ describe('startAction', () => {
     expect(blocked.ok).toBe(false);
     const resolved = tick(first.state, 10).state; // caedis completes, queue empties
     expect(startAction(resolved, 'suggestion').ok).toBe(true);
+  });
+});
+
+describe('action unlock gating (Suasio sheet)', () => {
+  it('gates Logismoi at Luxuria 2 and Imperium at Luxuria 3; ungated actions are always open', () => {
+    expect(actionUnlocked(fresh(), ACTIONS.logismoi!)).toBe(false);
+    expect(actionUnlocked(withLuxuria(fresh(), 1), ACTIONS.logismoi!)).toBe(false);
+    expect(actionUnlocked(withLuxuria(fresh(), 2), ACTIONS.logismoi!)).toBe(true);
+    expect(actionUnlocked(withLuxuria(fresh(), 2), ACTIONS.imperium!)).toBe(false);
+    expect(actionUnlocked(withLuxuria(fresh(), 3), ACTIONS.imperium!)).toBe(true);
+    expect(actionUnlocked(fresh(), ACTIONS.suggestion!)).toBe(true);
+  });
+
+  it('startAction refuses a locked action, then allows it once the Sin level is reached', () => {
+    const withInf = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, influence: bn(100) },
+    });
+    expect(startAction(withInf(fresh()), 'logismoi').ok).toBe(false);
+    const ok = startAction(withInf(withLuxuria(fresh(), 2)), 'logismoi');
+    expect(ok.ok).toBe(true);
+    if (ok.ok) expect(floor(ok.state.lifetime.influence).toNumber()).toBe(75); // 100 - 25
+  });
+});
+
+describe('resolveLogismoi', () => {
+  it('good and excellent each mint 10–29 unconverted reprobates', () => {
+    for (const tier of ['good', 'excellent'] as const) {
+      const n = resolveLogismoi(fresh(), tier, rng()).lifetime.reprobates.reprobate;
+      expect(n).toBeGreaterThanOrEqual(10);
+      expect(n).toBeLessThanOrEqual(29);
+    }
+  });
+  it('stellar mints 10–29 souls', () => {
+    const s = soulsOf(resolveLogismoi(fresh(), 'stellar', rng()));
+    expect(s).toBeGreaterThanOrEqual(10);
+    expect(s).toBeLessThanOrEqual(29);
+  });
+  it('terrible culls reprobates; neutral does nothing', () => {
+    const seeded = addReprobates(fresh(), 'reprobate', 100);
+    expect(totalReprobates(resolveLogismoi(seeded, 'terrible', rng()))).toBeLessThan(100);
+    expect(totalReprobates(resolveLogismoi(seeded, 'neutral', rng()))).toBe(100);
+  });
+});
+
+describe('resolveImperium', () => {
+  it('always adds 360–1260 unconverted reprobates (fixed, player-controlled outcome)', () => {
+    const n = resolveImperium(fresh(), rng()).lifetime.reprobates.reprobate;
+    expect(n).toBeGreaterThanOrEqual(360);
+    expect(n).toBeLessThanOrEqual(1260);
   });
 });
 

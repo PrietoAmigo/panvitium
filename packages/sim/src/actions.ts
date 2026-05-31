@@ -22,7 +22,8 @@ import {
   mintSouls,
   removeReprobatesRandom,
 } from './population.js';
-import { type ActionTimer, type GameState, totalReprobates } from './state.js';
+import { type ActionTimer, type GameState, type Sin, totalReprobates } from './state.js';
+import { sinLevel } from './progression.js';
 import { type OutcomeEvent } from './events.js';
 import {
   MALEFICIA,
@@ -52,6 +53,18 @@ export interface ActionDef {
   readonly cost: ActionCost;
   readonly weights: TierWeights;
   readonly efficiencyMode: EfficiencyMode;
+  /**
+   * Sin-level gate that makes the action appear in the Opera (Suasio/Decimatio sheets). Absent =
+   * available from the first lifetime (Suggestion / Caedis, which are gated only on *delegation*,
+   * not availability). Logismoi/Imperium gate on Luxuria, Pogrom/Purgatio on Ira.
+   */
+  readonly unlock?: { readonly sin: Sin; readonly level: number };
+}
+
+/** Whether `def` is available to start: no gate, or the gating Sin has reached the unlock level. */
+export function actionUnlocked(state: GameState, def: ActionDef): boolean {
+  if (!def.unlock) return true;
+  return sinLevel(state.devotion[def.unlock.sin]) >= def.unlock.level;
 }
 
 const SUGGESTION_WEIGHTS: TierWeights = {
@@ -61,6 +74,28 @@ const SUGGESTION_WEIGHTS: TierWeights = {
   neutral: 0.15,
   bad: 0.075,
   terrible: 0.025,
+  apocalyptic: 0,
+};
+
+/** Logismoi (Suasio sheet): mid-game reprobate/soul source; richer than Suggestion. */
+const LOGISMOI_WEIGHTS: TierWeights = {
+  stellar: 0.025,
+  excellent: 0.2,
+  good: 0.575,
+  neutral: 0.125,
+  bad: 0.06,
+  terrible: 0.015,
+  apocalyptic: 0,
+};
+
+/** Imperium (Suasio sheet): no distribution — a single fixed Good outcome (player in control). */
+const IMPERIUM_WEIGHTS: TierWeights = {
+  stellar: 0,
+  excellent: 0,
+  good: 1,
+  neutral: 0,
+  bad: 0,
+  terrible: 0,
   apocalyptic: 0,
 };
 
@@ -110,6 +145,26 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { influence: 5 },
     weights: SUGGESTION_WEIGHTS,
     efficiencyMode: 'cost-outcome',
+  },
+  logismoi: {
+    id: 'logismoi',
+    category: 'suasio',
+    baseTimeSeconds: 5,
+    cost: { influence: 25 },
+    weights: LOGISMOI_WEIGHTS,
+    efficiencyMode: 'cost-outcome',
+    unlock: { sin: 'luxuria', level: 2 },
+  },
+  imperium: {
+    id: 'imperium',
+    // PLACEHOLDER time: the Suasio sheet defers Imperium's duration ("Fill Time"). 60s holds the
+    // late-game big-payoff feel until the sheet pins it; cost/effect/gating are from the sheet.
+    baseTimeSeconds: 60,
+    category: 'suasio',
+    cost: { influence: 100 },
+    weights: IMPERIUM_WEIGHTS,
+    efficiencyMode: 'cost-outcome',
+    unlock: { sin: 'luxuria', level: 3 },
   },
   caedis: {
     id: 'caedis',
@@ -165,6 +220,11 @@ export function startAction(
 ): StartResult {
   const def = ACTIONS[actionId];
   if (!def) return { ok: false, reason: `unknown action: ${actionId}` };
+
+  // Sin-level availability gate (Suasio/Decimatio sheets). Suggestion/Caedis have no gate.
+  if (!actionUnlocked(state, def)) {
+    return { ok: false, reason: 'This rite is not yet within your reach.' };
+  }
 
   // Morpheus freeze (03 §2.4): no new Opera can be started while the apex Acedia is active.
   if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
@@ -326,6 +386,12 @@ export function resolveAction(
     case 'suggestion':
       next = resolveSuggestion(state, tier, rng, eff);
       break;
+    case 'logismoi':
+      next = resolveLogismoi(state, tier, rng, eff);
+      break;
+    case 'imperium':
+      next = resolveImperium(state, rng, eff);
+      break;
     case 'caedis':
       next = resolveCaedis(state, tier, rng, eff);
       break;
@@ -385,6 +451,37 @@ export function resolveSuggestion(
     default:
       return state;
   }
+}
+
+/** Logismoi outcome effects (Suasio sheet; exported for direct testing of each tier). */
+export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
+  const units = Math.max(1, Math.floor(efficiency));
+  switch (tier) {
+    case 'stellar':
+      // group suicides → +randint(10,29) souls; efficiency scales the soul count.
+      return mintSouls(state, randint(rng, 10, 29) * units);
+    case 'excellent':
+    case 'good':
+      // (major) sin → +randint(10,29) unconverted reprobates.
+      return addReprobates(state, 'reprobate', randint(rng, 10, 29) * units);
+    case 'bad':
+      return removeReprobatesRandom(state, units, rng).state; // reject + redeem
+    case 'terrible':
+      return loseReprobatesFraction(state, 0.09, rng).state; // Church intervention
+    case 'neutral':
+    case 'apocalyptic':
+    default:
+      return state;
+  }
+}
+
+/**
+ * Imperium outcome (Suasio sheet): a single fixed result — the player is in control, so it resolves
+ * the Good outcome regardless of the rolled tier: +randint(360,1260) unconverted reprobates.
+ */
+export function resolveImperium(state: GameState, rng: Rng, efficiency = 1): GameState {
+  const units = Math.max(1, Math.floor(efficiency));
+  return addReprobates(state, 'reprobate', randint(rng, 360, 1260) * units);
 }
 
 /** Caedis outcome effects (exported for direct testing of each tier). */
