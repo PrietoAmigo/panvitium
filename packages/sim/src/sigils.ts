@@ -43,6 +43,7 @@ export type ScalarModifierField =
   | 'indagatioEfficiencyMul'
   | 'emptioEfficiencyMul'
   | 'reprobateGenerationRateMul'
+  | 'conversionRateMul'
   | 'reprobateSuicideRateMul'
   | 'nihilistSuicideMul'
   | 'cholericMurderRateMul'
@@ -83,6 +84,8 @@ export type SigilEffect =
   | { readonly kind: 'indagatioDoubleFind' }
   | { readonly kind: 'offlineResource'; readonly resource: 'gold' | 'influence' }
   | { readonly kind: 'invocationEffect'; readonly invocation: string }
+  | { readonly kind: 'murderGold' }
+  | { readonly kind: 'shutdownRefund' }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
 
 /** The four Opera action categories a per-category tier sigil can target. */
@@ -123,6 +126,12 @@ export interface SigilDef {
 
 /** The wired subset of the 72 (03 §5). Curve defaults to √ unless noted. */
 export const SIGILS: Readonly<Record<number, SigilDef>> = {
+  1: {
+    id: 1,
+    name: 'Bael',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'conversionRateMul', direction: 'increase' },
+  },
   2: {
     id: 2,
     name: 'Agares',
@@ -210,6 +219,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       tiers: ['stellar', 'excellent', 'good'],
       direction: 'increase',
     },
+  },
+  14: {
+    id: 14,
+    name: 'Leraie',
+    coefficient: 0.001,
+    effect: { kind: 'murderGold' },
   },
   15: {
     id: 15,
@@ -391,6 +406,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Raum',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'increase' },
+  },
+  45: {
+    id: 45,
+    name: 'Vine',
+    coefficient: 0.001,
+    effect: { kind: 'shutdownRefund' },
   },
   46: {
     id: 46,
@@ -857,6 +878,39 @@ export function sigilInvocationEffectContributions(
     out[def.effect.invocation] = (out[def.effect.invocation] ?? 1) * (1 + s);
   }
   return out;
+}
+
+/**
+ * Gold yielded per Choleric murder from bound `murderGold` sigils (Leraie #14). Summed strength
+ * across such sigils; 0 when none are bound (the dynamics murder loop then runs unchanged). The
+ * magnitude is a placeholder coefficient until the sheet pins it.
+ */
+export function sigilCholericMurderGoldPerKill(state: GameState, effectMul = 1): number {
+  let gold = 0;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'murderGold') continue;
+    gold += sigilStrength(def, bound) * effectMul;
+  }
+  return gold;
+}
+
+/**
+ * Multiplier on the business-shutdown gold refund fraction from bound `shutdownRefund` sigils
+ * (Vine #45). Composed `(1 + strength)`; 1× when none are bound (refund unchanged). The caller
+ * clamps the effective fraction to ≤ 1 so a shutdown can never refund more than the build cost.
+ */
+export function sigilShutdownRefundMul(state: GameState, effectMul = 1): number {
+  let mul = 1;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'shutdownRefund') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s > 0) mul *= 1 + s;
+  }
+  return mul;
 }
 
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {

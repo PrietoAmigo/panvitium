@@ -26,9 +26,12 @@ import {
   makeRng,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
+  reprobateRates,
   resolveIndagatio,
+  shutdownRefundFraction,
   sigilById,
   sigilCategoryTierContributions,
+  sigilCholericMurderGoldPerKill,
   sigilConversionBiasContributions,
   sigilCostReductionByChannel,
   sigilIndagatioDoubleFindChance,
@@ -38,6 +41,7 @@ import {
   sigilModifierContributions,
   sigilMurderBiasContributions,
   sigilOfflineResourceMul,
+  sigilShutdownRefundMul,
   sigilStrength,
   sigilVisible,
   SIGIL_IDS,
@@ -710,5 +714,55 @@ describe('Per-invocation effectiveness sigils (S15)', () => {
       computeModifiers(fresh()).suasioEfficiencyMul,
       9,
     );
+  });
+});
+
+describe('Sigil one-offs (S16): conversion rate, murder gold, shutdown refund', () => {
+  it('Bael #1 lifts the overall conversion rate', () => {
+    expect(sigilById(1)!.effect).toEqual({
+      kind: 'modifier',
+      field: 'conversionRateMul',
+      direction: 'increase',
+    });
+    expect(computeModifiers(bound(1, 1_000_000)).conversionRateMul).toBeCloseTo(2, 6);
+    expect(computeModifiers(fresh()).conversionRateMul).toBe(1);
+    // Behavioural: a Compositum conversion source scales with the mul.
+    const withSrc = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, activeToggles: ['loan-shark-op'] },
+    });
+    const rate = (s: GameState): number =>
+      reprobateRates(s, computeModifiers(s)).conversionPerSecond;
+    const base = rate(withSrc(fresh()));
+    expect(base).toBeGreaterThan(0);
+    expect(rate(withSrc(bound(1, 1_000_000)))).toBeCloseTo(base * 2, 6);
+  });
+
+  it('Leraie #14 yields gold on each Choleric murder, inert when unbound', () => {
+    expect(sigilById(14)!.effect).toEqual({ kind: 'murderGold' });
+    expect(sigilCholericMurderGoldPerKill(bound(14, 1_000_000))).toBeCloseTo(1, 6); // 0.001×sqrt(1e6)
+    expect(sigilCholericMurderGoldPerKill(fresh())).toBe(0);
+    // Seed 5 pending murders against a pool of gamblers; a tiny step drains only those.
+    const seed = (s: GameState): GameState => ({
+      ...s,
+      lifetime: {
+        ...s.lifetime,
+        reprobates: { ...s.lifetime.reprobates, gambler: 10 },
+        murderPool: 5,
+      },
+    });
+    const goldAfter = (s: GameState): number =>
+      applyReprobateDynamics(seed(s), 1e-6, makeRng(7)).lifetime.gold.toNumber();
+    const base = goldAfter(fresh());
+    const leraie = goldAfter(bound(14, 1_000_000));
+    expect(leraie - base).toBeCloseTo(5, 6); // 5 murders × 1 gold each
+  });
+
+  it('Vine #45 raises the shutdown refund fraction, clamped to ≤ 1', () => {
+    expect(sigilById(45)!.effect).toEqual({ kind: 'shutdownRefund' });
+    expect(sigilShutdownRefundMul(bound(45, 1_000_000))).toBeCloseTo(2, 6);
+    expect(shutdownRefundFraction(fresh())).toBeCloseTo(0.25, 6); // base fraction
+    expect(shutdownRefundFraction(bound(45, 1_000_000))).toBeCloseTo(0.5, 6); // 0.25 × 2
+    expect(shutdownRefundFraction(bound(45, 1e18))).toBe(1); // clamp: never more than build cost
   });
 });

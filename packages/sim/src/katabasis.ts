@@ -13,7 +13,8 @@
  * fractions, with the hooks marked. All randomness comes from the injected save RNG (ADR-011).
  */
 import { add, clamp, floor, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
-import { businessById, SHUTDOWN_REFUND_FRACTION } from './businesses.js';
+import { businessById } from './businesses.js';
+import { shutdownRefundFraction } from './builds.js';
 import { sigilKatabasisBonus } from './sigils.js';
 import { sigilEffectMultiplier } from './maleficia.js';
 import {
@@ -135,7 +136,7 @@ export function enterKatabasis(state: GameState): GameState {
     if (!count) continue;
     const def = businessById(bid);
     if (!def) continue;
-    const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION) * count;
+    const refund = Math.floor(def.buildCost * shutdownRefundFraction(state)) * count;
     if (refund > 0) gold = add(gold, refund);
   }
   const acolytes = state.lifetime.acolytes.map((a) => ({
@@ -208,7 +209,7 @@ export function commitKatabasis(
     if (!count) continue;
     const def = businessById(bid);
     if (!def) continue;
-    const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION) * count;
+    const refund = Math.floor(def.buildCost * shutdownRefundFraction(state)) * count;
     if (refund > 0) goldAtDescent = add(goldAtDescent, refund);
   }
 

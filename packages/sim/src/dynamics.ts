@@ -54,7 +54,12 @@ import {
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobatesRandom } from './population.js';
 import { type Rng } from './rng.js';
-import { sigilConversionBiasContributions, sigilMurderBiasContributions } from './sigils.js';
+import {
+  sigilConversionBiasContributions,
+  sigilMurderBiasContributions,
+  sigilCholericMurderGoldPerKill,
+} from './sigils.js';
+import { add } from './bignum.js';
 import {
   type GameState,
   type ReprobateSubtype,
@@ -108,7 +113,8 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
     suicidePerSecond: suicideBase * population * mods.reprobateSuicideRateMul + enragingDeaths,
     murderPerSecond: murderBase * cholerics * mods.cholericMurderRateMul,
     conversionPerSecond:
-      businessConversionPerSecond(state) * vmMul + compositumConversionPerSecond(state),
+      (businessConversionPerSecond(state) * vmMul + compositumConversionPerSecond(state)) *
+      mods.conversionRateMul,
   };
 }
 
@@ -317,13 +323,23 @@ export function applyReprobateDynamics(
   //    Murder-victim bias (Glasya-Labolas/Sabnock/Camio) is constant across the loop — bindings
   //    don't change mid-tick — so compute it once.
   const murderBias = sigilMurderBiasContributions(working);
+  // Leraie #14: each Choleric murder also yields gold. 0 when unbound, so the loop (and its RNG
+  // draws) stay byte-identical to the no-sigil path; only the gold ledger changes when bound.
+  const murderGoldPerKill = sigilCholericMurderGoldPerKill(working);
   while (working.lifetime.murderPool >= 1 && nonCholericCount(working) > 0) {
     const after = removeOneNonCholeric(working, rng, murderBias);
     if (after === working) break;
     const withSoul = mintSouls(after, 1);
     working = {
       ...withSoul,
-      lifetime: { ...withSoul.lifetime, murderPool: working.lifetime.murderPool - 1 },
+      lifetime: {
+        ...withSoul.lifetime,
+        gold:
+          murderGoldPerKill > 0
+            ? add(withSoul.lifetime.gold, murderGoldPerKill)
+            : withSoul.lifetime.gold,
+        murderPool: working.lifetime.murderPool - 1,
+      },
     };
   }
 

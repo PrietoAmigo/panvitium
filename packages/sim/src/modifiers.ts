@@ -107,6 +107,13 @@ export interface Modifiers {
    */
   readonly reprobateGenerationRateMul: number;
   /**
+   * Multiplier on the overall Vitium conversion rate — unconverted reprobates → subtypes (02 §9).
+   * Composes on the summed business + Compositum conversion-per-second. Bael #1 sigil lifts it.
+   * Default 1×. (Distinct from the per-subtype `conversionBias` sigils, which only reweight *which*
+   * subtype a conversion produces, not how many conversions happen.)
+   */
+  readonly conversionRateMul: number;
+  /**
    * Multiplier on the population-wide reprobate suicide rate (02 §9). Tristitia / Resignation
    * raises it (via skill intensity); Tristitia level applies a per-level 2× on top. Nihilist
    * count, Crocell #49, Focalor #41, Ronove #27 will attach here as their systems land.
@@ -184,6 +191,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   emptioEfficiencyMul: 1,
   tierWeightMul: {},
   reprobateGenerationRateMul: 1,
+  conversionRateMul: 1,
   reprobateSuicideRateMul: 1,
   cholericMurderRateMul: 1,
   vitiumMercaturaOutputMul: 1,
@@ -470,6 +478,8 @@ export function computeModifiers(state: GameState): Modifiers {
       skillBonus(luxuriaIntensity) *
       gamblerGenerationMul *
       sc('reprobateGenerationRateMul'),
+    // Overall conversion rate: Bael #1 sigil composes (the per-subtype bias sigils are separate).
+    conversionRateMul: sc('conversionRateMul'),
     // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
     // Panvitium multiplies while active; Degenerate subtype drags it down; Nihilist subtype lifts
     // it; Crocell #49 sigil composes.

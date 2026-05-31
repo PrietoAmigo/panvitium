@@ -169,7 +169,7 @@ factor × the player's current action efficiency × the invocation-effect multip
 | I2  | Additive-to-base effects           | Nightmare → additive to base suicide rate (new `flatBaseSuicideRatePerSecond` bundle field, added in `dynamics` alongside the Doom toggle); Behemoth → additive Stellar weight (factor 0.0005, deferred past the tierAcc block for its `playerEff` dependency); Lemure → offline gain rate, retargeted off the wrong influence/Husk target (`flatInfluencePerSecond` now reserved for the Decarabia #69 sigil). All efficiency-scaled. |
 | I3  | Lamia runner                       | Reclassified Lamia from a generation + Suasio-success modifier into an autonomous Suasio runner (`autonomous: { action: 'suggestion', efficiency: 0.05 }`), advanced by `runner.ts` like Familiar/Upir/Imp. Removed its `reprobateGenerationRateMul` and `categoryTierModifiers` contributions (and the dead `LAMIA_*` constants).                                                                                                     |
 
-**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~65 of 72 now
+**Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~68 of 72 now
 bindable, the rest pending their effect mechanics):
 
 | #   | Slice                            | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -321,12 +321,12 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Sigils** — ~65 of 72 are wired (see the per-slice S1–S15 table under Status). Still open:
-  Bael #1 (Vitium conversion rate), Leraie #14 (Choleric-murder gold bonus) and Vine #45 (business
-  shutdown gold recovery) — each a small one-off hook. Deferred pending design/model decisions:
-  Ose #57 / Orias #59 (per-second subtype rebalancing — needs sub-1/tick accrual pools + a sheet
-  move-rate), Vual #47 (−Degenerate gold penalty — no such penalty in the model yet), and
-  Haures #64 (Choleric-on-Choleric murder — Cholerics are murderers, not victims).
+- **Sigils** — 68 of 72 are wired (see the per-slice S1–S16 table under Status). The last 4 are all
+  blocked on a design/model decision rather than effort: Ose #57 / Orias #59 (per-second subtype
+  rebalancing — needs sub-1/tick accrual pools + a sheet-pinned move-rate), Vual #47 (−Degenerate
+  gold penalty — no such penalty exists in the model yet), and Haures #64 (Choleric-on-Choleric
+  murder — Cholerics are murderers, not victims). Each needs a number or a mechanic settled on the
+  spreadsheet before it can be wired without guessing.
 - **Maleficia effects** — roster, invoking power, stack caps, the Opera-efficiency enhancers
   (Ars Serpens / Voynich / Ritual Dagger), the sigil-effect amplifiers (Solomon's Ring / Iron Nails),
   and the invocation-effect multiplier (Black Candles) are done. Still to wire: the oracular reveals,

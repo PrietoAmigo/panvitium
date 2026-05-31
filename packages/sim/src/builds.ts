@@ -9,13 +9,14 @@
  *   - The build cost (gold) is paid up-front at start; build success is deterministic — no tier
  *     roll, no probability of failure (03 §2.3: "These actions are deterministic — no tier roll").
  *
- * Manual shutdown is instant (no timer) and refunds a fraction of the original buildCost. The
- * default is `SHUTDOWN_REFUND_FRACTION` (0.5); Vine #45 raises it in a future sigil-effects slice.
- * Auto-shutdown at Katabasis uses the same refund into the gold pool BEFORE the carry-over roll
- * (see `katabasis.ts`).
+ * Manual shutdown is instant (no timer) and refunds a fraction of the original buildCost. The base
+ * is `SHUTDOWN_REFUND_FRACTION`; a bound Vine #45 sigil lifts it (clamped to ≤ 1) via
+ * `shutdownRefundFraction`. Auto-shutdown at Katabasis uses the same fraction into the gold pool
+ * BEFORE the carry-over roll (see `katabasis.ts`).
  */
 import { add, floor, gte, sub } from './bignum.js';
 import { businessById, SHUTDOWN_REFUND_FRACTION } from './businesses.js';
+import { sigilShutdownRefundMul } from './sigils.js';
 import { type Modifiers } from './modifiers.js';
 import { sinLevel } from './progression.js';
 import { type BuildTimer, type GameState, type VitiumConversionSource } from './state.js';
@@ -78,6 +79,15 @@ export type ShutdownResult =
  * `floor(buildCost × SHUTDOWN_REFUND_FRACTION)` gold and decrements the owned count by 1.
  * If the count hits 0 the key is deleted from the businesses map so empty-state stays clean.
  */
+/**
+ * Effective business-shutdown refund fraction: the base `SHUTDOWN_REFUND_FRACTION` lifted by any
+ * bound Vine #45 sigil, clamped to ≤ 1 so a shutdown can never refund more than the build cost.
+ * Shared by the manual shutdown and both Katabasis descent paths so they stay in lockstep.
+ */
+export function shutdownRefundFraction(state: GameState): number {
+  return Math.min(1, SHUTDOWN_REFUND_FRACTION * sigilShutdownRefundMul(state));
+}
+
 export function shutdownBusiness(state: GameState, businessId: string): ShutdownResult {
   const def = businessById(businessId);
   if (!def) return { ok: false, reason: `unknown business: ${businessId}` };
@@ -85,7 +95,7 @@ export function shutdownBusiness(state: GameState, businessId: string): Shutdown
   const count = state.lifetime.businesses[businessId] ?? 0;
   if (count <= 0) return { ok: false, reason: 'no such business owned' };
 
-  const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION);
+  const refund = Math.floor(def.buildCost * shutdownRefundFraction(state));
   const businesses = { ...state.lifetime.businesses };
   if (count === 1) delete businesses[businessId];
   else businesses[businessId] = count - 1;
