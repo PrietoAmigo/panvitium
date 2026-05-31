@@ -13,18 +13,19 @@ import type { DegradedSceneProps } from './types.js';
 
 /** Small image cache — loads urls once, re-renders when each decodes. */
 function useImages(urls: string[]): Record<string, HTMLImageElement> {
-  const cache = useRef<Record<string, HTMLImageElement>>({});
-  const [, force] = useState(0);
+  // Stored in state (not a ref): each decode yields a NEW object, so consumers that depend on the
+  // returned map actually re-run when an image loads. (A mutated ref keeps the same identity, which
+  // left the first visit to a room black — the scene never recomposed once the plate decoded.)
+  const [cache, setCache] = useState<Record<string, HTMLImageElement>>({});
   const key = urls.join('|');
   useEffect(() => {
     let alive = true;
     for (const u of urls) {
-      if (!u || cache.current[u]) continue;
+      if (!u || cache[u]) continue;
       const im = new Image();
       im.onload = (): void => {
         if (!alive) return;
-        cache.current[u] = im;
-        force((n) => n + 1);
+        setCache((prev) => (prev[u] ? prev : { ...prev, [u]: im }));
       };
       im.src = u;
     }
@@ -33,7 +34,7 @@ function useImages(urls: string[]): Record<string, HTMLImageElement> {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  return cache.current;
+  return cache;
 }
 
 export function DegradedScene({
