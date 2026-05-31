@@ -123,7 +123,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   const goldPerSecond =
     (BASE_GOLD_PER_SECOND +
       businessGoldPerSecond(state, mods) * mods.vitiumMercaturaOutputMul +
-      compositumGoldPerSecond(state) +
+      compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
     mods.goldRateMul *
     offlineGoldMul;

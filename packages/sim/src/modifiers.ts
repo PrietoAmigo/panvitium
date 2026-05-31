@@ -124,6 +124,11 @@ export interface Modifiers {
    */
   readonly vitiumMercaturaOutputMul: number;
   /**
+   * Multiplier on Vitium Compositum gold output (Zagan #61). Applied to `compositumGoldPerSecond`
+   * at the tick's gold-income site, parallel to `vitiumMercaturaOutputMul` for businesses. Default 1×.
+   */
+  readonly vitiumCompositumOutputMul: number;
+  /**
    * Per-acolyte action efficiency (02 §10). Default 0.33: an acolyte runs an action at one-third
    * of the player's own efficiency. Future sources fold in multiplicatively: Bathin #18, Satan
    * level (each +33%), other acolyte-tagged sigils. Read by the acolyte tick when starting a new
@@ -181,6 +186,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   reprobateSuicideRateMul: 1,
   cholericMurderRateMul: 1,
   vitiumMercaturaOutputMul: 1,
+  vitiumCompositumOutputMul: 1,
   acolyteEfficiencyMul: 0.33,
   invocationEfficiencyMul: 1,
   invocationSinEffectivenessMul: {
@@ -477,6 +483,8 @@ export function computeModifiers(state: GameState): Modifiers {
     vitiumMercaturaOutputMul:
       (1 + PLUTUS_VM_FACTOR * playerEff * invEffFor('avaritia') * plutusCount) *
       sc('vitiumMercaturaOutputMul'),
+    // Vitium Compositum gold output: Zagan #61 sigil composes; applied to compositumGoldPerSecond.
+    vitiumCompositumOutputMul: sc('vitiumCompositumOutputMul'),
     // Acolyte efficiency: 0.33 baseline (02 §10); Ira level lifts ×1.33/level (03 §1 Retribution);
     // Bathin #18 sigil composes on top.
     acolyteEfficiencyMul:

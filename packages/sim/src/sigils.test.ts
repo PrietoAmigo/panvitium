@@ -642,3 +642,37 @@ describe('Offline resource-rate sigils (S13)', () => {
     expect(infGain(2)).toBeCloseTo(infGain() * 2, 6);
   });
 });
+
+describe('Vitium Compositum output sigil (S14)', () => {
+  it('Zagan #61 lifts Compositum gold output (Ose #57 / Orias #59 deferred)', () => {
+    expect(sigilById(61)!.effect).toEqual({
+      kind: 'modifier',
+      field: 'vitiumCompositumOutputMul',
+      direction: 'increase',
+    });
+    expect(sigilById(61)!.name).toBe('Zagan');
+    // The re-conversion rebalancing sigils are not yet wired.
+    expect(SIGIL_IDS).not.toContain(57);
+    expect(SIGIL_IDS).not.toContain(59);
+    // 0.001 × sqrt(1e6) = 1 → ×2 on the field.
+    expect(computeModifiers(bound(61, 1_000_000)).vitiumCompositumOutputMul).toBeCloseTo(2, 6);
+    expect(computeModifiers(fresh()).vitiumCompositumOutputMul).toBe(1);
+  });
+
+  it('scales gold income from an active Compositum toggle', () => {
+    // loan-shark-op produces 100 gold/s but needs 10 influence/s upkeep; stock influence so it
+    // stays active, and force it on without going through activateToggle for the test.
+    const withToggle = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, activeToggles: ['loan-shark-op'], influence: bn(100) },
+    });
+    const gain = (s: GameState): number => {
+      const after = tick(s, 1).state;
+      return after.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
+    };
+    const base = gain(withToggle(fresh()));
+    const zagan = gain(withToggle(bound(61, 1_000_000)));
+    // Compositum's 100 gold/s doubles; the BASE_GOLD_PER_SECOND term is unaffected.
+    expect(zagan).toBeCloseTo(base + 100, 6);
+  });
+});

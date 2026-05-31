@@ -47,6 +47,7 @@ export type ScalarModifierField =
   | 'nihilistSuicideMul'
   | 'cholericMurderRateMul'
   | 'vitiumMercaturaOutputMul'
+  | 'vitiumCompositumOutputMul'
   | 'acolyteEfficiencyMul'
   | 'invocationEfficiencyMul'
   | 'offlineTimeMul';
@@ -474,6 +475,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Vapula',
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'vitiumMercaturaOutputMul', direction: 'increase' },
+  },
+  61: {
+    id: 61,
+    name: 'Zagan',
+    coefficient: 0.001,
+    effect: { kind: 'modifier', field: 'vitiumCompositumOutputMul', direction: 'increase' },
   },
   62: {
     id: 62,
