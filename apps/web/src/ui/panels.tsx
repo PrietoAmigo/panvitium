@@ -34,6 +34,7 @@ import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
 import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { buildAltar } from '../game/altar.js';
 import { buildCabinet } from '../game/maleficia.js';
+import { pogromTargets } from '../game/decimatio.js';
 import { useGameStore } from '../store/gameStore.js';
 import { actionName } from '../game/labels.js';
 
@@ -210,24 +211,124 @@ function OutcomeLog(): ReactElement {
   );
 }
 
-/** Decimatio actions (only Caedis wired so far). */
+/** A gated Opera row shown before its Sin level is reached: name + the requirement, dimmed. */
+function LockedRow({ name, gate }: { name: string; gate: string }): ReactElement {
+  return (
+    <div className="opera-action opera-action--locked">
+      <div className="opera-meta">
+        <span className="opera-name">{name}</span>
+        <span className="opera-cost">{gate}</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Pogrom (Decimatio): purges one *chosen* reprobate subtype, so it carries a subtype picker. The
+ * picker offers only present subtypes (via `pogromTargets`); casting wires the chosen subtype through
+ * `act('pogrom', subtype)`. No acolyte delegation here on purpose — a delegated Pogrom runs with no
+ * target (it would purge nothing yet still risk the bad-tier penalties), so automating it waits on a
+ * target-selection design for acolytes.
+ */
+function PogromRow({ cost, disabled }: { cost: number; disabled: boolean }): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const act = useGameStore((s) => s.act);
+  const [target, setTarget] = useState<string>('');
+  const targets = state ? pogromTargets(state) : [];
+  const none = targets.length === 0;
+  // Keep the selection valid as the population shifts (a culled subtype can vanish mid-view).
+  const selected = targets.some((t) => t.subtype === target) ? target : (targets[0]?.subtype ?? '');
+  return (
+    <div className="opera-action">
+      <div className="opera-meta">
+        <span className="opera-name">{strings.opera.pogrom}</span>
+        <span className="opera-cost">
+          {cost} {strings.resources.gold} · {ACTIONS.pogrom?.baseTimeSeconds ?? 0}s
+        </span>
+      </div>
+      <select
+        className="pogrom-target"
+        aria-label={strings.opera.pogromTarget}
+        value={selected}
+        disabled={none}
+        onChange={(e) => setTarget(e.target.value)}
+      >
+        {none ? (
+          <option value="">{strings.opera.pogromEmpty}</option>
+        ) : (
+          targets.map((t) => (
+            <option key={t.subtype} value={t.subtype}>
+              {t.label} ({t.count})
+            </option>
+          ))
+        )}
+      </select>
+      <button
+        type="button"
+        className="opera-btn"
+        disabled={disabled || none || selected === ''}
+        onClick={() => act('pogrom', selected)}
+      >
+        {strings.opera.purge}
+      </button>
+    </div>
+  );
+}
+
+/** Decimatio actions: Caedis (always open), then Pogrom and Purgatio, each gated by their Ira level. */
 function DecimatioGroup(): ReactElement {
-  const gold = useGameStore((s) => (s.state ? floor(s.state.lifetime.gold).toNumber() : 0));
-  const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'decimatio') : 1));
+  const state = useGameStore((s) => s.state);
   const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
   const underway = useUnderway();
-  const cost = Math.ceil((ACTIONS.caedis?.cost.gold ?? 0) * eff);
+  if (!state) return <></>;
+  const gold = floor(state.lifetime.gold).toNumber();
+  const eff = categoryEfficiency(state, 'decimatio');
+  const cap = (w: string): string => w.charAt(0).toUpperCase() + w.slice(1);
+  const goldCost = (id: 'caedis' | 'pogrom' | 'purgatio'): number =>
+    Math.ceil((ACTIONS[id]?.cost.gold ?? 0) * eff);
+  const pogromDef = ACTIONS.pogrom;
+  const purgatioDef = ACTIONS.purgatio;
+  const caedisCost = goldCost('caedis');
   return (
     <>
       <ActionRow
         name={strings.opera.caedis}
-        cost={`${cost} ${strings.resources.gold} · 10s`}
+        cost={`${caedisCost} ${strings.resources.gold} · 10s`}
         cta={strings.opera.cull}
-        disabled={underway || gold < cost}
+        disabled={underway || gold < caedisCost}
         onAct={() => act('caedis')}
         delegation={<AcolyteControls actionId="caedis" />}
       />
+      {pogromDef &&
+        (actionUnlocked(state, pogromDef) ? (
+          <PogromRow cost={goldCost('pogrom')} disabled={underway || gold < goldCost('pogrom')} />
+        ) : (
+          pogromDef.unlock && (
+            <LockedRow
+              name={strings.opera.pogrom}
+              gate={`${cap(pogromDef.unlock.sin)} ${pogromDef.unlock.level}`}
+            />
+          )
+        ))}
+      {purgatioDef &&
+        (actionUnlocked(state, purgatioDef) ? (
+          <ActionRow
+            name={strings.opera.purgatio}
+            cost={`${goldCost('purgatio')} ${strings.resources.gold} · ${purgatioDef.baseTimeSeconds}s`}
+            cta={strings.opera.purge}
+            disabled={underway || gold < goldCost('purgatio')}
+            onAct={() => act('purgatio')}
+            delegation={<AcolyteControls actionId="purgatio" />}
+          />
+        ) : (
+          purgatioDef.unlock && (
+            <LockedRow
+              name={strings.opera.purgatio}
+              gate={`${cap(purgatioDef.unlock.sin)} ${purgatioDef.unlock.level}`}
+            />
+          )
+        ))}
       {underway && <p className="opera-hint">{strings.opera.underway}</p>}
       {notice !== null && <p className="opera-notice">{notice}</p>}
     </>

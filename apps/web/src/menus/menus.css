@@ -708,6 +708,21 @@ body {
   color: var(--ink);
   border-color: #7a6740;
 }
+.pogrom-target {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: rgba(231, 216, 180, 0.18);
+  border: 1px solid #7a6740;
+  border-radius: 3px;
+  padding: 0.4rem 0.5rem;
+  cursor: pointer;
+}
+.pogrom-target:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 .opera-notice {
   color: var(--blood-bright);
   font-style: italic;
