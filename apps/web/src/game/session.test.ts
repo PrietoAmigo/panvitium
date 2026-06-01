@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { bn, BASE_GOLD_PER_SECOND, eq, type GameState } from '@panvitium/sim';
-import { startNewGame, resumeGame, MAX_OFFLINE_SECONDS } from './session.js';
+import { bn, BASE_GOLD_PER_SECOND, eq, gt, type GameState } from '@panvitium/sim';
+import {
+  startNewGame,
+  resumeGame,
+  offlineRecap,
+  MAX_OFFLINE_SECONDS,
+  MIN_OFFLINE_RECAP_SECONDS,
+} from './session.js';
 
 describe('session', () => {
   it('starts a new game at the given time with empty resources', () => {
@@ -61,5 +67,37 @@ describe('session', () => {
     const infBase = resumeGame(base, offlineMs).lifetime.influence.toNumber();
     const infSallos = resumeGame(sallos, offlineMs).lifetime.influence.toNumber();
     expect(infSallos).toBeCloseTo(infBase, 6);
+  });
+});
+
+describe('offlineRecap (welcome-back, 5.4)', () => {
+  it('returns null for a short absence (below the recap threshold)', () => {
+    const saved = startNewGame(0);
+    const now = (MIN_OFFLINE_RECAP_SECONDS - 5) * 1000;
+    expect(offlineRecap(saved, resumeGame(saved, now), now)).toBeNull();
+  });
+
+  it('reports away time and net gains after a meaningful absence', () => {
+    const saved = startNewGame(0);
+    const now = 3600 * 1000; // 1 hour
+    const recap = offlineRecap(saved, resumeGame(saved, now), now);
+    expect(recap).not.toBeNull();
+    expect(recap!.awaySeconds).toBe(3600);
+    expect(recap!.capped).toBe(false);
+    expect(gt(recap!.gold, bn(0))).toBe(true); // base gold accrues offline
+  });
+
+  it('flags a capped absence and clamps the reported away time', () => {
+    const saved = startNewGame(0);
+    const now = (MAX_OFFLINE_SECONDS + 100_000) * 1000;
+    const recap = offlineRecap(saved, resumeGame(saved, now), now);
+    expect(recap!.capped).toBe(true);
+    expect(recap!.awaySeconds).toBe(MAX_OFFLINE_SECONDS);
+  });
+
+  it('returns null while frozen mid-descent (the Katabasis menu reopens instead)', () => {
+    const saved: GameState = { ...startNewGame(0), inKatabasis: true };
+    const now = 3600 * 1000;
+    expect(offlineRecap(saved, resumeGame(saved, now), now)).toBeNull();
   });
 });

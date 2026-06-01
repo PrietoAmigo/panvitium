@@ -12,7 +12,7 @@ import {
   deserializeGameState,
   type SaveBlob,
 } from '@panvitium/shared';
-import { resumeGame, startNewGame } from '../game/session.js';
+import { resumeGame, startNewGame, offlineRecap, type OfflineRecap } from '../game/session.js';
 
 const SAVE_KEY = 'panvitium:save';
 const DEVICE_KEY = 'panvitium:deviceId';
@@ -22,6 +22,8 @@ export interface LoadedGame {
   state: GameState;
   saveVersion: number;
   deviceId: string;
+  /** The "while you were away" recap when resuming after a meaningful absence, else null. */
+  offlineRecap: OfflineRecap | null;
 }
 
 /** Get this device's stable id, creating and persisting one on first run. */
@@ -52,10 +54,13 @@ export function loadGame(now: number = Date.now()): LoadedGame {
   const blob = loadSaveBlob();
   if (blob) {
     try {
+      const saved = deserializeGameState(blob.state);
+      const state = resumeGame(saved, now);
       return {
-        state: resumeGame(deserializeGameState(blob.state), now),
+        state,
         saveVersion: blob.saveVersion,
         deviceId,
+        offlineRecap: offlineRecap(saved, state, now),
       };
     } catch (err) {
       // The blob validated against the schema but could not be resumed (deserialize or offline
@@ -63,7 +68,7 @@ export function loadGame(now: number = Date.now()): LoadedGame {
       console.error('Failed to resume saved game; starting fresh.', err);
     }
   }
-  return { state: startNewGame(now), saveVersion: 0, deviceId };
+  return { state: startNewGame(now), saveVersion: 0, deviceId, offlineRecap: null };
 }
 
 /** Write the current state to localStorage as a SaveBlob. */

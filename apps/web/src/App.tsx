@@ -13,6 +13,7 @@ import { AchievementToast } from './ui/AchievementToast.js';
 import { KatabasisModal } from './ui/KatabasisModal.js';
 import { SyncPanel } from './ui/SyncPanel.js';
 import { ConflictModal } from './ui/ConflictModal.js';
+import { WelcomeBackModal } from './ui/WelcomeBackModal.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
@@ -112,6 +113,7 @@ export function App(): ReactElement {
       <KatabasisModal />
       <SyncPanel />
       <ConflictModal />
+      <WelcomeBackModal />
       {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
       {activePanel && shell && (

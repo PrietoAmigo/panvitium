@@ -199,6 +199,13 @@ export const strings = {
     celebrity: 'Celebrities',
     sigma: 'Sigmas',
   },
+  welcomeBack: {
+    title: 'While you were away',
+    away: 'Away for',
+    capped: 'held at the seven-day limit',
+    nothing: 'The lair lay quiet; nothing stirred.',
+    dismiss: 'Resume',
+  },
   tiers: {
     stellar: 'Stellar',
     excellent: 'Excellent',

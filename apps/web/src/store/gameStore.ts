@@ -40,6 +40,7 @@ import {
   type KatabasisRecap,
 } from '@panvitium/sim';
 import { loadGame, saveGame, clearSave, writeSaveBlob } from './persistence.js';
+import { type OfflineRecap } from '../game/session.js';
 import {
   CURRENT_SCHEMA_VERSION,
   serializeGameState,
@@ -164,6 +165,10 @@ interface GameStore {
   dismissAchievementToast: () => void;
   /** Clear the active notice. */
   dismissNotice: () => void;
+  /** The "while you were away" recap, shown once on load after a meaningful absence; null otherwise. */
+  offlineRecap: OfflineRecap | null;
+  /** Dismiss the welcome-back recap. */
+  dismissOfflineRecap: () => void;
   /** Wipe the save and start a fresh game. */
   hardReset: () => void;
 
@@ -212,6 +217,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   katabasisPhase: null,
   recap: null,
   eternalReveal: false,
+  offlineRecap: null,
   user: null,
   authReady: false,
   syncStatus: 'idle',
@@ -433,6 +439,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   dismissSignature: () => set({ signature: null }),
   dismissAchievementToast: () => set({ achievementToast: null }),
   dismissNotice: () => set({ notice: null }),
+  dismissOfflineRecap: () => set({ offlineRecap: null }),
 
   hardReset: () => {
     clearSave();

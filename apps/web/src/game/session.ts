@@ -10,7 +10,10 @@ import {
   createInitialState,
   sigilOfflineResourceMul,
   sinLevel,
+  sub,
   tick,
+  totalReprobates,
+  type BigNum,
   type GameState,
 } from '@panvitium/sim';
 
@@ -55,4 +58,45 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
     offlineGoldMul: offlineRes.gold,
     offlineInfluenceMul: offlineRes.influence,
   }).state;
+}
+
+/** Below this, a reload is treated as "still here" and no welcome-back recap is shown. */
+export const MIN_OFFLINE_RECAP_SECONDS = 60;
+
+/** What accrued while the player was away — the "welcome back" summary. */
+export interface OfflineRecap {
+  /** Real wall-clock time away, clamped to MAX_OFFLINE_SECONDS, in seconds. */
+  awaySeconds: number;
+  /** True if the absence exceeded the cap, so the catch-up was clamped (relevant to the ADR-004 uncap). */
+  capped: boolean;
+  /** Net gains over the catch-up (souls/gold/influence as BigNum; reprobates as a count). */
+  souls: BigNum;
+  gold: BigNum;
+  influence: BigNum;
+  reprobates: number;
+}
+
+/**
+ * Build the "while you were away" recap by diffing the resumed state against the saved one. Returns
+ * null for a short absence (a quick reload, below MIN_OFFLINE_RECAP_SECONDS) or while frozen
+ * mid-descent (the Katabasis menu reopens instead of a recap). Pure — reads only the two states and
+ * the clock — and intentionally separate from `resumeGame` so the resume path stays single-purpose.
+ */
+export function offlineRecap(
+  saved: GameState,
+  resumed: GameState,
+  now: number = Date.now(),
+): OfflineRecap | null {
+  if (resumed.inKatabasis === true) return null;
+  const elapsed = Math.max(0, (now - saved.lastTickAt) / 1000);
+  const away = Math.min(elapsed, MAX_OFFLINE_SECONDS);
+  if (away < MIN_OFFLINE_RECAP_SECONDS) return null;
+  return {
+    awaySeconds: away,
+    capped: elapsed > MAX_OFFLINE_SECONDS,
+    souls: sub(resumed.souls, saved.souls),
+    gold: sub(resumed.lifetime.gold, saved.lifetime.gold),
+    influence: sub(resumed.lifetime.influence, saved.lifetime.influence),
+    reprobates: totalReprobates(resumed) - totalReprobates(saved),
+  };
 }

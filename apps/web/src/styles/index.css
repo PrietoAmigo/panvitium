@@ -1886,3 +1886,70 @@ body {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Welcome back — offline recap (Phase 5.4) ---------- */
+.welcome-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fade-in 0.4s ease both;
+}
+.welcome-inner {
+  max-width: 420px;
+  width: 100%;
+  padding: 1.6rem 1.8rem;
+  background: #0d0a09;
+  border: 1px solid var(--candle);
+  border-radius: 5px;
+  box-shadow: 0 0 32px rgba(196, 158, 74, 0.25);
+  text-align: center;
+}
+.welcome-title {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.5rem;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.5rem;
+  color: var(--candle);
+}
+.welcome-away {
+  margin: 0 0 1.1rem;
+  font-style: italic;
+  opacity: 0.85;
+  font-size: 0.92rem;
+}
+.welcome-stats {
+  margin: 0 0 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.welcome-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(196, 158, 74, 0.15);
+  padding-bottom: 0.3rem;
+}
+.welcome-stat dt {
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+.welcome-stat dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--candle);
+  font-weight: 600;
+}
+.welcome-nothing {
+  margin: 0 0 1.3rem;
+  font-style: italic;
+  opacity: 0.8;
+}
+.welcome-dismiss {
+  width: 100%;
+}

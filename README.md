@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 673** (sim 503 · shared 49 · api 11 · web 110).
+**Current test count: 677** (sim 503 · shared 49 · api 11 · web 114).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -347,23 +347,21 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   effects are still to be specified. Engineering note: purely informational / easter-egg codes are
   UI-only, but any code that grants a buff or other gameplay effect needs a sim hook (and, if it
   should persist across ticks or sessions, an additive-optional save field per ADR-023).
-- **Offline progression — uncap + return recap [design decision].** Two coupled changes to the
-  away/return experience. **(a) Remove the offline cap.** Today `resumeGame` clamps the elapsed
-  wall-clock to `MAX_OFFLINE_SECONDS` (7 days) in `apps/web/src/game/session.ts`; the decision is to
-  let offline progression accrue for the _full_ time away, however long. This **reverses ADR-004**
-  (whose current position is "offline = same tick, big _capped_ delta," the cap chosen so a long
-  absence can't fast-forward unbounded time and warp the economy), so it needs ADR-004 amended to
-  record the new intent and its economy implications before the slice lands. Engineering notes: the
-  apex/dynamics math already uses exact geometric integration (`1 − (1 − p)^Δt`) so one big offline tick
-  agrees with the live loop, and the `eᵗ` ramps (Panvitium, Aurevora) self-dispel via their
-  `Number.isFinite` guards — so an unbounded delta is numerically safe there. The open item is the
-  **Acedia offline-compound term** `BASE^(offlineMinutes × L²)`, which grows without bound as
-  `offlineMinutes` does; it likely needs its own ceiling or a saturating curve so it can't dominate the
-  catch-up. **(b) Return recap screen.** On resume, show a "while you were away" summary (time elapsed;
-  souls / gold / reprobates gained; anything that triggered) instead of advancing the state silently as
-  today — the recap is what keeps a long, now-unbounded absence legible. Needs `resumeGame` to return a
-  recap delta alongside the new state (a small additive change), surfaced as a welcome-back screen on
-  load (the UI half lives in the roadmap's 5.4 track).
+- **Offline progression — uncap the catch-up [design decision].** The **return recap has shipped**
+  (see the 5.4 track): resuming now shows a "while you were away" welcome-back screen via a pure
+  `offlineRecap(saved, resumed, now)` diff threaded through `loadGame` into the store. What remains is
+  the coupled **uncap**: today `resumeGame` clamps the elapsed wall-clock to `MAX_OFFLINE_SECONDS`
+  (7 days) in `apps/web/src/game/session.ts`; the decision is to let offline progression accrue for the
+  _full_ time away, however long. This **reverses ADR-004** (whose current position is "offline = same
+  tick, big _capped_ delta," the cap chosen so a long absence can't fast-forward unbounded time and warp
+  the economy), so it needs ADR-004 amended to record the new intent and its economy implications before
+  the slice lands. Engineering notes: the apex/dynamics math already uses exact geometric integration
+  (`1 − (1 − p)^Δt`) so one big offline tick agrees with the live loop, and the `eᵗ` ramps (Panvitium,
+  Aurevora) self-dispel via their `Number.isFinite` guards — so an unbounded delta is numerically safe
+  there. The open item is the **Acedia offline-compound term** `BASE^(offlineMinutes × L²)`, which grows
+  without bound as `offlineMinutes` does; it likely needs its own ceiling or a saturating curve so it
+  can't dominate the catch-up. (The recap already surfaces a `capped` flag, so once uncapped it simply
+  stops showing the seven-day note.)
 
 **UI work — to be built with Claude Design.** Designed and built in Claude Design. The two items
 below — Emails and the smartphone code terminal — are new in-world features whose scope is still being
@@ -491,11 +489,13 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   values stay legible deep into a run.
 - **Settings / options panel.** Audio (from 5.3), the `DegradePass` knobs (the engine already exposes
   them), save export/import, and a hard reset — gathered into one panel.
-- **Return-from-away recap.** A welcome-back screen on resume showing the time elapsed and what accrued
-  while away (souls / gold / reprobates, anything that triggered), replacing today's silent catch-up.
-  Pairs with the **uncapped** offline progression recorded under `### Remaining` — the recap is what
-  keeps a long, now-unbounded absence legible. Needs `resumeGame` to surface a recap delta alongside the
-  resumed state.
+- **Return-from-away recap** _(✓ shipped)_. A welcome-back screen on resume showing the time away and
+  the net souls / gold / influence / reprobates that accrued, replacing the old silent catch-up. Driven
+  by a pure `offlineRecap(saved, resumed, now)` diff (separate from `resumeGame`, so its tests stay
+  intact), threaded through `loadGame` into a store `offlineRecap` + `dismissOfflineRecap`, and mounted
+  as `WelcomeBackModal`. Suppressed for absences under a minute and while frozen mid-descent; it carries
+  a `capped` flag (pairs with the still-pending **uncap** decision in `### Remaining`). Pinned by
+  `offlineRecap` unit tests.
 - **Notifications.** A single toast/notice surface that folds together what already exists piecemeal: the
   achievement unlock toast, toggle auto-deactivation notices (`TickResult.notices`), and sync status.
 
