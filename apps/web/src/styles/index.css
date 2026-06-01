@@ -2219,7 +2219,9 @@ body {
   white-space: pre-wrap;
 }
 
-/* Game wordmark, anchored bottom-left (moved off the old top-left HUD). */
+/* PRESERVED wordmark treatment (gold-leaf display caps + soft glow) — kept for reuse. The PANVITIUM
+   wordmark was removed from the UI, so nothing currently renders with this class; re-mount <Hud /> or
+   apply this colour + type treatment to another element to bring it back. */
 .game-name {
   position: absolute;
   bottom: 1.1rem;

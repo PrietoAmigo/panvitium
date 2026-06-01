@@ -5,7 +5,6 @@ import { RoomView } from './menus/RoomView.js';
 import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
-import { Hud } from './ui/Hud.js';
 import { PANELS, PcDesk } from './ui/panels.js';
 import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
@@ -99,7 +98,6 @@ export function App(): ReactElement {
 
   return (
     <div className="app">
-      <Hud />
       <main className="stage">
         <RoomView
           room={ROOMS[room]}

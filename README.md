@@ -500,9 +500,10 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   the tick's income terms (zeroing while frozen mid-descent or under Morpheus), pinned by parity tests
   (the readout equals the gold the tick actually accrues over one second). These now surface in the
   **Analytics** program rather than the HUD (see below).
-- **Analytics PC program** _(✓ shipped)_. The always-on readouts were pulled off the HUD entirely — the
-  HUD is now just the **PANVITIUM wordmark, anchored bottom-left**. Everything moved into this on-demand
-  PC program (between Emptio and Achievements). Four tabs: **Main** (default — the ambient status that
+- **Analytics PC program** _(✓ shipped)_. The always-on readouts were pulled off the HUD entirely, and
+  the HUD itself is gone — the PANVITIUM wordmark was removed from the screen too (its gold-leaf
+  display-caps treatment is preserved, unmounted, in `Hud.tsx` / the `.game-name` rule for reuse).
+  Everything moved into this on-demand PC program (between Emptio and Achievements). Four tabs: **Main** (default — the ambient status that
   used to sit on the HUD: the in-flight rite with progress, the vigil clock, and player efficiency),
   **Resources** (souls / gold / influence with `perSecondRates` and the influence cap), **Reprobates**
   (unconverted vs converted counts by subtype, plus `reprobateRates` generation / conversion / death
