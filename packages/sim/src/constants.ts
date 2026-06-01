@@ -38,10 +38,10 @@ export const BASE_SUICIDE_RATE_PER_SECOND = 0.00023;
 export const BASE_REPROBATE_GENERATION_PER_SECOND = 0;
 
 /**
- * Base per-Choleric murder rate (kills / Choleric / second), before sigil/maleficium modifiers
- * (Reprobates sheet placeholder). Cholerics don't exist until Vitium-driven conversion lands, so
- * the pool stays at 0 for now and this value is a hold-the-shape placeholder, not authoritative
- * tuning. The spreadsheet will pin the real number when Cholerics arrive.
+ * Base per-Choleric murder rate (kills / Choleric / second), before sigil/maleficium modifiers.
+ * Sheet-pinned (Globals: "Base Choleric murder rate" = 0.001). Cholerics are now first-class — they
+ * murder any reprobate, including each other — so this rate is authoritative, not a hold-the-shape
+ * value.
  */
 export const BASE_CHOLERIC_MURDER_RATE_PER_SECOND = 0.001;
 
@@ -112,8 +112,11 @@ export const SPECUNITAS_CELEBRITY_BIAS_MUL = 100;
  * gold output boost** (applies multiplicatively to that Sin's businesses, per-count) and a
  * **secondary effect** on some global rate. All "increase" effects compose as `X × (1 + pct × n)`;
  * all "decrease" effects compose as `X / (1 + pct × n)` (asymptotic to 0, never negative — same
- * shape the Sin skills use). Magnitudes here are placeholders, spreadsheet-overridable; the
- * SHAPES are authoritative (which subtype affects which dimension, in which direction).
+ * shape the Sin skills use). The **primary** per-count effect — the Vitium-gold boost — is
+ * sheet-pinned (Globals "Base converted reprobate effect" = 0.01 = `SUBTYPE_VM_GOLD_BOOST_PER_COUNT`
+ * below). The **secondary** rate effects below have no separate magnitude on the sheet (the 0.01 is
+ * the gold boost), so they stay tuning values; the SHAPES are authoritative (which subtype affects
+ * which dimension, in which direction).
  */
 /** Per-count VM gold boost applied to the matching Sin's businesses (e.g. Gluttons → Gula VM). */
 export const SUBTYPE_VM_GOLD_BOOST_PER_COUNT = 0.01; // +1% per matched subtype, per business
@@ -150,8 +153,8 @@ export const IRA_ACOLYTE_INVOCATION_PER_LEVEL = 1.33;
  * Acedia per-level effect (03 §1, "Procrastination" / Belphegor): each level applies a
  * `1.00002^(X · L²)` multiplier to the offline-time duration used by `resumeGame`, where X is the
  * offline minutes and L is the Acedia level. Time-dependent — *not* a static modifier; applied at
- * session-resume time. Base 1.00002 is a placeholder, spreadsheet-overridable; the shape (an
- * exponential in `X · L²`) is authoritative.
+ * session-resume time. The sheet pins no value for this base, so 1.00002 is a genuine tuning
+ * constant (not awaiting a sheet number); the shape (an exponential in `X · L²`) is authoritative.
  */
 export const ACEDIA_OFFLINE_COMPOUND_BASE = 1.00002;
 

@@ -12,12 +12,13 @@
  * engine — population-proportional generation (Bacchanal), offline-gain scaling (Dolce Far Niente),
  * percentage-death (Enraging Broadcast), flat murder/suicide/generation-rate shifts (Ethnocentric
  * Revolt, Doom Gathering, No-babies Movement), and the four-Sin "subtype penalty" ceremonies
- * (Vegas, Crusade) — and land in dedicated effect slices; Panvitium's exponential retune rides with
- * its own slice on this foundation. Bacchanal and Panvitium below keep placeholder magnitudes until
- * those slices.
+ * (Vegas, Crusade). All of these effect slices have since shipped, each with sheet-accurate
+ * magnitudes (e.g. Bacchanal generates 10% of Gluttons+Degenerates/s; Panvitium's 1000/100
+ * gold/influence costs, its 0.01 conversion rate, and the eᵗ growth base all derive from Globals).
  *
- * Number convention: the four sheet-tuned toggles carry authoritative magnitudes; entries awaiting
- * their effect slice keep placeholders (shape authoritative, magnitudes not).
+ * Number convention: every toggle carries its sheet-pinned magnitude. The only Vitium Compositum
+ * tuning values NOT on the sheet are Panvitium's churn-rate multipliers (generation / suicide /
+ * murder while active), which live in `modifiers.ts`.
  *
  * Active toggles are tracked by membership in `LifetimeState.activeToggles` (a string[] already
  * on the save schema). A VC is either on or off — no per-VC payload this slice, so no new

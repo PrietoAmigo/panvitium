@@ -279,17 +279,17 @@ export function computeModifiers(state: GameState): Modifiers {
   const erinyesStackMul = 2 ** (state.erinyesEfficiencyStacks ?? 0);
 
   // Panvitium (03 §2.3): the endgame ritual. While active it drives the whole population at once —
-  // generation, suicide, and murder rates are enormous. The flat generation/conversion come from
-  // its Vitium Compositum entry; these multipliers amplify the churn. Placeholders, spreadsheet-
-  // overridable. (It cannot be read as a per-stack count — it's a single toggle, on or off.)
+  // generation, suicide, and murder rates are enormous. Its flat generation/conversion/cost come
+  // from its sheet-pinned Vitium Compositum entry; these churn MULTIPLIERS are the one piece the
+  // sheet doesn't pin — genuine tuning values. (It's a single toggle, on or off — not a stack.)
   const panvitiumActive = state.lifetime.activeToggles.includes('panvitium');
   const PANV_GEN_MUL = 10;
   const PANV_SUICIDE_MUL = 20;
   const PANV_MURDER_MUL = 20;
-  // Invocation effect magnitudes (placeholders; spreadsheet owns final tuning, like the others).
   // Invocation effect magnitudes (Invocatio sheet). Each invocation's "action efficiency" (its
-  // per-copy factor) applies × the player's current action efficiency (`playerEff`) × the
-  // invocation-effect multiplier (`invEff`), so the demonic court scales with the build (Model 1).
+  // per-copy factor below) is the sheet's Efficiency column, applied × the player's current action
+  // efficiency (`playerEff`) × the invocation-effect multiplier (`invEff`), so the demonic court
+  // scales with the build (Model 1).
   const FAMA_INFLUENCE_FACTOR = 0.05; // additive increase to influence rate
   const HARPY_DECIMATIO_FACTOR = 0.05; // multiplicative increase to Decimatio efficiency
   const PLUTUS_VM_FACTOR = 0.05; // increase to Vitium Mercatura output

@@ -391,9 +391,8 @@ only on a number or mechanic being settled on the sheet; once it is, each is a s
   Choleric-targeting murder bias), Ose #57 / Orias #59 (conversion re-roll toward the minority /
   majority subtype), and Vual #47 (softens the Degenerate suicide/murder penalties). See Status.
 - **Imperium's action time** — _decided at 10s_ (the Suasio sheet had left it "Fill Time").
-- **Placeholder sweep** — _still open:_ reconcile the inline-flagged magnitudes (`constants.ts`
-  Choleric-murder base + Sin-skill mags + Acedia compound base, `modifiers.ts` invocation mags)
-  against the sheet.
+- **Placeholder sweep** — _audited and reconciled._ No value changes were needed (every flag was
+  either stale or pointed to a magnitude the sheet doesn't pin); comments were corrected. See 5.5.
 
 Blocked on inputs that don't live in a coding session (independent of the above):
 
@@ -546,11 +545,26 @@ composition)._
   shared `degenerateDeathRates` penalty-reduction channel applied to both muls). All 72 sigils now bind.
 - **Imperium's action time** _(✓ shipped)_. Decided at 10s (the _Suasio_ sheet had left it "Fill Time";
   was a flagged 60s placeholder).
-- **Placeholder sweep** _(still open)_. Reconcile the magnitudes still flagged inline (`constants.ts`'s
-  Choleric-murder base / Sin-skill mags / Acedia compound base, `modifiers.ts`'s invocation mags)
-  against the sheet.
+- **Placeholder sweep** _(✓ shipped)_. Audited every inline-flagged magnitude against the sheet. The
+  verdict: **no value changes were needed** — each flag was either stale (the value is already
+  sheet-accurate, just mis-commented) or pointed to a magnitude the sheet doesn't pin. Reconciled the
+  comments: the Choleric-murder base (0.001) is sheet-pinned (Globals); Bacchanal's 10% and Panvitium's
+  costs / 0.01 conversion / eᵗ growth all derive from Globals; the invocation effect factors are the
+  Invocatio sheet's Efficiency column. The genuinely unpinned tuning values (no sheet number, so they
+  stay as-is) are the Acedia offline-compound base `1.00002`, the Panvitium churn multipliers
+  (gen/suicide/murder while active, in `modifiers.ts`), and the subtype **secondary**-effect magnitudes
+  (the sheet's per-unit 0.01 is the Vitium-gold boost, which matches `SUBTYPE_VM_GOLD_BOOST_PER_COUNT`;
+  the −suicide/−murder/−generation magnitudes have no separate sheet number). See "Open question" below.
 
-**Done when** no placeholder magnitudes remain flagged. _(All 72 sigils now bind ✓.)_
+**Done when** no placeholder magnitudes remain flagged. **✓ Done** — the sweep above reconciled them;
+all 72 sigils bind.
+
+> **Open question for the economy owner (not blocking):** the Reprobates sheet lists one "Effect per
+> unit = 0.01" per subtype. The code reads that as the **primary** Vitium-gold boost (0.01, matched) and
+> uses smaller tuning magnitudes (0.001 / 0.0001) for each subtype's **secondary** rate effect. If the
+> intent is that the secondary effects should _also_ be 0.01 per unit, that's a deliberate balance change
+> (e.g. 100 Degenerates would then halve suicide) — say the word and it's a one-line-per-constant edit
+> plus a test refresh.
 
 ### 5.6 — Production readiness & launch
 
