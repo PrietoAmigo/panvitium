@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 677** (sim 503 · shared 49 · api 11 · web 114).
+**Current test count: 678** (sim 503 · shared 49 · api 11 · web 115).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -485,8 +485,10 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
 - **Help & glossary.** Tooltips on resources, the seven outcome tiers, and the modifier readouts; a short
   glossary that explains (without anglicizing) the Latin — _Opera_, _Suasio_, _Decimatio_, _Katabasis_,
   _Vitium Compositum_, and the rest.
-- **Readability.** A pass on the BigNum displays (consistent suffixing, per-second rate readouts) so large
-  values stay legible deep into a run.
+- **Readability.** BigNum displays now use **consistent short-scale suffixing** (✓ shipped):
+  `formatBigNum` reads as grouped integers below a million, then M / B / T / … / Dc suffixes, then
+  compact scientific beyond the ladder for the astronomical endgame — so values stay legible deep into
+  a run. Still to do: **per-second rate readouts** (showing live income rates beside the totals).
 - **Settings / options panel.** Audio (from 5.3), the `DegradePass` knobs (the engine already exposes
   them), save export/import, and a hard reset — gathered into one panel.
 - **Return-from-away recap** _(✓ shipped)_. A welcome-back screen on resume showing the time away and
