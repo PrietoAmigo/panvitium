@@ -590,6 +590,93 @@ body {
   color: #c9b78c;
   font-family: 'IM Fell English', serif;
 }
+.panel--cabinet .oracle {
+  margin-top: 1.1rem;
+  border-top: 1px solid rgba(216, 182, 88, 0.3);
+  padding-top: 0.8rem;
+}
+.oracle-caption {
+  margin: 0 0 0.7rem;
+  font-style: italic;
+  color: #c9b78c;
+  font-family: 'IM Fell English', serif;
+}
+.oracle-legend {
+  list-style: none;
+  margin: 0 0 0.9rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: #c9b78c;
+}
+.oracle-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.oracle-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+}
+.oracle-group {
+  margin-bottom: 0.85rem;
+}
+.oracle-group-title {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  color: #ece0c2;
+  font-size: 0.95rem;
+}
+.oracle-row {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.18rem 0;
+}
+.oracle-action-name {
+  font-size: 0.82rem;
+  color: #c9b78c;
+  letter-spacing: 0.03em;
+}
+.oracle-bar {
+  display: flex;
+  height: 0.7rem;
+  width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+.oracle-seg {
+  height: 100%;
+}
+.oracle-seg--stellar {
+  background: #d8b658;
+}
+.oracle-seg--excellent {
+  background: #e6a23c;
+}
+.oracle-seg--good {
+  background: #6f9f6a;
+}
+.oracle-seg--neutral {
+  background: #9a8f7a;
+}
+.oracle-seg--bad {
+  background: #b9783a;
+}
+.oracle-seg--terrible {
+  background: #a01e22;
+}
+.oracle-seg--apocalyptic {
+  background: #5a0d10;
+}
 .panel--cabinet .rarity-common {
   color: #b59a6a;
 }

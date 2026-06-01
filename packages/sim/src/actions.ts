@@ -13,7 +13,13 @@
  */
 import { add, floor, gte, sub } from './bignum.js';
 import { type Rng } from './rng.js';
-import { type Tier, type TierWeights, applyTierModifiers, resolveTier } from './probability.js';
+import {
+  type Tier,
+  type TierWeights,
+  applyTierModifiers,
+  normalizeTierWeights,
+  resolveTier,
+} from './probability.js';
 import { categoryEfficiency, categoryTierModifiers, computeModifiers } from './modifiers.js';
 import {
   addReprobates,
@@ -417,6 +423,34 @@ export function runnerCycleDuration(actionId: string, eff: number): number {
 }
 
 /** Draw the outcome tier for a completed action, apply its effect, and report what happened. */
+/**
+ * The resolved (normalized) outcome distribution for an action right now — exactly the weights
+ * `resolveAction` draws from: base × global `tierWeightMul` × the per-category success shift,
+ * renormalized to sum 1. Pure and read-only; the oracular reveals (Maleficia) show these live odds,
+ * so they always match what an actual cast would roll.
+ */
+export function actionTierDistribution(state: GameState, actionId: string): TierWeights {
+  const def = ACTIONS[actionId];
+  if (!def) {
+    return normalizeTierWeights({
+      stellar: 0,
+      excellent: 0,
+      good: 0,
+      neutral: 0,
+      bad: 0,
+      terrible: 0,
+      apocalyptic: 0,
+    });
+  }
+  const mods = computeModifiers(state);
+  return normalizeTierWeights(
+    applyTierModifiers(
+      applyTierModifiers(def.weights, mods.tierWeightMul),
+      categoryTierModifiers(state, def.category),
+    ),
+  );
+}
+
 export function resolveAction(
   state: GameState,
   actionId: string,

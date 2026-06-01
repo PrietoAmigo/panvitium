@@ -14,6 +14,7 @@ import {
   resolvePurgatio,
   resolveIndagatio,
   actionUnlocked,
+  actionTierDistribution,
   ACTIONS,
 } from './actions.js';
 import { MALEFICIA, MALEFICIUM_PRICE_RANGE } from './maleficia.js';
@@ -446,5 +447,35 @@ describe('rolled Emptio pricing (Maleficia sheet)', () => {
     const r = startAction(s, 'emptio', { target: id });
     expect(r.ok).toBe(true);
     if (r.ok) expect(before - goldOf(r.state)).toBe(price); // time-mode: cost paid up front, unscaled
+  });
+});
+
+import { TIERS } from './probability.js';
+
+describe('actionTierDistribution (oracular reveals, 5.1)', () => {
+  it('returns a normalized distribution (sums to 1) for a real action', () => {
+    const s = createInitialState('oracle-test', 0);
+    const dist = actionTierDistribution(s, 'suggestion');
+    const total = TIERS.reduce((acc, t) => acc + dist[t], 0);
+    expect(total).toBeCloseTo(1, 10);
+    for (const t of TIERS) expect(dist[t]).toBeGreaterThanOrEqual(0);
+  });
+
+  it('mirrors a fixed-Good action (Imperium resolves Good with certainty)', () => {
+    const s = createInitialState('oracle-test', 0);
+    const dist = actionTierDistribution(s, 'imperium');
+    expect(dist.good).toBeCloseTo(1, 10);
+  });
+
+  it('reflects the base weights for Caedis (Good is the dominant tier)', () => {
+    const s = createInitialState('oracle-test', 0);
+    const dist = actionTierDistribution(s, 'caedis');
+    for (const t of TIERS) if (t !== 'good') expect(dist.good).toBeGreaterThan(dist[t]);
+  });
+
+  it('falls back to all-Neutral for an unknown action id', () => {
+    const s = createInitialState('oracle-test', 0);
+    const dist = actionTierDistribution(s, 'not_an_action');
+    expect(dist.neutral).toBe(1);
   });
 });

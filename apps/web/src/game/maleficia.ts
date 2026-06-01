@@ -12,6 +12,7 @@ import { strings } from '@panvitium/shared';
 import { MALEFICIA as DESIGN } from '../menus/menus.data.js';
 import type { Maleficium, MaleficiumUse, Rarity } from '../menus/types.js';
 import { formatDuration } from './format.js';
+import { buildOracle } from './oracle.js';
 
 const DESIGN_BY_ID: Record<string, Maleficium> = Object.fromEntries(DESIGN.map((m) => [m.id, m]));
 
@@ -63,6 +64,7 @@ export function buildCabinet(state: GameState): Maleficium[] {
     const art = DESIGN_BY_ID[id];
     const count = countCopies(owned, id);
     const use = affordanceFor(id);
+    const reveal = buildOracle(state, id);
     items.push({
       id,
       name: count > 1 ? `${def.name} ×${count}` : def.name,
@@ -71,6 +73,7 @@ export function buildCabinet(state: GameState): Maleficium[] {
       desc: art?.desc ?? def.description,
       effect: art?.effect ?? '',
       ...(use ? { use } : {}),
+      ...(reveal ? { reveal } : {}),
     });
   }
   return items;

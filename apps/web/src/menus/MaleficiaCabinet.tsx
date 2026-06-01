@@ -1,5 +1,55 @@
 import { useState, type ReactElement } from 'react';
-import type { Maleficium } from './types.js';
+import { strings } from '@panvitium/shared';
+import type { Maleficium, OracleGroup } from './types.js';
+
+/** The oracular tier-distribution readout: per category, a labelled odds bar for each action. */
+function OracleReveal({ reveal }: { reveal: OracleGroup[] }): ReactElement {
+  // The legend is the seven tiers from any action (all share the best→worst order).
+  const legend = reveal[0]?.actions[0]?.tiers ?? [];
+  return (
+    <div className="oracle">
+      <p className="oracle-caption">{strings.maleficia.oracleCaption}</p>
+      {legend.length > 0 && (
+        <ul className="oracle-legend">
+          {legend.map((t) => (
+            <li key={t.tier} className="oracle-legend-item">
+              <span className={`oracle-swatch oracle-seg--${t.tier}`} />
+              {t.label}
+            </li>
+          ))}
+        </ul>
+      )}
+      {reveal.map((g) => (
+        <div className="oracle-group" key={g.category}>
+          <h4 className="oracle-group-title">{g.label}</h4>
+          {g.actions.map((a) => (
+            <div className="oracle-row" key={a.action}>
+              <span className="oracle-action-name">{a.name}</span>
+              <div
+                className="oracle-bar"
+                role="img"
+                aria-label={`${a.name}: ${a.tiers
+                  .map((t) => `${t.label} ${Math.round(t.pct * 100)}%`)
+                  .join(', ')}`}
+              >
+                {a.tiers.map((t) =>
+                  t.pct > 0 ? (
+                    <span
+                      key={t.tier}
+                      className={`oracle-seg oracle-seg--${t.tier}`}
+                      style={{ width: `${t.pct * 100}%` }}
+                      title={`${t.label} ${Math.round(t.pct * 100)}%`}
+                    />
+                  ) : null,
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 interface MaleficiaCabinetProps {
   /** The player's owned maleficia (from `buildCabinet`); assumed non-empty. */
@@ -49,6 +99,7 @@ export function MaleficiaCabinet({ items, onUse }: MaleficiaCabinetProps): React
               </button>
             </div>
           )}
+          {m.reveal && <OracleReveal reveal={m.reveal} />}
         </div>
       </div>
     );

@@ -63,6 +63,41 @@ export interface Maleficium {
    * control. Absent for ordinary maleficia, which have no activation affordance.
    */
   use?: MaleficiumUse;
+  /**
+   * Present only for the oracular items (Obsidian Mirror, Hollow Effigy, The Dadu, Crossroads Dirt,
+   * Crow Feather); the live Opera tier-distribution readout they reveal.
+   */
+  reveal?: OracleGroup[];
+}
+
+/** One revealed Opera category's distributions (e.g. Suasio), for the oracular readout. */
+export interface OracleGroup {
+  /** Category id ('suasio' | 'decimatio' | 'indagatio' | 'emptio'). */
+  category: string;
+  /** Display label for the category. */
+  label: string;
+  /** Each action in the category, with its resolved tier odds. */
+  actions: OracleAction[];
+}
+
+/** One action's resolved outcome odds, for the oracular readout. */
+export interface OracleAction {
+  /** Action id. */
+  action: string;
+  /** Display name. */
+  name: string;
+  /** The seven tiers in best→worst order, each with its probability (0..1). */
+  tiers: OracleTier[];
+}
+
+/** One tier's slice of an action's outcome odds. */
+export interface OracleTier {
+  /** Tier id ('stellar' … 'apocalyptic'). */
+  tier: string;
+  /** Display label. */
+  label: string;
+  /** Probability in [0, 1]. */
+  pct: number;
 }
 
 /** The cabinet's single-use activation affordance for a consumable maleficium. */

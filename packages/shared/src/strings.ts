@@ -186,6 +186,7 @@ export const strings = {
     handOfGloryLeft: 'of fevered generation remain',
     defixioRolling: 'The curse stirs, choosing its victim\u2026',
     defixioOn: 'A curse gnaws at the',
+    oracleCaption: 'What the omens already weigh — the odds of each outcome, should you act now:',
   },
   subtypes: {
     reprobate: 'unconverted',
