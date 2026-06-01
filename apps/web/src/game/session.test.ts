@@ -4,7 +4,7 @@ import {
   startNewGame,
   resumeGame,
   offlineRecap,
-  MAX_OFFLINE_SECONDS,
+  ACEDIA_COMPOUND_CAP_SECONDS,
   MIN_OFFLINE_RECAP_SECONDS,
 } from './session.js';
 
@@ -21,11 +21,29 @@ describe('session', () => {
     expect(r.lastTickAt).toBe(10_000);
   });
 
-  it('caps offline time to MAX_OFFLINE_SECONDS', () => {
+  it('runs offline progression uncapped over the full elapsed time (ADR-004 amended)', () => {
     const s = startNewGame(0);
-    const farFuture = (MAX_OFFLINE_SECONDS + 100_000) * 1000;
+    const farFuture = (ACEDIA_COMPOUND_CAP_SECONDS + 100_000) * 1000;
     const r = resumeGame(s, farFuture);
-    expect(r.lastTickAt).toBe(MAX_OFFLINE_SECONDS * 1000);
+    // No cap: the full elapsed wall-clock advances the logical clock (a fresh game has neutral muls).
+    expect(r.lastTickAt).toBe(farFuture);
+  });
+
+  it('bounds the Acedia time-compound at the saturation point while base accrual stays uncapped', () => {
+    // Past the saturation point the Acedia multiplier is identical, but extra real time still earns
+    // more — proving the base accrual is uncapped while only the exponential bonus is held.
+    const base = startNewGame(0);
+    const lifted: GameState = { ...base, devotion: { ...base.devotion, acedia: bn(180 ** 4) } };
+    const g1 = resumeGame(
+      lifted,
+      (ACEDIA_COMPOUND_CAP_SECONDS + 1000) * 1000,
+    ).lifetime.gold.toNumber();
+    const g2 = resumeGame(
+      lifted,
+      (ACEDIA_COMPOUND_CAP_SECONDS + 2000) * 1000,
+    ).lifetime.gold.toNumber();
+    expect(g2).toBeGreaterThan(g1);
+    expect(Number.isFinite(g2)).toBe(true);
   });
 
   it('Acedia per-level compounds offline gold gain (03 §1: 1.00002^(X·L²))', () => {
@@ -83,16 +101,15 @@ describe('offlineRecap (welcome-back, 5.4)', () => {
     const recap = offlineRecap(saved, resumeGame(saved, now), now);
     expect(recap).not.toBeNull();
     expect(recap!.awaySeconds).toBe(3600);
-    expect(recap!.capped).toBe(false);
     expect(gt(recap!.gold, bn(0))).toBe(true); // base gold accrues offline
   });
 
-  it('flags a capped absence and clamps the reported away time', () => {
+  it('reports the full away time uncapped (ADR-004 amended — no cap flag)', () => {
     const saved = startNewGame(0);
-    const now = (MAX_OFFLINE_SECONDS + 100_000) * 1000;
-    const recap = offlineRecap(saved, resumeGame(saved, now), now);
-    expect(recap!.capped).toBe(true);
-    expect(recap!.awaySeconds).toBe(MAX_OFFLINE_SECONDS);
+    const seconds = ACEDIA_COMPOUND_CAP_SECONDS + 100_000;
+    const recap = offlineRecap(saved, resumeGame(saved, seconds * 1000), seconds * 1000);
+    expect(recap!.awaySeconds).toBe(seconds);
+    expect('capped' in recap!).toBe(false);
   });
 
   it('returns null while frozen mid-descent (the Katabasis menu reopens instead)', () => {

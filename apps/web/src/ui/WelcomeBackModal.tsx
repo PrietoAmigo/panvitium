@@ -30,7 +30,7 @@ export function WelcomeBackModal(): ReactElement | null {
     });
   }
 
-  const away = `${w.away} ${formatDuration(recap.awaySeconds * 1000)}${recap.capped ? ` — ${w.capped}` : ''}`;
+  const away = `${w.away} ${formatDuration(recap.awaySeconds * 1000)}`;
 
   return (
     <div className="welcome-modal" role="dialog" aria-label={w.title}>

@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 678** (sim 503 · shared 49 · api 11 · web 115).
+**Current test count: 679** (sim 503 · shared 49 · api 11 · web 116).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -347,21 +347,18 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   effects are still to be specified. Engineering note: purely informational / easter-egg codes are
   UI-only, but any code that grants a buff or other gameplay effect needs a sim hook (and, if it
   should persist across ticks or sessions, an additive-optional save field per ADR-023).
-- **Offline progression — uncap the catch-up [design decision].** The **return recap has shipped**
-  (see the 5.4 track): resuming now shows a "while you were away" welcome-back screen via a pure
-  `offlineRecap(saved, resumed, now)` diff threaded through `loadGame` into the store. What remains is
-  the coupled **uncap**: today `resumeGame` clamps the elapsed wall-clock to `MAX_OFFLINE_SECONDS`
-  (7 days) in `apps/web/src/game/session.ts`; the decision is to let offline progression accrue for the
-  _full_ time away, however long. This **reverses ADR-004** (whose current position is "offline = same
-  tick, big _capped_ delta," the cap chosen so a long absence can't fast-forward unbounded time and warp
-  the economy), so it needs ADR-004 amended to record the new intent and its economy implications before
-  the slice lands. Engineering notes: the apex/dynamics math already uses exact geometric integration
-  (`1 − (1 − p)^Δt`) so one big offline tick agrees with the live loop, and the `eᵗ` ramps (Panvitium,
-  Aurevora) self-dispel via their `Number.isFinite` guards — so an unbounded delta is numerically safe
-  there. The open item is the **Acedia offline-compound term** `BASE^(offlineMinutes × L²)`, which grows
-  without bound as `offlineMinutes` does; it likely needs its own ceiling or a saturating curve so it
-  can't dominate the catch-up. (The recap already surfaces a `capped` flag, so once uncapped it simply
-  stops showing the seven-day note.)
+- **Offline progression — uncap the catch-up** _(✓ shipped)_. The return recap shipped earlier (see
+  the 5.4 track); the coupled **uncap** is now done too. `resumeGame` no longer clamps the elapsed
+  wall-clock — offline progression accrues for the _full_ time away, however long. This reverses the
+  original ADR-004 cap, which is **amended (2026-06-01)** to record the new intent: every offline term
+  is safe under an unbounded delta (income / reprobate pools are linear, the apex `eᵗ` ramps self-dispel
+  via their `Number.isFinite` guards, Astiwihad's mass-suicide geometric-integrates and saturates at 1)
+  _except_ the **Acedia time-compound** `BASE^(offlineMinutes × L²)`, which is exponential in time. That
+  one term is therefore the only thing still bounded — its `offlineMinutes` input saturates at the
+  former seven-day point (`ACEDIA_COMPOUND_CAP_SECONDS`), so the sloth bonus holds at its prior maximum
+  while real time accrues without limit beyond it. The recap's old `capped` flag (and the seven-day
+  note) are removed. **Sync note:** the canonical ADR-004 in project knowledge should be updated to match
+  the repo's amendment in `docs/04-architecture-decisions.md`.
 
 **UI work — to be built with Claude Design.** Designed and built in Claude Design. The two items
 below — Emails and the smartphone code terminal — are new in-world features whose scope is still being

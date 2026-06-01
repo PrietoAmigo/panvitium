@@ -99,6 +99,8 @@ If any of the records below should be downgraded from `Accepted` to `Proposed`, 
 - Real-time wall-clock polling: loses the elegance of "online tick = offline tick."
 - Variable timestep: introduces nondeterminism, complicates the test surface.
 
+**Amendment (2026-06-01) — offline progression is uncapped.** The "capped to a sane maximum" clause is superseded: offline progression now accrues for the *full* elapsed wall-clock, however long the absence. The original cap existed so a long absence couldn't fast-forward unbounded time and warp the economy; in practice every offline term is safe under an unbounded delta *except one*. Income and the reprobate pools are linear in time; the apex `eᵗ` ramps (Panvitium, Aurevora) self-dispel via their `Number.isFinite` guards; Astiwihad's mass-suicide uses the geometric integration `1 − (1 − p)^Δt`, saturating at 1. The sole term that is exponential in time is the **Acedia time-compound bonus** `BASE^(offlineMinutes × L²)`. It is therefore the only thing now bounded: its `offlineMinutes` input saturates at the former seven-day cap (`ACEDIA_COMPOUND_CAP_SECONDS` in `apps/web/src/game/session.ts`), so the sloth bonus holds at its previous maximum while real time accrues without limit beyond it. The "online tick = offline tick" property, and the determinism and purity consequences above, are unchanged. (The earlier seven-day cap and the welcome-back recap's `capped` flag are removed.)
+
 ---
 
 ## ADR-005: Big-number arithmetic — break_infinity.js

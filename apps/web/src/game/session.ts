@@ -1,8 +1,10 @@
 /**
  * Session lifecycle helpers — pure, framework-free, unit-testable.
  *
- * A new game seeds a fresh GameState; resuming a saved game applies offline progression as a
- * single capped tick (ADR-004: offline uses the same tick function as online, with a sane cap).
+ * A new game seeds a fresh GameState; resuming a saved game applies offline progression as a single
+ * tick (ADR-004: offline uses the same tick function as online). ADR-004 amended (2026-06-01):
+ * offline progression is *uncapped* — the full elapsed wall-clock accrues — and only the Acedia
+ * time-compound bonus is bounded, since it is the one term that is exponential in time.
  */
 import {
   ACEDIA_OFFLINE_COMPOUND_BASE,
@@ -17,8 +19,12 @@ import {
   type GameState,
 } from '@panvitium/sim';
 
-/** Offline progression is capped so a long absence can't fast-forward unbounded time (ADR-004). */
-export const MAX_OFFLINE_SECONDS = 7 * 24 * 60 * 60; // 7 days
+/**
+ * The Acedia time-compound bonus `BASE^(offlineMinutes × L²)` is exponential in time, so its
+ * `offlineMinutes` input saturates here (the former offline cap). Offline progression itself is no
+ * longer capped (ADR-004 amended) — only this one explosive term is held at its seven-day maximum.
+ */
+export const ACEDIA_COMPOUND_CAP_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 /** A random seed for a brand-new game; keys the deterministic RNG (ADR-011). */
 export function randomSeed(): string {
@@ -31,26 +37,27 @@ export function startNewGame(now: number = Date.now()): GameState {
 }
 
 /**
- * Resume a loaded game, applying offline progression. The elapsed wall-clock since the save's
- * last tick is clamped to [0, MAX_OFFLINE_SECONDS], then scaled by two Acedia / 03 §3 factors:
+ * Resume a loaded game, applying offline progression over the *full* elapsed wall-clock since the
+ * save's last tick (ADR-004 amended: no cap). The elapsed seconds are scaled by two Acedia / 03 §3
+ * factors:
  *
  *   - **static**:  `mods.offlineTimeMul` — Glutton drags down (03 §3), Procrastination skill lifts
- *     (03 §1, continuous, intensity-driven).
- *   - **dynamic**: `BASE ^ (offlineMinutes × acediaLevel²)` (03 §1, per-level, time-dependent —
- *     so it can't be a static scalar in the bundle). Rewards being away longer at higher levels.
+ *     (03 §1, continuous, intensity-driven). Linear in time, safe unbounded.
+ *   - **dynamic**: `BASE ^ (offlineMinutes × acediaLevel²)` (03 §1, per-level, time-dependent). This
+ *     is exponential in time, so its `offlineMinutes` input is clamped to ACEDIA_COMPOUND_CAP_SECONDS
+ *     — the sloth bonus holds at its seven-day maximum while real time accrues without limit.
  *
  * The modifiers are sampled from the saved state — Glutton-count + Procrastination intensity +
  * Acedia level at descent govern the catchup, not whatever they become mid-catchup.
  */
 export function resumeGame(saved: GameState, now: number = Date.now()): GameState {
   const elapsedSeconds = Math.max(0, (now - saved.lastTickAt) / 1000);
-  const capped = Math.min(elapsedSeconds, MAX_OFFLINE_SECONDS);
   const offlineMul = computeModifiers(saved).offlineTimeMul;
   const acediaLvl = sinLevel(saved.devotion.acedia);
-  const offlineMinutes = capped / 60;
+  const acediaMinutes = Math.min(elapsedSeconds, ACEDIA_COMPOUND_CAP_SECONDS) / 60;
   const acediaCompound =
-    acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (offlineMinutes * acediaLvl * acediaLvl) : 1;
-  const scaled = capped * offlineMul * acediaCompound;
+    acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (acediaMinutes * acediaLvl * acediaLvl) : 1;
+  const scaled = elapsedSeconds * offlineMul * acediaCompound;
   // Sallos #19 / Forneus #30 lift offline gold / influence income specifically (online ticks pass
   // nothing, so these apply only to this catch-up).
   const offlineRes = sigilOfflineResourceMul(saved);
@@ -65,10 +72,8 @@ export const MIN_OFFLINE_RECAP_SECONDS = 60;
 
 /** What accrued while the player was away — the "welcome back" summary. */
 export interface OfflineRecap {
-  /** Real wall-clock time away, clamped to MAX_OFFLINE_SECONDS, in seconds. */
+  /** Real wall-clock time away, in seconds (uncapped — ADR-004 amended). */
   awaySeconds: number;
-  /** True if the absence exceeded the cap, so the catch-up was clamped (relevant to the ADR-004 uncap). */
-  capped: boolean;
   /** Net gains over the catch-up (souls/gold/influence as BigNum; reprobates as a count). */
   souls: BigNum;
   gold: BigNum;
@@ -89,11 +94,9 @@ export function offlineRecap(
 ): OfflineRecap | null {
   if (resumed.inKatabasis === true) return null;
   const elapsed = Math.max(0, (now - saved.lastTickAt) / 1000);
-  const away = Math.min(elapsed, MAX_OFFLINE_SECONDS);
-  if (away < MIN_OFFLINE_RECAP_SECONDS) return null;
+  if (elapsed < MIN_OFFLINE_RECAP_SECONDS) return null;
   return {
-    awaySeconds: away,
-    capped: elapsed > MAX_OFFLINE_SECONDS,
+    awaySeconds: elapsed,
     souls: sub(resumed.souls, saved.souls),
     gold: sub(resumed.lifetime.gold, saved.lifetime.gold),
     influence: sub(resumed.lifetime.influence, saved.lifetime.influence),

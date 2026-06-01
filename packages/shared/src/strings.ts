@@ -202,7 +202,6 @@ export const strings = {
   welcomeBack: {
     title: 'While you were away',
     away: 'Away for',
-    capped: 'held at the seven-day limit',
     nothing: 'The lair lay quiet; nothing stirred.',
     dismiss: 'Resume',
   },
