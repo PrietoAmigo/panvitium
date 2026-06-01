@@ -20,6 +20,7 @@ import {
   dispel,
   assignAcolyteToAction,
   unassignAcolyteFromAction,
+  activateMaleficium as activateMaleficiumSim,
   isSignatureTier,
   unbindAllSigils,
   bindSigil as bindSigilSim,
@@ -87,6 +88,12 @@ interface GameStore {
   advance: (deltaSeconds: number) => void;
   /** Begin an Opera action (pays its cost and queues it), or set a notice if it can't start. */
   act: (actionId: string, target?: string) => void;
+  /**
+   * Activate a single-use maleficium from the owned inventory (Hand of Glory, Defixio). Consumes one
+   * copy and applies its effect via the sim's `activateMaleficium`. Sets a notice on failure (none
+   * owned, or a defixio already at work). Like `act`, it relies on the debounced autosave (ADR-006).
+   */
+  activateMaleficium: (id: string) => void;
   /**
    * Start a Vitium Mercatura build (03 §2.3). Pays the up-front gold cost and queues a build
    * timer. Builds run alongside the player slot — multiple may be in flight concurrently.
@@ -254,6 +261,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     const result = startAction(current, actionId, target === undefined ? {} : { target });
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+  activateMaleficium: (id) => {
+    const current = get().state;
+    if (!current) return;
+    const result = activateMaleficiumSim(current, id);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },

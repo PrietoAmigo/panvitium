@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 652** (sim 499 · shared 49 · api 11 · web 93).
+**Current test count: 660** (sim 499 · shared 49 · api 11 · web 101).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -333,7 +333,7 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   gold penalty — no such penalty exists in the model yet), and Haures #64 (Choleric-on-Choleric
   murder — Cholerics are murderers, not victims). Each needs a number or a mechanic settled on the
   spreadsheet before it can be wired without guessing.
-- **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. Deliberately left for later: **(a)** the **single-use activation UI** — Hand of Glory and Defixio both have working, tested sim actions (`activateMaleficium`) but no player affordance yet; the Maleficia cabinet needs a "Use" button plus a status indicator (Hand of Glory's remaining time, Defixio's active target) wired to a store action (a UI decision: where the Use control and readout live in the specimen-cabinet detail view); **(b)** the **oracular reveals** (Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather — surface the relevant Opera tier distribution; an info-display feature needing a UI readout decision).
+- **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. Deliberately left for later: the **oracular reveals** (Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather — surface the relevant Opera tier distribution; an info-display feature needing a UI readout decision).
 - **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll. Deliberately left for later: **(a)** completing the PC's _Decimatio_ program — it surfaces only _Caedis_ today (`DecimatioGroup`), so _Pogrom_ (with a **subtype picker** — the player chooses which subtype to purge; a small design element) and _Purgatio_ (a trivial row) still need wiring there, **not** on the Suasio scroll (which holds only the Suasio temptations); **(b)** one **placeholder magnitude** remains — Imperium's action time (the Suasio sheet leaves it as "Fill Time"; currently a flagged 60s). The Pogrom (1000) and Purgatio (10000) gold costs are now sheet-pinned.
 - **Emails (Opera menu) — impact-feedback system [pending design].** A new Opera-menu item that
   surfaces the in-world consequences of the player's actions as incoming correspondence: subscribed
@@ -365,15 +365,12 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   recap delta alongside the new state (a small additive change), surfaced as a welcome-back screen on
   load (the UI half lives in the roadmap's 5.4 track).
 
-**UI work — to be built with Claude Design.** Designed and built in Claude Design. The first three
+**UI work — to be built with Claude Design.** Designed and built in Claude Design. The first two
 items below have a complete, tested sim/mechanic side and need only their player-facing surface; the
 last two — Emails and the smartphone code terminal — are new in-world features whose scope is still
-being specified (and may carry a small sim hook of their own):
+being specified (and may carry a small sim hook of their own). _(The Maleficia "Use" affordance,
+formerly first here, has shipped — see the Maleficia-effects bullet above.)_
 
-- **Single-use activation — "Use" affordance.** A Use button plus a status indicator in the
-  Maleficia specimen-cabinet detail view, wired to the existing `activateMaleficium` sim action, for the
-  two consumables: **Hand of Glory** (show remaining buff time; Maleficia M5) and **Defixio** (show the
-  active curse's target subtype; Maleficia M6).
 - **Oracular reveals.** When the player owns Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads
   Dirt / Crow Feather, surface the relevant Opera tier distribution as an info readout (Suasio /
   Decimatio / Indagatio / Emptio respectively; Obsidian Mirror reveals all).
@@ -428,11 +425,12 @@ _Lowest-risk, highest-leverage: three affordances whose mechanic is already impl
 the only missing piece is the player surface. Built in Claude Design per the frontend convention — **no
 new sim**._
 
-- **The "Use" affordance** _(sim done — Maleficia M5/M6)_. A Use button plus a status readout in the
-  Maleficia specimen-cabinet detail view, wired to the existing `activateMaleficium` store action, for the
-  two consumables: **Hand of Glory** (show the remaining buff time) and **Defixio** (show the active
-  curse's target subtype). The only open question is where the Use control and readout sit in the detail
-  view.
+- **The "Use" affordance** _(✓ shipped)_. A Use button plus a status readout in the
+  Maleficia specimen-cabinet detail view, wired to the `activateMaleficium` store action, for the
+  two consumables: **Hand of Glory** (remaining buff time) and **Defixio** (active curse's target,
+  or "choosing its victim" before the roll). Selection is by id so consuming the last copy can't
+  strand the detail view. Pinned by adapter + store unit tests; the Playwright e2e step is deferred to
+  a machine with a browser (and would benefit from a localStorage save-seed helper).
 - **Oracular reveals** _(sim done)_. When the player owns Obsidian Mirror / Hollow Effigy / The Dadu /
   Crossroads Dirt / Crow Feather, surface the relevant Opera tier distribution as an info readout (_Suasio_
   / _Decimatio_ / _Indagatio_ / _Emptio_ respectively; the Mirror reveals all). A display feature needing a

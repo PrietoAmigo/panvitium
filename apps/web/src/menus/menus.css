@@ -577,6 +577,19 @@ body {
   color: #e6a23c;
   border-top-color: rgba(216, 182, 88, 0.3);
 }
+.panel--cabinet .mal-use {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.panel--cabinet .mal-use-status {
+  margin: 0;
+  font-style: italic;
+  color: #c9b78c;
+  font-family: 'IM Fell English', serif;
+}
 .panel--cabinet .rarity-common {
   color: #b59a6a;
 }

@@ -58,6 +58,21 @@ export interface Maleficium {
   img: string;
   desc: string;
   effect: string;
+  /**
+   * Present only for single-use consumables (Hand of Glory, Defixio); drives the cabinet's "Use"
+   * control. Absent for ordinary maleficia, which have no activation affordance.
+   */
+  use?: MaleficiumUse;
+}
+
+/** The cabinet's single-use activation affordance for a consumable maleficium. */
+export interface MaleficiumUse {
+  /** Label for the activate button (e.g. "Use"). */
+  label: string;
+  /** False when the item is owned but cannot be activated right now (e.g. a defixio already runs). */
+  enabled: boolean;
+  /** A line describing the current effect status (remaining buff time, the cursed subtype), if any. */
+  status?: string;
 }
 
 export interface Sigil {

@@ -86,6 +86,26 @@ describe('gameStore — action wiring', () => {
   });
 });
 
+describe('gameStore — maleficia activation (5.1)', () => {
+  it('uses a Hand of Glory: consumes one copy and starts the buff, clearing any notice', () => {
+    const s = store().state as GameState;
+    useGameStore.setState({
+      state: { ...s, lifetime: { ...s.lifetime, maleficia: ['hand_of_glory'] } },
+    });
+    store().activateMaleficium('hand_of_glory');
+    expect(store().state?.lifetime.maleficia).toHaveLength(0);
+    expect(store().state?.lifetime.handOfGloryRemaining ?? 0).toBeGreaterThan(0);
+    expect(store().notice).toBeNull();
+  });
+
+  it('sets a notice and changes nothing when the item is not owned', () => {
+    const before = store().state?.lifetime.maleficia.length ?? 0;
+    store().activateMaleficium('hand_of_glory');
+    expect(store().state?.lifetime.maleficia.length ?? 0).toBe(before);
+    expect(store().notice).toBeTruthy();
+  });
+});
+
 describe('gameStore — outcome log', () => {
   it('records an outcome when a queued action resolves', () => {
     patchGold(200);
