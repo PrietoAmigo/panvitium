@@ -56,6 +56,7 @@ import { addReprobates, mintSouls, removeReprobatesRandom } from './population.j
 import { type Rng } from './rng.js';
 import {
   sigilConversionBiasContributions,
+  sigilConversionRebalance,
   sigilMurderBiasContributions,
   sigilCholericMurderGoldPerKill,
 } from './sigils.js';
@@ -184,6 +185,23 @@ export function conversionBiasMul(state: GameState): Partial<Record<ReprobateSub
   // Conversion-bias sigils (Eligos #15, Phenex #37 → Celebrity) compose multiplicatively on top.
   for (const [subtype, mul] of Object.entries(sigilConversionBiasContributions(state))) {
     out[subtype as ReprobateSubtype] = (out[subtype as ReprobateSubtype] ?? 1) * mul;
+  }
+  // Ose #57 / Orias #59: re-roll toward the currently smallest / largest CONVERTED subtype by
+  // count — multiply that subtype's conversion weight by (1 + strength), pulling new conversions
+  // toward it (Ose balances the spread; Orias snowballs the leader). The target is dynamic, picked
+  // from the live counts each call; a subtype with no source weight stays 0 (the mul is a no-op).
+  const { minority, majority } = sigilConversionRebalance(state);
+  if (minority > 0 || majority > 0) {
+    const counts = state.lifetime.reprobates;
+    let minT: ReprobateSubtype | null = null;
+    let maxT: ReprobateSubtype | null = null;
+    for (const t of REPROBATE_SUBTYPES) {
+      if (t === 'reprobate') continue;
+      if (minT === null || counts[t] < counts[minT]) minT = t;
+      if (maxT === null || counts[t] > counts[maxT]) maxT = t;
+    }
+    if (minority > 0 && minT !== null) out[minT] = (out[minT] ?? 1) * (1 + minority);
+    if (majority > 0 && maxT !== null) out[maxT] = (out[maxT] ?? 1) * (1 + majority);
   }
   return out;
 }

@@ -347,15 +347,21 @@ export function computeModifiers(state: GameState): Modifiers {
   // Sigil penalty reductions (Gaap/Malphas/Gremory/Volac): each divides its channel's per-count
   // coefficient by `(1 + strength)` (≥ 1; default 1 = no reduction), softening the penalty.
   const penRed = sigilPenaltyReductionByChannel(state, sigilEffectMultiplier(owned));
-  //   Degenerate (Luxuria): lowers suicide + Choleric murder
+  //   Degenerate (Luxuria): lowers suicide + Choleric murder. Vual #47 softens BOTH via the shared
+  //   `degenerateDeathRates` channel; Gaap/Malphas/Gremory/Volac's `degenerateSuicide` softens only
+  //   suicide. Each penRed channel divides the per-count penalty by (1 + strength) (default 1).
   const degenerateSuicideMul =
     1 /
     (1 +
       ((DEGENERATE_SUICIDE_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) /
-        (penRed.degenerateSuicide ?? 1)) *
+        ((penRed.degenerateSuicide ?? 1) * (penRed.degenerateDeathRates ?? 1))) *
         subs.degenerate);
   const degenerateMurderMul =
-    1 / (1 + (DEGENERATE_MURDER_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) * subs.degenerate);
+    1 /
+    (1 +
+      ((DEGENERATE_MURDER_REDUCTION_PER_COUNT + (pen.degenerate ?? 0)) /
+        (penRed.degenerateDeathRates ?? 1)) *
+        subs.degenerate);
   //   Nihilist (Tristitia): raises suicide. Ronove #27 / Focalor #41 amplify the per-count term
   //   (so they do nothing when no Nihilists are present).
   const nihilistSuicideMul =

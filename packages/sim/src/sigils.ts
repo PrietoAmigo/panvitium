@@ -80,6 +80,7 @@ export type SigilEffect =
   | { readonly kind: 'invokingPower' }
   | { readonly kind: 'costReduction'; readonly channel: CostChannel }
   | { readonly kind: 'conversionBias'; readonly subtype: ReprobateSubtype }
+  | { readonly kind: 'conversionRebalance'; readonly direction: 'minority' | 'majority' }
   | { readonly kind: 'murderBias'; readonly subtype: ReprobateSubtype }
   | { readonly kind: 'indagatioDoubleFind' }
   | { readonly kind: 'offlineResource'; readonly resource: 'gold' | 'influence' }
@@ -100,6 +101,7 @@ export type PenaltyChannel =
   | 'sigmaInfluence'
   | 'celebrityGold'
   | 'degenerateSuicide'
+  | 'degenerateDeathRates'
   | 'gamblerGeneration';
 
 /**
@@ -419,6 +421,15 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'modifier', field: 'indagatioEfficiencyMul', direction: 'increase' },
   },
+  47: {
+    id: 47,
+    name: 'Vual',
+    coefficient: 0.001,
+    // "Love of women" → softens the Degenerate dampening of suicide AND murder. Degenerates lower
+    // both rates (Reprobates sheet: −suicide, −Choleric murder); Vual divides that per-count penalty
+    // by (1 + strength) on the shared `degenerateDeathRates` channel, so both recover toward base.
+    effect: { kind: 'penaltyReduction', channel: 'degenerateDeathRates' },
+  },
   41: {
     id: 41,
     name: 'Focalor',
@@ -498,11 +509,27 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'penaltyReduction', channel: 'degenerateSuicide' },
   },
+  57: {
+    id: 57,
+    name: 'Ose',
+    coefficient: 0.001,
+    // "Changes shape" → Vitium Compositum re-roll toward the minority subtype: biases the
+    // conversion pick toward whichever converted subtype is currently smallest (balancing).
+    effect: { kind: 'conversionRebalance', direction: 'minority' },
+  },
   58: {
     id: 58,
     name: 'Amy',
     coefficient: 0.001,
     effect: { kind: 'costReduction', channel: 'emptioGold' },
+  },
+  59: {
+    id: 59,
+    name: 'Orias',
+    coefficient: 0.001,
+    // "Transformations" → Vitium Compositum re-roll toward the majority subtype: biases the
+    // conversion pick toward whichever converted subtype is currently largest (snowballing).
+    effect: { kind: 'conversionRebalance', direction: 'majority' },
   },
   60: {
     id: 60,
@@ -801,6 +828,29 @@ export function sigilConversionBiasContributions(
     out[def.effect.subtype] = (out[def.effect.subtype] ?? 1) * (1 + s);
   }
   return out;
+}
+
+/**
+ * Ose #57 / Orias #59: the conversion re-roll strengths toward the minority (Ose) / majority
+ * (Orias) subtype. Returns bare summed % per direction; `conversionBiasMul` resolves which subtype
+ * is currently smallest / largest and multiplies that subtype's conversion weight by (1 + %).
+ */
+export function sigilConversionRebalance(
+  state: GameState,
+  effectMul = 1,
+): { minority: number; majority: number } {
+  let minority = 0;
+  let majority = 0;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'conversionRebalance') continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s <= 0) continue;
+    if (def.effect.direction === 'minority') minority += s;
+    else majority += s;
+  }
+  return { minority, majority };
 }
 
 /**

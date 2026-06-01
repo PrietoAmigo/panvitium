@@ -19,6 +19,7 @@ import {
   categoryTierModifiers,
   computeModifiers,
   conversionBiasMul,
+  sigilConversionRebalance,
   createInitialState,
   currentInvokingPower,
   invocationById,
@@ -657,16 +658,13 @@ describe('Offline resource-rate sigils (S13)', () => {
 });
 
 describe('Vitium Compositum output sigil (S14)', () => {
-  it('Zagan #61 lifts Compositum gold output (Ose #57 / Orias #59 deferred)', () => {
+  it('Zagan #61 lifts Compositum gold output', () => {
     expect(sigilById(61)!.effect).toEqual({
       kind: 'modifier',
       field: 'vitiumCompositumOutputMul',
       direction: 'increase',
     });
     expect(sigilById(61)!.name).toBe('Zagan');
-    // The re-conversion rebalancing sigils are not yet wired.
-    expect(SIGIL_IDS).not.toContain(57);
-    expect(SIGIL_IDS).not.toContain(59);
     // 0.001 × sqrt(1e6) = 1 → ×2 on the field.
     expect(computeModifiers(bound(61, 1_000_000)).vitiumCompositumOutputMul).toBeCloseTo(2, 6);
     expect(computeModifiers(fresh()).vitiumCompositumOutputMul).toBe(1);
@@ -687,6 +685,73 @@ describe('Vitium Compositum output sigil (S14)', () => {
     const zagan = gain(withToggle(bound(61, 1_000_000)));
     // Compositum's 100 gold/s doubles; the BASE_GOLD_PER_SECOND term is unaffected.
     expect(zagan).toBeCloseTo(base + 100, 6);
+  });
+});
+
+describe('Conversion-rebalance sigils Ose #57 / Orias #59 (S14b)', () => {
+  // glutton is the unique smallest converted subtype; celebrity the unique largest.
+  const counts = {
+    reprobate: 0,
+    glutton: 1,
+    degenerate: 10,
+    gambler: 10,
+    nihilist: 10,
+    choleric: 10,
+    husk: 10,
+    celebrity: 100,
+    sigma: 10,
+  };
+  const withCounts = (s: GameState): GameState => ({
+    ...s,
+    lifetime: { ...s.lifetime, reprobates: { ...counts } },
+  });
+
+  it('Ose #57 / Orias #59 are conversion-rebalance sigils (minority / majority)', () => {
+    expect(sigilById(57)!.effect).toEqual({ kind: 'conversionRebalance', direction: 'minority' });
+    expect(sigilById(59)!.effect).toEqual({ kind: 'conversionRebalance', direction: 'majority' });
+    expect(sigilById(57)!.name).toBe('Ose');
+    expect(sigilById(59)!.name).toBe('Orias');
+  });
+
+  it('sigilConversionRebalance reports the bound minority / majority strengths', () => {
+    expect(sigilConversionRebalance(fresh())).toEqual({ minority: 0, majority: 0 });
+    // 0.001 × sqrt(1e6) = 1.
+    expect(sigilConversionRebalance(bound(57, 1_000_000)).minority).toBeCloseTo(1, 6);
+    expect(sigilConversionRebalance(bound(59, 1_000_000)).majority).toBeCloseTo(1, 6);
+  });
+
+  it('Ose biases conversion toward the minority subtype; Orias toward the majority', () => {
+    // Ose: glutton (smallest) weight × (1 + 1) = ×2.
+    expect(conversionBiasMul(withCounts(bound(57, 1_000_000))).glutton).toBeCloseTo(2, 6);
+    // Orias: celebrity (largest) weight × 2.
+    expect(conversionBiasMul(withCounts(bound(59, 1_000_000))).celebrity).toBeCloseTo(2, 6);
+    // Unbound: no rebalance multiplier at all.
+    expect(conversionBiasMul(withCounts(fresh()))).toEqual({});
+  });
+});
+
+describe('Vual #47 — softens the Degenerate suicide/murder penalties (S14c)', () => {
+  const withDegens = (s: GameState): GameState => ({
+    ...s,
+    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, degenerate: 500 } },
+  });
+
+  it('Vual #47 is a degenerateDeathRates penalty-reduction sigil', () => {
+    expect(sigilById(47)!.effect).toEqual({
+      kind: 'penaltyReduction',
+      channel: 'degenerateDeathRates',
+    });
+    expect(sigilById(47)!.name).toBe('Vual');
+  });
+
+  it('softens BOTH the suicide and Choleric-murder dampening from Degenerates', () => {
+    const unbound = computeModifiers(withDegens(fresh()));
+    const vual = computeModifiers(withDegens(bound(47, 1_000_000)));
+    // Degenerates drag both rates below 1; Vual pulls both back up toward 1 (softer penalty).
+    expect(unbound.reprobateSuicideRateMul).toBeLessThan(1);
+    expect(unbound.cholericMurderRateMul).toBeLessThan(1);
+    expect(vual.reprobateSuicideRateMul).toBeGreaterThan(unbound.reprobateSuicideRateMul);
+    expect(vual.cholericMurderRateMul).toBeGreaterThan(unbound.cholericMurderRateMul);
   });
 });
 
