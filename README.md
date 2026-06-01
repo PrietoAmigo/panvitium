@@ -334,7 +334,7 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   murder — Cholerics are murderers, not victims). Each needs a number or a mechanic settled on the
   spreadsheet before it can be wired without guessing.
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. Deliberately left for later: **(a)** the **single-use activation UI** — Hand of Glory and Defixio both have working, tested sim actions (`activateMaleficium`) but no player affordance yet; the Maleficia cabinet needs a "Use" button plus a status indicator (Hand of Glory's remaining time, Defixio's active target) wired to a store action (a UI decision: where the Use control and readout live in the specimen-cabinet detail view); **(b)** the **oracular reveals** (Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather — surface the relevant Opera tier distribution; an info-display feature needing a UI readout decision).
-- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll. Deliberately left for later: **(a)** the _Decimatio_ UI — a _Purgatio_ row (trivial) and a _Pogrom_ **subtype picker** (the player chooses which subtype to purge; a small design element); **(b)** one **placeholder magnitude** remains — Imperium's action time (the Suasio sheet leaves it as "Fill Time"; currently a flagged 60s). The Pogrom (1000) and Purgatio (10000) gold costs are now sheet-pinned.
+- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll. Deliberately left for later: **(a)** completing the PC's _Decimatio_ program — it surfaces only _Caedis_ today (`DecimatioGroup`), so _Pogrom_ (with a **subtype picker** — the player chooses which subtype to purge; a small design element) and _Purgatio_ (a trivial row) still need wiring there, **not** on the Suasio scroll (which holds only the Suasio temptations); **(b)** one **placeholder magnitude** remains — Imperium's action time (the Suasio sheet leaves it as "Fill Time"; currently a flagged 60s). The Pogrom (1000) and Purgatio (10000) gold costs are now sheet-pinned.
 - **Emails (Opera menu) — impact-feedback system [pending design].** A new Opera-menu item that
   surfaces the in-world consequences of the player's actions as incoming correspondence: subscribed
   newsletter emails, messages from people affected by the player's businesses (e.g. class actions),
@@ -377,9 +377,10 @@ being specified (and may carry a small sim hook of their own):
 - **Oracular reveals.** When the player owns Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads
   Dirt / Crow Feather, surface the relevant Opera tier distribution as an info readout (Suasio /
   Decimatio / Indagatio / Emptio respectively; Obsidian Mirror reveals all).
-- **Decimatio on the scroll.** A _Purgatio_ row and a _Pogrom_ **subtype picker** (how the player
-  chooses which subtype to purge), surfacing the already-implemented Pogrom/Purgatio sim
-  (economy-parity 14).
+- **Complete the PC's Decimatio program.** The PC's _Decimatio_ program surfaces only _Caedis_ today
+  (`DecimatioGroup`); add a _Purgatio_ row and a _Pogrom_ **subtype picker** (how the player chooses
+  which subtype to purge) alongside it — Decimatio lives entirely in the PC, never on the Suasio scroll
+  — surfacing the already-implemented Pogrom/Purgatio sim (economy-parity 14).
 - **Emails (Opera menu).** The impact-feedback correspondence system described above — its scope,
   triggers and presentation are a Claude Design topic.
 - **Smartphone code terminal.** The studio-desk dial-pad described above — its presentation and the
@@ -436,9 +437,10 @@ new sim**._
   Crossroads Dirt / Crow Feather, surface the relevant Opera tier distribution as an info readout (_Suasio_
   / _Decimatio_ / _Indagatio_ / _Emptio_ respectively; the Mirror reveals all). A display feature needing a
   readout decision, no mechanic.
-- **Decimatio on the scroll** _(sim done — economy-parity 14)_. A _Purgatio_ row (trivial) and a _Pogrom_
-  **subtype picker** (the player chooses which subtype to purge), surfacing the already-implemented
-  Pogrom/Purgatio sim through the existing action-`target` plumbing.
+- **Complete the PC's Decimatio program** _(sim done — economy-parity 14)_. The program surfaces only
+  _Caedis_ today (`DecimatioGroup`); add a _Purgatio_ row (trivial) and a _Pogrom_ **subtype picker** (the
+  player chooses which subtype to purge) alongside it — Decimatio belongs entirely to the PC, not the
+  Suasio scroll — surfacing the Pogrom/Purgatio sim through the existing action-`target` plumbing.
 
 **Done when** each affordance drives the live store action and is pinned by a Playwright e2e step.
 
