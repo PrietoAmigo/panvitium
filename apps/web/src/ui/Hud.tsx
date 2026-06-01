@@ -1,39 +1,10 @@
 import { type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import { useGameStore } from '../store/gameStore.js';
-import { formatBigNum } from '../game/format.js';
 import { actionName } from '../game/labels.js';
-import {
-  ACTIONS,
-  ZERO,
-  bn,
-  gt,
-  perSecondRates,
-  totalReprobates,
-  playerEfficiency,
-  type ActionTimer,
-  type BigNum,
-} from '@panvitium/sim';
+import { ACTIONS, totalReprobates, playerEfficiency, type ActionTimer } from '@panvitium/sim';
 
 const NO_TIMERS: readonly ActionTimer[] = [];
-
-function Resource({
-  label,
-  value,
-  rate,
-}: {
-  label: string;
-  value: BigNum;
-  rate?: string;
-}): ReactElement {
-  return (
-    <div className="resource">
-      <span className="resource-label">{label}</span>
-      <span className="resource-value">{formatBigNum(value)}</span>
-      {rate !== undefined && <span className="resource-rate">{rate}</span>}
-    </div>
-  );
-}
 
 /** The reprobate population — a natural count, not a BigNum resource (03 §3). */
 function Population(): ReactElement {
@@ -104,32 +75,9 @@ function Efficiency(): ReactElement | null {
 }
 
 export function Hud(): ReactElement {
-  const souls = useGameStore((s) => s.state?.souls ?? ZERO);
-  const gold = useGameStore((s) => s.state?.lifetime.gold ?? ZERO);
-  const influence = useGameStore((s) => s.state?.lifetime.influence ?? ZERO);
-  const state = useGameStore((s) => s.state);
-
-  // Live passive-income readouts (5.4). Shown only when positive, so the early game stays uncluttered
-  // and a Morpheus/descent freeze (rates → 0) hides them rather than reading a misleading "+0/s".
-  const rates = state ? perSecondRates(state) : null;
-  const goldRate = rates && rates.gold > 0 ? `+${formatBigNum(bn(rates.gold))}/s` : undefined;
-  const influenceRate =
-    rates && gt(rates.influence, ZERO) ? `+${formatBigNum(rates.influence)}/s` : undefined;
-
   return (
     <aside className="hud">
       <div className="hud-title">{strings.appName}</div>
-      <Resource label={strings.resources.souls} value={souls} />
-      <Resource
-        label={strings.resources.gold}
-        value={gold}
-        {...(goldRate !== undefined ? { rate: goldRate } : {})}
-      />
-      <Resource
-        label={strings.resources.influence}
-        value={influence}
-        {...(influenceRate !== undefined ? { rate: influenceRate } : {})}
-      />
       <Population />
       <ActiveActions />
       <Vigil />

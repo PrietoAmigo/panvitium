@@ -32,6 +32,7 @@ import { AltarPanel as DesignedAltar } from '../menus/AltarPanel.js';
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
 import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
 import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
+import { AnalyticsGroup } from './Analytics.js';
 import { buildAltar } from '../game/altar.js';
 import { buildCabinet } from '../game/maleficia.js';
 import { pogromTargets } from '../game/decimatio.js';
@@ -335,13 +336,21 @@ function DecimatioGroup(): ReactElement {
   );
 }
 
-type PcGroupId = 'depraedatio' | 'decimatio' | 'indagatio' | 'emptio' | 'achievements' | 'logs';
+type PcGroupId =
+  | 'depraedatio'
+  | 'decimatio'
+  | 'indagatio'
+  | 'emptio'
+  | 'analytics'
+  | 'achievements'
+  | 'logs';
 
 const PC_GROUPS: { id: PcGroupId; label: string }[] = [
   { id: 'depraedatio', label: strings.opera.depraedatio },
   { id: 'decimatio', label: strings.opera.decimatio },
   { id: 'indagatio', label: strings.opera.indagatio },
   { id: 'emptio', label: strings.opera.emptio },
+  { id: 'analytics', label: strings.analytics.title },
   { id: 'achievements', label: strings.achievements.ledger },
   { id: 'logs', label: strings.opera.logs },
 ];
@@ -805,6 +814,7 @@ function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
   if (group === 'decimatio') return <DecimatioGroup />;
   if (group === 'indagatio') return <IndagatioGroup />;
   if (group === 'emptio') return <EmptioGroup />;
+  if (group === 'analytics') return <AnalyticsGroup />;
   if (group === 'achievements') return <AchievementsGroup />;
   if (group === 'logs') return <OutcomeLog />;
   return <p className="pc-empty">{strings.opera.notYet}.</p>;

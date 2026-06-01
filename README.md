@@ -485,10 +485,17 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
 - **Readability** _(✓ shipped)_. BigNum displays use **consistent short-scale suffixing**:
   `formatBigNum` reads as grouped integers below a million, then M / B / T / … / Dc suffixes, then
   compact scientific beyond the ladder for the astronomical endgame — so values stay legible deep into
-  a run. **Per-second rate readouts** are now live too: a read-only `perSecondRates(state)` sim helper
-  mirrors the tick's income terms (zeroing while frozen mid-descent or under Morpheus), and the HUD
-  shows `+X/s` under Gold and Influence when positive. Pinned by parity tests (the readout equals the
-  gold the tick actually accrues over one second).
+  a run. **Per-second rate readouts** exist too: a read-only `perSecondRates(state)` sim helper mirrors
+  the tick's income terms (zeroing while frozen mid-descent or under Morpheus), pinned by parity tests
+  (the readout equals the gold the tick actually accrues over one second). These now surface in the
+  **Analytics** program rather than the HUD (see below).
+- **Analytics PC program** _(✓ shipped)_. The always-on resource values were pulled off the HUD (which
+  now carries only the ambient status: population, in-flight rites, vigil, efficiency) into an
+  on-demand PC program sitting between Emptio and Achievements. Three tabs: **Resources** (souls / gold
+  / influence with `perSecondRates` and the influence cap), **Reprobates** (unconverted vs converted
+  counts by subtype, plus `reprobateRates` generation / conversion / death rates), and **Acolytes** (a
+  per-acolyte board showing each one's current action, remaining cycle time, and a progress bar). Reuses
+  the existing `kat-tab` tab styling; the data all comes from already-tested sim helpers.
 - **Settings / options panel** _(partly shipped)_. A gear in the top-right opens a settings overlay.
   **Shipped:** local-first save tools — **export** (serialize the current game to a portable string via
   `serializeSaveBlob`), **import** (replace the game from a pasted save, validated through `parseSaveBlob`

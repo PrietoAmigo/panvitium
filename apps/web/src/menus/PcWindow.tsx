@@ -11,6 +11,7 @@ const EXECUTABLES = [
   { id: 'Decimatio', color: '#772953', glyph: '†' },
   { id: 'Indagatio', color: '#2c7bbe', glyph: '?' },
   { id: 'Emptio', color: '#2f9e52', glyph: '+' },
+  { id: 'Analytics', color: '#1f9e8f', glyph: '\u03A3' },
   { id: 'Achievements', color: '#c79a2b', glyph: '★' },
   { id: 'Logs', color: '#3a3a3e', glyph: '>_' },
 ] as const;
