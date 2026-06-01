@@ -76,7 +76,7 @@ export interface ReprobateRates {
   readonly generationPerSecond: number;
   /** Suicides per second across the whole population. */
   readonly suicidePerSecond: number;
-  /** Murders per second by Cholerics against non-Choleric reprobates. */
+  /** Murders per second by Cholerics against any reprobate (including other Cholerics). */
   readonly murderPerSecond: number;
   /** Conversion attempts per second from active Vitium sources. */
   readonly conversionPerSecond: number;
@@ -118,29 +118,20 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
   };
 }
 
-/** A non-Choleric reprobate count, used to gate murder application. */
-function nonCholericCount(state: GameState): number {
-  let n = 0;
-  for (const t of REPROBATE_SUBTYPES) if (t !== 'choleric') n += state.lifetime.reprobates[t];
-  return n;
-}
-
-/** Remove one non-Choleric reprobate at random, weighted by subtype counts. */
-function removeOneNonCholeric(
+/** Remove one reprobate at random, weighted by subtype counts — any subtype, Cholerics included. */
+function removeOneVictim(
   state: GameState,
   rng: Rng,
   bias?: Partial<Record<ReprobateSubtype, number>>,
 ): GameState {
   const counts = { ...state.lifetime.reprobates };
-  const total = nonCholericCount(state);
+  const total = totalReprobates(state);
   if (total <= 0) return state;
 
-  // No murder-bias sigils bound → the original uniform-by-count integer draw, untouched. This keeps
-  // the RNG stream (and every test that binds no murder-bias sigil) byte-identical.
+  // No murder-bias sigils bound → uniform-by-count integer draw across every subtype.
   if (bias === undefined || Object.keys(bias).length === 0) {
     let r = rng.int(total);
     for (const t of REPROBATE_SUBTYPES) {
-      if (t === 'choleric') continue;
       if (r < counts[t]) {
         counts[t] -= 1;
         return { ...state, lifetime: { ...state.lifetime, reprobates: counts } };
@@ -150,18 +141,17 @@ function removeOneNonCholeric(
     return state;
   }
 
-  // Biased (Glasya-Labolas/Sabnock/Camio): weight each non-Choleric subtype by count × bias and draw
-  // against the float total — redistributing which non-Choleric dies, not the total murder count.
+  // Biased (Glasya-Labolas/Sabnock/Camio/Haures): weight each subtype by count × bias and draw
+  // against the float total — redistributing which reprobate dies, not the total murder count.
   const w = {} as Record<ReprobateSubtype, number>;
   let totalW = 0;
   for (const t of REPROBATE_SUBTYPES) {
-    w[t] = t === 'choleric' ? 0 : counts[t] * (bias[t] ?? 1);
+    w[t] = counts[t] * (bias[t] ?? 1);
     totalW += w[t];
   }
   if (totalW <= 0) return state;
   let draw = rng.float() * totalW;
   for (const t of REPROBATE_SUBTYPES) {
-    if (t === 'choleric') continue;
     if (draw < w[t]) {
       counts[t] -= 1;
       return { ...state, lifetime: { ...state.lifetime, reprobates: counts } };
@@ -318,16 +308,16 @@ export function applyReprobateDynamics(
     };
   }
 
-  // 3. Murders. Cholerics kill non-Cholerics; each kill yields 1 soul. If no non-Cholerics exist,
-  //    we leave the pool alone so progress isn't lost — they'll resolve once a target appears.
-  //    Murder-victim bias (Glasya-Labolas/Sabnock/Camio) is constant across the loop — bindings
-  //    don't change mid-tick — so compute it once.
+  // 3. Murders. Cholerics kill any reprobate, including other Cholerics; each kill yields 1 soul.
+  //    If no reprobates exist, we leave the pool alone so progress isn't lost — they'll resolve
+  //    once a target appears. Murder-victim bias (Glasya-Labolas/Sabnock/Camio/Haures) is constant
+  //    across the loop — bindings don't change mid-tick — so compute it once.
   const murderBias = sigilMurderBiasContributions(working);
   // Leraie #14: each Choleric murder also yields gold. 0 when unbound, so the loop (and its RNG
   // draws) stay byte-identical to the no-sigil path; only the gold ledger changes when bound.
   const murderGoldPerKill = sigilCholericMurderGoldPerKill(working);
-  while (working.lifetime.murderPool >= 1 && nonCholericCount(working) > 0) {
-    const after = removeOneNonCholeric(working, rng, murderBias);
+  while (working.lifetime.murderPool >= 1 && totalReprobates(working) > 0) {
+    const after = removeOneVictim(working, rng, murderBias);
     if (after === working) break;
     const withSoul = mintSouls(after, 1);
     working = {

@@ -507,8 +507,9 @@ describe('Subtype-targeted murder-rate sigils (S10)', () => {
       field: 'cholericMurderRateMul',
       direction: 'increase',
     });
-    // Haures #64 (Choleric victims) is deferred — the model has no Choleric-murder channel.
-    expect(SIGIL_IDS).not.toContain(64);
+    // Haures #64 biases murder victims toward Cholerics (Cholerics are valid victims by default).
+    expect(sigilById(64)!.effect).toEqual({ kind: 'murderBias', subtype: 'choleric' });
+    expect(sigilById(64)!.name).toBe('Haures');
   });
 
   it('a bound murder-bias sigil raises only its subtype weight by (1 + strength)', () => {
@@ -521,6 +522,12 @@ describe('Subtype-targeted murder-rate sigils (S10)', () => {
   it('Amdusias #67 lifts the Choleric murder-rate modifier', () => {
     const { scalar } = sigilModifierContributions(bound(67, 1_000_000));
     expect(scalar.cholericMurderRateMul).toBeCloseTo(2, 6);
+  });
+
+  it('Haures #64 biases murder onto Cholerics (a Choleric-targeting murder-bias sigil)', () => {
+    const c = sigilMurderBiasContributions(bound(64, 1_000_000));
+    expect(c.choleric).toBeCloseTo(2, 6); // 0.001 × sqrt(1e6) = 1 → factor 2
+    expect(Object.keys(c)).toEqual(['choleric']);
   });
 
   it('a bound murder-bias sigil culls its subtype harder (weighted victim draw)', () => {
@@ -537,7 +544,8 @@ describe('Subtype-targeted murder-rate sigils (S10)', () => {
     // Tiny delta → only the pre-filled murders resolve (no meaningful births/suicides/conversions).
     const after = applyReprobateDynamics(seeded, 1e-6, makeRng(7));
     expect(after.lifetime.reprobates.celebrity).toBeLessThan(after.lifetime.reprobates.glutton);
-    expect(after.lifetime.reprobates.choleric).toBe(10); // Cholerics are never murder victims
+    // Cholerics are now eligible victims too (small unbiased share of the weighted draw).
+    expect(after.lifetime.reprobates.choleric).toBeLessThanOrEqual(10);
   });
 });
 

@@ -186,11 +186,11 @@ describe('reprobate dynamics — murder pool (dormant without Cholerics)', () =>
     expect(after.lifetime.murderPool).toBe(0);
   });
 
-  it('with Cholerics + non-Choleric target, the pool drains via removeOneNonCholeric', () => {
+  it('with Cholerics + a population, the murder pool drains and souls = total deaths', () => {
     // 10 Cholerics × 0.001/s = 0.01/s murder. Over 200 s = 2.0 → 2 murders.
     // Suicide also fires in parallel: 510 × 0.00023 = 0.1173/s × 200 s ≈ 23 suicides.
-    // What this test PINS: cholerics are untouched (murder targets non-Choleric only); the
-    // murder pool drains; total deaths = suicides + murders and each yields 1 soul.
+    // What this PINS now: any reprobate (Cholerics included) can be a murder victim; the murder
+    // pool drains; total deaths = suicides + murders and each yields 1 soul.
     const s = createInitialState('murder', 0);
     const state: GameState = {
       ...s,
@@ -201,22 +201,17 @@ describe('reprobate dynamics — murder pool (dormant without Cholerics)', () =>
     };
     const rng = makeRng(0);
     const after = applyReprobateDynamics(state, 200, rng);
-    // Cholerics never targeted by murder. With seed 0 the suicide draws never happen to land on
-    // them either, so they stay at exactly 10 here — but the invariant we lock is "murder doesn't
-    // touch Cholerics," which holds regardless of seed.
-    expect(after.lifetime.reprobates.choleric).toBe(10);
-    // Non-Choleric population dropped — both pools drained into it.
-    expect(after.lifetime.reprobates.reprobate).toBeLessThan(500);
-    // Souls minted equals total deaths.
+    // Total population dropped by suicides + murders, and souls minted equals total deaths.
     const totalDeaths =
       510 - (after.lifetime.reprobates.choleric + after.lifetime.reprobates.reprobate);
+    expect(totalDeaths).toBe(25); // 23 suicides + 2 murders
     expect(after.souls.toNumber()).toBe(totalDeaths);
     // Murder pool drained essentially to zero (2 events applied; ~0 residual).
     expect(after.lifetime.murderPool).toBeLessThan(1);
   });
 
-  it('Cholerics with no non-Choleric target: pool grows but no murder applied', () => {
-    const s = createInitialState('murder-no-target', 0);
+  it('all-Choleric population: Cholerics now murder other Cholerics (pool drains)', () => {
+    const s = createInitialState('murder-choleric', 0);
     const state: GameState = {
       ...s,
       lifetime: {
@@ -226,10 +221,11 @@ describe('reprobate dynamics — murder pool (dormant without Cholerics)', () =>
     };
     const rng = makeRng(0);
     const after = applyReprobateDynamics(state, 200, rng);
-    expect(after.lifetime.reprobates.choleric).toBe(10);
-    // 10 Cholerics × BASE 0.001 × 200 s × Choleric self-compounding (1 + 0.001 × 10) = 2.02.
-    // The self-compounding term is 03 §3's "Increases murder rate by per-Choleric percentage".
-    expect(after.lifetime.murderPool).toBeCloseTo(2.02, 4);
+    // 10 Cholerics × BASE 0.001 × 200 s × self-compounding (1 + 0.001 × 10) = 2.02 → 2 murders,
+    // which now land on Cholerics themselves (suicide is < 1 over this window, so no suicides).
+    expect(after.lifetime.reprobates.choleric).toBe(8);
+    expect(after.souls.toNumber()).toBe(2);
+    expect(after.lifetime.murderPool).toBeCloseTo(0.02, 4);
   });
 });
 

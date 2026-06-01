@@ -528,6 +528,15 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     effect: { kind: 'categoryTier', category: 'emptio', tiers: ['stellar'], direction: 'increase' },
   },
+  64: {
+    id: 64,
+    name: 'Haures',
+    coefficient: 0.001,
+    // "+Choleric murder of Cholerics": biases murder-victim selection toward Cholerics. Cholerics
+    // are valid murder victims by default (the murder pool draws across ALL subtypes), so this just
+    // raises the Choleric victim weight by (1 + strength), exactly like the other murder-bias sigils.
+    effect: { kind: 'murderBias', subtype: 'choleric' },
+  },
   65: {
     id: 65,
     name: 'Andrealphus',
@@ -544,10 +553,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 67,
     name: 'Amdusias',
     coefficient: 0.001,
-    // "Murder rate of non-Choleric reprobate types" — all murders already target non-Cholerics,
-    // so this is an overall Choleric-murder-rate boost (composes with Aim #23). Haures #64
-    // ("of Choleric reprobate type") stays deferred: the model has Cholerics as murderers, not
-    // victims, so there is no Choleric-murder channel to lift.
+    // "Murder rate of non-Choleric reprobate types" — an overall Choleric-murder-rate boost
+    // (composes with Aim #23). Distinct from Haures #64, which biases WHICH victim dies toward
+    // Cholerics rather than lifting the total murder rate.
     effect: { kind: 'modifier', field: 'cholericMurderRateMul', direction: 'increase' },
   },
   68: {

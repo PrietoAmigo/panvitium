@@ -117,6 +117,10 @@ describe('resolveLogismoi', () => {
 });
 
 describe('resolveImperium', () => {
+  it('takes the decided 10s to cast', () => {
+    expect(ACTIONS.imperium!.baseTimeSeconds).toBe(10);
+  });
+
   it('always adds 360–1260 unconverted reprobates (fixed, player-controlled outcome)', () => {
     const n = resolveImperium(fresh(), rng()).lifetime.reprobates.reprobate;
     expect(n).toBeGreaterThanOrEqual(360);

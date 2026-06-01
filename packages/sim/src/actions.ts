@@ -204,9 +204,9 @@ export const ACTIONS: Record<string, ActionDef> = {
   },
   imperium: {
     id: 'imperium',
-    // PLACEHOLDER time: the Suasio sheet defers Imperium's duration ("Fill Time"). 60s holds the
-    // late-game big-payoff feel until the sheet pins it; cost/effect/gating are from the sheet.
-    baseTimeSeconds: 60,
+    // Action time decided at 10s (the Suasio sheet left it "Fill Time"); cost/effect/gating are
+    // from the sheet. Late-game, single fixed outcome — a short cast for its big influence price.
+    baseTimeSeconds: 10,
     category: 'suasio',
     cost: { influence: 100 },
     weights: IMPERIUM_WEIGHTS,
