@@ -347,6 +347,23 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   effects are still to be specified. Engineering note: purely informational / easter-egg codes are
   UI-only, but any code that grants a buff or other gameplay effect needs a sim hook (and, if it
   should persist across ticks or sessions, an additive-optional save field per ADR-023).
+- **Offline progression — uncap + return recap [design decision].** Two coupled changes to the
+  away/return experience. **(a) Remove the offline cap.** Today `resumeGame` clamps the elapsed
+  wall-clock to `MAX_OFFLINE_SECONDS` (7 days) in `apps/web/src/game/session.ts`; the decision is to
+  let offline progression accrue for the _full_ time away, however long. This **reverses ADR-004**
+  (whose current position is "offline = same tick, big _capped_ delta," the cap chosen so a long
+  absence can't fast-forward unbounded time and warp the economy), so it needs ADR-004 amended to
+  record the new intent and its economy implications before the slice lands. Engineering notes: the
+  apex/dynamics math already uses exact geometric integration (`1 − (1 − p)^Δt`) so one big offline tick
+  agrees with the live loop, and the `eᵗ` ramps (Panvitium, Aurevora) self-dispel via their
+  `Number.isFinite` guards — so an unbounded delta is numerically safe there. The open item is the
+  **Acedia offline-compound term** `BASE^(offlineMinutes × L²)`, which grows without bound as
+  `offlineMinutes` does; it likely needs its own ceiling or a saturating curve so it can't dominate the
+  catch-up. **(b) Return recap screen.** On resume, show a "while you were away" summary (time elapsed;
+  souls / gold / reprobates gained; anything that triggered) instead of advancing the state silently as
+  today — the recap is what keeps a long, now-unbounded absence legible. Needs `resumeGame` to return a
+  recap delta alongside the new state (a small additive change), surfaced as a welcome-back screen on
+  load (the UI half lives in the roadmap's 5.4 track).
 
 **UI work — to be built with Claude Design.** Designed and built in Claude Design. The first three
 items below have a complete, tested sim/mechanic side and need only their player-facing surface; the
@@ -385,6 +402,142 @@ Blocked on inputs that don't live in a coding session (independent of the above)
     via the ADR-021 degraded-photoreal pipeline plus Howler audio content.
 - **Final economy tuning** — any magnitudes not yet pinned to the sheet remain placeholders, flagged
   inline; the numbers are loaded from `Panvitium_Economy_Template.xlsx` (spreadsheet always wins).
+
+## Phase 5 roadmap — surface, feel, and launch
+
+> A **plan**, not a progress log. The `## Status` section above stays the authoritative record of what
+> has shipped; this section sequences what comes next and reorganizes the `### Remaining` backlog into
+> tracks. Each track ships the usual way — small, individually gate-green slices, one overlay tarball at
+> a time (delivery convention in the `panvitium` skill, §4) — and as work lands it moves out of here and
+> into `## Status`. Items that already carry a tested sim/mechanic are flagged _sim done_; items still
+> waiting on a number, a model decision, or a design scope are flagged as such, because those gate _when_
+> a slice can start, not how hard it is.
+
+With Phases 2–4 and the bulk of the economy-parity pass closed, the game is mechanically complete and
+playable end-to-end. Phase 5 turns that into a finished, launchable product: every built system gets a
+player-facing surface, the world looks and sounds the way ADR-021 (degraded-photoreal art) and ADR-014
+(Howler audio) intend, a cold-start player can find their footing, and the scaffolded stack
+(ADR-016–019) actually runs in production. The six tracks below are ordered roughly by dependency and
+risk — 5.1, 5.3, and 5.4 can run in parallel, 5.2 and 5.5 wait on decisions, and 5.6 gates on the others
+being substantially done.
+
+### 5.1 — Surface the built sim (Claude Design)
+
+_Lowest-risk, highest-leverage: three affordances whose mechanic is already implemented and tested, so
+the only missing piece is the player surface. Built in Claude Design per the frontend convention — **no
+new sim**._
+
+- **The "Use" affordance** _(sim done — Maleficia M5/M6)_. A Use button plus a status readout in the
+  Maleficia specimen-cabinet detail view, wired to the existing `activateMaleficium` store action, for the
+  two consumables: **Hand of Glory** (show the remaining buff time) and **Defixio** (show the active
+  curse's target subtype). The only open question is where the Use control and readout sit in the detail
+  view.
+- **Oracular reveals** _(sim done)_. When the player owns Obsidian Mirror / Hollow Effigy / The Dadu /
+  Crossroads Dirt / Crow Feather, surface the relevant Opera tier distribution as an info readout (_Suasio_
+  / _Decimatio_ / _Indagatio_ / _Emptio_ respectively; the Mirror reveals all). A display feature needing a
+  readout decision, no mechanic.
+- **Decimatio on the scroll** _(sim done — economy-parity 14)_. A _Purgatio_ row (trivial) and a _Pogrom_
+  **subtype picker** (the player chooses which subtype to purge), surfacing the already-implemented
+  Pogrom/Purgatio sim through the existing action-`target` plumbing.
+
+**Done when** each affordance drives the live store action and is pinned by a Playwright e2e step.
+
+### 5.2 — New diegetic features (Claude Design + a small sim hook)
+
+_Net-new in-world systems already named in the backlog; **scope, triggers, and presentation are still to
+be specified** — each needs a short design pass before it becomes a slice._
+
+- **Emails (Opera menu) — impact-feedback.** An Opera-menu inbox that surfaces the in-world consequences
+  of the player's actions as incoming correspondence (newsletter subscriptions, class-actions from people
+  harmed by the player's _Vitium Mercatura_ businesses, and similar reactive mail), so the player _feels_
+  the impact rather than only reading numbers. Provisional engineering shape: an additive-optional inbox
+  save field (ADR-023) plus sim triggers keyed off action outcomes and business throughput.
+- **Smartphone code terminal (studio desk).** A smartphone prop on the studio desk that opens a dial-pad;
+  a recognised telephone-number code triggers an easter egg, bonus content, a lore snippet, or a gameplay
+  **buff**. Informational/easter-egg codes are UI-only; any buff-granting code needs a sim hook (and, if it
+  should persist, an additive-optional save field per ADR-023). The code table and its effects are still
+  to be specified.
+
+**Done when** the scope is agreed in design, any sim hook lands with focused Vitest pins, and the surface
+ships behind an e2e step.
+
+### 5.3 — Art & audio (ADR-021 + ADR-014)
+
+_The track gated on the `assets/` tree (which lives in the repo but outside a coding session) and the
+single GIMP degrade recipe. The room/menu degraded-photoreal pipeline is already in; what remains is
+content._
+
+- **Illustration.** Draw the un-illustrated invocations and maleficia — both the Ars Goetia _book_
+  drawings (`public/assets/panvitium/invocations-ars-goetia/<id>.png`, currently a text-plate fallback for
+  un-drawn seals) and the photoreal specimen art for the Maleficia cabinet — through the one ADR-021
+  degrade recipe, so the whole diegetic frame reads at a single fidelity.
+- **Audio.** Bring up the Howler layer over the existing `audio.play(event)` stub (ADR-014): settle the
+  event taxonomy, supply the asset set, and add a mute/volume control (which folds into the settings panel
+  in 5.4).
+
+**Done when** every catalog entry has art (no text-plate fallbacks remain) and the core events have sound.
+
+### 5.4 — Onboarding & game feel
+
+_Forward-looking — not yet in the backlog; **confirm scope before coding**. None of this is new gameplay;
+it is the UX an idle game needs to keep a cold-start player past the first minutes._
+
+- **First-run ramp.** A light guided opening — the first _Suasio_, the first Devotion threshold, the first
+  _Katabasis_ — surfaced as gentle prompts rather than a heavy modal tutorial.
+- **Help & glossary.** Tooltips on resources, the seven outcome tiers, and the modifier readouts; a short
+  glossary that explains (without anglicizing) the Latin — _Opera_, _Suasio_, _Decimatio_, _Katabasis_,
+  _Vitium Compositum_, and the rest.
+- **Readability.** A pass on the BigNum displays (consistent suffixing, per-second rate readouts) so large
+  values stay legible deep into a run.
+- **Settings / options panel.** Audio (from 5.3), the `DegradePass` knobs (the engine already exposes
+  them), save export/import, and a hard reset — gathered into one panel.
+- **Return-from-away recap.** A welcome-back screen on resume showing the time elapsed and what accrued
+  while away (souls / gold / reprobates, anything that triggered), replacing today's silent catch-up.
+  Pairs with the **uncapped** offline progression recorded under `### Remaining` — the recap is what
+  keeps a long, now-unbounded absence legible. Needs `resumeGame` to surface a recap delta alongside the
+  resumed state.
+- **Notifications.** A single toast/notice surface that folds together what already exists piecemeal: the
+  achievement unlock toast, toggle auto-deactivation notices (`TickResult.notices`), and sync status.
+
+**Done when** a player starting from a cold save reaches their first _Katabasis_ unaided in playtest.
+
+### 5.5 — Economy finalization
+
+_Blocked on a number or a model decision on `Panvitium_Economy_Template.xlsx`, not on effort — once each
+is settled it is a straightforward slice (the spreadsheet always wins on numbers and on a system's
+composition)._
+
+- **The last 4 sigils.** Ose #57 / Orias #59 (per-second subtype rebalancing — needs sub-1/tick accrual
+  pools plus a sheet-pinned move-rate), Vual #47 (−Degenerate gold penalty — no such penalty exists in the
+  model yet), and Haures #64 (Choleric-on-Choleric murder — the model has Cholerics as murderers, not
+  victims). Each needs its mechanic settled before it can be wired without guessing.
+- **Imperium's action time.** The _Suasio_ sheet leaves it as "Fill Time" (currently a flagged 60s
+  placeholder).
+- **Placeholder sweep.** Reconcile any magnitudes still flagged inline (`constants.ts`, `modifiers.ts`,
+  `apex.ts`, the Opera costs) against the sheet.
+
+**Done when** no placeholder magnitudes remain flagged and all 72 sigils bind.
+
+### 5.6 — Production readiness & launch
+
+_The scaffolded infrastructure (Phase 2) becomes a live service. Touches ADR-010/011/016–019/023; gates on
+the other tracks being substantially done._
+
+- **Deploy path.** Exercise it end-to-end: `main` builds/tests/publishes GHCR images, `release` is the
+  deploy gate, and a webhook deploys onto the single VPS behind Caddy auto-HTTPS (ADR-016/017). No
+  auto-deploy from `main`.
+- **Backups.** Nightly `age`-encrypted `pg_dump` to B2/R2, with the weekly restore test actually running
+  (ADR-018).
+- **Observability.** Dozzle + UptimeRobot live now; self-hosted PostHog later (ADR-019).
+- **Hardening before it bites.** Turn on HMAC-signed saves (ADR-011) and dry-run the first real save
+  migration (`migrations/v1→v2`, ADR-023) so the path is proven before a schema change forces it — none
+  exists yet (the dir holds a `_noop` placeholder + harness).
+- **Performance & accessibility.** Offline catch-up at large capped deltas, the `DegradePass` canvas cost,
+  and keyboard / assistive-tech reach across the diegetic panels.
+- **Beta → launch.** A closed beta cohort, then launch.
+
+**Done when** the game runs on the VPS, survives a restore test, monitoring is green, and a beta cohort is
+playing.
 
 ## License
 
