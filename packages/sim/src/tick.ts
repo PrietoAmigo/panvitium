@@ -11,7 +11,7 @@
  * Returns the new state plus the outcome events generated this tick (02 §2) — transient, not
  * persisted; the caller surfaces them in the log / pop-ups.
  */
-import { add, min, mul } from './bignum.js';
+import { add, bn, min, mul, ZERO, type BigNum } from './bignum.js';
 import { resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceInvocationRunners } from './invocations.js';
@@ -66,6 +66,38 @@ function clearDefixio(state: GameState): GameState {
   if (!state.lifetime.defixio) return state;
   const { defixio: _drop, ...rest } = state.lifetime;
   return { ...state, lifetime: rest };
+}
+
+/** Instantaneous passive income, read-only (for the HUD's per-second readouts). */
+export interface PerSecondRates {
+  /** Gold per second — uncapped, monotonic income. */
+  gold: number;
+  /** Influence per second — gross generation toward the cap (adds nothing once influence is maxed). */
+  influence: BigNum;
+}
+
+/**
+ * The current passive income rates, mirroring this file's income block without advancing the state.
+ * Zero while frozen (mid-descent or under Morpheus), since nothing accrues then. Influence is the
+ * gross generation rate — it represents economy throughput, not the net change once the cap is hit.
+ */
+export function perSecondRates(state: GameState): PerSecondRates {
+  if (state.inKatabasis === true || (state.lifetime.invocations.morpheus ?? 0) > 0) {
+    return { gold: 0, influence: ZERO };
+  }
+  const mods = computeModifiers(state);
+  const gold =
+    (BASE_GOLD_PER_SECOND +
+      businessGoldPerSecond(state, mods) * mods.vitiumMercaturaOutputMul +
+      compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
+      mods.flatGoldPerSecond) *
+    mods.goldRateMul;
+  const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
+  const influence = add(
+    mul(effectiveMax, BASE_INFLUENCE_RATE * mods.influenceRateMul),
+    bn((compositumInfluencePerSecond(state) + mods.flatInfluencePerSecond) * mods.influenceRateMul),
+  );
+  return { gold, influence };
 }
 
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */

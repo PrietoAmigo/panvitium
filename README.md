@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 683** (sim 503 · shared 49 · api 11 · web 120).
+**Current test count: 686** (sim 506 · shared 49 · api 11 · web 120).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -482,10 +482,13 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
 - **Help & glossary.** Tooltips on resources, the seven outcome tiers, and the modifier readouts; a short
   glossary that explains (without anglicizing) the Latin — _Opera_, _Suasio_, _Decimatio_, _Katabasis_,
   _Vitium Compositum_, and the rest.
-- **Readability.** BigNum displays now use **consistent short-scale suffixing** (✓ shipped):
+- **Readability** _(✓ shipped)_. BigNum displays use **consistent short-scale suffixing**:
   `formatBigNum` reads as grouped integers below a million, then M / B / T / … / Dc suffixes, then
   compact scientific beyond the ladder for the astronomical endgame — so values stay legible deep into
-  a run. Still to do: **per-second rate readouts** (showing live income rates beside the totals).
+  a run. **Per-second rate readouts** are now live too: a read-only `perSecondRates(state)` sim helper
+  mirrors the tick's income terms (zeroing while frozen mid-descent or under Morpheus), and the HUD
+  shows `+X/s` under Gold and Influence when positive. Pinned by parity tests (the readout equals the
+  gold the tick actually accrues over one second).
 - **Settings / options panel** _(partly shipped)_. A gear in the top-right opens a settings overlay.
   **Shipped:** local-first save tools — **export** (serialize the current game to a portable string via
   `serializeSaveBlob`), **import** (replace the game from a pasted save, validated through `parseSaveBlob`

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { bn, eq, floor } from './bignum.js';
 import { createInitialState, type GameState } from './state.js';
-import { tick } from './tick.js';
+import { tick, perSecondRates } from './tick.js';
 
 const goldOf = (s: GameState): number => floor(s.lifetime.gold).toNumber();
 const influenceOf = (s: GameState): number => floor(s.lifetime.influence).toNumber();
@@ -84,5 +84,30 @@ describe('tick — Lemure retargeted to offline gain (no flat influence)', () =>
     const base = tick(withLemure(50, 0), 1).state.lifetime.influence.toNumber();
     const withFive = tick(withLemure(50, 5), 1).state.lifetime.influence.toNumber();
     expect(withFive).toBeCloseTo(base, 6);
+  });
+});
+
+describe('perSecondRates — read-only income readout', () => {
+  it('matches base gold/influence on a fresh state', () => {
+    const r = perSecondRates(createInitialState('seed', 0));
+    expect(r.gold).toBe(2); // BASE_GOLD_PER_SECOND
+    expect(eq(r.influence, bn(1))).toBe(true); // 0.01 × maxInfluence(100)
+  });
+
+  it('agrees with the gold the tick actually accrues over one second', () => {
+    const s = createInitialState('seed', 0);
+    const gained = floor(tick(s, 1).state.lifetime.gold).toNumber();
+    expect(gained).toBe(Math.floor(perSecondRates(s).gold)); // rate × 1s == realised gain
+  });
+
+  it('reads zero while frozen under Morpheus', () => {
+    const base = createInitialState('seed', 0);
+    const frozen: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, morpheus: 1 } },
+    };
+    const r = perSecondRates(frozen);
+    expect(r.gold).toBe(0);
+    expect(eq(r.influence, bn(0))).toBe(true);
   });
 });

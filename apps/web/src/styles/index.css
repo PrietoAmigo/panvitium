@@ -2068,3 +2068,12 @@ body {
   width: 100%;
   margin-top: 0.4rem;
 }
+
+/* Per-second income readout under a HUD resource (Phase 5.4). */
+.resource-rate {
+  font-size: 0.7rem;
+  color: var(--candle-soft);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+  margin-top: 0.05rem;
+}
