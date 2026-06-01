@@ -71,8 +71,8 @@ export function loadGame(now: number = Date.now()): LoadedGame {
   return { state: startNewGame(now), saveVersion: 0, deviceId, offlineRecap: null };
 }
 
-/** Write the current state to localStorage as a SaveBlob. */
-export function saveGame(state: GameState, saveVersion: number, deviceId: string): void {
+/** Build the SaveBlob envelope for the current state and return it as a JSON string. */
+export function serializeSaveBlob(state: GameState, saveVersion: number, deviceId: string): string {
   const blob: SaveBlob = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     saveVersion,
@@ -80,7 +80,20 @@ export function saveGame(state: GameState, saveVersion: number, deviceId: string
     deviceId,
     state: serializeGameState(state),
   };
-  localStorage.setItem(SAVE_KEY, JSON.stringify(blob));
+  return JSON.stringify(blob);
+}
+
+/** Write the current state to localStorage as a SaveBlob. */
+export function saveGame(state: GameState, saveVersion: number, deviceId: string): void {
+  localStorage.setItem(SAVE_KEY, serializeSaveBlob(state, saveVersion, deviceId));
+}
+
+/**
+ * Parse an exported save string into a validated/migrated SaveBlob. Throws if the text isn't valid
+ * JSON or doesn't satisfy the save schema (the caller treats a throw as "not a valid save").
+ */
+export function parseSaveBlob(text: string): SaveBlob {
+  return migrateSave(JSON.parse(text));
 }
 
 /**

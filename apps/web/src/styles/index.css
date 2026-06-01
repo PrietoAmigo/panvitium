@@ -1953,3 +1953,118 @@ body {
 .welcome-dismiss {
   width: 100%;
 }
+
+/* ---------- Settings / options panel (Phase 5.4) ---------- */
+.settings-gear {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 35;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--candle);
+  background: rgba(13, 10, 9, 0.7);
+  border: 1px solid rgba(196, 158, 74, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition:
+    opacity 0.15s ease,
+    transform 0.2s ease;
+}
+.settings-gear:hover {
+  opacity: 1;
+  transform: rotate(30deg);
+}
+.settings-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: fade-in 0.3s ease both;
+  overflow-y: auto;
+}
+.settings-inner {
+  max-width: 460px;
+  width: 100%;
+  padding: 1.6rem 1.8rem;
+  background: #0d0a09;
+  border: 1px solid var(--candle);
+  border-radius: 5px;
+  box-shadow: 0 0 32px rgba(196, 158, 74, 0.25);
+}
+.settings-title {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.5rem;
+  letter-spacing: 0.06em;
+  margin: 0 0 1rem;
+  color: var(--candle);
+}
+.settings-section {
+  margin-bottom: 1.3rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid rgba(196, 158, 74, 0.15);
+}
+.settings-section-title {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display, Georgia, serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  color: var(--candle);
+}
+.settings-hint {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+.settings-blob {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.74rem;
+  color: var(--parchment);
+  background: rgba(196, 158, 74, 0.06);
+  border: 1px solid rgba(196, 158, 74, 0.3);
+  border-radius: 3px;
+  resize: vertical;
+}
+.settings-error {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  color: var(--blood-bright);
+}
+.settings-danger {
+  border-bottom: none;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0;
+}
+.settings-reset-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+.opera-btn--danger {
+  background: #2a0c0c;
+  border-color: var(--blood-bright);
+}
+.opera-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.settings-close {
+  width: 100%;
+  margin-top: 0.4rem;
+}

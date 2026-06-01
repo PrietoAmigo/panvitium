@@ -39,7 +39,14 @@ import {
   type Sin,
   type KatabasisRecap,
 } from '@panvitium/sim';
-import { loadGame, saveGame, clearSave, writeSaveBlob } from './persistence.js';
+import {
+  loadGame,
+  saveGame,
+  clearSave,
+  writeSaveBlob,
+  serializeSaveBlob,
+  parseSaveBlob,
+} from './persistence.js';
 import { type OfflineRecap } from '../game/session.js';
 import {
   CURRENT_SCHEMA_VERSION,
@@ -171,6 +178,10 @@ interface GameStore {
   dismissOfflineRecap: () => void;
   /** Wipe the save and start a fresh game. */
   hardReset: () => void;
+  /** Serialize the current game to a portable save string, or null if no game is loaded. */
+  exportSave: () => string | null;
+  /** Replace the current game with a pasted save string. Returns false if it isn't a valid save. */
+  importSave: (text: string) => boolean;
 
   // ── Cloud save sync (ADR-009 + ADR-010) ────────────────────────────────────
   /** The current signed-in user, or null when signed out. Populated by `refreshUser`. */
@@ -453,6 +464,36 @@ export const useGameStore = create<GameStore>((set, get) => ({
       katabasisPhase: null,
       recap: null,
     });
+  },
+
+  exportSave: () => {
+    const { state, saveVersion, deviceId } = get();
+    if (!state) return null;
+    return serializeSaveBlob(state, saveVersion, deviceId);
+  },
+
+  importSave: (text) => {
+    let blob;
+    try {
+      blob = parseSaveBlob(text);
+    } catch {
+      return false;
+    }
+    // Mirror the conflict chooser's "adopt this blob" path: write it through, then re-init from disk
+    // so the next load reconstructs the state (with offline progression) and resets transient UI.
+    writeSaveBlob(blob);
+    const loaded = loadGame(Date.now());
+    set({
+      ...loaded,
+      ready: true,
+      log: [],
+      signature: null,
+      notice: null,
+      offlineRecap: null,
+      recap: null,
+      katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
+    });
+    return true;
   },
 
   // ── Cloud save sync (ADR-009 + ADR-010) ────────────────────────────────────

@@ -509,4 +509,19 @@ describe('gameStore — sigil binding', () => {
     const after = computeModifiers(store().state as GameState).goldRateMul;
     expect(after).toBeGreaterThan(before);
   });
+
+  it('exports the current save and re-imports it (round-trip)', () => {
+    patchSouls(98_765);
+    const text = store().exportSave();
+    expect(text).not.toBeNull();
+    patchSouls(1); // perturb, then restore from the export
+    expect(store().importSave(text as string)).toBe(true);
+    expect(floor((store().state as GameState).souls).toNumber()).toBe(98_765);
+  });
+
+  it('rejects an invalid import and leaves the game untouched', () => {
+    const before = store().state;
+    expect(store().importSave('garbage')).toBe(false);
+    expect(store().state).toBe(before);
+  });
 });
