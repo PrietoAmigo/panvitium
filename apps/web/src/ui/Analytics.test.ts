@@ -61,10 +61,12 @@ describe('AnalyticsGroup', () => {
     expect(container!.textContent).toContain('Acolyte 2');
   });
 
-  it('renders the Resources and Reprobates tabs', () => {
+  it('defaults to the Main tab and can switch to Resources and Reprobates', () => {
     seed([]);
     render();
-    expect(container!.textContent).toContain('Souls'); // Resources is the default tab
+    expect(container!.textContent).toContain('vigil kept'); // Main is the default tab
+    clickTab('Resources');
+    expect(container!.textContent).toContain('Souls');
     clickTab('Reprobates');
     expect(container!.textContent).toContain('Unconverted');
   });

@@ -201,6 +201,7 @@ export const strings = {
   },
   analytics: {
     title: 'Analytics',
+    main: 'Main',
     resources: 'Resources',
     reprobates: 'Reprobates',
     acolytes: 'Acolytes',

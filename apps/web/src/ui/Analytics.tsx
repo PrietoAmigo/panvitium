@@ -5,18 +5,87 @@ import {
   REPROBATE_SUBTYPES,
   computeModifiers,
   perSecondRates,
+  playerEfficiency,
   reprobateRates,
   bn,
   gt,
   mul,
   ZERO,
+  type ActionTimer,
   type GameState,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
 import { actionName } from '../game/labels.js';
 
-type AnalyticsTab = 'resources' | 'reprobates' | 'acolytes';
+type AnalyticsTab = 'main' | 'resources' | 'reprobates' | 'acolytes';
+
+const NO_TIMERS: readonly ActionTimer[] = [];
+
+/** In-flight Opera timers with progress, so a queued rite is visible while it resolves. */
+function ActiveActions(): ReactElement {
+  const queue = useGameStore((s) => s.state?.lifetime.actionQueue ?? NO_TIMERS);
+  if (queue.length === 0) return <div className="active-actions idle">{strings.opera.idle}</div>;
+  return (
+    <div className="active-actions">
+      {queue.map((t, i) => {
+        const total = ACTIONS[t.actionId]?.baseTimeSeconds ?? 1;
+        const pct = Math.max(0, Math.min(1, 1 - t.remainingSeconds / total));
+        const name = actionName(t.actionId);
+        return (
+          <div className="action-progress" key={`${i}-${t.actionId}`}>
+            <span className="action-progress-label">
+              {name} · {Math.ceil(t.remainingSeconds)}s
+            </span>
+            <span className="action-progress-bar">
+              <span
+                className="action-progress-fill"
+                style={{ width: `${(pct * 100).toFixed(0)}%` }}
+              />
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The vigil indicator: logical session time, advancing with the 10 Hz tick loop. */
+function Vigil(): ReactElement {
+  const lastTickAt = useGameStore((s) => s.state?.lastTickAt ?? 0);
+  const seconds = Math.floor(lastTickAt / 1000) % 3600;
+  const mm = Math.floor(seconds / 60);
+  const ss = (seconds % 60).toString().padStart(2, '0');
+  return (
+    <div className="vigil" title="The tick loop is running">
+      <span className="vigil-dot" />
+      vigil kept · {mm}:{ss}
+    </div>
+  );
+}
+
+/** Player action efficiency from Sin levels / skills. Hidden at the neutral 1×. */
+function Efficiency(): ReactElement | null {
+  const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
+  if (eff <= 1) return null;
+  const label = Number.isInteger(eff) ? `${eff}×` : `${eff.toFixed(1)}×`;
+  return (
+    <div className="hud-efficiency" title="Player action efficiency (Sin levels / skills)">
+      ★ eff {label}
+    </div>
+  );
+}
+
+/** The Main tab: the ambient status formerly on the HUD — the in-flight rite, vigil, efficiency. */
+function MainTab(): ReactElement {
+  return (
+    <div className="analytics-main">
+      <ActiveActions />
+      <Vigil />
+      <Efficiency />
+    </div>
+  );
+}
 
 /**
  * The PC's Analytics program (5.4): the live numeric readouts pulled out of the always-on HUD into
@@ -24,7 +93,7 @@ type AnalyticsTab = 'resources' | 'reprobates' | 'acolytes';
  * vs converted by subtype) + dynamics rates, and a per-acolyte work board.
  */
 export function AnalyticsGroup(): ReactElement {
-  const [tab, setTab] = useState<AnalyticsTab>('resources');
+  const [tab, setTab] = useState<AnalyticsTab>('main');
   const present = useGameStore((s) => s.state !== null);
   if (!present) return <p className="pc-empty">{strings.opera.notYet}.</p>;
 
@@ -43,10 +112,12 @@ export function AnalyticsGroup(): ReactElement {
   return (
     <>
       <div className="kat-pager" role="tablist">
+        {tabBtn('main', strings.analytics.main)}
         {tabBtn('resources', strings.analytics.resources)}
         {tabBtn('reprobates', strings.analytics.reprobates)}
         {tabBtn('acolytes', strings.analytics.acolytes)}
       </div>
+      {tab === 'main' && <MainTab />}
       {tab === 'resources' && <ResourcesTab />}
       {tab === 'reprobates' && <ReprobatesTab />}
       {tab === 'acolytes' && <AcolytesTab />}

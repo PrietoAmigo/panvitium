@@ -500,13 +500,15 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   the tick's income terms (zeroing while frozen mid-descent or under Morpheus), pinned by parity tests
   (the readout equals the gold the tick actually accrues over one second). These now surface in the
   **Analytics** program rather than the HUD (see below).
-- **Analytics PC program** _(✓ shipped)_. The always-on resource values were pulled off the HUD (which
-  now carries only the ambient status: population, in-flight rites, vigil, efficiency) into an
-  on-demand PC program sitting between Emptio and Achievements. Three tabs: **Resources** (souls / gold
-  / influence with `perSecondRates` and the influence cap), **Reprobates** (unconverted vs converted
-  counts by subtype, plus `reprobateRates` generation / conversion / death rates), and **Acolytes** (a
-  per-acolyte board showing each one's current action, remaining cycle time, and a progress bar). Reuses
-  the existing `kat-tab` tab styling; the data all comes from already-tested sim helpers.
+- **Analytics PC program** _(✓ shipped)_. The always-on readouts were pulled off the HUD entirely — the
+  HUD is now just the **PANVITIUM wordmark, anchored bottom-left**. Everything moved into this on-demand
+  PC program (between Emptio and Achievements). Four tabs: **Main** (default — the ambient status that
+  used to sit on the HUD: the in-flight rite with progress, the vigil clock, and player efficiency),
+  **Resources** (souls / gold / influence with `perSecondRates` and the influence cap), **Reprobates**
+  (unconverted vs converted counts by subtype, plus `reprobateRates` generation / conversion / death
+  rates — this also subsumes the old HUD reprobate count), and **Acolytes** (a per-acolyte board showing
+  each one's current action, remaining cycle time, and a progress bar). Reuses the existing `kat-tab` tab
+  styling; the data all comes from already-tested sim helpers.
 - **Settings / options panel** _(partly shipped)_. A gear in the top-right opens a settings overlay.
   **Shipped:** local-first save tools — **export** (serialize the current game to a portable string via
   `serializeSaveBlob`), **import** (replace the game from a pasted save, validated through `parseSaveBlob`

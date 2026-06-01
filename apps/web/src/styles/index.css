@@ -2218,3 +2218,27 @@ body {
   line-height: 1.55;
   white-space: pre-wrap;
 }
+
+/* Game wordmark, anchored bottom-left (moved off the old top-left HUD). */
+.game-name {
+  position: absolute;
+  bottom: 1.1rem;
+  left: 1.4rem;
+  z-index: 20;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+  color: var(--gold-leaf);
+  text-shadow: 0 0 12px rgba(201, 162, 39, 0.35);
+  pointer-events: none;
+}
+
+/* Analytics → Main tab: the ambient status moved off the HUD. */
+.analytics-main {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}

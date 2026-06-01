@@ -1,87 +1,12 @@
 import { type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
-import { useGameStore } from '../store/gameStore.js';
-import { actionName } from '../game/labels.js';
-import { ACTIONS, totalReprobates, playerEfficiency, type ActionTimer } from '@panvitium/sim';
-
-const NO_TIMERS: readonly ActionTimer[] = [];
-
-/** The reprobate population — a natural count, not a BigNum resource (03 §3). */
-function Population(): ReactElement {
-  const total = useGameStore((s) => (s.state ? totalReprobates(s.state) : 0));
-  return (
-    <div className="resource population">
-      <span className="resource-label">{strings.reprobates}</span>
-      <span className="resource-value">{total.toLocaleString('en-US')}</span>
-    </div>
-  );
-}
-
-/** In-flight Opera timers with progress, so a queued rite is visible while it resolves. */
-function ActiveActions(): ReactElement {
-  const queue = useGameStore((s) => s.state?.lifetime.actionQueue ?? NO_TIMERS);
-  if (queue.length === 0) return <div className="active-actions idle">{strings.opera.idle}</div>;
-  return (
-    <div className="active-actions">
-      {queue.map((t, i) => {
-        const total = ACTIONS[t.actionId]?.baseTimeSeconds ?? 1;
-        const pct = Math.max(0, Math.min(1, 1 - t.remainingSeconds / total));
-        const name = actionName(t.actionId);
-        return (
-          <div className="action-progress" key={`${i}-${t.actionId}`}>
-            <span className="action-progress-label">
-              {name} · {Math.ceil(t.remainingSeconds)}s
-            </span>
-            <span className="action-progress-bar">
-              <span
-                className="action-progress-fill"
-                style={{ width: `${(pct * 100).toFixed(0)}%` }}
-              />
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 /**
- * The vigil indicator: shows logical session time, advancing with the tick loop. It is the
- * visible proof that the 10 Hz loop is running.
+ * The game wordmark, anchored to the bottom-left of the lair. The former HUD readouts (reprobate
+ * count, in-flight rite, vigil, efficiency) were moved off the always-on screen — the rite, vigil
+ * and efficiency now live in the PC's Analytics → Main tab; the reprobate count in Analytics →
+ * Reprobates.
  */
-function Vigil(): ReactElement {
-  const lastTickAt = useGameStore((s) => s.state?.lastTickAt ?? 0);
-  const seconds = Math.floor(lastTickAt / 1000) % 3600;
-  const mm = Math.floor(seconds / 60);
-  const ss = (seconds % 60).toString().padStart(2, '0');
-  return (
-    <div className="vigil" title="The tick loop is running">
-      <span className="vigil-dot" />
-      vigil kept · {mm}:{ss}
-    </div>
-  );
-}
-
-/** Player action efficiency from Sin levels (currently only Gula). Hidden at the neutral 1×. */
-function Efficiency(): ReactElement | null {
-  const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
-  if (eff <= 1) return null;
-  const label = Number.isInteger(eff) ? `${eff}×` : `${eff.toFixed(1)}×`;
-  return (
-    <div className="hud-efficiency" title="Player action efficiency (Sin levels / skills)">
-      ★ eff {label}
-    </div>
-  );
-}
-
 export function Hud(): ReactElement {
-  return (
-    <aside className="hud">
-      <div className="hud-title">{strings.appName}</div>
-      <Population />
-      <ActiveActions />
-      <Vigil />
-      <Efficiency />
-    </aside>
-  );
+  return <div className="game-name">{strings.appName}</div>;
 }
