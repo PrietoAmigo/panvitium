@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 697** (sim 509 · shared 52 · api 11 · web 125).
+**Current test count: 699** (sim 509 · shared 52 · api 11 · web 127).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -346,8 +346,9 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   unread markers, click-to-read, mark-all-read); content lives in `strings.emails.catalog` keyed by id.
   Placed in the PC (the program list is effectively the Opera menu). **Provisional:** the trigger set
   (`welcome`, `first-reprobates`, `first-business`, `newsletter-influence`, `class-action`) and the copy
-  are a first pass to be tuned in the 5.5 economy / Claude Design passes. (No "new mail" toast yet — an
-  unread marker only.)
+  are a first pass to be tuned in the 5.5 economy / Claude Design passes. New mail is surfaced by an
+  unread-count **badge on the Emails tile** in the PC (via `unreadCount` + a generic `badges` prop on
+  the PC window); there's no separate delivery toast yet, and no lair-level indicator on the PC prop.
 - **Smartphone code terminal (studio desk) — [pending design].** A smartphone prop resting on the
   desk in the studio. Tapping it opens a dial-pad where the player enters codes formatted as
   telephone numbers; a recognised number triggers an effect — an easter egg, bonus/extra content, a

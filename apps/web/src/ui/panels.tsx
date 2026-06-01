@@ -25,6 +25,7 @@ import {
   isDelegatable,
   ACHIEVEMENTS,
   isUnlocked,
+  unreadCount,
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../menus/types.js';
@@ -830,9 +831,11 @@ function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
  * by App, not framed in a Panel). The designed program id ("Depraedatio") lower-cases to the group.
  */
 export function PcDesk({ onClose }: { onClose: () => void }): ReactElement {
+  const unread = useGameStore((s) => (s.state ? unreadCount(s.state) : 0));
   return (
     <DesignedPc
       onClose={onClose}
+      badges={{ Emails: unread }}
       renderProgram={(id) => <PcGroupBody group={id.toLowerCase() as PcGroupId} />}
     />
   );

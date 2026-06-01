@@ -1233,6 +1233,7 @@ body {
   background: #e1ebf8;
 }
 .pc-file-icon {
+  position: relative;
   width: 62px;
   height: 62px;
   border-radius: 15px;
@@ -2183,4 +2184,26 @@ body {
 }
 .furnished .scene-studio {
   background-image: url('/assets/panvitium/backgrounds/studio_complete.png');
+}
+
+/* Unread/attention badge on a PC program tile (Phase 5.2 emails). */
+.pc-file-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #d23b2f;
+  color: #fff;
+  font-family: 'Ubuntu', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }

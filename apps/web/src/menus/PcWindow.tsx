@@ -4,6 +4,8 @@ interface PcWindowProps {
   /** Render the real body for a launched program (by its display id, e.g. "Depraedatio"). */
   renderProgram: (id: string) => ReactElement;
   onClose: () => void;
+  /** Unread/attention counts per program id (e.g. `{ Emails: 3 }`), shown as a tile badge. */
+  badges?: Record<string, number>;
 }
 
 const EXECUTABLES = [
@@ -20,7 +22,7 @@ const EXECUTABLES = [
 // The Studio desk PC — an Ubuntu-style file manager whose "files" are ritual programs. Full-screen
 // shell (does not use PanelShell). The chrome is the design; each launched program's body is the real
 // system component, supplied by `renderProgram`.
-export function PcWindow({ renderProgram, onClose }: PcWindowProps): ReactElement {
+export function PcWindow({ renderProgram, onClose, badges }: PcWindowProps): ReactElement {
   const [running, setRunning] = useState<string | null>(null);
   return (
     <div className="panel-overlay" onClick={onClose} role="presentation">
@@ -56,19 +58,27 @@ export function PcWindow({ renderProgram, onClose }: PcWindowProps): ReactElemen
                 <span className="pc-side-item">Trash</span>
               </aside>
               <div className="pc-files">
-                {EXECUTABLES.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    className="pc-file"
-                    onClick={() => setRunning(e.id)}
-                  >
-                    <span className="pc-file-icon" style={{ background: e.color }}>
-                      {e.glyph}
-                    </span>
-                    <span className="pc-file-name">{e.id}</span>
-                  </button>
-                ))}
+                {EXECUTABLES.map((e) => {
+                  const badge = badges?.[e.id] ?? 0;
+                  return (
+                    <button
+                      key={e.id}
+                      type="button"
+                      className="pc-file"
+                      onClick={() => setRunning(e.id)}
+                    >
+                      <span className="pc-file-icon" style={{ background: e.color }}>
+                        {e.glyph}
+                        {badge > 0 && (
+                          <span className="pc-file-badge" aria-label={`${badge} unread`}>
+                            {badge}
+                          </span>
+                        )}
+                      </span>
+                      <span className="pc-file-name">{e.id}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </>
