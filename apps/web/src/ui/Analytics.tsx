@@ -173,14 +173,14 @@ function AcolyteRow({ state, id }: { state: GameState; id: number }): ReactEleme
 }
 
 function AcolytesTab(): ReactElement {
-  const ids = useGameStore((s) => (s.state ? s.state.lifetime.acolytes.map((a) => a.id) : []));
   const state = useGameStore((s) => s.state);
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  if (ids.length === 0) return <p className="pc-empty">{strings.analytics.noAcolytes}</p>;
+  const acolytes = state.lifetime.acolytes;
+  if (acolytes.length === 0) return <p className="pc-empty">{strings.analytics.noAcolytes}</p>;
   return (
     <div className="analytics-acolytes">
-      {ids.map((id) => (
-        <AcolyteRow key={id} state={state} id={id} />
+      {acolytes.map((a) => (
+        <AcolyteRow key={a.id} state={state} id={a.id} />
       ))}
     </div>
   );
