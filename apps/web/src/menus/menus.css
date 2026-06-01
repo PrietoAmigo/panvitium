@@ -1092,7 +1092,7 @@ body {
 
 /* ---------- The PC — Ubuntu-style file-manager window ---------- */
 .pc-window {
-  width: min(700px, 93vw);
+  width: min(1050px, 93vw);
   height: min(560px, 85vh);
   display: flex;
   flex-direction: column;
