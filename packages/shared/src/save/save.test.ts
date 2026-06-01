@@ -498,3 +498,34 @@ describe('inKatabasis — ADR-023 additive-optional freeze flag', () => {
     expect(back.inKatabasis).not.toBe(true);
   });
 });
+
+describe('inbox — ADR-023 additive-optional impact-feedback mail (5.2)', () => {
+  it('omits the inbox from the wire when empty', () => {
+    const serialized = serializeGameState(createInitialState('seed', 5_000));
+    expect('inbox' in serialized.lifetime).toBe(false);
+  });
+
+  it('round-trips delivered emails with their read state', () => {
+    const fresh = createInitialState('seed', 5_000);
+    const withMail: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        inbox: [
+          { id: 'welcome', receivedAt: 1000, readAt: 2000 },
+          { id: 'class-action', receivedAt: 3000, readAt: null },
+        ],
+      },
+    };
+    const back = deserializeGameState(serializeGameState(withMail));
+    expect(back.lifetime.inbox).toHaveLength(2);
+    expect(back.lifetime.inbox[0]!.id).toBe('welcome');
+    expect(back.lifetime.inbox[0]!.readAt).toBe(2000);
+    expect(back.lifetime.inbox[1]!.readAt).toBeNull();
+  });
+
+  it('loads an old save without the inbox as an empty inbox', () => {
+    const back = deserializeGameState(serializeGameState(createInitialState('seed', 5_000)));
+    expect(back.lifetime.inbox).toEqual([]);
+  });
+});

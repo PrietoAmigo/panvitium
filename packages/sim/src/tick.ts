@@ -31,6 +31,7 @@ import { cullSubtypeCount, mintSouls } from './population.js';
 import { makeRng } from './rng.js';
 import { REPROBATE_SUBTYPES, type ActionTimer, type GameState } from './state.js';
 import { evaluateAchievements } from './achievements.js';
+import { deliverEmails } from './emails.js';
 
 /** Injected dependencies for a tick (tuning tables / per-call flags not part of the state). */
 export interface TickDeps {
@@ -336,8 +337,12 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   };
   const ach = evaluateAchievements(finalState);
 
+  // 7. Impact-feedback mail (5.2). Deliver any newly-triggered emails against the fully-advanced
+  //    state — last, like achievements, so one big offline tick also catches up the inbox.
+  const mailed = deliverEmails(ach.state, finalState.lastTickAt);
+
   return {
-    state: ach.state,
+    state: mailed,
     events,
     notices,
     achievementsUnlocked: ach.unlocked,

@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 689** (sim 506 · shared 49 · api 11 · web 123).
+**Current test count: 697** (sim 509 · shared 52 · api 11 · web 125).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -335,11 +335,19 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   spreadsheet before it can be wired without guessing.
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. The **oracular reveals** (Phase 5 slice) have also shipped: owning Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather surfaces a live Opera tier-distribution readout in that item's cabinet detail (a stacked odds bar per action, via a read-only `actionTierDistribution` sim helper that reuses the exact `resolveAction` composition). With this, Maleficia is complete — roster, gating, and every effect.
 - **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is now complete: _Caedis_ plus _Pogrom_ (with a present-subtype **picker** wiring `act('pogrom', subtype)`) and _Purgatio_, each gated by its Ira level, with delegation on Caedis/Purgatio but **not** Pogrom (a targetless delegated Pogrom would purge nothing yet still risk the bad-tier penalties — automating it awaits an acolyte target-selection design). Deliberately left for later: one **placeholder magnitude** remains — Imperium's action time (the Suasio sheet leaves it as "Fill Time"; currently a flagged 60s). The Pogrom (1000) and Purgatio (10000) gold costs are sheet-pinned.
-- **Emails (Opera menu) — impact-feedback system [pending design].** A new Opera-menu item that
-  surfaces the in-world consequences of the player's actions as incoming correspondence: subscribed
-  newsletter emails, messages from people affected by the player's businesses (e.g. class actions),
-  and similar reactive mail. The intent is to let the player _feel_ the impact of what they are doing
-  rather than read it only as numbers. Scope, triggers and presentation still to be specified.
+- **Emails (PC program) — impact-feedback system** _(✓ shipped, content provisional)_. An inbox that
+  surfaces the in-world consequences of the player's actions as incoming correspondence (newsletters as
+  the corruption spreads, complaints / a class-action from people harmed by their Vitium Mercatura
+  businesses), so the player _feels_ the impact rather than reading it only as numbers. Engineering
+  shape as planned: an additive-optional `inbox` save field (ADR-023; resets per lifetime, omitted from
+  the wire when empty), a pure sim engine (`packages/sim/src/emails.ts`) with a trigger catalog +
+  `deliverEmails(state, now)` run as the final tick step (so offline catch-up fills the inbox too), and
+  `markEmailRead` / `markAllEmailsRead` helpers. Surfaced as the **Emails** PC program (inbox list with
+  unread markers, click-to-read, mark-all-read); content lives in `strings.emails.catalog` keyed by id.
+  Placed in the PC (the program list is effectively the Opera menu). **Provisional:** the trigger set
+  (`welcome`, `first-reprobates`, `first-business`, `newsletter-influence`, `class-action`) and the copy
+  are a first pass to be tuned in the 5.5 economy / Claude Design passes. (No "new mail" toast yet — an
+  unread marker only.)
 - **Smartphone code terminal (studio desk) — [pending design].** A smartphone prop resting on the
   desk in the studio. Tapping it opens a dial-pad where the player enters codes formatted as
   telephone numbers; a recognised number triggers an effect — an easter egg, bonus/extra content, a
@@ -367,8 +375,9 @@ Decimatio program, and the oracular reveals, formerly listed here, have shipped 
 Maleficia-effects and Opera-actions bullets above. That clears all three of the surface-the-built-sim
 items; the rest of this list is net-new features.)_
 
-- **Emails (Opera menu).** The impact-feedback correspondence system described above — its scope,
-  triggers and presentation are a Claude Design topic.
+- **Emails (PC program).** _(✓ shipped — see the impact-feedback bullet above.)_ The inbox, sim
+  triggers and save field are built; only content/trigger tuning and presentation polish remain (a
+  Claude Design topic).
 - **Smartphone code terminal.** The studio-desk dial-pad described above — its presentation and the
   telephone-number code-entry interaction are a Claude Design topic; buff-granting codes additionally
   need a small sim hook.
@@ -442,11 +451,12 @@ helper to reach the required state, a small task of its own).
 _Net-new in-world systems already named in the backlog; **scope, triggers, and presentation are still to
 be specified** — each needs a short design pass before it becomes a slice._
 
-- **Emails (Opera menu) — impact-feedback.** An Opera-menu inbox that surfaces the in-world consequences
-  of the player's actions as incoming correspondence (newsletter subscriptions, class-actions from people
-  harmed by the player's _Vitium Mercatura_ businesses, and similar reactive mail), so the player _feels_
-  the impact rather than only reading numbers. Provisional engineering shape: an additive-optional inbox
-  save field (ADR-023) plus sim triggers keyed off action outcomes and business throughput.
+- **Emails (PC program) — impact-feedback** _(✓ shipped, content provisional)_. An inbox that surfaces
+  the in-world consequences of the player's actions as incoming correspondence (newsletters, a
+  class-action from people harmed by the player's _Vitium Mercatura_ businesses, and similar reactive
+  mail), so the player _feels_ the impact rather than only reading numbers. Built as planned: an
+  additive-optional inbox save field (ADR-023) plus a sim trigger catalog evaluated each tick. Triggers
+  and copy are a provisional first pass.
 - **Smartphone code terminal (studio desk).** A smartphone prop on the studio desk that opens a dial-pad;
   a recognised telephone-number code triggers an easter egg, bonus content, a lore snippet, or a gameplay
   **buff**. Informational/easter-egg codes are UI-only; any buff-granting code needs a sim hook (and, if it

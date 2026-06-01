@@ -13,6 +13,7 @@ const EXECUTABLES = [
   { id: 'Emptio', color: '#2f9e52', glyph: '+' },
   { id: 'Analytics', color: '#1f9e8f', glyph: '\u03A3' },
   { id: 'Achievements', color: '#c79a2b', glyph: '★' },
+  { id: 'Emails', color: '#9e6b4a', glyph: '\u2709' },
   { id: 'Logs', color: '#3a3a3e', glyph: '>_' },
 ] as const;
 

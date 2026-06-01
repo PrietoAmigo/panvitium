@@ -53,6 +53,12 @@ const buildTimerSchema = z.object({
   remainingSeconds: z.number(),
 });
 
+const inboxEntrySchema = z.object({
+  id: z.string(),
+  receivedAt: z.number().int(),
+  readAt: z.number().int().nullable(),
+});
+
 const lifetimeSchema = z.object({
   gold: bigNumString,
   influence: bigNumString,
@@ -86,6 +92,8 @@ const lifetimeSchema = z.object({
   buildQueue: z.array(buildTimerSchema).optional(),
   conversionPool: z.number().nonnegative().optional(),
   handOfGloryRemaining: z.number().nonnegative().optional(),
+  // Impact-feedback inbox (Phase 5.2). Additive-optional (ADR-023): absent → empty inbox at load.
+  inbox: z.array(inboxEntrySchema).optional(),
   defixio: z
     .object({ target: z.string().nullable(), elapsed: z.number().nonnegative() })
     .optional(),
@@ -191,6 +199,15 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.handOfGloryRemaining > 0
         ? { handOfGloryRemaining: state.lifetime.handOfGloryRemaining }
         : {}),
+      ...(state.lifetime.inbox.length > 0
+        ? {
+            inbox: state.lifetime.inbox.map((e) => ({
+              id: e.id,
+              receivedAt: e.receivedAt,
+              readAt: e.readAt,
+            })),
+          }
+        : {}),
       ...(state.lifetime.defixio
         ? {
             defixio: {
@@ -280,6 +297,11 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       murderPool: s.lifetime.murderPool ?? 0,
       conversionPool: s.lifetime.conversionPool ?? 0,
       handOfGloryRemaining: s.lifetime.handOfGloryRemaining ?? 0,
+      inbox: (s.lifetime.inbox ?? []).map((e) => ({
+        id: e.id,
+        receivedAt: e.receivedAt,
+        readAt: e.readAt,
+      })),
       ...(s.lifetime.defixio
         ? {
             defixio: {

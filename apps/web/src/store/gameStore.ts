@@ -29,6 +29,8 @@ import {
   eternalSinRevealed,
   commitKatabasis,
   enterKatabasis,
+  markEmailRead as markEmailReadSim,
+  markAllEmailsRead as markAllEmailsReadSim,
   bn,
   add,
   sub,
@@ -178,6 +180,10 @@ interface GameStore {
   dismissOfflineRecap: () => void;
   /** Wipe the save and start a fresh game. */
   hardReset: () => void;
+  /** Mark one inbox email read (Phase 5.2). Relies on the debounced autosave. */
+  markEmailRead: (id: string) => void;
+  /** Mark every unread inbox email read. */
+  markAllEmailsRead: () => void;
   /** Serialize the current game to a portable save string, or null if no game is loaded. */
   exportSave: () => string | null;
   /** Replace the current game with a pasted save string. Returns false if it isn't a valid save. */
@@ -464,6 +470,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       katabasisPhase: null,
       recap: null,
     });
+  },
+
+  markEmailRead: (id) => {
+    const s = get().state;
+    if (s) set({ state: markEmailReadSim(s, id, Date.now()) });
+  },
+
+  markAllEmailsRead: () => {
+    const s = get().state;
+    if (s) set({ state: markAllEmailsReadSim(s, Date.now()) });
   },
 
   exportSave: () => {

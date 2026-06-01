@@ -214,6 +214,42 @@ export const strings = {
     noAcolytes: 'No acolytes recruited yet.',
     ofMax: 'of',
   },
+  emails: {
+    title: 'Emails',
+    inboxEmpty: 'No correspondence yet. The world has not noticed you.',
+    unread: 'unread',
+    from: 'From',
+    back: 'Back to inbox',
+    markAllRead: 'Mark all read',
+    // Provisional content (Phase 5.2) — sender / subject / body keyed by the sim email id.
+    catalog: {
+      welcome: {
+        from: 'The Management',
+        subject: 'Welcome to the work',
+        body: 'Your terminal is provisioned. You will receive correspondence here as the world begins to feel your attentions. Most of it will be complaints. Read them, or do not — the rot proceeds either way.',
+      },
+      'first-reprobates': {
+        from: 'The Vesper Tribune',
+        subject: 'A curious malaise in the quarter',
+        body: 'Residents report a creeping listlessness, a taste for small ruin. Our correspondents can find no cause. We are sure it is nothing. We are sure of very little lately.',
+      },
+      'first-business': {
+        from: 'A former customer',
+        subject: 'I want to speak to someone',
+        body: 'I bought what you were selling and I am not myself since. My wife says my eyes have gone flat. Who do I write to about this? Is anyone reading these?',
+      },
+      'newsletter-influence': {
+        from: 'The Vesper Tribune',
+        subject: 'On the new patron everyone is whispering about',
+        body: 'A quiet hand is said to move beneath the city\u2019s affairs — generous, they say, and never seen. We would request an interview, but our editor has developed a sudden and total disinterest in the story.',
+      },
+      'class-action': {
+        from: 'Holloway & Crane, Attorneys',
+        subject: 'NOTICE OF PENDING ACTION',
+        body: 'You are named in a class action brought by some four hundred claimants alleging harm arising from your enterprises. Please retain all records. Settlement may be possible; restitution, we suspect, is not.',
+      },
+    },
+  },
   welcomeBack: {
     title: 'While you were away',
     away: 'Away for',

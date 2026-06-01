@@ -2147,3 +2147,74 @@ body {
   height: 100%;
   background: linear-gradient(90deg, var(--candle-soft), var(--candle));
 }
+
+/* ---------- Emails PC program (Phase 5.2) ---------- */
+.emails-list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.emails-item {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.emails-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.emails-item--unread {
+  border-color: rgba(196, 158, 74, 0.5);
+}
+.emails-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--candle);
+  flex: 0 0 auto;
+  align-self: center;
+}
+.emails-item-subject {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.emails-item--unread .emails-item-subject {
+  color: var(--candle);
+}
+.emails-item-from {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+.emails-markall {
+  margin-bottom: 0.2rem;
+}
+.emails-read .emails-back {
+  margin-bottom: 0.9rem;
+}
+.emails-subject {
+  margin: 0 0 0.3rem;
+  font-family: var(--font-display, Georgia, serif);
+  letter-spacing: 0.04em;
+}
+.emails-meta {
+  margin: 0 0 0.9rem;
+  font-size: 0.82rem;
+  opacity: 0.6;
+}
+.emails-body {
+  margin: 0;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}

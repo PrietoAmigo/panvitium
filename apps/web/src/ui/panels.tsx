@@ -33,6 +33,7 @@ import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.j
 import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
 import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { AnalyticsGroup } from './Analytics.js';
+import { EmailsGroup } from './Emails.js';
 import { buildAltar } from '../game/altar.js';
 import { buildCabinet } from '../game/maleficia.js';
 import { pogromTargets } from '../game/decimatio.js';
@@ -343,6 +344,7 @@ type PcGroupId =
   | 'emptio'
   | 'analytics'
   | 'achievements'
+  | 'emails'
   | 'logs';
 
 const PC_GROUPS: { id: PcGroupId; label: string }[] = [
@@ -352,6 +354,7 @@ const PC_GROUPS: { id: PcGroupId; label: string }[] = [
   { id: 'emptio', label: strings.opera.emptio },
   { id: 'analytics', label: strings.analytics.title },
   { id: 'achievements', label: strings.achievements.ledger },
+  { id: 'emails', label: strings.emails.title },
   { id: 'logs', label: strings.opera.logs },
 ];
 
@@ -815,6 +818,7 @@ function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
   if (group === 'indagatio') return <IndagatioGroup />;
   if (group === 'emptio') return <EmptioGroup />;
   if (group === 'analytics') return <AnalyticsGroup />;
+  if (group === 'emails') return <EmailsGroup />;
   if (group === 'achievements') return <AchievementsGroup />;
   if (group === 'logs') return <OutcomeLog />;
   return <p className="pc-empty">{strings.opera.notYet}.</p>;

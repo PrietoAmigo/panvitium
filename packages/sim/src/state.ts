@@ -225,6 +225,23 @@ export interface LifetimeState {
   pendingMorpheus?: boolean;
   /** Set by an Erinyes invoke; blocks any further Morpheus invoke for the rest of the lifetime. */
   morpheusLockedOut?: boolean;
+  /**
+   * The impact-feedback inbox (Phase 5.2): emails delivered as the in-world consequences of the
+   * player's actions accrue here, newest appended last. Each entry records which catalog email was
+   * delivered, when, and when it was read (null = unread). Always defined at runtime (default []);
+   * additive-optional on the wire per ADR-023 — pre-inbox saves load with an empty inbox.
+   */
+  inbox: ReceivedEmail[];
+}
+
+/** One delivered email in the player's inbox (Phase 5.2). Content (sender/subject/body) is keyed by
+ * `id` in the strings catalog; this record is just the delivery + read bookkeeping. */
+export interface ReceivedEmail {
+  id: string;
+  /** Wall-clock ms when the email was delivered (the tick's lastTickAt). */
+  receivedAt: number;
+  /** Wall-clock ms when first opened, or null while unread. */
+  readAt: number | null;
 }
 
 /** The complete gameplay state. */
@@ -326,6 +343,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       murderPool: 0,
       conversionPool: 0,
       handOfGloryRemaining: 0,
+      inbox: [],
     },
     rngState: hashSeed(seed),
     lastTickAt: now,

@@ -274,6 +274,7 @@ export function commitKatabasis(
     suicidePool: 0,
     murderPool: 0,
     conversionPool: 0,
+    inbox: [], // impact-feedback inbox resets with the fresh lifetime (5.2)
     // pendingErinyes / pendingMorpheus / morpheusLockedOut are intentionally omitted — the new
     // lifetime starts clean (they're additive-optional and absent ≡ false).
   };
