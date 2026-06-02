@@ -528,11 +528,17 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   `offlineRecap` unit tests.
 - **Launch title menu** _(✓ shipped)_. A full-screen title screen on every launch (`TitleMenu`, gated by
   a new `titleOpen` store flag) carrying the gold-leaf **PANVITIUM** wordmark — the display-caps treatment
-  preserved from the old in-game wordmark — a tagline, and four entries: **Continue** (dismisses the menu),
-  **New Game** (confirm-guarded wipe via `hardReset`), **Settings** (the existing overlay, whose open-state
-  was lifted into the store as `settingsOpen` so both the gear and the menu drive it), and **About**. The
-  sim is frozen behind the menu exactly like the Katabasis trance: `advance` no-ops while `titleOpen`, so
-  nothing accrues until Continue. Pinned by a `TitleMenu` render test and a store freeze test.
+  preserved from the old in-game wordmark — the Latin motto _Per vitia, ad solium_, and four entries:
+  **Continue**, **New Game** (confirm-guarded wipe via `hardReset`), **Settings** (the existing overlay,
+  whose open-state was lifted into the store as `settingsOpen` so both the gear and the menu drive it),
+  and **About**. The sim is frozen behind the menu exactly like the Katabasis trance: `advance` no-ops
+  while `titleOpen`. **Music + entry transition** (`TitleSequence`): a looping menu track
+  (`gnossienne_1.mp3`, played via a plain HTML5 `<audio>` element — no new dependency — at
+  `/assets/panvitium/music/`, with an autoplay-after-first-gesture fallback for browser policy); on
+  Continue the screen fades to black while the music fades out over the same window, the title is
+  dismissed at full black, then the black fades out so the altar room rises slowly from darkness.
+  `TitleSequence` lives in `App` so the timeline outlives the menu's unmount. Pinned by a `TitleMenu`
+  render test and a store freeze test.
 - **Notifications** _(declined)_. Considered folding the achievement toast, `TickResult.notices`, and sync
   status into one surface; the design call was to keep distinct signals in their own homes.
 

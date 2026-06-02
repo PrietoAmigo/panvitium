@@ -7,7 +7,7 @@
 export const strings = {
   appName: 'Panvitium',
   menu: {
-    tagline: 'Corrupt. Cull. Climb. Again.',
+    tagline: 'Per vitia, ad solium.',
     continue: 'Continue',
     newGame: 'New Game',
     newGamePrompt:

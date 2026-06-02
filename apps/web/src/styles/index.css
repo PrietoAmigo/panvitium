@@ -2377,3 +2377,41 @@ body {
   gap: 0.6rem;
   align-items: center;
 }
+
+/* ── Continue → lair entry transition ────────────────────────────────────────
+   A black veil above the title (90) and the lair: fades IN to cover the menu, then
+   (after the title is dismissed) fades OUT so the altar room rises slowly from black.
+   Durations are set inline from the JS constants in TitleSequence so the music fade
+   and the visual fade stay locked together. Covers input while it runs. */
+.entry-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 96;
+  background: #000;
+}
+.entry-fade--out {
+  animation-name: entry-to-black;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+.entry-fade--in {
+  animation-name: entry-from-black;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+@keyframes entry-to-black {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes entry-from-black {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}

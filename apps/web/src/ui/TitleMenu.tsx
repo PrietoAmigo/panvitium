@@ -8,7 +8,7 @@ import { useGameStore } from '../store/gameStore.js';
  * Continue or starts a New Game. Carries the gold-leaf PANVITIUM wordmark (the preserved display-
  * caps treatment) and four entries: Continue, New Game (confirm-wipe), Settings, About.
  */
-export function TitleMenu(): ReactElement | null {
+export function TitleMenu({ onContinue }: { onContinue?: () => void }): ReactElement | null {
   const open = useGameStore((s) => s.titleOpen);
   const dismissTitle = useGameStore((s) => s.dismissTitle);
   const hardReset = useGameStore((s) => s.hardReset);
@@ -19,6 +19,10 @@ export function TitleMenu(): ReactElement | null {
 
   if (!open) return null;
   const m = strings.menu;
+
+  // Continue runs the entry sequence (fade + music fade) when wired by TitleSequence; standalone
+  // (e.g. in tests) it just dismisses the title.
+  const handleContinue = onContinue ?? dismissTitle;
 
   const beginAnew = (): void => {
     hardReset();
@@ -66,7 +70,7 @@ export function TitleMenu(): ReactElement | null {
             <button
               type="button"
               className="title-entry title-entry--primary"
-              onClick={dismissTitle}
+              onClick={handleContinue}
             >
               {m.continue}
             </button>
