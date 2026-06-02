@@ -1092,8 +1092,11 @@ body {
 
 /* ---------- The PC — Ubuntu-style file-manager window ---------- */
 .pc-window {
-  width: min(1050px, 93vw);
-  height: min(560px, 85vh);
+  /* Base size; the whole window (and every menu inside it) is then scaled 1.25× below, so the box
+     stays small but renders 25% larger and proportional. The vw/vh caps are pre-divided by 1.25
+     (93/1.25≈74, 85/1.25≈68) so the SCALED window still fits the original viewport envelope. */
+  width: min(1050px, 74vw);
+  height: min(560px, 68vh);
   display: flex;
   flex-direction: column;
   background: #fbfbfb;
@@ -1107,7 +1110,23 @@ body {
     system-ui,
     -apple-system,
     sans-serif;
-  animation: panel-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  /* 25% larger, scaled about the centre so the flex-centred box stays centred. The dedicated
+     pc-rise animation ends at scale(1.25) (panel-rise ends at scale(1) and is shared, so it can't
+     be reused here without shrinking the window back). */
+  transform: scale(1.25);
+  transform-origin: center center;
+  animation: pc-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes pc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(1.225); /* 1.25 × 0.98 */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1.25);
+  }
 }
 
 .pc-titlebar {
