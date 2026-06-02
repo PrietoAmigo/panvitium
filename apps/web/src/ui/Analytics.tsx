@@ -3,6 +3,7 @@ import { strings } from '@panvitium/shared';
 import {
   ACTIONS,
   REPROBATE_SUBTYPES,
+  categoryEfficiency,
   computeModifiers,
   perSecondRates,
   playerEfficiency,
@@ -16,21 +17,25 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
+import { actionProgress } from '../game/progress.js';
 import { actionName } from '../game/labels.js';
 
-type AnalyticsTab = 'main' | 'resources' | 'reprobates' | 'acolytes';
+type AnalyticsTab = 'main' | 'reprobates' | 'acolytes';
 
 const NO_TIMERS: readonly ActionTimer[] = [];
 
-/** In-flight Opera timers with progress, so a queued rite is visible while it resolves. */
+/** In-flight Opera timers with progress, so a queued rite is visible while it resolves. The bar
+ *  fills 0→100% via the shared `actionProgress` rule (faster at higher efficiency, never offset). */
 function ActiveActions(): ReactElement {
-  const queue = useGameStore((s) => s.state?.lifetime.actionQueue ?? NO_TIMERS);
+  const state = useGameStore((s) => s.state);
+  const queue = state?.lifetime.actionQueue ?? NO_TIMERS;
   if (queue.length === 0) return <div className="active-actions idle">{strings.opera.idle}</div>;
   return (
     <div className="active-actions">
       {queue.map((t, i) => {
-        const total = ACTIONS[t.actionId]?.baseTimeSeconds ?? 1;
-        const pct = Math.max(0, Math.min(1, 1 - t.remainingSeconds / total));
+        const def = ACTIONS[t.actionId];
+        const eff = state && def ? categoryEfficiency(state, def.category) : 1;
+        const pct = actionProgress(t.actionId, t.remainingSeconds, eff);
         const name = actionName(t.actionId);
         return (
           <div className="action-progress" key={`${i}-${t.actionId}`}>
@@ -64,33 +69,56 @@ function Vigil(): ReactElement {
   );
 }
 
-/** Player action efficiency from Sin levels / skills. Hidden at the neutral 1×. */
-function Efficiency(): ReactElement | null {
+/** Player action efficiency (Sin levels / skills / invocations), as a labelled list value. */
+function EfficiencyRow(): ReactElement {
   const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
-  if (eff <= 1) return null;
-  const label = Number.isInteger(eff) ? `${eff}×` : `${eff.toFixed(1)}×`;
-  return (
-    <div className="hud-efficiency" title="Player action efficiency (Sin levels / skills)">
-      ★ eff {label}
-    </div>
-  );
+  const value = Number.isInteger(eff) ? `${eff}×` : `${eff.toFixed(1)}×`;
+  return <StatRow label={strings.analytics.playerEfficiency} value={value} />;
 }
 
-/** The Main tab: the ambient status formerly on the HUD — the in-flight rite, vigil, efficiency. */
+/**
+ * The Main tab (the old Main + Resources folded together, in this order): the live resource readouts
+ * — Souls, Influence, Gold — then the in-flight player action as a 0→100% progress bar, the player's
+ * action efficiency, and the vigil indicator.
+ */
 function MainTab(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+  const mods = computeModifiers(state);
+  const rates = perSecondRates(state);
+  const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
+  const perSec = (v: string): string => `+${v}/s`;
+
   return (
     <div className="analytics-main">
+      <div className="analytics-list">
+        <StatRow label={strings.resources.souls} value={formatBigNum(state.souls)} />
+        <StatRow
+          label={strings.resources.influence}
+          value={formatBigNum(state.lifetime.influence)}
+          detail={`${strings.analytics.ofMax} ${formatBigNum(effectiveMax)}`}
+          {...(gt(rates.influence, ZERO) ? { rate: perSec(formatBigNum(rates.influence)) } : {})}
+        />
+        <StatRow
+          label={strings.resources.gold}
+          value={formatBigNum(state.lifetime.gold)}
+          {...(rates.gold > 0 ? { rate: perSec(formatBigNum(bn(rates.gold))) } : {})}
+        />
+      </div>
       <ActiveActions />
+      <div className="analytics-list">
+        <EfficiencyRow />
+      </div>
       <Vigil />
-      <Efficiency />
     </div>
   );
 }
 
 /**
  * The PC's Analytics program (5.4): the live numeric readouts pulled out of the always-on HUD into
- * an on-demand panel. Three tabs — current resources + rates, the reprobate population (unconverted
- * vs converted by subtype) + dynamics rates, and a per-acolyte work board.
+ * an on-demand panel. Three tabs — Main (resources + rates, the in-flight action, efficiency, vigil),
+ * the reprobate population (unconverted vs converted by subtype) + dynamics rates, and a per-acolyte
+ * work board.
  */
 export function AnalyticsGroup(): ReactElement {
   const [tab, setTab] = useState<AnalyticsTab>('main');
@@ -113,12 +141,10 @@ export function AnalyticsGroup(): ReactElement {
     <>
       <div className="kat-pager" role="tablist">
         {tabBtn('main', strings.analytics.main)}
-        {tabBtn('resources', strings.analytics.resources)}
         {tabBtn('reprobates', strings.analytics.reprobates)}
         {tabBtn('acolytes', strings.analytics.acolytes)}
       </div>
       {tab === 'main' && <MainTab />}
-      {tab === 'resources' && <ResourcesTab />}
       {tab === 'reprobates' && <ReprobatesTab />}
       {tab === 'acolytes' && <AcolytesTab />}
     </>
@@ -143,32 +169,6 @@ function StatRow({
       <span className="analytics-value">{value}</span>
       {detail !== undefined && <span className="analytics-detail">{detail}</span>}
       {rate !== undefined && <span className="analytics-rate">{rate}</span>}
-    </div>
-  );
-}
-
-function ResourcesTab(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const mods = computeModifiers(state);
-  const rates = perSecondRates(state);
-  const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
-  const perSec = (v: string): string => `+${v}/s`;
-
-  return (
-    <div className="analytics-list">
-      <StatRow label={strings.resources.souls} value={formatBigNum(state.souls)} />
-      <StatRow
-        label={strings.resources.gold}
-        value={formatBigNum(state.lifetime.gold)}
-        {...(rates.gold > 0 ? { rate: perSec(formatBigNum(bn(rates.gold))) } : {})}
-      />
-      <StatRow
-        label={strings.resources.influence}
-        value={formatBigNum(state.lifetime.influence)}
-        detail={`${strings.analytics.ofMax} ${formatBigNum(effectiveMax)}`}
-        {...(gt(rates.influence, ZERO) ? { rate: perSec(formatBigNum(rates.influence)) } : {})}
-      />
     </div>
   );
 }
@@ -220,9 +220,7 @@ function AcolyteRow({ state, id }: { state: GameState; id: number }): ReactEleme
   let remaining = '';
   if (!idle && acolyte.remainingSeconds !== null) {
     const eff = Math.max(computeModifiers(state).acolyteEfficiencyMul, 1e-9);
-    const base = ACTIONS[acolyte.assignedAction as string]?.baseTimeSeconds ?? 1;
-    const total = base / eff;
-    const pct = Math.max(0, Math.min(1, 1 - acolyte.remainingSeconds / total));
+    const pct = actionProgress(acolyte.assignedAction as string, acolyte.remainingSeconds, eff);
     remaining = formatDuration(Math.max(0, Math.ceil(acolyte.remainingSeconds)) * 1000);
     bar = (
       <span className="analytics-bar">

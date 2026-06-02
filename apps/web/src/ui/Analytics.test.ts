@@ -61,12 +61,13 @@ describe('AnalyticsGroup', () => {
     expect(container!.textContent).toContain('Acolyte 2');
   });
 
-  it('defaults to the Main tab and can switch to Resources and Reprobates', () => {
+  it('defaults to the Main tab (resources folded in) and can switch to Reprobates', () => {
     seed([]);
     render();
-    expect(container!.textContent).toContain('vigil kept'); // Main is the default tab
-    clickTab('Resources');
+    // Main now carries the resources, the player action efficiency, and the vigil, in one tab.
     expect(container!.textContent).toContain('Souls');
+    expect(container!.textContent).toContain('Player action efficiency');
+    expect(container!.textContent).toContain('vigil kept');
     clickTab('Reprobates');
     expect(container!.textContent).toContain('Unconverted');
   });

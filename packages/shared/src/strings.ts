@@ -228,6 +228,7 @@ export const strings = {
     noConverted: 'None converted yet.',
     noAcolytes: 'No acolytes recruited yet.',
     ofMax: 'of',
+    playerEfficiency: 'Player action efficiency',
   },
   emails: {
     title: 'Emails',
