@@ -25,12 +25,15 @@ import {
   dispel,
   INVOCATION_IDS,
   invocationById,
+  invocationRunnerEfficiency,
+  invocationRunnerKey,
   invocationSoulCost,
   invocationUnlocked,
   invocationVisible,
   invoke,
   makeRng,
   NEUTRAL_MODIFIERS,
+  tick,
   type GameState,
   type Sin,
 } from './index.js';
@@ -461,5 +464,65 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(two.state.lifetime.invocationRunners.imp).toBeGreaterThan(0);
     expect(two.state.lifetime.invocationRunners['imp#1']).toBeGreaterThan(0);
     expect(one.state.lifetime.invocationRunners['imp#1']).toBeUndefined(); // one copy ⇒ no suffix
+  });
+});
+
+describe('Analytics surface: runner key + channel efficiency', () => {
+  it('keys copy 0 bare and stacked copies suffixed', () => {
+    expect(invocationRunnerKey('imp', 0)).toBe('imp');
+    expect(invocationRunnerKey('imp', 1)).toBe('imp#1');
+    expect(invocationRunnerKey('imp', 2)).toBe('imp#2');
+  });
+
+  it('channel efficiency = autonomous.efficiency × the modifier terms (the value the advance uses)', () => {
+    const s = withInvocation(fresh(), 'familiar', 1);
+    const fam = invocationById('familiar')!;
+    const mods = computeModifiers(s);
+    // Familiar has no Sin, so no per-Sin term; it is its own +33% playerEfficiency source.
+    expect(invocationRunnerEfficiency(s, fam)).toBeCloseTo(
+      fam.autonomous!.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul,
+      10,
+    );
+  });
+
+  it('folds the runner Sin effectiveness term for a Sin-aligned runner (Imp → Ira)', () => {
+    const s = withInvocation(fresh(), 'imp', 1);
+    const imp = invocationById('imp')!;
+    const mods = computeModifiers(s);
+    expect(invocationRunnerEfficiency(s, imp)).toBeCloseTo(
+      imp.autonomous!.efficiency *
+        mods.playerEfficiencyMul *
+        mods.invocationEfficiencyMul *
+        mods.invocationSinEffectivenessMul.ira,
+      10,
+    );
+  });
+
+  it('returns 0 for a passive invocation (no autonomous channel)', () => {
+    expect(invocationRunnerEfficiency(fresh(), invocationById('fama')!)).toBe(0);
+  });
+});
+
+describe('tick outcome source tagging (player-only PC log)', () => {
+  it('tags acolyte and invocation-runner outcomes; player outcomes stay untagged', () => {
+    const base = fresh('source-tag', 0);
+    const s: GameState = {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        // A player Indagatio about to complete (time-mode, free) → an untagged player outcome.
+        actionQueue: [{ actionId: 'indagatio', remainingSeconds: 0.05 }],
+        // An acolyte mid-Indagatio about to complete → an outcome tagged 'acolyte'.
+        acolytes: [{ id: 1, assignedAction: 'indagatio', remainingSeconds: 0.05 }],
+        // A bound Familiar whose Indagatio channel is about to complete → tagged 'invocation'.
+        invocations: { ...base.lifetime.invocations, familiar: 1 },
+        invocationRunners: { familiar: 0.05 },
+      },
+    };
+    const { events } = tick(s, 2); // 2s completes all three channels
+    const sources = events.map((e) => e.source);
+    expect(events.some((e) => e.source === undefined)).toBe(true); // player
+    expect(sources).toContain('acolyte');
+    expect(sources).toContain('invocation');
   });
 });

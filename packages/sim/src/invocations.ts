@@ -440,8 +440,23 @@ function activeRunnerIds(state: GameState): string[] {
  * Timer key for copy `k` of runner `id`. Copy 0 keeps the bare id so single-copy runners (and saves
  * predating stacking) are unchanged; each additional stacked copy gets its own suffixed channel.
  */
-function runnerKey(id: string, k: number): string {
+export function invocationRunnerKey(id: string, k: number): string {
   return k === 0 ? id : `${id}#${k}`;
+}
+
+/**
+ * The effective per-copy efficiency an active runner channel works at: its base `autonomous.efficiency`
+ * × the player's own efficiency × the invocation-wide boost × the runner's own Sin effectiveness (the
+ * Familiar has no Sin, so it takes no per-Sin term). This is the single source of truth the runner
+ * advance and the UI both read, so the displayed efficiency and progress-bar speed match the sim.
+ * Returns 0 for an invocation with no autonomous channel.
+ */
+export function invocationRunnerEfficiency(state: GameState, def: InvocationDef): number {
+  const auto = def.autonomous;
+  if (!auto) return 0;
+  const mods = computeModifiers(state);
+  const sinMul = def.sin ? mods.invocationSinEffectivenessMul[def.sin] : 1;
+  return auto.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul * sinMul;
 }
 
 /**
@@ -471,7 +486,7 @@ export function advanceInvocationRunners(
   const validKeys = new Set<string>();
   for (const id of active) {
     const copies = state.lifetime.invocations[id] ?? 0;
-    for (let k = 0; k < copies; k++) validKeys.add(runnerKey(id, k));
+    for (let k = 0; k < copies; k++) validKeys.add(invocationRunnerKey(id, k));
   }
   const hasStaleTimers = Object.keys(existing).some((key) => !validKeys.has(key));
 
@@ -491,14 +506,10 @@ export function advanceInvocationRunners(
     const auto = def.autonomous!;
     const copies = working.lifetime.invocations[id] ?? 0;
     for (let k = 0; k < copies; k++) {
-      const key = runnerKey(id, k);
-      // Recomputed per copy so each channel sees the resources the earlier copies have already spent.
-      const mods = computeModifiers(working);
-      // auto.efficiency × player's own × invocation-wide boost (Ira level / Black Candles / Murmur) ×
-      // the runner's own Sin effectiveness. Familiar has no Sin, so it takes no per-Sin boost.
-      const sinMul = def.sin ? mods.invocationSinEffectivenessMul[def.sin] : 1;
-      const eff =
-        auto.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul * sinMul;
+      const key = invocationRunnerKey(id, k);
+      // Recomputed per copy (inside the helper) so each channel sees the resources earlier copies
+      // have already spent; the efficiency itself is the same for every copy of a runner.
+      const eff = invocationRunnerEfficiency(working, def);
       // Absent key (undefined) ⇒ null: a fresh or previously-stalled channel the engine will (re)start.
       const prev = existing[key] ?? null;
       const r = advanceRunnerCycles(

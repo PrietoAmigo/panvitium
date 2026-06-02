@@ -192,6 +192,33 @@ export const strings = {
       morpheus: 'Morpheus',
       specunitas: 'Specunitas',
     } as Record<string, string>,
+    // Analytics → Invocations tab.
+    noneBound: 'No invocations are bound.',
+    runs: 'Runs',
+    actionEfficiency: 'action efficiency',
+    stalled: 'stalled — waiting on resources',
+    /** A short, accurate "total effect" line per invocation (the real sim behaviour, not the older
+     *  Ars Goetia flavour). Runners also surface their channel efficiency and per-copy bars. */
+    effects: {
+      familiar: '+33% player efficiency, plus a background Indagatio.',
+      imp: 'A background Good-only Decimatio — culls reprobates.',
+      upir: 'A background Good-only Decimatio — culls reprobates.',
+      lamia: 'A background Suasio, and shifts Suasio toward success.',
+      fama: 'Raises influence gain.',
+      nightmare: 'Raises the base reprobate suicide rate.',
+      harpy: 'Raises Decimatio efficiency.',
+      lemure: 'Raises the offline gain rate.',
+      behemoth: 'Raises the Stellar success chance.',
+      midas: '×3 gold gain — but ×100 the Apocalyptic chance.',
+      plutus: 'Raises Vitium Mercatura output.',
+      succubus: 'Raises Suasio efficiency, at a cut to gold.',
+      doppelgaenger: '+50% player efficiency, at half influence gain.',
+      astiwihad: 'Each second, a chance to wipe all reprobates into souls.',
+      aurevora: 'Player efficiency ramps exponentially — burns gold, self-dispels at zero.',
+      erinyes: 'At the next Katabasis: kills every reprobate and permanently doubles efficiency.',
+      morpheus: 'Holds the world still; at Katabasis, maxes the carry-over rolls.',
+      specunitas: 'Biases conversion toward a chosen subtype.',
+    } as Record<string, string>,
   },
   maleficia: {
     intro:
@@ -227,6 +254,7 @@ export const strings = {
     resources: 'Resources',
     reprobates: 'Reprobates',
     acolytes: 'Acolytes',
+    invocations: 'Invocations',
     generation: 'Generation',
     conversion: 'Conversion',
     deaths: 'Deaths',

@@ -12,6 +12,12 @@ export interface OutcomeEvent {
   readonly soulsDelta: number;
   readonly reprobateDelta: number;
   readonly goldDelta: number;
+  /**
+   * Who produced this outcome. Absent ⇒ the player's own action (the default). Acolyte delegations
+   * and autonomous invocation-runner channels tag their outcomes so a consumer can separate them —
+   * the PC Logs program shows player outcomes only. Transient (events are not persisted).
+   */
+  readonly source?: EventSource;
   /** Maleficium ids surfaced into the Emptio list this outcome (Indagatio). */
   readonly maleficiaSurfaced?: readonly string[];
   /** Maleficium ids added to the player's inventory this outcome (Emptio purchase). */
@@ -19,6 +25,9 @@ export interface OutcomeEvent {
   /** Maleficium ids dropped from the Emptio list (Emptio failure terrible/apocalyptic). */
   readonly maleficiaLost?: readonly string[];
 }
+
+/** The origin of an outcome event. */
+export type EventSource = 'player' | 'acolyte' | 'invocation';
 
 /** Tiers dramatic enough to warrant a pop-up (02 §2). */
 export function isSignatureTier(tier: Tier): boolean {

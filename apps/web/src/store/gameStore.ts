@@ -288,7 +288,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
     set((s) => {
-      const log = [...events].reverse().concat(s.log).slice(0, LOG_CAP);
+      // The PC Logs program is the player's own action log: acolyte- and invocation-runner outcomes
+      // are tagged with a source and excluded here (they have their own surfaces — the Analytics
+      // Acolytes/Invocations tabs). Signature pop-ups still fire from any source.
+      const playerEvents = events.filter((e) => e.source === undefined || e.source === 'player');
+      const log =
+        playerEvents.length > 0
+          ? [...playerEvents].reverse().concat(s.log).slice(0, LOG_CAP)
+          : s.log;
       let signature = s.signature;
       for (const e of events) if (isSignatureTier(e.tier)) signature = e;
       return { state, log, signature, ...noticePatch, ...achievementPatch };

@@ -72,3 +72,56 @@ describe('AnalyticsGroup', () => {
     expect(container!.textContent).toContain('Unconverted');
   });
 });
+
+/** Seed arbitrary lifetime fields (invocations, runner timers) for the Invocations tab tests. */
+function seedLifetime(over: Partial<GameState['lifetime']>): void {
+  const base = createInitialState('seed', 0);
+  const state: GameState = { ...base, lifetime: { ...base.lifetime, ...over } };
+  useGameStore.setState({ state });
+}
+
+/** Click the first button whose text contains `substr` (an invocation row head, not a tab). */
+function clickName(substr: string): void {
+  const btn = Array.from(container!.querySelectorAll('button')).find((b) =>
+    (b.textContent ?? '').includes(substr),
+  );
+  if (!btn) throw new Error(`row not found: ${substr}`);
+  act(() => btn.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+}
+
+describe('AnalyticsGroup — Invocations tab', () => {
+  it('shows the empty state when nothing is bound', () => {
+    seed([]);
+    render();
+    clickTab('Invocations');
+    expect(container!.textContent).toContain('No invocations are bound');
+  });
+
+  it('lists a passive invocation with its count and total effect (no efficiency line)', () => {
+    seedLifetime({ invocations: { fama: 2 } });
+    render();
+    clickTab('Invocations');
+    expect(container!.textContent).toContain('Fama');
+    expect(container!.textContent).toContain('\u00D72'); // number bound
+    expect(container!.textContent).toContain('Raises influence gain');
+    expect(container!.textContent).not.toContain('action efficiency'); // passive ⇒ effect, not eff
+  });
+
+  it('shows a runner invocation efficiency and expands per-copy bars on name click', () => {
+    seedLifetime({
+      invocations: { imp: 2 },
+      invocationRunners: { imp: 5, 'imp#1': 5 },
+    });
+    render();
+    clickTab('Invocations');
+    expect(container!.textContent).toContain('Imp');
+    expect(container!.textContent).toContain('action efficiency'); // runner ⇒ channel efficiency
+    // Collapsed: no per-copy channel rows yet.
+    expect(container!.querySelectorAll('.analytics-inv-channel').length).toBe(0);
+    // Click the invocation name to expand; one channel per summoned copy appears.
+    clickName('Imp');
+    expect(container!.querySelectorAll('.analytics-inv-channel').length).toBe(2);
+    expect(container!.textContent).toContain('#1');
+    expect(container!.textContent).toContain('#2');
+  });
+});

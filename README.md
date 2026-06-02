@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 725** (sim 518 · shared 52 · api 11 · web 144).
+**Current test count: 733** (sim 523 · shared 52 · api 11 · web 147).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -534,18 +534,31 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
 - **Analytics PC program** _(✓ shipped)_. The always-on readouts were pulled off the HUD entirely, and
   the HUD itself is gone — the PANVITIUM wordmark was removed from the screen too (its gold-leaf
   display-caps treatment is preserved, unmounted, in `Hud.tsx` / the `.game-name` rule for reuse).
-  Everything moved into this on-demand PC program (between Emptio and Achievements). Three tabs:
+  Everything moved into this on-demand PC program (between Emptio and Achievements). Four tabs:
   **Main** (default) folds the former Resources tab in and lists, in order: **Souls**, **Influence**,
   **Gold** (with `perSecondRates` and the influence cap), the **current player action** as a progress
   bar, **player action efficiency** as a labelled value, and the **vigil** clock; **Reprobates**
   (unconverted vs converted counts by subtype, plus `reprobateRates` generation / conversion / death
-  rates — this also subsumes the old HUD reprobate count); and **Acolytes** (a per-acolyte board showing
-  each one's current action, remaining cycle time, and a progress bar). Every progress bar — player,
-  acolyte, or (future) invocation — runs through one shared rule (`game/progress.ts → actionProgress`,
+  rates — this also subsumes the old HUD reprobate count); **Acolytes** (a per-acolyte board showing
+  each one's current action, remaining cycle time, and a progress bar); and **Invocations** (every
+  bound invocation, its count, and either its **total effect** — a short accurate line per invocation
+  from `strings.invocations.effects`, the real sim behaviour rather than the older Ars Goetia flavour —
+  or, for invocations that **carry actions** (the autonomous runners: Familiar, Imp, Upir, Lamia), the
+  channel's action and effective **efficiency**; clicking a runner's name expands a **per-copy progress
+  bar** for each summoned copy, reading `lifetime.invocationRunners` keyed via the now-exported
+  `invocationRunnerKey`, with a copy that can't yet afford its next cost-outcome cycle shown as
+  _stalled_. The displayed efficiency and bar speed come from the new exported
+  `invocationRunnerEfficiency`, which `advanceInvocationRunners` was refactored to use too, so UI and
+  sim can't drift). Every progress bar — player,
+  acolyte, or invocation — runs through one shared rule (`game/progress.ts → actionProgress`,
   built on the sim's `runnerCycleDuration`): the bar always fills **0 → 100%**; higher efficiency on a
   time-mode action makes it fill _faster_ (a smaller total) rather than starting partway, and
   cost-outcome actions keep a fixed duration. Reuses the existing `kat-tab` tab styling; the data all
-  comes from already-tested sim helpers.
+  comes from already-tested sim helpers. The **PC Logs program is now player-only**: `OutcomeEvent`
+  carries an additive-optional `source` tag (`'player' | 'acolyte' | 'invocation'`, transient — not
+  persisted), the tick tags acolyte and invocation-runner outcomes accordingly, and the store folds
+  only untagged (player) outcomes into the log — acolyte/invocation work has its own surfaces in the
+  Analytics tabs. Signature Stellar/Apocalyptic pop-ups still fire from any source.
 - **Settings / options panel** _(partly shipped)_. A gear in the top-right opens a settings overlay.
   **Shipped:** local-first save tools — **export** (serialize the current game to a portable string via
   `serializeSaveBlob`), **import** (replace the game from a pasted save, validated through `parseSaveBlob`

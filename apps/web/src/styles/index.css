@@ -2148,6 +2148,85 @@ body {
   background: linear-gradient(90deg, var(--candle-soft), var(--candle));
 }
 
+/* ---------- Analytics → Invocations tab ---------- */
+.analytics-invocations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.analytics-invocation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.9rem;
+}
+.analytics-inv-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.analytics-inv-name {
+  font-family: var(--font-display, Georgia, serif);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.analytics-inv-meta {
+  flex: 1 1 auto;
+  font-size: 0.8rem;
+  color: var(--candle);
+  font-variant-numeric: tabular-nums;
+}
+.analytics-inv-chevron {
+  opacity: 0.7;
+  font-size: 0.8rem;
+}
+.analytics-inv-effect {
+  font-size: 0.82rem;
+  opacity: 0.7;
+}
+.analytics-inv-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.1rem;
+  padding-left: 0.6rem;
+}
+.analytics-inv-channel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+}
+.analytics-inv-channel .analytics-bar {
+  flex: 1 1 auto;
+}
+.analytics-inv-channel-idx {
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.analytics-inv-channel-note {
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.analytics-inv-channel--stalled .analytics-inv-channel-note {
+  color: var(--candle);
+  opacity: 0.85;
+}
+
 /* ---------- Emails PC program (Phase 5.2) ---------- */
 .emails-list {
   list-style: none;

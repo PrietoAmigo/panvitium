@@ -3,6 +3,11 @@ import { strings } from '@panvitium/shared';
 import {
   ACTIONS,
   REPROBATE_SUBTYPES,
+  INVOCATION_IDS,
+  activeInvocationCount,
+  invocationById,
+  invocationRunnerEfficiency,
+  invocationRunnerKey,
   categoryEfficiency,
   computeModifiers,
   perSecondRates,
@@ -14,13 +19,14 @@ import {
   ZERO,
   type ActionTimer,
   type GameState,
+  type InvocationDef,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
 import { actionProgress } from '../game/progress.js';
 import { actionName } from '../game/labels.js';
 
-type AnalyticsTab = 'main' | 'reprobates' | 'acolytes';
+type AnalyticsTab = 'main' | 'reprobates' | 'acolytes' | 'invocations';
 
 const NO_TIMERS: readonly ActionTimer[] = [];
 
@@ -116,9 +122,9 @@ function MainTab(): ReactElement {
 
 /**
  * The PC's Analytics program (5.4): the live numeric readouts pulled out of the always-on HUD into
- * an on-demand panel. Three tabs — Main (resources + rates, the in-flight action, efficiency, vigil),
- * the reprobate population (unconverted vs converted by subtype) + dynamics rates, and a per-acolyte
- * work board.
+ * an on-demand panel. Four tabs — Main (resources + rates, the in-flight action, efficiency, vigil),
+ * the reprobate population (unconverted vs converted by subtype) + dynamics rates, a per-acolyte
+ * work board, and the bound invocations (count, runner channel efficiency / total effect).
  */
 export function AnalyticsGroup(): ReactElement {
   const [tab, setTab] = useState<AnalyticsTab>('main');
@@ -143,10 +149,12 @@ export function AnalyticsGroup(): ReactElement {
         {tabBtn('main', strings.analytics.main)}
         {tabBtn('reprobates', strings.analytics.reprobates)}
         {tabBtn('acolytes', strings.analytics.acolytes)}
+        {tabBtn('invocations', strings.analytics.invocations)}
       </div>
       {tab === 'main' && <MainTab />}
       {tab === 'reprobates' && <ReprobatesTab />}
       {tab === 'acolytes' && <AcolytesTab />}
+      {tab === 'invocations' && <InvocationsTab />}
     </>
   );
 }
@@ -251,6 +259,123 @@ function AcolytesTab(): ReactElement {
       {acolytes.map((a) => (
         <AcolyteRow key={a.id} state={state} id={a.id} />
       ))}
+    </div>
+  );
+}
+
+/**
+ * One bound invocation per row. Passive invocations show a one-line "total effect". Invocations that
+ * carry actions (autonomous runners — Familiar, Imp, Upir, Lamia) show their channel's action and
+ * effective efficiency, and clicking the name expands a per-copy progress bar for each summoned copy
+ * (a stacked runner runs one independent channel per copy; a cost-outcome channel that can't yet
+ * afford its next cycle shows "stalled"). The bar uses the shared `actionProgress` rule at the same
+ * efficiency the sim drives the channel with, so the displayed speed matches the simulation.
+ */
+function InvocationRow({
+  state,
+  id,
+  def,
+  expanded,
+  onToggle,
+}: {
+  state: GameState;
+  id: string;
+  def: InvocationDef;
+  expanded: boolean;
+  onToggle: (id: string) => void;
+}): ReactElement {
+  const count = activeInvocationCount(state, id);
+  const name = strings.invocations.names[id] ?? id;
+  const countLabel = count > 1 ? `${name} \u00D7${count}` : name;
+  const effect = strings.invocations.effects[id] ?? '';
+  const auto = def.autonomous;
+
+  if (!auto) {
+    return (
+      <div className="analytics-invocation analytics-invocation--passive">
+        <span className="analytics-inv-name">{countLabel}</span>
+        {effect !== '' && <span className="analytics-inv-effect">{effect}</span>}
+      </div>
+    );
+  }
+
+  const eff = invocationRunnerEfficiency(state, def);
+  const meta = `${strings.invocations.runs} ${actionName(auto.action)} \u00B7 ${eff.toFixed(2)}\u00D7 ${strings.invocations.actionEfficiency}`;
+
+  return (
+    <div className="analytics-invocation">
+      <button
+        type="button"
+        className="analytics-inv-head"
+        aria-expanded={expanded}
+        onClick={() => onToggle(id)}
+      >
+        <span className="analytics-inv-name">{countLabel}</span>
+        <span className="analytics-inv-meta">{meta}</span>
+        <span className="analytics-inv-chevron">{expanded ? '\u25BE' : '\u25B8'}</span>
+      </button>
+      {effect !== '' && <span className="analytics-inv-effect">{effect}</span>}
+      {expanded && (
+        <div className="analytics-inv-channels">
+          {Array.from({ length: count }, (_, k) => {
+            const remaining = state.lifetime.invocationRunners[invocationRunnerKey(id, k)];
+            if (remaining === undefined) {
+              return (
+                <div className="analytics-inv-channel analytics-inv-channel--stalled" key={k}>
+                  <span className="analytics-inv-channel-idx">#{k + 1}</span>
+                  <span className="analytics-inv-channel-note">{strings.invocations.stalled}</span>
+                </div>
+              );
+            }
+            const pct = actionProgress(auto.action, remaining, eff);
+            return (
+              <div className="analytics-inv-channel" key={k}>
+                <span className="analytics-inv-channel-idx">#{k + 1}</span>
+                <span className="analytics-bar">
+                  <span
+                    className="analytics-bar-fill"
+                    style={{ width: `${(pct * 100).toFixed(0)}%` }}
+                  />
+                </span>
+                <span className="analytics-inv-channel-note">{Math.ceil(remaining)}s</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Bound invocations: count, channel efficiency (runners) or total effect (passive). */
+function InvocationsTab(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+  const bound = INVOCATION_IDS.filter((id) => activeInvocationCount(state, id) > 0);
+  if (bound.length === 0) return <p className="pc-empty">{strings.invocations.noneBound}</p>;
+  const toggle = (id: string): void =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  return (
+    <div className="analytics-invocations">
+      {bound.map((id) => {
+        const def = invocationById(id);
+        return def ? (
+          <InvocationRow
+            key={id}
+            state={state}
+            id={id}
+            def={def}
+            expanded={expanded.has(id)}
+            onToggle={toggle}
+          />
+        ) : null;
+      })}
     </div>
   );
 }

@@ -319,13 +319,13 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   working = autoRecruitAcolytes(working);
   const acoResult = advanceAcolytes(working, deltaSeconds, rng);
   working = acoResult.state;
-  for (const ev of acoResult.events) events.push(ev);
+  for (const ev of acoResult.events) events.push({ ...ev, source: 'acolyte' });
 
   // 5b. Autonomous invocation runners (02 §3). The Familiar runs Indagatio in its own channel at a
   //     fraction of the player's efficiency — separate from the player slot and the acolytes.
   const runResult = advanceInvocationRunners(working, deltaSeconds, rng);
   working = runResult.state;
-  for (const ev of runResult.events) events.push(ev);
+  for (const ev of runResult.events) events.push({ ...ev, source: 'invocation' });
 
   // 6. Achievements (03 §7). Evaluate the catalog against the fully-advanced state; fold any newly-
   //    earned ids into state.achievements and surface them for a toast. Last step, so every change
