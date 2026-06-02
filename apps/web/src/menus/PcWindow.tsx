@@ -10,7 +10,7 @@ interface PcWindowProps {
 
 const EXECUTABLES = [
   { id: 'Depraedatio', color: '#E95420', glyph: '$' },
-  { id: 'Decimatio', color: '#772953', glyph: '†' },
+  { id: 'Decimatio', color: '#772953', glyph: 'X' },
   { id: 'Indagatio', color: '#2c7bbe', glyph: '?' },
   { id: 'Emptio', color: '#2f9e52', glyph: '+' },
   { id: 'Analytics', color: '#1f9e8f', glyph: '\u03A3' },

@@ -259,11 +259,13 @@ extensions, `import type`, Prettier):
     extra space shows as more file-grid columns and roomier panels, not a zoomed-in UI). The `vw`/`vh`
     caps are unchanged, so the window still shrinks to fit a small viewport. PC action rows
     (`.vitium-row`, `.pc-app-row`) gained horizontal breathing room so their buttons no longer jam
-    against the bar's right edge (with `min-width: 0` on the row meta so a long _Expected outcomes_
-    line wraps instead of shoving the button out), and the three deactivation buttons — business
-    **Shutdown**, ceremony **End**, invocation **Dispel** — now use a dedicated green
-    `.opera-btn--stop` variant (a "turn this off" affordance, distinct from the blood-red
-    BEGIN/Summon); cancel and sign-out buttons stay on the neutral `--secondary` style.
+    against the bar's right edge, and the three deactivation buttons — business **Shutdown**, ceremony
+    **End**, invocation **Dispel** — use a dedicated green `.opera-btn--stop` variant (a "turn this
+    off" affordance, distinct from the blood-red BEGIN/Summon); cancel and sign-out buttons stay on the
+    neutral `--secondary` style. **Gotcha:** both `index.css` and `menus.css` define `.opera-btn` and
+    `.vitium-row`, and `menus.css` is imported last, so it wins the cascade _per property_ — the PC
+    overrides for these (padding, the `--stop` colours) must live in `menus.css`; the same edits in
+    `index.css` are silently overridden.
   - _W8 — render-loop fix._ The Maleficia shelf selected `buildCabinet(state)` _inside_ a Zustand
     selector, returning a fresh array each call — which makes `useSyncExternalStore` see an
     ever-changing snapshot and loop (“Maximum update depth exceeded”) when the cabinet mounts. Now it

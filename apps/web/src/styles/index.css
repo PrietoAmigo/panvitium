@@ -1310,7 +1310,7 @@ body {
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.55rem 1rem;
+  padding: 0.5rem 0.6rem;
   border: 1px solid rgba(196, 158, 74, 0.22);
   background: rgba(8, 8, 10, 0.55);
 }
@@ -1322,7 +1322,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  min-width: 0;
 }
 .vitium-name {
   font-family: var(--font-display);
@@ -1350,17 +1349,6 @@ body {
   background: rgba(40, 16, 16, 0.5);
   border-color: rgba(212, 72, 72, 0.5);
   color: #e6c993;
-}
-/* Deactivation buttons (business Shutdown, ceremony End, invocation Dispel) read green —
-   a clear "turn this active thing off" affordance, distinct from the blood-red BEGIN/Summon. */
-.opera-btn--stop {
-  background: #1d5236;
-  border-color: #3f9e63;
-  color: var(--parchment);
-}
-.opera-btn--stop:hover:not(:disabled) {
-  background: #246b44;
-  border-color: #56bd7e;
 }
 .vitium-heading {
   margin: 0.9rem 0 0.3rem;

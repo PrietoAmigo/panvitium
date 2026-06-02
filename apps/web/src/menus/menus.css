@@ -795,6 +795,19 @@ body {
   color: var(--ink);
   border-color: #7a6740;
 }
+/* Deactivation buttons (business Shutdown, ceremony End, invocation Dispel) read green — a clear
+   "turn this active thing off" affordance, distinct from the blood-red BEGIN/Summon. Defined here in
+   menus.css (not index.css) because this stylesheet loads last and wins the per-property cascade for
+   .opera-btn; a copy in index.css would be overridden by the red .opera-btn base above. */
+.opera-btn--stop {
+  background: #1d5236;
+  border-color: #3f9e63;
+  color: var(--parchment);
+}
+.opera-btn--stop:hover:not(:disabled) {
+  background: #246b44;
+  border-color: #56bd7e;
+}
 .pogrom-target {
   font-family: var(--font-display);
   letter-spacing: 0.04em;
@@ -885,7 +898,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.8rem;
-  padding: 0.55rem 0;
+  padding: 0.55rem 1rem;
   border-top: 1px solid var(--parchment-shadow);
 }
 .vitium-row.is-locked {
