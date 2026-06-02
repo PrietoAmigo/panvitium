@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 722** (sim 518 · shared 52 · api 11 · web 141).
+**Current test count: 725** (sim 518 · shared 52 · api 11 · web 144).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -295,7 +295,12 @@ extensions, `import type`, Prettier):
     live in the PC's Logs program). Split the PC's **Depraedatio** program into three tabs — Vitium
     Mercatura (the businesses), Vitium Compositum (the ceremonies), and In Flight (builds under
     construction); the in-flight tab collapses identical builds into one counted row (“6× Street
-    food stand”) showing the soonest completion, and the tab carries a live count.
+    food stand”) showing the soonest completion, and the tab carries a live count. Each **Vitium
+    Compositum** toggle now explains itself with two lines (`game/compositumText.ts`): a **Cost** line
+    (the per-second upkeep, with "and rising" for Panvitium's ramp) and an **Expected outcomes** line
+    that spells the effects out concretely — income, biased conversion with the favoured subtypes, the
+    percentage breed/cull, the flat suicide/murder/birth shifts, the sharpened subtype penalties, the
+    offline-gain boost — instead of the old vague verb.
   - _Ars Goetia types decoupled (no visual change)._ Per the focused Ars-Goetia export, moved
     `GoetiaEntry` / `ArsGoetiaBookProps` into a self-contained `ars-goetia.types.ts` so the grimoire
     no longer depends on the degradation layer's `types.ts`; `ArsGoetiaBook` and `buildGoetia` import

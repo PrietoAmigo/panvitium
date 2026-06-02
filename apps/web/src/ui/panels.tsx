@@ -29,6 +29,7 @@ import {
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../menus/types.js';
+import { compositumCostLine, compositumOutcomesLine } from '../game/compositumText.js';
 import { AltarPanel as DesignedAltar } from '../menus/AltarPanel.js';
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
 import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
@@ -625,32 +626,6 @@ function DepraedatioGroup(): ReactElement {
   );
 }
 
-/** Build a short "cost → effect" label for a Vitium Compositum entry. */
-function compositumSummary(id: string): string {
-  const def = compositumById(id);
-  if (!def) return '';
-  const costs: string[] = [];
-  if (def.costPerSecond.gold) costs.push(`${def.costPerSecond.gold} ${strings.resources.gold}/s`);
-  if (def.costPerSecond.influence)
-    costs.push(`${def.costPerSecond.influence} ${strings.resources.influence}/s`);
-  const effects: string[] = [];
-  if (def.goldPerSecond) effects.push(`+${def.goldPerSecond} ${strings.resources.gold}/s`);
-  if (def.influencePerSecond)
-    effects.push(`+${def.influencePerSecond} ${strings.resources.influence}/s`);
-  if (def.generationPerSecond) effects.push(strings.compositum.generates);
-  if (def.conversionPerSecond) effects.push(strings.compositum.converts);
-  if ((def.flatGenerationPerSecond ?? 0) > 0) effects.push(strings.compositum.generates);
-  if ((def.flatGenerationPerSecond ?? 0) < 0) effects.push(strings.compositum.slowsGeneration);
-  if (def.populationGeneration) effects.push(strings.compositum.generates);
-  if (def.deathFractionPerSecond) effects.push(strings.compositum.culls);
-  if (def.flatBaseSuicideRatePerSecond) effects.push(strings.compositum.raisesSuicide);
-  if (def.flatBaseCholericMurderRatePerSecond) effects.push(strings.compositum.raisesMurder);
-  if (def.penaltyIncrease) effects.push(strings.compositum.sharpensVices);
-  if (def.offlineGainBoost) effects.push(strings.compositum.idleGains);
-  const costStr = costs.length > 0 ? costs.join(' · ') : strings.compositum.noCost;
-  return `${costStr} \u2192 ${effects.join(' · ')}`;
-}
-
 /**
  * Vitium Compositum (03 §2.3): multi-Sin ceremony toggles. Listed beneath the businesses in the
  * Depraedatio ledger. Each shows its Sin gate, cost→effect summary, and an activate/deactivate
@@ -679,7 +654,14 @@ function CompositumSection(): ReactElement {
             >
               <div className="vitium-meta">
                 <span className="vitium-name">{name}</span>
-                <span className="vitium-sub">{unlocked ? compositumSummary(id) : gate}</span>
+                {unlocked ? (
+                  <>
+                    <span className="vitium-sub">{compositumCostLine(def)}</span>
+                    <span className="vitium-sub">{compositumOutcomesLine(def)}</span>
+                  </>
+                ) : (
+                  <span className="vitium-sub">{gate}</span>
+                )}
               </div>
               <div className="vitium-actions">
                 {active ? (
