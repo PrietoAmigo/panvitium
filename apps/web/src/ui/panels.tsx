@@ -536,7 +536,7 @@ function MercaturaList(): ReactElement {
               {ownedCount > 0 && (
                 <button
                   type="button"
-                  className="opera-btn opera-btn--secondary"
+                  className="opera-btn opera-btn--stop"
                   onClick={() => shutdown(id)}
                   aria-label={`${strings.opera.shutdown} ${name}`}
                 >
@@ -667,7 +667,7 @@ function CompositumSection(): ReactElement {
                 {active ? (
                   <button
                     type="button"
-                    className="opera-btn opera-btn--secondary"
+                    className="opera-btn opera-btn--stop"
                     onClick={() => deactivate(id)}
                     aria-label={`${strings.compositum.stop} ${name}`}
                   >
@@ -941,7 +941,7 @@ function ArsGoetiaPanel(): ReactElement {
                   {count > 0 && (
                     <button
                       type="button"
-                      className="opera-btn opera-btn--secondary"
+                      className="opera-btn opera-btn--stop"
                       onClick={() => banish(def.id)}
                       aria-label={`${strings.invocations.dispel} ${name}`}
                     >
