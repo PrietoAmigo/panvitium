@@ -21,6 +21,14 @@ export const ROOM_PLATES: Record<RoomId, string> = {
   studio: `${ASSET_BASE}/backgrounds/studio_complete.png`,
 };
 
+/* ---- FLAVOUR: the Altar backdrop varies with how many acolytes the player keeps (0–4); each plate
+   bakes that many acolytes into the scene. Clamped and floored, so an over-cap or fractional count
+   still resolves to a real plate. Supersedes ROOM_PLATES.altar for the Altar room's canvas. ---- */
+export function altarPlateForAcolytes(acolytes: number): string {
+  const n = Math.max(0, Math.min(4, Math.floor(acolytes)));
+  return `${ASSET_BASE}/backgrounds/altar_by_acolytes/169_altar_clean_${n}acolytes.png`;
+}
+
 /* ---- FLAVOUR: default standing spot + scale for a summoned creature in the
    Invocation circle, by invocation id. x = centre, y = baseline, w = width,
    all stage fractions. Tuned to the invocation_complete plate's circle. ---- */

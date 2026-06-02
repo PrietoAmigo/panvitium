@@ -73,6 +73,10 @@ export function App(): ReactElement {
   });
   const summoned = useMemo(() => (summonedKey ? summonedKey.split(',') : []), [summonedKey]);
 
+  // The Altar backdrop varies with the acolyte count (0–4). A stable primitive selector, so this
+  // only re-renders the room when an acolyte is gained/lost, not every tick.
+  const acolytes = useGameStore((s) => s.state?.lifetime.acolytes.length ?? 0);
+
   // The descent takes the full screen; close any grimoire panel when it opens.
   useEffect(() => {
     if (katabasisPhase !== null) setPanel(null);
@@ -104,6 +108,7 @@ export function App(): ReactElement {
           room={ROOMS[room]}
           signature={signature}
           summoned={summoned}
+          acolytes={acolytes}
           onAction={handleAction}
         />
         <div className="room-name">{ROOMS[room].title}</div>

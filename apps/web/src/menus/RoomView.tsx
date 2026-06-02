@@ -1,12 +1,14 @@
 import { type ReactElement } from 'react';
 import type { RoomDef, HotspotAction, SceneSprite } from './types.js';
 import { DegradedScene } from './DegradedScene.js';
-import { ROOM_PLATES, spriteFor } from './degrade.data.js';
+import { ROOM_PLATES, altarPlateForAcolytes, spriteFor } from './degrade.data.js';
 
 interface RoomViewProps {
   room: RoomDef;
   signature: boolean; // Studio "panvitium" ritual glow (handled inside the pass)
   summoned: string[];
+  /** Current acolyte count — selects the Altar backdrop (0–4). */
+  acolytes: number;
   onAction: (action: HotspotAction) => void;
 }
 
@@ -19,16 +21,24 @@ function doorGlyph(id: string): string {
 // One room. The backdrop, its baked props, and any summoned creatures are composited onto a single
 // <canvas> through the uniform degradation pass (DegradedScene), so the whole frame reads at one
 // fidelity. The chrome — hotspots (and the HUD/panels above) — layers over it and stays crisp.
-export function RoomView({ room, signature, summoned, onAction }: RoomViewProps): ReactElement {
+export function RoomView({
+  room,
+  signature,
+  summoned,
+  acolytes,
+  onAction,
+}: RoomViewProps): ReactElement {
   const sprites: SceneSprite[] =
     room.id === 'invocation'
       ? summoned.map(spriteFor).filter((s): s is SceneSprite => s !== null)
       : [];
+  // The Altar's backdrop tracks the acolyte count (0–4); every other room uses its default plate.
+  const backdrop = room.id === 'altar' ? altarPlateForAcolytes(acolytes) : ROOM_PLATES[room.id];
   return (
     <div className={'scene ' + room.sceneClass} role="group" aria-label={room.title}>
       <DegradedScene
         roomId={room.id}
-        backdrop={ROOM_PLATES[room.id]}
+        backdrop={backdrop}
         sprites={sprites}
         signature={room.id === 'studio' && signature}
       />

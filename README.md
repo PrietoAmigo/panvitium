@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 712** (sim 516 · shared 52 · api 11 · web 133).
+**Current test count: 715** (sim 516 · shared 52 · api 11 · web 136).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -270,8 +270,11 @@ extensions, `import type`, Prettier):
     pass `settings` to override any knob. Room changes play the engine's fade-to-black curtain;
     creature idle motion is composited before the pass. `RoomView` feeds it `ROOM_PLATES` (the
     `*_complete.png` plates, props baked in) and `spriteFor` (summoned ids → canvas sprites), which
-    settles the earlier furnish question — every room degrades its complete plate. The DOM
-    `SummonedCreatures` and the crisp `ars_goetia` prop are retired (composited / baked in); the
+    settles the earlier furnish question — every room degrades its complete plate. **The Altar plate is
+    dynamic**: it tracks the acolyte count via `altarPlateForAcolytes(n)` (clamped 0–4 →
+    `backgrounds/altar_by_acolytes/169_altar_clean_{n}acolytes.png`), so the scene shows that many
+    acolytes; `App` passes a stable `acolytes` count so it redraws only when one is gained or lost. The
+    DOM `SummonedCreatures` and the crisp `ars_goetia` prop are retired (composited / baked in); the
     `.scene` CSS backdrop is superseded by the canvas. The **Ars Goetia** grimoire is the reworked
     prop-driven `ArsGoetiaBook` (takes a pre-formatted `invokingPower`; the bound-count display was
     dropped by the new design); `buildGoetia` now yields `GoetiaEntry[]` + `invokingPower`, omitting
