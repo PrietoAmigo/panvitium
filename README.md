@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 737** (sim 527 · shared 52 · api 11 · web 147).
+**Current test count: 742** (sim 527 · shared 52 · api 11 · web 152).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -351,6 +351,23 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
     repo-root `assets/` tree is source/staging and unused at runtime. Optional cleanup: the orphaned
     `useHold` export, the superseded text panels, and the unused `menus.data.ts` mock arrays. Plus
     the content backlog (art/lore for the un-illustrated invocations & maleficia, audio).
+  - _Ars Goetia effect lines made authoritative._ The grimoire's per-invocation **Effect** line was
+    reading hand-authored copy from `menus.data.ts` (`INVOCATION_BY_ID[id].effect`), which had gone
+    stale and wrong: Harpy listed _Suasio_ (it's **Decimatio** efficiency), Behemoth listed _×2
+    reprobate generation_ (it's a **+Stellar-chance** boost) and via a `\\u00D7` escape rendered the
+    literal `\u00D72`, Upir was framed as a passive (it's a **Caedis runner**), Fama showed a
+    hardcoded `+50%`, and Lamia/Imp/Succubus/Doppelgänger/Midas/&c. had **no** effect line at all.
+    The fix extracts the (correct) sim-derived describe logic that the PC's Analytics → Invocations
+    tab already used into a shared `apps/web/src/game/invocationEffect.ts` (`invocationEffectText`),
+    and both the grimoire (`buildGoetia`) and the Analytics tab now call it — one source of truth, so
+    the menu can't drift again. Runners read _Action · expected outcome (mean ± sd) · every cadence_;
+    passives read their live modifier delta (computed for ≥1 copy, so the catalog reads meaningfully
+    even before you summon the seal). Also fixed a latent moment-baseline bug in that describe logic:
+    an absent tier-weight multiplier is the neutral **1**, not 0, so Behemoth no longer renders blank
+    and Midas only reads _Apocalyptic locked_ when the Mark of Cain actually zeroes it. The static
+    `effect` strings in `menus.data.ts` are now dead (kept only because the flavour type still
+    requires the field) and can be dropped in a follow-up. Effect copy comes from the sim; lore/art
+    stay flavour.
 
 ### Remaining
 

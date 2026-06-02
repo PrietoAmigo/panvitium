@@ -65,3 +65,41 @@ describe('buildGoetia view-model adapter', () => {
     expect(midas.affordable).toBe(true); // free apex is always affordable
   });
 });
+
+describe('buildGoetia effect lines (sim-derived, not stale static copy)', () => {
+  const effectOf = (id: string): string => {
+    const e = buildGoetia(richState()).entries.find((x) => x.id === id);
+    return e?.effect ?? '';
+  };
+
+  it('never emits a broken \\u escape (the old menus.data.ts copy rendered literal \\u00D7)', () => {
+    for (const e of buildGoetia(richState()).entries) {
+      expect(e.effect ?? '').not.toMatch(/\\u[0-9A-Fa-f]{4}/);
+    }
+  });
+
+  it('Harpy reads as Decimatio efficiency, not the stale "Suasio"', () => {
+    const eff = effectOf('harpy');
+    expect(eff).toMatch(/Decimatio/i);
+    expect(eff).not.toMatch(/Suasio/i);
+  });
+
+  it('Behemoth reads as a Stellar-chance boost, not the stale "reprobate generation"', () => {
+    const eff = effectOf('behemoth');
+    expect(eff.toLowerCase()).toContain('stellar');
+    expect(eff.toLowerCase()).not.toContain('reprobate generation');
+  });
+
+  it('runner invocations (Lamia, Imp) describe an action + cadence, not a passive blurb', () => {
+    expect(effectOf('lamia')).toMatch(/Suggestion/i);
+    expect(effectOf('lamia')).toContain('every');
+    expect(effectOf('imp')).toMatch(/Caedis/i);
+    expect(effectOf('imp')).toContain('every');
+  });
+
+  it('Fama shows a live percentage, not a hardcoded "+50%"', () => {
+    const eff = effectOf('fama');
+    expect(eff).toMatch(/%/);
+    expect(eff).not.toContain('50%');
+  });
+});

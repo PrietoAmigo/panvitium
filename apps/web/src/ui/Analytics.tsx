@@ -6,9 +6,6 @@ import {
   INVOCATION_IDS,
   activeInvocationCount,
   invocationById,
-  invocationRunnerEfficiency,
-  runnerCycleDuration,
-  actionOutcomeForecast,
   categoryEfficiency,
   computeModifiers,
   perSecondRates,
@@ -21,13 +18,12 @@ import {
   type ActionTimer,
   type GameState,
   type InvocationDef,
-  type OutcomeForecast,
-  type OutcomeMoment,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
 import { actionProgress } from '../game/progress.js';
 import { actionName } from '../game/labels.js';
+import { invocationEffectText } from '../game/invocationEffect.js';
 
 type AnalyticsTab = 'main' | 'reprobates' | 'acolytes' | 'invocations';
 
@@ -267,103 +263,6 @@ function AcolytesTab(): ReactElement {
 }
 
 /**
- * The live, quantified "total effect" of a passive invocation at its current bound count — computed
- * by diffing the real modifier bundle with vs without this invocation, so each contribution is
- * isolated exactly (composition is multiplicative/additive). Entities whose effect isn't a
- * modifier-bundle magnitude (Katabasis apexes, per-tick apexes, the conversion-bias Specunitas) fall
- * back to their qualitative line.
- */
-function passiveEffectText(state: GameState, id: string): string {
-  const L = strings.invocations.effectLabels;
-  const w = computeModifiers(state);
-  const b = computeModifiers({
-    ...state,
-    lifetime: {
-      ...state.lifetime,
-      invocations: { ...state.lifetime.invocations, [id]: 0 },
-    },
-  });
-  const ok = (x: number): boolean => Number.isFinite(x) && x > 0;
-  const fmtPct = (p: number): string => {
-    const a = Math.abs(p);
-    const s = a >= 10 ? a.toFixed(0) : a >= 1 ? a.toFixed(1) : a.toFixed(2);
-    return String(Number(s)); // trim trailing zeros: 0.10 → 0.1, 10.0 → 10
-  };
-  const up = (a: number, c: number, label: string): string =>
-    `+${fmtPct((a / c - 1) * 100)}% ${label}`;
-  const down = (a: number, c: number, label: string): string =>
-    `\u2212${fmtPct((1 - a / c) * 100)}% ${label}`;
-  const times = (a: number, c: number, label: string): string =>
-    `\u00D7${Number((a / c).toFixed(1))} ${label}`;
-
-  switch (id) {
-    case 'fama':
-      return ok(b.influenceRateMul) ? up(w.influenceRateMul, b.influenceRateMul, L.influence) : '';
-    case 'harpy':
-      return up(w.decimatioEfficiencyMul, b.decimatioEfficiencyMul, L.decimatioEff);
-    case 'plutus':
-      return up(w.vitiumMercaturaOutputMul, b.vitiumMercaturaOutputMul, L.vmOutput);
-    case 'behemoth': {
-      const ws = w.tierWeightMul.stellar ?? 0;
-      const bs = b.tierWeightMul.stellar ?? 0;
-      return ok(bs) ? up(ws, bs, L.stellar) : '';
-    }
-    case 'lemure':
-      return ok(b.offlineTimeMul) ? up(w.offlineTimeMul, b.offlineTimeMul, L.offline) : '';
-    case 'nightmare': {
-      const d = w.flatBaseSuicideRatePerSecond - b.flatBaseSuicideRatePerSecond;
-      return `+${Number(d.toFixed(3))}/s ${L.baseSuicide}`;
-    }
-    case 'succubus':
-      return `${up(w.suasioEfficiencyMul, b.suasioEfficiencyMul, L.suasioEff)} \u00B7 ${down(w.goldRateMul, b.goldRateMul, L.gold)}`;
-    case 'doppelgaenger':
-      return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} \u00B7 ${down(w.influenceRateMul, b.influenceRateMul, L.influence)}`;
-    case 'midas': {
-      const gold = times(w.goldRateMul, b.goldRateMul, L.gold);
-      const wa = w.tierWeightMul.apocalyptic ?? 0;
-      const ba = b.tierWeightMul.apocalyptic ?? 0;
-      const apoc = ok(ba) ? times(wa, ba, L.apocalyptic) : L.apocLocked;
-      return `${gold} \u00B7 ${apoc}`;
-    }
-    case 'aurevora':
-      return up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff);
-    default:
-      return strings.invocations.effects[id] ?? '';
-  }
-}
-
-/** Signed mean: integer-rounded for large magnitudes, 2 decimals otherwise, with a real minus sign. */
-function fmtSigned(n: number): string {
-  const r = Math.abs(n) >= 10 ? Math.round(n) : Number(n.toFixed(2));
-  return `${r < 0 ? '\u2212' : '+'}${Math.abs(r)}`;
-}
-/** Unsigned magnitude for the ± sd term. */
-function fmtNum(n: number): string {
-  return String(Number(n >= 10 ? n.toFixed(0) : n.toFixed(2)));
-}
-
-/**
- * One runner cycle's expected outcome as "mean ± sd unit" per non-trivial dimension, e.g.
- * "+1 soul, −1 reprobate" (deterministic, sd 0) or "+0.31 ±0.7 reprobates, +0.15 souls". The sd is
- * the listable deviation (√variance); it's omitted when ~0 (a deterministic outcome).
- */
-function formatForecast(f: OutcomeForecast): string {
-  const U = strings.invocations.outcomeUnits;
-  const parts: string[] = [];
-  const add = (m: OutcomeMoment, one: string, many: string): void => {
-    if (Math.abs(m.mean) < 0.005 && m.sd < 0.005) return;
-    const unit = Math.abs(m.mean) === 1 ? one : many;
-    const pm = m.sd >= 0.005 ? ` \u00B1${fmtNum(m.sd)}` : '';
-    parts.push(`${fmtSigned(m.mean)}${pm} ${unit}`);
-  };
-  add(f.souls, U.soul, U.souls);
-  add(f.reprobates, U.reprobate, U.reprobates);
-  add(f.gold, U.gold, U.gold);
-  add(f.maleficia, U.maleficium, U.maleficia);
-  return parts.join(', ');
-}
-
-/**
  * One bound invocation per row, a single line (no per-copy detail, for performance). Runners (the
  * autonomous channels — Familiar, Imp, Upir, Lamia) show their action, what one cycle yields, and the
  * current cycle time; passive invocations show their live quantified total effect at the current
@@ -382,21 +281,7 @@ function InvocationRow({
   const name = strings.invocations.names[id] ?? id;
   const countLabel = count > 1 ? `${name} \u00D7${count}` : name;
   const auto = def.autonomous;
-
-  let detail: string;
-  if (auto) {
-    const action = actionName(auto.action);
-    const eff = invocationRunnerEfficiency(state, def);
-    const outcome = formatForecast(actionOutcomeForecast(state, auto.action, eff, auto.forcedTier));
-    const dur = runnerCycleDuration(auto.action, eff);
-    const cadence =
-      Number.isFinite(dur) && dur > 0
-        ? `${strings.invocations.every} ${formatDuration(dur * 1000)}`
-        : '';
-    detail = [action, outcome, cadence].filter((s) => s !== '').join(' \u00B7 ');
-  } else {
-    detail = passiveEffectText(state, id);
-  }
+  const detail = invocationEffectText(state, id);
 
   return (
     <div className={'analytics-invocation' + (auto ? '' : ' analytics-invocation--passive')}>

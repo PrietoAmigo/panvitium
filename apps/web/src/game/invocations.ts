@@ -21,6 +21,7 @@ import {
 import { strings } from '@panvitium/shared';
 import type { GoetiaEntry } from '../menus/ars-goetia.types.js';
 import { INVOCATION_BY_ID, ASSET_BASE } from '../menus/menus.data.js';
+import { invocationEffectText } from './invocationEffect.js';
 
 const ROMAN = [
   'I',
@@ -82,7 +83,9 @@ export function buildGoetia(state: GameState): GoetiaView {
           ? strings.invocations.active
           : `${strings.invocations.active} \u00D7${active}`;
     const flavour = INVOCATION_BY_ID[id]; // design art/lore for the illustrated entries
-    const effect = flavour?.effect ?? '';
+    // Effect is a MECHANIC, so it comes from the authoritative sim (same source as the Analytics
+    // Invocations tab) — never the static menus.data.ts copy, which went stale. Lore/art stay flavour.
+    const effect = invocationEffectText(state, id);
     const lore = flavour?.lore ?? '';
     entries.push({
       id,
