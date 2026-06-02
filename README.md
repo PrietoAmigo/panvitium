@@ -541,20 +541,29 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   (unconverted vs converted counts by subtype, plus `reprobateRates` generation / conversion / death
   rates — this also subsumes the old HUD reprobate count); **Acolytes** (a per-acolyte board showing
   each one's current action, remaining cycle time, and a progress bar); and **Invocations** (every
-  bound invocation, its count, and either its **total effect** — a short accurate line per invocation
-  from `strings.invocations.effects`, the real sim behaviour rather than the older Ars Goetia flavour —
-  or, for invocations that **carry actions** (the autonomous runners: Familiar, Imp, Upir, Lamia), the
-  channel's action and effective **efficiency**; clicking a runner's name expands a **per-copy progress
-  bar** for each summoned copy, reading `lifetime.invocationRunners` keyed via the now-exported
-  `invocationRunnerKey`, with a copy that can't yet afford its next cost-outcome cycle shown as
-  _stalled_. The displayed efficiency and bar speed come from the new exported
-  `invocationRunnerEfficiency`, which `advanceInvocationRunners` was refactored to use too, so UI and
-  sim can't drift). Every progress bar — player,
-  acolyte, or invocation — runs through one shared rule (`game/progress.ts → actionProgress`,
+  bound invocation type, **one line each** — no per-copy detail, for performance). A type that
+  **carries actions** (the autonomous runners: Familiar, Imp, Upir, Lamia) shows its **action**, what
+  one cycle **yields** (`strings.invocations.actionOutcome` — culls / converts reprobates, surfaces
+  maleficia), and the current **cycle time** (`runnerCycleDuration` at the live channel efficiency).
+  A **passive** type shows its **live quantified total effect** at the current bound count — computed
+  by diffing the real modifier bundle (`computeModifiers`) with vs without that invocation, so each
+  contribution is isolated exactly (composition is multiplicative/additive). So Fama ×2 reads
+  _+10% influence gain_, Midas _×3 gold · ×100 Apocalyptic chance_, Doppelgänger _+50% player
+  efficiency · −50% influence_, etc.; entities whose effect isn't a modifier-bundle magnitude
+  (the Katabasis apexes Erinyes/Morpheus, the per-tick apexes, the conversion-bias Specunitas) fall
+  back to a qualitative line. The earlier expandable per-copy action bars were **removed** for
+  performance (they were the heavy part — N live-updating bars at 10 Hz); `invocationRunnerEfficiency`
+  and `invocationRunnerKey` remain exported (the sim's `advanceInvocationRunners` uses the former, so
+  UI and sim can't drift). The HUD progress bars that remain — player and acolyte —
+  run through one shared rule (`game/progress.ts → actionProgress`,
   built on the sim's `runnerCycleDuration`): the bar always fills **0 → 100%**; higher efficiency on a
   time-mode action makes it fill _faster_ (a smaller total) rather than starting partway, and
   cost-outcome actions keep a fixed duration. Reuses the existing `kat-tab` tab styling; the data all
   comes from already-tested sim helpers. The **PC Logs program is now player-only**: `OutcomeEvent`
+  carries an additive-optional `source` tag (`'player' | 'acolyte' | 'invocation'`, transient — not
+  persisted), the tick tags acolyte and invocation-runner outcomes accordingly, and the store folds
+  only untagged (player) outcomes into the log — acolyte/invocation work has its own surfaces in the
+  Analytics tabs. Signature Stellar/Apocalyptic pop-ups still fire from any source.
   carries an additive-optional `source` tag (`'player' | 'acolyte' | 'invocation'`, transient — not
   persisted), the tick tags acolyte and invocation-runner outcomes accordingly, and the store folds
   only untagged (player) outcomes into the log — acolyte/invocation work has its own surfaces in the

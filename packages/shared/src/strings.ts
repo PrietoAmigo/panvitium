@@ -194,11 +194,31 @@ export const strings = {
     } as Record<string, string>,
     // Analytics → Invocations tab.
     noneBound: 'No invocations are bound.',
-    runs: 'Runs',
-    actionEfficiency: 'action efficiency',
-    stalled: 'stalled — waiting on resources',
-    /** A short, accurate "total effect" line per invocation (the real sim behaviour, not the older
-     *  Ars Goetia flavour). Runners also surface their channel efficiency and per-copy bars. */
+    perCycle: 'per cycle',
+    /** What one cycle of a runner's action yields, keyed by action id. */
+    actionOutcome: {
+      caedis: 'culls reprobates',
+      suggestion: 'converts reprobates',
+      indagatio: 'surfaces maleficia',
+    } as Record<string, string>,
+    /** Noun labels for the live quantified "total effect" of passive invocations (composed with the
+     *  +X% / ×N value the Analytics tab computes from the current modifier bundle). */
+    effectLabels: {
+      influence: 'influence gain',
+      decimatioEff: 'Decimatio efficiency',
+      vmOutput: 'Vitium Mercatura output',
+      stellar: 'Stellar chance',
+      offline: 'offline gain',
+      baseSuicide: 'base suicide rate',
+      gold: 'gold',
+      apocalyptic: 'Apocalyptic chance',
+      apocLocked: 'Apocalyptic locked to zero',
+      suasioEff: 'Suasio efficiency',
+      playerEff: 'player efficiency',
+    },
+    /** Qualitative fallback line for invocations whose effect isn't a live modifier-bundle magnitude
+     *  (Katabasis / per-tick apex / conversion-bias entities). Runners show action + outcome + cycle
+     *  time instead; the other passives show the computed quantified effect. */
     effects: {
       familiar: '+33% player efficiency, plus a background Indagatio.',
       imp: 'A background Good-only Decimatio — culls reprobates.',

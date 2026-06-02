@@ -7,7 +7,7 @@ import {
   activeInvocationCount,
   invocationById,
   invocationRunnerEfficiency,
-  invocationRunnerKey,
+  runnerCycleDuration,
   categoryEfficiency,
   computeModifiers,
   perSecondRates,
@@ -264,117 +264,124 @@ function AcolytesTab(): ReactElement {
 }
 
 /**
- * One bound invocation per row. Passive invocations show a one-line "total effect". Invocations that
- * carry actions (autonomous runners — Familiar, Imp, Upir, Lamia) show their channel's action and
- * effective efficiency, and clicking the name expands a per-copy progress bar for each summoned copy
- * (a stacked runner runs one independent channel per copy; a cost-outcome channel that can't yet
- * afford its next cycle shows "stalled"). The bar uses the shared `actionProgress` rule at the same
- * efficiency the sim drives the channel with, so the displayed speed matches the simulation.
+ * The live, quantified "total effect" of a passive invocation at its current bound count — computed
+ * by diffing the real modifier bundle with vs without this invocation, so each contribution is
+ * isolated exactly (composition is multiplicative/additive). Entities whose effect isn't a
+ * modifier-bundle magnitude (Katabasis apexes, per-tick apexes, the conversion-bias Specunitas) fall
+ * back to their qualitative line.
+ */
+function passiveEffectText(state: GameState, id: string): string {
+  const L = strings.invocations.effectLabels;
+  const w = computeModifiers(state);
+  const b = computeModifiers({
+    ...state,
+    lifetime: {
+      ...state.lifetime,
+      invocations: { ...state.lifetime.invocations, [id]: 0 },
+    },
+  });
+  const ok = (x: number): boolean => Number.isFinite(x) && x > 0;
+  const fmtPct = (p: number): string => {
+    const a = Math.abs(p);
+    const s = a >= 10 ? a.toFixed(0) : a >= 1 ? a.toFixed(1) : a.toFixed(2);
+    return String(Number(s)); // trim trailing zeros: 0.10 → 0.1, 10.0 → 10
+  };
+  const up = (a: number, c: number, label: string): string =>
+    `+${fmtPct((a / c - 1) * 100)}% ${label}`;
+  const down = (a: number, c: number, label: string): string =>
+    `\u2212${fmtPct((1 - a / c) * 100)}% ${label}`;
+  const times = (a: number, c: number, label: string): string =>
+    `\u00D7${Number((a / c).toFixed(1))} ${label}`;
+
+  switch (id) {
+    case 'fama':
+      return ok(b.influenceRateMul) ? up(w.influenceRateMul, b.influenceRateMul, L.influence) : '';
+    case 'harpy':
+      return up(w.decimatioEfficiencyMul, b.decimatioEfficiencyMul, L.decimatioEff);
+    case 'plutus':
+      return up(w.vitiumMercaturaOutputMul, b.vitiumMercaturaOutputMul, L.vmOutput);
+    case 'behemoth': {
+      const ws = w.tierWeightMul.stellar ?? 0;
+      const bs = b.tierWeightMul.stellar ?? 0;
+      return ok(bs) ? up(ws, bs, L.stellar) : '';
+    }
+    case 'lemure':
+      return ok(b.offlineTimeMul) ? up(w.offlineTimeMul, b.offlineTimeMul, L.offline) : '';
+    case 'nightmare': {
+      const d = w.flatBaseSuicideRatePerSecond - b.flatBaseSuicideRatePerSecond;
+      return `+${Number(d.toFixed(3))}/s ${L.baseSuicide}`;
+    }
+    case 'succubus':
+      return `${up(w.suasioEfficiencyMul, b.suasioEfficiencyMul, L.suasioEff)} \u00B7 ${down(w.goldRateMul, b.goldRateMul, L.gold)}`;
+    case 'doppelgaenger':
+      return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} \u00B7 ${down(w.influenceRateMul, b.influenceRateMul, L.influence)}`;
+    case 'midas': {
+      const gold = times(w.goldRateMul, b.goldRateMul, L.gold);
+      const wa = w.tierWeightMul.apocalyptic ?? 0;
+      const ba = b.tierWeightMul.apocalyptic ?? 0;
+      const apoc = ok(ba) ? times(wa, ba, L.apocalyptic) : L.apocLocked;
+      return `${gold} \u00B7 ${apoc}`;
+    }
+    case 'aurevora':
+      return up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff);
+    default:
+      return strings.invocations.effects[id] ?? '';
+  }
+}
+
+/**
+ * One bound invocation per row, a single line (no per-copy detail, for performance). Runners (the
+ * autonomous channels — Familiar, Imp, Upir, Lamia) show their action, what one cycle yields, and the
+ * current cycle time; passive invocations show their live quantified total effect at the current
+ * bound count.
  */
 function InvocationRow({
   state,
   id,
   def,
-  expanded,
-  onToggle,
 }: {
   state: GameState;
   id: string;
   def: InvocationDef;
-  expanded: boolean;
-  onToggle: (id: string) => void;
 }): ReactElement {
   const count = activeInvocationCount(state, id);
   const name = strings.invocations.names[id] ?? id;
   const countLabel = count > 1 ? `${name} \u00D7${count}` : name;
-  const effect = strings.invocations.effects[id] ?? '';
   const auto = def.autonomous;
 
-  if (!auto) {
-    return (
-      <div className="analytics-invocation analytics-invocation--passive">
-        <span className="analytics-inv-name">{countLabel}</span>
-        {effect !== '' && <span className="analytics-inv-effect">{effect}</span>}
-      </div>
-    );
+  let detail: string;
+  if (auto) {
+    const action = actionName(auto.action);
+    const outcome = strings.invocations.actionOutcome[auto.action] ?? '';
+    const dur = runnerCycleDuration(auto.action, invocationRunnerEfficiency(state, def));
+    const cycle =
+      Number.isFinite(dur) && dur > 0
+        ? `${formatDuration(dur * 1000)} ${strings.invocations.perCycle}`
+        : '';
+    detail = [action, outcome, cycle].filter((s) => s !== '').join(' \u00B7 ');
+  } else {
+    detail = passiveEffectText(state, id);
   }
 
-  const eff = invocationRunnerEfficiency(state, def);
-  const meta = `${strings.invocations.runs} ${actionName(auto.action)} \u00B7 ${eff.toFixed(2)}\u00D7 ${strings.invocations.actionEfficiency}`;
-
   return (
-    <div className="analytics-invocation">
-      <button
-        type="button"
-        className="analytics-inv-head"
-        aria-expanded={expanded}
-        onClick={() => onToggle(id)}
-      >
-        <span className="analytics-inv-name">{countLabel}</span>
-        <span className="analytics-inv-meta">{meta}</span>
-        <span className="analytics-inv-chevron">{expanded ? '\u25BE' : '\u25B8'}</span>
-      </button>
-      {effect !== '' && <span className="analytics-inv-effect">{effect}</span>}
-      {expanded && (
-        <div className="analytics-inv-channels">
-          {Array.from({ length: count }, (_, k) => {
-            const remaining = state.lifetime.invocationRunners[invocationRunnerKey(id, k)];
-            if (remaining === undefined) {
-              return (
-                <div className="analytics-inv-channel analytics-inv-channel--stalled" key={k}>
-                  <span className="analytics-inv-channel-idx">#{k + 1}</span>
-                  <span className="analytics-inv-channel-note">{strings.invocations.stalled}</span>
-                </div>
-              );
-            }
-            const pct = actionProgress(auto.action, remaining, eff);
-            return (
-              <div className="analytics-inv-channel" key={k}>
-                <span className="analytics-inv-channel-idx">#{k + 1}</span>
-                <span className="analytics-bar">
-                  <span
-                    className="analytics-bar-fill"
-                    style={{ width: `${(pct * 100).toFixed(0)}%` }}
-                  />
-                </span>
-                <span className="analytics-inv-channel-note">{Math.ceil(remaining)}s</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+    <div className={'analytics-invocation' + (auto ? '' : ' analytics-invocation--passive')}>
+      <span className="analytics-inv-name">{countLabel}</span>
+      {detail !== '' && <span className="analytics-inv-detail">{detail}</span>}
     </div>
   );
 }
 
-/** Bound invocations: count, channel efficiency (runners) or total effect (passive). */
+/** Bound invocations, one line each: action + outcome + cycle time (runners) or total effect (passive). */
 function InvocationsTab(): ReactElement {
   const state = useGameStore((s) => s.state);
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
   const bound = INVOCATION_IDS.filter((id) => activeInvocationCount(state, id) > 0);
   if (bound.length === 0) return <p className="pc-empty">{strings.invocations.noneBound}</p>;
-  const toggle = (id: string): void =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   return (
     <div className="analytics-invocations">
       {bound.map((id) => {
         const def = invocationById(id);
-        return def ? (
-          <InvocationRow
-            key={id}
-            state={state}
-            id={id}
-            def={def}
-            expanded={expanded.has(id)}
-            onToggle={toggle}
-          />
-        ) : null;
+        return def ? <InvocationRow key={id} state={state} id={id} def={def} /> : null;
       })}
     </div>
   );
