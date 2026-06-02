@@ -84,6 +84,13 @@ interface GameStore {
   notice: string | null;
   /** Which Katabasis screen is open (null = none). */
   katabasisPhase: KatabasisPhase;
+  /**
+   * True on launch — the title menu is showing and the sim is frozen behind it until the player
+   * picks Continue (or starts a New Game). Set false by `dismissTitle`; never re-shown in-session.
+   */
+  titleOpen: boolean;
+  /** True when the Settings overlay is open (gear button or the title menu's Settings entry). */
+  settingsOpen: boolean;
   /** The recap produced by the last descent, shown on the recap screen. */
   recap: KatabasisRecap | null;
   /**
@@ -180,6 +187,12 @@ interface GameStore {
   dismissOfflineRecap: () => void;
   /** Wipe the save and start a fresh game. */
   hardReset: () => void;
+  /** Dismiss the launch title menu, unfreezing the sim. */
+  dismissTitle: () => void;
+  /** Open the Settings overlay (from the gear or the title menu). */
+  openSettings: () => void;
+  /** Close the Settings overlay. */
+  closeSettings: () => void;
   /** Mark one inbox email read (Phase 5.2). Relies on the debounced autosave. */
   markEmailRead: (id: string) => void;
   /** Mark every unread inbox email read. */
@@ -232,6 +245,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   notice: null,
   achievementToast: null,
   katabasisPhase: null,
+  titleOpen: true,
+  settingsOpen: false,
   recap: null,
   eternalReveal: false,
   offlineRecap: null,
@@ -254,11 +269,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   advance: (deltaSeconds) => {
     const current = get().state;
     if (!current) return;
-    // During the descent (menu open) and the recap the lifetime is frozen — the soul is in trance.
-    // Skip the sim entirely so nothing accrues (no suicides, no business gold, no soul minting).
-    // The RAF accumulator drains harmlessly through these no-op calls, so there is no catch-up
-    // burst when the screen closes.
-    if (get().katabasisPhase !== null) return;
+    // During the descent (menu open), the recap, and the launch title menu the lifetime is frozen
+    // — the soul is in trance. Skip the sim entirely so nothing accrues (no suicides, no business
+    // gold, no soul minting). The RAF accumulator drains harmlessly through these no-op calls, so
+    // there is no catch-up burst when the screen closes.
+    if (get().katabasisPhase !== null || get().titleOpen) return;
     const { state, events, notices, achievementsUnlocked } = tick(current, deltaSeconds);
     // A toggle that auto-deactivated this tick surfaces as the transient notice (02 §3). The
     // sim has already removed it; this just tells the player. Latest wins if several fired.
@@ -469,8 +484,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       notice: null,
       katabasisPhase: null,
       recap: null,
+      settingsOpen: false,
     });
   },
+
+  dismissTitle: () => set({ titleOpen: false }),
+  openSettings: () => set({ settingsOpen: true }),
+  closeSettings: () => set({ settingsOpen: false }),
 
   markEmailRead: (id) => {
     const s = get().state;

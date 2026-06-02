@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 706** (sim 516 · shared 52 · api 11 · web 127).
+**Current test count: 712** (sim 516 · shared 52 · api 11 · web 133).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -526,8 +526,15 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   as `WelcomeBackModal`. Suppressed for absences under a minute and while frozen mid-descent; it carries
   a `capped` flag (pairs with the still-pending **uncap** decision in `### Remaining`). Pinned by
   `offlineRecap` unit tests.
-- **Notifications.** A single toast/notice surface that folds together what already exists piecemeal: the
-  achievement unlock toast, toggle auto-deactivation notices (`TickResult.notices`), and sync status.
+- **Launch title menu** _(✓ shipped)_. A full-screen title screen on every launch (`TitleMenu`, gated by
+  a new `titleOpen` store flag) carrying the gold-leaf **PANVITIUM** wordmark — the display-caps treatment
+  preserved from the old in-game wordmark — a tagline, and four entries: **Continue** (dismisses the menu),
+  **New Game** (confirm-guarded wipe via `hardReset`), **Settings** (the existing overlay, whose open-state
+  was lifted into the store as `settingsOpen` so both the gear and the menu drive it), and **About**. The
+  sim is frozen behind the menu exactly like the Katabasis trance: `advance` no-ops while `titleOpen`, so
+  nothing accrues until Continue. Pinned by a `TitleMenu` render test and a store freeze test.
+- **Notifications** _(declined)_. Considered folding the achievement toast, `TickResult.notices`, and sync
+  status into one surface; the design call was to keep distinct signals in their own homes.
 
 **Done when** a player starting from a cold save reaches their first _Katabasis_ unaided in playtest.
 

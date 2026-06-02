@@ -8,14 +8,16 @@ import { useGameStore } from '../store/gameStore.js';
  * guarded hard reset. Audio and the `DegradePass` knobs are deferred to the 5.3 art/audio track.
  */
 export function SettingsPanel(): ReactElement {
-  const [open, setOpen] = useState(false);
+  const open = useGameStore((s) => s.settingsOpen);
+  const openSettings = useGameStore((s) => s.openSettings);
+  const closeSettings = useGameStore((s) => s.closeSettings);
   return (
     <>
       <button
         type="button"
         className="settings-gear"
         aria-label={strings.settings.title}
-        onClick={() => setOpen(true)}
+        onClick={openSettings}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path
@@ -28,7 +30,7 @@ export function SettingsPanel(): ReactElement {
           />
         </svg>
       </button>
-      {open && <SettingsOverlay onClose={() => setOpen(false)} />}
+      {open && <SettingsOverlay onClose={closeSettings} />}
     </>
   );
 }

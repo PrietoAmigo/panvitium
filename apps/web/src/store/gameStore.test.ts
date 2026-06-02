@@ -45,6 +45,7 @@ beforeEach(() => {
     notice: null,
     katabasisPhase: null,
     recap: null,
+    titleOpen: false,
   });
   store().init();
 });

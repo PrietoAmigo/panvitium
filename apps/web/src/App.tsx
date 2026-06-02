@@ -14,6 +14,7 @@ import { SyncPanel } from './ui/SyncPanel.js';
 import { ConflictModal } from './ui/ConflictModal.js';
 import { WelcomeBackModal } from './ui/WelcomeBackModal.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
+import { TitleMenu } from './ui/TitleMenu.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
@@ -114,6 +115,7 @@ export function App(): ReactElement {
       <ConflictModal />
       <WelcomeBackModal />
       <SettingsPanel />
+      <TitleMenu />
       {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
       {activePanel && shell && (

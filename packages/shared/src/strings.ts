@@ -6,6 +6,20 @@
  */
 export const strings = {
   appName: 'Panvitium',
+  menu: {
+    tagline: 'Corrupt. Cull. Climb. Again.',
+    continue: 'Continue',
+    newGame: 'New Game',
+    newGamePrompt:
+      'Abandon this descent and begin anew? Your current lifetime and all progress will be lost.',
+    newGameConfirm: 'Begin anew',
+    cancel: 'Keep descending',
+    settings: 'Settings',
+    about: 'About',
+    back: 'Back',
+    aboutBody:
+      'Panvitium is an idle descent into damnation. Corrupt the living into reprobates, cull them for their souls, and spend those souls climbing the hierarchy of Hell — lifetime after lifetime, world without end.\n\nThe Latin is left untranslated, as it should be. Everything else, you will learn by doing.',
+  },
   resources: {
     souls: 'Souls',
     gold: 'Gold',
