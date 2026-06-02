@@ -1092,11 +1092,12 @@ body {
 
 /* ---------- The PC — Ubuntu-style file-manager window ---------- */
 .pc-window {
-  /* Base size; the whole window (and every menu inside it) is then scaled 1.25× below, so the box
-     stays small but renders 25% larger and proportional. The vw/vh caps are pre-divided by 1.25
-     (93/1.25≈74, 85/1.25≈68) so the SCALED window still fits the original viewport envelope. */
-  width: min(1050px, 74vw);
-  height: min(560px, 68vh);
+  /* The window box itself is 25% larger (1050→1312, 560→700) to give the menus more room; the
+     contents — icons, text, buttons — keep their native sizes, so the extra space shows as more
+     file-grid columns and roomier panels rather than a zoomed-in UI. The vw/vh caps are unchanged,
+     so on a small viewport the window still shrinks to fit. */
+  width: min(1312px, 93vw);
+  height: min(700px, 85vh);
   display: flex;
   flex-direction: column;
   background: #fbfbfb;
@@ -1110,23 +1111,7 @@ body {
     system-ui,
     -apple-system,
     sans-serif;
-  /* 25% larger, scaled about the centre so the flex-centred box stays centred. The dedicated
-     pc-rise animation ends at scale(1.25) (panel-rise ends at scale(1) and is shared, so it can't
-     be reused here without shrinking the window back). */
-  transform: scale(1.25);
-  transform-origin: center center;
-  animation: pc-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
-}
-
-@keyframes pc-rise {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(1.225); /* 1.25 × 0.98 */
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1.25);
-  }
+  animation: panel-rise 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
 .pc-titlebar {
@@ -1321,7 +1306,9 @@ body {
 }
 .pc-app-card {
   width: 100%;
-  max-width: 840px;
+  /* 25% wider (840→1050) so the menus fill the enlarged window with room to spare, rather than the
+     extra width becoming side margins. Content inside keeps its native sizing. */
+  max-width: 1050px;
   background: rgba(28, 24, 30, 0.93);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 10px;

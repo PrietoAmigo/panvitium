@@ -253,11 +253,11 @@ extensions, `import type`, Prettier):
     rather than the designed `PanelShell`, so they had lost their themed backgrounds. They now render
     via `PanelShell` with the right variant: the Altar in engraved **stone** (`altar-stone.png`,
     header-less), the Maleficia **cabinet** in wood, and the Suasio **scroll** in parchment. Ars
-    Goetia, the PC and Katabasis keep their own full-screen shells. The PC window is rendered **25%
-    larger** via a `transform: scale(1.25)` on `.pc-window` (with a dedicated `pc-rise` animation that
-    ends at 1.25× rather than the shared `panel-rise`'s 1×), so the whole shell and every menu inside
-    it scale together proportionally; its `vw`/`vh` caps are pre-divided by 1.25 so the scaled window
-    still fits the viewport.
+    Goetia, the PC and Katabasis keep their own full-screen shells. The PC window is **25% larger**
+    (1050→1312 wide, 560→700 tall) and its program card's `max-width` is raised to match (840→1050), so
+    the menus get more room while their contents — icons, text, buttons — keep their native sizes (the
+    extra space shows as more file-grid columns and roomier panels, not a zoomed-in UI). The `vw`/`vh`
+    caps are unchanged, so the window still shrinks to fit a small viewport.
   - _W8 — render-loop fix._ The Maleficia shelf selected `buildCabinet(state)` _inside_ a Zustand
     selector, returning a fresh array each call — which makes `useSyncExternalStore` see an
     ever-changing snapshot and loop (“Maximum update depth exceeded”) when the cabinet mounts. Now it
