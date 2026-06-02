@@ -1979,6 +1979,12 @@ body {
   font-style: italic;
   color: #c0453c;
 }
+.gb-bound {
+  font-size: 2.2cqh;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  color: var(--candle, #e6a23c);
+}
 
 /* Index pager — turn between leaves when the roster overflows a page. */
 .gb-pager {

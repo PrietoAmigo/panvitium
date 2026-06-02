@@ -61,8 +61,12 @@ export function ArsGoetiaBook({
                       <span className="gb-rank">{g.rank}</span>
                       <span className="gb-name">{g.name}</span>
                       <span className="gb-dots" />
-                      {/* Index shows the requirement on locked seals (red); no effect copy. */}
-                      {!g.unlocked && <span className="gb-hint">{g.gate ?? 'Sealed'}</span>}
+                      {/* Bound entries show their count; otherwise a locked seal shows its gate. */}
+                      {g.bound ? (
+                        <span className="gb-bound">{g.bound}</span>
+                      ) : (
+                        !g.unlocked && <span className="gb-hint">{g.gate ?? 'Sealed'}</span>
+                      )}
                     </button>
                   </li>
                 ))}
@@ -120,6 +124,12 @@ export function ArsGoetiaBook({
               <dl className="gb-stats">
                 <dt>Cost</dt>
                 <dd>{entry.cost}</dd>
+                {entry.active > 0 ? (
+                  <>
+                    <dt>Bound</dt>
+                    <dd>{entry.bound}</dd>
+                  </>
+                ) : null}
                 {entry.gate ? (
                   <>
                     <dt>Gate</dt>
@@ -138,14 +148,16 @@ export function ArsGoetiaBook({
                 <button
                   type="button"
                   className="gb-summon"
-                  disabled={!entry.unlocked}
+                  disabled={!entry.unlocked || entry.atCap || !entry.affordable}
                   onClick={() => onSummon(entry.id)}
                 >
-                  {entry.unlocked ? 'Summon' : 'Sealed'}
+                  {entry.atCap ? 'Bound' : entry.unlocked ? 'Summon' : 'Sealed'}
                 </button>
-                <button type="button" className="gb-dispel" onClick={() => onDispel(entry.id)}>
-                  Dispel
-                </button>
+                {entry.active > 0 && (
+                  <button type="button" className="gb-dispel" onClick={() => onDispel(entry.id)}>
+                    Dispel
+                  </button>
+                )}
               </div>
             </div>
             <div className="gb-page gb-page--right gb-illus-page">

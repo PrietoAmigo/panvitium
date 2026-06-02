@@ -35,4 +35,33 @@ describe('buildGoetia view-model adapter', () => {
       expect(e.illus).toBe(`/assets/panvitium/invocations-ars-goetia/${e.id}.png`);
     }
   });
+
+  it('a fresh roster shows nothing bound', () => {
+    for (const e of buildGoetia(richState()).entries) {
+      expect(e.active).toBe(0);
+      expect(e.bound).toBeUndefined();
+      expect(e.atCap).toBe(false);
+    }
+  });
+
+  it('reports the bound count, cap, affordability, and the bound badge', () => {
+    const base = richState();
+    // Stack a stackable invocation and bind a singleton apex (set directly on state).
+    const s = {
+      ...base,
+      lifetime: { ...base.lifetime, invocations: { fama: 2, midas: 1 } },
+    };
+    const view = buildGoetia(s);
+
+    const fama = view.entries.find((e) => e.id === 'fama')!;
+    expect(fama.active).toBe(2);
+    expect(fama.atCap).toBe(false); // stackable — never caps
+    expect(fama.bound).toBe(`${strings.invocations.active} \u00D72`); // 'bound ×2'
+
+    const midas = view.entries.find((e) => e.id === 'midas')!;
+    expect(midas.active).toBe(1);
+    expect(midas.atCap).toBe(true); // apex, maxActive 1
+    expect(midas.bound).toBe(strings.invocations.active); // 'bound' — no ×1 for a singleton
+    expect(midas.affordable).toBe(true); // free apex is always affordable
+  });
 });

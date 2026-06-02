@@ -23,8 +23,16 @@ export interface GoetiaEntry {
   lore?: string;
   /** Illustration url. Omit → the book falls back to a text plate gracefully. */
   illus?: string;
-  /** Whether the entry can be summoned now. REAL (from the gate check). */
+  /** Whether the entry passes its gate (invoking power + Sin level). REAL. */
   unlocked: boolean;
+  /** How many copies are currently bound/active. REAL (0 = none summoned). */
+  active: number;
+  /** True when at its max-active cap (apexes + the runner singletons cap at 1). REAL. */
+  atCap: boolean;
+  /** True when the current soul (and gold) cost is affordable right now. REAL. */
+  affordable: boolean;
+  /** Pre-formatted bound badge, e.g. 'bound' or 'bound ×2'. Omit when nothing is bound. REAL. */
+  bound?: string;
 }
 
 export interface ArsGoetiaBookProps {

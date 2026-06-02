@@ -10,8 +10,11 @@ import {
   invocationVisible,
   invocationUnlocked,
   invocationSoulCost,
+  invocationGoldCost,
+  activeInvocationCount,
   currentInvokingPower,
   floor,
+  gte,
   type GameState,
   type InvocationDef,
 } from '@panvitium/sim';
@@ -65,7 +68,19 @@ export function buildGoetia(state: GameState): GoetiaView {
     const def = invocationById(id);
     if (!def || !invocationVisible(state, def)) return;
     const unlocked = invocationUnlocked(state, def);
-    const cost = floor(invocationSoulCost(state, def)).toNumber();
+    const soulCost = invocationSoulCost(state, def);
+    const goldCost = invocationGoldCost(state, def);
+    const cost = floor(soulCost).toNumber();
+    const active = activeInvocationCount(state, def.id);
+    const atCap = def.maxActive !== undefined && active >= def.maxActive;
+    const affordable =
+      gte(floor(state.souls), soulCost) && gte(floor(state.lifetime.gold), goldCost);
+    const bound =
+      active <= 0
+        ? undefined
+        : active === 1
+          ? strings.invocations.active
+          : `${strings.invocations.active} \u00D7${active}`;
     const flavour = INVOCATION_BY_ID[id]; // design art/lore for the illustrated entries
     const effect = flavour?.effect ?? '';
     const lore = flavour?.lore ?? '';
@@ -76,9 +91,13 @@ export function buildGoetia(state: GameState): GoetiaView {
       rank: id === 'familiar' ? '' : (flavour?.rank ?? roman(i + 1)),
       cost: cost > 0 ? `${cost} ${strings.resources.souls}` : strings.invocations.free,
       unlocked,
+      active,
+      atCap,
+      affordable,
       // Optional fields omitted (not set to undefined) per exactOptionalPropertyTypes: a locked
-      // entry carries its real gate; the effect/lore lines degrade to absent for un-flavoured seals.
+      // entry carries its real gate; the effect/lore/bound lines degrade to absent.
       ...(unlocked ? {} : { gate: gateLabel(def) }),
+      ...(bound ? { bound } : {}),
       ...(effect ? { effect } : {}),
       ...(lore ? { lore } : {}),
       // Book drawings (not the photorealistic creature art) live in their own folder, keyed by id.

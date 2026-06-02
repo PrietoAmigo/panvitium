@@ -85,6 +85,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: null,
     invokingPower: 3,
     maxActive: 1,
+    // The lone "Special" invocation: only one Familiar may be bound (unlike the stackable Normals).
     // Hybrid (02 §3): a flat +33% to player efficiency (applied in modifiers.ts alongside the other
     // invocation magnitudes) AND a background Indagatio runner at 5% of the player's efficiency.
     autonomous: { action: 'indagatio', efficiency: 0.05 },
@@ -95,10 +96,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 4,
     sinLevel: 1,
     soulCost: { fraction: 0.1, minimum: 100 },
-    maxActive: 1,
-    // Background Decimatio (cost-outcome): each cycle pays ceil(caedisCost × 0.05×playerEff) and
-    // resolves a Good kill. Good-only so a passive entity can never roll Apocalyptic and gut the
-    // player's gold/reprobates unprompted (03 §2.4).
+    // Stackable (Normal type). Background Decimatio (cost-outcome): each cycle pays
+    // ceil(caedisCost × 0.05×playerEff) and resolves a Good kill. Good-only so a passive entity can
+    // never roll Apocalyptic and gut the player's gold/reprobates unprompted (03 §2.4). Each summoned
+    // copy runs its own channel (advanceInvocationRunners), so N imps cull at ~N× the rate.
     autonomous: { action: 'caedis', efficiency: 0.05, forcedTier: 'good' },
   },
   upir: {
@@ -107,11 +108,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 3,
     sinLevel: 1,
     soulCost: { fraction: 0.1, minimum: 100 },
-    maxActive: 1,
-    // Gula's background culler. The spreadsheet frames Upir as a Caedis runner at 0.05 (the doc's
-    // "kills 1 / 30 s" was the older mechanic); per the spreadsheet-wins-on-numbers rule we model it
-    // as the engine's cost-outcome runner, Good-only like the Imp. Single channel (maxActive 1) —
-    // the runner model is one channel per id, so stacking wouldn't multiply throughput anyway.
+    // Stackable (Normal type). Gula's background culler. The spreadsheet frames Upir as a Caedis
+    // runner at 0.05 (the doc's "kills 1 / 30 s" was the older mechanic); per the
+    // spreadsheet-wins-on-numbers rule we model it as the engine's cost-outcome runner, Good-only
+    // like the Imp. Each summoned copy runs its own channel, so stacking multiplies throughput.
     autonomous: { action: 'caedis', efficiency: 0.05, forcedTier: 'good' },
   },
   fama: {
@@ -141,10 +141,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 8,
     sinLevel: 2,
     soulCost: { fraction: 0.25, minimum: 1500 },
-    // Stackable. A background Suasio runner at `efficiency × the player's efficiency` (Invocatio
-    // sheet: "action efficiency applies to Suasio") — like the Familiar/Upir/Imp channels, without
-    // occupying the player's action slot. `suggestion` is the Suasio-category action. Natural tier
-    // rolls (no forced tier).
+    // Stackable (Normal type). A background Suasio runner at `efficiency × the player's efficiency`
+    // (Invocatio sheet: "action efficiency applies to Suasio"), without occupying the player's action
+    // slot. `suggestion` is the Suasio-category action; natural tier rolls. Each summoned copy runs
+    // its own channel (advanceInvocationRunners), so N lamiae work at ~N× the rate.
     autonomous: { action: 'suggestion', efficiency: 0.05 },
   },
   lemure: {
@@ -153,7 +153,8 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 7,
     sinLevel: 1,
     soulCost: { fraction: 0.1, minimum: 100 },
-    // Stackable. Effect (modifiers.ts): adds flat influence/s scaling with the Husk population.
+    // Stackable. Effect (modifiers.ts): an additive boost to the offline gain rate (Invocatio sheet),
+    // 0.025 × player/invocation efficiency per copy.
   },
   behemoth: {
     id: 'behemoth',
@@ -436,12 +437,26 @@ function activeRunnerIds(state: GameState): string[] {
 }
 
 /**
+ * Timer key for copy `k` of runner `id`. Copy 0 keeps the bare id so single-copy runners (and saves
+ * predating stacking) are unchanged; each additional stacked copy gets its own suffixed channel.
+ */
+function runnerKey(id: string, k: number): string {
+  return k === 0 ? id : `${id}#${k}`;
+}
+
+/**
  * Advance every active autonomous-runner invocation (the Familiar's background Indagatio, the Imp's
- * background Decimatio — 02 §3) by `deltaSeconds`, each in its own channel, never touching the
- * player's action slot. Per runner the effective efficiency is `autonomous.efficiency × the player's
- * efficiency`. Cost-outcome runners (Imp) pay per cycle and may STALL when the lifetime can't afford
- * one — a stalled runner stores no timer (its key is omitted) and is retried next tick. Timers for
- * invocations no longer active are dropped. Events fold into the same outcome stream.
+ * background Decimatio — 02 §3) by `deltaSeconds`, never touching the player's action slot. Per
+ * runner the effective efficiency is `autonomous.efficiency × the player's efficiency` (× the
+ * invocation-wide and per-Sin boosts).
+ *
+ * Stackable runners (the Normal-type Imp/Upir/Lamia) run ONE INDEPENDENT CHANNEL PER SUMMONED COPY,
+ * so N copies work at ~N× the rate — folding the count into efficiency wouldn't do this, because the
+ * per-cycle outcome is quantised at `max(1, floor(eff))` and would round sub-unit gains away. The
+ * channels resolve in sequence against the running `working` state, so a later copy naturally stalls
+ * when the earlier ones have drained the gold/influence a cost-outcome cycle needs. A stalled channel
+ * stores no timer (its key is omitted) and retries next tick. Timers whose copy no longer exists
+ * (dispelled, or the runner is gone) are dropped. Events fold into the same outcome stream.
  */
 export function advanceInvocationRunners(
   state: GameState,
@@ -450,7 +465,16 @@ export function advanceInvocationRunners(
 ): { state: GameState; events: OutcomeEvent[] } {
   const active = activeRunnerIds(state);
   const existing = state.lifetime.invocationRunners;
-  const hasStaleTimers = Object.keys(existing).some((id) => !active.includes(id));
+
+  // The timer keys that *should* exist: one per summoned copy of each active runner. Anything else
+  // in the record is stale (a dispelled copy or a dispelled runner) and gets cleared.
+  const validKeys = new Set<string>();
+  for (const id of active) {
+    const copies = state.lifetime.invocations[id] ?? 0;
+    for (let k = 0; k < copies; k++) validKeys.add(runnerKey(id, k));
+  }
+  const hasStaleTimers = Object.keys(existing).some((key) => !validKeys.has(key));
+
   if (active.length === 0) {
     // Nothing runs; clear any leftover timers so dispelled runners don't linger in the save.
     return hasStaleTimers
@@ -465,27 +489,32 @@ export function advanceInvocationRunners(
   for (const id of active) {
     const def = INVOCATIONS[id]!;
     const auto = def.autonomous!;
-    const mods = computeModifiers(working);
-    // Per-invocation auto.efficiency × player's own × invocation-wide boost (Ira level / Black
-    // Candles / Murmur) × the runner's own Sin effectiveness (the Sin-themed sigils). Familiar has
-    // no Sin, so it takes no per-Sin boost.
-    const sinMul = def.sin ? mods.invocationSinEffectivenessMul[def.sin] : 1;
-    const eff = auto.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul * sinMul;
-    // Absent key (undefined) ⇒ null: a fresh or previously-stalled channel the engine will (re)start.
-    const prev = existing[id] ?? null;
-    const r = advanceRunnerCycles(
-      working,
-      auto.action,
-      eff,
-      prev,
-      deltaSeconds,
-      rng,
-      auto.forcedTier,
-    );
-    working = r.state;
-    for (const e of r.events) events.push(e);
-    // Only persist a numeric timer; a stalled channel (null) leaves its key out of the record.
-    if (r.remaining !== null) runners[id] = r.remaining;
+    const copies = working.lifetime.invocations[id] ?? 0;
+    for (let k = 0; k < copies; k++) {
+      const key = runnerKey(id, k);
+      // Recomputed per copy so each channel sees the resources the earlier copies have already spent.
+      const mods = computeModifiers(working);
+      // auto.efficiency × player's own × invocation-wide boost (Ira level / Black Candles / Murmur) ×
+      // the runner's own Sin effectiveness. Familiar has no Sin, so it takes no per-Sin boost.
+      const sinMul = def.sin ? mods.invocationSinEffectivenessMul[def.sin] : 1;
+      const eff =
+        auto.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul * sinMul;
+      // Absent key (undefined) ⇒ null: a fresh or previously-stalled channel the engine will (re)start.
+      const prev = existing[key] ?? null;
+      const r = advanceRunnerCycles(
+        working,
+        auto.action,
+        eff,
+        prev,
+        deltaSeconds,
+        rng,
+        auto.forcedTier,
+      );
+      working = r.state;
+      for (const e of r.events) events.push(e);
+      // Only persist a numeric timer; a stalled channel (null) leaves its key out of the record.
+      if (r.remaining !== null) runners[key] = r.remaining;
+    }
   }
 
   return {

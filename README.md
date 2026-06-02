@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 715** (sim 516 · shared 52 · api 11 · web 136).
+**Current test count: 719** (sim 518 · shared 52 · api 11 · web 138).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -276,10 +276,19 @@ extensions, `import type`, Prettier):
     acolytes; `App` passes a stable `acolytes` count so it redraws only when one is gained or lost. The
     DOM `SummonedCreatures` and the crisp `ars_goetia` prop are retired (composited / baked in); the
     `.scene` CSS backdrop is superseded by the canvas. The **Ars Goetia** grimoire is the reworked
-    prop-driven `ArsGoetiaBook` (takes a pre-formatted `invokingPower`; the bound-count display was
-    dropped by the new design); `buildGoetia` now yields `GoetiaEntry[]` + `invokingPower`, omitting
-    `gate`/`effect`/`lore`/`illus` where absent so un-illustrated seals degrade to a text leaf.
-    Orphaned by this pass (cleanup): `SummonedCreatures.tsx`.
+    prop-driven `ArsGoetiaBook` (takes a pre-formatted `invokingPower`); `buildGoetia` now yields
+    `GoetiaEntry[]` + `invokingPower`, omitting `gate`/`effect`/`lore`/`illus` where absent so
+    un-illustrated seals degrade to a text leaf. **Bound state restored** (it was dropped in the
+    rework, leaving the menu blind to what was summoned): each entry now carries its `active` count,
+    `atCap`, and `affordable`, so the index shows a `bound ×N` badge, the detail shows a Bound row,
+    Summon is disabled at the cap / when unaffordable (labelled _Bound_ for a full apex), and Dispel
+    only appears when something is actually bound. Orphaned by the earlier pass (cleanup):
+    `SummonedCreatures.tsx`. **Runner stacking fixed**: the Normal-type runners (Imp/Upir/Lamia) are
+    uncapped per the sheet, and `advanceInvocationRunners` now runs **one independent channel per
+    summoned copy** (copy 0 keeps the bare timer key; extra copies get suffixed `id#k` keys), so N
+    copies cull/persuade at ~N× the rate. Folding the count into efficiency wouldn't work — the
+    per-cycle outcome is quantised at `max(1, floor(eff))`, so sub-unit gains would round away. The
+    Familiar stays the lone capped runner (the "Special").
   - _PC/Suasio polish._ Confirmed acolyte **delegation works inside the PC**: Decimatio (`caedis`)
     and Indagatio (`indagatio`) render the `+`/− `AcolyteControls` (shown once you hold ≥1 acolyte)
     via `ActionRow`'s delegation slot. Removed the outcome **log from the Suasio scroll** (outcomes

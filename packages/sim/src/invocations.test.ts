@@ -88,6 +88,15 @@ describe('Invocation catalog', () => {
     expect(invocationById('fama')!.maxActive).toBeUndefined();
   });
 
+  it('only the Familiar (Special) caps among the runners; Normal runners stack', () => {
+    // The Familiar is the lone Special — one only. The Normal-type runners (Imp/Upir/Lamia) have no
+    // cap: each summoned copy runs its own channel, so stacking multiplies throughput.
+    expect(invocationById('familiar')!.maxActive).toBe(1);
+    for (const id of ['imp', 'upir', 'lamia']) {
+      expect(invocationById(id)!.maxActive).toBeUndefined();
+    }
+  });
+
   it('the new per-tick apexes carry their gates and are free, max-1', () => {
     const astiwihad = invocationById('astiwihad')!;
     expect(astiwihad.invokingPower).toBe(15);
@@ -331,32 +340,33 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
   const impGold = (s: GameState): number =>
     actionCycleCost('caedis', 0.05 * computeModifiers(s).playerEfficiencyMul).gold;
 
-  it('is gated on power 4 + Ira 1, caps at 1, and runs a Good-only Caedis channel', () => {
+  it('is gated on power 4 + Ira 1, stackable, and runs a Good-only Caedis channel', () => {
     const def = invocationById('imp')!;
     expect(def.sin).toBe('ira');
     expect(def.invokingPower).toBe(4);
     expect(def.sinLevel).toBe(1);
-    expect(def.maxActive).toBe(1);
+    expect(def.maxActive).toBeUndefined(); // Normal type → stacks (one channel per copy)
     expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
   });
 
-  it('Upir is the Gula counterpart — power 3 + Gula 1, a single Good-only Caedis channel', () => {
+  it('Upir is the Gula counterpart — power 3 + Gula 1, a stackable Good-only Caedis channel', () => {
     const def = invocationById('upir')!;
     expect(def.sin).toBe('gula');
     expect(def.invokingPower).toBe(3);
     expect(def.sinLevel).toBe(1);
-    expect(def.maxActive).toBe(1);
+    expect(def.maxActive).toBeUndefined(); // Normal type → stacks
     expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
   });
 
-  it('Lamia is a stackable Luxuria Suasio runner — power 8 + Luxuria 2', () => {
+  it('Lamia is the Luxuria Suasio runner — power 8 + Luxuria 2, stackable', () => {
     const def = invocationById('lamia')!;
     expect(def.sin).toBe('luxuria');
     expect(def.invokingPower).toBe(8);
     expect(def.sinLevel).toBe(2);
-    expect(def.maxActive).toBeUndefined(); // stackable
+    // Normal type → no cap. Each summoned copy runs its own channel, so stacking scales throughput.
+    expect(def.maxActive).toBeUndefined();
     expect(def.autonomous).toEqual({ action: 'suggestion', efficiency: 0.05 }); // background Suasio runner
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(25_000); // 25%
   });
@@ -433,5 +443,23 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(r.events).toHaveLength(2);
     expect(r.state.lifetime.gold.toNumber()).toBe(2);
     expect(r.state.lifetime.invocationRunners.imp).toBeUndefined(); // stalled ⇒ key omitted
+  });
+
+  it('stacking a runner multiplies throughput — two imps cull ~2× one (independent channels)', () => {
+    const base = withReprobates(withGold(fresh(), 100_000), 1000);
+    // 105 s → 10 full 10 s cycles per channel, plus an in-flight 11th (so a timer key persists).
+    const one = advanceInvocationRunners(withInvocation(base, 'imp', 1), 105, makeRng(9));
+    const two = advanceInvocationRunners(withInvocation(base, 'imp', 2), 105, makeRng(9));
+    // The cost-outcome cycle is a fixed 10 s, so each channel resolves 10 cycles regardless of eff —
+    // a second copy means a second channel, i.e. double the kills.
+    expect(one.events).toHaveLength(10);
+    expect(two.events).toHaveLength(20);
+    const oneSouls = one.state.souls.toNumber() - base.souls.toNumber();
+    const twoSouls = two.state.souls.toNumber() - base.souls.toNumber();
+    expect(twoSouls).toBe(2 * oneSouls); // 1 soul per Good kill, scaled by the copy count
+    // Copy 0 keeps the bare id key; the extra copy runs on its own suffixed channel.
+    expect(two.state.lifetime.invocationRunners.imp).toBeGreaterThan(0);
+    expect(two.state.lifetime.invocationRunners['imp#1']).toBeGreaterThan(0);
+    expect(one.state.lifetime.invocationRunners['imp#1']).toBeUndefined(); // one copy ⇒ no suffix
   });
 });
