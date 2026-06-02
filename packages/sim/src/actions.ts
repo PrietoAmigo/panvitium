@@ -16,6 +16,7 @@ import { type Rng } from './rng.js';
 import {
   type Tier,
   type TierWeights,
+  TIERS,
   applyTierModifiers,
   normalizeTierWeights,
   resolveTier,
@@ -449,6 +450,190 @@ export function actionTierDistribution(state: GameState, actionId: string): Tier
       categoryTierModifiers(state, def.category),
     ),
   );
+}
+
+/** First two moments (mean and standard deviation) of one resolution's effect on a resource. */
+export interface OutcomeMoment {
+  readonly mean: number;
+  /** Standard deviation — the listable "deviation" companion to the mean (√variance). */
+  readonly sd: number;
+}
+
+/**
+ * The expected outcome of ONE resolution of an action (a single cycle for a runner), as mean ± sd per
+ * dimension. Computed analytically in closed form from the live tier distribution (or a forced tier)
+ * times each tier's per-dimension delta moments — no sampling, deterministic, and consistent with
+ * what `resolveAction` actually rolls. `souls`/`reprobates`/`gold` are net deltas; `maleficia` is the
+ * expected count surfaced (Indagatio). Modeled for the actions that have runner/forecast surfaces so
+ * far (Caedis, Suggestion, Indagatio); other actions return a zero forecast until modeled.
+ */
+export interface OutcomeForecast {
+  readonly souls: OutcomeMoment;
+  readonly reprobates: OutcomeMoment;
+  readonly gold: OutcomeMoment;
+  readonly maleficia: OutcomeMoment;
+}
+
+const ZERO_MOMENT: OutcomeMoment = { mean: 0, sd: 0 };
+const ZERO_FORECAST: OutcomeForecast = {
+  souls: ZERO_MOMENT,
+  reprobates: ZERO_MOMENT,
+  gold: ZERO_MOMENT,
+  maleficia: ZERO_MOMENT,
+};
+
+/** Per-dimension first two raw moments (mean `m`, variance `v`) of one tier's delta. */
+interface Dim {
+  readonly m: number;
+  readonly v: number;
+}
+interface TierDelta {
+  readonly souls: Dim;
+  readonly reprobates: Dim;
+  readonly gold: Dim;
+  readonly maleficia: Dim;
+}
+const ZERO_DIM: Dim = { m: 0, v: 0 };
+const NO_DELTA: TierDelta = {
+  souls: ZERO_DIM,
+  reprobates: ZERO_DIM,
+  gold: ZERO_DIM,
+  maleficia: ZERO_DIM,
+};
+/** A deterministic amount (variance 0). */
+const fixed = (m: number): Dim => ({ m, v: 0 });
+/** k copies of a uniform integer in [lo, hi] inclusive: mean k·(lo+hi)/2, variance k²·((n²−1)/12). */
+const uniform = (lo: number, hi: number, k: number): Dim => {
+  const n = hi - lo + 1;
+  return { m: (k * (lo + hi)) / 2, v: k * k * ((n * n - 1) / 12) };
+};
+
+function caedisTierDelta(tier: Tier, units: number, pop: number, gold: number): TierDelta {
+  switch (tier) {
+    // Stellar/Excellent remove randint(...)×units (capped by population in `resolveCaedis`; the
+    // forecast uses the uncapped moments, an upper bound when the roster is nearly empty). Souls
+    // minted equal reprobates removed.
+    case 'stellar': {
+      const r = uniform(15, 45, units);
+      return { ...NO_DELTA, reprobates: { m: -r.m, v: r.v }, souls: r };
+    }
+    case 'excellent': {
+      const r = uniform(3, 9, units);
+      return { ...NO_DELTA, reprobates: { m: -r.m, v: r.v }, souls: r };
+    }
+    case 'good': {
+      const removed = Math.min(units, pop); // deterministic
+      return { ...NO_DELTA, reprobates: fixed(-removed), souls: fixed(removed) };
+    }
+    case 'bad':
+      return { ...NO_DELTA, gold: fixed(-Math.floor(0.05 * gold)) };
+    case 'terrible':
+      return { ...NO_DELTA, gold: fixed(-Math.floor(0.15 * gold)) };
+    case 'apocalyptic':
+      return {
+        ...NO_DELTA,
+        gold: fixed(-Math.floor(0.66 * gold)),
+        reprobates: fixed(-Math.floor(0.5 * pop)),
+      };
+    default:
+      return NO_DELTA; // neutral: the kill fails
+  }
+}
+
+function suggestionTierDelta(tier: Tier, units: number, pop: number): TierDelta {
+  switch (tier) {
+    case 'stellar':
+      return { ...NO_DELTA, reprobates: uniform(4, 8, units) };
+    case 'excellent':
+      return { ...NO_DELTA, souls: fixed(units) };
+    case 'good':
+      return { ...NO_DELTA, reprobates: fixed(units) };
+    case 'bad':
+      return { ...NO_DELTA, reprobates: fixed(-Math.min(units, pop)) };
+    case 'terrible':
+      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.09 * pop)) };
+    default:
+      return NO_DELTA; // neutral / apocalyptic: nothing
+  }
+}
+
+function indagatioTierDelta(state: GameState, tier: Tier, gold: number): TierDelta {
+  const canFind = (chain: readonly MaleficiumRarity[]): boolean =>
+    chain.some(
+      (r) => findableIds(r, state.lifetime.maleficia, state.lifetime.emptioList).length > 0,
+    );
+  // Mirrors resolveIndagatio: each surfacing tier finds one item along its rarity chain (the rare
+  // Furcas double-find is not modeled); the failure tiers bite gold instead.
+  switch (tier) {
+    case 'stellar':
+      return {
+        ...NO_DELTA,
+        maleficia: fixed(canFind(['anathema', 'profane', 'rare', 'common']) ? 1 : 0),
+      };
+    case 'excellent':
+      return { ...NO_DELTA, maleficia: fixed(canFind(['profane', 'rare', 'common']) ? 1 : 0) };
+    case 'good':
+      return { ...NO_DELTA, maleficia: fixed(canFind(['rare', 'common']) ? 1 : 0) };
+    case 'neutral':
+      return { ...NO_DELTA, maleficia: fixed(canFind(['common']) ? 1 : 0) };
+    case 'terrible':
+      return { ...NO_DELTA, gold: fixed(-Math.floor(0.15 * gold)) };
+    case 'apocalyptic':
+      return { ...NO_DELTA, gold: fixed(-Math.floor(0.8 * gold)) };
+    default:
+      return NO_DELTA; // bad: false lead
+  }
+}
+
+export function actionOutcomeForecast(
+  state: GameState,
+  actionId: string,
+  efficiency = 1,
+  forcedTier?: Tier,
+): OutcomeForecast {
+  if (!ACTIONS[actionId]) return ZERO_FORECAST;
+  const units = Math.max(1, Math.floor(efficiency));
+  const pop = totalReprobates(state);
+  const gold = floor(state.lifetime.gold).toNumber();
+  const dist: TierWeights = forcedTier
+    ? (Object.fromEntries(TIERS.map((t) => [t, t === forcedTier ? 1 : 0])) as TierWeights)
+    : actionTierDistribution(state, actionId);
+  const tierDelta = (tier: Tier): TierDelta =>
+    actionId === 'caedis'
+      ? caedisTierDelta(tier, units, pop, gold)
+      : actionId === 'suggestion'
+        ? suggestionTierDelta(tier, units, pop)
+        : actionId === 'indagatio'
+          ? indagatioTierDelta(state, tier, gold)
+          : NO_DELTA;
+
+  // Mixture moments via the law of total variance: across tiers, mean = Σ pₜ·mₜ and
+  // E[X²] = Σ pₜ·(vₜ + mₜ²); variance = E[X²] − mean².
+  const acc = {
+    souls: { m: 0, e2: 0 },
+    reprobates: { m: 0, e2: 0 },
+    gold: { m: 0, e2: 0 },
+    maleficia: { m: 0, e2: 0 },
+  };
+  for (const tier of TIERS) {
+    const p = dist[tier] ?? 0;
+    if (p <= 0) continue;
+    const d = tierDelta(tier);
+    for (const dim of ['souls', 'reprobates', 'gold', 'maleficia'] as const) {
+      acc[dim].m += p * d[dim].m;
+      acc[dim].e2 += p * (d[dim].v + d[dim].m * d[dim].m);
+    }
+  }
+  const moment = (a: { m: number; e2: number }): OutcomeMoment => ({
+    mean: a.m,
+    sd: Math.sqrt(Math.max(0, a.e2 - a.m * a.m)),
+  });
+  return {
+    souls: moment(acc.souls),
+    reprobates: moment(acc.reprobates),
+    gold: moment(acc.gold),
+    maleficia: moment(acc.maleficia),
+  };
 }
 
 export function resolveAction(

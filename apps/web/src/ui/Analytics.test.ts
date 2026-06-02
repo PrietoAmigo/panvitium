@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { createInitialState, type Acolyte, type GameState } from '@panvitium/sim';
+import { createInitialState, addReprobates, type Acolyte, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { AnalyticsGroup } from './Analytics.js';
 
@@ -97,19 +97,29 @@ describe('AnalyticsGroup — Invocations tab', () => {
     expect(text).toContain('\u00D72'); // number bound
     expect(text).toContain('influence gain'); // the effect label
     expect(/[+\-\u2212]\d+%/.test(text)).toBe(true); // a computed magnitude, not a static phrase
-    expect(text).not.toContain('per cycle'); // passive ⇒ no action/cycle
+    expect(text).not.toContain('every'); // passive ⇒ no action/cadence
   });
 
-  it('lists a runner invocation as one line: action, outcome, cycle time (no bars/dropdown)', () => {
-    seedLifetime({ invocations: { imp: 2 } });
+  it('lists a runner with its expected per-cycle outcome (mean) and cadence — no bars/dropdown', () => {
+    const base = createInitialState('seed', 0);
+    const withReps = addReprobates(base, 'reprobate', 200);
+    const state: GameState = {
+      ...withReps,
+      lifetime: { ...withReps.lifetime, invocations: { imp: 2 } },
+    };
+    useGameStore.setState({ state });
     render();
     clickTab('Invocations');
     const text = container!.textContent ?? '';
     expect(text).toContain('Imp');
     expect(text).toContain('\u00D72'); // number bound
     expect(text).toContain('Caedis'); // the action
-    expect(text).toContain('culls reprobates'); // the outcome
-    expect(text).toContain('per cycle'); // the cycle time
+    // The expected outcome, not a qualitative phrase: forced-Good Caedis culls 1 / mints 1 per cycle.
+    expect(text).toContain('soul');
+    expect(text).toContain('reprobate');
+    expect(/[+\u2212]\d/.test(text)).toBe(true); // a signed expected magnitude
+    expect(text).not.toContain('culls reprobates'); // qualitative phrase replaced
+    expect(text).toContain('every'); // cadence
     // The performance change: no expandable head button, no per-copy channel rows/bars.
     expect(container!.querySelectorAll('.analytics-inv-channel').length).toBe(0);
     expect(container!.querySelectorAll('.analytics-invocations button').length).toBe(0);

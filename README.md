@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 733** (sim 523 · shared 52 · api 11 · web 147).
+**Current test count: 737** (sim 527 · shared 52 · api 11 · web 147).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -542,9 +542,18 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   rates — this also subsumes the old HUD reprobate count); **Acolytes** (a per-acolyte board showing
   each one's current action, remaining cycle time, and a progress bar); and **Invocations** (every
   bound invocation type, **one line each** — no per-copy detail, for performance). A type that
-  **carries actions** (the autonomous runners: Familiar, Imp, Upir, Lamia) shows its **action**, what
-  one cycle **yields** (`strings.invocations.actionOutcome` — culls / converts reprobates, surfaces
-  maleficia), and the current **cycle time** (`runnerCycleDuration` at the live channel efficiency).
+  **carries actions** (the autonomous runners: Familiar, Imp, Upir, Lamia) shows its **action**, the
+  **expected outcome of one cycle** as `mean ± sd` per affected resource, and the **cadence**
+  (`runnerCycleDuration` at the live channel efficiency). The expected outcome comes from a new pure
+  sim helper `actionOutcomeForecast(state, actionId, eff, forcedTier?)`, which computes the first two
+  moments in closed form from the live tier distribution (or a forced tier) × each tier's per-dimension
+  delta moments (fixed amounts, `randint` ranges, %-of-population culls), combined via the law of total
+  variance — no sampling, deterministic, and Monte-Carlo-validated against the real resolver in the sim
+  tests so it can't drift. So the Imp's forced-Good Caedis reads _+1 soul, −1 reprobate · every 10s_
+  (deterministic, sd 0), a Lamia's Suggestion reads e.g. _+0.61 ±0.52 reprobates, +0.15 souls · every
+  5s_, and the Familiar's Indagatio reads its expected maleficia surfaced per cycle. The qualitative
+  "culls reprobates" phrasing it replaced wasn't enough — outcomes are now always listed as an expected
+  value with its deviation.
   A **passive** type shows its **live quantified total effect** at the current bound count — computed
   by diffing the real modifier bundle (`computeModifiers`) with vs without that invocation, so each
   contribution is isolated exactly (composition is multiplicative/additive). So Fama ×2 reads

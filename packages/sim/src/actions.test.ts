@@ -15,6 +15,7 @@ import {
   resolveIndagatio,
   actionUnlocked,
   actionTierDistribution,
+  actionOutcomeForecast,
   ACTIONS,
 } from './actions.js';
 import { MALEFICIA, MALEFICIUM_PRICE_RANGE } from './maleficia.js';
@@ -481,5 +482,80 @@ describe('actionTierDistribution (oracular reveals, 5.1)', () => {
     const s = createInitialState('oracle-test', 0);
     const dist = actionTierDistribution(s, 'not_an_action');
     expect(dist.neutral).toBe(1);
+  });
+});
+
+describe('actionOutcomeForecast — expected outcome + variance', () => {
+  // Monte-Carlo the REAL resolver at the same state/efficiency and assert the analytical forecast
+  // matches its empirical moments — this pins the closed-form moments to the actual resolve logic,
+  // so any drift in a resolve function fails here.
+  function empirical(
+    state: GameState,
+    actionId: string,
+    eff: number,
+    forcedTier: 'good' | undefined,
+    n: number,
+  ): { repMean: number; repSd: number; soulMean: number; malMean: number } {
+    const r = makeRng(hashSeed('forecast-mc'));
+    let sumR = 0;
+    let sumR2 = 0;
+    let sumS = 0;
+    let sumM = 0;
+    for (let i = 0; i < n; i++) {
+      const { event } = resolveAction(state, actionId, r, {
+        efficiency: eff,
+        ...(forcedTier ? { forcedTier } : {}),
+      });
+      const rd = event ? event.reprobateDelta : 0;
+      sumR += rd;
+      sumR2 += rd * rd;
+      sumS += event ? event.soulsDelta : 0;
+      sumM += event && event.maleficiaSurfaced ? event.maleficiaSurfaced.length : 0;
+    }
+    const repMean = sumR / n;
+    return {
+      repMean,
+      repSd: Math.sqrt(Math.max(0, sumR2 / n - repMean * repMean)),
+      soulMean: sumS / n,
+      malMean: sumM / n,
+    };
+  }
+
+  it('matches the real Suggestion resolver mean and variance (incl. the %-population Terrible tier)', () => {
+    const state = addReprobates(fresh(), 'reprobate', 200);
+    const f = actionOutcomeForecast(state, 'suggestion', 1);
+    const e = empirical(state, 'suggestion', 1, undefined, 40000);
+    expect(Math.abs(f.reprobates.mean - e.repMean)).toBeLessThan(0.1);
+    expect(Math.abs(f.souls.mean - e.soulMean)).toBeLessThan(0.05);
+    expect(Math.abs(f.reprobates.sd - e.repSd)).toBeLessThan(0.3);
+    expect(f.reprobates.sd).toBeGreaterThan(0); // stochastic outcome
+  });
+
+  it('is deterministic for forced-Good Caedis: +units souls, −units reprobates, sd 0', () => {
+    const state = addReprobates(fresh(), 'reprobate', 200);
+    const f = actionOutcomeForecast(state, 'caedis', 1, 'good');
+    expect(f.reprobates.mean).toBeCloseTo(-1, 6);
+    expect(f.souls.mean).toBeCloseTo(1, 6);
+    expect(f.reprobates.sd).toBeCloseTo(0, 6);
+    const e = empirical(state, 'caedis', 1, 'good', 2000);
+    expect(e.repMean).toBeCloseTo(-1, 6);
+    expect(e.soulMean).toBeCloseTo(1, 6);
+  });
+
+  it('forecasts Indagatio as ~one maleficium surfaced per cycle, no soul/reprobate delta', () => {
+    const state = fresh(); // full findable roster
+    const f = actionOutcomeForecast(state, 'indagatio', 1);
+    const e = empirical(state, 'indagatio', 1, undefined, 20000);
+    expect(f.maleficia.mean).toBeGreaterThan(0);
+    expect(f.maleficia.mean).toBeLessThanOrEqual(1);
+    expect(Math.abs(f.maleficia.mean - e.malMean)).toBeLessThan(0.05);
+    expect(f.souls.mean).toBe(0);
+    expect(f.reprobates.mean).toBe(0);
+  });
+
+  it('returns a zero forecast for an unknown action', () => {
+    const f = actionOutcomeForecast(fresh(), 'nope', 1);
+    expect(f.souls.mean).toBe(0);
+    expect(f.reprobates.sd).toBe(0);
   });
 });

@@ -8,6 +8,7 @@ import {
   invocationById,
   invocationRunnerEfficiency,
   runnerCycleDuration,
+  actionOutcomeForecast,
   categoryEfficiency,
   computeModifiers,
   perSecondRates,
@@ -20,6 +21,8 @@ import {
   type ActionTimer,
   type GameState,
   type InvocationDef,
+  type OutcomeForecast,
+  type OutcomeMoment,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
@@ -329,6 +332,37 @@ function passiveEffectText(state: GameState, id: string): string {
   }
 }
 
+/** Signed mean: integer-rounded for large magnitudes, 2 decimals otherwise, with a real minus sign. */
+function fmtSigned(n: number): string {
+  const r = Math.abs(n) >= 10 ? Math.round(n) : Number(n.toFixed(2));
+  return `${r < 0 ? '\u2212' : '+'}${Math.abs(r)}`;
+}
+/** Unsigned magnitude for the ± sd term. */
+function fmtNum(n: number): string {
+  return String(Number(n >= 10 ? n.toFixed(0) : n.toFixed(2)));
+}
+
+/**
+ * One runner cycle's expected outcome as "mean ± sd unit" per non-trivial dimension, e.g.
+ * "+1 soul, −1 reprobate" (deterministic, sd 0) or "+0.31 ±0.7 reprobates, +0.15 souls". The sd is
+ * the listable deviation (√variance); it's omitted when ~0 (a deterministic outcome).
+ */
+function formatForecast(f: OutcomeForecast): string {
+  const U = strings.invocations.outcomeUnits;
+  const parts: string[] = [];
+  const add = (m: OutcomeMoment, one: string, many: string): void => {
+    if (Math.abs(m.mean) < 0.005 && m.sd < 0.005) return;
+    const unit = Math.abs(m.mean) === 1 ? one : many;
+    const pm = m.sd >= 0.005 ? ` \u00B1${fmtNum(m.sd)}` : '';
+    parts.push(`${fmtSigned(m.mean)}${pm} ${unit}`);
+  };
+  add(f.souls, U.soul, U.souls);
+  add(f.reprobates, U.reprobate, U.reprobates);
+  add(f.gold, U.gold, U.gold);
+  add(f.maleficia, U.maleficium, U.maleficia);
+  return parts.join(', ');
+}
+
 /**
  * One bound invocation per row, a single line (no per-copy detail, for performance). Runners (the
  * autonomous channels — Familiar, Imp, Upir, Lamia) show their action, what one cycle yields, and the
@@ -352,13 +386,14 @@ function InvocationRow({
   let detail: string;
   if (auto) {
     const action = actionName(auto.action);
-    const outcome = strings.invocations.actionOutcome[auto.action] ?? '';
-    const dur = runnerCycleDuration(auto.action, invocationRunnerEfficiency(state, def));
-    const cycle =
+    const eff = invocationRunnerEfficiency(state, def);
+    const outcome = formatForecast(actionOutcomeForecast(state, auto.action, eff, auto.forcedTier));
+    const dur = runnerCycleDuration(auto.action, eff);
+    const cadence =
       Number.isFinite(dur) && dur > 0
-        ? `${formatDuration(dur * 1000)} ${strings.invocations.perCycle}`
+        ? `${strings.invocations.every} ${formatDuration(dur * 1000)}`
         : '';
-    detail = [action, outcome, cycle].filter((s) => s !== '').join(' \u00B7 ');
+    detail = [action, outcome, cadence].filter((s) => s !== '').join(' \u00B7 ');
   } else {
     detail = passiveEffectText(state, id);
   }

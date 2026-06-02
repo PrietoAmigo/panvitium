@@ -194,13 +194,17 @@ export const strings = {
     } as Record<string, string>,
     // Analytics → Invocations tab.
     noneBound: 'No invocations are bound.',
-    perCycle: 'per cycle',
-    /** What one cycle of a runner's action yields, keyed by action id. */
-    actionOutcome: {
-      caedis: 'culls reprobates',
-      suggestion: 'converts reprobates',
-      indagatio: 'surfaces maleficia',
-    } as Record<string, string>,
+    every: 'every',
+    /** Outcome unit nouns for a runner's expected per-cycle yield (mean ± sd). */
+    outcomeUnits: {
+      soul: 'soul',
+      souls: 'souls',
+      reprobate: 'reprobate',
+      reprobates: 'reprobates',
+      gold: 'gold',
+      maleficium: 'maleficium',
+      maleficia: 'maleficia',
+    },
     /** Noun labels for the live quantified "total effect" of passive invocations (composed with the
      *  +X% / ×N value the Analytics tab computes from the current modifier bundle). */
     effectLabels: {
