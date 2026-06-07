@@ -31,6 +31,7 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
+import { buildAltar } from '../game/altar.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
 // the two carved-slab layers are placed here on apply (they live at the repo root + the design zip).
@@ -906,9 +907,11 @@ function AmbientEmbers(): ReactElement {
 function AltarGate({
   state,
   onDescend,
+  onTurnAway,
 }: {
   state: GameState;
   onDescend: () => void;
+  onTurnAway: () => void;
 }): ReactElement {
   const [armed, setArmed] = useState(false);
   useEffect(() => {
@@ -917,6 +920,7 @@ function AltarGate({
     return () => clearTimeout(t);
   }, [armed]);
   const offered = SINS.some((s) => !isZero(state.devotion[s]));
+  const { sins, boundSigils } = buildAltar(state);
   return (
     <div className="scene altar-gate">
       <div className="altar-fog" aria-hidden="true" />
@@ -929,6 +933,24 @@ function AltarGate({
           Princes their Devotion and bind your souls to the seals{' '}
           {offered ? 'once more' : 'of the lesser key'}.
         </p>
+
+        <div className="altar-standing">
+          <div className="altar-standing-label">Your standing before the Princes</div>
+          <div className="altar-standing-grid">
+            {sins.map((s) => (
+              <div className="altar-prince" key={s.latin}>
+                <span className="ap-latin">{s.latin}</span>
+                <Pips level={s.level} max={MAX_SIN_LEVEL} />
+              </div>
+            ))}
+          </div>
+          <div className="altar-standing-seals">
+            {boundSigils.length === 0
+              ? 'No seals bound'
+              : `${boundSigils.length} of 72 seals bound`}
+          </div>
+        </div>
+
         <div className={`altar-slab${armed ? ' is-armed' : ''}`}>
           <span className="candle l" aria-hidden="true" />
           <span className="candle r" aria-hidden="true" />
@@ -954,6 +976,9 @@ function AltarGate({
         <div className="descend-warn">
           {armed ? 'Press again to commit the descent.' : '\u00A0'}
         </div>
+        <button type="button" className="altar-turn-away" onClick={onTurnAway}>
+          Turn away &mdash; climb back to the altar room
+        </button>
       </div>
     </div>
   );
@@ -1031,6 +1056,8 @@ type Screen = 'altar' | 'descending' | 'statues' | 'sigils' | 'ascending';
 export function Katabasis(): ReactElement {
   const state = useGameStore((s) => s.state);
   const confirm = useGameStore((s) => s.confirmKatabasis);
+  const begin = useGameStore((s) => s.beginKatabasis);
+  const close = useGameStore((s) => s.closeKatabasis);
 
   const [screen, setScreen] = useState<Screen>('altar');
   const [caption, setCaption] = useState(false);
@@ -1110,7 +1137,16 @@ export function Katabasis(): ReactElement {
     <div className="katabasis-flow" role="dialog" aria-label={strings.katabasis.title}>
       <audio ref={audioRef} loop preload="auto" aria-hidden="true" />
 
-      {screen === 'altar' && <AltarGate state={state} onDescend={() => setScreen('descending')} />}
+      {screen === 'altar' && (
+        <AltarGate
+          state={state}
+          onDescend={() => {
+            begin(); // commit: tear down the lifetime + freeze, then fall
+            setScreen('descending');
+          }}
+          onTurnAway={() => close()}
+        />
+      )}
       {screen === 'descending' && <Transition kind="descending" onDone={arrive} />}
       {screen === 'ascending' && <Transition kind="ascending" onDone={() => confirm()} />}
 

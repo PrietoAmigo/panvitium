@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 747** (sim 527 · shared 52 · api 11 · web 157).
+**Current test count: 751** (sim 527 · shared 52 · api 11 · web 161).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -498,8 +498,8 @@ helper to reach the required state, a small task of its own).
 ### 5.1b — Katabasis visual rework (Claude Design)
 
 _A faithful rebuild of the Katabasis surface from a dedicated Claude Design handoff — the descent as
-a cinematic sequence rather than a flat menu. Delivered in two gate-green slices; **K1 (the descent)
-has shipped**, K2 (the in-room altar retouch) is next._
+a cinematic sequence rather than a flat menu. Delivered in two gate-green slices, **both shipped**:
+K1 (the descent) and K2 (the in-room altar → gate reconciliation)._
 
 - **K1 — the cinematic descent** _(✓ shipped)_. The `menu` phase is now a full-screen flow: a commit
   **Altar gate** → an Abyss descent transition → the **Court of Spires** (the eight Princes under
@@ -515,12 +515,20 @@ has shipped**, K2 (the in-room altar retouch) is next._
   arming, "You Rise" reading committed state, reveal-over-flow); all seven screens were visually
   verified against the handoff via Playwright. Runtime art (`katabasis{,2,3,_end}.png`,
   `sigil-slab-{dark,molten}.png`) is placed under `public/assets/panvitium/katabasis/` on apply.
-- **K2 — in-room altar retouch** _(next)_. Restyle the existing `AltarPanel` ledger (Devotion /
-  bound-sigils, in the stone `PanelShell`) to the new aesthetic and reconcile it with the K1
-  full-screen gate.
+- **K2 — in-room altar reconciliation** _(✓ shipped)_. Clicking the in-room Altar now goes straight
+  to the full-screen gate (a new `{ type: 'altar' }` hotspot action → a new `openKatabasis` store
+  action that opens the gate **without** the destructive teardown). The gate is the single point of
+  no return: its two-press commit fires `beginKatabasis` (the teardown + freeze) and falls into the
+  descent, while a new **"Turn away — climb back to the altar room"** affordance calls `closeKatabasis`
+  for a clean exit (nothing has been torn down yet). The old intermediate stone-ledger panel
+  (`AltarPanel` / the `altar-menu` panel) is removed; its per-Prince Devotion review is folded onto the
+  gate as a compact "your standing" strip, reusing the tested `buildAltar` view-model. Pinned by an
+  `openKatabasis` store test (opens the gate, no teardown) and three gate render tests (standing
+  readout, turn-away returns to the room, commit enters Katabasis + descends); the full altar → gate →
+  descend / turn-away flow was verified through the real UI via Playwright.
 
-**Done when** both slices have shipped gate-green; the descent's audio asset lands (5.3) and the flow
-gains an e2e step on a browser-capable machine.
+**Done** — both slices have shipped gate-green; what remains for the descent is the audio asset (5.3)
+and an e2e step on a browser-capable machine.
 
 ### 5.2 — New diegetic features (Claude Design + a small sim hook)
 

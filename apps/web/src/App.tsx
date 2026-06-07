@@ -24,7 +24,6 @@ import { audio } from './audio/audio.js';
  * overlays and don't appear here). The stone and cabinet hide the header in favour of a float close.
  */
 const PANEL_SHELL: Partial<Record<PanelId, { variant: PanelVariant; hideHeader?: boolean }>> = {
-  'altar-menu': { variant: 'stone', hideHeader: true },
   maleficia: { variant: 'cabinet', hideHeader: true },
   suasio: { variant: 'scroll' },
 };
@@ -55,6 +54,7 @@ export function App(): ReactElement {
   const [room, setRoom] = useState<RoomId>('altar');
   const [panel, setPanel] = useState<PanelId | null>(null);
   const katabasisPhase = useGameStore((s) => s.katabasisPhase);
+  const openKatabasis = useGameStore((s) => s.openKatabasis);
 
   // The Studio's red "panvitium" glow while that ritual runs (03 §2.3).
   const signature = useGameStore(
@@ -86,6 +86,11 @@ export function App(): ReactElement {
     if (action.type === 'door') {
       setRoom(action.to);
       audio.play('room-change');
+    } else if (action.type === 'altar') {
+      // The Altar opens the full-screen gate straight away (no ledger step); the gate is where the
+      // player commits to the descent or turns back. Nothing is torn down until they commit there.
+      openKatabasis();
+      audio.play('panel-open');
     } else {
       setPanel(action.panel);
       audio.play('panel-open');

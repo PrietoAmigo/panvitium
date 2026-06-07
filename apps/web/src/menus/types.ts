@@ -4,7 +4,7 @@
 // INTEGRATION.md §"Wiring to real state".
 
 export type RoomId = 'invocation' | 'altar' | 'studio';
-export type PanelId = 'maleficia' | 'ars-goetia' | 'altar-menu' | 'pc' | 'suasio';
+export type PanelId = 'maleficia' | 'ars-goetia' | 'pc' | 'suasio';
 export type Rarity = 'common' | 'rare' | 'profane' | 'anathema';
 
 export interface Rect {
@@ -14,7 +14,10 @@ export interface Rect {
   h: number;
 }
 
-export type HotspotAction = { type: 'door'; to: RoomId } | { type: 'panel'; panel: PanelId };
+export type HotspotAction =
+  | { type: 'door'; to: RoomId }
+  | { type: 'panel'; panel: PanelId }
+  | { type: 'altar' };
 
 export interface Hotspot {
   id: string;

@@ -30,13 +30,11 @@ import {
 } from '@panvitium/sim';
 import { type PanelId } from '../menus/types.js';
 import { compositumCostLine, compositumOutcomesLine } from '../game/compositumText.js';
-import { AltarPanel as DesignedAltar } from '../menus/AltarPanel.js';
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
 import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
 import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
-import { buildAltar } from '../game/altar.js';
 import { buildCabinet } from '../game/maleficia.js';
 import { pogromTargets } from '../game/decimatio.js';
 import { useGameStore } from '../store/gameStore.js';
@@ -865,17 +863,6 @@ interface PanelContent {
   body: ReactNode;
 }
 
-/** The altar menu (02 §10): Devotion and level per Prince, bound sigils, plus the descent trigger.
- * Renders the designed Altar ledger fed by the real `buildAltar` view-model; the designed component
- * owns the two-tap arm/confirm and calls `beginKatabasis` on commit. */
-function AltarPanel(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const begin = useGameStore((s) => s.beginKatabasis);
-  if (!state) return <p>{strings.altar.intro}</p>;
-  const { sins, boundSigils } = buildAltar(state);
-  return <DesignedAltar sins={sins} boundSigils={boundSigils} onDescend={begin} />;
-}
-
 /**
  * Ars Goetia (Invocation Room, 02 §12): the invocation list. An entry appears once invoking power
  * reaches half its requirement (a teaser). Each shows its gate, soul cost, and active count, with a
@@ -968,10 +955,6 @@ export const PANELS: Record<PanelId, PanelContent> = {
   maleficia: {
     title: 'The Maleficia Shelf',
     body: <MaleficiaShelf />,
-  },
-  'altar-menu': {
-    title: 'The Altar',
-    body: <AltarPanel />,
   },
   pc: {
     title: 'The Desk',

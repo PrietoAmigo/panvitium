@@ -109,4 +109,35 @@ describe('Katabasis flow — orchestrator', () => {
     expect(container!.querySelector('.altar-gate')).not.toBeNull();
     expect(container!.querySelectorAll('.katabasis-flow').length).toBeGreaterThanOrEqual(2);
   });
+
+  it('opens the gate via openKatabasis without tearing down the lifetime', () => {
+    act(() => store().openKatabasis());
+    render();
+    expect(container!.querySelector('.altar-gate')).not.toBeNull();
+    expect((store().state as GameState).inKatabasis).not.toBe(true);
+    // The standing readout (folded-in ledger) shows the eight Princes + the seal tally.
+    expect(container!.querySelectorAll('.altar-prince').length).toBe(8);
+    expect(container!.querySelector('.altar-standing-seals')?.textContent).toContain(
+      'No seals bound',
+    );
+  });
+
+  it('turning away at the gate returns to the room cleanly (no teardown)', () => {
+    act(() => store().openKatabasis());
+    render();
+    const back = container!.querySelector<HTMLButtonElement>('.altar-turn-away')!;
+    act(() => back.click());
+    expect(store().katabasisPhase).toBeNull();
+    expect((store().state as GameState).inKatabasis).not.toBe(true);
+  });
+
+  it('committing at the gate enters Katabasis (teardown) and falls into the descent', () => {
+    act(() => store().openKatabasis());
+    render();
+    const cta = container!.querySelector<HTMLButtonElement>('.descend-cta')!;
+    act(() => cta.click()); // arm
+    act(() => cta.click()); // commit
+    expect((store().state as GameState).inKatabasis).toBe(true);
+    expect(container!.querySelector('.transit')).not.toBeNull(); // the Abyss descent transition
+  });
 });

@@ -55,7 +55,7 @@ export const ROOMS: Record<RoomId, RoomDef> = {
         id: 'altar',
         label: 'The Altar',
         rect: { x: 37, y: 48, w: 26, h: 35 },
-        action: { type: 'panel', panel: 'altar-menu' },
+        action: { type: 'altar' },
       },
       {
         id: 'door-left',

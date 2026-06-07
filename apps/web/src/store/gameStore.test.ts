@@ -134,6 +134,25 @@ describe('gameStore — Katabasis', () => {
     expect(store().katabasisPhase).toBe('menu');
   });
 
+  it('openKatabasis opens the gate without committing — no teardown until beginKatabasis', () => {
+    const s0 = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s0,
+        lifetime: { ...s0.lifetime, businesses: { ...s0.lifetime.businesses, gula_1: 2 } },
+      },
+    });
+    store().openKatabasis();
+    const st = store().state as GameState;
+    expect(store().katabasisPhase).toBe('menu'); // gate is showing…
+    expect(st.inKatabasis).not.toBe(true); // …but the lifetime is intact (nothing torn down)
+    expect(st.lifetime.businesses.gula_1).toBe(2);
+    // Turning back is a clean exit.
+    store().closeKatabasis();
+    expect(store().katabasisPhase).toBeNull();
+    expect((store().state as GameState).lifetime.businesses.gula_1).toBe(2);
+  });
+
   it('offers any amount (down to 1); levels are reached naturally at the threshold', () => {
     patchSouls(200);
     store().beginKatabasis();

@@ -143,7 +143,18 @@ interface GameStore {
   summon: (invocationId: string) => void;
   /** Dispel one active invocation of the given id. */
   banish: (invocationId: string) => void;
-  /** Open the Katabasis menu (returns any bound souls to the pool first, 02 §5). */
+  /**
+   * Open the full-screen Altar gate without committing — no teardown, only the menu pause. The
+   * in-room Altar routes here; from the gate the player either commits (`beginKatabasis`) or turns
+   * back (`closeKatabasis`). Safe to cancel: nothing in the lifetime has been torn down yet.
+   */
+  openKatabasis: () => void;
+  /**
+   * Commit to the descent from the Altar gate: tear down the lifetime's productive systems
+   * (businesses, toggles, actions, invocations — 02 §6) and freeze ticking while the player
+   * allocates. Sigil bindings persist; the carry-over roll + lifetime reset happen on the rise
+   * (`confirmKatabasis`).
+   */
   beginKatabasis: () => void;
   /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
   offer: (sin: Sin, amount: BigNum | number) => void;
@@ -459,6 +470,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().persist();
   },
 
+  openKatabasis: () => set({ katabasisPhase: 'menu', notice: null }),
   closeKatabasis: () => set({ katabasisPhase: null, notice: null }),
   closeRecap: () => set({ katabasisPhase: null, recap: null }),
 

@@ -2032,6 +2032,71 @@ body {
   min-height: 1.2em;
   font-size: 0.92rem;
 }
+/* Compact "your standing" readout on the gate — the old ledger, folded into the commit screen. */
+.katabasis-flow .altar-standing {
+  margin-top: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.katabasis-flow .altar-standing-label {
+  font-family: var(--font-inscribe);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  font-size: 0.66rem;
+  color: var(--faint);
+}
+.katabasis-flow .altar-standing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 0.45rem 1.6rem;
+  justify-content: center;
+}
+.katabasis-flow .altar-prince {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.katabasis-flow .altar-prince .ap-latin {
+  min-width: 5.4em;
+  text-align: right;
+}
+.katabasis-flow .altar-prince .pips {
+  font-size: 0.82rem;
+}
+.katabasis-flow .altar-standing-seals {
+  font-family: var(--font-inscribe);
+  font-style: italic;
+  font-size: 0.84rem;
+  color: var(--faint);
+}
+/* Turn back to the room — nothing has been torn down yet, so this is a clean exit. */
+.katabasis-flow .altar-turn-away {
+  margin-top: 1.4rem;
+  font-family: var(--font-inscribe);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--faint);
+  background: none;
+  border: 0;
+  padding: 0.4rem 0.6rem;
+  transition: color 0.2s ease;
+}
+.katabasis-flow .altar-turn-away:hover {
+  color: var(--bone);
+}
+@media (max-width: 560px) {
+  .katabasis-flow .altar-standing-grid {
+    grid-template-columns: repeat(2, auto);
+  }
+}
 
 /* ── SCREEN · Descent / Ascent transition (Abyss) ─────────────────────────── */
 .katabasis-flow .transit {
