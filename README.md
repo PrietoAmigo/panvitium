@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 742** (sim 527 · shared 52 · api 11 · web 152).
+**Current test count: 747** (sim 527 · shared 52 · api 11 · web 157).
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -494,6 +494,33 @@ surface. All three have shipped (no new mechanic — the only sim addition was a
 **Done** — all three surfaces drive live store/sim reads and are pinned by unit/adapter tests; the
 Playwright e2e steps are deferred to a browser-capable machine (they'd want a localStorage save-seed
 helper to reach the required state, a small task of its own).
+
+### 5.1b — Katabasis visual rework (Claude Design)
+
+_A faithful rebuild of the Katabasis surface from a dedicated Claude Design handoff — the descent as
+a cinematic sequence rather than a flat menu. Delivered in two gate-green slices; **K1 (the descent)
+has shipped**, K2 (the in-room altar retouch) is next._
+
+- **K1 — the cinematic descent** _(✓ shipped)_. The `menu` phase is now a full-screen flow: a commit
+  **Altar gate** → an Abyss descent transition → the **Court of Spires** (the eight Princes under
+  live lightning, with full-screen text takeovers bound to real `sinLevel` / `skillIntensity` /
+  `devotionForLevel`) ⇄ the **Goetia** (all 72 seals carved in a basalt slab, molten where souls are
+  bound, the _Semet_ #32 cell sealed until every Cardinal Sin is Rank 2) → an ascent transition → the
+  **"You Rise"** recap → the **Semet** reveal (overlaid, so it never loses the player's place in the
+  descent). All offering / binding drives the existing store actions — no sim or save change — and the
+  whole flow is scoped under `.katabasis-flow` so its local palette can't disturb the app. New: a
+  per-Prince lore block in `strings.sins`, the `IM Fell English SC` inscription face, and an
+  ambient-score hook. The in-room `AltarPanel` still triggers `beginKatabasis()`, which now opens the
+  full-screen gate as screen 0. Pinned by a `Katabasis.test.ts` render suite (altar gate, two-press
+  arming, "You Rise" reading committed state, reveal-over-flow); all seven screens were visually
+  verified against the handoff via Playwright. Runtime art (`katabasis{,2,3,_end}.png`,
+  `sigil-slab-{dark,molten}.png`) is placed under `public/assets/panvitium/katabasis/` on apply.
+- **K2 — in-room altar retouch** _(next)_. Restyle the existing `AltarPanel` ledger (Devotion /
+  bound-sigils, in the stone `PanelShell`) to the new aesthetic and reconcile it with the K1
+  full-screen gate.
+
+**Done when** both slices have shipped gate-green; the descent's audio asset lands (5.3) and the flow
+gains an e2e step on a browser-capable machine.
 
 ### 5.2 — New diegetic features (Claude Design + a small sim hook)
 
