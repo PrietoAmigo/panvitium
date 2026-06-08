@@ -590,6 +590,8 @@ function StatuesPlace({
         </>
       )}
 
+      <div className="kat-degrade-chrome" aria-hidden="true" />
+
       {showCaption && (
         <div className="hell-caption">
           <div className="t">{ended ? 'The Court Made Whole' : 'The Court of Spires'}</div>
@@ -827,6 +829,7 @@ function SigilsPlace({ state }: { state: GameState }): ReactElement {
           />
           <div className="slab-torch" aria-hidden="true" />
           <div className="slab-edge" aria-hidden="true" />
+          <div className="kat-degrade-chrome" aria-hidden="true" />
           {cells}
         </div>
       </div>
@@ -1136,6 +1139,33 @@ export function Katabasis(): ReactElement {
   return (
     <div className="katabasis-flow" role="dialog" aria-label={strings.katabasis.title}>
       <audio ref={audioRef} loop preload="auto" aria-hidden="true" />
+
+      {/* Backdrop degrade filter (Option B): block pixelation + posterise + tone crush. The R/G/B
+          transfer curves are IDENTICAL, so it changes resolution + contrast only and never shifts
+          hue — i.e. the full room treatment minus the red palette tint. Referenced from menus.css
+          as `filter: url(#kat-degrade)` on the scene backdrop layers. The 3px cell ≈ the rooms'
+          block:3; raise the feComposite/feMorphology sizes together for chunkier pixels. */}
+      <svg className="kat-degrade-defs" width="0" height="0" aria-hidden="true" focusable="false">
+        <filter
+          id="kat-degrade"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood x="1" y="1" width="1" height="1" floodColor="#fff" floodOpacity="1" />
+          <feComposite width="3" height="3" />
+          <feTile result="cellGrid" />
+          <feComposite in="SourceGraphic" in2="cellGrid" operator="in" />
+          <feMorphology operator="dilate" radius="1.5" />
+          <feComponentTransfer>
+            <feFuncR type="discrete" tableValues="0 0.13 0.27 0.42 0.58 0.75 1" />
+            <feFuncG type="discrete" tableValues="0 0.13 0.27 0.42 0.58 0.75 1" />
+            <feFuncB type="discrete" tableValues="0 0.13 0.27 0.42 0.58 0.75 1" />
+          </feComponentTransfer>
+        </filter>
+      </svg>
 
       {screen === 'altar' && (
         <AltarGate

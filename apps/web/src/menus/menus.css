@@ -2285,7 +2285,8 @@ body {
   inset: 0;
   background-size: cover;
   background-position: center bottom;
-  filter: brightness(0.55) saturate(0.65);
+  /* url(#kat-degrade): block pixelation + posterise + tone crush, no palette tint (see end of file) */
+  filter: brightness(0.55) saturate(0.65) url(#kat-degrade);
   opacity: 0.16;
 }
 .katabasis-flow .bg-strike {
@@ -2296,6 +2297,7 @@ body {
   opacity: 0;
   will-change: opacity;
   pointer-events: none;
+  filter: url(#kat-degrade);
 }
 .katabasis-flow .bg-whiteflash {
   position: absolute;
@@ -2316,6 +2318,7 @@ body {
   background-size: cover;
   background-position: center bottom;
   opacity: 1;
+  filter: url(#kat-degrade);
 }
 .katabasis-flow .end-glow {
   position: absolute;
@@ -2941,7 +2944,7 @@ body {
   height: 100%;
   object-fit: cover;
   border-radius: 10px;
-  filter: brightness(1.16) contrast(1.04);
+  filter: brightness(1.16) contrast(1.04) url(#kat-degrade);
 }
 .katabasis-flow .slab-molten {
   position: absolute;
@@ -2952,7 +2955,8 @@ body {
   border-radius: 10px;
   mix-blend-mode: screen;
   pointer-events: none;
-  filter: saturate(1.15) brightness(1.05) drop-shadow(0 0 6px rgba(255, 90, 40, 0.55));
+  filter: saturate(1.15) brightness(1.05) drop-shadow(0 0 6px rgba(255, 90, 40, 0.55))
+    url(#kat-degrade);
   animation: kat-molten-breathe 2.8s ease-in-out infinite;
 }
 @keyframes kat-molten-breathe {
@@ -3681,4 +3685,69 @@ body {
   font-weight: 700;
   line-height: 1;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Katabasis degrade treatment ──────────────────────────────────────────────
+   The two descent scenes (Prince's court, the Goetia slab) are animated, layered
+   DOM rather than static room plates, so they don't flow through the canvas
+   DegradePass. To still read at the room fidelity, their backdrop image layers
+   carry `url(#kat-degrade)` (block pixelation + posterise + tone crush, equal RGB
+   channels so there is NO palette/red tint — the one room knob we drop), and this
+   chrome overlay adds the CRT scanlines + animated grain over the backdrop only.
+   The statue / seal hotspots and captions sit above it and stay crisp, exactly as
+   the rooms keep their UI sharp over a degraded plate. Tune the block by editing
+   the cell size in the #kat-degrade filter (Katabasis.tsx) — 3 ≈ the rooms' block:3. */
+.katabasis-flow .kat-degrade-chrome {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* scanlines ≈ DegradeSettings.scanlines 0.25: a 1px dark line every 3px */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.24) 0 1px,
+    rgba(0, 0, 0, 0) 1px 3px
+  );
+  mix-blend-mode: multiply;
+}
+/* In the Prince's scene the chrome must sit above the scene's own vignette
+   (z-index 15) but below the caption (18) and statue hotspots (20). In the Goetia
+   scene the chrome lives inside .slab-frame and relies on DOM order (it precedes
+   the seal cells), so it needs no explicit z-index there. */
+.katabasis-flow .scene.hell > .kat-degrade-chrome {
+  z-index: 16;
+}
+/* Animated film grain ≈ DegradeSettings.grain 0.03 + flicker — a tiled fractal-noise
+   tile that shifts per-frame (steps) with a gentle opacity flicker. */
+.katabasis-flow .kat-degrade-chrome::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  animation:
+    kat-grain-shift 0.55s steps(5) infinite,
+    kat-grain-flicker 3.1s ease-in-out infinite;
+}
+@keyframes kat-grain-shift {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(-9%, 7%);
+  }
+}
+@keyframes kat-grain-flicker {
+  0%,
+  100% {
+    opacity: 0.05;
+  }
+  50% {
+    opacity: 0.09;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .katabasis-flow .kat-degrade-chrome::before {
+    animation: none;
+  }
 }
