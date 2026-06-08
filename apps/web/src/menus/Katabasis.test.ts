@@ -1,9 +1,11 @@
 /**
- * Render smoke tests for the reworked cinematic Katabasis flow (Claude Design handoff). These pin
- * the wiring the visual rework introduced: the descent opens on the full-screen Altar commit gate,
- * the gate arms on the first press, the recap reads "You Rise" off the committed state, and the
- * Eternal-Sin reveal overlays the still-mounted flow (so closing it preserves the player's place).
- * The store actions and sim math themselves are covered by their own suites.
+ * Render smoke tests for the cinematic Katabasis flow (Claude Design handoff + seal-gate rework).
+ * These pin the wiring the visual rework introduced: the descent opens on the full-screen Altar
+ * commit gate (now a ritual seal circle), the seal arms on the first press and commits on the
+ * second (the two-press safeguard, preserved), the "Status quo" action opens the read-only Ledger
+ * (Cardinal-Sin standing + bound-sigil effects), the recap reads "You Rise" off the committed
+ * state, and the Eternal-Sin reveal overlays the still-mounted flow. The store actions and sim math
+ * themselves are covered by their own suites.
  */
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { act, createElement } from 'react';
@@ -57,29 +59,41 @@ afterEach(() => {
   root = null;
 });
 
+/** Find an inscribed gate action ("Turn away" / "Status quo") by its label text. */
+function action(label: string): HTMLButtonElement {
+  const found = Array.from(container!.querySelectorAll<HTMLButtonElement>('.altar-action')).find(
+    (a) => a.querySelector('.altar-action-label')?.textContent === label,
+  );
+  if (!found) throw new Error(`no altar action labelled "${label}"`);
+  return found;
+}
+
 describe('Katabasis flow — orchestrator', () => {
   it('renders nothing when idle (no phase, no reveal)', () => {
     render();
     expect(container!.querySelector('.katabasis-flow')).toBeNull();
   });
 
-  it('opens the descent on the full-screen Altar commit gate', () => {
+  it('opens the descent on the full-screen Altar seal gate', () => {
     useGameStore.setState({ katabasisPhase: 'menu' });
     render();
-    expect(container!.querySelector('.altar-kicker')?.textContent).toBe('The Altar Room');
     expect(container!.querySelector('.altar-title')?.textContent).toBe('Katabasis');
-    expect(container!.querySelector('.descend-cta')).not.toBeNull();
+    // The central sigil is the descend button; the two inscribed gates sit beneath it.
+    expect(container!.querySelector('.kat-seal-btn')).not.toBeNull();
+    expect(container!.querySelectorAll('.altar-action').length).toBe(2);
+    expect(action('Turn away')).toBeTruthy();
+    expect(action('Status quo')).toBeTruthy();
     // Not yet armed.
-    expect(container!.querySelector('.descend-cta--armed')).toBeNull();
+    expect(container!.querySelector('.kat-seal-wrap.is-armed')).toBeNull();
   });
 
-  it('arms the Altar CTA on the first press (two-press commit)', () => {
+  it('arms the seal on the first press (two-press commit)', () => {
     useGameStore.setState({ katabasisPhase: 'menu' });
     render();
-    const cta = container!.querySelector<HTMLButtonElement>('.descend-cta')!;
-    act(() => cta.click());
-    expect(container!.querySelector('.descend-cta--armed')).not.toBeNull();
-    expect(container!.querySelector('.descend-cta')?.textContent).toContain('there is no return');
+    const seal = container!.querySelector<HTMLButtonElement>('.kat-seal-btn')!;
+    act(() => seal.click());
+    expect(container!.querySelector('.kat-seal-wrap.is-armed')).not.toBeNull();
+    expect(container!.querySelector('.kat-seal-hint')?.textContent).toContain('there is no return');
   });
 
   it('renders the "You Rise" recap off the committed state, with ranks held', () => {
@@ -114,19 +128,14 @@ describe('Katabasis flow — orchestrator', () => {
     act(() => store().openKatabasis());
     render();
     expect(container!.querySelector('.altar-gate')).not.toBeNull();
+    expect(container!.querySelector('.kat-seal-btn')).not.toBeNull();
     expect((store().state as GameState).inKatabasis).not.toBe(true);
-    // The standing readout (folded-in ledger) shows the eight Princes + the seal tally.
-    expect(container!.querySelectorAll('.altar-prince').length).toBe(8);
-    expect(container!.querySelector('.altar-standing-seals')?.textContent).toContain(
-      'No seals bound',
-    );
   });
 
   it('turning away at the gate returns to the room cleanly (no teardown)', () => {
     act(() => store().openKatabasis());
     render();
-    const back = container!.querySelector<HTMLButtonElement>('.altar-turn-away')!;
-    act(() => back.click());
+    act(() => action('Turn away').click());
     expect(store().katabasisPhase).toBeNull();
     expect((store().state as GameState).inKatabasis).not.toBe(true);
   });
@@ -134,10 +143,52 @@ describe('Katabasis flow — orchestrator', () => {
   it('committing at the gate enters Katabasis (teardown) and falls into the descent', () => {
     act(() => store().openKatabasis());
     render();
-    const cta = container!.querySelector<HTMLButtonElement>('.descend-cta')!;
-    act(() => cta.click()); // arm
-    act(() => cta.click()); // commit
+    const seal = container!.querySelector<HTMLButtonElement>('.kat-seal-btn')!;
+    act(() => seal.click()); // arm
+    act(() => seal.click()); // commit
     expect((store().state as GameState).inKatabasis).toBe(true);
     expect(container!.querySelector('.transit')).not.toBeNull(); // the Abyss descent transition
+  });
+
+  it('opens the Ledger from the gate, listing the eight Princes (fresh = none seated)', () => {
+    act(() => store().openKatabasis());
+    render();
+    act(() => action('Status quo').click());
+    expect(container!.querySelector('.ledger-title')?.textContent).toBe('The Ledger');
+    // Every Cardinal Sin gets a card; a fresh game seats none and binds no seals.
+    expect(container!.querySelectorAll('.ledger-sin').length).toBe(8);
+    expect(container!.querySelectorAll('.ledger-sin.is-dormant').length).toBe(8);
+    const stats = Array.from(container!.querySelectorAll('.ls-stat')).map(
+      (s) => s.textContent ?? '',
+    );
+    expect(stats.some((t) => t.includes('0 / 8') && t.includes('Princes Seated'))).toBe(true);
+    expect(container!.querySelector('.ledger-sigils-empty')).not.toBeNull();
+    expect(container!.querySelector('.ledger-sigil')).toBeNull();
+  });
+
+  it('lists a bound sigil in the Ledger by effect only (no seal name)', () => {
+    // Marbas #5 — always visible, wired effect "Influence gain ↑".
+    patch({ sigilBindings: { 5: bn(100) } });
+    act(() => store().openKatabasis());
+    render();
+    act(() => action('Status quo').click());
+    const sig = container!.querySelector('.ledger-sigil');
+    expect(sig).not.toBeNull();
+    const effect = sig!.querySelector('.ls-effect')?.textContent ?? '';
+    expect(effect).toContain('Influence gain');
+    expect(effect).not.toContain('Marbas'); // effects only — never the seal name
+    expect(sig!.querySelector('.ls-dir')?.textContent).toContain('\u2191');
+  });
+
+  it('returns to the gate from the Ledger via the back link', () => {
+    act(() => store().openKatabasis());
+    render();
+    act(() => action('Status quo').click());
+    expect(container!.querySelector('.ledger')).not.toBeNull();
+    const back = container!.querySelector<HTMLButtonElement>('.ledger-back')!;
+    act(() => back.click());
+    expect(container!.querySelector('.ledger')).toBeNull();
+    expect(container!.querySelector('.altar-gate')).not.toBeNull();
+    expect(container!.querySelector('.kat-seal-btn')).not.toBeNull();
   });
 });

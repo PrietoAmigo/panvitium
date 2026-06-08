@@ -103,9 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 696** (sim 474 · shared 54 · api 11 · web 157).
+**Current test count: 699** (sim 474 · shared 54 · api 11 · web 160).
 
-> **Latest change — reprobate subtypes & the Vitium conversion mechanic removed.** Reprobates are
+> **Latest change — Altar commit gate redesigned as a ritual seal circle + a new Status Quo
+> "Ledger" screen.** The prior slab-with-candles drop target is replaced (Claude Design handoff) by
+> a full-screen seal: the central Goetic sigil _is_ the descend button, ringed by counter-rotating
+> Latin script (`PER VITIA, AD SOLIUM`). The two-press commit safeguard is preserved — the first
+> press arms the seal, the second commits the (irreversible) descent — and reduced-motion stills the
+> ring, pulse, and embers. Beneath it sit two inscribed gates: **Turn away** (back to the Altar Room)
+> and **Status quo**, which opens the new read-only **Ledger** — each Cardinal Sin's rank with its
+> Skill and per-rank Level effects, then every _bound_ sigil's effect (effects only, no seal names or
+> art; the Semet lock is respected). All wired to live state (`sinLevel`, `strings.sins`,
+> `state.sigilBindings`); no static sample data. Ships the `seal-panvitium.png` glyph. The
+> `buildAltar` view-model is retired from the gate but kept (still tested) for future reuse.
+
+> **Prior change — reprobate subtypes & the Vitium conversion mechanic removed.** Reprobates are
 > now a single undifferentiated pool (`lifetime.reprobates` is one integer). The conversion pool,
 > `biasedSubtype`, the eight per-subtype rate penalties, and the per-Sin Vitium-gold boost are gone;
 > murder is re-anchored to a per-capita rate on the whole population; Pogrom culls the pool (no

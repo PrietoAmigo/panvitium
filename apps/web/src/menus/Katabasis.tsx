@@ -1,6 +1,8 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -23,15 +25,16 @@ import {
   floor,
   isZero,
   bn,
+  add,
   sub,
   div,
+  gt,
   type BigNum,
   type Sin,
   type GameState,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
-import { buildAltar } from '../game/altar.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
 // the two carved-slab layers are placed here on apply (they live at the repo root + the design zip).
@@ -907,81 +910,334 @@ function AmbientEmbers(): ReactElement {
   );
 }
 
+// ── The Altar commit gate (screen 0): the ritual seal circle ─────────────────────────────────────
+// A redesign of the prior slab-with-candles drop target (Claude Design handoff). The central Goetic
+// sigil IS the descend button, ringed by counter-rotating Latin script. The two-press safeguard
+// from the prior gate is preserved on the seal: the first press arms it, the second commits the
+// (irreversible) descent; it auto-disarms after a few seconds. "Turn away" routes back to the real
+// Altar Room (the room layer) via the store's close action — the prototype's in-screen altar-room
+// overlay is intentionally not ported. "Status quo" opens the Ledger (below).
+const SEAL_SRC = `${ASSET}/seal-panvitium.png`;
+const RING_PHRASE = 'PER VITIA, AD SOLIUM';
+const RING_RADIUS = 118; // matches the #kat-ring-path arc radius
+
 function AltarGate({
-  state,
   onDescend,
   onTurnAway,
+  onStatusQuo,
 }: {
-  state: GameState;
   onDescend: () => void;
   onTurnAway: () => void;
+  onStatusQuo: () => void;
 }): ReactElement {
+  const svgRef = useRef<SVGSVGElement>(null);
+  // Whole phrases evenly spaced around the ring — computed from measured text so a phrase is never
+  // clipped at the seam. Defaults to 2 (opposite each other) when measurement is unavailable
+  // (jsdom, or before the webfont loads).
+  const [phraseCount, setPhraseCount] = useState(2);
+  // Two-press commit safeguard: the first press arms the seal, the second descends. Auto-disarms.
   const [armed, setArmed] = useState(false);
+
   useEffect(() => {
     if (!armed) return;
     const t = setTimeout(() => setArmed(false), 4000);
     return () => clearTimeout(t);
   }, [armed]);
-  const offered = SINS.some((s) => !isZero(state.devotion[s]));
-  const { sins, boundSigils } = buildAltar(state);
+
+  useLayoutEffect(() => {
+    let cancelled = false;
+    const build = (): void => {
+      const svg = svgRef.current;
+      if (!svg || cancelled) return;
+      const NS = 'http://www.w3.org/2000/svg';
+      const measure = (s: string): number => {
+        const t = document.createElementNS(NS, 'text');
+        t.setAttribute('class', 'kat-seal-text');
+        t.style.visibility = 'hidden';
+        t.textContent = s;
+        svg.appendChild(t);
+        let len = 0;
+        try {
+          // jsdom (tests) doesn't implement SVG text measurement — fall back to the default count.
+          len = typeof t.getComputedTextLength === 'function' ? t.getComputedTextLength() : 0;
+        } catch {
+          len = 0;
+        }
+        svg.removeChild(t);
+        return len;
+      };
+      const circumference = 2 * Math.PI * RING_RADIUS;
+      const phraseLen = measure(RING_PHRASE);
+      const gapUnit = measure('\u00B7 ');
+      if (!phraseLen || !gapUnit) return; // measurement unavailable — keep the default of 2
+      const n = Math.max(1, Math.floor(circumference / (phraseLen + 4 * gapUnit)));
+      if (!cancelled) setPhraseCount(n);
+    };
+    if (document.fonts?.ready) void document.fonts.ready.then(build);
+    build();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const ticks = Array.from({ length: 48 }, (_, i) => {
+    const a = (i / 48) * Math.PI * 2;
+    const r1 = 150;
+    const r2 = i % 4 === 0 ? 138 : 144;
+    return (
+      <line
+        key={i}
+        className="kat-seal-tick"
+        x1={190 + Math.cos(a) * r1}
+        y1={190 + Math.sin(a) * r1}
+        x2={190 + Math.cos(a) * r2}
+        y2={190 + Math.sin(a) * r2}
+        strokeWidth={i % 4 === 0 ? 1.4 : 0.7}
+      />
+    );
+  });
+
+  const phrases = Array.from({ length: phraseCount }, (_, i) => (
+    <text key={i} className="kat-seal-text" textAnchor="middle">
+      <textPath href="#kat-ring-path" startOffset={`${((i + 0.5) / phraseCount) * 100}%`}>
+        {RING_PHRASE}
+      </textPath>
+    </text>
+  ));
+
+  const press = (): void => {
+    if (armed) {
+      setArmed(false);
+      onDescend();
+    } else {
+      setArmed(true);
+    }
+  };
+
   return (
     <div className="scene altar-gate">
       <div className="altar-fog" aria-hidden="true" />
       <AmbientEmbers />
       <div className="altar-inner">
-        <div className="altar-kicker">The Altar Room</div>
         <h1 className="altar-title">Katabasis</h1>
-        <p className="altar-verse">
-          Lay your work upon the stone and let the soul go down into Hell. There you will pay the
-          Princes their Devotion and bind your souls to the seals{' '}
-          {offered ? 'once more' : 'of the lesser key'}.
-        </p>
 
-        <div className="altar-standing">
-          <div className="altar-standing-label">Your standing before the Princes</div>
-          <div className="altar-standing-grid">
-            {sins.map((s) => (
-              <div className="altar-prince" key={s.latin}>
-                <span className="ap-latin">{s.latin}</span>
-                <Pips level={s.level} max={MAX_SIN_LEVEL} />
+        <div className={`kat-seal-wrap${armed ? ' is-armed' : ''}`}>
+          <div className="kat-seal-core" aria-hidden="true" />
+          <svg className="kat-seal-svg" viewBox="0 0 380 380" ref={svgRef} aria-hidden="true">
+            <defs>
+              <path
+                id="kat-ring-path"
+                d="M 190,190 m -118,0 a 118,118 0 1,1 236,0 a 118,118 0 1,1 -236,0"
+              />
+            </defs>
+            <circle
+              className="kat-seal-stroke"
+              cx="190"
+              cy="190"
+              r="170"
+              strokeWidth="1"
+              opacity="0.5"
+            />
+            <g className="kat-seal-spin">
+              <circle className="kat-seal-stroke" cx="190" cy="190" r="150" strokeWidth="1.4" />
+              {ticks}
+            </g>
+            <circle
+              className="kat-seal-stroke"
+              cx="190"
+              cy="190"
+              r="132"
+              strokeWidth="0.8"
+              opacity="0.7"
+            />
+            <g className="kat-seal-spin-rev">{phrases}</g>
+            <circle className="kat-seal-stroke" cx="190" cy="190" r="92" strokeWidth="1.2" />
+          </svg>
+          <button
+            type="button"
+            className="kat-seal-btn"
+            onClick={press}
+            aria-label={
+              armed ? 'Confirm the descent \u2014 there is no return' : 'Press the seal to descend'
+            }
+          >
+            <img className="kat-seal-glyph" src={SEAL_SRC} alt="" draggable={false} />
+          </button>
+        </div>
+
+        <div className={`kat-seal-hint${armed ? ' is-armed' : ''}`}>
+          {armed
+            ? 'Press the seal again \u2014 there is no return.'
+            : 'Press the seal to begin the descent.'}
+        </div>
+
+        <div className="altar-actions">
+          <button type="button" className="altar-action" onClick={onTurnAway}>
+            <span className="altar-action-label">Turn away</span>
+            <span className="altar-action-sub">climb back to the altar room</span>
+          </button>
+          <button type="button" className="altar-action" onClick={onStatusQuo}>
+            <span className="altar-action-label">Status quo</span>
+            <span className="altar-action-sub">the ledger of Devotion</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Split a boon string's trailing direction arrow off so the ledger can colour it separately. */
+function splitBoon(desc: string): { text: string; dir: string } {
+  const trimmed = desc.trimEnd();
+  const last = trimmed.slice(-1);
+  if (last === '\u2191' || last === '\u2193') {
+    return { text: trimmed.slice(0, -1).trimEnd(), dir: last };
+  }
+  return { text: trimmed, dir: '' };
+}
+
+// One Cardinal Sin's row in the Ledger: Latin/English name, rank pips, Prince + epithet, and the
+// two effect lines (the always-on Skill, and the per-rank Level effect). Dormant (Rank 0) sins dim
+// their level row, matching the handoff.
+function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): ReactElement {
+  const info = strings.sins[sinKey];
+  const level = sinLevel(state.devotion[sinKey]);
+  const dormant = level === 0;
+  return (
+    <div className={`ledger-sin${dormant ? ' is-dormant' : ''}`}>
+      <div className="ledger-sin-top">
+        <div className="ledger-sin-name">
+          <span className="ls-latin">{info.latin}</span>
+          <span className="ls-eng">{info.english}</span>
+        </div>
+        <Pips level={level} max={MAX_SIN_LEVEL} />
+      </div>
+      <div className="ledger-sin-prince">
+        {info.prince} <span aria-hidden="true">&middot;</span>{' '}
+        <span className="ls-epithet">{info.epithet}</span>
+      </div>
+      <div className="ledger-sin-effects">
+        <div className="ledger-eff">
+          <span className="ls-tag">Skill</span>
+          <span className="ls-txt">
+            <span className="ls-skill">{info.skill}</span> &mdash; {info.skillEffect}
+          </span>
+        </div>
+        <div className="ledger-eff is-lvl">
+          <span className="ls-tag is-lvl">Level {level}</span>
+          <span className="ls-txt">{info.levelEffect}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The Ledger ("Status Quo") — the player's current standing, reached from the Altar gate. Read-only:
+ * each Cardinal Sin's rank + skill/level effects, then every BOUND sigil's effect (effects only — no
+ * seal names, no art, per the design). All wired to live state: Sin levels via `sinLevel`, the
+ * eight Princes' lore from `strings.sins`, bound sigils from `state.sigilBindings` (visible + souls
+ * bound), and a derived summary. Sealed sigils (Semet, until every Sin is Rank ≥ 2) never surface.
+ */
+function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): ReactElement {
+  // Total Devotion = the sum offered across the eight Princes (not the Eternal column).
+  const totalDevotion = useMemo(
+    () => SINS.reduce((acc, key) => add(acc, state.devotion[key]), bn(0)),
+    [state.devotion],
+  );
+  const seated = SINS.filter((key) => sinLevel(state.devotion[key]) >= 1).length;
+
+  // Bound sigils — effects only, sorted most-bound first. A seal appears only once it has souls
+  // bound and is visible (Semet stays sealed until the gate opens). Effect text + arrow come from
+  // the authoritative `strings.sigils.descriptions`, falling back to the local boon table.
+  const boundSigils = useMemo(() => {
+    const rows: Array<{ id: number; text: string; dir: string; bound: BigNum }> = [];
+    for (let id = 1; id <= 72; id++) {
+      const v = state.sigilBindings[id];
+      if (v === undefined || isZero(v)) continue;
+      const def = sigilById(id);
+      if (def && !sigilVisible(state, def)) continue;
+      const desc =
+        strings.sigils.descriptions[id] ?? GOETIA_BOON[id] ?? 'A seal of the lesser key.';
+      const { text, dir } = splitBoon(desc);
+      rows.push({ id, text, dir, bound: v });
+    }
+    rows.sort((a, b) => (gt(b.bound, a.bound) ? 1 : gt(a.bound, b.bound) ? -1 : a.id - b.id));
+    return rows;
+  }, [state]);
+
+  return (
+    <div className="scene ledger">
+      <div className="ledger-wrap">
+        <button type="button" className="ledger-back" onClick={onBack}>
+          <span className="ls-arrow" aria-hidden="true">
+            {'\u2190'}
+          </span>{' '}
+          Return to the altar
+        </button>
+
+        <div className="ledger-masthead">
+          <div className="ledger-eyebrow">Status Quo</div>
+          <h1 className="ledger-title">The Ledger</h1>
+          <p className="ledger-dek">
+            The Devotion owed each Prince and the rank it buys you, the powers your Sins now exert,
+            and the effects of every sigil bound to your soul.
+          </p>
+        </div>
+
+        <div className="ledger-summary">
+          <div className="ls-stat">
+            <div className="ls-num">{formatBigNum(totalDevotion)}</div>
+            <div className="ls-lab">Total Devotion</div>
+          </div>
+          <div className="ls-stat">
+            <div className="ls-num">{seated} / 8</div>
+            <div className="ls-lab">Princes Seated</div>
+          </div>
+          <div className="ls-stat">
+            <div className="ls-num">{boundSigils.length}</div>
+            <div className="ls-lab">Sigils Bound</div>
+          </div>
+        </div>
+
+        <div className="ledger-section-head">
+          <h2>Cardinal Sins</h2>
+          <div className="ls-rule" aria-hidden="true" />
+          <div className="ls-count">levels &amp; effects</div>
+        </div>
+        <div className="ledger-sins">
+          {SINS.map((key) => (
+            <SinLedgerCard key={key} sinKey={key} state={state} />
+          ))}
+        </div>
+
+        <div className="ledger-section-head">
+          <h2>Bound Sigils</h2>
+          <div className="ls-rule" aria-hidden="true" />
+          <div className="ls-count">effects only</div>
+        </div>
+        {boundSigils.length === 0 ? (
+          <p className="ledger-sigils-empty">
+            No seals burn yet. Bind souls to the Goetia and their effects will surface here.
+          </p>
+        ) : (
+          <div className="ledger-sigils">
+            {boundSigils.map((g) => (
+              <div className="ledger-sigil" key={g.id}>
+                <span className="ls-effect">
+                  {g.text}
+                  {g.dir && <span className="ls-dir"> {g.dir}</span>}
+                </span>
+                <span className="ls-bound">
+                  <b>{formatBigNum(g.bound)}</b> souls
+                </span>
               </div>
             ))}
           </div>
-          <div className="altar-standing-seals">
-            {boundSigils.length === 0
-              ? 'No seals bound'
-              : `${boundSigils.length} of 72 seals bound`}
-          </div>
-        </div>
-
-        <div className={`altar-slab${armed ? ' is-armed' : ''}`}>
-          <span className="candle l" aria-hidden="true" />
-          <span className="candle r" aria-hidden="true" />
-          <span className="altar-slab-face">
-            <span className="altar-glyph">{'\u26B6'}</span>
-            <span className="altar-ring" aria-hidden="true" />
-          </span>
-        </div>
-        <button
-          type="button"
-          className={`descend-cta${armed ? ' descend-cta--armed' : ''}`}
-          onClick={() => {
-            if (armed) {
-              setArmed(false);
-              onDescend();
-            } else {
-              setArmed(true);
-            }
-          }}
-        >
-          {armed ? 'Descend \u2014 there is no return' : 'Lay upon the altar'}
-        </button>
-        <div className="descend-warn">
-          {armed ? 'Press again to commit the descent.' : '\u00A0'}
-        </div>
-        <button type="button" className="altar-turn-away" onClick={onTurnAway}>
-          Turn away &mdash; climb back to the altar room
-        </button>
+        )}
+        <p className="ledger-sigils-note">
+          A sigil shows here only once enough souls are bound for it to bite.
+        </p>
       </div>
     </div>
   );
@@ -1047,7 +1303,7 @@ function HellFloor({
   );
 }
 
-type Screen = 'altar' | 'descending' | 'statues' | 'sigils' | 'ascending';
+type Screen = 'altar' | 'ledger' | 'descending' | 'statues' | 'sigils' | 'ascending';
 
 /**
  * Katabasis — the cinematic demonic descent (02 §6/§10), rebuilt from the Claude Design handoff and
@@ -1169,14 +1425,15 @@ export function Katabasis(): ReactElement {
 
       {screen === 'altar' && (
         <AltarGate
-          state={state}
           onDescend={() => {
             begin(); // commit: tear down the lifetime + freeze, then fall
             setScreen('descending');
           }}
           onTurnAway={() => close()}
+          onStatusQuo={() => setScreen('ledger')}
         />
       )}
+      {screen === 'ledger' && <Ledger state={state} onBack={() => setScreen('altar')} />}
       {screen === 'descending' && <Transition kind="descending" onDone={arrive} />}
       {screen === 'ascending' && <Transition kind="ascending" onDone={() => confirm()} />}
 
