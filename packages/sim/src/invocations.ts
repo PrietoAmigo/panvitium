@@ -33,13 +33,7 @@ import { sigilInvokingPower, sigilCostReductionByChannel } from './sigils.js';
 import { totalInvokingPower, sigilEffectMultiplier } from './maleficia.js';
 import { mintSouls } from './population.js';
 import { sinLevel } from './progression.js';
-import {
-  REPROBATE_SUBTYPES,
-  totalReprobates,
-  type GameState,
-  type ReprobateSubtype,
-  type Sin,
-} from './state.js';
+import { totalReprobates, type GameState, type Sin } from './state.js';
 import { computeModifiers } from './modifiers.js';
 import { advanceRunnerCycles } from './runner.js';
 import { type Tier } from './probability.js';
@@ -244,22 +238,14 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 13,
     sinLevel: 3,
     maxActive: 1,
-    // Apex Vanagloria (free). Effect (dynamics.ts `conversionBiasMul`): the Celebrity subtype's
-    // weight in the conversion-bias draw is multiplied 100× — businesses already biased toward
-    // Celebrity (Vanagloria-mercatura) convert almost entirely to Celebrity while Specunitas is
-    // active. The same hook will carry Eligos #15 / Phenex #37 sigil bonuses later.
+    // Apex Vanagloria (free). Its only effect was the conversion-bias hook (Celebrity subtype),
+    // which was removed with reprobate subtypes. EFFECTLESS for now — flagged for re-homing in the
+    // orphaned-sigils/invocations slice (Slice 4).
   },
 } as const;
 
 /** All wired invocation ids in stable order. */
 export const INVOCATION_IDS: readonly string[] = Object.freeze(Object.keys(INVOCATIONS));
-
-/** A zeroed per-subtype reprobate map (used by the Erinyes kill-all). */
-function zeroReprobates(): Record<ReprobateSubtype, number> {
-  const out = {} as Record<ReprobateSubtype, number>;
-  for (const t of REPROBATE_SUBTYPES) out[t] = 0;
-  return out;
-}
 
 /** Lookup; undefined for unknown ids. */
 export function invocationById(id: string): InvocationDef | undefined {
@@ -380,7 +366,7 @@ export function invoke(state: GameState, id: string): InvokeResult {
       working = mintSouls(working, population);
       working = {
         ...working,
-        lifetime: { ...working.lifetime, reprobates: zeroReprobates() },
+        lifetime: { ...working.lifetime, reprobates: 0 },
       };
     }
     // Dispel any active Morpheus, cancel its pending Katabasis effect, and lock it out.

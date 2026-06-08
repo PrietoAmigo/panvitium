@@ -103,7 +103,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 751** (sim 527 · shared 52 · api 11 · web 161).
+**Current test count: 696** (sim 474 · shared 54 · api 11 · web 157).
+
+> **Latest change — reprobate subtypes & the Vitium conversion mechanic removed.** Reprobates are
+> now a single undifferentiated pool (`lifetime.reprobates` is one integer). The conversion pool,
+> `biasedSubtype`, the eight per-subtype rate penalties, and the per-Sin Vitium-gold boost are gone;
+> murder is re-anchored to a per-capita rate on the whole population; Pogrom culls the pool (no
+> target) and Defixio curses the pool (no subtype). This **bumped the save schema to v2** with the
+> project's first real migration (`migrations/v1-to-v2.ts`: sum old per-subtype counts, drop
+> `conversionPool`, drop `defixio.target`). Three ceremonies whose only effect was conversion or a
+> subtype penalty (**Outrage Cycle, Vegas, Crusade**) are kept as compile-green stubs, and the
+> subtype/conversion-keyed sigils plus Specunitas are neutralized to an `inert` effect (IDs
+> preserved) — both flagged for the forthcoming Vitium Mercatura / Vitium Compositum rework and an
+> orphaned-sigils pass. The historical build-log rows below predate this change and are kept as a
+> record; where they describe subtypes/conversion, the single-pool model above supersedes them.
 
 **Phases 2 (infrastructure), 3 (gameplay), and 4 (content depth) are complete for code.** The
 skeleton builds, tests, containerizes, and is CI-gated; the full core loop is implemented, tested,
@@ -116,16 +129,17 @@ Implemented gameplay (each slice pinned with Vitest):
 - **Devotion & the modifier engine** — Cardinal Sin levels (`180^X`) and skill intensities, composed
   through a single `computeModifiers` point (ADR-022).
 - **Katabasis** — the descent flow, offering menu, recap, and unspent-soul carry-over.
-- **Reprobate dynamics** — fractional generation / suicide / murder / conversion pools (02 §9).
+- **Reprobate dynamics** — fractional generation / suicide / murder pools over one undifferentiated
+  reprobate pool (02 §9); murder is a per-capita cull of the whole population.
 - **_Depraedatio_** — _Vitium Mercatura_ businesses and _Vitium Compositum_ ceremony toggles.
 - **Acolytes**, **invocations** (all 18 wired — autonomous-runner channel for the Familiar / Imp /
   Upir, static modifier-bundle contributions for the demonic court, per-tick or per-invoke
   side-effects for the apex entities), and **maleficia** (_Indagatio_ / _Emptio_).
 - **Apex entities** — Astiwihad + Aurevora (per-tick effects in `apex.ts`), Erinyes + Morpheus
   (mutually-exclusive Katabasis-carryover apexes; Morpheus freezes the lifetime, Erinyes kills
-  every reprobate at invoke), Specunitas (conversion-bias hook).
+  every reprobate at invoke), Specunitas (apex Vanagloria; effect retired with subtypes).
 - **Sigils** — the 72-sigil recoverable prestige axis, with binding curves, Katabasis carry-over
-  bonuses (gold / maleficia / unconverted), and the _Semet_ gate.
+  bonuses (gold / maleficia / reprobate), and the _Semet_ gate.
 - **Achievements** — a static catalog evaluated each tick, with an unlock toast and a ledger panel.
 - **Panvitium** — the namesake endgame ritual.
 - **The Eternal Sin** — the ninth-Sin reveal (_Semet_), with the total runtime as the score.

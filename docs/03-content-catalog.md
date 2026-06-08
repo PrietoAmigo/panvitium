@@ -171,10 +171,17 @@ Per-tier weights for *Emptio* are in the spreadsheet (tiers not listed above car
 
 ## 3. Reprobate types
 
+> **SUPERSEDED (ADR-024, 2026-06-07).** Reprobate subtypes and the Vitium conversion mechanic were
+> removed. Reprobates are now a single undifferentiated pool: there are no subtypes, no conversion,
+> and no per-subtype penalties or per-Sin Vitium-gold boost. Murder is a per-capita cull of the whole
+> population; a reprobate loss simply decrements the pool. The subtype table and conversion rules
+> below are retained only as historical design context — they do not describe the current engine, and
+> the Vitium Mercatura / Vitium Compositum sections (§2.3) are pending a redesign that fills the gap
+> the conversion dimension left.
+
 All reprobates yield 1 soul on death. This cannot be changed — 1 person, 1 soul.
-Reprobates converted to a Cardinal Sin cannot be converted to another Cardinal Sin, except by the explicit effect of a sigil, maleficium, or opus (Ose #57, Orias #59).
 All reprobates have a small base suicide chance per second — applied population-wide, accumulated in `suicidePool` and floored on integer apply (the rate lives in the spreadsheet `Globals`). See `02 §9` for the worked example and the per-pool tick math.
-When an outcome triggers a reprobate loss, the loss draws across all reprobate subtypes (including unconverted) chosen randomly from the seeded RNG, unless the outcome explicitly restricts the subtype.
+When an outcome triggers a reprobate loss, the loss decrements the single reprobate pool (deaths still mint one soul each), unless the outcome explicitly says otherwise.
 
 | Subtype | Sin | Mechanical role |
 |---|---|---|

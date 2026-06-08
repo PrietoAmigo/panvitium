@@ -34,45 +34,10 @@ export const SINS: readonly Sin[] = [
   'superbia',
 ] as const;
 
-/** Reprobate subtypes (03 §3). `reprobate` is the unconverted default. */
-export type ReprobateSubtype =
-  | 'reprobate'
-  | 'glutton'
-  | 'degenerate'
-  | 'gambler'
-  | 'nihilist'
-  | 'choleric'
-  | 'husk'
-  | 'celebrity'
-  | 'sigma';
-
-export const REPROBATE_SUBTYPES: readonly ReprobateSubtype[] = [
-  'reprobate',
-  'glutton',
-  'degenerate',
-  'gambler',
-  'nihilist',
-  'choleric',
-  'husk',
-  'celebrity',
-  'sigma',
-] as const;
-
 /**
- * The "themed" subtype for each Cardinal Sin (03 §3): a Gula business biases conversion toward
- * Gluttons, an Ira business toward Cholerics, and so on. Used by the conversion-bias draw and by
- * the per-subtype Vitium Mercatura gold boost in `computeModifiers`.
+ * Reprobates are a single undifferentiated pool (03 §3). Subtypes and the Vitium conversion
+ * mechanic were removed: every reprobate is identical, counted by one integer on the lifetime.
  */
-export const SUBTYPE_OF_SIN: Record<Sin, ReprobateSubtype> = {
-  gula: 'glutton',
-  luxuria: 'degenerate',
-  avaritia: 'gambler',
-  tristitia: 'nihilist',
-  ira: 'choleric',
-  acedia: 'husk',
-  vanagloria: 'celebrity',
-  superbia: 'sigma',
-} as const;
 
 /** Sigils are referenced by their canonical Goetia number, 1..72. */
 export type SigilId = number;
@@ -114,26 +79,13 @@ export interface Acolyte {
   remainingSeconds: number | null;
 }
 
-/**
- * A Vitium conversion source — the unit that feeds `biasedSubtype` and the conversion pool
- * (02 §9). Both Vitium Mercatura businesses and active Vitium Compositum toggles produce these;
- * the dynamics layer concatenates them so conversion bias reflects the player's whole Vitium
- * footprint, not Sin level (per the design correction). `conversionPerSecond` is the source's
- * throughput; `subtypeBias` is its per-subtype weighting (need not sum to 1 — renormalized at
- * draw).
- */
-export interface VitiumConversionSource {
-  readonly conversionPerSecond: number;
-  readonly subtypeBias: Partial<Record<ReprobateSubtype, number>>;
-}
-
 /** State scoped to a single lifetime — reset (mostly) on Katabasis. */
 export interface LifetimeState {
   gold: BigNum;
   influence: BigNum;
   maxInfluence: BigNum;
-  /** Living reprobate counts by subtype. Plain integers (1 person = 1 soul). */
-  reprobates: Record<ReprobateSubtype, number>;
+  /** Living reprobates — a single undifferentiated pool. Plain integer (1 person = 1 soul). */
+  reprobates: number;
   acolytes: Acolyte[];
   /** Active invocations as type -> count (most stack; the apex ones are capped at 1). */
   invocations: Record<string, number>;
@@ -193,26 +145,17 @@ export interface LifetimeState {
   suicidePool: number;
   murderPool: number;
   /**
-   * Conversion pool (02 §9 / 03 §2.3). Vitium Mercatura businesses (and later Vitium Compositum
-   * toggles, Panvitium) contribute conversion attempts per second. While the pool ≥ 1, one
-   * unconverted reprobate is converted to a subtype picked by `biasedSubtype` (which weights by
-   * the active Vitium sources). If no unconverted reprobate exists when the pool crosses, the
-   * pool is left intact so progress isn't wasted.
-   */
-  conversionPool: number;
-  /**
    * Seconds remaining on the Hand of Glory buff (+100% reprobate generation while > 0; Maleficia
    * sheet). Refilled by activating a Hand of Glory; decays in real time each tick. Additive-optional
    * (ADR-023), default 0.
    */
   handOfGloryRemaining: number;
   /**
-   * Active Defixio curse (Maleficia), or absent when none runs. Cast single-use; the first tick
-   * rolls `target` uniformly among present subtypes (null until then), after which it culls that
-   * subtype at eᵗ per second (`elapsed` = seconds the curse has run) until the subtype is gone, then
-   * the field is dropped. Additive-optional (ADR-023); one curse at a time.
+   * Active Defixio curse (Maleficia), or absent when none runs. Cast single-use; it culls the
+   * reprobate pool at eᵗ per second (`elapsed` = seconds the curse has run) until the pool is
+   * empty, then the field is dropped. Additive-optional (ADR-023); one curse at a time.
    */
-  defixio?: { target: ReprobateSubtype | null; elapsed: number };
+  defixio?: { elapsed: number };
   /**
    * Apex-invocation pending Katabasis modifiers (03 §2.4). Set the moment Erinyes/Morpheus is
    * summoned; consumed by `commitKatabasis` to override the carry-over rolls (Erinyes zeroes the
@@ -297,12 +240,6 @@ export interface GameState {
   inKatabasis?: boolean;
 }
 
-function zeroReprobates(): Record<ReprobateSubtype, number> {
-  const out = {} as Record<ReprobateSubtype, number>;
-  for (const t of REPROBATE_SUBTYPES) out[t] = 0;
-  return out;
-}
-
 function zeroDevotion(): Record<Sin, BigNum> {
   const out = {} as Record<Sin, BigNum>;
   for (const s of SINS) out[s] = ZERO;
@@ -325,7 +262,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       gold: ZERO,
       influence: ZERO,
       maxInfluence: bn(BASE_MAX_INFLUENCE),
-      reprobates: zeroReprobates(),
+      reprobates: 0,
       acolytes: [],
       invocations: {},
       invocationRunners: {},
@@ -341,7 +278,6 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       generationPool: 0,
       suicidePool: 0,
       murderPool: 0,
-      conversionPool: 0,
       handOfGloryRemaining: 0,
       inbox: [],
     },
@@ -353,9 +289,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
   };
 }
 
-/** Total living reprobates across all subtypes. */
+/** Total living reprobates (the single pool). */
 export function totalReprobates(state: GameState): number {
-  let sum = 0;
-  for (const t of REPROBATE_SUBTYPES) sum += state.lifetime.reprobates[t];
-  return sum;
+  return state.lifetime.reprobates;
 }

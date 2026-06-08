@@ -1,11 +1,11 @@
 /**
  * Save migration (ADR-006): the version field on every save drives forward migration on load
- * and rejection of versions newer than this client understands. No migrations exist yet (v1 is
- * the only version), but the runner is written before it is needed — the first schema change
- * just registers a step here.
+ * and rejection of versions newer than this client understands. Migrations are applied in
+ * sequence from the blob's version up to {@link CURRENT_SCHEMA_VERSION}.
  */
 import { z } from 'zod';
 import { saveBlobSchema, CURRENT_SCHEMA_VERSION, type SaveBlob } from './schema.js';
+import { migrateV1ToV2 } from './migrations/v1-to-v2.js';
 
 /** A single forward migration that upgrades a blob from one schema version to the next. */
 export interface SaveMigration {
@@ -14,8 +14,8 @@ export interface SaveMigration {
   migrate(blob: Record<string, unknown>): Record<string, unknown>;
 }
 
-/** Registered migrations, applied in sequence. Empty while v1 is the only version. */
-export const SAVE_MIGRATIONS: readonly SaveMigration[] = [];
+/** Registered migrations, applied in sequence (v1 → v2: reprobate-subtype/conversion removal). */
+export const SAVE_MIGRATIONS: readonly SaveMigration[] = [migrateV1ToV2];
 
 export class SaveMigrationError extends Error {
   override name = 'SaveMigrationError';

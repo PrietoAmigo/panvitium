@@ -17,18 +17,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   advanceBuilds,
-  biasedSubtype,
   bn,
   BUSINESSES,
   BUSINESS_IDS,
   businessGenerationPerSecond,
   businessGoldPerSecond,
-  businessConversionPerSecond,
   businessById,
   commitKatabasis,
   computeModifiers,
   createInitialState,
-  makeRng,
   reprobateRates,
   SHUTDOWN_REFUND_FRACTION,
   SINS,
@@ -36,7 +33,6 @@ import {
   startBuild,
   tick,
   type GameState,
-  type ReprobateSubtype,
 } from './index.js';
 
 function fresh(seed = 'vitium', t = 0): GameState {
@@ -71,50 +67,25 @@ describe('Vitium Mercatura — catalog', () => {
   });
 
   it('pins the per-tier numbers to the Vitium Mercatura sheet', () => {
-    // Tier 1: 60 s, 1 gold/s, 0.05 gen/s, 0.001 conv/s; cost 500 (Gula) / 100 (others).
+    // Tier 1: 60 s, 1 gold/s, 0.05 gen/s; cost 500 (Gula) / 100 (others).
     expect(BUSINESSES['gula-mercatura-1']!.buildCost).toBe(500);
     expect(BUSINESSES['luxuria-mercatura-1']!.buildCost).toBe(100);
     const t1 = BUSINESSES['gula-mercatura-1']!;
-    expect([
-      t1.buildTimeSeconds,
-      t1.goldPerSecond,
-      t1.reprobateGenPerSecond,
-      t1.conversionPerSecond,
-    ]).toEqual([60, 1, 0.05, 0.001]);
+    expect([t1.buildTimeSeconds, t1.goldPerSecond, t1.reprobateGenPerSecond]).toEqual([
+      60, 1, 0.05,
+    ]);
     const t2 = BUSINESSES['gula-mercatura-2']!;
-    expect([
-      t2.buildCost,
-      t2.buildTimeSeconds,
-      t2.goldPerSecond,
-      t2.reprobateGenPerSecond,
-      t2.conversionPerSecond,
-    ]).toEqual([25_000, 1800, 22, 1, 0.025]);
+    expect([t2.buildCost, t2.buildTimeSeconds, t2.goldPerSecond, t2.reprobateGenPerSecond]).toEqual(
+      [25_000, 1800, 22, 1],
+    );
     const t3 = BUSINESSES['gula-mercatura-3']!;
-    expect([
-      t3.buildCost,
-      t3.buildTimeSeconds,
-      t3.goldPerSecond,
-      t3.reprobateGenPerSecond,
-      t3.conversionPerSecond,
-    ]).toEqual([500_000, 36_000, 450, 125, 0.2]);
+    expect([t3.buildCost, t3.buildTimeSeconds, t3.goldPerSecond, t3.reprobateGenPerSecond]).toEqual(
+      [500_000, 36_000, 450, 125],
+    );
     const t4 = BUSINESSES['gula-mercatura-4']!;
-    expect([
-      t4.buildCost,
-      t4.buildTimeSeconds,
-      t4.goldPerSecond,
-      t4.reprobateGenPerSecond,
-      t4.conversionPerSecond,
-    ]).toEqual([100_000_000, 500_000, 10_000, 500, 1]);
-  });
-
-  it('each business biases toward its matching subtype with a small reprobate leakage', () => {
-    for (const id of BUSINESS_IDS) {
-      const def = BUSINESSES[id]!;
-      const matchingSubtype = expectedSubtypeForSin(def.sin);
-      expect(def.subtypeBias[matchingSubtype]).toBeGreaterThan(0.5);
-      // Some leakage into unconverted reprobates so early conversions don't all hit the bias.
-      expect(def.subtypeBias.reprobate ?? 0).toBeGreaterThan(0);
-    }
+    expect([t4.buildCost, t4.buildTimeSeconds, t4.goldPerSecond, t4.reprobateGenPerSecond]).toEqual(
+      [100_000_000, 500_000, 10_000, 500],
+    );
   });
 
   it('lookup helpers behave', () => {
@@ -268,7 +239,7 @@ describe('tick — business gold income', () => {
       ...s,
       lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 1 } },
     };
-    expect(businessGoldPerSecond(owned, computeModifiers(owned))).toBe(1);
+    expect(businessGoldPerSecond(owned)).toBe(1);
     const after = tick(owned, 1).state;
     expect(after.lifetime.gold.toNumber()).toBeCloseTo(3, 5);
   });
@@ -286,7 +257,7 @@ describe('tick — business gold income', () => {
         },
       },
     };
-    expect(businessGoldPerSecond(owned, computeModifiers(owned))).toBe(5);
+    expect(businessGoldPerSecond(owned)).toBe(5);
   });
 });
 
@@ -303,52 +274,7 @@ describe('tick — business reprobate generation', () => {
     // Unconverted reprobate count goes up; conversion needs > 1 unconverted to fire and the
     // 20 × 0.001 = 0.02/s conversion rate is negligible over 1.2 s, so one birth lands as a
     // straight unconverted reprobate.
-    expect(after.lifetime.reprobates.reprobate + after.lifetime.reprobates.glutton).toBe(1);
-  });
-});
-
-describe('tick — Vitium-driven conversion via biasedSubtype', () => {
-  it('owned business drains the conversion pool and biases the conversion toward its subtype', () => {
-    // Set up: 100 unconverted reprobates AND 100 gula-mercatura-1 businesses (0.001 each → 0.10
-    // conv/s). Over 50 s: conversion pool ≈ 5 → ~5 attempts; ~85% land on Glutton. (Generation
-    // also adds unconverted reprobates over the window, but conversions draw from the plentiful pool.)
-    const s = fresh();
-    const seeded: GameState = {
-      ...s,
-      lifetime: {
-        ...s.lifetime,
-        reprobates: { ...s.lifetime.reprobates, reprobate: 100 },
-        businesses: { 'gula-mercatura-1': 100 },
-      },
-    };
-    expect(businessConversionPerSecond(seeded)).toBeCloseTo(0.1, 6);
-    const after = tick(seeded, 50).state;
-    expect(after.lifetime.reprobates.glutton).toBeGreaterThanOrEqual(2);
-    expect(after.lifetime.reprobates.glutton).toBeLessThanOrEqual(6);
-  });
-
-  it('biasedSubtype with no active business falls back to "reprobate" (no conversion)', () => {
-    const rng = makeRng(0);
-    expect(biasedSubtype(fresh(), rng)).toBe('reprobate');
-  });
-
-  it('biasedSubtype with only a gula business picks "glutton" most of the time', () => {
-    const s = fresh();
-    const owned: GameState = {
-      ...s,
-      lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 1 } },
-    };
-    let gluttons = 0;
-    let totalNonReprobate = 0;
-    const rng = makeRng(42);
-    for (let i = 0; i < 200; i++) {
-      const pick = biasedSubtype(owned, rng);
-      if (pick === 'glutton') gluttons++;
-      if (pick !== 'reprobate') totalNonReprobate++;
-    }
-    // With 85/15 weights, ~85% of non-reprobate picks should be glutton; allow wide tolerance.
-    expect(totalNonReprobate).toBeGreaterThan(150);
-    expect(gluttons / totalNonReprobate).toBeGreaterThan(0.7);
+    expect(after.lifetime.reprobates).toBe(1);
   });
 });
 
@@ -367,7 +293,6 @@ describe('Katabasis — Vitium Mercatura auto-shutdown', () => {
     // All Vitium state cleared on rebirth.
     expect(Object.keys(after.lifetime.businesses)).toHaveLength(0);
     expect(after.lifetime.buildQueue).toHaveLength(0);
-    expect(after.lifetime.conversionPool).toBe(0);
   });
 
   it('in-flight builds fizzle on Katabasis (no refund — they had not completed)', () => {
@@ -398,33 +323,7 @@ describe('Modifiers — vitiumMercaturaOutputMul defaults to 1', () => {
     };
     const mods = computeModifiers(owned);
     const rates = reprobateRates(owned, mods);
-    // 1 × gula tier-1: gen 0.05, conversion 0.001. Multiplier defaults to 1.
+    // 1 × gula tier-1: gen 0.05. Multiplier defaults to 1.
     expect(rates.generationPerSecond).toBeCloseTo(0.05, 6);
-    expect(rates.conversionPerSecond).toBeCloseTo(0.001, 6);
   });
 });
-
-// ── helpers ──────────────────────────────────────────────────────────────────
-
-function expectedSubtypeForSin(sin: string): ReprobateSubtype {
-  switch (sin) {
-    case 'gula':
-      return 'glutton';
-    case 'luxuria':
-      return 'degenerate';
-    case 'avaritia':
-      return 'gambler';
-    case 'tristitia':
-      return 'nihilist';
-    case 'ira':
-      return 'choleric';
-    case 'acedia':
-      return 'husk';
-    case 'vanagloria':
-      return 'celebrity';
-    case 'superbia':
-      return 'sigma';
-    default:
-      throw new Error(`unknown sin ${sin}`);
-  }
-}

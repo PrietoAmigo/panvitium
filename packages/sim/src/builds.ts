@@ -17,9 +17,8 @@
 import { add, floor, gte, sub } from './bignum.js';
 import { businessById, SHUTDOWN_REFUND_FRACTION } from './businesses.js';
 import { sigilShutdownRefundMul } from './sigils.js';
-import { type Modifiers } from './modifiers.js';
 import { sinLevel } from './progression.js';
-import { type BuildTimer, type GameState, type VitiumConversionSource } from './state.js';
+import { type BuildTimer, type GameState } from './state.js';
 
 export type StartBuildResult =
   | { readonly ok: true; readonly state: GameState }
@@ -147,19 +146,16 @@ export function advanceBuilds(state: GameState, deltaSeconds: number): GameState
 }
 
 /**
- * Sum of `goldPerSecond` across all owned businesses, with the per-Sin subtype gold boost applied
- * per-business (03 §3: a Gula business is boosted by Glutton-count; an Ira business by Cholerics;
- * etc.). The boost composes with the global `vitiumMercaturaOutputMul` at the call site in `tick`,
- * not here, so this returns the per-business contribution after subtype lift but before global VM
- * lift. Unknown business ids are ignored.
+ * Sum of `goldPerSecond` across all owned businesses. The global `vitiumMercaturaOutputMul`
+ * composes at the call site in `tick`, not here, so this returns the raw catalog contribution.
+ * Unknown business ids are ignored. (The per-Sin subtype gold boost was removed with subtypes.)
  */
-export function businessGoldPerSecond(state: GameState, mods: Modifiers): number {
+export function businessGoldPerSecond(state: GameState): number {
   let s = 0;
   for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
     const def = businessById(bid);
     if (!def || !count) continue;
-    const subtypeMul = mods.subtypeVitiumGoldMulBySin[def.sin];
-    s += def.goldPerSecond * count * subtypeMul;
+    s += def.goldPerSecond * count;
   }
   return s;
 }
@@ -173,29 +169,4 @@ export function businessGenerationPerSecond(state: GameState): number {
     s += def.reprobateGenPerSecond * count;
   }
   return s;
-}
-
-/** Sum of `conversionPerSecond` across all owned businesses. Fed into the conversion pool. */
-export function businessConversionPerSecond(state: GameState): number {
-  let s = 0;
-  for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
-    const def = businessById(bid);
-    if (!def || !count) continue;
-    s += def.conversionPerSecond * count;
-  }
-  return s;
-}
-
-/** Owned businesses as Vitium conversion sources (for biasedSubtype / the conversion pool). */
-export function businessConversionSources(state: GameState): VitiumConversionSource[] {
-  const out: VitiumConversionSource[] = [];
-  for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
-    const def = businessById(bid);
-    if (!def || !count) continue;
-    out.push({
-      conversionPerSecond: def.conversionPerSecond * count,
-      subtypeBias: def.subtypeBias,
-    });
-  }
-  return out;
 }

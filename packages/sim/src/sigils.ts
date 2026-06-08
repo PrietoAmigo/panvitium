@@ -14,7 +14,7 @@
 import { type BigNum, add, floor, lte, ZERO } from './bignum.js';
 import { MAX_SIN_LEVEL } from './constants.js';
 import { sinLevel } from './progression.js';
-import { SINS, type GameState, type ReprobateSubtype, type SigilId, type Sin } from './state.js';
+import { SINS, type GameState, type SigilId, type Sin } from './state.js';
 import { type Tier } from './probability.js';
 
 export type BindingCurve = 'sqrt' | 'linear' | 'log';
@@ -43,10 +43,8 @@ export type ScalarModifierField =
   | 'indagatioEfficiencyMul'
   | 'emptioEfficiencyMul'
   | 'reprobateGenerationRateMul'
-  | 'conversionRateMul'
   | 'reprobateSuicideRateMul'
-  | 'nihilistSuicideMul'
-  | 'cholericMurderRateMul'
+  | 'murderRateMul'
   | 'vitiumMercaturaOutputMul'
   | 'vitiumCompositumOutputMul'
   | 'acolyteEfficiencyMul'
@@ -54,7 +52,7 @@ export type ScalarModifierField =
   | 'offlineTimeMul';
 
 /** Which Katabasis carry-over roll a sigil's bonus feeds. */
-export type KatabasisRoll = 'gold' | 'unconverted' | 'maleficia';
+export type KatabasisRoll = 'gold' | 'reprobate' | 'maleficia';
 
 /**
  * A sigil's effect. `modifier`/`tier` multiply an in-lifetime value by `(1 + strength)` (increase)
@@ -75,34 +73,22 @@ export type SigilEffect =
       readonly direction: 'increase' | 'decrease';
     }
   | { readonly kind: 'invocationSin'; readonly sin: Sin }
-  | { readonly kind: 'penaltyReduction'; readonly channel: PenaltyChannel }
   | { readonly kind: 'flatGen'; readonly resource: 'gold' | 'influence' }
   | { readonly kind: 'invokingPower' }
   | { readonly kind: 'costReduction'; readonly channel: CostChannel }
-  | { readonly kind: 'conversionBias'; readonly subtype: ReprobateSubtype }
-  | { readonly kind: 'conversionRebalance'; readonly direction: 'minority' | 'majority' }
-  | { readonly kind: 'murderBias'; readonly subtype: ReprobateSubtype }
   | { readonly kind: 'indagatioDoubleFind' }
   | { readonly kind: 'offlineResource'; readonly resource: 'gold' | 'influence' }
   | { readonly kind: 'invocationEffect'; readonly invocation: string }
   | { readonly kind: 'murderGold' }
   | { readonly kind: 'shutdownRefund' }
-  | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
+  | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] }
+  // Inert: a catalog entry kept (so sigil numbering / IDs don't shift) but contributing nothing.
+  // Used for sigils whose effect was keyed to reprobate subtypes or the conversion mechanic, both
+  // removed. These are flagged for re-homing in the orphaned-sigils slice (Slice 4).
+  | { readonly kind: 'inert' };
 
 /** The four Opera action categories a per-category tier sigil can target. */
 export type SigilCategory = 'suasio' | 'decimatio' | 'indagatio' | 'emptio';
-
-/**
- * A subtype-penalty channel a sigil can soften (Gaap/Malphas/Gremory/Volac). Each names one existing
- * per-count penalty coefficient; the sigil divides that coefficient by `(1 + strength)` (asymptotic
- * to no penalty, never an outright bonus).
- */
-export type PenaltyChannel =
-  | 'sigmaInfluence'
-  | 'celebrityGold'
-  | 'degenerateSuicide'
-  | 'degenerateDeathRates'
-  | 'gamblerGeneration';
 
 /**
  * A cost a sigil can soften (Paimon/Orobas/Amy). `influence` = action influence costs, `invocationSoul`
@@ -132,7 +118,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 1,
     name: 'Bael',
     coefficient: 0.001,
-    effect: { kind: 'modifier', field: 'conversionRateMul', direction: 'increase' },
+    effect: { kind: 'inert' },
   },
   2: {
     id: 2,
@@ -232,7 +218,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 15,
     name: 'Eligos',
     coefficient: 0.001,
-    effect: { kind: 'conversionBias', subtype: 'celebrity' },
+    effect: { kind: 'inert' },
   },
   16: {
     id: 16,
@@ -290,7 +276,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 23,
     name: 'Aim',
     coefficient: 0.001,
-    effect: { kind: 'modifier', field: 'cholericMurderRateMul', direction: 'increase' },
+    effect: { kind: 'modifier', field: 'murderRateMul', direction: 'increase' },
   },
   24: {
     id: 24,
@@ -308,7 +294,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 25,
     name: 'Glasya-Labolas',
     coefficient: 0.001,
-    effect: { kind: 'murderBias', subtype: 'celebrity' },
+    effect: { kind: 'inert' },
   },
   26: {
     id: 26,
@@ -320,7 +306,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 27,
     name: 'Ronove',
     coefficient: 0.001,
-    effect: { kind: 'modifier', field: 'nihilistSuicideMul', direction: 'increase' },
+    effect: { kind: 'inert' },
   },
   28: {
     id: 28,
@@ -355,7 +341,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 33,
     name: 'Gaap',
     coefficient: 0.001,
-    effect: { kind: 'penaltyReduction', channel: 'sigmaInfluence' },
+    effect: { kind: 'inert' },
   },
   34: {
     id: 34,
@@ -369,7 +355,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 32,
     name: 'Semet',
     coefficient: 0.001,
-    effect: { kind: 'katabasis', rolls: ['gold', 'maleficia', 'unconverted'] },
+    effect: { kind: 'katabasis', rolls: ['gold', 'maleficia', 'reprobate'] },
     gateAllSinsLevel: 2,
   },
   35: {
@@ -389,7 +375,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 37,
     name: 'Phenex',
     coefficient: 0.001,
-    effect: { kind: 'conversionBias', subtype: 'celebrity' },
+    effect: { kind: 'inert' },
   },
   38: {
     id: 38,
@@ -401,7 +387,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 39,
     name: 'Malphas',
     coefficient: 0.001,
-    effect: { kind: 'penaltyReduction', channel: 'celebrityGold' },
+    effect: { kind: 'inert' },
   },
   40: {
     id: 40,
@@ -428,13 +414,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // "Love of women" → softens the Degenerate dampening of suicide AND murder. Degenerates lower
     // both rates (Reprobates sheet: −suicide, −Choleric murder); Vual divides that per-count penalty
     // by (1 + strength) on the shared `degenerateDeathRates` channel, so both recover toward base.
-    effect: { kind: 'penaltyReduction', channel: 'degenerateDeathRates' },
+    effect: { kind: 'inert' },
   },
   41: {
     id: 41,
     name: 'Focalor',
     coefficient: 0.001,
-    effect: { kind: 'modifier', field: 'nihilistSuicideMul', direction: 'increase' },
+    effect: { kind: 'inert' },
   },
   42: {
     id: 42,
@@ -446,7 +432,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 43,
     name: 'Sabnock',
     coefficient: 0.001,
-    effect: { kind: 'murderBias', subtype: 'glutton' },
+    effect: { kind: 'inert' },
   },
   44: {
     id: 44,
@@ -489,7 +475,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 53,
     name: 'Camio',
     coefficient: 0.001,
-    effect: { kind: 'murderBias', subtype: 'degenerate' },
+    effect: { kind: 'inert' },
   },
   54: {
     id: 54,
@@ -507,7 +493,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 56,
     name: 'Gremory',
     coefficient: 0.001,
-    effect: { kind: 'penaltyReduction', channel: 'degenerateSuicide' },
+    effect: { kind: 'inert' },
   },
   57: {
     id: 57,
@@ -515,7 +501,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     // "Changes shape" → Vitium Compositum re-roll toward the minority subtype: biases the
     // conversion pick toward whichever converted subtype is currently smallest (balancing).
-    effect: { kind: 'conversionRebalance', direction: 'minority' },
+    effect: { kind: 'inert' },
   },
   58: {
     id: 58,
@@ -529,7 +515,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     coefficient: 0.001,
     // "Transformations" → Vitium Compositum re-roll toward the majority subtype: biases the
     // conversion pick toward whichever converted subtype is currently largest (snowballing).
-    effect: { kind: 'conversionRebalance', direction: 'majority' },
+    effect: { kind: 'inert' },
   },
   60: {
     id: 60,
@@ -547,7 +533,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 62,
     name: 'Volac',
     coefficient: 0.001,
-    effect: { kind: 'penaltyReduction', channel: 'gamblerGeneration' },
+    effect: { kind: 'inert' },
   },
   63: {
     id: 63,
@@ -562,7 +548,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // "+Choleric murder of Cholerics": biases murder-victim selection toward Cholerics. Cholerics
     // are valid murder victims by default (the murder pool draws across ALL subtypes), so this just
     // raises the Choleric victim weight by (1 + strength), exactly like the other murder-bias sigils.
-    effect: { kind: 'murderBias', subtype: 'choleric' },
+    effect: { kind: 'inert' },
   },
   65: {
     id: 65,
@@ -583,7 +569,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // "Murder rate of non-Choleric reprobate types" — an overall Choleric-murder-rate boost
     // (composes with Aim #23). Distinct from Haures #64, which biases WHICH victim dies toward
     // Cholerics rather than lifting the total murder rate.
-    effect: { kind: 'modifier', field: 'cholericMurderRateMul', direction: 'increase' },
+    effect: { kind: 'modifier', field: 'murderRateMul', direction: 'increase' },
   },
   68: {
     id: 68,
@@ -726,27 +712,6 @@ export function sigilInvocationSinContributions(
   return out;
 }
 /**
- * Per-channel subtype-penalty reduction factors from bound sigils (Gaap/Malphas/Gremory/Volac). Each
- * value is a `(1 + strength)` divisor (≥ 1) applied to that penalty channel's per-count coefficient in
- * `computeModifiers`, softening the penalty toward zero. `effectMul` carries the sigil enhancers.
- */
-export function sigilPenaltyReductionByChannel(
-  state: GameState,
-  effectMul = 1,
-): Partial<Record<PenaltyChannel, number>> {
-  const out: Partial<Record<PenaltyChannel, number>> = {};
-  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
-    if (bound === undefined) continue;
-    const def = sigilById(Number(idStr));
-    if (!def || def.effect.kind !== 'penaltyReduction') continue;
-    const s = sigilStrength(def, bound) * effectMul;
-    if (s <= 0) continue;
-    out[def.effect.channel] = (out[def.effect.channel] ?? 1) * (1 + s);
-  }
-  return out;
-}
-
-/**
  * Flat per-second resource generation from the log-curve generator sigils (Haagenti #48 → gold,
  * Decarabia #69 → influence). Each contributes its `coefficient × ln(1 + souls)` directly (additive,
  * not a multiplier). Consumed by `computeModifiers` → `flatGoldPerSecond` / `flatInfluencePerSecond`,
@@ -803,75 +768,6 @@ export function sigilCostReductionByChannel(
     const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
     out[def.effect.channel] = (out[def.effect.channel] ?? 1) * (1 + s);
-  }
-  return out;
-}
-
-/**
- * Per-subtype conversion-bias multipliers from bound sigils (Eligos #15, Phenex #37 → Celebrity).
- * Each is a `(1 + strength)` factor on that subtype's weight in `biasedSubtype`, composed
- * multiplicatively with each other and with the apex Specunitas bias (the shared `conversionBiasMul`
- * seam in `dynamics.ts`). Strictly multiplicative on existing weights — these cannot manufacture a
- * conversion from a subtype with zero active source. `effectMul` carries the sigil enhancers.
- */
-export function sigilConversionBiasContributions(
-  state: GameState,
-  effectMul = 1,
-): Partial<Record<ReprobateSubtype, number>> {
-  const out: Partial<Record<ReprobateSubtype, number>> = {};
-  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
-    if (bound === undefined) continue;
-    const def = sigilById(Number(idStr));
-    if (!def || def.effect.kind !== 'conversionBias') continue;
-    const s = sigilStrength(def, bound) * effectMul;
-    if (s <= 0) continue;
-    out[def.effect.subtype] = (out[def.effect.subtype] ?? 1) * (1 + s);
-  }
-  return out;
-}
-
-/**
- * Ose #57 / Orias #59: the conversion re-roll strengths toward the minority (Ose) / majority
- * (Orias) subtype. Returns bare summed % per direction; `conversionBiasMul` resolves which subtype
- * is currently smallest / largest and multiplies that subtype's conversion weight by (1 + %).
- */
-export function sigilConversionRebalance(
-  state: GameState,
-  effectMul = 1,
-): { minority: number; majority: number } {
-  let minority = 0;
-  let majority = 0;
-  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
-    if (bound === undefined) continue;
-    const def = sigilById(Number(idStr));
-    if (!def || def.effect.kind !== 'conversionRebalance') continue;
-    const s = sigilStrength(def, bound) * effectMul;
-    if (s <= 0) continue;
-    if (def.effect.direction === 'minority') minority += s;
-    else majority += s;
-  }
-  return { minority, majority };
-}
-
-/**
- * Per-subtype murder-victim bias from bound sigils (Glasya-Labolas #25 → Celebrity, Sabnock #43 →
- * Glutton, Camio #53 → Degenerate). Each is a `(1 + strength)` factor on that subtype's weight when
- * a Choleric murder picks its victim (see `removeOneNonCholeric` in `dynamics.ts`) — redistributing
- * which non-Choleric dies, not the total murder count. Composed multiplicatively. `effectMul` carries
- * the sigil enhancers.
- */
-export function sigilMurderBiasContributions(
-  state: GameState,
-  effectMul = 1,
-): Partial<Record<ReprobateSubtype, number>> {
-  const out: Partial<Record<ReprobateSubtype, number>> = {};
-  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
-    if (bound === undefined) continue;
-    const def = sigilById(Number(idStr));
-    if (!def || def.effect.kind !== 'murderBias') continue;
-    const s = sigilStrength(def, bound) * effectMul;
-    if (s <= 0) continue;
-    out[def.effect.subtype] = (out[def.effect.subtype] ?? 1) * (1 + s);
   }
   return out;
 }
@@ -939,11 +835,11 @@ export function sigilInvocationEffectContributions(
 }
 
 /**
- * Gold yielded per Choleric murder from bound `murderGold` sigils (Leraie #14). Summed strength
- * across such sigils; 0 when none are bound (the dynamics murder loop then runs unchanged). The
- * magnitude is a placeholder coefficient until the sheet pins it.
+ * Gold yielded per murder from bound `murderGold` sigils (Leraie #14). Summed strength across such
+ * sigils; 0 when none are bound (the dynamics murder loop then runs unchanged). The magnitude is a
+ * placeholder coefficient until the sheet pins it.
  */
-export function sigilCholericMurderGoldPerKill(state: GameState, effectMul = 1): number {
+export function sigilMurderGoldPerKill(state: GameState, effectMul = 1): number {
   let gold = 0;
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
     if (bound === undefined) continue;

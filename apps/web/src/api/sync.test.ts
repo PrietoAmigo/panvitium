@@ -27,7 +27,7 @@ const USER: User = {
 
 function makeBlob(overrides: Partial<SaveBlob> = {}): SaveBlob {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     saveVersion: 3,
     lastTickAt: 1_700_000_000_000,
     deviceId: 'dev-1',
@@ -48,17 +48,7 @@ function makeBlob(overrides: Partial<SaveBlob> = {}): SaveBlob {
         gold: '0',
         influence: '0',
         maxInfluence: '100',
-        reprobates: {
-          reprobate: 0,
-          glutton: 0,
-          degenerate: 0,
-          gambler: 0,
-          nihilist: 0,
-          choleric: 0,
-          husk: 0,
-          celebrity: 0,
-          sigma: 0,
-        },
+        reprobates: 0,
         acolytes: [],
         invocations: {},
         maleficia: [],

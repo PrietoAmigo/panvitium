@@ -21,21 +21,14 @@ import {
   BASE_MAX_INFLUENCE,
   BASE_REMAINING_GOLD,
   BASE_REMAINING_MALEFICIA,
-  BASE_REMAINING_UNCONVERTED_REPROBATE,
+  BASE_REMAINING_REPROBATE,
   REMAINING_GOLD_PER_AVARITIA_LEVEL,
   REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL,
-  REMAINING_UNCONVERTED_PER_LUXURIA_LEVEL,
+  REMAINING_REPROBATE_PER_LUXURIA_LEVEL,
 } from './constants.js';
 import { sinLevel } from './progression.js';
 import { makeRng } from './rng.js';
-import {
-  type GameState,
-  type LifetimeState,
-  type ReprobateSubtype,
-  type Sin,
-  type SigilId,
-  REPROBATE_SUBTYPES,
-} from './state.js';
+import { type GameState, type LifetimeState, type Sin, type SigilId } from './state.js';
 
 const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
 
@@ -51,10 +44,10 @@ export function remainingGoldFraction(state: GameState, sigilBonus = 0): number 
   );
 }
 
-export function remainingUnconvertedFraction(state: GameState, sigilBonus = 0): number {
+export function remainingReprobateFraction(state: GameState, sigilBonus = 0): number {
   return clamp01(
-    BASE_REMAINING_UNCONVERTED_REPROBATE +
-      REMAINING_UNCONVERTED_PER_LUXURIA_LEVEL * sinLevel(state.devotion.luxuria) +
+    BASE_REMAINING_REPROBATE +
+      REMAINING_REPROBATE_PER_LUXURIA_LEVEL * sinLevel(state.devotion.luxuria) +
       sigilBonus,
   );
 }
@@ -174,14 +167,8 @@ export interface KatabasisRecap {
   readonly soulsCarried: BigNum;
 }
 
-function emptyReprobates(): Record<ReprobateSubtype, number> {
-  const out = {} as Record<ReprobateSubtype, number>;
-  for (const t of REPROBATE_SUBTYPES) out[t] = 0;
-  return out;
-}
-
 /**
- * Commit the Katabasis: reset the lifetime, keeping a fraction of gold and unconverted reprobates
+ * Commit the Katabasis: reset the lifetime, keeping a fraction of gold and reprobates
  * and rolling each maleficium against its remaining chance. Souls (the leftover pool), Devotion,
  * and current sigil bindings carry through untouched. Invocations are dispelled, businesses/Emptio
  * cleared, influence reset to 0. Returns the resumed state and the recap of what was kept.
@@ -239,15 +226,10 @@ export function commitKatabasis(
     else maleficiaLost.push(m);
   }
 
-  // Remaining reprobates: a fraction of the UNCONVERTED survive; converted subtypes are lost.
-  // Sigils (Semet #32) lift the fraction.
-  const reprobates = emptyReprobates();
-  reprobates.reprobate = Math.floor(
-    state.lifetime.reprobates.reprobate *
-      remainingUnconvertedFraction(
-        state,
-        sigilKatabasisBonus(state, 'unconverted', sigilEffectMul),
-      ),
+  // Remaining reprobates: a fraction of the pool survives the descent. Sigils (Semet #32) lift it.
+  const reprobates = Math.floor(
+    state.lifetime.reprobates *
+      remainingReprobateFraction(state, sigilKatabasisBonus(state, 'reprobate', sigilEffectMul)),
   );
 
   const lifetime: LifetimeState = {
@@ -273,7 +255,6 @@ export function commitKatabasis(
     generationPool: 0, // pools reset with the fresh lifetime
     suicidePool: 0,
     murderPool: 0,
-    conversionPool: 0,
     inbox: [], // impact-feedback inbox resets with the fresh lifetime (5.2)
     // pendingErinyes / pendingMorpheus / morpheusLockedOut are intentionally omitted — the new
     // lifetime starts clean (they're additive-optional and absent ≡ false).
@@ -295,7 +276,7 @@ export function commitKatabasis(
     },
     recap: {
       goldKept,
-      reprobatesKept: reprobates.reprobate,
+      reprobatesKept: reprobates,
       maleficiaKept,
       maleficiaLost,
       soulsCarried: floor(state.souls),

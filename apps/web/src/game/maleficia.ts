@@ -35,11 +35,7 @@ function makeAffordance(state: GameState): (id: string) => MaleficiumUse | undef
       // Only one curse at a time (the sim refuses a second); disable with a status while one runs.
       const active = state.lifetime.defixio;
       if (!active) return { label: S.use, enabled: true };
-      const status =
-        active.target === null
-          ? S.defixioRolling
-          : `${S.defixioOn} ${strings.subtypes[active.target]}`;
-      return { label: S.use, enabled: false, status };
+      return { label: S.use, enabled: false, status: S.defixioOn };
     }
     return undefined;
   };

@@ -66,19 +66,9 @@ describe('buildCabinet — single-use affordance (5.1)', () => {
     expect(item!.use!.status).toBeUndefined();
   });
 
-  it('Defixio is disabled while a curse is at work, naming the cursed subtype', () => {
-    const [item] = buildCabinet(
-      withLifetime(['defixio'], { defixio: { target: 'glutton', elapsed: 5 } }),
-    );
+  it('Defixio is disabled while a curse is at work', () => {
+    const [item] = buildCabinet(withLifetime(['defixio'], { defixio: { elapsed: 5 } }));
     expect(item!.use!.enabled).toBe(false);
-    expect(item!.use!.status).toBe(`${strings.maleficia.defixioOn} ${strings.subtypes.glutton}`);
-  });
-
-  it('Defixio shows the rolling status before the target is chosen', () => {
-    const [item] = buildCabinet(
-      withLifetime(['defixio'], { defixio: { target: null, elapsed: 0 } }),
-    );
-    expect(item!.use!.enabled).toBe(false);
-    expect(item!.use!.status).toBe(strings.maleficia.defixioRolling);
+    expect(item!.use!.status).toBe(strings.maleficia.defixioOn);
   });
 });

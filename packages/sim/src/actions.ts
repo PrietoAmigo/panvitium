@@ -24,21 +24,12 @@ import {
 import { categoryEfficiency, categoryTierModifiers, computeModifiers } from './modifiers.js';
 import {
   addReprobates,
-  cullSubtypeFraction,
-  loseConvertedReprobatesFraction,
   loseGoldFraction,
   loseReprobatesFraction,
   mintSouls,
-  removeReprobatesRandom,
+  removeReprobates,
 } from './population.js';
-import {
-  type ActionTimer,
-  type GameState,
-  type Sin,
-  type ReprobateSubtype,
-  REPROBATE_SUBTYPES,
-  totalReprobates,
-} from './state.js';
+import { type ActionTimer, type GameState, type Sin, totalReprobates } from './state.js';
 import { sinLevel } from './progression.js';
 import { type OutcomeEvent } from './events.js';
 import {
@@ -329,13 +320,6 @@ export function startAction(
     // catalog cost for any item surfaced before rolled pricing landed (older saves).
     const rolled = state.lifetime.maleficiaPrices[options.target] ?? malef.cost;
     goldCost = costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled;
-    target = options.target;
-  }
-  if (actionId === 'pogrom') {
-    // Pogrom purges one chosen reprobate subtype — it needs a valid target to act on.
-    if (!options.target || !REPROBATE_SUBTYPES.includes(options.target as ReprobateSubtype)) {
-      return { ok: false, reason: 'Choose a subtype to purge.' };
-    }
     target = options.target;
   }
   if (def.efficiencyMode === 'cost-outcome') {
@@ -688,7 +672,7 @@ export function resolveAction(
       next = resolveCaedis(state, tier, rng, eff);
       break;
     case 'pogrom':
-      next = resolvePogrom(state, tier, rng, options.target, eff);
+      next = resolvePogrom(state, tier, rng, eff);
       break;
     case 'purgatio':
       next = resolvePurgatio(state, tier, rng, eff);
@@ -734,16 +718,16 @@ export function resolveSuggestion(
   switch (tier) {
     case 'stellar':
       // major sin → +randint(4,8) unconverted reprobates (Suasio sheet); efficiency scales the count.
-      return addReprobates(state, 'reprobate', randint(rng, 4, 8) * units);
+      return addReprobates(state, randint(rng, 4, 8) * units);
     case 'excellent':
       // target suicides → +1 soul (Suasio sheet); efficiency scales the soul count.
       return mintSouls(state, units);
     case 'good':
-      return addReprobates(state, 'reprobate', units);
+      return addReprobates(state, units);
     case 'bad':
-      return removeReprobatesRandom(state, units, rng).state; // rejects + redeems another
+      return removeReprobates(state, units).state; // rejects + redeems another
     case 'terrible':
-      return loseReprobatesFraction(state, 0.09, rng).state; // Church intervention
+      return loseReprobatesFraction(state, 0.09).state; // Church intervention
     case 'neutral':
     case 'apocalyptic':
     default:
@@ -761,11 +745,11 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
     case 'excellent':
     case 'good':
       // (major) sin → +randint(10,29) unconverted reprobates.
-      return addReprobates(state, 'reprobate', randint(rng, 10, 29) * units);
+      return addReprobates(state, randint(rng, 10, 29) * units);
     case 'bad':
-      return removeReprobatesRandom(state, units, rng).state; // reject + redeem
+      return removeReprobates(state, units).state; // reject + redeem
     case 'terrible':
-      return loseReprobatesFraction(state, 0.09, rng).state; // Church intervention
+      return loseReprobatesFraction(state, 0.09).state; // Church intervention
     case 'neutral':
     case 'apocalyptic':
     default:
@@ -779,7 +763,7 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
  */
 export function resolveImperium(state: GameState, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
-  return addReprobates(state, 'reprobate', randint(rng, 360, 1260) * units);
+  return addReprobates(state, randint(rng, 360, 1260) * units);
 }
 
 /** Caedis outcome effects (exported for direct testing of each tier). */
@@ -787,23 +771,15 @@ export function resolveCaedis(state: GameState, tier: Tier, rng: Rng, efficiency
   const scale = Math.max(1, Math.floor(efficiency));
   switch (tier) {
     case 'stellar': {
-      const { state: next, removed } = removeReprobatesRandom(
-        state,
-        randint(rng, 15, 45) * scale,
-        rng,
-      );
+      const { state: next, removed } = removeReprobates(state, randint(rng, 15, 45) * scale);
       return mintSouls(next, removed);
     }
     case 'excellent': {
-      const { state: next, removed } = removeReprobatesRandom(
-        state,
-        randint(rng, 3, 9) * scale,
-        rng,
-      );
+      const { state: next, removed } = removeReprobates(state, randint(rng, 3, 9) * scale);
       return mintSouls(next, removed);
     }
     case 'good': {
-      const { state: next, removed } = removeReprobatesRandom(state, scale, rng);
+      const { state: next, removed } = removeReprobates(state, scale);
       return mintSouls(next, removed);
     }
     case 'bad':
@@ -815,7 +791,7 @@ export function resolveCaedis(state: GameState, tier: Tier, rng: Rng, efficiency
       // 66% current gold loss and 50% of all reprobates lost — taken from you, not harvested,
       // so no souls are minted (mirrors the Suggestion "Church" loss).
       const afterGold = loseGoldFraction(state, 0.66);
-      return loseReprobatesFraction(afterGold, 0.5, rng).state;
+      return loseReprobatesFraction(afterGold, 0.5).state;
     }
     case 'neutral':
     default:
@@ -825,28 +801,18 @@ export function resolveCaedis(state: GameState, tier: Tier, rng: Rng, efficiency
 }
 
 /**
- * Pogrom outcome (Decimatio sheet): a mass cull of one chosen subtype. Stellar/Excellent/Good kill
- * 25 / 10 / 5 % of that subtype and harvest a soul per death; positive culls scale with efficiency
- * (clamped to 100%). Bad/Apocalyptic burn gold; Terrible lets the Church seize converts. `target`
- * is the subtype id (validated at `startAction`).
+ * Pogrom outcome (Decimatio sheet): a mass cull of the reprobate pool. Stellar/Excellent/Good kill
+ * 25 / 10 / 5 % of the population and harvest a soul per death; positive culls scale with efficiency
+ * (clamped to 100%). Bad/Apocalyptic burn gold; Terrible lets the Church seize converts. (With
+ * subtypes removed, Pogrom no longer targets a subtype — it is a smaller-fraction sibling of
+ * Purgatio.)
  */
-export function resolvePogrom(
-  state: GameState,
-  tier: Tier,
-  _rng: Rng,
-  target: string | undefined,
-  efficiency = 1,
-): GameState {
+export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficiency = 1): GameState {
   // Efficiency lifts the positive cull share (02 §2: Decimatio efficiency modifies positive
-  // outcomes), never beyond the whole subtype.
+  // outcomes), never beyond the whole population.
   const cullFrac = (base: number): number => Math.min(1, base * Math.max(0, efficiency));
   const purge = (frac: number): GameState => {
-    if (!target || !REPROBATE_SUBTYPES.includes(target as ReprobateSubtype)) return state;
-    const { state: next, removed } = cullSubtypeFraction(
-      state,
-      target as ReprobateSubtype,
-      cullFrac(frac),
-    );
+    const { state: next, removed } = loseReprobatesFraction(state, cullFrac(frac));
     return mintSouls(next, removed);
   };
   switch (tier) {
@@ -859,7 +825,7 @@ export function resolvePogrom(
     case 'bad':
       return loseGoldFraction(state, 0.05); // mob turns
     case 'terrible':
-      return loseConvertedReprobatesFraction(state, 0.15).state; // Church seizes converts
+      return loseReprobatesFraction(state, 0.15).state; // Church seizes converts
     case 'apocalyptic':
       return loseGoldFraction(state, 0.65); // a Higher Power smites the operation
     case 'neutral':
@@ -869,16 +835,21 @@ export function resolvePogrom(
 }
 
 /**
- * Purgatio outcome (Decimatio sheet): culls every subtype at once — Stellar/Excellent/Good kill
- * 100 / 66 / 33 % of all reprobates, harvesting a soul per death (positive share scales with
+ * Purgatio outcome (Decimatio sheet): a mass cull of the reprobate pool — Stellar/Excellent/Good
+ * kill 100 / 66 / 33 % of all reprobates, harvesting a soul per death (positive share scales with
  * efficiency, clamped to 100%). Bad burns gold; Terrible/Apocalyptic let the Church seize converts,
  * with Apocalyptic also taking 95 % of gold.
  */
-export function resolvePurgatio(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
+export function resolvePurgatio(
+  state: GameState,
+  tier: Tier,
+  _rng: Rng,
+  efficiency = 1,
+): GameState {
   const harvest = (base: number): GameState => {
     const frac = Math.min(1, base * Math.max(0, efficiency));
     const k = Math.floor(totalReprobates(state) * frac);
-    const { state: next, removed } = removeReprobatesRandom(state, k, rng);
+    const { state: next, removed } = removeReprobates(state, k);
     return mintSouls(next, removed);
   };
   switch (tier) {
@@ -891,10 +862,10 @@ export function resolvePurgatio(state: GameState, tier: Tier, rng: Rng, efficien
     case 'bad':
       return loseGoldFraction(state, 0.05); // mob turns
     case 'terrible':
-      return loseConvertedReprobatesFraction(state, 0.15).state; // Church seizes converts
+      return loseReprobatesFraction(state, 0.15).state; // Church seizes converts
     case 'apocalyptic':
       // Lose 95% of gold and a quarter of the converts.
-      return loseConvertedReprobatesFraction(loseGoldFraction(state, 0.95), 0.25).state;
+      return loseReprobatesFraction(loseGoldFraction(state, 0.95), 0.25).state;
     case 'neutral':
     default:
       return state; // mob disperses; gold already spent

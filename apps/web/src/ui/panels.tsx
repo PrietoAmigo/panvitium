@@ -36,7 +36,6 @@ import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
 import { buildCabinet } from '../game/maleficia.js';
-import { pogromTargets } from '../game/decimatio.js';
 import { useGameStore } from '../store/gameStore.js';
 import { actionName } from '../game/labels.js';
 
@@ -225,58 +224,6 @@ function LockedRow({ name, gate }: { name: string; gate: string }): ReactElement
   );
 }
 
-/**
- * Pogrom (Decimatio): purges one *chosen* reprobate subtype, so it carries a subtype picker. The
- * picker offers only present subtypes (via `pogromTargets`); casting wires the chosen subtype through
- * `act('pogrom', subtype)`. No acolyte delegation here on purpose — a delegated Pogrom runs with no
- * target (it would purge nothing yet still risk the bad-tier penalties), so automating it waits on a
- * target-selection design for acolytes.
- */
-function PogromRow({ cost, disabled }: { cost: number; disabled: boolean }): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const act = useGameStore((s) => s.act);
-  const [target, setTarget] = useState<string>('');
-  const targets = state ? pogromTargets(state) : [];
-  const none = targets.length === 0;
-  // Keep the selection valid as the population shifts (a culled subtype can vanish mid-view).
-  const selected = targets.some((t) => t.subtype === target) ? target : (targets[0]?.subtype ?? '');
-  return (
-    <div className="opera-action">
-      <div className="opera-meta">
-        <span className="opera-name">{strings.opera.pogrom}</span>
-        <span className="opera-cost">
-          {cost} {strings.resources.gold} · {ACTIONS.pogrom?.baseTimeSeconds ?? 0}s
-        </span>
-      </div>
-      <select
-        className="pogrom-target"
-        aria-label={strings.opera.pogromTarget}
-        value={selected}
-        disabled={none}
-        onChange={(e) => setTarget(e.target.value)}
-      >
-        {none ? (
-          <option value="">{strings.opera.pogromEmpty}</option>
-        ) : (
-          targets.map((t) => (
-            <option key={t.subtype} value={t.subtype}>
-              {t.label} ({t.count})
-            </option>
-          ))
-        )}
-      </select>
-      <button
-        type="button"
-        className="opera-btn"
-        disabled={disabled || none || selected === ''}
-        onClick={() => act('pogrom', selected)}
-      >
-        {strings.opera.purge}
-      </button>
-    </div>
-  );
-}
-
 /** Decimatio actions: Caedis (always open), then Pogrom and Purgatio, each gated by their Ira level. */
 function DecimatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);
@@ -304,7 +251,14 @@ function DecimatioGroup(): ReactElement {
       />
       {pogromDef &&
         (actionUnlocked(state, pogromDef) ? (
-          <PogromRow cost={goldCost('pogrom')} disabled={underway || gold < goldCost('pogrom')} />
+          <ActionRow
+            name={strings.opera.pogrom}
+            cost={`${goldCost('pogrom')} ${strings.resources.gold} · ${pogromDef.baseTimeSeconds}s`}
+            cta={strings.opera.purge}
+            disabled={underway || gold < goldCost('pogrom')}
+            onAct={() => act('pogrom')}
+            delegation={<AcolyteControls actionId="pogrom" />}
+          />
         ) : (
           pogromDef.unlock && (
             <LockedRow

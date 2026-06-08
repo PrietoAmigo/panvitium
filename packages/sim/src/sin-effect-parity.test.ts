@@ -91,19 +91,4 @@ describe('Acedia — Procrastination skill lifts the STATIC offlineTimeMul', () 
     expect(intensity).toBeGreaterThan(0);
     expect(computeModifiers(s).offlineTimeMul).toBeCloseTo(1 + intensity, 9);
   });
-
-  it('composes with Glutton (Glutton drags down, Procrastination lifts)', () => {
-    const dev = 100_000;
-    const s: GameState = withDevotion(fresh(), 'acedia', dev);
-    const withGlutton: GameState = {
-      ...s,
-      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, glutton: 500 } },
-    };
-    const justAcedia = computeModifiers(s).offlineTimeMul;
-    const both = computeModifiers(withGlutton).offlineTimeMul;
-    expect(both).toBeLessThan(justAcedia); // Glutton drag wins on the composite
-    // Strict multiplicative composition: justAcedia × glutton-only.
-    const gluttonOnly = computeModifiers(withGlutton).offlineTimeMul / justAcedia;
-    expect(gluttonOnly).toBeLessThan(1);
-  });
 });

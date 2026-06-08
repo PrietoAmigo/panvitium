@@ -361,7 +361,7 @@ function withInfluence(s: GameState, v: number): GameState {
 function withReprobates(s: GameState, n: number): GameState {
   return {
     ...s,
-    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: n } },
+    lifetime: { ...s.lifetime, reprobates: n },
   };
 }
 
@@ -408,7 +408,7 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
     expect(adv.events).toHaveLength(1);
     expect(adv.events[0]!.actionId).toBe('caedis');
     expect(adv.state.lifetime.gold.toNumber()).toBe(1000 - cost); // not charged again (one-shot)
-    expect(adv.state.lifetime.reprobates.reprobate).toBeLessThanOrEqual(100); // Caedis never adds
+    expect(adv.state.lifetime.reprobates).toBeLessThanOrEqual(100); // Caedis never adds
     expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBeNull(); // retired to idle
     expect(adv.state.lifetime.actionQueue).toHaveLength(0);
   });

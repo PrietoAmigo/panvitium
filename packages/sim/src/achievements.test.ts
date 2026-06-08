@@ -49,7 +49,7 @@ describe('Predicates fire under the right condition', () => {
     expect(earned(fresh()).has('first_harvest')).toBe(false);
     expect(earned({ ...fresh(), souls: bn(1) }).has('first_harvest')).toBe(true);
     const withReprobate = fresh();
-    withReprobate.lifetime.reprobates.reprobate = 1;
+    withReprobate.lifetime.reprobates = 1;
     expect(earned(withReprobate).has('first_stain')).toBe(true);
   });
 

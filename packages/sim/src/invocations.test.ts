@@ -246,7 +246,7 @@ describe('Invocation modifier effects', () => {
   it('Harpy: lifts Decimatio efficiency (not murder), scaled by player efficiency', () => {
     const two = computeModifiers(withInvocation(fresh(), 'harpy', 2));
     expect(two.decimatioEfficiencyMul).toBeCloseTo(1 + 0.05 * 2, 6); // baseline playerEff/invEff = 1
-    expect(two.cholericMurderRateMul).toBe(NEUTRAL_MODIFIERS.cholericMurderRateMul); // murder untouched
+    expect(two.murderRateMul).toBe(NEUTRAL_MODIFIERS.murderRateMul); // murder untouched
   });
 
   it('Behemoth: additive increase to Stellar weight (efficiency-scaled, 0.0005/stack baseline)', () => {
@@ -256,7 +256,7 @@ describe('Invocation modifier effects', () => {
 
   it('no invocations → bundle matches the neutral baseline for the affected fields', () => {
     const m = computeModifiers(fresh());
-    expect(m.cholericMurderRateMul).toBe(NEUTRAL_MODIFIERS.cholericMurderRateMul);
+    expect(m.murderRateMul).toBe(NEUTRAL_MODIFIERS.murderRateMul);
     expect(m.tierWeightMul.apocalyptic).toBeUndefined();
     expect(m.tierWeightMul.stellar).toBeUndefined();
   });
@@ -337,7 +337,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
   });
   const withReprobates = (s: GameState, n: number): GameState => ({
     ...s,
-    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: n } },
+    lifetime: { ...s.lifetime, reprobates: n },
   });
   /** The Imp's per-cycle gold cost at its effective efficiency (0.05 × player efficiency). */
   const impGold = (s: GameState): number =>
@@ -421,7 +421,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(r.events.length).toBeGreaterThanOrEqual(2);
     expect(r.events.every((e) => e.actionId === 'caedis')).toBe(true);
     expect(r.state.souls.toNumber()).toBe(soulsBefore + r.events.length); // 1 kill → 1 soul each
-    expect(r.state.lifetime.reprobates.reprobate).toBe(100 - r.events.length);
+    expect(r.state.lifetime.reprobates).toBe(100 - r.events.length);
     // Cost is paid at each cycle's START, so a paid-but-in-flight cycle means paid ≥ resolved.
     const paid = 1000 - r.state.lifetime.gold.toNumber();
     expect(paid % cost).toBe(0);
@@ -437,7 +437,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(r.events).toHaveLength(10);
     expect(r.state.lifetime.gold.toNumber()).toBe(1000 - 10 * cost); // pure cost, no Bad/Terrible
     expect(r.state.souls.toNumber()).toBe(soulsBefore + 10);
-    expect(r.state.lifetime.reprobates.reprobate).toBe(990);
+    expect(r.state.lifetime.reprobates).toBe(990);
   });
 
   it('stalls when gold runs out — no key persisted, no further kills', () => {

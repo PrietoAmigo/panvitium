@@ -38,12 +38,20 @@ export const BASE_SUICIDE_RATE_PER_SECOND = 0.00023;
 export const BASE_REPROBATE_GENERATION_PER_SECOND = 0;
 
 /**
- * Base per-Choleric murder rate (kills / Choleric / second), before sigil/maleficium modifiers.
- * Sheet-pinned (Globals: "Base Choleric murder rate" = 0.001). Cholerics are now first-class — they
- * murder any reprobate, including each other — so this rate is authoritative, not a hold-the-shape
- * value.
+ * Panvitium's instantaneous rate base R₀ (Globals: 1 × Base VC conversion rate 0.01). With the
+ * conversion mechanic removed, R(t) = R₀·eᵗ no longer drives conversion; it still drives the two
+ * surviving coupled effects (soul harvest ∝ current souls, and a flat reprobate-generation
+ * increase). t = seconds Panvitium has been active; the eᵗ growth base is shared with the cost ramp.
  */
-export const BASE_CHOLERIC_MURDER_RATE_PER_SECOND = 0.001;
+export const PANVITIUM_RATE_BASE = 0.01;
+
+/**
+ * Base reprobate murder rate (kills / reprobate / second), applied to the whole population, before
+ * sigil/maleficium/ceremony modifiers. With reprobate subtypes removed, murder is a per-capita cull
+ * of the single pool (re-anchored from the old per-Choleric rate). Placeholder pending the economy
+ * sheet — the SHAPE (per-capita on total population) is authoritative; the magnitude is tuning.
+ */
+export const BASE_MURDER_RATE_PER_SECOND = 0.0001;
 
 /** Cumulative Devotion to reach Sin level X is DEVOTION_LEVEL_BASE^X souls (Globals: 180). */
 export const DEVOTION_LEVEL_BASE = 180;
@@ -61,15 +69,15 @@ export const SKILL_INTENSITY_DIVISOR = 65.37;
 /**
  * Katabasis carry-over base fractions (Globals). Each is raised additively by a Sin's per-level
  * effect (Sins & Devotion sheet) and, later, by sigils:
- *   - remaining gold %:          +6.25%/level Avaritia (Mammon)
- *   - remaining unconverted %:   +6.25%/level Luxuria (Asmodeus)
+ *   - remaining gold %:           +6.25%/level Avaritia (Mammon)
+ *   - remaining reprobate %:      +6.25%/level Luxuria (Asmodeus)
  *   - remaining maleficia chance: +12.5%/level Superbia (Lucifer)
  */
 export const BASE_REMAINING_GOLD = 0.05; // Globals: 0.05 (5%)
 export const BASE_REMAINING_MALEFICIA = 0.05; // Globals value 0.05 (the "(25%)" note is superseded)
-export const BASE_REMAINING_UNCONVERTED_REPROBATE = 0.05; // Globals: 0.05
+export const BASE_REMAINING_REPROBATE = 0.05; // Globals: 0.05
 export const REMAINING_GOLD_PER_AVARITIA_LEVEL = 0.0625;
-export const REMAINING_UNCONVERTED_PER_LUXURIA_LEVEL = 0.0625;
+export const REMAINING_REPROBATE_PER_LUXURIA_LEVEL = 0.0625;
 export const REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL = 0.125;
 
 /** Souls offered to the Eternal Sin to end the game (Globals: 8 × 180^4). */
@@ -98,49 +106,6 @@ export const AUREVORA_BASE_GOLD_DRAIN_PER_SECOND = 100;
 export const AUREVORA_DRAIN_GROWTH_PER_SECOND = 1.05;
 /** Efficiency multiplier base; `growth^secondsActive` (≥ 1 at t = 0, rising "similarly"). */
 export const AUREVORA_EFFICIENCY_GROWTH_PER_SECOND = 1.05;
-
-/**
- * Specunitas (apex Vanagloria): multiplier on the Celebrity subtype weight in the conversion-bias
- * draw (03 §2.4 "Celebrity conversion rate is multiplied hundredfold"). Applied by
- * `conversionBiasMul` in dynamics.ts, composed multiplicatively with future per-subtype bias
- * sources (the Eligos #15 / Phenex #37 sigils attach to the same hook).
- */
-export const SPECUNITAS_CELEBRITY_BIAS_MUL = 100;
-
-/**
- * Reprobate subtype effects (03 §3). Each subtype has TWO effects: a **Sin-themed Vitium Mercatura
- * gold output boost** (applies multiplicatively to that Sin's businesses, per-count) and a
- * **secondary effect** on some global rate. All "increase" effects compose as `X × (1 + pct × n)`;
- * all "decrease" effects compose as `X / (1 + pct × n)` (asymptotic to 0, never negative — same
- * shape the Sin skills use). The **primary** per-count effect — the Vitium-gold boost — is
- * sheet-pinned (Globals "Base converted reprobate effect" = 0.01 = `SUBTYPE_VM_GOLD_BOOST_PER_COUNT`
- * below). The **secondary** rate effects below have no separate magnitude on the sheet (the 0.01 is
- * the gold boost), so they stay tuning values; the SHAPES are authoritative (which subtype affects
- * which dimension, in which direction).
- */
-/** Per-count VM gold boost applied to the matching Sin's businesses (e.g. Gluttons → Gula VM). */
-export const SUBTYPE_VM_GOLD_BOOST_PER_COUNT = 0.01; // +1% per matched subtype, per business
-/** Glutton (Gula): per-count multiplicative slowdown on the offline catchup duration. */
-export const GLUTTON_OFFLINE_PENALTY_PER_COUNT = 0.0001;
-/** Degenerate (Luxuria): per-count multiplicative reduction in baseline suicide rate. */
-export const DEGENERATE_SUICIDE_REDUCTION_PER_COUNT = 0.001;
-/** Degenerate (Luxuria): per-count multiplicative reduction in Choleric murder rate. */
-export const DEGENERATE_MURDER_REDUCTION_PER_COUNT = 0.001;
-/** Gambler (Avaritia): per-count multiplicative reduction in reprobate generation rate. */
-export const GAMBLER_GENERATION_REDUCTION_PER_COUNT = 0.001;
-/** Nihilist (Tristitia): per-count multiplicative increase in suicide rate. */
-export const NIHILIST_SUICIDE_INCREASE_PER_COUNT = 0.001;
-/** Choleric (Ira): per-count multiplicative compounding on its OWN murder rate (in addition to
- *  the linear `BASE × cholerics` term already in `reprobateRates`). Doc text: "by a per-Choleric
- *  percentage", read as a second-order amplification. */
-export const CHOLERIC_MURDER_INCREASE_PER_COUNT = 0.001;
-/** Husk (Acedia): per-count multiplicative reduction on the PLAYER's action efficiency (online
- *  only — Acedia's offline boost is a separate, future channel). */
-export const HUSK_EFFICIENCY_REDUCTION_PER_COUNT = 0.0001;
-/** Celebrity (Vanagloria): per-count multiplicative reduction on overall gold rate. */
-export const CELEBRITY_GOLD_REDUCTION_PER_COUNT = 0.0001;
-/** Sigma (Superbia): per-count multiplicative reduction on influence rate. */
-export const SIGMA_INFLUENCE_REDUCTION_PER_COUNT = 0.0001;
 
 /**
  * Ira per-level effect (03 §1, "Retribution" / Satan): each level multiplies BOTH acolyte action

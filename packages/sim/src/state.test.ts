@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialState, totalReprobates, SINS, REPROBATE_SUBTYPES } from './state.js';
+import { createInitialState, totalReprobates, SINS } from './state.js';
 import { isZero } from './bignum.js';
 
 describe('createInitialState', () => {
@@ -10,9 +10,9 @@ describe('createInitialState', () => {
     expect(Object.keys(s.sigilBindings)).toHaveLength(0);
   });
 
-  it('starts with zero reprobates of every subtype', () => {
+  it('starts with an empty reprobate pool', () => {
     const s = createInitialState('seed', 0);
-    for (const t of REPROBATE_SUBTYPES) expect(s.lifetime.reprobates[t]).toBe(0);
+    expect(s.lifetime.reprobates).toBe(0);
     expect(totalReprobates(s)).toBe(0);
   });
 

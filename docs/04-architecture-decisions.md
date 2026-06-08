@@ -546,6 +546,50 @@ Without a policy, ad-hoc decisions accumulate: a developer adds a non-optional f
 
 ---
 
+## ADR-024: Reprobates are a single pool — subtypes and the Vitium conversion mechanic removed
+
+**Status.** Accepted [2026-06-07].
+
+**Context.** The original design (03 §3) split reprobates into eight Sin-themed subtypes plus an
+unconverted default, with a *conversion* mechanic that turned unconverted reprobates into subtypes
+at a rate driven by Vitium Mercatura businesses and Vitium Compositum ceremonies. Each subtype
+carried two effects: a per-Sin Vitium-gold boost and a secondary global-rate penalty
+(offline/suicide/murder/generation/efficiency/gold/influence). This coupling reached into nearly
+every sim module (`dynamics`, `modifiers`, `businesses`, `compositum`, `sigils`, `apex`,
+`katabasis`), the save schema, and the web UI. In play it added bookkeeping and surface area without
+proportionate depth, and it made the Vitium Mercatura / Vitium Compositum economies harder to reason
+about and rebalance.
+
+**Decision.** Collapse reprobates to a single undifferentiated pool. `lifetime.reprobates` becomes
+one integer. Remove the `ReprobateSubtype` type, `SUBTYPE_OF_SIN`, the conversion pool,
+`biasedSubtype`/`conversionBiasMul`, the eight per-subtype rate penalties, and the per-Sin
+Vitium-gold boost. Re-anchor murder from a per-Choleric rate to a per-capita rate on the whole
+population. Pogrom culls the pool (no target); Defixio curses the pool (no subtype). Vitium Mercatura
+businesses become gold + generation only; the three ceremonies whose sole effect was conversion or a
+subtype penalty (Outrage Cycle, Vegas, Crusade) are kept as compile-green stubs pending the Vitium
+rework; subtype/conversion-keyed sigils and Specunitas are neutralized to an `inert` effect with
+their catalog IDs preserved. The persisted shape changes (record → integer, two field removals), so
+per ADR-023 this is a breaking change: bump `schemaVersion` 1 → 2 with a migration
+(`migrations/v1-to-v2.ts`) that sums the old per-subtype counts into one integer, drops
+`conversionPool`, and strips `defixio.target`.
+
+**Consequences.**
+- Large one-time churn (a root type change touches every consumer), but a markedly smaller and more
+  legible model afterward. Net −55 tests as the subtype/conversion/penalty specs retire.
+- Vitium Mercatura and Vitium Compositum need a redesign of the dimension conversion used to fill;
+  that is deliberately separated into follow-up slices (the economy spreadsheet is authoritative for
+  composition). Three ceremonies and a set of sigils sit inert in the meantime, flagged in the README.
+- This is the project's first real save migration — a worked example of the ADR-023 breaking-change
+  path (version bump + a self-contained, tested migration).
+
+**Alternatives considered.**
+- *Keep subtypes, simplify only the penalties.* Rejected — the conversion mechanic and per-Sin gold
+  boost were the load-bearing coupling; trimming penalties alone leaves the complexity in place.
+- *Keep the subtype field but always use one bucket.* Rejected — a half-measure that preserves the
+  record shape (and its serialization/migration cost) while delivering none of the simplification.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.

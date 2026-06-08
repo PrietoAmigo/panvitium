@@ -65,7 +65,7 @@ describe('SaveBlob envelope', () => {
 
   it('rejects a wrong schema version and a missing deviceId', () => {
     const blob = makeBlob(createInitialState('seed', 0));
-    expect(saveBlobSchema.safeParse({ ...blob, schemaVersion: 2 }).success).toBe(false);
+    expect(saveBlobSchema.safeParse({ ...blob, schemaVersion: 99 }).success).toBe(false);
     const { deviceId: _omit, ...withoutDevice } = blob;
     expect(saveBlobSchema.safeParse(withoutDevice).success).toBe(false);
   });
@@ -128,28 +128,20 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion remains v1 — pools are additive-optional, no bump needed', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(1);
+  it('schemaVersion is v2 (the reprobate-subtype/conversion removal bumped it; pools stay additive-optional)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(2);
   });
 });
 
 describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
-  it('a v1 save without businesses/buildQueue/conversionPool loads with defaults', () => {
+  it('a v1 save without businesses/buildQueue loads with defaults', () => {
     const fresh = createInitialState('seed', 0);
     const serialized = serializeGameState(fresh);
     // Strip the Vitium fields entirely — simulates a pre-Vitium save.
-    const {
-      businesses,
-      buildQueue,
-      conversionPool,
-      generationPool,
-      suicidePool,
-      murderPool,
-      ...rest
-    } = serialized.lifetime;
+    const { businesses, buildQueue, generationPool, suicidePool, murderPool, ...rest } =
+      serialized.lifetime;
     void businesses;
     void buildQueue;
-    void conversionPool;
     void generationPool;
     void suicidePool;
     void murderPool;
@@ -160,14 +152,13 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
     const back = deserializeGameState(parsed.data);
     expect(back.lifetime.businesses).toEqual({});
     expect(back.lifetime.buildQueue).toEqual([]);
-    expect(back.lifetime.conversionPool).toBe(0);
+    expect(back.lifetime.reprobates).toBe(0);
   });
 
-  it('a fresh save omits empty businesses/buildQueue and zero conversionPool from the wire', () => {
+  it('a fresh save omits empty businesses/buildQueue from the wire', () => {
     const serialized = serializeGameState(createInitialState('seed', 0));
     expect('businesses' in serialized.lifetime).toBe(false);
     expect('buildQueue' in serialized.lifetime).toBe(false);
-    expect('conversionPool' in serialized.lifetime).toBe(false);
     expect('maleficiaPrices' in serialized.lifetime).toBe(false);
     expect('handOfGloryRemaining' in serialized.lifetime).toBe(false);
     expect('defixio' in serialized.lifetime).toBe(false);
@@ -198,9 +189,8 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
           { businessId: 'luxuria-mercatura-1', remainingSeconds: 12.5 },
           { businessId: 'gula-mercatura-1', remainingSeconds: 27 },
         ],
-        conversionPool: 0.42,
         handOfGloryRemaining: 1234,
-        defixio: { target: 'choleric', elapsed: 42 },
+        defixio: { elapsed: 42 },
       },
     };
     const back = deserializeGameState(serializeGameState(withVitium));
@@ -208,9 +198,8 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
     expect(back.lifetime.buildQueue).toHaveLength(2);
     expect(back.lifetime.buildQueue[0]!.businessId).toBe('luxuria-mercatura-1');
     expect(back.lifetime.buildQueue[0]!.remainingSeconds).toBe(12.5);
-    expect(back.lifetime.conversionPool).toBeCloseTo(0.42, 10);
     expect(back.lifetime.handOfGloryRemaining).toBe(1234);
-    expect(back.lifetime.defixio).toEqual({ target: 'choleric', elapsed: 42 });
+    expect(back.lifetime.defixio).toEqual({ elapsed: 42 });
   });
 });
 

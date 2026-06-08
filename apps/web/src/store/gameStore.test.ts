@@ -182,7 +182,7 @@ describe('gameStore — Katabasis', () => {
     useGameStore.setState({
       state: {
         ...s0,
-        lifetime: { ...s0.lifetime, reprobates: { ...s0.lifetime.reprobates, reprobate: 5000 } },
+        lifetime: { ...s0.lifetime, reprobates: 5000 },
       },
     });
     store().beginKatabasis();

@@ -18,8 +18,6 @@ import {
   categoryEfficiency,
   categoryTierModifiers,
   computeModifiers,
-  conversionBiasMul,
-  sigilConversionRebalance,
   createInitialState,
   currentInvokingPower,
   invocationById,
@@ -27,20 +25,17 @@ import {
   makeRng,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
-  reprobateRates,
   resolveIndagatio,
   shutdownRefundFraction,
   sigilById,
   sigilCategoryTierContributions,
-  sigilCholericMurderGoldPerKill,
-  sigilConversionBiasContributions,
+  sigilMurderGoldPerKill,
   sigilCostReductionByChannel,
   sigilIndagatioDoubleFindChance,
   sigilInvocationEffectContributions,
   sigilInvokingPower,
   sigilKatabasisBonus,
   sigilModifierContributions,
-  sigilMurderBiasContributions,
   sigilOfflineResourceMul,
   sigilShutdownRefundMul,
   sigilStrength,
@@ -217,7 +212,7 @@ describe('Katabasis carry-over bonuses', () => {
     const s = bound(32, 10_000, maxSinsTo(fresh(), 4)); // unlocked
     expect(sigilKatabasisBonus(s, 'gold')).toBeGreaterThan(0);
     expect(sigilKatabasisBonus(s, 'maleficia')).toBeGreaterThan(0);
-    expect(sigilKatabasisBonus(s, 'unconverted')).toBeGreaterThan(0);
+    expect(sigilKatabasisBonus(s, 'reprobate')).toBeGreaterThan(0);
   });
 
   it('Halphas #38 feeds only the maleficia roll', () => {
@@ -340,50 +335,6 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
   });
 });
 
-describe('Subtype penalty-reduction sigils (S5)', () => {
-  const withSubtype = (subtype: 'sigma' | 'celebrity' | 'degenerate' | 'gambler', n: number) => {
-    const s = fresh();
-    return {
-      ...s,
-      lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, [subtype]: n } },
-    };
-  };
-
-  it('Gaap #33 softens the Sigma influence penalty (never into a bonus)', () => {
-    const s = withSubtype('sigma', 1000);
-    const base = computeModifiers(s).influenceRateMul;
-    const softened = computeModifiers(bound(33, 1_000_000, s)).influenceRateMul;
-    expect(base).toBeLessThan(1); // penalty present
-    expect(softened).toBeGreaterThan(base); // softened toward 1
-    expect(softened).toBeLessThanOrEqual(1); // but never an outright bonus
-  });
-
-  it('Malphas #39 softens the Celebrity gold penalty', () => {
-    const s = withSubtype('celebrity', 1000);
-    const base = computeModifiers(s).goldRateMul;
-    const softened = computeModifiers(bound(39, 1_000_000, s)).goldRateMul;
-    expect(softened).toBeGreaterThan(base);
-    expect(softened).toBeLessThanOrEqual(1);
-  });
-
-  it('Gremory #56 softens the Degenerate suicide penalty (and only suicide)', () => {
-    const s = withSubtype('degenerate', 1000);
-    const base = computeModifiers(s).reprobateSuicideRateMul;
-    const m = computeModifiers(bound(56, 1_000_000, s));
-    expect(m.reprobateSuicideRateMul).toBeGreaterThan(base); // suicide penalty eased
-    // The Degenerate murder penalty is a different channel — untouched by Gremory.
-    expect(m.cholericMurderRateMul).toBeCloseTo(computeModifiers(s).cholericMurderRateMul, 6);
-  });
-
-  it('Volac #62 softens the Gambler generation penalty', () => {
-    const s = withSubtype('gambler', 1000);
-    const base = computeModifiers(s).reprobateGenerationRateMul;
-    const softened = computeModifiers(bound(62, 1_000_000, s)).reprobateGenerationRateMul;
-    expect(softened).toBeGreaterThan(base);
-    expect(softened).toBeLessThanOrEqual(1);
-  });
-});
-
 describe('Flat-generator sigils (S6)', () => {
   it('Haagenti #48 generates gold/s on a log curve matching the sheet', () => {
     // Sheet: base coeff 10, N=100 → 10 × ln(101) ≈ 46.151 gold/s.
@@ -467,120 +418,24 @@ describe('Cost-reduction sigils (S8)', () => {
   });
 });
 
-describe('Conversion-bias sigils (S9)', () => {
-  it('Eligos #15 and Phenex #37 are named Celebrity-bias sigils', () => {
-    expect(SIGIL_IDS).toContain(15);
-    expect(SIGIL_IDS).toContain(37);
-    expect(sigilById(15)!.name).toBe('Eligos');
-    expect(sigilById(37)!.name).toBe('Phenex');
-    expect(sigilById(15)!.effect).toEqual({ kind: 'conversionBias', subtype: 'celebrity' });
-    expect(sigilById(37)!.effect).toEqual({ kind: 'conversionBias', subtype: 'celebrity' });
-  });
-
-  it('a bound conversion-bias sigil raises only its subtype weight by (1 + strength)', () => {
-    expect(sigilConversionBiasContributions(fresh())).toEqual({});
-    // 0.001 × sqrt(1e6) = 1 → factor 2 on Celebrity; no other subtype touched.
-    const c = sigilConversionBiasContributions(bound(15, 1_000_000));
-    expect(c.celebrity).toBeCloseTo(2, 6);
-    expect(Object.keys(c)).toEqual(['celebrity']);
-  });
-
-  it('Eligos and Phenex compose multiplicatively on Celebrity', () => {
-    const st = bound(37, 1_000_000, bound(15, 1_000_000));
-    expect(sigilConversionBiasContributions(st).celebrity).toBeCloseTo(4, 6); // 2 × 2
-  });
-
-  it('conversionBiasMul folds the bound sigil bias into the draw seam', () => {
-    expect(conversionBiasMul(fresh()).celebrity).toBeUndefined();
-    expect(conversionBiasMul(bound(15, 1_000_000)).celebrity).toBeCloseTo(2, 6);
-  });
-});
-
-describe('Subtype-targeted murder-rate sigils (S10)', () => {
-  it('Glasya-Labolas #25 / Sabnock #43 / Camio #53 are murder-bias sigils; #67 boosts the rate', () => {
-    expect(sigilById(25)!.effect).toEqual({ kind: 'murderBias', subtype: 'celebrity' });
-    expect(sigilById(43)!.effect).toEqual({ kind: 'murderBias', subtype: 'glutton' });
-    expect(sigilById(53)!.effect).toEqual({ kind: 'murderBias', subtype: 'degenerate' });
-    expect(sigilById(25)!.name).toBe('Glasya-Labolas');
-    // Amdusias #67 (non-Choleric types) lifts the overall Choleric murder rate.
+describe('Murder-rate sigils (S10)', () => {
+  it('Amdusias #67 lifts the overall murder rate; the old murder-bias sigils are now inert', () => {
     expect(sigilById(67)!.effect).toEqual({
       kind: 'modifier',
-      field: 'cholericMurderRateMul',
+      field: 'murderRateMul',
       direction: 'increase',
     });
-    // Haures #64 biases murder victims toward Cholerics (Cholerics are valid victims by default).
-    expect(sigilById(64)!.effect).toEqual({ kind: 'murderBias', subtype: 'choleric' });
+    // Subtype murder-bias sigils were neutralized with subtypes (entries kept, effect inert).
+    for (const id of [25, 43, 53, 64]) {
+      expect(sigilById(id)!.effect).toEqual({ kind: 'inert' });
+    }
+    expect(sigilById(25)!.name).toBe('Glasya-Labolas');
     expect(sigilById(64)!.name).toBe('Haures');
   });
 
-  it('a bound murder-bias sigil raises only its subtype weight by (1 + strength)', () => {
-    expect(sigilMurderBiasContributions(fresh())).toEqual({});
-    const c = sigilMurderBiasContributions(bound(25, 1_000_000));
-    expect(c.celebrity).toBeCloseTo(2, 6); // 0.001 × sqrt(1e6) = 1 → factor 2
-    expect(Object.keys(c)).toEqual(['celebrity']);
-  });
-
-  it('Amdusias #67 lifts the Choleric murder-rate modifier', () => {
+  it('Amdusias #67 lifts the murder-rate modifier', () => {
     const { scalar } = sigilModifierContributions(bound(67, 1_000_000));
-    expect(scalar.cholericMurderRateMul).toBeCloseTo(2, 6);
-  });
-
-  it('Haures #64 biases murder onto Cholerics (a Choleric-targeting murder-bias sigil)', () => {
-    const c = sigilMurderBiasContributions(bound(64, 1_000_000));
-    expect(c.choleric).toBeCloseTo(2, 6); // 0.001 × sqrt(1e6) = 1 → factor 2
-    expect(Object.keys(c)).toEqual(['choleric']);
-  });
-
-  it('a bound murder-bias sigil culls its subtype harder (weighted victim draw)', () => {
-    // ≈ 11× Celebrity weight; equal Celebrity/Glutton counts; a pre-filled murder pool to resolve.
-    const base = bound(25, 100_000_000);
-    const seeded: GameState = {
-      ...base,
-      lifetime: {
-        ...base.lifetime,
-        reprobates: { ...base.lifetime.reprobates, celebrity: 50, glutton: 50, choleric: 10 },
-        murderPool: 80,
-      },
-    };
-    // Tiny delta → only the pre-filled murders resolve (no meaningful births/suicides/conversions).
-    const after = applyReprobateDynamics(seeded, 1e-6, makeRng(7));
-    expect(after.lifetime.reprobates.celebrity).toBeLessThan(after.lifetime.reprobates.glutton);
-    // Cholerics are now eligible victims too (small unbiased share of the weighted draw).
-    expect(after.lifetime.reprobates.choleric).toBeLessThanOrEqual(10);
-  });
-});
-
-describe('Nihilist suicide-rate sigils (S11)', () => {
-  const withNihilists = (s: GameState, n = 100): GameState => ({
-    ...s,
-    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, nihilist: n } },
-  });
-
-  it('Ronove #27 and Focalor #41 amplify the Nihilist suicide multiplier', () => {
-    for (const id of [27, 41]) {
-      expect(sigilById(id)!.effect).toEqual({
-        kind: 'modifier',
-        field: 'nihilistSuicideMul',
-        direction: 'increase',
-      });
-    }
-    expect(sigilById(27)!.name).toBe('Ronove');
-    // 0.001 × sqrt(1e6) = 1 → ×2 on the field's sigil contribution.
-    expect(sigilModifierContributions(bound(27, 1_000_000)).scalar.nihilistSuicideMul).toBeCloseTo(
-      2,
-      6,
-    );
-  });
-
-  it('raises the suicide rate when Nihilists are present, and is inert when they are not', () => {
-    const baseRate = computeModifiers(withNihilists(fresh())).reprobateSuicideRateMul;
-    const boosted = computeModifiers(withNihilists(bound(27, 1_000_000))).reprobateSuicideRateMul;
-    expect(boosted).toBeGreaterThan(baseRate);
-    // No Nihilists → the per-count term is zero, so the sigil cannot lift the rate.
-    expect(computeModifiers(bound(27, 1_000_000)).reprobateSuicideRateMul).toBeCloseTo(
-      computeModifiers(fresh()).reprobateSuicideRateMul,
-      9,
-    );
+    expect(scalar.murderRateMul).toBeCloseTo(2, 6);
   });
 });
 
@@ -688,73 +543,6 @@ describe('Vitium Compositum output sigil (S14)', () => {
   });
 });
 
-describe('Conversion-rebalance sigils Ose #57 / Orias #59 (S14b)', () => {
-  // glutton is the unique smallest converted subtype; celebrity the unique largest.
-  const counts = {
-    reprobate: 0,
-    glutton: 1,
-    degenerate: 10,
-    gambler: 10,
-    nihilist: 10,
-    choleric: 10,
-    husk: 10,
-    celebrity: 100,
-    sigma: 10,
-  };
-  const withCounts = (s: GameState): GameState => ({
-    ...s,
-    lifetime: { ...s.lifetime, reprobates: { ...counts } },
-  });
-
-  it('Ose #57 / Orias #59 are conversion-rebalance sigils (minority / majority)', () => {
-    expect(sigilById(57)!.effect).toEqual({ kind: 'conversionRebalance', direction: 'minority' });
-    expect(sigilById(59)!.effect).toEqual({ kind: 'conversionRebalance', direction: 'majority' });
-    expect(sigilById(57)!.name).toBe('Ose');
-    expect(sigilById(59)!.name).toBe('Orias');
-  });
-
-  it('sigilConversionRebalance reports the bound minority / majority strengths', () => {
-    expect(sigilConversionRebalance(fresh())).toEqual({ minority: 0, majority: 0 });
-    // 0.001 × sqrt(1e6) = 1.
-    expect(sigilConversionRebalance(bound(57, 1_000_000)).minority).toBeCloseTo(1, 6);
-    expect(sigilConversionRebalance(bound(59, 1_000_000)).majority).toBeCloseTo(1, 6);
-  });
-
-  it('Ose biases conversion toward the minority subtype; Orias toward the majority', () => {
-    // Ose: glutton (smallest) weight × (1 + 1) = ×2.
-    expect(conversionBiasMul(withCounts(bound(57, 1_000_000))).glutton).toBeCloseTo(2, 6);
-    // Orias: celebrity (largest) weight × 2.
-    expect(conversionBiasMul(withCounts(bound(59, 1_000_000))).celebrity).toBeCloseTo(2, 6);
-    // Unbound: no rebalance multiplier at all.
-    expect(conversionBiasMul(withCounts(fresh()))).toEqual({});
-  });
-});
-
-describe('Vual #47 — softens the Degenerate suicide/murder penalties (S14c)', () => {
-  const withDegens = (s: GameState): GameState => ({
-    ...s,
-    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, degenerate: 500 } },
-  });
-
-  it('Vual #47 is a degenerateDeathRates penalty-reduction sigil', () => {
-    expect(sigilById(47)!.effect).toEqual({
-      kind: 'penaltyReduction',
-      channel: 'degenerateDeathRates',
-    });
-    expect(sigilById(47)!.name).toBe('Vual');
-  });
-
-  it('softens BOTH the suicide and Choleric-murder dampening from Degenerates', () => {
-    const unbound = computeModifiers(withDegens(fresh()));
-    const vual = computeModifiers(withDegens(bound(47, 1_000_000)));
-    // Degenerates drag both rates below 1; Vual pulls both back up toward 1 (softer penalty).
-    expect(unbound.reprobateSuicideRateMul).toBeLessThan(1);
-    expect(unbound.cholericMurderRateMul).toBeLessThan(1);
-    expect(vual.reprobateSuicideRateMul).toBeGreaterThan(unbound.reprobateSuicideRateMul);
-    expect(vual.cholericMurderRateMul).toBeGreaterThan(unbound.cholericMurderRateMul);
-  });
-});
-
 describe('Per-invocation effectiveness sigils (S15)', () => {
   const withInv = (s: GameState, id: string, n = 1): GameState => ({
     ...s,
@@ -790,42 +578,27 @@ describe('Per-invocation effectiveness sigils (S15)', () => {
   });
 });
 
-describe('Sigil one-offs (S16): conversion rate, murder gold, shutdown refund', () => {
-  it('Bael #1 lifts the overall conversion rate', () => {
-    expect(sigilById(1)!.effect).toEqual({
-      kind: 'modifier',
-      field: 'conversionRateMul',
-      direction: 'increase',
-    });
-    expect(computeModifiers(bound(1, 1_000_000)).conversionRateMul).toBeCloseTo(2, 6);
-    expect(computeModifiers(fresh()).conversionRateMul).toBe(1);
-    // Behavioural: a Compositum conversion source scales with the mul.
-    const withSrc = (s: GameState): GameState => ({
-      ...s,
-      lifetime: { ...s.lifetime, activeToggles: ['loan-shark-op'] },
-    });
-    const rate = (s: GameState): number =>
-      reprobateRates(s, computeModifiers(s)).conversionPerSecond;
-    const base = rate(withSrc(fresh()));
-    expect(base).toBeGreaterThan(0);
-    expect(rate(withSrc(bound(1, 1_000_000)))).toBeCloseTo(base * 2, 6);
+describe('Sigil one-offs (S16): murder gold, shutdown refund', () => {
+  it('Bael #1 is now inert (its overall-conversion effect was removed with subtypes)', () => {
+    expect(sigilById(1)!.effect).toEqual({ kind: 'inert' });
+    expect(sigilById(1)!.name).toBe('Bael');
   });
 
-  it('Leraie #14 yields gold on each Choleric murder, inert when unbound', () => {
+  it('Leraie #14 yields gold on each murder, inert when unbound', () => {
     expect(sigilById(14)!.effect).toEqual({ kind: 'murderGold' });
-    expect(sigilCholericMurderGoldPerKill(bound(14, 1_000_000))).toBeCloseTo(1, 6); // 0.001×sqrt(1e6)
-    expect(sigilCholericMurderGoldPerKill(fresh())).toBe(0);
-    // Seed 5 pending murders against a pool of gamblers; a tiny step drains only those.
+    expect(sigilMurderGoldPerKill(bound(14, 1_000_000))).toBeCloseTo(1, 6); // 0.001×sqrt(1e6)
+    expect(sigilMurderGoldPerKill(fresh())).toBe(0);
+    // Seed 5 pending murders against the pool; a tiny step drains only those.
     const seed = (s: GameState): GameState => ({
       ...s,
       lifetime: {
         ...s.lifetime,
-        reprobates: { ...s.lifetime.reprobates, gambler: 10 },
+        reprobates: 10,
         murderPool: 5,
       },
     });
     const goldAfter = (s: GameState): number =>
-      applyReprobateDynamics(seed(s), 1e-6, makeRng(7)).lifetime.gold.toNumber();
+      applyReprobateDynamics(seed(s), 1e-6).lifetime.gold.toNumber();
     const base = goldAfter(fresh());
     const leraie = goldAfter(bound(14, 1_000_000));
     expect(leraie - base).toBeCloseTo(5, 6); // 5 murders × 1 gold each

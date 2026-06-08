@@ -2,7 +2,6 @@ import { useState, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   ACTIONS,
-  REPROBATE_SUBTYPES,
   INVOCATION_IDS,
   activeInvocationCount,
   invocationById,
@@ -187,8 +186,6 @@ function ReprobatesTab(): ReactElement {
   const rates = reprobateRates(state, mods);
   const reps = state.lifetime.reprobates;
   const deaths = rates.suicidePerSecond + rates.murderPerSecond;
-  const converted = REPROBATE_SUBTYPES.filter((t) => t !== 'reprobate' && reps[t] > 0);
-  const totalConverted = converted.reduce((sum, t) => sum + reps[t], 0);
   const num = (n: number): string => Math.floor(n).toLocaleString('en-US');
   const perSec = (n: number): string => `${n >= 0 ? '+' : ''}${n.toFixed(2)}/s`;
 
@@ -196,21 +193,10 @@ function ReprobatesTab(): ReactElement {
     <>
       <div className="analytics-rates">
         <StatRow label={strings.analytics.generation} value={perSec(rates.generationPerSecond)} />
-        <StatRow label={strings.analytics.conversion} value={perSec(rates.conversionPerSecond)} />
         <StatRow label={strings.analytics.deaths} value={perSec(-deaths)} />
       </div>
       <div className="analytics-list">
-        <StatRow label={strings.analytics.unconverted} value={num(reps.reprobate)} />
-        {converted.length === 0 ? (
-          <p className="pc-empty">{strings.analytics.noConverted}</p>
-        ) : (
-          <>
-            {converted.map((t) => (
-              <StatRow key={t} label={strings.subtypes[t]} value={num(reps[t])} />
-            ))}
-            <StatRow label={strings.analytics.totalConverted} value={num(totalConverted)} />
-          </>
-        )}
+        <StatRow label={strings.analytics.reprobates} value={num(reps)} />
       </div>
     </>
   );

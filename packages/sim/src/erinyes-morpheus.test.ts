@@ -51,7 +51,7 @@ function withGates(opts: {
   // 17 Black Salt Pouches (each +1 IP, stackable) covers either gate (Erinyes 17, Morpheus 14).
   const maleficia = Array.from({ length: 20 }, () => 'black_salt_pouch');
   const sin = opts.apex === 'erinyes' ? 'ira' : 'acedia';
-  const reprobates = { ...s.lifetime.reprobates, reprobate: opts.reprobates ?? 0 };
+  const reprobates = opts.reprobates ?? 0;
   return {
     ...s,
     souls: bn(opts.souls ?? 100_000),

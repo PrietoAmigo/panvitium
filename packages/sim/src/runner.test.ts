@@ -17,7 +17,7 @@ function withGold(s: GameState, gold: number): GameState {
 function withReprobates(s: GameState, n: number): GameState {
   return {
     ...s,
-    lifetime: { ...s.lifetime, reprobates: { ...s.lifetime.reprobates, reprobate: n } },
+    lifetime: { ...s.lifetime, reprobates: n },
   };
 }
 
@@ -74,7 +74,7 @@ describe('advanceRunnerCycles — forced tier', () => {
     expect(r.events).toHaveLength(5);
     expect(r.state.lifetime.gold.toNumber()).toBe(500); // exactly 5×100, no Bad/Terrible bite
     expect(r.state.souls.toNumber()).toBe(before + 5); // 5 Good kills → 5 souls
-    expect(r.state.lifetime.reprobates.reprobate).toBe(995);
+    expect(r.state.lifetime.reprobates).toBe(995);
   });
 });
 

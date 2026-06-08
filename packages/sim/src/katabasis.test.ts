@@ -9,7 +9,7 @@ import {
   unbindAllSigils,
   totalBound,
   remainingGoldFraction,
-  remainingUnconvertedFraction,
+  remainingReprobateFraction,
   remainingMaleficiaChance,
   commitKatabasis,
   enterKatabasis,
@@ -64,7 +64,7 @@ describe('carry-over fractions', () => {
   it('use base values with no Devotion', () => {
     const s = fresh(0);
     expect(remainingGoldFraction(s)).toBeCloseTo(0.05, 6);
-    expect(remainingUnconvertedFraction(s)).toBeCloseTo(0.05, 6);
+    expect(remainingReprobateFraction(s)).toBeCloseTo(0.05, 6);
     expect(remainingMaleficiaChance(s)).toBeCloseTo(0.05, 6);
   });
 
@@ -80,7 +80,7 @@ describe('carry-over fractions', () => {
       },
     };
     expect(remainingGoldFraction(s)).toBeCloseTo(0.05 + 0.0625 * 2, 6); // 0.175
-    expect(remainingUnconvertedFraction(s)).toBeCloseTo(0.05 + 0.0625 * 1, 6); // 0.1125
+    expect(remainingReprobateFraction(s)).toBeCloseTo(0.05 + 0.0625 * 1, 6); // 0.1125
     expect(remainingMaleficiaChance(s)).toBeCloseTo(0.05 + 0.125 * 4, 6); // 0.55
   });
 });
@@ -94,7 +94,7 @@ describe('commitKatabasis', () => {
         ...s.lifetime,
         gold: bn(1000),
         influence: bn(500),
-        reprobates: { ...s.lifetime.reprobates, reprobate: 100, glutton: 50 },
+        reprobates: 150,
         invocations: { upir: 3 },
         activeToggles: ['bacchanal'],
         actionQueue: [{ actionId: 'caedis', remainingSeconds: 4 }],
@@ -103,15 +103,14 @@ describe('commitKatabasis', () => {
     };
   }
 
-  it('keeps base fractions of gold and unconverted reprobates; loses converted', () => {
+  it('keeps a base fraction of gold and reprobates', () => {
     const { state, recap } = commitKatabasis(loaded());
     expect(soulsOf(state)).toBe(500); // carried untouched
     expect(eq(state.lifetime.gold, bn(50))).toBe(true); // 5% of 1000
-    expect(state.lifetime.reprobates.reprobate).toBe(5); // 5% of 100
-    expect(state.lifetime.reprobates.glutton).toBe(0); // converted lost
-    expect(totalReprobates(state)).toBe(5);
+    expect(state.lifetime.reprobates).toBe(7); // floor(5% of 150)
+    expect(totalReprobates(state)).toBe(7);
     expect(recap.goldKept.toString()).toBe('50');
-    expect(recap.reprobatesKept).toBe(5);
+    expect(recap.reprobatesKept).toBe(7);
     expect(recap.soulsCarried.toString()).toBe('500');
   });
 
@@ -172,7 +171,7 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
       lifetime: {
         ...base.lifetime,
         gold: bn(1000),
-        reprobates: { ...base.lifetime.reprobates, reprobate: 50 },
+        reprobates: 50,
         businesses: { 'gula-mercatura-1': 2 },
         buildQueue: [{ businessId: 'ira-mercatura-1', remainingSeconds: 30 }],
         activeToggles: ['bacchanal'],
@@ -208,7 +207,7 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
     expect(after.lifetime.acolytes[0]!.assignedAction).toBeNull();
     expect(after.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
     // Reprobates are NOT cleared here — the commit rolls them for carry-over.
-    expect(after.lifetime.reprobates.reprobate).toBe(50);
+    expect(after.lifetime.reprobates).toBe(50);
     // Souls in the pool are untouched on entry.
     expect(after.souls.toNumber()).toBe(5000);
   });
@@ -227,7 +226,7 @@ describe('tick — frozen while inKatabasis (02 §6)', () => {
     const base = createInitialState('freeze', 0);
     return {
       ...base,
-      lifetime: { ...base.lifetime, reprobates: { ...base.lifetime.reprobates, reprobate: n } },
+      lifetime: { ...base.lifetime, reprobates: n },
     };
   }
 

@@ -28,12 +28,7 @@ import {
 } from './constants.js';
 import { mintSouls } from './population.js';
 import { type Rng } from './rng.js';
-import {
-  type GameState,
-  type ReprobateSubtype,
-  REPROBATE_SUBTYPES,
-  totalReprobates,
-} from './state.js';
+import { type GameState, totalReprobates } from './state.js';
 
 /**
  * Aurevora gold drain per second at a given active-duration: `base × growth^secondsActive`. May
@@ -64,12 +59,6 @@ export function aurevoraEfficiencyMul(secondsActive: number): number {
 export function astiwihadTriggerChance(deltaSeconds: number): number {
   if (deltaSeconds <= 0) return 0;
   return 1 - (1 - ASTIWIHAD_WIPE_CHANCE_PER_SECOND) ** deltaSeconds;
-}
-
-function zeroReprobates(): Record<ReprobateSubtype, number> {
-  const out = {} as Record<ReprobateSubtype, number>;
-  for (const t of REPROBATE_SUBTYPES) out[t] = 0;
-  return out;
 }
 
 /**
@@ -138,7 +127,7 @@ export function applyInvocationTickEffects(
       const minted = mintSouls(working, population);
       working = {
         ...minted,
-        lifetime: { ...minted.lifetime, reprobates: zeroReprobates() },
+        lifetime: { ...minted.lifetime, reprobates: 0 },
       };
       notices.push(`Astiwihad's despair took every reprobate \u2014 ${population} souls reaped.`);
     }

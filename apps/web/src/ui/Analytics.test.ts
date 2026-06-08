@@ -69,7 +69,7 @@ describe('AnalyticsGroup', () => {
     expect(container!.textContent).toContain('Player action efficiency');
     expect(container!.textContent).toContain('vigil kept');
     clickTab('Reprobates');
-    expect(container!.textContent).toContain('Unconverted');
+    expect(container!.textContent).toContain('Reprobates');
   });
 });
 
@@ -102,7 +102,7 @@ describe('AnalyticsGroup — Invocations tab', () => {
 
   it('lists a runner with its expected per-cycle outcome (mean) and cadence — no bars/dropdown', () => {
     const base = createInitialState('seed', 0);
-    const withReps = addReprobates(base, 'reprobate', 200);
+    const withReps = addReprobates(base, 200);
     const state: GameState = {
       ...withReps,
       lifetime: { ...withReps.lifetime, invocations: { imp: 2 } },

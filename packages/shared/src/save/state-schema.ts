@@ -9,11 +9,9 @@ import { z } from 'zod';
 import {
   type GameState,
   type Sin,
-  type ReprobateSubtype,
   type SigilId,
   type BigNum,
   SINS,
-  REPROBATE_SUBTYPES,
   serializeBigNum,
   deserializeBigNum,
 } from '@panvitium/sim';
@@ -63,7 +61,7 @@ const lifetimeSchema = z.object({
   gold: bigNumString,
   influence: bigNumString,
   maxInfluence: bigNumString,
-  reprobates: recordOf(REPROBATE_SUBTYPES, z.number().int().nonnegative()),
+  reprobates: z.number().int().nonnegative(),
   acolytes: z.array(acolyteSchema),
   invocations: z.record(z.string(), z.number().int().nonnegative()),
   // Autonomous-runner timers (Familiar's background Indagatio, 02 §3): invocation id -> remaining
@@ -86,17 +84,15 @@ const lifetimeSchema = z.object({
   generationPool: z.number().nonnegative().optional(),
   suicidePool: z.number().nonnegative().optional(),
   murderPool: z.number().nonnegative().optional(),
-  // Vitium Mercatura — businesses + builds + conversion pool (03 §2.3 / 02 §9). All additive
-  // optional under ADR-023; absent / empty / 0 round-trips identically to a pre-Vitium save.
+  // Vitium Mercatura — businesses + builds (03 §2.3 / 02 §9). All additive optional under ADR-023;
+  // absent / empty round-trips identically to a pre-Vitium save. (The conversion pool was removed
+  // with reprobate subtypes; v1 saves that carried it are migrated by dropping the field.)
   businesses: z.record(z.string(), z.number().int().nonnegative()).optional(),
   buildQueue: z.array(buildTimerSchema).optional(),
-  conversionPool: z.number().nonnegative().optional(),
   handOfGloryRemaining: z.number().nonnegative().optional(),
   // Impact-feedback inbox (Phase 5.2). Additive-optional (ADR-023): absent → empty inbox at load.
   inbox: z.array(inboxEntrySchema).optional(),
-  defixio: z
-    .object({ target: z.string().nullable(), elapsed: z.number().nonnegative() })
-    .optional(),
+  defixio: z.object({ elapsed: z.number().nonnegative() }).optional(),
   // Apex Katabasis-modifier pending flags + Morpheus lockout (03 §2.4). Additive-optional
   // (ADR-023): absent in old saves → false at runtime; omitted when false.
   pendingErinyes: z.boolean().optional(),
@@ -142,9 +138,6 @@ export function serializeGameState(state: GameState): SerializedGameState {
     if (bound !== undefined) sigilBindings[id] = serializeBigNum(bound);
   }
 
-  const reprobates = {} as Record<ReprobateSubtype, number>;
-  for (const t of REPROBATE_SUBTYPES) reprobates[t] = state.lifetime.reprobates[t];
-
   return {
     souls: serializeBigNum(state.souls),
     devotion,
@@ -157,7 +150,7 @@ export function serializeGameState(state: GameState): SerializedGameState {
       gold: serializeBigNum(state.lifetime.gold),
       influence: serializeBigNum(state.lifetime.influence),
       maxInfluence: serializeBigNum(state.lifetime.maxInfluence),
-      reprobates,
+      reprobates: state.lifetime.reprobates,
       acolytes: state.lifetime.acolytes.map((a) => ({
         id: a.id,
         assignedAction: a.assignedAction,
@@ -193,9 +186,6 @@ export function serializeGameState(state: GameState): SerializedGameState {
         : {}),
       ...(state.lifetime.suicidePool > 0 ? { suicidePool: state.lifetime.suicidePool } : {}),
       ...(state.lifetime.murderPool > 0 ? { murderPool: state.lifetime.murderPool } : {}),
-      ...(state.lifetime.conversionPool > 0
-        ? { conversionPool: state.lifetime.conversionPool }
-        : {}),
       ...(state.lifetime.handOfGloryRemaining > 0
         ? { handOfGloryRemaining: state.lifetime.handOfGloryRemaining }
         : {}),
@@ -208,14 +198,7 @@ export function serializeGameState(state: GameState): SerializedGameState {
             })),
           }
         : {}),
-      ...(state.lifetime.defixio
-        ? {
-            defixio: {
-              target: state.lifetime.defixio.target,
-              elapsed: state.lifetime.defixio.elapsed,
-            },
-          }
-        : {}),
+      ...(state.lifetime.defixio ? { defixio: { elapsed: state.lifetime.defixio.elapsed } } : {}),
       // Apex Katabasis-modifier flags + Morpheus lockout: omit when false so fresh / pre-apex
       // saves keep the prior wire form (ADR-023 additive-optional discipline).
       ...(state.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
@@ -257,9 +240,6 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     sigilBindings[Number(id)] = deserializeBigNum(bound);
   }
 
-  const reprobates = {} as Record<ReprobateSubtype, number>;
-  for (const t of REPROBATE_SUBTYPES) reprobates[t] = s.lifetime.reprobates[t];
-
   return {
     souls: deserializeBigNum(s.souls),
     devotion,
@@ -272,7 +252,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       gold: deserializeBigNum(s.lifetime.gold),
       influence: deserializeBigNum(s.lifetime.influence),
       maxInfluence: deserializeBigNum(s.lifetime.maxInfluence),
-      reprobates,
+      reprobates: s.lifetime.reprobates,
       acolytes: s.lifetime.acolytes.map((a) => ({
         id: a.id,
         assignedAction: a.assignedAction,
@@ -295,21 +275,13 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       generationPool: s.lifetime.generationPool ?? 0,
       suicidePool: s.lifetime.suicidePool ?? 0,
       murderPool: s.lifetime.murderPool ?? 0,
-      conversionPool: s.lifetime.conversionPool ?? 0,
       handOfGloryRemaining: s.lifetime.handOfGloryRemaining ?? 0,
       inbox: (s.lifetime.inbox ?? []).map((e) => ({
         id: e.id,
         receivedAt: e.receivedAt,
         readAt: e.readAt,
       })),
-      ...(s.lifetime.defixio
-        ? {
-            defixio: {
-              target: s.lifetime.defixio.target as ReprobateSubtype | null,
-              elapsed: s.lifetime.defixio.elapsed,
-            },
-          }
-        : {}),
+      ...(s.lifetime.defixio ? { defixio: { elapsed: s.lifetime.defixio.elapsed } } : {}),
       // Apex Katabasis-modifier flags + Morpheus lockout: conditional spread keeps them optional
       // under exactOptionalPropertyTypes (assigning undefined would type-error).
       ...(s.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),

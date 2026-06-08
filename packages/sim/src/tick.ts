@@ -21,15 +21,15 @@ import {
   advanceToggles,
   compositumGoldPerSecond,
   compositumInfluencePerSecond,
-  panvitiumConversionRate,
+  panvitiumRate,
 } from './compositum.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
 import { computeModifiers } from './modifiers.js';
-import { cullSubtypeCount, mintSouls } from './population.js';
+import { removeReprobates, mintSouls } from './population.js';
 import { makeRng } from './rng.js';
-import { REPROBATE_SUBTYPES, type ActionTimer, type GameState } from './state.js';
+import { type ActionTimer, type GameState } from './state.js';
 import { evaluateAchievements } from './achievements.js';
 import { deliverEmails } from './emails.js';
 
@@ -89,7 +89,7 @@ export function perSecondRates(state: GameState): PerSecondRates {
   const mods = computeModifiers(state);
   const gold =
     (BASE_GOLD_PER_SECOND +
-      businessGoldPerSecond(state, mods) * mods.vitiumMercaturaOutputMul +
+      businessGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
     mods.goldRateMul;
@@ -163,7 +163,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   const offlineInfluenceMul = deps.offlineInfluenceMul ?? 1;
   const goldPerSecond =
     (BASE_GOLD_PER_SECOND +
-      businessGoldPerSecond(state, mods) * mods.vitiumMercaturaOutputMul +
+      businessGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
     mods.goldRateMul *
@@ -241,16 +241,16 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   working = advanceBuilds(working, deltaSeconds);
 
   // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer
-  //    births / suicides / murders / conversions (02 §9). Each death mints 1 soul. The pools
-  //    live on the lifetime state and persist across save/load (ADR-023 additive optional).
-  working = applyReprobateDynamics(working, deltaSeconds, rng);
+  //    births / suicides / murders (02 §9). Each death mints 1 soul. The pools live on the
+  //    lifetime state and persist across save/load (ADR-023 additive optional).
+  working = applyReprobateDynamics(working, deltaSeconds);
 
   // 4b. Panvitium soul harvest (03 §2.3): while the ritual burns, it mints souls each second in
   //     proportion to the current soul total — R(t) × souls — compounding the hoard for as long as
   //     the exponential upkeep can be sustained. Accrued fractionally on `souls` (BigNum), floored
   //     only at display/spend per ADR-005. R(t) reads the post-upkeep duration set at step 0.
   {
-    const panvRate = panvitiumConversionRate(working);
+    const panvRate = panvitiumRate(working);
     if (panvRate > 0) {
       working = {
         ...working,
@@ -271,44 +271,23 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
     };
   }
 
-  // 4d. Defixio curse (Maleficia): a single-use hex on a random subtype. The first tick after it is
-  //     cast rolls the target uniformly among the present subtypes (the only Defixio RNG draw —
-  //     gated, so an uncast game leaves the stream untouched); thereafter it culls that subtype at
+  // 4d. Defixio curse (Maleficia): a single-use hex on the reprobate pool. It culls the pool at
   //     eᵗ per second (t = seconds the curse has run, read at the start of the interval), minting a
-  //     soul per death, until the subtype is exterminated — then the curse lifts.
+  //     soul per death, until the pool is empty — then the curse lifts. No RNG draw (single pool).
   if (working.lifetime.defixio) {
-    if (working.lifetime.defixio.target === null) {
-      const present = REPROBATE_SUBTYPES.filter((t) => working.lifetime.reprobates[t] > 0);
-      working =
-        present.length === 0
-          ? clearDefixio(working) // nothing left to curse; it fizzles
-          : {
-              ...working,
-              lifetime: {
-                ...working.lifetime,
-                defixio: { target: present[rng.int(present.length)]!, elapsed: 0 },
-              },
-            };
-    }
     const curse = working.lifetime.defixio;
-    if (curse && curse.target !== null) {
-      const culled = cullSubtypeCount(
-        working,
-        curse.target,
-        Math.exp(curse.elapsed) * deltaSeconds,
-      );
-      working = mintSouls(culled.state, culled.removed);
-      working =
-        working.lifetime.reprobates[curse.target] <= 0
-          ? clearDefixio(working) // subtype exterminated — the curse lifts
-          : {
-              ...working,
-              lifetime: {
-                ...working.lifetime,
-                defixio: { target: curse.target, elapsed: curse.elapsed + deltaSeconds },
-              },
-            };
-    }
+    const culled = removeReprobates(working, Math.exp(curse.elapsed) * deltaSeconds);
+    working = mintSouls(culled.state, culled.removed);
+    working =
+      working.lifetime.reprobates <= 0
+        ? clearDefixio(working) // pool exterminated — the curse lifts
+        : {
+            ...working,
+            lifetime: {
+              ...working.lifetime,
+              defixio: { elapsed: curse.elapsed + deltaSeconds },
+            },
+          };
   }
 
   // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; unlocks on a

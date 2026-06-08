@@ -1,37 +1,25 @@
 /**
  * Vitium Compositum (03 §2.3) — multi-Sin themed TOGGLES. Each is gated behind two (or three)
  * Cardinal Sins at a minimum level, and while active it pays a per-second cost and contributes a
- * per-second effect bundle: gold income, influence income, reprobate generation, and conversion
- * biased toward 2–3 subtypes. A toggle that cannot pay its full per-second cost AUTO-DEACTIVATES
- * on the next tick (02 §3); there's no refund and no partial application.
+ * per-second effect bundle: gold income, influence income, and reprobate-rate shifts. A toggle that
+ * cannot pay its full per-second cost AUTO-DEACTIVATES on the next tick (02 §3); there's no refund
+ * and no partial application.
  *
- * The base toggle economics — per-second gold/influence cost, gold/influence income, and standard
- * (optionally single-subtype-restricted) conversion — are wired here and tuned to the Vitium
- * Compositum sheet for the toggles that need only those mechanics: Outrage Cycle, Loan Shark Op,
- * Charity, and Gala. The remaining sheet toggles each hinge on a bespoke effect not yet in the
- * engine — population-proportional generation (Bacchanal), offline-gain scaling (Dolce Far Niente),
- * percentage-death (Enraging Broadcast), flat murder/suicide/generation-rate shifts (Ethnocentric
- * Revolt, Doom Gathering, No-babies Movement), and the four-Sin "subtype penalty" ceremonies
- * (Vegas, Crusade). All of these effect slices have since shipped, each with sheet-accurate
- * magnitudes (e.g. Bacchanal generates 10% of Gluttons+Degenerates/s; Panvitium's 1000/100
- * gold/influence costs, its 0.01 conversion rate, and the eᵗ growth base all derive from Globals).
+ * NOTE: the conversion + subtype-bias mechanic was removed. Ceremonies whose ONLY effect was biased
+ * conversion (Loan Shark Op, Charity, Gala) now keep their gold/influence income; ceremonies whose
+ * effect was a subtype-penalty increase (Vegas, Crusade) keep their income too; Outrage Cycle —
+ * which had no income, only conversion — is left as an income-less stub. All three of these are
+ * flagged for redesign in the Vitium Compositum rework (Slice 3). The flat-rate ceremonies
+ * (No-babies Movement, Doom Gathering, Ethnocentric Revolt, Enraging Broadcast, Dolce Far Niente)
+ * and Bacchanal's population-proportional generation are unaffected in shape.
  *
- * Number convention: every toggle carries its sheet-pinned magnitude. The only Vitium Compositum
- * tuning values NOT on the sheet are Panvitium's churn-rate multipliers (generation / suicide /
- * murder while active), which live in `modifiers.ts`.
- *
- * Active toggles are tracked by membership in `LifetimeState.activeToggles` (a string[] already
- * on the save schema). A VC is either on or off — no per-VC payload this slice, so no new
- * persisted state. Panvitium's duration tracking will add an additive-optional field when it lands.
+ * Active toggles are tracked by membership in `LifetimeState.activeToggles`. A VC is either on or
+ * off — no per-VC payload. Panvitium's duration is tracked in `toggleDurations`.
  */
 import { floor, gte, sub } from './bignum.js';
+import { PANVITIUM_RATE_BASE } from './constants.js';
 import { sinLevel } from './progression.js';
-import {
-  type GameState,
-  type ReprobateSubtype,
-  type Sin,
-  type VitiumConversionSource,
-} from './state.js';
+import { type GameState, type Sin, totalReprobates } from './state.js';
 
 export interface CompositumDef {
   readonly id: string;
@@ -47,10 +35,6 @@ export interface CompositumDef {
   readonly influencePerSecond?: number;
   /** Per-second reprobate generation contribution (fed into the generation pool). */
   readonly generationPerSecond?: number;
-  /** Per-second conversion attempts (fed into the conversion pool / biasedSubtype). */
-  readonly conversionPerSecond?: number;
-  /** Per-subtype conversion bias; need not sum to 1 — renormalized at draw (02 §9). */
-  readonly subtypeBias?: Partial<Record<ReprobateSubtype, number>>;
   /**
    * Flat additive contribution to the per-second reprobate GENERATION rate while active (folded
    * into the generation term alongside business/Compositum generation, before the generation
@@ -60,47 +44,32 @@ export interface CompositumDef {
   readonly flatGenerationPerSecond?: number;
   /**
    * Flat additive increase to the BASE per-capita suicide rate while active (added to
-   * `BASE_SUICIDE_RATE_PER_SECOND` before the ×population×mul, so it composes with the
-   * Nihilist/Degenerate subtype penalties). Doom Gathering. Default 0.
+   * `BASE_SUICIDE_RATE_PER_SECOND` before the ×population×mul). Doom Gathering. Default 0.
    */
   readonly flatBaseSuicideRatePerSecond?: number;
   /**
-   * Flat additive increase to the BASE per-Choleric murder rate while active (added to
-   * `BASE_CHOLERIC_MURDER_RATE_PER_SECOND` before the ×cholerics×mul). Ethnocentric Revolt.
-   * Default 0.
+   * Flat additive increase to the BASE per-capita murder rate while active (added to
+   * `BASE_MURDER_RATE_PER_SECOND` before the ×population×mul). Ethnocentric Revolt. Default 0.
    */
-  readonly flatBaseCholericMurderRatePerSecond?: number;
+  readonly flatBaseMurderRatePerSecond?: number;
   /**
-   * Population-proportional generation while active: adds `fraction × (sum of the listed subtype
-   * counts)` unconverted reprobates per second to the generation term (Bacchanal — 10% of Gluttons
-   * + Degenerates). Folded in alongside the other generation contributions, before the generation
-   * multiplier. Default: none.
+   * Population-proportional generation while active: adds `fraction × total reprobate population`
+   * reprobates per second to the generation term (Bacchanal — 10% of the population). Folded in
+   * alongside the other generation contributions, before the generation multiplier. Default: none.
    */
   readonly populationGeneration?: {
     readonly fraction: number;
-    readonly subtypes: readonly ReprobateSubtype[];
   };
   /**
    * Per-second fraction of the TOTAL reprobate population that dies while active (Enraging
-   * Broadcast — "percentage death of total reprobates"). Routed through the suicide pool (random
-   * subtype, one soul per death) but NOT scaled by the suicide-rate multiplier — it is a flat
-   * percentage cull. Default 0.
+   * Broadcast — "percentage death of total reprobates"). Routed through the suicide pool (one soul
+   * per death) but NOT scaled by the suicide-rate multiplier — it is a flat percentage cull.
+   * Default 0.
    */
   readonly deathFractionPerSecond?: number;
   /**
-   * While active, flatly increases the per-count PENALTY coefficient of each listed reprobate
-   * subtype by `amount` (Vegas → Choleric/Sigma/Celebrity; Crusade → Degenerate/Gambler/Glutton/
-   * Husk — sheet authoritative; each ceremony sharpens the *opposite* faction's vices). Folded into
-   * the per-count penalty terms in `modifiers.ts`. Default: none.
-   */
-  readonly penaltyIncrease?: {
-    readonly subtypes: readonly ReprobateSubtype[];
-    readonly amount: number;
-  };
-  /**
-   * While active, multiplies the offline-gain rate by `(1 + offlineGainBoost)` (Dolce Far Niente —
-   * "the conversion rate instead applies to offline gain rate"). Folded into `offlineTimeMul`.
-   * Default 0.
+   * While active, multiplies the offline-gain rate by `(1 + offlineGainBoost)` (Dolce Far Niente).
+   * Folded into `offlineTimeMul`. Default 0.
    */
   readonly offlineGainBoost?: number;
   /**
@@ -115,13 +84,12 @@ export interface CompositumDef {
    */
   readonly costGrowthPerSecond?: number;
   /**
-   * If set, the toggle's conversion rate (and the Panvitium effects derived from it — all-subtype
-   * conversion, souls/s ∝ current souls, and flat generation) is multiplied by
-   * `conversionGrowthBase ** secondsActive`, the same exponential time-ramp as the cost (Panvitium,
-   * sheet: conversion `= base × eᵗ`). Duration is read from `LifetimeState.toggleDurations`.
-   * Default: flat (no growth).
+   * Panvitium only: the rate base R₀ for its surviving coupled effects. R(t) = R₀ ×
+   * `costGrowthPerSecond ** secondsActive` (the same eᵗ ramp as the cost) drives the soul harvest
+   * (∝ current souls, in the tick) and a flat reprobate-generation increase (in dynamics). Default:
+   * none (no Panvitium rate).
    */
-  readonly conversionGrowthBase?: number;
+  readonly panvitiumRateBase?: number;
 }
 
 /** The wired subset of the Vitium Compositum catalog (03 §2.3). Keyed by id. */
@@ -131,8 +99,8 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     sins: ['gula', 'luxuria'],
     minLevel: 1,
     costPerSecond: { gold: 100, influence: 10 },
-    // Sheet: "generates 10% of total gluttons + degenerates as unconverted reprobates per second."
-    populationGeneration: { fraction: 0.1, subtypes: ['glutton', 'degenerate'] },
+    // Generates 10% of the total reprobate population as new reprobates per second.
+    populationGeneration: { fraction: 0.1 },
   },
   'loan-shark-op': {
     id: 'loan-shark-op',
@@ -140,8 +108,7 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     minLevel: 1,
     costPerSecond: { influence: 10 },
     goldPerSecond: 100,
-    conversionPerSecond: 0.01,
-    subtypeBias: { gambler: 0.5, choleric: 0.5 },
+    // Conversion effect removed with subtypes; kept as a gold-income toggle pending Slice 3 rework.
   },
   charity: {
     id: 'charity',
@@ -149,8 +116,7 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     minLevel: 1,
     costPerSecond: { influence: 25 },
     goldPerSecond: 200,
-    conversionPerSecond: 0.01,
-    subtypeBias: { gambler: 0.5, celebrity: 0.5 },
+    // Conversion effect removed with subtypes; kept as a gold-income toggle pending Slice 3 rework.
   },
   gala: {
     id: 'gala',
@@ -158,19 +124,15 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     minLevel: 1,
     costPerSecond: { gold: 250 },
     influencePerSecond: 20,
-    conversionPerSecond: 0.01,
-    subtypeBias: { sigma: 0.5, celebrity: 0.5 },
+    // Conversion effect removed with subtypes; kept as an influence-income toggle pending Slice 3.
   },
   'outrage-cycle': {
     id: 'outrage-cycle',
     sins: ['ira', 'vanagloria'],
     minLevel: 1,
     costPerSecond: { gold: 50, influence: 5 },
-    conversionPerSecond: 0.01,
-    // "Conversion only applies to Choleric" (sheet effect): the toggle themes Cholerics +
-    // Celebrities, but its conversion is restricted to Choleric — representable directly as a
-    // single-subtype bias on the standard conversion pool.
-    subtypeBias: { choleric: 1 },
+    // Conversion-only effect removed with subtypes; no income to fall back on. EFFECTLESS STUB —
+    // flagged for redesign in the Vitium Compositum rework (Slice 3).
   },
   'no-babies-movement': {
     id: 'no-babies-movement',
@@ -195,8 +157,8 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     sins: ['superbia', 'ira'],
     minLevel: 1,
     costPerSecond: { gold: 100, influence: 10 },
-    // Sheet: "conversion rate instead applies as a flat increase to base Choleric murder rate."
-    flatBaseCholericMurderRatePerSecond: 0.001,
+    // Flat increase to the base reprobate murder rate while active.
+    flatBaseMurderRatePerSecond: 0.001,
   },
   'enraging-broadcast': {
     id: 'enraging-broadcast',
@@ -221,8 +183,7 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     minLevel: 2,
     costPerSecond: { gold: 1000 },
     influencePerSecond: 100,
-    // Sheet: "flat increase to base Choleric, Sigma and Celebrity penalties."
-    penaltyIncrease: { subtypes: ['choleric', 'sigma', 'celebrity'], amount: 0.01 },
+    // Subtype-penalty effect removed with subtypes; kept as an influence-income toggle (Slice 3).
   },
   crusade: {
     id: 'crusade',
@@ -230,38 +191,23 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     minLevel: 2,
     costPerSecond: { influence: 100 },
     goldPerSecond: 1000,
-    // Sheet: "flat increase to base Degenerate, Gambler, Glutton and Husk penalties."
-    penaltyIncrease: { subtypes: ['degenerate', 'gambler', 'glutton', 'husk'], amount: 0.01 },
+    // Subtype-penalty effect removed with subtypes; kept as a gold-income toggle (Slice 3).
   },
   // The endgame ritual (03 §2.3). Gated on ALL eight Sins at level 3. Cannot be turned off by
   // hand; its cost ramps exponentially with active duration so it can't become a steady state —
-  // "flipped on for a glorious, expensive minute or two." Enormous generation + conversion here,
-  // with suicide/murder amplified via the modifier bundle (see modifiers.ts). Placeholders;
-  // spreadsheet-overridable. Even subtype bias — Panvitium drives the whole population at once.
+  // "flipped on for a glorious, expensive minute or two." With conversion removed, R(t) = 0.01·eᵗ
+  // still drives the soul harvest (∝ current souls, in the tick) and a flat generation increase
+  // (in dynamics); suicide/murder are amplified via the modifier bundle (see modifiers.ts).
   panvitium: {
     id: 'panvitium',
     sins: ['gula', 'luxuria', 'avaritia', 'tristitia', 'ira', 'acedia', 'vanagloria', 'superbia'],
     minLevel: 3,
     // Sheet: gold 10×(Base VC gold cost 100)=1000, influence 10×(Base VC influence cost 10)=100,
-    // each × eᵗ; conversion 1×(Base VC conversion rate 0.01)=0.01 × eᵗ. t = seconds active.
+    // each × eᵗ; rate base 1×(Base VC rate 0.01)=0.01 × eᵗ. t = seconds active.
     costPerSecond: { gold: 1000, influence: 100 },
-    conversionPerSecond: 0.01,
-    // The single conversion rate R(t) = 0.01·eᵗ drives THREE coupled effects (sheet): conversion
-    // across ALL subtypes (uniform bias below), souls/s ∝ current souls (tick), and a flat increase
-    // to unconverted generation (dynamics). Growth base e is shared with the cost ramp.
-    subtypeBias: {
-      glutton: 1,
-      degenerate: 1,
-      gambler: 1,
-      nihilist: 1,
-      choleric: 1,
-      husk: 1,
-      celebrity: 1,
-      sigma: 1,
-    },
+    panvitiumRateBase: PANVITIUM_RATE_BASE,
     manualDeactivateForbidden: true,
     costGrowthPerSecond: Math.E,
-    conversionGrowthBase: Math.E,
   },
 } as const;
 
@@ -439,28 +385,6 @@ export function compositumGenerationPerSecond(state: GameState): number {
   return s;
 }
 
-/** Sum of `conversionPerSecond` across active toggles. */
-/**
- * Effective conversion rate of a toggle this instant: its base `conversionPerSecond`, scaled by
- * `conversionGrowthBase ** secondsActive` when the toggle ramps exponentially (Panvitium). Duration
- * is read from the tracked `toggleDurations`.
- */
-function toggleConversionRate(def: CompositumDef, state: GameState): number {
-  const base = def.conversionPerSecond ?? 0;
-  if (!def.conversionGrowthBase) return base;
-  const dur = state.lifetime.toggleDurations[def.id] ?? 0;
-  return base * Math.pow(def.conversionGrowthBase, dur);
-}
-
-export function compositumConversionPerSecond(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles) {
-    const def = compositumById(id);
-    if (def) s += toggleConversionRate(def, state);
-  }
-  return s;
-}
-
 /** Sum of `flatGenerationPerSecond` across active toggles (may be negative; caller clamps total). */
 export function compositumFlatGenerationPerSecond(state: GameState): number {
   let s = 0;
@@ -477,22 +401,21 @@ export function compositumFlatBaseSuicideRatePerSecond(state: GameState): number
   return s;
 }
 
-/** Sum of flat additive increases to the BASE Choleric murder rate across active toggles. */
-export function compositumFlatBaseCholericMurderRatePerSecond(state: GameState): number {
+/** Sum of flat additive increases to the BASE murder rate across active toggles. */
+export function compositumFlatBaseMurderRatePerSecond(state: GameState): number {
   let s = 0;
   for (const id of state.lifetime.activeToggles)
-    s += compositumById(id)?.flatBaseCholericMurderRatePerSecond ?? 0;
+    s += compositumById(id)?.flatBaseMurderRatePerSecond ?? 0;
   return s;
 }
 
-/** Population-proportional generation across active toggles: Σ fraction × Σ(subtype counts). */
+/** Population-proportional generation across active toggles: Σ fraction × total population. */
 export function compositumPopulationGenerationPerSecond(state: GameState): number {
   let s = 0;
+  const pop = totalReprobates(state);
   for (const id of state.lifetime.activeToggles) {
     const def = compositumById(id);
     if (!def?.populationGeneration) continue;
-    let pop = 0;
-    for (const t of def.populationGeneration.subtypes) pop += state.lifetime.reprobates[t];
     s += def.populationGeneration.fraction * pop;
   }
   return s;
@@ -506,22 +429,6 @@ export function compositumDeathFractionPerSecond(state: GameState): number {
   return s;
 }
 
-/**
- * Aggregate per-subtype increase to the per-count PENALTY coefficient from active toggles
- * (Vegas/Crusade). Consumed in `modifiers.ts`, added to each subtype's base `*_PER_COUNT` constant.
- */
-export function compositumPenaltyIncreaseBySubtype(
-  state: GameState,
-): Partial<Record<ReprobateSubtype, number>> {
-  const out: Partial<Record<ReprobateSubtype, number>> = {};
-  for (const id of state.lifetime.activeToggles) {
-    const pen = compositumById(id)?.penaltyIncrease;
-    if (!pen) continue;
-    for (const t of pen.subtypes) out[t] = (out[t] ?? 0) + pen.amount;
-  }
-  return out;
-}
-
 /** Sum of offline-gain boosts across active toggles (Dolce Far Niente). */
 export function compositumOfflineGainBoost(state: GameState): number {
   let s = 0;
@@ -529,25 +436,17 @@ export function compositumOfflineGainBoost(state: GameState): number {
   return s;
 }
 
-/** Active toggles as Vitium conversion sources (for biasedSubtype / the conversion pool). */
-export function compositumConversionSources(state: GameState): VitiumConversionSource[] {
-  const out: VitiumConversionSource[] = [];
-  for (const id of state.lifetime.activeToggles) {
-    const def = compositumById(id);
-    if (!def || !def.subtypeBias) continue;
-    const rate = toggleConversionRate(def, state);
-    if (rate <= 0) continue;
-    out.push({ conversionPerSecond: rate, subtypeBias: def.subtypeBias });
-  }
-  return out;
-}
-
 /**
- * Panvitium's instantaneous conversion rate R(t) = 0.01·eᵗ (0 if inactive). The single rate the
- * sheet reuses for Panvitium's all-subtype conversion, its soul income (× current souls), and its
- * flat generation increase.
+ * Panvitium's instantaneous rate R(t) = R₀·eᵗ (0 if inactive), where the eᵗ ramp shares Panvitium's
+ * cost growth base and t is its tracked active duration. With conversion removed, this single rate
+ * now feeds two coupled effects: the soul harvest (× current souls, in the tick) and a flat
+ * reprobate-generation increase (in dynamics).
  */
-export function panvitiumConversionRate(state: GameState): number {
+export function panvitiumRate(state: GameState): number {
   if (!state.lifetime.activeToggles.includes('panvitium')) return 0;
-  return toggleConversionRate(COMPOSITA.panvitium!, state);
+  const def = COMPOSITA.panvitium!;
+  const base = def.panvitiumRateBase ?? 0;
+  const growth = def.costGrowthPerSecond ?? 1;
+  const dur = state.lifetime.toggleDurations[def.id] ?? 0;
+  return base * Math.pow(growth, dur);
 }

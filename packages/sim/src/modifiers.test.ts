@@ -186,14 +186,14 @@ describe('computeModifiers — reprobate-dynamics rate multipliers (02 §9)', ()
   it('NEUTRAL bundle carries all three reprobate-rate multipliers at 1', () => {
     expect(NEUTRAL_MODIFIERS.reprobateGenerationRateMul).toBe(1);
     expect(NEUTRAL_MODIFIERS.reprobateSuicideRateMul).toBe(1);
-    expect(NEUTRAL_MODIFIERS.cholericMurderRateMul).toBe(1);
+    expect(NEUTRAL_MODIFIERS.murderRateMul).toBe(1);
   });
 
   it('fresh state stays at 1× across all three rate multipliers', () => {
     const m = computeModifiers(fresh());
     expect(m.reprobateGenerationRateMul).toBe(1);
     expect(m.reprobateSuicideRateMul).toBe(1);
-    expect(m.cholericMurderRateMul).toBe(1);
+    expect(m.murderRateMul).toBe(1);
   });
 
   it('Tristitia 180 Devotion (level 1 + Resignation skill) lifts suicide rate ~2.825×', () => {

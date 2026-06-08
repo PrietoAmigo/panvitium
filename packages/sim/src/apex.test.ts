@@ -39,7 +39,7 @@ function withApex(
   opts: { gold?: number; reprobates?: number; duration?: number } = {},
 ): GameState {
   const s = fresh();
-  const reprobates = { ...s.lifetime.reprobates, reprobate: opts.reprobates ?? 0 };
+  const reprobates = opts.reprobates ?? 0;
   return {
     ...s,
     souls: bn(0),

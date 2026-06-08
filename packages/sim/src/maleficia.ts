@@ -380,7 +380,7 @@ export function activateMaleficium(state: GameState, id: string): ActivateResult
     if (state.lifetime.defixio) return { ok: false, reason: 'A defixio is already at work.' };
     const idx = state.lifetime.maleficia.indexOf('defixio');
     if (idx === -1) return { ok: false, reason: 'You hold no Defixio.' };
-    // Target is rolled on the next tick (inside the RNG-managed flow); null marks it pending.
+    // The curse begins immediately and culls the reprobate pool at eᵗ/s (no subtype target).
     return {
       ok: true,
       state: {
@@ -388,7 +388,7 @@ export function activateMaleficium(state: GameState, id: string): ActivateResult
         lifetime: {
           ...state.lifetime,
           maleficia: removeOne(idx),
-          defixio: { target: null, elapsed: 0 },
+          defixio: { elapsed: 0 },
         },
       },
     };

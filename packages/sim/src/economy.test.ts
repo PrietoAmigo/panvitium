@@ -67,22 +67,21 @@ describe('tick — modifiers (Sin level / Sin skill)', () => {
 });
 
 describe('tick — Lemure retargeted to offline gain (no flat influence)', () => {
-  function withLemure(huskCount: number, lemures: number): GameState {
+  function withLemure(lemures: number): GameState {
     const s = createInitialState('lemure', 0);
     return {
       ...s,
       lifetime: {
         ...s.lifetime,
         maxInfluence: bn(1_000_000),
-        reprobates: { ...s.lifetime.reprobates, husk: huskCount },
         invocations: { ...s.lifetime.invocations, lemure: lemures },
       },
     };
   }
 
   it('no longer adds flat influence in the tick (Lemure now boosts the offline gain rate)', () => {
-    const base = tick(withLemure(50, 0), 1).state.lifetime.influence.toNumber();
-    const withFive = tick(withLemure(50, 5), 1).state.lifetime.influence.toNumber();
+    const base = tick(withLemure(0), 1).state.lifetime.influence.toNumber();
+    const withFive = tick(withLemure(5), 1).state.lifetime.influence.toNumber();
     expect(withFive).toBeCloseTo(base, 6);
   });
 });

@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { serializedGameStateSchema } from './state-schema.js';
 
 /** The current save schema version. Bump when the persisted shape changes; add a migration. */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export const saveBlobSchema = z.object({
   /** Persisted-shape version; gates migration on load (ADR-006). */

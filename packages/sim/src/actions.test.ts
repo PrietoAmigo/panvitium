@@ -100,7 +100,7 @@ describe('action unlock gating (Suasio sheet)', () => {
 describe('resolveLogismoi', () => {
   it('good and excellent each mint 10–29 unconverted reprobates', () => {
     for (const tier of ['good', 'excellent'] as const) {
-      const n = resolveLogismoi(fresh(), tier, rng()).lifetime.reprobates.reprobate;
+      const n = resolveLogismoi(fresh(), tier, rng()).lifetime.reprobates;
       expect(n).toBeGreaterThanOrEqual(10);
       expect(n).toBeLessThanOrEqual(29);
     }
@@ -111,7 +111,7 @@ describe('resolveLogismoi', () => {
     expect(s).toBeLessThanOrEqual(29);
   });
   it('terrible culls reprobates; neutral does nothing', () => {
-    const seeded = addReprobates(fresh(), 'reprobate', 100);
+    const seeded = addReprobates(fresh(), 100);
     expect(totalReprobates(resolveLogismoi(seeded, 'terrible', rng()))).toBeLessThan(100);
     expect(totalReprobates(resolveLogismoi(seeded, 'neutral', rng()))).toBe(100);
   });
@@ -123,7 +123,7 @@ describe('resolveImperium', () => {
   });
 
   it('always adds 360–1260 unconverted reprobates (fixed, player-controlled outcome)', () => {
-    const n = resolveImperium(fresh(), rng()).lifetime.reprobates.reprobate;
+    const n = resolveImperium(fresh(), rng()).lifetime.reprobates;
     expect(n).toBeGreaterThanOrEqual(360);
     expect(n).toBeLessThanOrEqual(1260);
   });
@@ -131,13 +131,13 @@ describe('resolveImperium', () => {
 
 describe('resolveSuggestion', () => {
   it('good adds one unconverted reprobate', () => {
-    expect(resolveSuggestion(fresh(), 'good', rng()).lifetime.reprobates.reprobate).toBe(1);
+    expect(resolveSuggestion(fresh(), 'good', rng()).lifetime.reprobates).toBe(1);
   });
 
   it('stellar adds 4..8 unconverted reprobates and mints no soul', () => {
     const s = resolveSuggestion(fresh(), 'stellar', rng());
     expect(soulsOf(s)).toBe(0);
-    const n = s.lifetime.reprobates.reprobate;
+    const n = s.lifetime.reprobates;
     expect(n).toBeGreaterThanOrEqual(4);
     expect(n).toBeLessThanOrEqual(8);
     expect(totalReprobates(s)).toBe(n); // all unconverted
@@ -150,14 +150,10 @@ describe('resolveSuggestion', () => {
   });
 
   it('bad removes a reprobate; terrible loses 9% of the population', () => {
-    expect(
-      totalReprobates(resolveSuggestion(addReprobates(fresh(), 'reprobate', 3), 'bad', rng())),
-    ).toBe(2);
-    expect(
-      totalReprobates(
-        resolveSuggestion(addReprobates(fresh(), 'reprobate', 100), 'terrible', rng()),
-      ),
-    ).toBe(91);
+    expect(totalReprobates(resolveSuggestion(addReprobates(fresh(), 3), 'bad', rng()))).toBe(2);
+    expect(totalReprobates(resolveSuggestion(addReprobates(fresh(), 100), 'terrible', rng()))).toBe(
+      91,
+    );
   });
 
   it('neutral changes nothing', () => {
@@ -169,7 +165,7 @@ describe('resolveSuggestion', () => {
 
 describe('resolveCaedis', () => {
   it('good kills one reprobate and mints one soul', () => {
-    const s = resolveCaedis(addReprobates(fresh(), 'reprobate', 5), 'good', rng());
+    const s = resolveCaedis(addReprobates(fresh(), 5), 'good', rng());
     expect(totalReprobates(s)).toBe(4);
     expect(soulsOf(s)).toBe(1);
   });
@@ -179,7 +175,7 @@ describe('resolveCaedis', () => {
   });
 
   it('never mints more souls than reprobates killed (population caps the kill)', () => {
-    const s = resolveCaedis(addReprobates(fresh(), 'reprobate', 5), 'stellar', rng()); // would kill 15..45
+    const s = resolveCaedis(addReprobates(fresh(), 5), 'stellar', rng()); // would kill 15..45
     expect(totalReprobates(s)).toBe(0);
     expect(soulsOf(s)).toBe(5);
   });
@@ -190,7 +186,7 @@ describe('resolveCaedis', () => {
   });
 
   it('apocalyptic loses 66% gold and 50% of all reprobates, minting no souls', () => {
-    const s0 = withGold(addReprobates(fresh(), 'reprobate', 100), 1000);
+    const s0 = withGold(addReprobates(fresh(), 100), 1000);
     const s = resolveCaedis(s0, 'apocalyptic', rng());
     expect(goldOf(s)).toBe(340); // 1000 → keep 34%
     expect(totalReprobates(s)).toBe(50); // 100 → lose 50%
@@ -213,7 +209,7 @@ describe('tick — action resolution and events', () => {
   });
 
   it('closes the corruption → cull → soul loop deterministically', () => {
-    const seeded = withGold(addReprobates(fresh(), 'reprobate', 10), 500);
+    const seeded = withGold(addReprobates(fresh(), 10), 500);
     const started = startAction(seeded, 'caedis');
     if (!started.ok) throw new Error('should start');
     const after = tick(started.state, 10);
@@ -227,7 +223,7 @@ describe('tick — action resolution and events', () => {
 
 describe('resolveAction', () => {
   it('returns an event describing the outcome', () => {
-    const { state, event } = resolveAction(addReprobates(fresh(), 'reprobate', 5), 'caedis', rng());
+    const { state, event } = resolveAction(addReprobates(fresh(), 5), 'caedis', rng());
     expect(event).not.toBeNull();
     if (event) {
       expect(event.actionId).toBe('caedis');
@@ -371,37 +367,29 @@ describe('Decimatio gating + Pogrom target', () => {
     expect(actionUnlocked(fresh(), ACTIONS.caedis!)).toBe(true); // ungated
   });
 
-  it('Pogrom needs a valid subtype target to start', () => {
+  it('Pogrom starts without a target now (subtypes removed; it culls the pool)', () => {
     const ready = withGold(withIra(fresh(), 2), 100_000);
-    expect(startAction(ready, 'pogrom').ok).toBe(false); // no target
-    expect(startAction(ready, 'pogrom', { target: 'not-a-subtype' }).ok).toBe(false);
-    const ok = startAction(ready, 'pogrom', { target: 'gambler' });
+    const ok = startAction(ready, 'pogrom');
     expect(ok.ok).toBe(true);
     if (ok.ok) expect(goldOf(ok.state)).toBeLessThan(100_000); // gold was charged
   });
 });
 
 describe('resolvePogrom', () => {
-  const seed = (): GameState => {
-    let s = addReprobates(fresh(), 'gambler', 100);
-    s = addReprobates(s, 'choleric', 100);
-    return withGold(s, 1000);
-  };
-  it('Good culls 5% of the chosen subtype and harvests a soul per death', () => {
-    const s = resolvePogrom(seed(), 'good', rng(), 'gambler');
-    expect(s.lifetime.reprobates.gambler).toBe(95); // 100 - floor(100*0.05)
-    expect(s.lifetime.reprobates.choleric).toBe(100); // untouched
-    expect(soulsOf(s)).toBe(5);
+  const seed = (): GameState => withGold(addReprobates(fresh(), 200), 1000);
+  it('Good culls 5% of the reprobate pool and harvests a soul per death', () => {
+    const s = resolvePogrom(seed(), 'good', rng());
+    expect(s.lifetime.reprobates).toBe(190); // 200 - floor(200*0.05)
+    expect(soulsOf(s)).toBe(10);
   });
-  it('Terrible lets the Church seize 15% of converts (no souls); Apocalyptic burns 65% gold', () => {
-    const terrible = resolvePogrom(seed(), 'terrible', rng(), 'gambler');
-    expect(terrible.lifetime.reprobates.gambler).toBe(85);
-    expect(terrible.lifetime.reprobates.choleric).toBe(85);
+  it('Terrible lets the Church seize 15% (no souls); Apocalyptic burns 65% gold', () => {
+    const terrible = resolvePogrom(seed(), 'terrible', rng());
+    expect(terrible.lifetime.reprobates).toBe(170); // 200 - floor(200*0.15)
     expect(soulsOf(terrible)).toBe(0);
-    expect(goldOf(resolvePogrom(seed(), 'apocalyptic', rng(), 'gambler'))).toBe(350);
+    expect(goldOf(resolvePogrom(seed(), 'apocalyptic', rng()))).toBe(350);
   });
   it('Neutral does nothing', () => {
-    const s = resolvePogrom(seed(), 'neutral', rng(), 'gambler');
+    const s = resolvePogrom(seed(), 'neutral', rng());
     expect(totalReprobates(s)).toBe(200);
     expect(goldOf(s)).toBe(1000);
   });
@@ -409,8 +397,8 @@ describe('resolvePogrom', () => {
 
 describe('resolvePurgatio', () => {
   const seed = (): GameState => {
-    let s = addReprobates(fresh(), 'gambler', 100);
-    s = addReprobates(s, 'reprobate', 100);
+    let s = addReprobates(fresh(), 100);
+    s = addReprobates(s, 100);
     return withGold(s, 1000);
   };
   it('Stellar kills every reprobate and harvests a soul each', () => {
@@ -423,11 +411,10 @@ describe('resolvePurgatio', () => {
     expect(totalReprobates(s)).toBe(134); // 200 - floor(200*0.33)
     expect(soulsOf(s)).toBe(66);
   });
-  it('Apocalyptic burns 95% gold and seizes 25% of converts', () => {
+  it('Apocalyptic burns 95% gold and seizes 25% of the pool', () => {
     const s = resolvePurgatio(seed(), 'apocalyptic', rng());
     expect(goldOf(s)).toBe(50); // 1000 * 0.05
-    expect(s.lifetime.reprobates.gambler).toBe(75); // converts: lose 25%
-    expect(s.lifetime.reprobates.reprobate).toBe(100); // unconverted untouched
+    expect(totalReprobates(s)).toBe(150); // 200 - floor(200*0.25)
   });
 });
 
@@ -522,7 +509,7 @@ describe('actionOutcomeForecast — expected outcome + variance', () => {
   }
 
   it('matches the real Suggestion resolver mean and variance (incl. the %-population Terrible tier)', () => {
-    const state = addReprobates(fresh(), 'reprobate', 200);
+    const state = addReprobates(fresh(), 200);
     const f = actionOutcomeForecast(state, 'suggestion', 1);
     const e = empirical(state, 'suggestion', 1, undefined, 40000);
     expect(Math.abs(f.reprobates.mean - e.repMean)).toBeLessThan(0.1);
@@ -532,7 +519,7 @@ describe('actionOutcomeForecast — expected outcome + variance', () => {
   });
 
   it('is deterministic for forced-Good Caedis: +units souls, −units reprobates, sd 0', () => {
-    const state = addReprobates(fresh(), 'reprobate', 200);
+    const state = addReprobates(fresh(), 200);
     const f = actionOutcomeForecast(state, 'caedis', 1, 'good');
     expect(f.reprobates.mean).toBeCloseTo(-1, 6);
     expect(f.souls.mean).toBeCloseTo(1, 6);
