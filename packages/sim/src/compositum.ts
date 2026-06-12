@@ -18,6 +18,7 @@
  */
 import { floor, gte, sub } from './bignum.js';
 import { PANVITIUM_RATE_BASE } from './constants.js';
+import { foedusTier, foedusUpkeepMul } from './mercatus.js';
 import { sinLevel } from './progression.js';
 import { type GameState, type Sin, totalReprobates } from './state.js';
 
@@ -90,6 +91,12 @@ export interface CompositumDef {
    * none (no Panvitium rate).
    */
   readonly panvitiumRateBase?: number;
+  /**
+   * Foedus opt-out (spec §2): when true, this ceremony forms NO Foedus with its member Sins'
+   * Mercatūs — no upkeep discount, no revenue bonus. A per-VC tuning flag mirrored from the
+   * spreadsheet; default absent (all-on).
+   */
+  readonly foedusOptOut?: boolean;
 }
 
 /** The wired subset of the Vitium Compositum catalog (03 §2.3). Keyed by id. */
@@ -319,8 +326,9 @@ export function advanceToggles(
     }
     const dur = durations[vcId] ?? 0;
     const growth = def.costGrowthPerSecond ? Math.pow(def.costGrowthPerSecond, dur) : 1;
-    const goldCost = (def.costPerSecond.gold ?? 0) * growth * deltaSeconds;
-    const inflCost = (def.costPerSecond.influence ?? 0) * growth * deltaSeconds;
+    const foedusMul = compositumFoedusUpkeepMul(state, def);
+    const goldCost = (def.costPerSecond.gold ?? 0) * growth * foedusMul * deltaSeconds;
+    const inflCost = (def.costPerSecond.influence ?? 0) * growth * foedusMul * deltaSeconds;
     const canPay =
       Number.isFinite(goldCost) &&
       Number.isFinite(inflCost) &&
@@ -360,6 +368,18 @@ export function advanceToggles(
     },
     deactivated,
   };
+}
+
+/**
+ * Foedus upkeep discount (spec §2): the ceremony's Foedus with its member Sins' Mercatūs
+ * multiplies its per-second cost by `1 − 0.125 × tier` (tier 4 → ×0.5). Applied to the COMPUTED
+ * per-second cost in `advanceToggles`, so ramped upkeeps (Panvitium's eᵗ) take the same
+ * multiplier — the intended late-game payoff is that a deep all-eight Foedus discounts the
+ * exponential ramp itself. An opted-out ceremony (`foedusOptOut`) always pays full price.
+ */
+export function compositumFoedusUpkeepMul(state: GameState, def: CompositumDef): number {
+  if (def.foedusOptOut === true) return 1;
+  return foedusUpkeepMul(foedusTier(state, def.sins));
 }
 
 // ── Aggregate effect helpers (consumed by tick / dynamics) ─────────────────────

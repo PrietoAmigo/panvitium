@@ -103,9 +103,30 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 699** (sim 474 · shared 54 · api 11 · web 160).
+**Current test count: 699** (sim 472 · shared 56 · api 11 · web 160).
 
-> **Latest change — Altar commit gate redesigned as a ritual seal circle + a new Status Quo
+> **Latest change — Vitium Mercatura replaced by the Mercatus system + the Foedera coupling
+> (vm-vc-redesign-spec).** The legacy business system (32-business catalog, build queue, flat
+> emitters) is gone. In its place: eight trades, exactly one per Cardinal Sin (_Mercatus Gulae …
+> Superbiae_), each a single integer **depth** — deepening is an instant gold purchase
+> (`investCost(d) = floor(50 × 1.6^d)`, cap `10 × sinLevel`), divesting refunds the Globals
+> shutdown-recovery fraction (0.25, Vine #45 still applies) of the closed-form cumulative cost.
+> Revenue is **demand-driven** — `0.1 × reprobates × (1 − e^(−0.15·d))` per trade — composed at
+> the exact site the old `businessGoldPerSecond` held (`× vitiumMercaturaOutputMul ×
+goldRateMul`); generation contributes `0.02 × d` to the pool. On Katabasis all trades
+> auto-divest into gold **before** the remaining-gold roll. **Foedera** couples Mercatūs to
+> Vitium Compositum: `tier = min(floor(min member depth / 10), 4)` discounts an active ceremony's
+> upkeep by `1 − 0.125 × tier` (incl. Panvitium's eᵗ ramp — the late-game payoff) and multiplies
+> member-Sin trade revenue by `1 + 0.05 × tier` (active-only; shared Sins stack
+> multiplicatively; per-VC `foedusOptOut` flag, default all-on). Save schema **bumped to v3**
+> with a real migration (`v2-to-v3.ts`: credit 25% of owned build costs as gold, fizzle the
+> build queue, drop both fields; `mercatusDepths` seeds empty). The Depraedatio panel's Mercatura
+> tab is rebuilt as eight data-driven rows (roots meter, take/s, Deepen / Cut back / Sell off,
+> Foedus badge); the in-flight tab is retired. The economy spreadsheet's `Vitium Mercatura`
+> sheet now carries the constants block + per-VC opt-out flags. The §1.5 per-Sin signature
+> clauses are **deliberately unshipped** (spec marks them optional, pending approval).
+
+> **Prior change — Altar commit gate redesigned as a ritual seal circle + a new Status Quo
 > "Ledger" screen.** The prior slab-with-candles drop target is replaced (Claude Design handoff) by
 > a full-screen seal: the central Goetic sigil _is_ the descend button, ringed by counter-rotating
 > Latin script (`PER VITIA, AD SOLIUM`). The two-press commit safeguard is preserved — the first
@@ -117,7 +138,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > `state.sigilBindings`); no static sample data. Ships the `seal-panvitium.png` glyph. The
 > `buildAltar` view-model is retired from the gate but kept (still tested) for future reuse.
 
-> **Prior change — reprobate subtypes & the Vitium conversion mechanic removed.** Reprobates are
+> **Earlier change — reprobate subtypes & the Vitium conversion mechanic removed.** Reprobates are
 > now a single undifferentiated pool (`lifetime.reprobates` is one integer). The conversion pool,
 > `biasedSubtype`, the eight per-subtype rate penalties, and the per-Sin Vitium-gold boost are gone;
 > murder is re-anchored to a per-capita rate on the whole population; Pogrom culls the pool (no
@@ -143,7 +164,9 @@ Implemented gameplay (each slice pinned with Vitest):
 - **Katabasis** — the descent flow, offering menu, recap, and unspent-soul carry-over.
 - **Reprobate dynamics** — fractional generation / suicide / murder pools over one undifferentiated
   reprobate pool (02 §9); murder is a per-capita cull of the whole population.
-- **_Depraedatio_** — _Vitium Mercatura_ businesses and _Vitium Compositum_ ceremony toggles.
+- **_Depraedatio_** — the _Vitium Mercatura_ **Mercatus** system (eight per-Sin trades with
+  depth-driven, demand-coupled revenue) and _Vitium Compositum_ ceremony toggles, bound by the
+  **Foedera** coupling.
 - **Acolytes**, **invocations** (all 18 wired — autonomous-runner channel for the Familiar / Imp /
   Upir, static modifier-bundle contributions for the demonic court, per-tick or per-invoke
   side-effects for the apex entities), and **maleficia** (_Indagatio_ / _Emptio_).

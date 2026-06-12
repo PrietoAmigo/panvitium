@@ -172,8 +172,7 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
         ...base.lifetime,
         gold: bn(1000),
         reprobates: 50,
-        businesses: { 'gula-mercatura-1': 2 },
-        buildQueue: [{ businessId: 'ira-mercatura-1', remainingSeconds: 30 }],
+        mercatusDepths: { gula: 4 },
         activeToggles: ['bacchanal'],
         toggleDurations: { bacchanal: 12 },
         actionQueue: [{ actionId: 'caedis', remainingSeconds: 4 }],
@@ -184,13 +183,12 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
     };
   }
 
-  it('shuts down businesses, folding the refund into gold, and clears the build queue', () => {
+  it('liquidates every Mercatus, folding the refund into gold, and zeroes the depths', () => {
     const before = loaded();
     const after = enterKatabasis(before);
-    // 2 × floor(500 × 0.25) = 250 refund folded into the 1000 gold held.
-    expect(after.lifetime.gold.toNumber()).toBe(1250);
-    expect(Object.keys(after.lifetime.businesses)).toHaveLength(0);
-    expect(after.lifetime.buildQueue).toHaveLength(0);
+    // floor(0.25 × cumulative(4)) = floor(0.25 × 50·(1.6⁴−1)/0.6) = floor(0.25 × 462.93…) = 115.
+    expect(after.lifetime.gold.toNumber()).toBe(1115);
+    expect(Object.keys(after.lifetime.mercatusDepths)).toHaveLength(0);
   });
 
   it('stops toggles, fizzles the action queue, and dispels invocations + their channels', () => {

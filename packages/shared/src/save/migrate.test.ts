@@ -79,8 +79,8 @@ describe('v1 → v2 migration (reprobate-subtype / conversion removal)', () => {
   }
 
   it('sums the per-subtype counts, drops conversionPool, strips the defixio target', () => {
-    const migrated = migrateSave(v1Blob());
-    expect(migrated.schemaVersion).toBe(2);
+    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → v3
+    expect(migrated.schemaVersion).toBe(3);
     expect(migrated.state.lifetime.reprobates).toBe(200); // 100+40+10+5+5+20+0+15+5
     expect('conversionPool' in migrated.state.lifetime).toBe(false);
     expect(migrated.state.lifetime.defixio).toEqual({ elapsed: 42 });
@@ -105,5 +105,47 @@ describe('v1 → v2 migration (reprobate-subtype / conversion removal)', () => {
     const migrated = migrateSave(blob);
     expect(migrated.state.lifetime.reprobates).toBe(0);
     expect(migrated.state.lifetime.defixio).toBeUndefined();
+  });
+});
+
+describe('v2 → v3 migration (legacy business system → Mercatus)', () => {
+  /** A v2-shaped raw blob: owned businesses + an in-flight build queue, gold as a wire string. */
+  function v2Blob(): Record<string, unknown> {
+    const base = currentBlob();
+    const lifetime = base.state.lifetime as Record<string, unknown>;
+    return {
+      ...base,
+      schemaVersion: 2,
+      state: {
+        ...base.state,
+        lifetime: {
+          ...lifetime,
+          gold: '100',
+          businesses: { 'gula-mercatura-1': 2, 'avaritia-mercatura-2': 1 },
+          buildQueue: [{ businessId: 'ira-mercatura-1', remainingSeconds: 30 }],
+        },
+      },
+    };
+  }
+
+  it('credits 25% of each owned build cost, fizzles the queue, drops both fields', () => {
+    const migrated = migrateSave(v2Blob());
+    expect(migrated.schemaVersion).toBe(3);
+    // floor(500 × 0.25) × 2 + floor(25000 × 0.25) × 1 = 250 + 6250 = 6500, on top of 100 held.
+    expect(migrated.state.lifetime.gold).toBe('6600');
+    expect('businesses' in migrated.state.lifetime).toBe(false);
+    expect('buildQueue' in migrated.state.lifetime).toBe(false);
+    // The new system starts from scratch: depths are seeded by omission.
+    expect('mercatusDepths' in migrated.state.lifetime).toBe(false);
+  });
+
+  it('is a no-op gold-wise for a v2 save with no businesses, and tolerates junk entries', () => {
+    const blob = v2Blob();
+    const lifetime = (blob.state as Record<string, unknown>).lifetime as Record<string, unknown>;
+    lifetime.businesses = { acme: 3, 'gula-mercatura-1': 'lots', 'ira-mercatura-2': -4 };
+    delete lifetime.buildQueue;
+    const migrated = migrateSave(blob);
+    expect(migrated.state.lifetime.gold).toBe('100'); // unknown id / NaN / negative all credit 0
+    expect('businesses' in migrated.state.lifetime).toBe(false);
   });
 });

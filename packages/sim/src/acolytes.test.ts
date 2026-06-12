@@ -29,8 +29,8 @@ import {
   isDelegatable,
   makeRng,
   maxAcolytes,
+  investMercatus,
   startAction,
-  startBuild,
   tick,
   unassignAcolyteFromAction,
   type GameState,
@@ -331,22 +331,22 @@ describe('Modifiers — acolyteEfficiencyMul defaults to 0.33', () => {
   });
 });
 
-// Smoke: builds and acolytes don't trip over each other (separate channels).
-describe('builds + acolytes — both run in parallel without touching the player slot', () => {
-  it('one build and one acolyte work concurrently with no shared queue', () => {
+// Smoke: Mercatus deepening and acolytes don't trip over each other (separate channels).
+describe('mercatus + acolytes — investing never touches the player slot', () => {
+  it('an invest and an acolyte assignment coexist with no shared queue', () => {
     let s = recruited();
     s = {
       ...s,
       devotion: { ...s.devotion, gula: bn(180) },
       lifetime: { ...s.lifetime, gold: bn(2000) },
     };
-    const built = startBuild(s, 'gula-mercatura-1');
-    if (!built.ok) throw new Error('build failed');
-    s = built.state;
+    const invested = investMercatus(s, 'gula');
+    if (!invested.ok) throw new Error('invest failed');
+    s = invested.state;
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
-    expect(s.lifetime.buildQueue).toHaveLength(1);
+    expect(s.lifetime.mercatusDepths.gula).toBe(1);
     expect(s.lifetime.acolytes[0]!.assignedAction).toBe('indagatio');
     expect(s.lifetime.actionQueue).toHaveLength(0); // player slot free
   });

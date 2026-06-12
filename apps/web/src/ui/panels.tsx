@@ -2,14 +2,20 @@ import { useState, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   floor,
-  sinLevel,
   ACTIONS,
   actionUnlocked,
   categoryEfficiency,
   MALEFICIA,
-  BUSINESS_IDS,
-  businessById,
-  SHUTDOWN_REFUND_FRACTION,
+  SINS,
+  mercatusDepth,
+  mercatusDepthCap,
+  mercatusUnlocked,
+  mercatusRevenuePerSecond,
+  foedusRevenueMul,
+  highestFoedusTierForSin,
+  investCost,
+  cumulativeInvestCost,
+  divestFraction,
   COMPOSITUM_IDS,
   compositumById,
   compositumUnlocked,
@@ -438,62 +444,93 @@ function formatDuration(totalSec: number): string {
 }
 
 /**
- * Depraedatio (03 §2.3): Vitium Mercatura. Thirty-two businesses (eight Sins × four tiers); each
- * tier unlocks at Sin level `tier − 1`, with locked rows shown dimmed. Each builds via the parallel
- * buildQueue — does NOT occupy the player slot, so the player can run a Studio rite simultaneously
- * and queue multiple builds at once.
+ * Depraedatio: the Mercatus system (Vitium Mercatura rework spec §1). Eight trades, exactly one
+ * per Cardinal Sin, each a single integer depth. Deepening is an instant gold purchase (no build
+ * times, no queue); revenue is demand-driven — spendPerCapita × reprobates × penetration(depth) —
+ * so a trade's take grows with the living population and with its reach into it.
  */
-/** The Vitium Mercatura businesses — build / shut down, gated by Sin level. */
+
+/** Roman numerals for the Foedus tier badge (tiers 1..4). */
+const ROMAN_TIERS = ['', 'I', 'II', 'III', 'IV'] as const;
+
+/** The eight Mercatūs — deepen / cut back / sell off, gated by Sin level. */
 function MercaturaList(): ReactElement {
   const state = useGameStore((s) => s.state);
-  const build = useGameStore((s) => s.build);
-  const shutdown = useGameStore((s) => s.shutdown);
+  const invest = useGameStore((s) => s.invest);
+  const divest = useGameStore((s) => s.divest);
   if (!state) return <></>;
   const gold = floor(state.lifetime.gold).toNumber();
-  const owned = state.lifetime.businesses;
+  const fraction = divestFraction(state);
   return (
     <ul className="vitium-list">
-      {BUSINESS_IDS.map((id) => {
-        const def = businessById(id);
-        if (!def) return null;
-        const have = sinLevel(state.devotion[def.sin]);
-        const required = def.level - 1; // spreadsheet "Sin-lvl unlock" column is (tier − 1)
-        const unlocked = have >= required;
-        const ownedCount = owned[id] ?? 0;
-        const refund = Math.floor(def.buildCost * SHUTDOWN_REFUND_FRACTION);
-        const name = strings.businesses[id] ?? id;
-        const buildCostLabel = `${def.buildCost} ${strings.resources.gold} · ${formatDuration(def.buildTimeSeconds)}`;
+      {SINS.map((sin) => {
+        const name = strings.mercatus.names[sin] ?? sin;
+        const unlocked = mercatusUnlocked(state, sin);
+        const d = mercatusDepth(state, sin);
+        const cap = mercatusDepthCap(state, sin);
+        const atCap = unlocked && d >= cap;
+        const nextCost = investCost(d);
+        const revenue = mercatusRevenuePerSecond(state, sin) * foedusRevenueMul(state, sin);
+        const tier = highestFoedusTierForSin(state, sin);
+        const cutBackRefund = Math.floor(
+          fraction * (cumulativeInvestCost(d) - cumulativeInvestCost(d - 1)),
+        );
+        const sellOffRefund = Math.floor(fraction * cumulativeInvestCost(d));
         return (
-          <li key={id} className={`vitium-row${unlocked ? '' : ' vitium-locked'}`}>
+          <li key={sin} className={`vitium-row${unlocked ? '' : ' vitium-locked'}`}>
             <div className="vitium-meta">
-              <span className="vitium-name">{name}</span>
+              <span className="vitium-name">
+                {name}
+                {tier >= 1 && (
+                  <span className="foedus-badge" title={strings.mercatus.foedusTitle}>
+                    {' '}
+                    {strings.mercatus.foedus} {ROMAN_TIERS[tier]}
+                  </span>
+                )}
+              </span>
               <span className="vitium-sub">
-                {def.sin}
-                {required > 0 ? ` L${required}` : ''}
-                {ownedCount > 0 ? ` · ${ownedCount} ${strings.opera.owned}` : ''}
+                {unlocked
+                  ? `${strings.mercatus.roots} ${d} / ${cap}` +
+                    (d > 0
+                      ? ` · ${formatRate(revenue)} ${strings.resources.gold}${strings.mercatus.perSecond}`
+                      : '')
+                  : `${sin} · ${strings.mercatus.lockedHint}`}
               </span>
             </div>
             <div className="vitium-actions">
               <button
                 type="button"
                 className="opera-btn"
-                disabled={!unlocked || gold < def.buildCost}
-                onClick={() => build(id)}
-                aria-label={`${strings.opera.build} ${name}`}
+                disabled={!unlocked || atCap || gold < nextCost}
+                onClick={() => invest(sin)}
+                aria-label={`${strings.mercatus.deepen} ${name}`}
+                title={atCap ? strings.mercatus.capped : undefined}
               >
                 {unlocked
-                  ? `${strings.opera.build} · ${buildCostLabel}`
-                  : `${strings.opera.sinLocked} · ${def.sin} L${required}`}
+                  ? atCap
+                    ? strings.mercatus.capped
+                    : `${strings.mercatus.deepen} · ${nextCost} ${strings.resources.gold}`
+                  : strings.opera.sinLocked}
               </button>
-              {ownedCount > 0 && (
-                <button
-                  type="button"
-                  className="opera-btn opera-btn--stop"
-                  onClick={() => shutdown(id)}
-                  aria-label={`${strings.opera.shutdown} ${name}`}
-                >
-                  {strings.opera.shutdown} · +{refund} {strings.resources.gold}
-                </button>
+              {d > 0 && (
+                <>
+                  <button
+                    type="button"
+                    className="opera-btn opera-btn--stop"
+                    onClick={() => divest(sin, 1)}
+                    aria-label={`${strings.mercatus.cutBack} ${name}`}
+                  >
+                    {strings.mercatus.cutBack} · +{cutBackRefund} {strings.resources.gold}
+                  </button>
+                  <button
+                    type="button"
+                    className="opera-btn opera-btn--stop"
+                    onClick={() => divest(sin, d)}
+                    aria-label={`${strings.mercatus.sellOff} ${name}`}
+                  >
+                    {strings.mercatus.sellOff} · +{sellOffRefund} {strings.resources.gold}
+                  </button>
+                </>
               )}
             </div>
           </li>
@@ -503,54 +540,19 @@ function MercaturaList(): ReactElement {
   );
 }
 
-/**
- * Businesses currently under construction. Identical builds are collapsed into one row with a count
- * ("6× Street food stand") rather than six separate rows; the time shown is the soonest to finish.
- */
-function InFlightList(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  if (!state) return <></>;
-  const buildQueue = state.lifetime.buildQueue;
-  if (buildQueue.length === 0) {
-    return <p className="pc-empty">{strings.opera.depraedatioEmpty}</p>;
-  }
-  const groups = new Map<string, { count: number; soonest: number }>();
-  for (const t of buildQueue) {
-    const g = groups.get(t.businessId);
-    if (g) {
-      g.count += 1;
-      g.soonest = Math.min(g.soonest, t.remainingSeconds);
-    } else {
-      groups.set(t.businessId, { count: 1, soonest: t.remainingSeconds });
-    }
-  }
-  return (
-    <ul className="vitium-queue">
-      {[...groups.entries()].map(([id, g]) => {
-        const name = strings.businesses[id] ?? id;
-        return (
-          <li key={id} className="vitium-queue-row">
-            <span className="vitium-queue-name">
-              {g.count > 1 ? `${g.count}\u00D7 ${name}` : name}
-            </span>
-            <span className="vitium-queue-time">
-              {formatDuration(Math.max(0, Math.ceil(g.soonest)))}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  );
+/** Compact rate readout: 2 decimals under 100, whole numbers above. */
+function formatRate(n: number): string {
+  if (n >= 100) return String(Math.floor(n));
+  return (Math.round(n * 100) / 100).toString();
 }
 
-type DepraedatioTab = 'mercatura' | 'compositum' | 'inflight';
+type DepraedatioTab = 'mercatura' | 'compositum';
 
 function DepraedatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);
   const notice = useGameStore((s) => s.notice);
   const [tab, setTab] = useState<DepraedatioTab>('mercatura');
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const inFlight = state.lifetime.buildQueue.length;
   const tab_ = (id: DepraedatioTab, label: string): ReactElement => (
     <button
       type="button"
@@ -568,11 +570,9 @@ function DepraedatioGroup(): ReactElement {
       <div className="kat-pager" role="tablist">
         {tab_('mercatura', 'Vitium Mercatura')}
         {tab_('compositum', strings.compositum.heading)}
-        {tab_('inflight', `${strings.opera.inFlight}${inFlight > 0 ? ` · ${inFlight}` : ''}`)}
       </div>
       {tab === 'mercatura' && <MercaturaList />}
       {tab === 'compositum' && <CompositumSection />}
-      {tab === 'inflight' && <InFlightList />}
       {notice !== null && <p className="opera-notice">{notice}</p>}
     </>
   );

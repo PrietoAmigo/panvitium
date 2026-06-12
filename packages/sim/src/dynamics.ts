@@ -22,7 +22,7 @@ import {
   BASE_SUICIDE_RATE_PER_SECOND,
   BASE_MURDER_RATE_PER_SECOND,
 } from './constants.js';
-import { businessGenerationPerSecond } from './builds.js';
+import { mercatusGenerationPerSecond } from './mercatus.js';
 import {
   compositumGenerationPerSecond,
   compositumFlatGenerationPerSecond,
@@ -43,7 +43,7 @@ import { type GameState, totalReprobates } from './state.js';
  * tick computes these once and feeds them into the pool drain.
  */
 export interface ReprobateRates {
-  /** Births per second (passive base + per-business contributions × generation mul). */
+  /** Births per second (passive base + Mercatus depth contributions × generation mul). */
   readonly generationPerSecond: number;
   /** Suicides per second across the whole population. */
   readonly suicidePerSecond: number;
@@ -54,12 +54,12 @@ export interface ReprobateRates {
 /** Compute the rates from the state, given a precomputed Modifiers bundle (tick already has it). */
 export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRates {
   const population = totalReprobates(state);
-  // Vitium Mercatura output multiplier (Plutus, Vapula #60) scales the BUSINESS contribution to
+  // Vitium Mercatura output multiplier (Plutus, Vapula #60) scales the MERCATUS contribution to
   // generation — not the base or Vitium Compositum terms.
   const vmMul = mods.vitiumMercaturaOutputMul;
   const baseGen =
     BASE_REPROBATE_GENERATION_PER_SECOND +
-    businessGenerationPerSecond(state) * vmMul +
+    mercatusGenerationPerSecond(state) * vmMul +
     compositumGenerationPerSecond(state) +
     compositumFlatGenerationPerSecond(state) + // toggle flat add/decrease (No-babies); clamped below
     compositumPopulationGenerationPerSecond(state) + // population-proportional (Bacchanal)

@@ -8,13 +8,10 @@
  * Whatever is left over carries into the next lifetime. Committing resets the lifetime, keeping a
  * fraction of gold / unconverted reprobates / maleficia per the carry-over rolls.
  *
- * This module is the pure core; the menu UI and store orchestrate it. Systems not yet built
- * (invocations, businesses, Emptio, the sigil/sin *modifier* engine) are cleared or use base
- * fractions, with the hooks marked. All randomness comes from the injected save RNG (ADR-011).
+ * This module is the pure core; the menu UI and store orchestrate it. All randomness comes from the injected save RNG (ADR-011).
  */
 import { add, clamp, floor, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
-import { businessById } from './businesses.js';
-import { shutdownRefundFraction } from './builds.js';
+import { liquidateMercatus } from './mercatus.js';
 import { sigilKatabasisBonus } from './sigils.js';
 import { sigilEffectMultiplier } from './maleficia.js';
 import {
@@ -115,36 +112,29 @@ export function bindSigil(
 
 /**
  * Begin the descent (02 §6): the moment the player commits to Katabasis, the lifetime's *productive*
- * systems are torn down — NOT later when they rise. Businesses shut down (their refund folded into
- * gold so it rides the later carry-over roll), in-flight builds fizzle, toggles stop, the action
- * queue clears, invocations are dispelled and their autonomous channels stop, and acolytes drop
- * their assignments. What the commit will roll for carry-over (gold, reprobates, maleficia) is left
- * intact and frozen; the store suspends ticking while the menu is open, so nothing accrues during
- * allocation. `commitKatabasis` finishes the descent (the carry-over rolls + lifetime reset) when
- * the player confirms.
+ * systems are torn down — NOT later when they rise. Every Mercatus auto-divests at the divest
+ * fraction into gold (so the refund rides the later carry-over roll — spec §1.4), toggles stop,
+ * the action queue clears, invocations are dispelled and their autonomous channels stop, and
+ * acolytes drop their assignments. What the commit will roll for carry-over (gold, reprobates,
+ * maleficia) is left intact and frozen; the store suspends ticking while the menu is open, so
+ * nothing accrues during allocation. `commitKatabasis` finishes the descent (the carry-over rolls
+ * + lifetime reset) when the player confirms.
  */
 export function enterKatabasis(state: GameState): GameState {
-  let gold = state.lifetime.gold;
-  for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
-    if (!count) continue;
-    const def = businessById(bid);
-    if (!def) continue;
-    const refund = Math.floor(def.buildCost * shutdownRefundFraction(state)) * count;
-    if (refund > 0) gold = add(gold, refund);
-  }
-  const acolytes = state.lifetime.acolytes.map((a) => ({
+  // Mercatus liquidation (spec §1.4): all trades sell off into gold and depths reset, BEFORE the
+  // remaining-gold roll at commit — the same ordering the old auto-shutdown had, preserving the
+  // Avaritia carry-over interplay (the refund is real risk capital subject to the same loss).
+  const liquidated = liquidateMercatus(state);
+  const acolytes = liquidated.lifetime.acolytes.map((a) => ({
     ...a,
     assignedAction: null,
     remainingSeconds: null,
   }));
   return {
-    ...state,
+    ...liquidated,
     inKatabasis: true, // freeze the lifetime in `tick` (online + offline) until commit
     lifetime: {
-      ...state.lifetime,
-      gold, // includes business shutdown refunds (rolled by the remaining-gold % at commit)
-      businesses: {}, // shut down now, not on rise
-      buildQueue: [], // in-flight builds fizzle (no refund — they hadn't completed)
+      ...liquidated.lifetime,
       activeToggles: [], // toggles stop
       toggleDurations: {},
       actionQueue: [], // uncompleted player actions fizzle
@@ -170,8 +160,8 @@ export interface KatabasisRecap {
 /**
  * Commit the Katabasis: reset the lifetime, keeping a fraction of gold and reprobates
  * and rolling each maleficium against its remaining chance. Souls (the leftover pool), Devotion,
- * and current sigil bindings carry through untouched. Invocations are dispelled, businesses/Emptio
- * cleared, influence reset to 0. Returns the resumed state and the recap of what was kept.
+ * and current sigil bindings carry through untouched. Invocations are dispelled, Mercatus depths /
+ * Emptio cleared, influence reset to 0. Returns the resumed state and the recap of what was kept.
  *
  * Call AFTER the player has finished allocating (offer/bind). `now` defaults to the current clock.
  */
@@ -187,21 +177,15 @@ export function commitKatabasis(
   const pendingErinyes = state.lifetime.pendingErinyes === true;
   const pendingMorpheus = !pendingErinyes && state.lifetime.pendingMorpheus === true;
 
-  // Vitium Mercatura auto-shutdown (02 §6): every owned business shuts down and refunds a
-  // fraction of its buildCost into the gold pool BEFORE the carry-over roll. This means the
-  // refund participates in the remaining-gold % and not at face value — the design intent is
-  // that businesses are real risk capital subject to the same loss as cash on hand at descent.
-  let goldAtDescent = state.lifetime.gold;
-  for (const [bid, count] of Object.entries(state.lifetime.businesses)) {
-    if (!count) continue;
-    const def = businessById(bid);
-    if (!def) continue;
-    const refund = Math.floor(def.buildCost * shutdownRefundFraction(state)) * count;
-    if (refund > 0) goldAtDescent = add(goldAtDescent, refund);
-  }
+  // Mercatus liquidation (spec §1.4): every trade auto-divests into gold BEFORE the carry-over
+  // roll, so the refund participates in the remaining-gold % and not at face value — the trades
+  // are real risk capital subject to the same loss as cash on hand at descent. `enterKatabasis`
+  // already liquidated; this defensive repeat is a no-op when depths are 0.
+  state = liquidateMercatus(state);
+  const goldAtDescent = state.lifetime.gold;
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
-  // business shutdown refunds folded in above. Sigils (Purson #20, Semet #32) lift the fraction;
+  // Mercatus liquidation refunds folded in above. Sigils (Purson #20, Semet #32) lift the fraction;
   // Erinyes/Morpheus override it outright. Sigil-enhancer maleficia (Solomon's Ring, Iron Nails)
   // scale every sigil's carry-over strength.
   const sigilEffectMul = sigilEffectMultiplier(state.lifetime.maleficia);
@@ -250,8 +234,7 @@ export function commitKatabasis(
     activeToggles: [], // toggles stop
     toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle
-    businesses: {}, // all businesses auto-shut-down at descent (refund folded into goldAtDescent)
-    buildQueue: [], // in-flight builds fizzle (no refund — they hadn't completed)
+    mercatusDepths: {}, // all trades liquidated at descent (refund folded into goldAtDescent)
     generationPool: 0, // pools reset with the fresh lifetime
     suicidePool: 0,
     murderPool: 0,

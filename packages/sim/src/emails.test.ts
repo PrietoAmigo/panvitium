@@ -12,11 +12,11 @@ describe('emails (impact-feedback)', () => {
     expect(s2).toBe(s1); // dedup → same reference when nothing new fires
   });
 
-  it('delivers business / influence mail once their conditions are met', () => {
+  it('delivers trade / influence mail once their conditions are met', () => {
     const base = createInitialState('seed', 0);
     const rich: GameState = {
       ...base,
-      lifetime: { ...base.lifetime, businesses: { acme: 5 }, influence: bn(2000) },
+      lifetime: { ...base.lifetime, mercatusDepths: { gula: 3, ira: 2 }, influence: bn(2000) },
     };
     const ids = deliverEmails(rich, 10).lifetime.inbox.map((e) => e.id);
     expect(ids).toContain('first-business');

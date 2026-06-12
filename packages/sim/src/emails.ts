@@ -1,7 +1,7 @@
 /**
  * The impact-feedback email engine (Phase 5.2). Emails are delivered as the in-world consequences of
  * the player's actions: newsletters as corruption spreads, complaints and class-actions from people
- * harmed by their Vitium Mercatura businesses, and similar reactive mail. This module owns *which*
+ * harmed by their Vitium Mercatura trades, and similar reactive mail. This module owns *which*
  * emails fire and *when* (pure, deterministic, sim-side); the sender/subject/body copy lives in the
  * strings catalog keyed by the same id, so content can change without touching the sim.
  *
@@ -9,6 +9,7 @@
  * economy pass — they're the provisional v1 set, not final balance.
  */
 import { gte, bn } from './bignum.js';
+import { totalMercatusDepth } from './mercatus.js';
 import { totalReprobates, type GameState, type ReceivedEmail } from './state.js';
 
 /** A catalog email: its id (also the strings key) and the once-only condition that delivers it. */
@@ -18,13 +19,6 @@ export interface EmailTrigger {
   trigger: (state: GameState) => boolean;
 }
 
-/** Total owned Vitium Mercatura businesses across all ids. */
-function businessCount(state: GameState): number {
-  let n = 0;
-  for (const owned of Object.values(state.lifetime.businesses)) n += owned;
-  return n;
-}
-
 /**
  * The provisional v1 catalog (content is a Claude Design topic; these triggers are tuneable). Ordered
  * roughly by when they unlock so a fresh inbox reads sensibly.
@@ -32,9 +26,11 @@ function businessCount(state: GameState): number {
 export const EMAIL_TRIGGERS: readonly EmailTrigger[] = [
   { id: 'welcome', trigger: () => true },
   { id: 'first-reprobates', trigger: (s) => totalReprobates(s) >= 10 },
-  { id: 'first-business', trigger: (s) => businessCount(s) >= 1 },
+  // Re-keyed from the legacy owned-business counts to Mercatus depth (rework spec): the first
+  // deepening of any trade, and a total reach of five depths across the eight trades.
+  { id: 'first-business', trigger: (s) => totalMercatusDepth(s) >= 1 },
   { id: 'newsletter-influence', trigger: (s) => gte(s.lifetime.influence, bn(1000)) },
-  { id: 'class-action', trigger: (s) => businessCount(s) >= 5 },
+  { id: 'class-action', trigger: (s) => totalMercatusDepth(s) >= 5 },
 ];
 
 /**

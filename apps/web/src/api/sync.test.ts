@@ -27,7 +27,7 @@ const USER: User = {
 
 function makeBlob(overrides: Partial<SaveBlob> = {}): SaveBlob {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     saveVersion: 3,
     lastTickAt: 1_700_000_000_000,
     deviceId: 'dev-1',

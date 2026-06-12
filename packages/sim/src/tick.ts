@@ -16,7 +16,7 @@ import { resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceInvocationRunners } from './invocations.js';
 import { applyInvocationTickEffects } from './apex.js';
-import { advanceBuilds, businessGoldPerSecond } from './builds.js';
+import { mercatusGoldPerSecond } from './foedera.js';
 import {
   advanceToggles,
   compositumGoldPerSecond,
@@ -89,7 +89,7 @@ export function perSecondRates(state: GameState): PerSecondRates {
   const mods = computeModifiers(state);
   const gold =
     (BASE_GOLD_PER_SECOND +
-      businessGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
+      mercatusGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
     mods.goldRateMul;
@@ -119,7 +119,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   }
 
   // Morpheus freeze (03 §2.4): while the apex Acedia is active, the lifetime is held in stillness —
-  // no income, no Opera/build progress, no dynamics, no apex per-tick effects, no Vitium toggle
+  // no income, no Opera progress, no dynamics, no apex per-tick effects, no Vitium toggle
   // upkeep. Only the clock and the achievement evaluator advance (the latter so an unlock that
   // depends on PRE-Morpheus state can still surface; nothing new can be earned mid-freeze because
   // the underlying state isn't changing). The player can still summon other invocations from the
@@ -151,9 +151,9 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   const mods = computeModifiers(state);
 
   // 1. Passive generation (02 §1) with modifier bundle applied.
-  //    Gold/s = (base + Σ business goldPerSecond + Σ active-VC goldPerSecond) × goldRateMul.
+  //    Gold/s = (base + Σ Mercatus revenue [Foedus-scaled] + Σ active-VC goldPerSecond) × goldRateMul.
   //    Influence gain = (proportional base + Σ active-VC influencePerSecond) × influenceRateMul,
-  //    capped at effectiveMax = base × maxInfluenceMul. Business / VC income obeys the same
+  //    capped at effectiveMax = base × maxInfluenceMul. Mercatus / VC income obeys the same
   //    multipliers as base so Avaritia / Silver / Acclaim scale them too.
   //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
   //    only at display/spend/comparison boundary.
@@ -163,7 +163,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   const offlineInfluenceMul = deps.offlineInfluenceMul ?? 1;
   const goldPerSecond =
     (BASE_GOLD_PER_SECOND +
-      businessGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
+      mercatusGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
     mods.goldRateMul *
@@ -234,11 +234,6 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
       if (resolved.event) events.push(resolved.event);
     }
   }
-
-  // 3. Vitium Mercatura build queue (03 §2.3 / 02 §3): builds advance independently of the
-  //    player action slot. Completed builds increment the businesses map; new owned counts
-  //    contribute to subsequent ticks' gold/generation/conversion rates.
-  working = advanceBuilds(working, deltaSeconds);
 
   // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer
   //    births / suicides / murders (02 §9). Each death mints 1 soul. The pools live on the

@@ -12,8 +12,8 @@ import { create } from 'zustand';
 import {
   tick,
   startAction,
-  startBuild,
-  shutdownBusiness,
+  investMercatus,
+  divestMercatus,
   activateToggle,
   deactivateToggle,
   invoke,
@@ -112,16 +112,15 @@ interface GameStore {
    */
   activateMaleficium: (id: string) => void;
   /**
-   * Start a Vitium Mercatura build (03 §2.3). Pays the up-front gold cost and queues a build
-   * timer. Builds run alongside the player slot — multiple may be in flight concurrently.
-   * Sets a notice on failure (no level / not enough gold / unknown id).
+   * Deepen a Sin's Mercatus by one depth (rework spec §1.1) — an instant gold purchase. Sets a
+   * notice on failure (Sin below level 1, depth cap reached, not enough gold, Morpheus freeze).
    */
-  build: (businessId: string) => void;
+  invest: (sin: Sin) => void;
   /**
-   * Manually shut down one owned business of `businessId` (03 §2.3). Instant; refunds the default
-   * 50% of the buildCost into gold and decrements the owned count by one.
+   * Wind a Sin's Mercatus down by `depths` (clamped; pass the full depth to sell off entirely).
+   * Instant; refunds the divest fraction of the divested depths' cumulative cost into gold.
    */
-  shutdown: (businessId: string) => void;
+  divest: (sin: Sin, depths?: number) => void;
   /**
    * Assign one idle acolyte to a delegatable action (02 §10). Notice on failure (e.g. all
    * acolytes busy, or the action is not delegatable yet — Indagatio only in this slice).
@@ -151,7 +150,7 @@ interface GameStore {
   openKatabasis: () => void;
   /**
    * Commit to the descent from the Altar gate: tear down the lifetime's productive systems
-   * (businesses, toggles, actions, invocations — 02 §6) and freeze ticking while the player
+   * (Mercatūs, toggles, actions, invocations — 02 §6) and freeze ticking while the player
    * allocates. Sigil bindings persist; the carry-over roll + lifetime reset happen on the rise
    * (`confirmKatabasis`).
    */
@@ -281,7 +280,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     // During the descent (menu open), the recap, and the launch title menu the lifetime is frozen
-    // — the soul is in trance. Skip the sim entirely so nothing accrues (no suicides, no business
+    // — the soul is in trance. Skip the sim entirely so nothing accrues (no suicides, no Mercatus
     // gold, no soul minting). The RAF accumulator drains harmlessly through these no-op calls, so
     // there is no catch-up burst when the screen closes.
     if (get().katabasisPhase !== null || get().titleOpen) return;
@@ -328,18 +327,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     else set({ notice: result.reason });
   },
 
-  build: (businessId) => {
+  invest: (sin) => {
     const current = get().state;
     if (!current) return;
-    const result = startBuild(current, businessId);
+    const result = investMercatus(current, sin);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },
 
-  shutdown: (businessId) => {
+  divest: (sin, depths = 1) => {
     const current = get().state;
     if (!current) return;
-    const result = shutdownBusiness(current, businessId);
+    const result = divestMercatus(current, sin, depths);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },
@@ -395,7 +394,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   beginKatabasis: () => {
     const current = get().state;
     if (!current) return;
-    // Entering Katabasis tears down the lifetime's productive systems immediately (businesses,
+    // Entering Katabasis tears down the lifetime's productive systems immediately (Mercatūs,
     // toggles, actions, invocations — 02 §6). Sigil bindings PERSIST across the descent: bound souls
     // stay bound and must be released manually (the "unbind all" control or each seal's release).
     // The store then freezes ticking (see `advance`) so nothing accrues while the player allocates.

@@ -160,16 +160,16 @@ describe('reprobate dynamics — murder pool (per-capita cull)', () => {
 });
 
 describe('reprobate dynamics — Vitium Mercatura output multiplier (Plutus / Vapula)', () => {
-  /** A state owning one entry-tier business (0.05 reprobate/s generation at catalog values). */
+  /** A state with one trade at depth 5 (5 × 0.02 = 0.1 reprobate/s generation). */
   function withBusiness(): GameState {
     const s = createInitialState('vm-test', 0);
     return {
       ...s,
-      lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 1 } },
+      lifetime: { ...s.lifetime, mercatusDepths: { gula: 5 } },
     };
   }
 
-  it('business generation scales with the VM-output multiplier (Plutus lifts it)', () => {
+  it('mercatus generation scales with the VM-output multiplier (Plutus lifts it)', () => {
     const base = withBusiness();
     const baseRate = reprobateRates(base, computeModifiers(base)).generationPerSecond;
     expect(baseRate).toBeGreaterThan(0);

@@ -1,31 +1,40 @@
 # 03 — Content Catalog
 
-Reference tables for every named entity in the game. This document is **the working surface** for content design — when systems in `02-systems-and-mechanics.md` change, this catalog should be updated first, then the systems doc rewritten if needed.
+This document is the catalog of *what exists*: every Sin, action, ceremony, maleficium, sigil,
+invocation, and achievement. *How* the systems work is `02-systems-and-mechanics.md`. **Numbers
+live in the economy spreadsheet** (`Panvitium_Economy_Template.xlsx`), which wins over this
+document wherever the two disagree; formulas that define a system's shape are stated here, and
+their constants live in the sheet.
 
-Conventions:
-- This catalog describes **what each entity does**, not **by how much**. Every concrete number — costs, times, probabilities, rates, percentages, multipliers, coefficients, soul/gold amounts, thresholds, and durations — lives in the economy spreadsheet (`Panvitium_Economy_Template.xlsx`), which is the single source of truth for tuning. Effects here are stated qualitatively so the spreadsheet can be retuned without touching this document.
-- `[TBD]` — description not yet defined.
-- Italics — Latin terms preserved as flavour.
-- Square-root binding curves are the default for sigils (see `02-systems-and-mechanics.md` §5).
+This revision incorporates **ADR-024** (single reprobate pool; subtypes and conversion removed)
+and the **Vitium Mercatura / Vitium Compositum redesign** (`vm-vc-redesign-spec.md`). Section
+numbering is preserved from the previous revision so cross-references in other documents and in
+code comments stay valid.
 
 ---
 
-## 1. The Eight Princes and the Cardinal Sins
+## 1. The Eight Princes — Cardinal Sins, skills, and per-level effects
 
-| Prince | Cardinal Sin | English | Skill | Skill effect (summary) | Level effect |
+Each Prince is a school of vice with its own temper, pacing, and economy
+(`00-lore-bible.md` §6). Devotion offered to a Prince raises that Cardinal Sin: a continuous
+**skill** intensity plus a discrete **per-level effect** at each threshold (`02 §6`). Levels run
+0–4; the threshold base and the skill-intensity curve live in the spreadsheet
+(`Sins & Devotion`, `Globals`).
+
+| Prince | Sin (Latin) | English | Skill | Skill effect (continuous) | Per-level effect |
 |---|---|---|---|---|---|
-| **Beelzebub** | *Gula* | Gluttony | Insatiability | Decreases overall Terrible and Apocalyptic outcome probabilities. | Each level increases player online action efficiency (does not affect acolytes nor invocations, does not apply when offline) multiplicatively. |
-| **Asmodeus** | *Luxuria* | Lust | Seduction | Increases overall reprobate generation rate. | Each level increases the remaining unconverted reprobate percentage. Each following level enables toggling *Suasio* actions unlocked in the previous level. |
-| **Mammon** | *Avaritia* | Greed | Golden Hand | Increases overall gold gain rate. | Each level increases the remaining gold percentage. |
-| **Leviathan** | *Tristitia* | Sorrow / Despair | Resignation | Increases overall *Suasio* success probability (this does not mean Good outcome probability — it means overall success, raising Stellar, Excellent and Good by the same percentage) and action efficiency. | Each level increases the base reprobate suicide chance multiplicatively. |
-| **Satan** | *Ira* | Wrath | Retribution | Increases overall *Decimatio* success probability and action efficiency. | Each level increases acolyte and invocation action efficiency multiplicatively. Each following level enables toggling *Decimatio* actions unlocked in the previous level. |
-| **Belphegor** | *Acedia* | Sloth | Procrastination | Increases offline reprobate generation rate, offline gold gain rate and offline action efficiency. | Each level applies a compounding multiplier to offline time, growing with both the length of the offline stretch and the *Acedia* level (curve in the spreadsheet). |
-| **Rosier** | *Vanagloria* | Vainglory | Acclaim | Increases maximum influence. | Each level increases influence gain rate multiplicatively. |
-| **Lucifer** | *Superbia* | Pride | Morning Star | Increases overall Stellar outcome probabilities. | Each level increases the remaining maleficia chance. |
+| **Beelzebub** | *Gula* | Gluttony | Insatiability | Increases online player efficiency. | Removes a flat share of Bad, Terrible, and Apocalyptic chance per level (additive); at level 4 the negative-outcome chance is 0%. |
+| **Asmodeus** | *Luxuria* | Lust | Seduction | Increases the reprobate generation rate. | Multiplies overall *Suasio* efficiency per level; unlocks the *Suasio* actions and their toggles. |
+| **Mammon** | *Avaritia* | Greed | Golden Hand | Increases the gold gain rate. | Increases the Katabasis remaining-gold percentage per level. |
+| **Leviathan** | *Tristitia* | Sorrow | Resignation | Increases acolyte efficiency. | Increases the Katabasis remaining-reprobate percentage per level. |
+| **Satan** | *Ira* | Wrath | Retribution | Increases invocation efficiency. | Multiplies overall *Decimatio* efficiency per level; unlocks the *Decimatio* actions and their toggles. |
+| **Belphegor** | *Acedia* | Sloth | Procrastination | Increases offline player efficiency. | Each level applies a compounding multiplier to offline gains, growing with both the offline stretch and the level (curve in the spreadsheet; its time input saturates per ADR-004's amendment). |
+| **Rosier** | *Vanagloria* | Vainglory | Acclaim | Increases maximum influence. | Multiplies the influence gain rate per level. |
+| **Lucifer** | *Superbia* | Pride | Morning Star | Increases overall Stellar outcome probability. | Increases the Katabasis remaining-maleficia chance per level. |
 
-**Skills** have continuous, per-Sin intensity that rises with total Devotion to the Prince along a fixed curve (the curve shape and its divisor live in the spreadsheet `Globals`; per-Sin coefficients can override). The modifier engine couples a skill's intensity to its target via `1 + intensity` for "increase" skills and `1 / (1 + intensity)` for "decrease" skills (`02 §4`).
-
-**Levels:** each Cardinal Sin runs from 0 to its maximum level. The cumulative Devotion cost to reach each successive level escalates per level (the base and curve live in the spreadsheet `Globals`). Reaching a level threshold grants the per-level effect above, in addition to the continuous skill intensity.
+**Skills** couple to their target via `1 + intensity` ("increase") or `1 / (1 + intensity)`
+("decrease") through the modifier engine (`02 §4`); intensity rises with total Devotion along
+the fixed curve in the spreadsheet.
 
 ---
 
@@ -33,319 +42,325 @@ Conventions:
 
 ### 2.1 *Suasio* — Tempting
 
-Three actions: *Suggestion*, *logismoi*, and *Imperium*. Some are gated by *Luxuria* level.
-Action efficiency is `cost-outcome` mode (`02 §3`): it modifies *Suasio* costs and outcomes by the same percentage. Action efficiency does not affect *Suasio* action time.
+Three actions: *Suggestion*, *Logismoi*, and *Imperium*, gated and toggle-gated by *Luxuria*
+level. Efficiency mode is **`cost-outcome`** (`02 §3`): it modifies *Suasio* costs and positive
+outcomes by the same percentage and does not affect action time.
 
-Probabilities, outcomes, cost, time, and the *Luxuria* levels that unlock and toggle-unlock each action are in the economy spreadsheet.
+- **Suggestion** — the early-game reprobate source. Short, cheap, modest yield.
+- **Logismoi** — the mid-game source; bulk corruption with a wider variance.
+- **Imperium** — the late-game source; the player in control, with soul-minting and
+  percentage-of-population outcomes at the top tiers.
+
+Per-action probabilities, outcomes, costs, durations, and the *Luxuria* gates are in the
+`Suasio` sheet.
 
 ### 2.2 *Decimatio* — Culling
 
-Three actions: *Caedis*, *pogrom*, and *purgatio*. Some are gated by *Ira* level.
-Action efficiency is `cost-outcome` mode: it modifies *Decimatio* positive outcomes (and costs by the same percentage). Action efficiency does not affect *Decimatio* action time.
+Three actions: *Caedis*, *Pogrom*, and *Purgatio*, gated and toggle-gated by *Ira* level.
+Efficiency mode is **`time`** (`02 §3`, per the sheet): efficiency reduces the action's
+duration and affects neither costs nor outcomes.
 
-Probabilities, outcomes, cost, time, and the *Ira* levels that unlock and toggle-unlock each action are in the economy spreadsheet.
+- **Caedis** — the early soul source; single kills with occasional sprees.
+- **Pogrom** — the mass cull; percentage-of-population kills, heavier mishaps.
+- **Purgatio** — soul farming at scale; enormous yields against ruinous Terrible/Apocalyptic
+  outcomes (total gold loss, total loss).
+
+Every kill mints one soul (`02 §9`). Per-action tables are in the `Decimatio` sheet. Note the
+tension the redesigned economy creates: every reprobate culled is a customer *Vitium Mercatura*
+no longer earns from (§2.3).
 
 ### 2.3 *Depraedatio* — Exploiting
 
-These actions are deterministic — no tier roll.
+The vice economy. Deterministic — no tier rolls anywhere in this category.
 
-#### *Vitium Mercatura* — single-Sin businesses
+#### *Vitium Mercatura* — the eight trades
 
-Each *Vitium Mercatura* tier is a sin-themed business that produces gold passively while running, generates unconverted reprobates, and biases reprobate conversion toward the matching subtype. Higher tiers cost more, produce more, and unlock at higher Sin levels.
+One trade per Cardinal Sin — *Mercatus Gulae, Luxuriae, Avaritiae, Tristitiae, Irae, Acediae,
+Vanagloriae, Superbiae* — each with a single integer **depth** `d ≥ 0`. There are no buildings,
+no copies, and no build queue: deepening and divesting are instant gold transactions (`02 §3`).
 
-Building a business takes time that scales with the tier of the business.
-A build action is **not** subject to player action efficiency; it does not occupy the player's action slot (`02 §3` parallelism rules). Multiple builds can be triggered concurrently and cannot be delegated to acolytes or invocations.
-The outcome of a successful build is the **business itself**, which has a continuous gold output, a base reprobate generation rate, and a subtype-biased conversion rate. There is no maximum cap on the number of businesses owned. A business can be shut down with a partial recovery of the invested gold (the recovery fraction lives in the spreadsheet and is modified by sigils such as Vine #45).
+- **Unlock:** a Mercatus opens at its Sin's level 1. **Depth cap:** `capPerLevel × sinLevel`.
+- **Invest:** cost from depth `d` to `d+1` is `floor(C0 × r^d)`; the cumulative cost is the
+  closed form `C0 (r^d − 1)/(r − 1)` — always derived, never stored.
+- **Revenue is demand-driven:** `revenue/s = spendPerCapita × reprobates × penetration(d)` with
+  `penetration(d) = 1 − e^(−a·d)`. No population, no income: the trades earn from the living
+  damned, so the gold curve rides the population curve.
+- **Corruption:** each trade also breeds — `generation/s = genPerDepth × d`, folded into the
+  generation pool (`02 §9`). Customers beget customers.
+- **Divest:** winding down refunds `divestFraction ×` the cumulative cost of the divested
+  depths (the `Globals` recovery constant, modified by Vine #45 and Furcas #50).
+- **Katabasis liquidation:** on descent, all Mercatūs auto-divest into gold **before** the
+  remaining-gold roll (`02 §6`) and depths reset with the lifetime.
+- Mercatus revenue and corruption are both scaled by the *Vitium Mercatura* output modifiers
+  (Plutus invocation, Vapula #60, Sitri #12).
 
-Per-tier gold cost, gold output, build time, reprobate generation rate, conversion rate, and subtype bias are in the spreadsheet.
+All constants (`C0`, `r`, `a`, `spendPerCapita`, `genPerDepth`, the depth cap, the divest
+fraction) live in the `Vitium Mercatura` sheet.
 
-#### *Vitium Compositum* — multi-Sin events
+#### *Vitium Compositum* — multi-Sin ceremonies
 
-Each *Vitium Compositum* is a multi-Sin-themed toggle that biases reprobate generation toward the matching subtypes and produces additional effects.
-These events are organised by you and your acolytes; acolytes can be assigned to help run an event.
-*Vitium Compositum* ticks at a fixed cadence (in the spreadsheet) and is not affected by action efficiency; instead, action efficiency multiplicatively scales the per-tick effect, cost, and outcomes. The total effective efficiency on an event is the player's contribution (if running it themselves) plus each assigned acolyte's contribution, plus any invocation contribution.
+Each *Vitium Compositum* is a multi-Sin toggle organised by you and your acolytes; acolytes can
+be assigned to help run one. A ceremony ticks at a fixed cadence unaffected by efficiency;
+efficiency multiplicatively scales the per-tick costs, outputs, and effects (`02 §3`). The total
+effective efficiency is the player's contribution plus each assigned acolyte's plus any
+invocation contribution. A toggle that cannot pay its full per-second cost auto-deactivates on
+the next tick.
 
-A toggle that cannot pay its full per-second cost auto-deactivates on the next tick (`02 §3`).
+The catalog (gates, per-second costs/outputs, and effects in the `Vitium Compositum` sheet):
 
-| Action | Sin combination | Subtypes biased & output |
+| Ceremony | Sin combination | Character |
 |---|---|---|
-| **Outrage Cycle** | *Ira* + *Vanagloria* | Cholerics + Celebrities. Costs influence and gold. Increases Choleric conversion rate. |
-| **Loan Shark Op** | *Avaritia* + *Ira* | Gamblers + Cholerics. Costs influence; produces gold income. |
-| **Bacchanal** | *Gula* + *Luxuria* | Gluttons + Degenerates. Costs gold and influence. Generates unconverted reprobates scaled to its matching subtype populations. |
-| **Dolce Far Niente** | *Gula* + *Acedia* | Gluttons + Husks. No upkeep. Increases offline gain rate. |
-| **Charity** | *Avaritia* + *Vanagloria* | Gamblers + Celebrities. Costs influence; produces high gold income. |
-| **Gala** | *Superbia* + *Vanagloria* | Sigmas + Celebrities. Costs gold; produces strong influence income. |
-| **Enraging broadcast** | *Ira* + *Tristitia* | Cholerics + Nihilists. Costs influence. Destroys a share of all reprobates each second. |
-| **Ethnocentric revolt** | *Superbia* + *Ira* | Cholerics + Sigmas. Costs gold and influence. Increases the base Choleric murder rate. |
-| **No-babies movement** | *Luxuria* + *Acedia* | Degenerates + Husks. Small gold and influence income. Decreases unconverted reprobate generation rate. |
-| **Doom gathering** | *Tristitia* + *Acedia* | Nihilists + Husks. Costs gold and influence. Increases the base reprobate suicide rate. |
-| **Vegas** | *Luxuria* + *Avaritia* + *Gula* + *Acedia* | Degenerates + Gamblers + Gluttons + Husks. High gold cost; high influence income. Adjusts the offsetting penalties of its matching subtypes. |
-| **Crusade** | *Superbia* + *Ira* + *Vanagloria* + *Tristitia* | Cholerics + Sigmas + Celebrities + Nihilists. High influence cost; high gold income. Adjusts the offsetting penalties of its matching subtypes. |
-| **Panvitium** | Explained below; very important. | Explained below; very important. |
+| **Charity** | *Avaritia* + *Vanagloria* | Costs influence; strong gold income. |
+| **Gala** | *Superbia* + *Vanagloria* | Costs gold; strong influence income. |
+| **Bacchanal** | *Gula* + *Luxuria* | Costs gold and influence; raises the online reprobate generation rate. |
+| **Dolce Far Niente** | *Gula* + *Acedia* | No upkeep; raises offline gold and offline generation rates. |
+| **Enraging Broadcast** | *Ira* + *Tristitia* | Costs influence; raises the murder rate. |
+| **Doom Gathering** | *Tristitia* + *Acedia* | Costs gold and influence; raises the suicide rate. |
+| **Vegas** | *Luxuria* + *Avaritia* + *Gula* + *Acedia* | Percentage-of-income gold cost; percentage influence income. |
+| **Crusade** | *Superbia* + *Ira* + *Vanagloria* + *Tristitia* | Percentage-of-income influence cost; outsized influence return. |
+| **Panvitium** | All eight Sins (level gate in the sheet) | See below. |
 
-Entries are ordered roughly by the number of Sins involved.
+The previous revision's subtype-keyed ceremonies (*Outrage Cycle*, *Loan Shark Op*,
+*Ethnocentric Revolt*, *No-babies Movement*) are **retired with ADR-024**; the sheet's list
+above is the canonical set.
 
-Sin-level gates, per-second costs, per-second outputs, effects, conversion rates and subtype biases for each *Vitium Compositum* are in the spreadsheet. To keep the spreadsheet flexible, all combinations are tracked there.
+#### *Foedera* — the Mercatus ↔ Compositum coupling
+
+A *Foedus* forms between a ceremony and the Mercatūs of its member Sins, replacing the retired
+conversion coupling as the bridge between the two *Vitium* systems:
+
+- `foedusTier = min(floor(min member depth / step), maxTier)` — it deepens as the member trades
+  deepen.
+- The ceremony's per-second upkeep takes a per-tier discount; while the ceremony is active, each
+  member Sin's Mercatus revenue takes a per-tier bonus. Bonuses from several active ceremonies
+  sharing a Sin stack multiplicatively on that Mercatus.
+- Every ceremony participates by its member-Sin set — including the percentage-upkeep ceremonies
+  and *Panvitium* itself, whose Foedus discounts the exponential ramp (the intended late-game
+  payoff of deep, broad trades).
+
+Step, tier cap, per-tier coefficients, and the per-ceremony opt-out flags are in the
+`Vitium Mercatura` sheet.
 
 ##### *Panvitium*
 
-The action that gives the game its name. Unlocked when every Cardinal Sin reaches the required level (see spreadsheet).
+The action that gives the game its name. Unlocked when every Cardinal Sin reaches the required
+level (sheet).
 
-- **Type:** toggle. Cannot be manually deactivated. Auto-deactivates on the next tick if its per-second cost cannot be paid (`02 §3`).
-- **Cost:** gold and influence per second, both growing **exponentially** with active duration — sustained *Panvitium* burns through resources fast.
-- **Effect:** The Cardinal Sins take the streets. Reprobate generation, suicide, and murder rates are enormous across the whole population; conversion applies to every subtype at once; souls are minted each second (scaled to the current soul pool); and unconverted reprobate generation gets a flat boost on top.
-- **Role:** ultra-burst, late-game, **not easily maintainable for long** by design. *Panvitium* is the "endgame ritual" — flipped on for a glorious, expensive minute or two, then off (resource-driven). The exponential cost ensures it cannot become a steady-state mode.
-- **The visual signature** of the game: before activating, the player gets a pop-up for confirmation; when *Panvitium* is active, the Studio's window onto the world shows the city tinted red, lit by fires, processions of the corrupted. This is the screenshot moment.
+- **Type:** toggle; cannot be manually deactivated; auto-deactivates the moment its per-second
+  cost cannot be paid (`02 §3`).
+- **Cost:** gold and influence per second, both growing **exponentially** with active duration.
+- **Effect:** the Cardinal Sins take the streets — souls are minted each second, scaled to the
+  current reprobate population (sheet).
+- **Role:** ultra-burst, late-game, deliberately unsustainable: flipped on for a glorious,
+  expensive minute or two, then off (resource-driven). The exponential cost ensures it can never
+  become a steady state; a deep all-eight Foedus stretches the burn without removing the wall.
+- **The visual signature:** a confirmation pop-up before activating; while active, the Studio's
+  window shows the city tinted red, lit by fires, processions of the corrupted. The screenshot
+  moment.
 
-### 2.4 *Invocatio*
+### 2.4 *Invocatio* — Summoning
 
-The summoning category. Invocations are deterministic.
-Each invocation has its own invoking-power requirement and Sin-level gate, in addition to other costs (souls, influence per second, etc.). All of those requirements and costs live in the spreadsheet (`Invocatio` sheet).
+Deterministic. Each invocation has an invoking-power requirement, a Sin-level gate, and costs
+(one-time and/or per-second); mechanics, concurrency limits (one Apex, one Familiar, any number
+of Normal), visibility at half power, and the three effect shapes are `02 §7`. All are dispelled
+on Katabasis. Numbers live in the `Invocatio` sheet; the catalog:
 
-All invocations are **persistent** unless their description states a specific dispel condition (e.g. Aurevora dispels at gold = 0; Erinyes is one-shot). Most invocations can be **dispelled at will** by the player; the exceptions are explicitly noted ("cannot be manually dispelled"). On Katabasis, all invocations are dispelled (`02 §7`). Apex invocations and the Familiar are limited to one active at a time.
-
-| Invocation | Sin alignment | Effect |
-|---|---|---|
-| **Familiar** | — | **Maximum one active.** Generic productivity boost: lifts the player's own action efficiency and additionally runs *Indagatio* in the background (autonomous channel; `02 §3`). |
-| **Upir** | *Gula* | Runs *Caedis* in the background (autonomous channel). |
-| **Aurevora** | *Gula* | **Maximum one active.** Apex *Gula*. Drains gold per second at an exponentially-rising rate; in exchange, player action efficiency is raised at a similarly-rising rate. Once gold reaches 0 it is dispelled. |
-| **Lamia** | *Luxuria* | Increases overall *Suasio* action efficiency. |
-| **Succubus** | *Luxuria* | **Maximum one active.** Apex *Luxuria*. Multiplies overall *Suasio* action efficiency and reduces overall gold gain rate. |
-| **Plutus** | *Avaritia* | Increases *Vitium Mercatura* output. |
-| **Midas** | *Avaritia* | **Maximum one active.** Apex *Avaritia*. Sharply multiplies overall gold gain rate and sharply raises Apocalyptic-outcome chance across all Opera. |
-| **Imp** | *Ira* | Runs *Caedis* in the background, always resolving Good outcomes (autonomous channel). |
-| **Harpy** | *Ira* | Increases overall *Decimatio* action efficiency. |
-| **Erinyes** | *Ira* | **Maximum one active.** Apex *Ira*. All reprobates are immediately killed. At your next Katabasis, no gold or maleficia carry over, and overall action efficiency is permanently increased. Morpheus is dispelled and cannot be invoked. |
-| **Nightmare** | *Tristitia* | Increases the base reprobate suicide rate. |
-| **Astiwihad** | *Tristitia* | **Maximum one active.** Apex *Tristitia*. Each second, there is a small chance that all reprobates commit suicide at once. |
-| **Lemure** | *Acedia* | Increases the offline gain rate. |
-| **Morpheus** | *Acedia* | **Maximum one active.** Apex *Acedia*. Full freeze: reprobates cannot be generated, converted, killed, or suicide; gold and influence gain rates and costs are nil; overall action efficiency is nil. At your next Katabasis, all gold and maleficia carry over and the *Emptio* list is preserved (the surfaced maleficia are not lost). |
-| **Fama** | *Vanagloria* | Increases influence gain rate. |
-| **Specunitas** | *Vanagloria* | **Maximum one active.** Apex *Vanagloria*. Sharply multiplies Celebrity conversion rate. |
-| **Behemoth** | *Superbia* | Increases Stellar outcome chance across all Opera. |
-| **Doppelgaenger** | *Superbia* | **Maximum one active.** Apex *Superbia*. Increases the player's own action efficiency and reduces influence gain rate. |
-
-**Invoking power** is acquired through equipped maleficia (sum of each copy's invoking power) and through specific sigils. The Familiar's "autonomous *Indagatio* channel" is the canonical example of a hybrid invocation (boost + delegated action); see `02 §3`. Per-invocation invoking-power requirements, Sin-level gates, soul/influence costs, and contributed efficiency are in the spreadsheet.
-
-### 2.5 *Indagatio* — Searching
-
-Searches the world for *maleficia*. Can be run by the player or delegated to an acolyte (subject to acolyte rules — `02 §10`). Takes time and is probabilistic.
-
-Action efficiency is `time` mode (`02 §3`): it divides the action's duration. Cost and tier probabilities are not affected.
-
-**Stack rules** (formalising `02 §8`):
-
-- A **non-stackable** maleficium already in inventory OR already on the *Emptio* list cannot be surfaced.
-- A **stackable** maleficium for which owned + listed copies have reached its stack cap cannot be surfaced.
-- A maleficium currently being purchased by an in-flight *Emptio* timer counts as **listed** for stack-rule purposes until the timer resolves.
-
-Tier-to-rarity surfacing rule (default; modifiable by sigils such as Stolas #36 and Vassago #3):
-
-- Stellar → anathema (falls back through profane → rare → common if no anathema candidates).
-- Excellent → profane (falls back through rare → common).
-- Good → rare (falls back to common).
-- Neutral → common.
-- Bad → false lead; time lost, nothing surfaced.
-- Terrible → nothing surfaced, gold loss.
-- Apocalyptic → nothing surfaced, larger gold loss.
-
-Per-tier weights and rarity-fallback distributions are in the spreadsheet.
-
-### 2.6 *Emptio* — Purchase
-
-Once a maleficium is surfaced by *Indagatio*, it appears on the *Emptio* list available for purchase. The list is emptied on Katabasis (preserved if Morpheus is active at descent).
-
-Action efficiency is `time` mode: it divides the action's duration. The gold cost paid is the targeted maleficium's cost, **not modified by efficiency**.
-
-Per-tier outcomes (default; modifiable by sigils such as Andromalius #72 and Andras #63):
-
-- Stellar → item acquired AND full refund (the seller is vulnerable; kill and take it free).
-- Excellent → item acquired at a reduced price (partial refund).
-- Neutral → item acquired at the listed price (the standard purchase).
-- Terrible → a fake; gold lost, item removed from the list.
-- Apocalyptic → bait; gold lost, item removed, and an additional gold bite.
-
-Per-tier weights for *Emptio* are in the spreadsheet (tiers not listed above carry no weight in the current distribution).
+| Invocation | Sin | Type | Effect (summary) |
+|---|---|---|---|
+| **Familiar** | — | Special | Flat bonus to player efficiency; additionally runs *Indagatio* autonomously. Always in the Studio, beside the door. |
+| **Lemure** | *Acedia* | Normal | Its efficiency applies as an additive offline gain rate. Altar room. |
+| **Morpheus** | *Acedia* | Apex | Full freeze; the next Katabasis keeps 100% of gold and maleficia and the *Emptio* list. Floats over the Altar, overrides other silhouettes. |
+| **Plutus** | *Avaritia* | Normal | Its efficiency increases *Vitium Mercatura* output. Sometimes in the Studio. |
+| **Midas** | *Avaritia* | Apex | Multiplies gold gain; massively multiplies Apocalyptic chance. Sends profane advisory email (`00-lore-bible.md` §11). |
+| **Upir** | *Gula* | Normal | Its efficiency applies to *Caedis*. Sometimes in the Invocation Room. |
+| **Aurevora** | *Gula* | Apex | Devours gold on an exponential ramp; a share of the ramp returns as player efficiency; self-dispels at 0 gold. |
+| **Imp** | *Ira* | Normal | Its efficiency applies to *Caedis*. |
+| **Harpy** | *Ira* | Normal | Its efficiency applies to *Pogrom*. Sometimes at the Studio window. |
+| **Erinyes** | *Ira* | Apex | Kills every reprobate at invoke; the next Katabasis keeps 0% gold and maleficia; permanently doubles overall action efficiency. Altar room, overrides. |
+| **Lamia** | *Luxuria* | Normal | Its efficiency applies to *Logismoi*. At most one shown. |
+| **Succubus** | *Luxuria* | Apex | Its efficiency applies to *Imperium*, at a steep percentage-of-income cost. |
+| **Behemoth** | *Superbia* | Normal | Its efficiency applies as an additive Stellar-chance increase across the Opera. |
+| **Doppelgänger** | *Superbia* | Apex | Adds half the player's efficiency on top. Writes you email from an address almost your own (`00-lore-bible.md` §11). |
+| **Nightmare** | *Tristitia* | Normal | Its efficiency applies as an additive increase to the base suicide rate. Altar room. |
+| **Astiwihad** | *Tristitia* | Apex | Each second, a small chance that the whole population suicides. Altar room. |
+| **Fama** | *Vanagloria* | Normal | Its efficiency applies as an additive influence-gain increase, at a percentage-of-gold cost. |
+| **Specunitas** | *Vanagloria* | Apex | Doubles influence gain at a steep percentage-of-income cost. Sometimes in the Studio. |
 
 ---
 
-## 3. Reprobate types
+## 3. Reprobates
 
-> **SUPERSEDED (ADR-024, 2026-06-07).** Reprobate subtypes and the Vitium conversion mechanic were
-> removed. Reprobates are now a single undifferentiated pool: there are no subtypes, no conversion,
-> and no per-subtype penalties or per-Sin Vitium-gold boost. Murder is a per-capita cull of the whole
-> population; a reprobate loss simply decrements the pool. The subtype table and conversion rules
-> below are retained only as historical design context — they do not describe the current engine, and
-> the Vitium Mercatura / Vitium Compositum sections (§2.3) are pending a redesign that fills the gap
-> the conversion dimension left.
+Per **ADR-024**, reprobates are a **single undifferentiated pool**: abstract populations and
+probability inputs, never units (`01`, "What this game is not"). The subtype catalog, the
+conversion mechanic, and every per-subtype effect from earlier revisions are removed.
 
-All reprobates yield 1 soul on death. This cannot be changed — 1 person, 1 soul.
-All reprobates have a small base suicide chance per second — applied population-wide, accumulated in `suicidePool` and floored on integer apply (the rate lives in the spreadsheet `Globals`). See `02 §9` for the worked example and the per-pool tick math.
-When an outcome triggers a reprobate loss, the loss decrements the single reprobate pool (deaths still mint one soul each), unless the outcome explicitly says otherwise.
+What remains is the population's role as the economy's centre of mass (`02 §9`):
 
-| Subtype | Sin | Mechanical role |
-|---|---|---|
-| **Reprobate** (unconverted) | — | Default corrupted human. Convertible into a subtype via further corruption (*Vitium* / *Vitium Compositum* / *Panvitium*). |
-| **Glutton** | *Gula* | Increases the gold output of *Gula*-related *Vitium* actions and slows offline progression by a per-Glutton percentage. |
-| **Degenerate** | *Luxuria* | Increases the gold output of *Luxuria*-related *Vitium* actions, lowers reprobate suicide rate, and lowers Choleric murder rate by a per-Degenerate percentage. |
-| **Gambler** | *Avaritia* | Increases the gold output of *Avaritia*-related *Vitium* actions and lowers reprobate generation rate by a per-Gambler percentage. |
-| **Nihilist** | *Tristitia* | Increases the gold output of *Tristitia*-related *Vitium* actions and increases reprobate suicide rate by a per-Nihilist percentage. |
-| **Choleric** | *Ira* | Increases the gold output of *Ira*-related *Vitium* actions and increases the Choleric murder rate of all reprobate types by a per-Choleric percentage. |
-| **Husk** | *Acedia* | Increases the gold output of *Acedia*-related *Vitium* actions and decreases overall online action efficiency by a per-Husk percentage. |
-| **Celebrity** | *Vanagloria* | Increases the gold output of *Vanagloria*-related *Vitium* actions and decreases overall gold gain rate by a per-Celebrity percentage. |
-| **Sigma** | *Superbia* | Increases the gold output of *Superbia*-related *Vitium* actions and decreases influence gain rate by a per-Sigma percentage. |
+- **Born** of *Suasio*, of Mercatus corruption, of ceremonies and sigils that raise generation.
+- **Spending** while alive — *Vitium Mercatura* revenue is proportional to the living count.
+- **Dying** by cull (*Decimatio*), suicide, and murder — every death mints exactly one soul.
+- **Scattering** at Katabasis: a small identified fraction carries over (`02 §6`).
 
-**Subtype conversion** happens through *Vitium* / *Vitium Compositum* / *Panvitium*, biased toward the subtypes of the active Vitium sources driving the conversion (each source carries its own subtype bias — `biasedSubtype()` weights subtypes by the aggregate bias of every active source, not by Cardinal Sin level).
+Base suicide and murder rates are population-wide per-second rates in `Globals`; their modifier
+sources are listed in `02 §9`.
 
 ---
 
 ## 4. Maleficia
 
-Maleficia are equippable occult items. They:
+Occult items, discovered via *Indagatio* and bought via *Emptio* (`02 §8`; both `time`-mode).
+Owned items are always in effect; stackables repeat per copy to their cap. Power sources feed
+invoking power (`02 §7`); oraculars reveal outcome distributions (`02 §2`). Each owned item
+rolls the remaining-maleficia chance at Katabasis.
 
-- Are **discovered** via *Indagatio*.
-- Are **purchased** via *Emptio*.
-- Are **visually shown** on the Invocation Room shelf, grouped by id with stack counts for stackables.
-- **Remain across lifetimes** if their remaining-maleficia roll passes at Katabasis.
+The catalog (invoking power, stack caps, prices, and exact magnitudes in the `Maleficia` sheet):
 
-**Owning a maleficium equips it.** There is no separate equip slot. The catalog entries below describe each item's intrinsic effect; if owned, the effect is active (`02 §8`).
+| Maleficium | Type | Rarity | Effect (summary) |
+|---|---|---|---|
+| **Spear of Longinus** | Enhancer | Anathema | Greatly multiplies maximum influence. |
+| **Mark of Cain** | Enhancer | Anathema | Greatly multiplies the murder rate. |
+| **Thirty Pieces of Silver** | Enhancer | Anathema | Gold gain grows with current gold. |
+| **Solomon's Ring** | Enhancer | Anathema | Multiplies sigil effects. |
+| **The Voynich Manuscript** | Enhancer, power source | Profane | Multiplies *Suasio* efficiency; grants power. |
+| **Obsidian Mirror** | Oracular, power source | Profane | Reveals ALL Opera distributions; grants power. |
+| **Defixio** | Targeted, stackable | Profane | Single-use curse: culls reprobates on an exponential ramp. |
+| **Galdrabók** | Enhancer | Profane | Multiplies the murder rate. |
+| **Codex Gigas** | Enhancer | Profane | Greatly multiplies influence gain. |
+| **Ars Serpens** | Enhancer, power source | Rare | Multiplies *Suasio* efficiency; grants power. |
+| **Ritual Dagger** | Enhancer, power source | Rare | Multiplies *Decimatio* efficiency; grants power. |
+| **Blood Chalk** | Power source | Rare | Grants invoking power. |
+| **Blackthorn Wand** | Power source | Rare | Grants invoking power. |
+| **Hand of Glory** | Targeted, stackable | Rare | Single-use: doubles the reprobate generation rate for one hour. |
+| **Dybbuk Box** | Power source | Rare | Grants invoking power. |
+| **Black Robe** | Power source | Common | Grants invoking power. |
+| **Sulfur Censer** | Power source | Common | Grants invoking power. |
+| **Black Candles** | Enhancer, stackable | Common | Increases invocation effect per candle. |
+| **The Dadu** | Oracular, power source | Common | Reveals the *Decimatio* distribution; grants power. |
+| **Hollow Effigy** | Oracular, power source | Common | Reveals the *Suasio* distribution; grants power. |
+| **Black Salt Pouch** | Power source, stackable | Common | Grants invoking power per copy, uncapped. |
+| **Iron Nails** | Power source, stackable | Common | Each copy increases sigil effects and grants power. |
+| **Witch Bottle** | Power source | Common | Grants invoking power. |
+| **Crossroads Dirt** | Oracular, power source | Common | Reveals the *Emptio* distribution; grants power. |
+| **Mandrake Root** | Power source | Common | Grants invoking power. |
+| **Crow Feather** | Oracular, power source | Common | Reveals the *Indagatio* distribution; grants power. |
+| **Witch Ladder** | Enhancer | Common | Multiplies the suicide rate. |
+| **Adder Stone** | Enhancer | Common | Multiplies reprobate generation. |
+| **Poppet** | Enhancer | Common | Multiplies the murder rate. |
 
-A first inventory of named maleficia (to be expanded):
-
-| Maleficium | Type | Effect | Rarity | Description |
-|---|---|---|---|---|
-| **Ars Serpens** | Enhancer, power source | Increases overall *Suasio* action efficiency multiplicatively. Grants invoking power. | Rare | Within these pages are not spells, but seeds: subtle reasonings that take root in the human heart. |
-| **Ritual Dagger** | Enhancer, power source | Increases overall *Decimatio* action efficiency. Grants invoking power. | Rare | A rare hour of convergence: when offering and offerer cease to be separate. |
-| **The Voynich Manuscript** | Enhancer, power source | Increases overall *Suasio* action efficiency multiplicatively (more strongly than Ars Serpens). Grants invoking power. | Profane | The real title reads "De Regno Voluntatis". |
-| **Black Robe** | Power source | Grants invoking power. | Common | What separates the celebrant from the congregation is mostly fabric. |
-| **Blood Chalk** | Power source | Grants invoking power. | Rare | Marks drawn with it cannot be erased, only forgotten. |
-| **Sulfur Censer** | Power source | Grants invoking power. | Common | Where it has burned, prayer no longer travels upward. |
-| **Obsidian Mirror** | Oracular, power source | Reveals the outcome distribution for all Opera. Grants invoking power. | Profane | It shows what the future is already weighing. |
-| **Blackthorn Wand** | Power source | Grants invoking power. | Rare | Cut on a moonless night from a tree that took root over a grave. Blackthorn is a wood that holds grudges. |
-| **Black Candles** | Enhancer, stackable | Each candle stacked slightly enhances the effects of all invocations. | Common | Lit not for light. |
-| **Defixio** | Targeted, stackable | Single-use: continuously culls a whole random reprobate subtype; effect increases exponentially with time and ends when that subtype reaches zero. | Profane | Lead tablet inscribed in inverted Latin and folded around iron nails. Buried, it begins to remember. |
-| **Hand of Glory** | Targeted, stackable | Single-use: temporarily increases the base reprobate generation rate for a fixed duration. | Rare | Severed hand of a hanged felon, dressed and candle-fitted. Mass-converts a congregation into reprobates. |
-| **The Dadu** | Oracular, power source | Reveals the *Decimatio* outcome distribution. Grants invoking power. | Common | Four-sided die of human bone. |
-| **Dybbuk Box** | Power source | Grants invoking power. | Rare | A good addition. |
-| **Hollow Effigy** | Oracular, power source | Reveals the *Suasio* outcome distribution. Grants invoking power. | Common | The hollow is not a flaw; it is the function. |
-| **Black Salt Pouch** | Power source, stackable | Grants invoking power per copy. | Common | Drawn from ash, charcoal, and graveyard earth. |
-| **Spear of Longinus** | Enhancer | Greatly multiplies maximum influence. | Anathema | Just the tip. |
-| **Codex Gigas** | Enhancer | Greatly multiplies influence gain rate. | Anathema | One scribe. One night. One signature in the margin no Pope has ever erased. |
-| **Mark of Cain** | Enhancer | Removes Apocalyptic outcomes (their chance becomes nil). | Anathema | The sevenfold vengeance was never a curse. It was a guarantee. |
-| **Thirty Pieces of Silver** | Enhancer | Greatly multiplies gold gain rate. | Anathema | Counted out, refused, returned, refused again. Coinage that always finds its way back into a hand. |
-| **Solomon's Ring** | Enhancer | Increases sigil effects multiplicatively. | Anathema | An inquiry into how many seals a single signet may bear. |
-| **Iron Nails** | Power source, stackable | Each copy increases sigil effects multiplicatively and grants invoking power. | Common | Rusted from coffin-lids and gallows-frames. Iron remembers what it was last used to hold. |
-| **Witch Bottle** | Power source | Grants invoking power. | Common | A glass jar packed with nails, hair, and what the celebrant could not bear to keep. |
-| **Crossroads Dirt** | Oracular, power source | Reveals the *Emptio* outcome distribution. Grants invoking power. | Common | Where four roads meet, no prayer holds priority. Useful for transactions that should not be witnessed. |
-| **Mandrake Root** | Power source | Grants invoking power. | Common | Pulled from beneath a gallows, where the sap of the hanged still feeds the soil. Carved into the shape it most resembles. |
-| **Crow Feather** | Oracular, power source | Reveals the *Indagatio* outcome distribution. Grants invoking power. | Common | A messenger carries word both ways. |
-
-Per-item rarity weighting, gold cost, invoking-power value, stack caps, and effect magnitudes live in the spreadsheet (`Maleficia` sheet).
+*Indagatio* resolves rarity by tier (Neutral finds Common, the top tiers find Profane and
+Anathema); *Emptio* resolves price by tier against the rarity's price band. Both distributions,
+durations, and the price bands are in the `Indagatio & Emptio` and `Maleficia` sheets.
 
 ---
 
 ## 5. Sigils — the Goetia
 
-Seventy-two sigils, in canonical *Lesser Key of Solomon* numbering, with Asmoday (#32, the *Luxuria* Prince Asmodeus) substituted by **Semet**. Semet is not immediately unlocked nor visible — it becomes unlocked and visible once you reach the required Cardinal-Sin level in every Sin (see §8). Semet is intentionally named for the Eternal Sin (§8 below); a player who binds Semet without yet seeing the Eternal Sin reveal is unknowingly worshipping themselves.
+Seventy-two sigils in canonical *Lesser Key of Solomon* numbering, with Asmoday (#32)
+substituted by **Semet**. Semet is not initially visible — it unlocks once every Cardinal Sin
+reaches the required level (sheet), long before the Eternal Sin reveal (§8); a player binding
+souls to Semet at that point is unknowingly worshipping themselves.
+
+Binding mechanics and curves are `02 §5`. The default curve is **√**; sigils marked **[log]**
+below use the logarithmic curve (these are the flat-generator and carry-over seals). Per-sigil
+coefficients are in the `Sigils` sheet.
 
 | # | Sigil | Demonological role | In-game effect |
 |---|---|---|---|
-| 1 | **Bael** | Changeling, three heads, makes invisible | Increases *Vitium* reprobate conversion rate. |
-| 2 | **Agares** | Causes earthquakes; retrieval of fugitives | Higher *Indagatio* success chance. |
-| 3 | **Vassago** | Foresees past and future | Higher chance of finding profane and anathema maleficia. |
-| 4 | **Samigina** | Teaches arts and sciences; gives accounts of the dead in sin | Increases *Tristitia* invocation effectiveness. |
-| 5 | **Marbas** | Reveals secrets | Increases online influence gain rate. |
-| 6 | **Valefor** | Thievery | Increases online gold gain rate. |
-| 7 | **Aamon** | Reproduction and life | Increases unconverted reprobate generation rate. |
-| 8 | **Barbatos** | Understands songs of birds and animals | Increases *Gula* invocation effectiveness. |
-| 9 | **Paimon** | Loyalty; returning servants | Decreases influence costs. |
-| 10 | **Buer** | Bestows good familiars | Increases familiar effectiveness. |
-| 11 | **Gusion** | Reveals truth, reconciles enemies | Decreases Terrible outcome chances for all Opera. |
-| 12 | **Sitri** | Love | Succubi have increased effect. |
-| 13 | **Beleth** | Terrible king attended by trumpets | Increases *Decimatio* successful outcome chances. |
-| 14 | **Leraie** | Putrefies wounds | Choleric murders also yield a small gold bonus. |
-| 15 | **Eligos** | Attracts the favour of important people | Higher chance of Celebrity conversion. |
-| 16 | **Zepar** | Makes women barren | Decreases base reprobate generation rate. |
-| 17 | **Botis** | Tells past and future | Reduces *Suasio* bad outcome chance. |
+| 1 | **Bael** | Changeling; makes invisible | Reduces negative outcome chance across the Opera. |
+| 2 | **Agares** | Earthquakes; retrieval | Chance to duplicate the output of *Indagatio*. |
+| 3 | **Vassago** | Foresees past and future | Higher chance of profane and anathema maleficia. |
+| 4 | **Samigina** | Accounts of the dead | Increases *Tristitia* invocation effectiveness. |
+| 5 | **Marbas** | Reveals secrets | Increases *Indagatio* positive outcome chance. |
+| 6 | **Valefor** | Thievery | Increases online gold gain. |
+| 7 | **Aamon** | Reproduction, life | Increases online reprobate generation. |
+| 8 | **Barbatos** | Songs of animals | Increases *Gula* invocation effectiveness. |
+| 9 | **Paimon** | Loyalty; returning servants | Reduces influence costs. |
+| 10 | **Buer** | Good familiars | Increases Familiar effectiveness. |
+| 11 | **Gusion** | Reconciles enemies | Increases *Vitium Compositum* effects (not its gold/influence outputs). |
+| 12 | **Sitri** | Love | Increases *Vitium Mercatura* reprobate generation. |
+| 13 | **Beleth** | Attended by trumpets | Increases *Decimatio* positive outcome chance. |
+| 14 | **Leraie** | Putrefies wounds | Chance a murder triggers a suicide. |
+| 15 | **Eligos** | Favour of important people | Increases offline influence gain. |
+| 16 | **Zepar** | Makes barren | Increases offline reprobate generation. |
+| 17 | **Botis** | Past and future | Reduces *Suasio* negative outcome chance. |
 | 18 | **Bathin** | Transport | Increases acolyte action efficiency. |
-| 19 | **Sallos** | Peace, idleness | Increases offline gold gain rate. |
-| 20 | **Purson** | Hidden treasures | Increases remaining gold percentage. |
+| 19 | **Sallos** | Peace, idleness | Increases offline gold gain. |
+| 20 | **Purson** | Hidden treasures | Increases the Katabasis remaining-gold % (flat). [log] |
 | 21 | **Marax** | Stops, delays | Increases offline action efficiency. |
-| 22 | **Ipos** | Valiant, tactical | Decreases *Decimatio* bad outcome chances. |
-| 23 | **Aim** | Sets fire | Increases Cholerics murder rate. |
-| 24 | **Naberius** | Skilled in arts and rhetoric | Increases *Suggestion* and *Logismoi* base success rates. |
-| 25 | **Glasya-Labolas** | Manslaughter | Increases Choleric murder rate of Celebrity reprobates. |
+| 22 | **Ipos** | Valiant, tactical | Reduces *Decimatio* negative outcome chance. |
+| 23 | **Aim** | Sets fire | Increases the murder rate. |
+| 24 | **Naberius** | Arts and rhetoric | Increases *Vitium Compositum* effects. |
+| 25 | **Glasya-Labolas** | Manslaughter | Increases the murder rate (flat). [log] |
 | 26 | **Bune** | Wisdom | Increases *Vanagloria* invocation effectiveness. |
-| 27 | **Ronove** | Harvests souls near death | Increases Nihilists' suicide rate. |
+| 27 | **Ronove** | Harvests souls near death | Increases the suicide rate. |
 | 28 | **Berith** | Covenant | Increases *Superbia* invocation effectiveness. |
-| 29 | **Astaroth** | Reveals secrets, all times | Increases Stellar outcome chances for *Indagatio*. |
-| 30 | **Forneus** | Rhetoric, beloved by foes | Increases offline influence gain rate. |
-| 31 | **Foras** | Logic, ethics, herbs, invisibility | Decreases the chance of Apocalyptic outcomes. |
-| 32 | **Semet** | Final destiny (foreshadowing — see §8) | Increases remaining gold percentage, remaining maleficia chance, and remaining unconverted reprobate percentage. |
-| 33 | **Gaap** | Makes men stupid | Decreases Sigmas' influence gain rate penalty. |
-| 34 | **Furfur** | Causes love between man and woman; terrible storms | Increases *Luxuria* invocation effectiveness. |
-| 35 | **Marchosias** | Faithful follower | Increases maximum Influence. |
-| 36 | **Stolas** | Astronomy, herbs and stones | Higher chance of finding rare maleficia in *Indagatio*. |
-| 37 | **Phenex** | Phoenix; sings beautifully | Higher chance of Celebrity conversion. |
-| 38 | **Halphas** | Builds towers, fills with weapons and men | Increases remaining maleficia chances. |
-| 39 | **Malphas** | Builds and demolishes; deceives those who trust him | Decreases Celebrities' gold gain rate penalty. |
-| 40 | **Raum** | Steals treasures, destroys cities | Increases overall *Decimatio* action efficiency. |
-| 41 | **Focalor** | Kills by drowning | Increases Nihilist suicide rate. |
-| 42 | **Vepar** | Putrefying wounds with worms | Increases *Ira* invocation effectiveness. |
-| 43 | **Sabnock** | Causes wounds and sores | Increases Choleric murder rate of Glutton reprobates. |
-| 44 | **Shax** | Causes deafness, blindness, dumbness; takes money | Increases *Avaritia* invocation effectiveness. |
-| 45 | **Vine** | Reveals witches; builds and demolishes walls | Increases recovered gold when shutting down a business. |
-| 46 | **Bifrons** | Astronomy, sciences, herbs, stones | Increases *Indagatio* action efficiency. |
-| 47 | **Vual** | Earns love of women; knows all times | Decreases Degenerates' gold gain rate penalty. |
-| 48 | **Haagenti** | Turns water to wine; metal to gold | Generates gold per second. |
-| 49 | **Crocell** | Geometry; warms waters | Increases base reprobate suicide rate. |
-| 50 | **Furcas** | Philosophy, astronomy, palmistry, pyromancy | Increases the probability for *Indagatio* to find two maleficia. |
-| 51 | **Balam** | All times; makes invisible | Decreases the per-action chance of Terrible outcomes across all Opera. |
-| 52 | **Alloces** | Astronomy; gives good familiars | Increases *Acedia* invocation effectiveness. |
-| 53 | **Camio** | Songs of birds; disputation | Increases Choleric murder rate of Degenerate reprobates. |
-| 54 | **Murmur** | Philosophy; summons dead souls | Increases overall invocation effectiveness. |
-| 55 | **Orobas** | Reveals truth; divinity; all times; faithful to the conjurer | Decreases the soul cost of all invocations. |
-| 56 | **Gremory** | Treasures; love of women | Decreases Degenerates' reprobate suicide chance penalty. |
-| 57 | **Ose** | Changes shape | For active *Vitium Compositum*, rolls re-conversion each second from the more-numerous matching subtype toward the less-numerous matching subtype (rebalancing toward the minimum). |
-| 58 | **Amy** | Astronomy; treasures | Decreases *Emptio* gold cost. |
-| 59 | **Orias** | Mansions of planets; transformations | For active *Vitium Compositum*, rolls re-conversion each second from the less-numerous matching subtype toward the more-numerous matching subtype (concentrating toward the maximum). |
-| 60 | **Vapula** | Mechanical arts | Increases overall *Vitium Mercatura* gold output. |
-| 61 | **Zagan** | Wine to water; fools wise | Increases overall *Vitium Compositum* gold output. |
-| 62 | **Volac** | Treasures; finds serpents | Decreases Gamblers' reprobate generation rate penalty. |
-| 63 | **Andras** | Sows discord; kills the unwary | Increases Stellar outcome chances for *Emptio*. |
-| 64 | **Haures** | Destroys enemies; distinguishes friend from foe | Increases Cholerics' murder rate of Choleric reprobate type. |
-| 65 | **Andrealphus** | Mensuration; shape of birds | Increases invoking power (flat increase, rounding to closest integer). |
-| 66 | **Cimejes** | Africa; lost things; treasures; valiant | Increases the remaining maleficia chance. |
-| 67 | **Amdusias** | Bends trees; harsh music; voices | Increases Cholerics' murder rate of non-Choleric reprobate types. |
-| 68 | **Belial** | Causes favour; distributes preferments | Increases influence gain rate. |
-| 69 | **Decarabia** | Stones and herbs; takes shape of birds | Generates influence per second. |
-| 70 | **Seere** | Brings things suddenly; transports | Increases overall *Emptio* action efficiency. |
-| 71 | **Dantalion** | All human thoughts; declares minds | Increases overall *Suasio* action efficiency. |
-| 72 | **Andromalius** | Returns stolen; discovers thieves; reveals plots | Increases *Emptio* successful outcome chances. |
+| 29 | **Astaroth** | Secrets, all times | Increases *Indagatio* Stellar chance. |
+| 30 | **Forneus** | Rhetoric | Increases invoking power (flat). [log] |
+| 31 | **Foras** | Logic, invisibility | Extends the offline accrual window. |
+| 32 | **Semet** | Final destiny | Increases all sigil effects. Gated (see above). [log] |
+| 33 | **Gaap** | Makes men stupid | Increases maleficia effects. [log] |
+| 34 | **Furfur** | Love; storms | Increases *Luxuria* invocation effectiveness. |
+| 35 | **Marchosias** | Faithful follower | Increases maximum influence. |
+| 36 | **Stolas** | Astronomy, herbs | Reduces the chance of Common finds in *Indagatio*. |
+| 37 | **Phenex** | Phoenix; sings | Reduces *Emptio* negative outcome chance. |
+| 38 | **Halphas** | Builds towers, arms | Reduces the chance of Common and Rare finds. |
+| 39 | **Malphas** | Builds, demolishes; deceives | Chance to duplicate the output of *Suasio*. |
+| 40 | **Raum** | Steals; destroys cities | Increases *Decimatio* action efficiency. |
+| 41 | **Focalor** | Kills by drowning | Chance to duplicate the output of *Decimatio*. |
+| 42 | **Vepar** | Putrefying wounds | Increases *Ira* invocation effectiveness. |
+| 43 | **Sabnock** | Wounds and sores | Increases the suicide rate (flat). [log] |
+| 44 | **Shax** | Deafness; takes money | Increases *Avaritia* invocation effectiveness. |
+| 45 | **Vine** | Reveals witches; walls | Increases the Mercatus divest/liquidation recovery fraction. |
+| 46 | **Bifrons** | Sciences, herbs | Increases *Indagatio* action efficiency. |
+| 47 | **Vual** | Love of women; all times | Increases *Suasio* Stellar chance. |
+| 48 | **Haagenti** | Metal to gold | Generates gold per second (flat). [log] |
+| 49 | **Crocell** | Geometry; warms waters | Chance *Indagatio* finds two. |
+| 50 | **Furcas** | Pyromancy | Increases the Mercatus divest recovery fraction. |
+| 51 | **Balam** | All times; invisibility | Reduces negative outcome chance across the Opera. |
+| 52 | **Alloces** | Astronomy; familiars | Increases *Acedia* invocation effectiveness. |
+| 53 | **Camio** | Disputation | Increases the Katabasis remaining-reprobate % (flat). [log] |
+| 54 | **Murmur** | Summons dead souls | Increases overall invocation effectiveness. |
+| 55 | **Orobas** | Faithful; all times | Reduces the cost of all invocations. |
+| 56 | **Gremory** | Treasures; love | Increases *Suasio* positive outcome chance. |
+| 57 | **Ose** | Changes shape | Generates reprobates (flat). [log] |
+| 58 | **Amy** | Treasures | Increases *Indagatio* and *Emptio* action efficiency. |
+| 59 | **Orias** | Transformations | Increases *Vitium Compositum* influence output. |
+| 60 | **Vapula** | Mechanical arts | Increases *Vitium Mercatura* gold output. |
+| 61 | **Zagan** | Fools wise | Increases *Vitium Compositum* gold output. |
+| 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
+| 63 | **Andras** | Sows discord | Increases *Emptio* Stellar chance. |
+| 64 | **Haures** | Destroys enemies | Increases *Decimatio* Stellar chance. |
+| 65 | **Andrealphus** | Mensuration | Increases invoking power. |
+| 66 | **Cimejes** | Lost things; treasures | Increases the Katabasis remaining-maleficia chance. [log] |
+| 67 | **Amdusias** | Harsh music | Increases positive outcome chance across the Opera. |
+| 68 | **Belial** | Favour; preferments | Increases the influence gain rate. |
+| 69 | **Decarabia** | Stones and herbs | Generates influence per second (flat). [log] |
+| 70 | **Seere** | Brings things suddenly | Increases *Emptio* action efficiency. |
+| 71 | **Dantalion** | All human thoughts | Increases *Suasio* action efficiency. |
+| 72 | **Andromalius** | Returns stolen; reveals plots | Increases *Emptio* positive outcome chance. |
 
-### Notes on the sigil set
-
-The default binding-to-effect curve is **√(bound souls)** (`02 §5`). Per-sigil curve overrides (linear or logarithmic) and per-sigil effect coefficients live in the spreadsheet (`Sigils` sheet). A sigil row above is not annotated for curve when it uses the default; future tuning passes that move a specific sigil to linear or log should mark it inline (e.g. *"… [linear]"*).
-
-When a sigil unlocks a toggle or action, the toggle/action's effect rate scales with the souls bound to that sigil along the sigil's curve.
+Sigil #58 (*Amy*) is authored in the sheet with a sign worth confirming at implementation time
+(the sheet reads "−Indagatio & Emptio action efficiency"); flag it in the next tuning pass.
 
 ---
 
 ## 6. Acolytes
 
-The mechanics live in `02 §10` (maximum count, recruitment, efficiency, refusal-cooldown, loss). The content-level catalog of acolyte interactions is the per-sigil and per-skill modifiers that affect acolyte efficiency or behaviour:
+The mechanics live in `02 §10` (count from influence thresholds, delegation, efficiency,
+limits). The content-level catalog is the set of modifiers that touch them:
 
+- **Resignation** (Leviathan / *Tristitia* skill) — increases acolyte efficiency.
 - **Bathin** (#18) — increases acolyte action efficiency.
-- **Satan / Ira level** — each level grants additional acolyte and invocation action efficiency multiplicatively.
 
-
-There is no per-acolyte specialization in the current design — every acolyte is interchangeable. A future content pass could introduce named acolytes with per-Sin affinity; not in scope for launch.
+There is no per-acolyte specialization — every acolyte is interchangeable. A future content
+pass could introduce named acolytes with per-Sin affinity; not in scope for launch.
 
 ---
 
 ## 7. Achievements
 
-A seeded list — achievements as a design surface. The exact wording, icons, and threshold tuning land closer to release; the *shape* of the achievement set lives here. Roughly fifteen, spanning early-game pacing markers, mid-game milestones, late-game capstones, and one terminal achievement.
+Roughly fifteen, spanning early pacing markers, mid-game milestones, late capstones, and one
+terminal achievement. Thresholds in the spreadsheet; icons and flavour text are open items.
 
 | Achievement | Trigger |
 |---|---|
@@ -353,41 +368,56 @@ A seeded list — achievements as a design surface. The exact wording, icons, an
 | **First Harvest** | Earn your first soul. |
 | **First Descent** | Complete your first Katabasis. |
 | **First Bargain** | Acquire your first maleficium. |
-| **The Council Convenes** | Reach the first Cardinal-Sin level in every Sin (unlocks *Vitium Compositum*). |
+| **The Council Convenes** | Reach the first Cardinal-Sin level in every Sin. |
 | **Profane Possession** | Own at least one profane maleficium. |
 | **Anathema** | Own at least one anathema maleficium. |
 | **Court of Spires** | Reach a high maximum influence (threshold in the spreadsheet). |
-| **The Goetia, Recited** | Bind at least one soul to each of the Goetia sigils across one or more lifetimes. |
+| **The Goetia, Recited** | Bind at least one soul to each of the 72 sigils across one or more lifetimes. |
 | **Single-Minded** | Reach the maximum Cardinal-Sin level in any one Sin. |
 | **Eight at the Table** | Reach the Cardinal-Sin level that unlocks *Panvitium* in every Sin. |
-| **The Long Burn** | Run *Panvitium* continuously for a sustained duration (threshold in the spreadsheet). |
+| **The Long Burn** | Run *Panvitium* continuously for a sustained duration. |
 | **Curator** | Own every maleficium currently in the catalog. |
 | **The Crown of Hell** | Reach the maximum Cardinal-Sin level in every Sin. |
 | **Semet** | Reveal the Eternal Sin (§8). The terminal achievement. |
-
-Per-achievement icon design and lore-flavour text are open. Steam achievement IDs and unlock metadata land with the publish pipeline.
 
 ---
 
 ## 8. End of the game — the Eternal Sin
 
-Once the player gets every Cardinal Sin to its maximum level, an unknown ninth Sin becomes visible above them — the **Eternal Sin**, blacked out, though souls can be offered to it.
+Once every Cardinal Sin reaches its maximum level, an unknown ninth Sin becomes visible above
+them — the **Eternal Sin**, blacked out, though souls can be offered to it.
 
-Offering the required soul threshold (in the spreadsheet) reveals the Demon Prince's name — **Semet** — the name of the Sin itself, and the closing flavour. A black screen displays the total game runtime that the player took to fully devote to this Eternal Sin, with the Latin flavour:
+Offering the required soul threshold (`Globals`) reveals the name — **Semet** — and the closing
+flavour: a black screen with the total game runtime the climb took, and the Latin:
 
-> *"Iam pridem scis te perditum esse. Quiescere non potes, sed nihil agis: nihil enim venenum acerbissimum est, ornamentum gravissimum, quod cervicem premit nec umquam deponi patitur. At inter has tenebras amor eorum iustus ignem accendit, eaque sola flamma, quamvis tenuis, viam tibi monstrat."*
+> *"Iam pridem scis te perditum esse. Quiescere non potes, sed nihil agis: nihil enim venenum
+> acerbissimum est, ornamentum gravissimum, quod cervicem premit nec umquam deponi patitur. At
+> inter has tenebras amor eorum iustus ignem accendit, eaque sola flamma, quamvis tenuis, viam
+> tibi monstrat."*
 
-*Semet* means "oneself" in Latin. You are the King of All Sins.
+*Semet* means "oneself." You are the King of All Sins — reached alive, per the lore's living
+apotheosis (`00-lore-bible.md` §7): maximal unrest, not stillness, and still bounded by the one
+ceiling it can never cross.
 
-**Foreshadowing.** Sigil #32, also named *Semet*, becomes available once every Cardinal Sin reaches the required level (see spreadsheet) — long before the reveal itself. A player binding souls to Semet at that point does not know the connection.
+**Foreshadowing.** Sigil #32 carries the same name and unlocks far earlier (§5).
 
-**Post-reveal continuation.** The reveal is a terminal milestone and a credits screen. See `01-vision-and-core-loop.md` "After the Eternal Sin". The runtime number on the reveal screen is the score, the screenshot is the trophy.
+**Post-reveal continuation.** The reveal is a terminal milestone and a credits screen
+(`01`, "After the Eternal Sin"). The runtime number is the score; the screenshot is the trophy.
 
 ---
 
 ## 9. Open content items
 
-Items held in reserve or unresolved. None of these block the current build; all should be tracked.
+None of these block the current build; all should be tracked.
 
-- **Reprobate-subtype achievement set** — a "convert one of each subtype" achievement would round out completionist appeal but adds a tracking surface (per-subtype "ever converted" boolean per lifetime or globally); deferred until the core systems are all in.
-- **Sigil curve overrides** — currently every sigil uses the default √ curve; if a future tuning pass requires linear or log on specific sigils, annotate the per-sigil row above (`[linear]` / `[log]`).
+- **Mercatus signature clauses** — the optional per-Sin clause set
+  (`vm-vc-redesign-spec.md` §1.5) is authored but explicitly held as a second slice pending
+  confirmation.
+- **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
+- **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)
+  has its channels in the Studio (`02 §12`) but its message catalog is unwritten; the Katabasis
+  liquidation and the Panvitium burn are natural trigger beats.
+- **Achievement flavour** — per-achievement icons and lore text; Steam IDs land with the
+  publish pipeline.
+- **Acolyte specialization** — named acolytes with per-Sin affinity, reserved for a future
+  content pass.

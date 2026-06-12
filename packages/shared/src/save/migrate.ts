@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { saveBlobSchema, CURRENT_SCHEMA_VERSION, type SaveBlob } from './schema.js';
 import { migrateV1ToV2 } from './migrations/v1-to-v2.js';
+import { migrateV2ToV3 } from './migrations/v2-to-v3.js';
 
 /** A single forward migration that upgrades a blob from one schema version to the next. */
 export interface SaveMigration {
@@ -14,8 +15,9 @@ export interface SaveMigration {
   migrate(blob: Record<string, unknown>): Record<string, unknown>;
 }
 
-/** Registered migrations, applied in sequence (v1 → v2: reprobate-subtype/conversion removal). */
-export const SAVE_MIGRATIONS: readonly SaveMigration[] = [migrateV1ToV2];
+/** Registered migrations, applied in sequence (v1 → v2: reprobate-subtype/conversion removal;
+ * v2 → v3: legacy business system → Mercatus — gold credit, build-queue fizzle, field drop). */
+export const SAVE_MIGRATIONS: readonly SaveMigration[] = [migrateV1ToV2, migrateV2ToV3];
 
 export class SaveMigrationError extends Error {
   override name = 'SaveMigrationError';

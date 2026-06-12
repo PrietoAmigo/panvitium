@@ -428,7 +428,7 @@ describe('Vitium Compositum — flat dynamics-rate ceremonies', () => {
 
   it('No-babies Movement flatly decreases generation and never charges upkeep', () => {
     let s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['no-babies-movement']!);
-    s = { ...s, lifetime: { ...s.lifetime, businesses: { 'gula-mercatura-1': 1 } } }; // 0.05 gen/s
+    s = { ...s, lifetime: { ...s.lifetime, mercatusDepths: { gula: 3 } } }; // 0.06 gen/s
     const genMul = computeModifiers(s).reprobateGenerationRateMul;
     const off = reprobateRates(s, computeModifiers(s)).generationPerSecond;
     const a = activateToggle(s, 'no-babies-movement');

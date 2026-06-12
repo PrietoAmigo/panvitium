@@ -1,344 +1,477 @@
 # 02 — Systems and Mechanics
 
-This document describes *how* the game works, system by system. Specific content — every action, every sigil, every reprobate type — lives in `03-content-catalog.md`. Specific numbers — base rates, per-tier weights, per-level coefficients — live in the economy spreadsheet, which always takes priority over this document when the two disagree.
+This document describes *how* the game works, system by system. Specific content — every action,
+every sigil, every maleficium — lives in `03-content-catalog.md`. Specific numbers — base rates,
+per-tier weights, per-level coefficients — live in the economy spreadsheet
+(`Panvitium_Economy_Template.xlsx`), which always takes priority over this document when the two
+disagree. The fiction underneath everything is `00-lore-bible.md`; build decisions are
+`04-architecture-decisions.md` (ADRs).
+
+This revision incorporates **ADR-024** (reprobates are a single pool; subtypes and the conversion
+mechanic are removed) and the **Vitium Mercatura / Vitium Compositum redesign**
+(`vm-vc-redesign-spec.md`): the business grid and build queue are retired in favour of the
+Mercatus system and the Foedera coupling.
 
 ---
 
 ## 1. Resources
 
-The game has three resources. Each behaves differently and serves a different role.
+The game has three resources. Each behaves differently and serves a different role. Reprobates
+are not a resource — they are a population (§9) — but they obey the same display rules.
 
 ### Resource representation
 
-At the **visible** layer (what the player sees in the HUD and spends in the Opera), every resource is a natural number: 0, 1, 2, 3 … . Resources cannot be displayed or compared as floats.
+At the **visible** layer (what the player sees in the HUD and spends in the Opera), every
+resource is a natural number: 0, 1, 2, 3 … . Resources cannot be displayed or compared as floats.
 
-At the **engine** layer, resources accumulate fractionally. Gold, influence, and accumulated tick-pools (suicide, murder, generation; see §9) are stored as `BigNum` and **floored on read** for any operation that compares against a threshold, deducts a cost, or renders the number to the UI. This is the load-bearing invariant: the player never sees `99.6 gold` and an action declaring it costs 100 must read the resource as `99` and refuse — not as `99.6` and accept.
+At the **engine** layer, resources accumulate fractionally. Gold, influence, and the accumulated
+tick-pools (generation, suicide, murder; see §9) are stored as `BigNum` (ADR-005) and **floored
+on read** for any operation that compares against a threshold, deducts a cost, or renders the
+number to the UI. This is the load-bearing invariant: the player never sees `99.6 gold`, and an
+action declaring it costs 100 must read the resource as `99` and refuse — not as `99.6` and
+accept.
 
-The internal-fractional / floor-on-read pattern matters because at high progression the per-second gold and influence accruals are themselves fractional (a Sin-skill multiplier of 1.0625 on a 10/s base is not an integer), and floored-per-tick deductions would lose meaningful progress.
+The internal-fractional / floor-on-read pattern matters because at high progression the
+per-second gold and influence accruals are themselves fractional, and floored-per-tick deductions
+would lose meaningful progress.
 
 ### Souls
 
-- **Source:** earned when a corrupted human (a *reprobate*) dies.
+- **Source:** earned when a corrupted human (a *reprobate*) dies — one person, one soul, always.
 - **Role:** the primary progression resource and the meta-currency.
 - **Spending:**
   - During a lifetime: spent on some *Invocations* and some *Opera*.
   - On Katabasis: **bound** to sigils (recoverable) or **offered** to Princes (permanent).
 - **Carry-over:** souls left unspent at Katabasis carry over when coming back.
-- **Cap:** none. Numbers will grow into the millions and beyond at high progression — engineering side uses `break_infinity.js` (ADR-005).
+- **Cap:** none. Numbers grow into the billions at high progression (the Eternal Sin threshold
+  alone is in the 10⁹ range); engineering uses `break_infinity.js` (ADR-005).
 
 ### Gold
 
-- **Source:** generated passively over time, modulated by Cardinal Sin levels, sigils and by certain reprobate subtypes. Base gold gain per second is in the spreadsheet (`Globals` sheet).
-- **Role:** the operating budget. Most everyday Opera actions consume gold.
-- **Spending:** *Decimatio* actions, *Depraedatio* ceremonies, *Indagatio* searches, *Emptio* purchases.
-- **Reset on Katabasis:** yes. A percentage of gold remains when coming back; base remaining percentage is in the spreadsheet and is modified by Avaritia level, Pieces of Silver, and several sigils.
+- **Source:** generated passively over time, plus the dominant in-lifetime source: **Vitium
+  Mercatura revenue**, which is extracted from the living reprobate population (§3, `03 §2.3`).
+  Base passive gain per second is in the spreadsheet (`Globals`).
+- **Role:** the operating budget. Most everyday Opera actions consume gold; deepening a Mercatus
+  consumes gold in lumps.
+- **Spending:** *Decimatio* actions, Mercatus investment, *Vitium Compositum* upkeep, *Indagatio*
+  searches, *Emptio* purchases, some invocations.
+- **Reset on Katabasis:** yes. The Mercatūs are liquidated into gold first (§6), then a
+  percentage of the resulting gold remains when coming back; the base remaining percentage is in
+  the spreadsheet and is modified by Avaritia level and sigils (Purson #20).
 
 ### Influence
 
-- **Source:** generated passively over time as a *proportion of maximum influence*, capped by maximum influence. Base rate per second and base maximum are in the spreadsheet.
-- **Role:** drives maximum acolyte count (§10), and is consumed by *Suasio*, *Depraedatio* toggles, and several invocations.
-- **Cap:** the lifetime's current `maxInfluence`, modified by Vanagloria's Acclaim skill, the Spear of Longinus, and Marchosias (#35).
-- **Reset on Katabasis:** influence drops to 0; `maxInfluence` drops to base (any per-lifetime growth is lost; the next lifetime starts at the base value).
+- **Source:** generated passively as a *proportion of maximum influence*, capped at maximum
+  influence. Base rate and base maximum are in the spreadsheet (`Globals`).
+- **Role:** the social budget. Drives maximum acolyte count (§10) and is consumed by *Suasio*,
+  *Vitium Compositum* toggles, and several invocations.
+- **Maximum influence** is itself a modifiable value (Vanagloria's Acclaim skill, Spear of
+  Longinus, Marchosias #35).
+- **Reset on Katabasis:** yes — back to the base maximum and zero acolytes.
 
 ---
 
-## 2. The probability outcome system
+## 2. The probability-tier outcome system
 
-Some Opera actions resolve on a tiered probability scale. The seven tiers, from best to worst for the player:
+Most non-deterministic Opera actions resolve on a **seven-tier outcome ladder**. Every tiered
+action declares a base probability distribution over the seven tiers, summing to exactly 1.0
+(the spreadsheet enforces a SUM check per distribution).
 
-| Tier | Typical role | Associated colour |
+| Tier | Colour (lore) | Typical manifestation |
 |---|---|---|
-| **Stellar** | Very rare, very strong positive outcome (e.g. target suicides, granting a soul directly). | Crimson. |
-| **Excellent** | Rare strong positive (e.g. mass-conversion event, free maleficium). | Orange. |
-| **Good** | The "intended" success outcome (e.g. a person becomes a reprobate). | Yellow. |
-| **Neutral** | Nothing happens. The default failure mode. | White. |
-| **Bad** | A minor negative (loss of gold, reprobate redeems). | Green. |
-| **Terrible** | A major negative — *the Church may intervene here*: loss of multiple reprobates, loss of a maleficium. | Church purple. |
-| **Apocalyptic** | Very rare, catastrophic — typically some resources are depleted, *Higher Power may be the narrative cause here*. | Light blue. |
+| **Stellar** | Crimson | Windfall; the wildest positive outcome. |
+| **Excellent** | Orange | Strong positive outcome. |
+| **Good** | Yellow | The bread-and-butter positive outcome. |
+| **Neutral** | White | Nothing happens; cost is spent. |
+| **Bad** | Green | Mild setback. |
+| **Terrible** | Church purple | Severe setback. Can manifest as Church involvement — a parish priest, a confessor, an inquiry — undoing recent corruption. |
+| **Apocalyptic** | Light blue | Catastrophe. Can manifest as direct Higher-Power intervention: the player struck down, heavy losses. |
 
-Stellar and Apocalyptic outcomes are very important: when one happens, a black, small pop-up appears in the upper half of the screen showing the action that triggered the outcome, the lore of the outcome, and the outcome itself. This pop-up does not slow nor stop game time.
+The Church and the Higher Powers surface **only** through these rare bad outcomes for most of the
+game (`01`, "The world does not know it's you"); they are weather, not a faction.
 
-### Combination rule
+### Modifying a distribution
 
-When Cardinal Sin levels and sigils both modify a tier's probability, modifiers are **multiplicative weights applied to each tier's base probability, then renormalized so the distribution sums to 1.0**. The modifier engine (§3 below; ADR-022) produces a `tierWeightMul: Partial<Record<Tier, number>>` for global per-tier multipliers; a missing entry means 1 (no change). This avoids negative or > 1 probabilities and keeps the tier shape sensible under stacking.
+Tier modifiers from any source (Sin skills, sigils, maleficia, invocations) are **multiplicative
+weights on each tier's base probability, then the whole distribution is renormalised to 1.0**
+(`Prob Tiers` sheet). This avoids negative or > 1 probabilities and keeps the tier shape sensible
+under stacking.
 
-Per-category tier shifts (e.g. Resignation increasing the Suasio Good-tier probability, Retribution doing the same for Decimatio) attach at action-resolution time rather than as global tier multipliers, since they target a specific category's distribution.
+Two kinds of deviation from plain multiplication are allowed, and both are explicit:
+
+- **Locks.** *Mark of Cain* zeroes the Apocalyptic tier outright; a lock overrides any further
+  multiplier and is applied last.
+- **Additive reductions.** Gula's per-level effect removes a flat share of the negative tiers
+  per level (additive; at the level cap the negative-outcome chance reaches 0% — see `03 §1` and
+  the `Sins & Devotion` sheet).
+
+Per-category tier shifts (e.g. a sigil raising only Suasio's Stellar chance) attach at
+action-resolution time rather than as global tier multipliers, since they target a specific
+category's distribution.
 
 ### Visibility
 
-Outcome distributions are **hidden by default**. They are progressively revealed by oracular maleficia (see `03-content-catalog.md` §4).
+Outcome distributions are **hidden by default**. They are progressively revealed by oracular
+maleficia (`03 §4`): one maleficium per Opera category, plus the Obsidian Mirror which reveals
+all of them.
 
-### Authoring checklist for any new action
+### Randomness discipline
+
+All rolls draw from a **seeded, serialized RNG** (ADR-011): the RNG state is part of the save,
+ticks are deterministic, and a system that has nothing to roll must not consume draws (gating),
+so replays and offline catch-up are reproducible.
+
+### Authoring checklist for any new tiered action
 
 1. List all relevant tiers.
-2. Assign baseline probabilities summing to 1.0.
+2. Assign baseline probabilities summing to 1.0 (with the spreadsheet SUM check).
 3. Specify the effect of each tier in concrete game terms.
 4. Specify which Cardinal Sins / sigils / invocations modify the distribution and how.
 5. Specify the cost and the time to perform.
-6. Pick the action's **efficiency mode** (see §3).
+6. Pick the action's **efficiency mode** (§3).
 
 ---
 
 ## 3. Opera
 
+The Opera is the action surface of a lifetime: everything the player does between descents.
+
 ### Action types
 
-Actions can be:
+- **One-shot** actions with a duration (e.g. *Suggestion*, *Caedis*, *Indagatio*).
+- **Toggles** that consume resources per second while active (e.g. the *Vitium Compositum*
+  ceremonies, *Panvitium*). One-shot actions gain a toggle (auto-repeat) variant at the Sin
+  levels noted in the spreadsheet.
+- **Transactions** — instant, deterministic exchanges that are not actions at all and never
+  occupy the action slot: Mercatus invest/divest, sigil binding, equipping maleficia, summoning
+  an invocation.
 
-- **One-shot** with a duration (e.g. base *Suggestion*).
-- **Toggles** that consume resources per second while active (e.g. *Panvitium*).
-
-Unlocked actions can be **delegated**: acolytes or invocations run them in parallel with a specific efficiency. By default the player's own efficiency is 100% (modified by Sin levels and skills); an acolyte runs at 33% of player by default (modified by sigils and skills); an invocation runs at a per-invocation rate (some are faster than acolytes, e.g. Imp at *Caedis*).
+Unlocked actions can be **delegated**: acolytes or invocations run them in parallel with their
+own efficiency. By default the player's own efficiency is 100% (modified by Sin levels and
+skills); an acolyte runs at a flat fraction of the player's (spreadsheet `Globals` /
+`Acolytes`); an invocation runs at a per-invocation rate (`Invocatio` sheet) — some are faster
+than acolytes.
 
 ### Efficiency modes
 
-Every action declares an **efficiency mode** describing how its declared efficiency feeds the resolution:
+Every action declares an **efficiency mode** describing how its effective efficiency feeds the
+resolution. The spreadsheet states each category's mode at the top of its sheet; the sheet wins
+over any older prose.
 
-- **`cost-outcome`** (Suasio, Decimatio): efficiency scales both the *cost paid* and the *outcome units delivered* by the same percentage. The duration is not affected. So Suggestion at efficiency 4 costs 4× influence and produces ~4× the per-tier outcome (e.g. 4 reprobates added on Good instead of 1).
-- **`time`** (Indagatio, Emptio): efficiency divides the *action's duration*. Cost and success probabilities are not affected. So Indagatio at efficiency 4 takes 1/4 the base duration; the tier distribution is unchanged. Emptio additionally pays a per-target cost (the targeted maleficium's gold price) which is unaffected by efficiency.
+- **`cost-outcome`** (*Suasio*): efficiency scales both the *cost paid* and the *positive
+  outcome units delivered* by the same percentage. Duration is not affected.
+- **`time`** (*Decimatio*, *Indagatio*, *Emptio*): efficiency divides the *action's duration*.
+  Costs and the tier distribution are not affected. (*Emptio* additionally pays the targeted
+  maleficium's gold price, unaffected by efficiency.)
+- **Toggle scaling** (*Vitium Compositum*): the ceremony ticks at a fixed cadence unaffected by
+  efficiency; efficiency multiplicatively scales the per-tick costs, outputs, and effects.
 
-A new action category that arrives later (`depraedatio`, `invocatio`) declares its own mode at the same site. Modes can be added; existing modes are stable.
+A new action category arriving later declares its own mode at the same site. Modes can be added;
+existing modes are stable.
 
-The total efficiency for a specific action is the product of the player's global efficiency (Gula skill / level), the action's category efficiency (Leviathan for Suasio, Satan for Decimatio; nothing yet for Indagatio/Emptio), and any delegated-runner contribution (acolyte/invocation). When multiple runners are assigned to the same action, their per-runner efficiencies sum, and the resulting total is used as the action's effective efficiency.
+The total efficiency for a specific action is the **product** of the player's global efficiency
+(Gula's Insatiability online, Acedia's Procrastination offline), the action's category
+efficiency (Luxuria levels for *Suasio*, Ira levels for *Decimatio*, per-category sigils), and
+the **sum** of all runner contributions on that action: the player's own contribution plus each
+assigned acolyte's plus any invocation contribution.
 
-Example: the player runs Suggestion at base efficiency 100% (Gula L0), with one acolyte assigned at 33% of player, and one Lamia invocation contributing 25% of player. Total efficiency is 1 + 0.33 + 0.25 = 1.58. For a 10-second base, in `cost-outcome` mode this means the cost is paid as `ceil(5 × 1.58) = 8` influence and the outcome at Good produces `floor(1.58) = 1` reprobate. In `time` mode the action would instead finish in `10 / 1.58 = 6.33` seconds.
+Example: the player runs *Suggestion* at base efficiency 1.0, with one acolyte assigned at 0.33
+and one Lamia invocation contributing 0.25. Total efficiency 1.58. In `cost-outcome` mode the
+cost is paid as `ceil(5 × 1.58) = 8` influence and a Good outcome produces `floor(1.58) = 1`
+reprobate. In `time` mode the same total would instead divide the duration: `10 / 1.58 ≈ 6.33 s`.
 
 ### Parallelism rules
 
-- **One** player-driven action at a time. The action queue holds the player's currently-running rite plus any acolyte or invocation delegated rites.
-- **Toggles** may be active concurrently with player-driven actions and with each other, subject to per-second resource costs.
-- ***Vitium Mercatura* builds** run alongside player-driven actions and do **not** count as player-driven actions. Multiple builds can be in flight concurrently. Builds cannot be delegated.
-- **Acolytes** operate at a flat percentage of the player's efficiency (modifiable via sigils). Each acolyte runs at most one delegated action; the action shape and rules are the same as the player's, but with the acolyte's efficiency.
-- **Invocations** can operate at a percentage of player efficiency that may be different from acolytes in an autonomous channel that does not occupy the player's action slot (an Imp doing *Ira*-aligned work is faster than an acolyte). Specific multipliers are in the spreadsheet.
-- **Hybrid invocations.** The Familiar is a hybrid: it contributes a passive `+33%` multiplier to the player's own action efficiency *and* runs *Indagatio* in the background at 5% of the player's efficiency, in an autonomous channel that does not occupy the player's action slot. Future invocations may declare both kinds of contribution; the action engine reserves a queue slot per autonomous channel. There is no general "ambient action" capability for the player; this is invocation-flavoured.
+- **One** player-driven action at a time. The action queue holds the player's currently-running
+  rite plus any acolyte- or invocation-delegated rites, each in its own channel.
+- **Toggles** may be active concurrently with player-driven actions and with each other, subject
+  to per-second resource costs.
+- **Transactions** (Mercatus invest/divest and the rest listed above) resolve instantly and
+  never occupy any slot. There is no build queue; nothing in *Vitium Mercatura* takes time.
+- **Acolytes** each run at most one delegated action; the action shape and rules are the same as
+  the player's, but with the acolyte's efficiency. Acolytes can also be assigned to help run a
+  *Vitium Compositum* ceremony, adding their contribution to its effective efficiency.
+- **Invocations** with an autonomous-runner effect (Familiar, Imp, Upir, …) run their action in
+  their own channel without occupying the player's slot. A cost-outcome cycle that cannot be
+  paid stalls until it can.
+- **Hybrid invocations.** The Familiar both contributes a passive bonus to the player's own
+  efficiency *and* runs *Indagatio* autonomously. Future invocations may declare both kinds of
+  contribution. There is no general "ambient action" capability for the player; this is
+  invocation-flavoured.
 
 ### Resource-driven toggle deactivation
 
-When a toggle's per-second cost cannot be paid in full from the player's resources, the toggle **auto-deactivates** on the next tick. There is no refund and no partial application; the tick records a single deactivation event in the log. *Panvitium*, which cannot be manually deactivated, follows the same rule: if its per-second cost cannot be paid, *Panvitium* ends.
+When a toggle's per-second cost cannot be paid in full, the toggle **auto-deactivates on the
+next tick**, before any income is applied — a toggle never earns on a tick it could not afford.
+There is no refund and no partial application; the tick records one deactivation notice.
+*Panvitium*, which cannot be manually deactivated, follows the same rule: when its exponential
+cost outruns the treasury, *Panvitium* ends.
 
 ### The six Opera categories
 
 | Category | Latin meaning | Role |
 |---|---|---|
-| **Suasio** | "Persuasion / temptation" | Convert ordinary humans into reprobates. |
+| **Suasio** | "Persuasion / temptation" | Corrupt ordinary humans into reprobates. |
 | **Decimatio** | "Culling" | Kill reprobates to harvest souls. |
-| **Depraedatio** | "Plundering / despoliation" | Sin-themed businesses (*Vitium Mercatura*) and ceremonies (*Vitium Compositum*, including *Panvitium*). |
-| **Invocatio** | "Invocation" | Summon hellish entities that grant effects or run autonomous actions. |
-| **Indagatio** | "Searching / investigation" | Search the world for *maleficia*. |
-| **Emptio** | "Purchase" | Buy a maleficium found via *Indagatio*. |
+| **Depraedatio** | "Plundering / despoliation" | The vice economy: the eight *Vitium Mercatura* trades and the *Vitium Compositum* ceremonies (including *Panvitium*). |
+| **Indagatio** | "Searching out" | Hunt for maleficia. |
+| **Emptio** | "Purchase" | Buy maleficia from the discovered market. |
+| **Invocatio** | "Summoning" | Summon and maintain invocations. |
 
-The exhaustive action list is in `03-content-catalog.md`.
+Content, gates, and numbers per category are in `03 §2` and the spreadsheet.
 
 ---
 
-## 4. Cardinal Sin levels and Devotion
+## 4. The modifier engine
 
-- Devotion is gained **only on Katabasis**, by *offering* souls to the Prince associated with that Sin. Devotion number is equal to the number of offered souls. There are 4 Cardinal Sin Devotion milestones for each Cardinal Sin — reaching a given milestone grants you 1 Level for that Cardinal Sin. The **cumulative cost** to reach level *X* is **180^X** souls.
-- Each Cardinal Sin grants a **Skill** with an **intensity** given by a formula per Cardinal Sin, based on the total Devotion for the Demon Prince / Cardinal Sin (the default shape is `intensity(x) = ln(x)² / SKILL_INTENSITY_DIVISOR`; the divisor and per-Sin overrides are in the spreadsheet).
-- Sins also unlock content gates: *Vitium Compositum* requires every Sin at level ≥ 1; *Panvitium* requires every Sin at level ≥ 3.
+Many independent sources affect many independent targets: Sin levels, Sin skills (intensity
+∝ ln(devotion)², divisor in the spreadsheet), sigil bindings, equipped maleficia, active
+ceremonies, invocations, acolytes. Per **ADR-022**, all of it converges in a **single
+composition point**: `computeModifiers(state)` assembles an immutable bundle of derived
+multipliers each tick, and every consumer (tick loop, action engine, probability resolver) reads
+only the bundle.
 
-The Skill effects are listed in `03-content-catalog.md` §1. The Sin levels and Sin skills feed into the modifier engine (ADR-022) — a Sin skill that "increases X" multiplies X by `1 + intensity`; a skill that "decreases X" multiplies by `1 / (1 + intensity)`, which is asymptotic to 0 and never negative.
+- **Composition rule:** all effects compose **multiplicatively** unless a target's nature
+  demands otherwise; deviations (locks, additive reductions — §2) are explicit.
+- **Skill→effect coupling:** a skill that "increases X" multiplies X by `1 + intensity`; a skill
+  that "decreases X" multiplies X by `1 / (1 + intensity)` (asymptotic to 0, never negative).
+  Fixed convention project-wide; per-skill coefficients are tunable in the spreadsheet.
+- **The bundle is derived, never persisted.** The save stores sources; the bundle is rebuilt on
+  load and each tick.
+- Some couplings are inherently local and compute at their call site instead of the global
+  bundle — e.g. **Foedera** (§3, `03 §2.3`), which depends on per-ceremony active state.
 
 ---
 
 ## 5. Sigils
 
-Sigils are the second prestige axis. Seventy-two sigils are exposed (the full *Lesser Key of Solomon* Goetia, with #32 replaced by Semet for lore purposes).
+The 72 sigils of the Goetia are the **tactical, recoverable** prestige axis. On each Katabasis
+the player may bind unspent souls to sigils; each sigil grants a passive effect whose magnitude
+follows the sigil's **curve** over the bound souls:
 
-- On Katabasis, the player may **bind** unspent souls to one or more sigils.
-- Each sigil has a passive effect that scales with the number of bound souls.
-- **Multiple sigils can be bound simultaneously**, with no count cap.
-- Bindings are **fully recoverable** during Katabases — souls return to the unspent pool and can be re-bound elsewhere or offered as Devotion.
+- **√(bound souls)** — the default.
+- **log(bound souls + 1)** — used by the flat-generator and carry-over sigils.
+- **linear** — reserved; applies as a flat increase rather than a percentage.
 
-### Binding-to-effect curve
+Effect at N bound souls = `base coefficient × curve(N)`; per-sigil curve and coefficient live in
+the spreadsheet (`Sigils` sheet). Percentage-type yields fold into the modifier bundle (§4);
+flat-type yields (gold/s, influence/s, carry-over points) add at their target site.
 
-By default, the **effect scales with √(bound souls)** — a square-root curve. This gives strong early returns and gentle late returns, encouraging spreading across multiple sigils rather than dumping all souls into one.
-
-Some sigils may override this default for distinctive feel:
-
-- **Linear-curve sigils** — more dangerous, more rewarding, more swingy. Strong-build-defining.
-- **Logarithmic-curve sigils** — sharply diminishing returns; useful as splash investments.
-
-Per-sigil curve overrides and per-sigil coefficients are in the economy spreadsheet (`Sigils` sheet). The catalog row in `03-content-catalog.md` §6 marks any non-default curve in the per-sigil description; an unmarked sigil uses the √ default.
+Binding is a **re-allocation, not a sacrifice**: bound souls return to the pool at the next
+Katabasis menu and can be re-bound freely. The full catalog is `03 §5`; *Semet* (#32) carries
+its own visibility gate.
 
 ---
 
-## 6. Katabasis flow
+## 6. Devotion, the Princes, and Katabasis
 
-Triggered by Katabasis on the Altar.
+### Devotion
 
-1. **Katabasis starts.** Active toggles stop, uncompleted actions fizzle, invocations are dispelled, all active *Vitium Mercatura* businesses are automatically shut down and their shut-down gold refund is collected (see §3 for the percentage rule).
-2. **Katabasis menu opens.**
-3. **Player allocates** between sigils (recoverable) and Devotion (permanent). Anything left over carries into the next lifetime. The player **cannot un-offer** Devotion. They **can** un-bind sigils. This asymmetry is the spine of the prestige design.
-4. **Player confirms.** Then:
-   - **Remaining maleficia roll.** Each owned maleficium's remaining chance is rolled independently using the current remaining-maleficia chance. Each maleficium passing the roll will be available when coming back; the others are lost.
-   - **Remaining gold roll.** Remaining gold is defined as the remaining-gold percentage times the gold at Katabasis start. The percentage is affected by specific sigils and Cardinal Sin levels (Avaritia/Mammon, Semet).
-   - **Remaining reprobates roll.** Each unconverted reprobate is rolled against the remaining-unconverted-reprobate chance (Luxuria/Asmodeus, Semet). Converted reprobates of all subtypes are lost on Katabasis.
-   - **Katabasis recap.** A black page with white text appears, listing what remains. The fiction is that some acolytes stayed faithful, guarded part of your estate, and kept track of what they could.
-5. **Player comes back.** Remaining reprobates, remaining gold (as floored integer), remaining maleficia, 0 influence, `maxInfluence` reset to base, 0 *Emptio*-listed maleficia (the list is lost; the Morpheus invocation can preserve it), current Cardinal Sin Devotion permanently in effect, current sigil bindings active.
+Souls **offered** to a Prince are permanent and irreversible — the strategic axis, in deliberate
+tension with sigil binding: every soul offered is one that cannot be bound, and vice versa.
+
+Cumulative Devotion to reach Sin level X is `base^X` souls (base in `Globals`; levels run 0–4).
+Each Cardinal Sin grants:
+
+- a **continuous skill** whose intensity rises with total Devotion along the fixed curve
+  (`intensity = ln(devotion)² / divisor`, divisor in the spreadsheet), coupled to its target per
+  §4; and
+- a **discrete per-level effect** at each level threshold (unlocks, carry-over bonuses, category
+  efficiency multipliers — the table is `03 §1`).
+
+### Katabasis — the descent
+
+Lying on the altar (a two-step confirmation in the Altar room) ends the lifetime:
+
+1. **Liquidation.** Every *Vitium Mercatura* trade auto-divests into gold at the divest fraction
+   (`03 §2.3`) — the pre-descent cash-out. This happens **before** any carry-over roll, so
+   Avaritia and the gold-carry-over sigils act on the liquidated total.
+2. **Carry-over rolls.** A percentage of gold remains; each owned maleficium has a chance to
+   remain; a percentage of reprobates remain identified. Base fractions are in `Globals`
+   (5% each); they are raised by Avaritia / Superbia / Tristitia levels respectively
+   (`03 §1`) and by sigils (Purson #20, Cimejes #66, Camio #53). The Erinyes and Morpheus apex
+   invocations override the next descent's carry-over wholesale (`03 §2.4`).
+3. **The Katabasis menu.** Unspent souls are allocated: bound to sigils (recoverable) or offered
+   to Princes (permanent). Souls left unspent carry over as a usable resource.
+4. **The recap.** A black page, white text, naming and numbering what survived: the gold kept
+   safe, the maleficia not looted, the reprobates still identified.
+5. **The new lifetime** begins with starting gold (the carried fraction), base influence, zero
+   acolytes, zero Mercatus depths, no active invocations or toggles, current Devotion levels in
+   effect, current sigil bindings active, and the unspent soul pool.
+
+All invocations are dispelled by the descent. Everything in `lifetime` state resets; `devotion`,
+`sigilBindings`, unspent `souls`, achievements, and the Katabasis count persist.
 
 ---
 
 ## 7. Invocations
 
-Invocations consume resources to summon hellish entities that affect gameplay. **Most invocations are persistent.** Some have a specific dispel condition (e.g. Aurevora dispels when gold reaches 0; Erinyes is one-shot). Invocations can be dispelled at will by the player unless explicitly marked otherwise (e.g. *Panvitium*, Morpheus).
+Summoned entities, maintained from the Invocation Room (`§12`). Mechanics:
 
-- Each invocation has an **invoking power** requirement and may also require a Cardinal Sin level.
-- **Invoking power** is acquired through equipped maleficia (the `invokingPower` of each owned copy sums) and through specific sigils.
-- **On Katabasis**, all invocations are dispelled. The Erinyes one-shot is consumed; any persistent invocation's effects end.
-
-The invocation list is in `03-content-catalog.md` §2.4.
+- **Invoking power** gates every invocation. Power comes from owned power-source maleficia
+  (`03 §4`) and from sigils (Forneus #30, Andrealphus #65). An invocation becomes *visible* in
+  the Ars Goetia book once the player holds at least **half** its required power; it becomes
+  summonable at full power plus its Sin-level gate and cost.
+- **Concurrency:** at most one **Apex** invocation active at a time; at most one **Familiar**;
+  any number of **Normal** invocations. All invocations are dispelled on Katabasis; an
+  invocation whose per-second cost cannot be paid is dispelled by the same rule as toggles (§3),
+  and the exponential-ramp apexes self-dispel when their cost outruns the treasury.
+- **Effect shapes.** An invocation's effect is one of three engine shapes: an **autonomous
+  runner** (runs a named action in its own channel at its listed efficiency), a **static
+  modifier contribution** (a line in the §4 bundle while active), or a **per-tick apex effect**
+  (mass events, ramps, next-Katabasis overrides). The catalog and per-invocation numbers are
+  `03 §2.4` and the `Invocatio` sheet.
 
 ---
 
 ## 8. Maleficia
 
-Maleficia are occult items. The system is defined as follows:
+Occult items. Owned maleficia are always in effect (there is no equip slot); **stackable** items
+repeat their effect per copy up to their stack cap; the rest cap at one copy.
 
-- They are **discovered** via the *Indagatio* action — probabilistic, with rarer tiers surfacing at lower probability.
-- They are **purchased** via the *Emptio* action — once *Indagatio* surfaces a maleficium, it appears on the *Emptio* list; the player pays gold and rolls the *Emptio* outcome distribution.
-- **Owning a maleficium equips it.** There is no separate equip step. Owned = equipped = contributing its effect to the modifier engine and its invoking power to the invocation gate. A future loadout system (equipped subset of owned) is not currently planned.
-- Some are **stackable**, with a `stackMax` per the catalog. Each owned copy contributes independently (e.g. each Iron Nail adds its sigil-effect bonus once).
-- Stack rules at *Indagatio* discovery time (03 §2.5): a **non-stackable** maleficium that is already owned **or** already on the *Emptio* list cannot be re-surfaced. A **stackable** maleficium cannot be surfaced once `owned + listed >= stackMax`. A maleficium currently being purchased by an in-flight *Emptio* timer counts as **listed** until the timer resolves.
-- They are **preserved across lifetimes** with a remaining chance — base remaining chance is in the spreadsheet, increased by Superbia level, several sigils, and Solomon's Ring.
+- **Types.** *Power sources* grant invoking power (§7). *Enhancers* contribute to the modifier
+  bundle. *Oraculars* reveal a category's outcome distribution (§2). *Targeted* items are
+  single-use effects (Defixio, Hand of Glory).
+- **Acquisition.** *Indagatio* (a timed search resolving on the tier ladder — the tier decides
+  the rarity found) and *Emptio* (a timed purchase from the discovered list at the rarity's
+  gold price — the tier decides the discount or the mishap). Both are `time`-mode actions.
+- **The Emptio list** — maleficia discovered but not yet bought — persists within a lifetime and
+  is part of the save.
+- **Carry-over.** Each owned maleficium survives Katabasis with the remaining-maleficia chance
+  (§6). The Morpheus apex guarantees the whole inventory and the Emptio list across one descent.
 
-The maleficia list, *Indagatio* and *Emptio* probability distributions, and per-maleficium costs are in `03-content-catalog.md` §4.
+The maleficia catalog, the *Indagatio*/*Emptio* distributions, and prices are `03 §4` and the
+spreadsheet.
 
 ---
 
 ## 9. Reprobate dynamics
 
-Reprobates are integer populations per subtype, never floats at the visible layer. The mechanics that change their count each tick — passive generation, suicide, and Choleric murder — all produce *fractional* per-tick contributions that need to be turned into integer kills/births deterministically.
+Per **ADR-024**, reprobates are a **single undifferentiated pool** — one integer population.
+There are no subtypes and no conversion mechanic. The population is the centre of the economy:
+*Suasio* and Mercatus corruption grow it, *Vitium Mercatura* revenue is proportional to it, and
+*Decimatio* plus the ambient death rates spend it for souls. Every death — culled, suicide, or
+murder — mints exactly one soul.
 
 ### Per-tick accrual pools
 
-The lifetime state carries three fractional accrual pools, alongside the integer population:
+The mechanics that change the population each tick produce *fractional* contributions that must
+become integer events deterministically. The lifetime state carries three fractional pools
+alongside the integer population:
 
-- `generationPool: number` — fractional reprobate-additions accumulated since the last integer birth.
-- `suicidePool: number` — fractional reprobate-removals accumulated since the last integer suicide.
-- `murderPool: number` — fractional reprobate-removals from Choleric violence accumulated since the last integer murder.
+- `generationPool` — fractional births (Mercatus corruption, *Suasio*-adjacent toggles, sigils
+  Ose #57 / Aamon #7 / Zepar #16, Adder Stone, Hand of Glory).
+- `suicidePool` — fractional removals from despair.
+- `murderPool` — fractional removals from violence.
 
-Each tick (10 Hz, `deltaSeconds = 0.1` online; an arbitrary `deltaSeconds` offline):
-
-1. Compute the per-second rate from current state (population, Sin levels, sigil bindings, equipped maleficia, active toggles).
-2. Add `rate × deltaSeconds` to the corresponding pool.
-3. While the pool ≥ 1, subtract 1 from the pool and apply one integer event (a birth, a suicide, a murder).
-4. The pool persists across ticks and across save/load, so a sub-1 fractional contribution is never lost.
-
-This pattern matches the BigNum-resource fractional-internal / floored-display convention from §1. Pools are serialized; they are part of the save format.
+Each tick: compute the per-second rate from current state; add `rate × deltaSeconds` to the
+pool; while a pool ≥ 1, subtract 1 and apply one integer event. Pools persist across ticks and
+saves, so sub-1 contributions are never lost. Offline catch-up is the same tick with a large
+delta (ADR-004, uncapped).
 
 ### Suicide
 
-Base rate: a population-wide percentage per second (e.g. 0.023% per second baseline; see spreadsheet `Globals`). The rate is multiplied by `(1 + Tristitia_intensity)` (Resignation skill), by `(1 + per_Nihilist_bonus × NihilistCount)`, and by relevant sigils (Crocell #49, Focalor #41, Ronove #27 for Nihilists specifically). A higher Tristitia level applies a `2^Tristitia_level` multiplier on top.
+A population-wide percentage per second (base in `Globals`), multiplied by the Tristitia-driven
+and sigil/maleficia modifiers (Ronove #27, Sabnock #43, Witch Ladder, the Nightmare invocation,
+Doom Gathering). Each suicide mints a soul.
 
-Per-tick fractional suicides = `population × rate × deltaSeconds`. Added to `suicidePool`. Each integer kill drawn from the pool picks one reprobate at random across **all subtypes** (including unconverted), weighted by current subtype counts, using the seeded RNG. Conversions are preserved on death: a Glutton suicide yields 1 soul exactly like any other death.
+### Murder
 
-A worked example: 1000 total reprobates, base rate 0.023%/s, no modifiers. Per-second fractional kills = `1000 × 0.00023 = 0.23`. Across 10 ticks/s that's `0.023` per tick. After 4.35 seconds, `suicidePool` crosses 1 → one reprobate dies. Steady-state: ~1 suicide every 4.35 seconds.
+A population-wide per-capita rate per second (base in `Globals`; re-anchored from the retired
+per-Choleric rate by ADR-024), multiplied by its modifiers (Aim #23, Glasya-Labolas #25, Mark of
+Cain, Poppet, Galdrabók, Enraging Broadcast). Each murder mints a soul. Leraie #14 gives each
+murder a chance to trigger a follow-on suicide.
 
-### Choleric murder
+### Generation
 
-Base rate per Choleric per second: spreadsheet (`Reprobates` sheet, per-Choleric murder rate). Modified multiplicatively by Aim (#23), Sabnock (#43 vs Gluttons), Camio (#53 vs Degenerates), Glasya-Labolas (#25 vs Celebrities), Haures (#64 vs Cholerics), Amdusias (#67 vs non-Cholerics), the Harpy invocation, and reprobate-subtype mitigations (Degenerates lower the murder rate).
-
-Per-tick fractional murders = `cholericCount × per_choleric_rate × deltaSeconds`. Added to `murderPool`. Each integer kill drawn from the pool picks one non-Choleric reprobate at random (or a Choleric, if a sigil specifically biases toward Cholerics — Haures #64). Cholerics never murder unconverted reprobates more readily than they murder subtype reprobates unless a sigil biases that way.
-
-### Passive generation
-
-Base rate: spreadsheet (`Globals` sheet, base reprobate generation per second; may be 0 in the absence of *Vitium*-driven generation). Modified additively by per-business generation contributions, sigils (Aamon #7, Zepar #16 reduces), and the Lamia invocation.
-
-Per-tick fractional births = `total_rate × deltaSeconds`. Added to `generationPool`. Each integer birth produces one unconverted reprobate (type `'reprobate'`); subtype conversion happens through *Vitium* / *Vitium Compositum* / *Panvitium* and not through passive generation.
-
-### Conversion
-
-When a reprobate is converted (*Vitium Mercatura*, *Vitium Compositum*, *Panvitium*), the subtype is chosen by `biasedSubtype()`, which weights subtypes by their corresponding Vitium specific conversion rate (see spreadsheet) - if more than 100% it is renormalized. Conversion is irreversible by default; sigils, maleficia, or specific Opera (Ose #57, Orias #59) may convert across subtypes.
+Base passive generation is **zero**: nothing breeds reprobates until the player acts. The two
+engines are *Suasio* (the player's hand) and *Vitium Mercatura* corruption (the trades'
+throughput, `03 §2.3`), plus the flat and percentage modifiers above.
 
 ---
 
 ## 10. Acolytes
 
-Acolytes are your followers. They run delegated actions at a percentage of player efficiency and constitute the primary lever for parallelising progress without invocations.
+Lesser practitioners who do the work's lower offices (`00-lore-bible.md` §9). Mechanically:
 
-### Maximum count
-
-The maximum number of acolytes is a function of `maxInfluence`:
-
-```
-maxAcolytes = max(1, 1 + floor(log10(maxInfluence / BASE_MAX_INFLUENCE)))
-```
-
-At `maxInfluence = BASE_MAX_INFLUENCE` this gives 1 acolyte. At 10× base, 2. At 100× base, 3. The growth is deliberately slow so that even a heavy Vanagloria build settles at single-digit acolyte counts during normal play. The constants live in the spreadsheet; the *shape* (log-scaling on `maxInfluence`) is fixed by this section.
-
-The Altar room shows **up to 4** acolytes visually (per §12). Acolytes beyond that count exist in state and can be assigned actions, but only 4 sprites render.
-
-### Recruitment
-
-Recruitment is automatic. When `maxInfluence` rises past a threshold that increases `maxAcolytes`, a new acolyte appears the same tick. There is no recruitment cost and no recruitment delay — the fiction is that acolytes find *you*; you do not seek them. This keeps the player's optimisation surface focused on Influence-cap growth rather than on a separate recruitment minigame.
-
-### Efficiency
-
-Default acolyte efficiency is **33%** of the player's own action efficiency. This is modified multiplicatively by:
-
-- Bathin (#18) — increases acolyte action efficiency.
-- Satan / Ira level — each level increases acolyte and invocation efficiency by 33% multiplicatively.
-- Other sigils tagged "acolyte action efficiency" in `03-content-catalog.md` §6.
-
-Acolyte efficiency stacks additively with the player's own efficiency when both are assigned to the same action (§3). Acolytes are subject to the same `efficiencyMode` as the action they're running.
-
-### Assignment
-
-Each acolyte may be assigned to at most one delegated action at a time. Assignment is a single-click operation, available actions for assignment should display a "-" symbol on the left and a "+" symbol on the right, which let the player assign and remove acolytes. An acolyte assigned to an action runs that action in a separate queue slot; the action completes at `baseTime / totalEfficiency` (time mode) or with cost/outcome scaled by `totalEfficiency` (cost-outcome mode), where `totalEfficiency` is the acolyte's contribution alone (or summed with other runners if the player chooses to stack on the same action).
-
-### Loss
-
-Acolytes are lost at Katabasis (the recap fiction is that some stayed faithful, but mechanically the lifetime starts with zero acolytes and recruitment happens again from scratch).
+- **Count is driven by effective maximum influence.** The Nth acolyte unlocks at the Nth
+  threshold of a geometric series anchored at the base threshold (both in the `Acolytes` sheet).
+  Influence resets on Katabasis, so each lifetime re-earns its retinue.
+- **Delegation.** Each acolyte runs at most one delegated action at the acolyte efficiency (base
+  fraction in `Globals`, raised by Tristitia's Resignation skill and Bathin #18). Delegated
+  one-shot tasks retire the acolyte to idle on completion; acolytes can instead be assigned to
+  help run a *Vitium Compositum* ceremony, summing into its efficiency.
+- **Limits.** Acolytes cannot run actions that require specific maleficia. At most four are
+  visualized in the Altar room (per-count background plates); further acolytes work unseen.
+- **Desertion** is a Katabasis-time fiction beat (the unfaithful loot what is portable) — it is
+  *expressed* through the carry-over rolls (§6), not simulated per-acolyte.
 
 ---
 
 ## 11. Save format and persistence
 
-The save format is versioned (ADR-006, ADR-010). The persisted state is a single JSON blob, written to `localStorage` every 10–30 seconds and on significant state changes, and additionally pushed to the server for logged-in users.
+The save is a single versioned JSON blob (ADR-006), written to `localStorage` on a debounced
+cadence and pushed to the server for logged-in users. The shape is defined in
+`packages/shared/src/save/state-schema.ts`, validated with Zod on both ends, and evolves under
+**ADR-023**: additive optional fields don't bump the version; renames, removals, type changes,
+and non-optional additions bump `schemaVersion` with a pure, tested migration
+(`packages/shared/src/save/migrations/`).
 
-The save shape is defined by `packages/shared/src/save/state-schema.ts` and validated with Zod on both client and server. Schema evolution follows ADR-023 (additive optional fields don't bump the version; renames, removals, or non-optional additions do).
+Current per-save state to track:
 
-For the design phase, the relevant constraint is: **all systems described above must be representable as serializable state**. The current per-save state to track:
+- the unspent soul pool and the Eternal-Sin devotion;
+- Devotion per Sin; sigil bindings (sigil → souls bound);
+- the lifetime state: gold, influence, `maxInfluence`, the reprobate population (one integer),
+  **Mercatus depths per Sin**, the acolyte list with assignment state, active invocations and
+  their runner timers, owned maleficia (duplicates for stackables), the *Emptio* list, active
+  toggles and toggle durations, the action queue (timers, optional `target` for Emptio), and the
+  accrual pools (`generationPool`, `suicidePool`, `murderPool`);
+- achievements, the Katabasis count, the run's start timestamp;
+- the seeded RNG state and the timestamp of the last applied tick.
 
-- the unspent soul pool;
-- the current Devotion per Sin;
-- the current sigil bindings (sigil → souls bound);
-- the lifetime state: gold, influence, `maxInfluence`, per-subtype reprobate counts, acolyte list with assignment state, invocation count per id, equipped maleficia (with duplicates for stackables), the *Emptio* list, active toggles, the action queue (timers, each with optional `target` payload for Emptio), and the reprobate-dynamics pools (`generationPool`, `suicidePool`, `murderPool`);
-- the seeded RNG state;
-- the timestamp of the last applied tick.
-
-A migration directory (`packages/shared/src/save/migrations/`) is reserved for future shape-change migrations; none are required at the current schema version.
+Schema history: v1 → v2 (ADR-024: subtype record collapsed to one integer). The Vitium
+Mercatura redesign removes `businesses`/`buildQueue` and is the v2 → v3 migration
+(`vm-vc-redesign-spec.md` §4).
 
 ---
 
 ## 12. The three-room UI
 
-The player operates from a **three-room interior** rendered as a lightly-pixelated side-elevation. There is no global menu bar. Menus are **diegetic** — they open by clicking objects in the rooms.
-
-Some resources are visible at the left of the screen at all times — **Souls**, **gold**, **influence**. You can change rooms by clicking on the doors: the Invocation room's door leads to the Altar room; the Studio room's door leads to the Altar room; the Altar room's left door leads to the Invocation room and its right door to the Studio room.
-
-Switching between rooms is a single click (a doorway). The Katabasis screen takes the full screen as a carved-in-stone modal.
+The player operates from a **three-room interior** rendered as a degraded-photoreal
+side-elevation (ADR-021; `01`, visual identity). There is no global menu bar; menus are
+**diegetic**, opened by clicking objects in the rooms. Souls, gold, and influence are always
+visible at the left of the screen. Room changes are single clicks on doors: the Invocation
+Room ↔ the Altar room ↔ the Studio. The Katabasis screen takes the full screen as a
+carved-in-stone modal.
 
 ### Invocation Room
 
-There's a luxurious candelabra hanging from the ceiling. Walls are made of stones, wooden floor of intricate parquet, and a red carpet covers half the floor (the side of the door); the other side has no carpet and contains a drawn invocation circle.
+Stone walls, intricate parquet, a luxurious candelabra; a red carpet on the door side, a drawn
+invocation circle on the other.
 
-- **Ars Goetia (book).** Click to open the *Invocatio* panel: list of available invocations, costs, gates, current number active for each, the "summon" button. The modal looks like an old page and the text looks inked. Not all invocations are shown — an invocation appears once you have at least half its required invoking power.
-- **Maleficia shelf.** Click to open the maleficia panel showing your current inventory: icons of the owned maleficia in a list; clicking on a specific maleficium shows the full picture, name, rarity, and effect description. Counts are shown for stackables.
-- **Active invocations** are visible in the room after invocation — only one at a time (the last one); leaving the room hides them.
+- **Ars Goetia (book).** Opens the *Invocatio* panel: available invocations, costs, gates,
+  active counts, the summon button — inked text on an old page. An invocation appears once the
+  player holds at least half its required invoking power (§7).
+- **Maleficia shelf.** Opens the inventory: icons in a list; clicking one shows the full
+  picture, name, rarity, and effect. Counts shown for stackables.
+- Active invocations render as silhouettes per the `Invocatio` sheet's display rules.
 
-### Altar room
+### Altar Room
 
-Black marble floor, white marble walls. 2 ionic columns near a crude stone altar. Some candles behind the altar.
+The found altar at the centre; doors left (Invocation Room) and right (Studio). Up to four
+acolytes are visualized, switching the background plate per count.
 
-- **Stone altar.** Click to open the altar menu, showing the current Devotion per Cardinal Sin (with skill intensity and progress toward next level), the current Sigil loadout, and a button to Descend (initiates Katabasis).
-- **Acolytes.** Once you have acolytes, up to 4 are visualised in the room. Further acolytes exist in state but are not rendered.
+- **The Altar.** Opens the Devotion ledger (per-Prince Devotion and levels, bound sigils) and
+  carries the two-step **descend** action that opens the Katabasis flow (§6).
 
-### Studio room
+### Studio
 
-The view is as if you were seated in the Studio chair behind the mahogany-wood desk. Everything is luxurious; two windows are on the left side of the screen. The familiar appears in this room (only here) once invoked, as a ghostly dog sitting near the door.
+The 2015-era seat of the worldly operation: a desk, a PC, a smartphone, a window onto the city.
 
-- **PC / desk.** A very old PC with a black screen and green text. Click to open. It shows the four PC ledgers — *Depraedatio*, *Decimatio*, *Indagatio*, *Emptio* — and the game logs (the last 100 outcomes). Visual design echoes a Windows-95 interface.
-- **The *Suasio* scroll.** Click to open the *Suasio* menu (same modal type as the Ars Goetia in the Invocation Room).
-- **Window onto the world.** Cannot be clicked; only shows light entering the room. The light's colour changes under certain game states (notably under active *Panvitium*: red, lit by fires).
+- **The PC.** Opens the worldly programs: the **Vitium Mercatura** panel (eight trades — depth,
+  revenue, invest/divest, Foedus badge), the *Decimatio* and *Indagatio* actions, the *Emptio*
+  market, achievements, the event log, and the **email** client (the content channel —
+  `00-lore-bible.md` §10).
+- **The smartphone** carries the incoming and outgoing calls.
+- **The Suasio scroll.** The *Suasio* actions and their delegation.
+- **The window** is the *Panvitium* signature. The screenshot moment.

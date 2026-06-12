@@ -46,11 +46,6 @@ const actionTimerSchema = z.object({
   target: z.string().optional(),
 });
 
-const buildTimerSchema = z.object({
-  businessId: z.string(),
-  remainingSeconds: z.number(),
-});
-
 const inboxEntrySchema = z.object({
   id: z.string(),
   receivedAt: z.number().int(),
@@ -84,11 +79,11 @@ const lifetimeSchema = z.object({
   generationPool: z.number().nonnegative().optional(),
   suicidePool: z.number().nonnegative().optional(),
   murderPool: z.number().nonnegative().optional(),
-  // Vitium Mercatura — businesses + builds (03 §2.3 / 02 §9). All additive optional under ADR-023;
-  // absent / empty round-trips identically to a pre-Vitium save. (The conversion pool was removed
-  // with reprobate subtypes; v1 saves that carried it are migrated by dropping the field.)
-  businesses: z.record(z.string(), z.number().int().nonnegative()).optional(),
-  buildQueue: z.array(buildTimerSchema).optional(),
+  // Vitium Mercatura — Mercatus depths (rework spec §4): one integer depth per Cardinal Sin,
+  // sparse (absent Sin ≡ depth 0). Optional; omitted when empty so a fresh game's wire form stays
+  // minimal. (The legacy `businesses` / `buildQueue` fields were REMOVED in schema v3; v2 saves
+  // are migrated by `v2-to-v3.ts` — gold credit + drop.)
+  mercatusDepths: z.record(z.string(), z.number().int().nonnegative()).optional(),
   handOfGloryRemaining: z.number().nonnegative().optional(),
   // Impact-feedback inbox (Phase 5.2). Additive-optional (ADR-023): absent → empty inbox at load.
   inbox: z.array(inboxEntrySchema).optional(),
@@ -127,6 +122,17 @@ export const serializedGameStateSchema = z.object({
 
 /** The JSON-safe form of GameState. */
 export type SerializedGameState = z.infer<typeof serializedGameStateSchema>;
+
+/** Narrow a wire mercatusDepths record to the eight Sin keys (drops anything else). */
+function pickSinDepths(depths: Record<string, number> | undefined): Partial<Record<Sin, number>> {
+  if (!depths) return {};
+  const out: Partial<Record<Sin, number>> = {};
+  for (const sin of SINS) {
+    const d = depths[sin];
+    if (typeof d === 'number' && d > 0) out[sin] = d;
+  }
+  return out;
+}
 
 /** Convert a runtime GameState into its JSON-safe form (BigNum -> string). */
 export function serializeGameState(state: GameState): SerializedGameState {
@@ -204,17 +210,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
       ...(state.lifetime.pendingMorpheus === true ? { pendingMorpheus: true } : {}),
       ...(state.lifetime.morpheusLockedOut === true ? { morpheusLockedOut: true } : {}),
-      // Vitium Mercatura state. Omit when empty so fresh games match the pre-Vitium wire form.
-      ...(Object.keys(state.lifetime.businesses).length > 0
-        ? { businesses: { ...state.lifetime.businesses } }
-        : {}),
-      ...(state.lifetime.buildQueue.length > 0
-        ? {
-            buildQueue: state.lifetime.buildQueue.map((t) => ({
-              businessId: t.businessId,
-              remainingSeconds: t.remainingSeconds,
-            })),
-          }
+      // Mercatus depths: omit when empty so fresh games keep a minimal wire form (ADR-023).
+      ...(Object.keys(state.lifetime.mercatusDepths).length > 0
+        ? { mercatusDepths: { ...state.lifetime.mercatusDepths } }
         : {}),
     },
     rngState: state.rngState,
@@ -287,13 +285,10 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       ...(s.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
       ...(s.lifetime.pendingMorpheus === true ? { pendingMorpheus: true } : {}),
       ...(s.lifetime.morpheusLockedOut === true ? { morpheusLockedOut: true } : {}),
-      // Vitium Mercatura: empty defaults match pre-Vitium saves; new saves round-trip whatever
-      // is present. `buildQueue` entries copy verbatim — they don't carry optional payload.
-      businesses: { ...(s.lifetime.businesses ?? {}) },
-      buildQueue: (s.lifetime.buildQueue ?? []).map((t) => ({
-        businessId: t.businessId,
-        remainingSeconds: t.remainingSeconds,
-      })),
+      // Mercatus depths: absent → {} (depth 0 everywhere). Keys are restricted to the eight
+      // Cardinal Sins on the way in, so a hand-edited or future-version blob can't smuggle
+      // arbitrary keys into the runtime record.
+      mercatusDepths: pickSinDepths(s.lifetime.mercatusDepths),
     },
     rngState: s.rngState,
     lastTickAt: s.lastTickAt,

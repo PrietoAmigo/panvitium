@@ -5,7 +5,7 @@
  *     clears pendingMorpheus, sets pendingErinyes and morpheusLockedOut
  *   - Morpheus invoke: deducts soul + gold cost; refused while morpheusLockedOut
  *   - tick is frozen while Morpheus is active (clock advances, nothing else accrues)
- *   - startAction and startBuild are blocked under Morpheus
+ *   - startAction and investMercatus are blocked under Morpheus
  *   - commitKatabasis: Erinyes overrides → gold 0, maleficia 0, stacks ×2 player efficiency
  *   - commitKatabasis: Morpheus overrides → gold 100%, maleficia 100%, Emptio list preserved
  *   - computeModifiers folds Erinyes's permanent stacks (×2 per stack on playerEfficiencyMul)
@@ -28,7 +28,7 @@ import {
   totalReprobates,
   type GameState,
 } from './index.js';
-import { startBuild } from './builds.js';
+import { investMercatus } from './mercatus.js';
 
 function fresh(seed = 'erinyes-morpheus', t = 0): GameState {
   return createInitialState(seed, t);
@@ -187,13 +187,14 @@ describe('Morpheus blocks Opera + Builds', () => {
     expect(r.reason).toMatch(/Morpheus/);
   });
 
-  it('startBuild refuses with the same Morpheus stillness reason', () => {
+  it('investMercatus refuses with the same Morpheus stillness reason', () => {
     const s = withGates({ apex: 'morpheus', gold: 100_000 });
     const frozen: GameState = {
       ...s,
+      devotion: { ...s.devotion, gula: bn(180) },
       lifetime: { ...s.lifetime, invocations: { morpheus: 1 } },
     };
-    const r = startBuild(frozen, 'gula-mercatura-1');
+    const r = investMercatus(frozen, 'gula');
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.reason).toMatch(/Morpheus/);
@@ -244,7 +245,7 @@ describe('Morpheus carry-over at commitKatabasis', () => {
     };
     const torn = enterKatabasis(live);
     const { state, recap } = commitKatabasis(torn);
-    // Gold kept at 100% of pre-descent (refund folded in from no businesses).
+    // Gold kept at 100% of pre-descent (no Mercatus depths, so liquidation adds nothing).
     expect(floor(recap.goldKept).toNumber()).toBe(200_000);
     expect(recap.maleficiaKept).toEqual(live.lifetime.maleficia);
     expect(recap.maleficiaLost).toEqual([]);

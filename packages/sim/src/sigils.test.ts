@@ -26,7 +26,7 @@ import {
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
   resolveIndagatio,
-  shutdownRefundFraction,
+  divestFraction,
   sigilById,
   sigilCategoryTierContributions,
   sigilMurderGoldPerKill,
@@ -604,11 +604,11 @@ describe('Sigil one-offs (S16): murder gold, shutdown refund', () => {
     expect(leraie - base).toBeCloseTo(5, 6); // 5 murders × 1 gold each
   });
 
-  it('Vine #45 raises the shutdown refund fraction, clamped to ≤ 1', () => {
+  it('Vine #45 raises the Mercatus divest fraction, clamped to ≤ 1', () => {
     expect(sigilById(45)!.effect).toEqual({ kind: 'shutdownRefund' });
     expect(sigilShutdownRefundMul(bound(45, 1_000_000))).toBeCloseTo(2, 6);
-    expect(shutdownRefundFraction(fresh())).toBeCloseTo(0.25, 6); // base fraction
-    expect(shutdownRefundFraction(bound(45, 1_000_000))).toBeCloseTo(0.5, 6); // 0.25 × 2
-    expect(shutdownRefundFraction(bound(45, 1e18))).toBe(1); // clamp: never more than build cost
+    expect(divestFraction(fresh())).toBeCloseTo(0.25, 6); // base fraction
+    expect(divestFraction(bound(45, 1_000_000))).toBeCloseTo(0.5, 6); // 0.25 × 2
+    expect(divestFraction(bound(45, 1e18))).toBe(1); // clamp: never refund more than was invested
   });
 });

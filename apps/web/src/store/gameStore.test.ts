@@ -139,18 +139,18 @@ describe('gameStore — Katabasis', () => {
     useGameStore.setState({
       state: {
         ...s0,
-        lifetime: { ...s0.lifetime, businesses: { ...s0.lifetime.businesses, gula_1: 2 } },
+        lifetime: { ...s0.lifetime, mercatusDepths: { ...s0.lifetime.mercatusDepths, gula: 2 } },
       },
     });
     store().openKatabasis();
     const st = store().state as GameState;
     expect(store().katabasisPhase).toBe('menu'); // gate is showing…
     expect(st.inKatabasis).not.toBe(true); // …but the lifetime is intact (nothing torn down)
-    expect(st.lifetime.businesses.gula_1).toBe(2);
+    expect(st.lifetime.mercatusDepths.gula).toBe(2);
     // Turning back is a clean exit.
     store().closeKatabasis();
     expect(store().katabasisPhase).toBeNull();
-    expect((store().state as GameState).lifetime.businesses.gula_1).toBe(2);
+    expect((store().state as GameState).lifetime.mercatusDepths.gula).toBe(2);
   });
 
   it('offers any amount (down to 1); levels are reached naturally at the threshold', () => {
@@ -191,14 +191,14 @@ describe('gameStore — Katabasis', () => {
     expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtEntry);
   });
 
-  it('entering Katabasis tears down businesses, toggles, and invocations immediately', () => {
+  it('entering Katabasis liquidates the Mercatūs and stops toggles and invocations immediately', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
         ...s0,
         lifetime: {
           ...s0.lifetime,
-          businesses: { 'gula-mercatura-1': 1 },
+          mercatusDepths: { gula: 1 },
           activeToggles: ['bacchanal'],
           invocations: { imp: 1 },
         },
@@ -206,7 +206,7 @@ describe('gameStore — Katabasis', () => {
     });
     store().beginKatabasis();
     const st = store().state as GameState;
-    expect(Object.keys(st.lifetime.businesses)).toHaveLength(0);
+    expect(Object.keys(st.lifetime.mercatusDepths)).toHaveLength(0);
     expect(st.lifetime.activeToggles).toHaveLength(0);
     expect(Object.keys(st.lifetime.invocations)).toHaveLength(0);
   });
@@ -223,53 +223,49 @@ describe('gameStore — Katabasis', () => {
   });
 });
 
-describe('gameStore — Vitium Mercatura (build/shutdown)', () => {
-  it('builds the entry tier at Sin level 0 (gated at tier − 1)', () => {
+describe('gameStore — Vitium Mercatura (invest/divest)', () => {
+  it('refuses to invest while the Sin is below level 1', () => {
     patchGold(1000);
-    // Devotion is 0; the entry tier unlocks at Sin level 0, so a fresh player can build it.
-    store().build('gula-mercatura-1');
-    expect(store().state?.lifetime.buildQueue ?? []).toHaveLength(1);
-    expect(store().notice).toBeNull();
+    // Devotion is 0; a Mercatus only becomes available at its Sin's level 1.
+    store().invest('gula');
+    expect(store().state?.lifetime.mercatusDepths.gula).toBeUndefined();
+    expect(store().notice).toMatch(/level 1/);
   });
 
-  it('refuses to build when gold is insufficient', () => {
+  it('refuses to invest when gold is insufficient', () => {
     patchDevotion('gula', 180); // exactly L1
-    patchGold(50);
-    store().build('gula-mercatura-1');
-    expect(store().state?.lifetime.buildQueue ?? []).toHaveLength(0);
+    patchGold(40);
+    store().invest('gula');
+    expect(store().state?.lifetime.mercatusDepths.gula).toBeUndefined();
     expect(store().notice).toMatch(/gold/i);
   });
 
-  it('queues a build when gated and paid, leaving the player slot free', () => {
+  it('deepens instantly when gated and paid, leaving the player slot free', () => {
     patchDevotion('gula', 180);
     patchGold(2000);
-    store().build('gula-mercatura-1');
+    store().invest('gula');
     const s = store().state as GameState;
-    expect(s.lifetime.buildQueue).toHaveLength(1);
+    expect(s.lifetime.mercatusDepths.gula).toBe(1); // instant — no queue, no timer
     expect(s.lifetime.actionQueue).toHaveLength(0); // doesn't occupy the player slot
-    expect(floor(s.lifetime.gold).toNumber()).toBe(1500); // 2000 − 500 (Gula tier-1 cost)
+    expect(floor(s.lifetime.gold).toNumber()).toBe(1950); // 2000 − floor(50 × 1.6⁰)
     expect(store().notice).toBeNull();
   });
 
-  it('completes a build via advance and lets the player shut it down for a 25% refund', () => {
+  it('cuts back one depth for the divest-fraction refund of that depth\u2019s cost', () => {
     patchDevotion('gula', 180);
     patchGold(2000);
-    store().build('gula-mercatura-1');
-    store().advance(60); // build completes in 60s
-    const built = store().state as GameState;
-    expect(built.lifetime.buildQueue).toHaveLength(0);
-    expect(built.lifetime.businesses['gula-mercatura-1']).toBe(1);
-    // Don't over-specify business/base gold accrued during the advance; check the shutdown delta.
-    const goldBefore = floor(built.lifetime.gold).toNumber();
-    store().shutdown('gula-mercatura-1');
+    store().invest('gula'); // pays 50, depth 1
+    store().invest('gula'); // pays 80, depth 2
+    const goldBefore = floor((store().state as GameState).lifetime.gold).toNumber();
+    store().divest('gula', 1);
     const after = store().state as GameState;
-    expect(after.lifetime.businesses['gula-mercatura-1']).toBeUndefined();
-    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 125); // floor(500 * 0.25)
+    expect(after.lifetime.mercatusDepths.gula).toBe(1);
+    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 20); // floor(0.25 × 80)
   });
 
-  it('refuses shutdown when nothing owned', () => {
+  it('refuses divest when the trade has no roots', () => {
     patchDevotion('gula', 180);
-    store().shutdown('gula-mercatura-1');
+    store().divest('gula');
     expect(store().notice).toBeTruthy();
   });
 });

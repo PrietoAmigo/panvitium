@@ -63,54 +63,42 @@ export const strings = {
     emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be bought.',
     indagatioCta: 'Begin the search',
     depraedatioIntro:
-      'Sin-themed enterprises. Each pays out in gold and breeds reprobates while it stands. Builds run independently of the Studio rite.',
-    depraedatioEmpty:
-      'No business yet stands. Reach Level 1 of a Sin to break ground on its trade.',
-    build: 'Build',
-    shutdown: 'Shutdown',
-    owned: 'owned',
-    inFlight: 'in flight',
+      'Eight trades, one to each Sin. A trade is deepened for gold; as its roots spread, its reach among the reprobates grows \u2014 and so does its take.',
     sinLocked: 'Locked',
   },
   /**
-   * Display names for Vitium Mercatura businesses (03 §2.3). Latin/Latinate where it suits the
-   * voice; flavorful where a plain trade name lands better. Keyed by business id so the catalog
-   * stays the source of truth for numbers while strings stay translatable.
+   * The Mercatus system (Vitium Mercatura rework): eight trades, exactly one per Cardinal Sin.
+   * Display names are the Latin *Mercatus <genitive>* forms, untranslated (ADR-020). Copy stays
+   * in the established register \u2014 a trade has roots and reach, it is deepened, cut back,
+   * sold off.
    */
-  businesses: {
-    'gula-mercatura-1': 'Street food stand',
-    'gula-mercatura-2': 'Smash burger place',
-    'gula-mercatura-3': 'Fast food chain',
-    'gula-mercatura-4': 'Processed foods conglomerate',
-    'luxuria-mercatura-1': 'Pimp',
-    'luxuria-mercatura-2': 'Strip club',
-    'luxuria-mercatura-3': 'Porn studio',
-    'luxuria-mercatura-4': 'Luxury escort service',
-    'avaritia-mercatura-1': 'Garage sale',
-    'avaritia-mercatura-2': 'Lending service',
-    'avaritia-mercatura-3': 'Pyramid scheme',
-    'avaritia-mercatura-4': 'Casino',
-    'tristitia-mercatura-1': 'Baleful billboard',
-    'tristitia-mercatura-2': 'Raucous radio',
-    'tristitia-mercatura-3': 'Triste tabloid',
-    'tristitia-mercatura-4': 'Neurotic News Network',
-    'ira-mercatura-1': 'Arms dealer',
-    'ira-mercatura-2': 'Mercenary outfit',
-    'ira-mercatura-3': 'MMA promotion',
-    'ira-mercatura-4': 'Military contractor',
-    'acedia-mercatura-1': 'Maldives trip agency',
-    'acedia-mercatura-2': 'Pill mill',
-    'acedia-mercatura-3': 'Streaming platform',
-    'acedia-mercatura-4': 'Lotus Resort empire',
-    'vanagloria-mercatura-1': 'Nail salon',
-    'vanagloria-mercatura-2': 'Image consultant',
-    'vanagloria-mercatura-3': 'Fashion magazine',
-    'vanagloria-mercatura-4': 'Awards Organization',
-    'superbia-mercatura-1': 'Garage gym',
-    'superbia-mercatura-2': 'Grindset school',
-    'superbia-mercatura-3': 'Sports car rental',
-    'superbia-mercatura-4': 'TRT clinic',
-  } as Record<string, string>,
+  mercatus: {
+    names: {
+      gula: 'Mercatus Gulae',
+      luxuria: 'Mercatus Luxuriae',
+      avaritia: 'Mercatus Avaritiae',
+      tristitia: 'Mercatus Tristitiae',
+      ira: 'Mercatus Irae',
+      acedia: 'Mercatus Acediae',
+      vanagloria: 'Mercatus Vanagloriae',
+      superbia: 'Mercatus Superbiae',
+    } as Record<string, string>,
+    /** The depth meter label: "roots 12 / 20". */
+    roots: 'roots',
+    /** The revenue/s readout suffix: "4.2 gold/s". */
+    perSecond: '/s',
+    deepen: 'Deepen',
+    cutBack: 'Cut back',
+    sellOff: 'Sell off',
+    /** Locked rows: the trade opens at its Sin's first level. */
+    lockedHint: 'opens at Level 1',
+    /** Depth-capped rows: deepening resumes at the next Sin level. */
+    capped: 'its roots can reach no deeper at this rank',
+    /** The Foedus tier badge prefix; tier rendered as a Roman numeral (Foedus II). */
+    foedus: 'Foedus',
+    foedusTitle:
+      'Bound in Foedus with an active ceremony \u2014 its take grows, the rite costs less.',
+  },
   acolytes: {
     acolyte: 'Acolyte',
     assign: 'Assign one more',

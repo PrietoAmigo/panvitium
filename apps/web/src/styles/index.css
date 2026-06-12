@@ -1335,6 +1335,19 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+/* Foedus tier badge on a Mercatus row (rework spec §2): a small inscribed seal-mark. */
+.foedus-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--ember, #c49e4a);
+  border: 1px solid rgba(196, 158, 74, 0.45);
+  border-radius: 2px;
+  padding: 0.05rem 0.3rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
 .vitium-actions {
   display: flex;
   gap: 0.35rem;

@@ -128,20 +128,19 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v2 (the reprobate-subtype/conversion removal bumped it; pools stay additive-optional)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(2);
+  it('schemaVersion is v3 (the legacy-business → Mercatus replacement bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(3);
   });
 });
 
-describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
-  it('a v1 save without businesses/buildQueue loads with defaults', () => {
+describe('Mercatus depths — ADR-023 additive-optional (a/b/c round-trip)', () => {
+  it('(a) a save without mercatusDepths loads with every depth defaulting to 0', () => {
     const fresh = createInitialState('seed', 0);
     const serialized = serializeGameState(fresh);
-    // Strip the Vitium fields entirely — simulates a pre-Vitium save.
-    const { businesses, buildQueue, generationPool, suicidePool, murderPool, ...rest } =
+    // Strip the optional fields entirely — simulates an older minimal save.
+    const { mercatusDepths, generationPool, suicidePool, murderPool, ...rest } =
       serialized.lifetime;
-    void businesses;
-    void buildQueue;
+    void mercatusDepths;
     void generationPool;
     void suicidePool;
     void murderPool;
@@ -150,15 +149,13 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
     const back = deserializeGameState(parsed.data);
-    expect(back.lifetime.businesses).toEqual({});
-    expect(back.lifetime.buildQueue).toEqual([]);
+    expect(back.lifetime.mercatusDepths).toEqual({});
     expect(back.lifetime.reprobates).toBe(0);
   });
 
-  it('a fresh save omits empty businesses/buildQueue from the wire', () => {
+  it('(b) a fresh save omits empty mercatusDepths from the wire', () => {
     const serialized = serializeGameState(createInitialState('seed', 0));
-    expect('businesses' in serialized.lifetime).toBe(false);
-    expect('buildQueue' in serialized.lifetime).toBe(false);
+    expect('mercatusDepths' in serialized.lifetime).toBe(false);
     expect('maleficiaPrices' in serialized.lifetime).toBe(false);
     expect('handOfGloryRemaining' in serialized.lifetime).toBe(false);
     expect('defixio' in serialized.lifetime).toBe(false);
@@ -178,28 +175,31 @@ describe('Vitium Mercatura state — ADR-023 additive-optional', () => {
     expect(deserializeGameState(wire).lifetime.maleficiaPrices).toEqual({});
   });
 
-  it('non-empty Vitium state round-trips through the wire', () => {
+  it('(c) populated mercatusDepths round-trip exactly; junk keys are dropped on load', () => {
     const fresh = createInitialState('seed', 0);
     const withVitium: GameState = {
       ...fresh,
       lifetime: {
         ...fresh.lifetime,
-        businesses: { 'gula-mercatura-1': 3, 'avaritia-mercatura-1': 1 },
-        buildQueue: [
-          { businessId: 'luxuria-mercatura-1', remainingSeconds: 12.5 },
-          { businessId: 'gula-mercatura-1', remainingSeconds: 27 },
-        ],
+        mercatusDepths: { gula: 12, superbia: 3 },
         handOfGloryRemaining: 1234,
         defixio: { elapsed: 42 },
       },
     };
-    const back = deserializeGameState(serializeGameState(withVitium));
-    expect(back.lifetime.businesses).toEqual({ 'gula-mercatura-1': 3, 'avaritia-mercatura-1': 1 });
-    expect(back.lifetime.buildQueue).toHaveLength(2);
-    expect(back.lifetime.buildQueue[0]!.businessId).toBe('luxuria-mercatura-1');
-    expect(back.lifetime.buildQueue[0]!.remainingSeconds).toBe(12.5);
+    const wire = serializeGameState(withVitium);
+    const back = deserializeGameState(wire);
+    expect(back.lifetime.mercatusDepths).toEqual({ gula: 12, superbia: 3 });
     expect(back.lifetime.handOfGloryRemaining).toBe(1234);
     expect(back.lifetime.defixio).toEqual({ elapsed: 42 });
+    // A hand-edited blob can't smuggle non-Sin keys into the runtime record.
+    const tampered = {
+      ...wire,
+      lifetime: { ...wire.lifetime, mercatusDepths: { gula: 2, acme: 9 } },
+    };
+    const parsed = serializedGameStateSchema.safeParse(tampered);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(deserializeGameState(parsed.data).lifetime.mercatusDepths).toEqual({ gula: 2 });
   });
 });
 

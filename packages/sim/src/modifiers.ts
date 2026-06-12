@@ -108,14 +108,14 @@ export interface Modifiers {
    */
   readonly murderRateMul: number;
   /**
-   * Multiplier on Vitium Mercatura output (gold AND reprobate generation AND conversion). Future
-   * sources: Plutus invocation (flat factor on output), Vapula #60 sigil (overall VM gold
-   * output), and analogous. Currently 1× — businesses contribute at catalog values.
+   * Multiplier on Vitium Mercatura output (Mercatus revenue AND reprobate generation). Sources:
+   * Plutus invocation (flat factor on output), Vapula #60 sigil (overall VM gold output).
+   * Consumed at the tick gold-income and dynamics generation call sites.
    */
   readonly vitiumMercaturaOutputMul: number;
   /**
    * Multiplier on Vitium Compositum gold output (Zagan #61). Applied to `compositumGoldPerSecond`
-   * at the tick's gold-income site, parallel to `vitiumMercaturaOutputMul` for businesses. Default 1×.
+   * at the tick's gold-income site, parallel to `vitiumMercaturaOutputMul` for the Mercatūs. Default 1×.
    */
   readonly vitiumCompositumOutputMul: number;
   /**
@@ -385,7 +385,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // cull of the whole population (subtypes removed).
     murderRateMul: (panvitiumActive ? PANV_MURDER_MUL : 1) * sc('murderRateMul'),
     // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
-    // multiplier scales business gold + generation at the tick/dynamics call sites.
+    // multiplier scales Mercatus revenue + generation at the tick/dynamics call sites.
     vitiumMercaturaOutputMul:
       (1 + PLUTUS_VM_FACTOR * playerEff * invEffFor('avaritia') * plutusCount) *
       sc('vitiumMercaturaOutputMul'),

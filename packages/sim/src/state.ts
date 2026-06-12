@@ -53,16 +53,6 @@ export interface ActionTimer {
 }
 
 /**
- * A Vitium Mercatura business build in progress (03 §2.3). Builds live in their own queue
- * separate from `actionQueue` — they don't occupy the player slot and multiple can be in flight
- * at once. They cannot be delegated to acolytes or invocations.
- */
-export interface BuildTimer {
-  readonly businessId: string;
-  remainingSeconds: number;
-}
-
-/**
  * An acolyte and the action it is currently delegated to (02 §10). When `assignedAction` is null
  * the acolyte is idle. When set, the acolyte runs the action in its own autonomous channel; the
  * tick decrements `remainingSeconds` and, on reaching 0, resolves the action and immediately
@@ -125,15 +115,11 @@ export interface LifetimeState {
   /** In-flight timed actions. */
   actionQueue: ActionTimer[];
   /**
-   * Owned Vitium Mercatura businesses by id (03 §2.3). Multiple owned copies stack — fungible
-   * (no per-instance state). Empty by default.
+   * Mercatus depths (Vitium Mercatura rework): one trade per Cardinal Sin, each a single integer
+   * depth ≥ 0 (spec §1). Sparse — an absent Sin means depth 0, and the serializer omits the whole
+   * record when empty. Reset to {} on Katabasis after the liquidation refund.
    */
-  businesses: Record<string, number>;
-  /**
-   * In-flight Vitium Mercatura builds. Multiple builds run concurrently and do NOT occupy the
-   * player's action slot (02 §3 / user correction). Empty by default.
-   */
-  buildQueue: BuildTimer[];
+  mercatusDepths: Partial<Record<Sin, number>>;
   /**
    * Reprobate-dynamics accrual pools (02 §9). Each tick the per-second rate × deltaSeconds is
    * added to the matching pool; while the pool ≥ 1 it is decremented and an integer event applied
@@ -273,8 +259,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       activeToggles: [],
       toggleDurations: {},
       actionQueue: [],
-      businesses: {},
-      buildQueue: [],
+      mercatusDepths: {},
       generationPool: 0,
       suicidePool: 0,
       murderPool: 0,
