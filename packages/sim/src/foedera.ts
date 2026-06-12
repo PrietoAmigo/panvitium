@@ -58,15 +58,21 @@ export function highestFoedusTierForSin(state: GameState, sin: Sin): number {
 }
 
 /**
+ * One Sin's full Mercatus revenue/s: the raw demand-driven take (signature clause included) ×
+ * its combined Foedus bonus. The tick reads this for the Acediae offline-revenue exemption.
+ */
+export function mercatusRevenueWithFoedus(state: GameState, sin: Sin): number {
+  const raw = mercatusRevenuePerSecond(state, sin);
+  return raw > 0 ? raw * foedusRevenueMul(state, sin) : 0;
+}
+
+/**
  * Total Mercatus revenue/s across the eight trades, Foedus bonuses applied per Sin. This replaces
  * the legacy `businessGoldPerSecond` at tick step 1, composed exactly as before:
  * `(... + mercatusGoldPerSecond × vitiumMercaturaOutputMul + ...) × goldRateMul`.
  */
 export function mercatusGoldPerSecond(state: GameState): number {
   let s = 0;
-  for (const sin of SINS) {
-    const raw = mercatusRevenuePerSecond(state, sin);
-    if (raw > 0) s += raw * foedusRevenueMul(state, sin);
-  }
+  for (const sin of SINS) s += mercatusRevenueWithFoedus(state, sin);
   return s;
 }

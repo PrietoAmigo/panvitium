@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { bn, BASE_GOLD_PER_SECOND, eq, gt, type GameState } from '@panvitium/sim';
+import {
+  bn,
+  BASE_GOLD_PER_SECOND,
+  PLAYER_OFFLINE_EFFICIENCY,
+  eq,
+  gt,
+  type GameState,
+} from '@panvitium/sim';
 import {
   startNewGame,
   resumeGame,
@@ -59,8 +66,29 @@ describe('session', () => {
     const goldLifted = rLifted.lifetime.gold.toNumber();
     // The lifted state accumulates MORE gold because the catchup tick ran on a stretched delta.
     expect(goldLifted).toBeGreaterThan(goldBase);
-    // Baseline sanity: gold ≈ BASE_GOLD_PER_SECOND × 3600 (no muls). Allow drift from skills.
-    expect(goldBase).toBeGreaterThan(BASE_GOLD_PER_SECOND * 3000);
+    // Baseline sanity: gold ≈ BASE_GOLD_PER_SECOND × 3600 × the 0.5 player offline efficiency
+    // (Globals row 8, wired with the Mercatus signature clauses). Allow drift from skills.
+    expect(goldBase).toBeGreaterThan(BASE_GOLD_PER_SECOND * PLAYER_OFFLINE_EFFICIENCY * 3000);
+    expect(goldBase).toBeLessThan(BASE_GOLD_PER_SECOND * 3600); // …and clearly below full rate
+  });
+
+  it('Mercatus Acediae: its take is exempt from the 0.5 offline efficiency on resume', () => {
+    // Two saves, identical but for which trade holds the depth. Offline, the Acediae trade earns
+    // double the Tristitiae one (its revenue is restored to full wall-clock rate while everything
+    // else — including the base trickle — accrues at the halved clock).
+    const base = startNewGame(0);
+    const populated = (depths: Record<string, number>): GameState => ({
+      ...base,
+      lifetime: { ...base.lifetime, reprobates: 1000, mercatusDepths: depths },
+    });
+    const hour = 3600 * 1000;
+    const viaAcedia = resumeGame(populated({ acedia: 10 }), hour).lifetime.gold.toNumber();
+    const viaTristitia = resumeGame(populated({ tristitia: 10 }), hour).lifetime.gold.toNumber();
+    // Strip the shared base-gold trickle (2/s × 1800 effective seconds) before comparing trades.
+    // The Acediae save also carries its per-depth offline lift (+0.825%/depth on the gain rate),
+    // so its margin over the doubled Tristitiae take is strictly positive.
+    const baseTrickle = BASE_GOLD_PER_SECOND * 3600 * PLAYER_OFFLINE_EFFICIENCY;
+    expect(viaAcedia - baseTrickle).toBeGreaterThan((viaTristitia - baseTrickle) * 2);
   });
 
   it('zero offline time = no catchup, regardless of Acedia level (no NaN, no division)', () => {

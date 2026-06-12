@@ -103,9 +103,26 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 699** (sim 472 · shared 56 · api 11 · web 160).
+**Current test count: 709** (sim 481 · shared 56 · api 11 · web 161).
 
-> **Latest change — Vitium Mercatura replaced by the Mercatus system + the Foedera coupling
+> **Latest change — Mercatus per-Sin signature clauses (slice 2, §1.5 table amended in
+> session).** Each trade now carries one signature twist: **Gulae** patrons spend ×1.25;
+> **Luxuriae** generation ×1.25; **Avaritiae** depths ×0.995 cheaper (refunds on the same
+> basis); **Tristitiae** +0.825% suicide-rate mul per depth; **Irae** +0.825% murder-rate mul
+> per depth; **Acediae** revenue exempt from the offline efficiency factor plus +0.825% offline
+> gain rate mul per depth; **Vanagloriae** +0.25% of effective max influence as flat
+> influence/s per full 10 depths (stepped); **Superbiae** depths ×1.25 dearer but its revenue
+> and generation ×1.33. Per-trade cost/revenue/generation multipliers live in `mercatus.ts`
+> (invest/cumulative curves are now sin-aware); the dynamics couplings are one line each in
+> `computeModifiers`. **Globals row 8 ("Player base offline efficiency" 0.5×) is now actually
+> wired**: `resumeGame` scales the offline catch-up by `PLAYER_OFFLINE_EFFICIENCY` and passes it
+> as a tick dep so the Acediae trade's take alone is restored to full wall-clock rate — a global
+> offline-economy change (offline gains now run at the half-rate base the spreadsheet always
+> specified). Fixing that also fixed a latent clock bug: `resumeGame` now reconciles
+> `lastTickAt` to wall-clock after the catch-up, so scaled offline time can neither double-count
+> (mul < 1) nor silently eat the overshoot (Acedia compound > 1). No save-schema change.
+
+> **Prior change — Vitium Mercatura replaced by the Mercatus system + the Foedera coupling
 > (vm-vc-redesign-spec).** The legacy business system (32-business catalog, build queue, flat
 > emitters) is gone. In its place: eight trades, exactly one per Cardinal Sin (_Mercatus Gulae …
 > Superbiae_), each a single integer **depth** — deepening is an instant gold purchase
@@ -126,7 +143,7 @@ goldRateMul`); generation contributes `0.02 × d` to the pool. On Katabasis all 
 > sheet now carries the constants block + per-VC opt-out flags. The §1.5 per-Sin signature
 > clauses are **deliberately unshipped** (spec marks them optional, pending approval).
 
-> **Prior change — Altar commit gate redesigned as a ritual seal circle + a new Status Quo
+> **Earlier change — Altar commit gate redesigned as a ritual seal circle + a new Status Quo
 > "Ledger" screen.** The prior slab-with-candles drop target is replaced (Claude Design handoff) by
 > a full-screen seal: the central Goetic sigil _is_ the descend button, ringed by counter-rotating
 > Latin script (`PER VITIA, AD SOLIUM`). The two-press commit safeguard is preserved — the first

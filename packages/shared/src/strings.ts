@@ -94,6 +94,20 @@ export const strings = {
     lockedHint: 'opens at Level 1',
     /** Depth-capped rows: deepening resumes at the next Sin level. */
     capped: 'its roots can reach no deeper at this rank',
+    /**
+     * Per-trade signature clauses (§1.5, amended) — shown as the row name's tooltip. In-register:
+     * roots, reach, take; never analytics vocabulary.
+     */
+    clauses: {
+      gula: 'Its patrons spend a quarter more.',
+      luxuria: 'Its corruption breeds a quarter richer.',
+      avaritia: 'Each deepening comes a sliver cheaper.',
+      tristitia: 'Every depth thickens the despair it feeds.',
+      ira: 'Every depth sharpens the knives it sells.',
+      acedia: 'Its take never sleeps, and its torpor stretches the hours away.',
+      vanagloria: 'Deep roots pay tribute \u2014 a share of your utmost influence, each second.',
+      superbia: 'Costlier to deepen; its take and its breeding run a third richer.',
+    } as Record<string, string>,
     /** The Foedus tier badge prefix; tier rendered as a Roman numeral (Foedus II). */
     foedus: 'Foedus',
     foedusTitle:

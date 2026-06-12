@@ -25,6 +25,14 @@ import {
   investCost,
   investMercatus,
   liquidateMercatus,
+  mercatusCostMul,
+  mercatusGenerationClauseMul,
+  mercatusRevenueClauseMul,
+  MERCATUS_ACEDIA_OFFLINE_PER_DEPTH,
+  MERCATUS_IRA_MURDER_PER_DEPTH,
+  MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH,
+  MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS,
+  mercatusRevenueWithFoedus,
   mercatusDepth,
   mercatusDepthCap,
   mercatusGenerationPerSecond,
@@ -62,19 +70,19 @@ function withReprobates(s: GameState, n: number): GameState {
 }
 
 describe('Mercatus — invest cost curve and cumulative closed form (§1.1)', () => {
-  it('investCost(d) = floor(C0 × r^d)', () => {
-    expect(investCost(0)).toBe(50);
-    expect(investCost(1)).toBe(80);
-    expect(investCost(2)).toBe(128);
-    expect(investCost(5)).toBe(Math.floor(50 * 1.6 ** 5)); // 524
+  it('investCost(sin, d) = floor(C0 × r^d × costMul) — ×1 for an unclaused trade', () => {
+    expect(investCost('gula', 0)).toBe(50);
+    expect(investCost('gula', 1)).toBe(80);
+    expect(investCost('gula', 2)).toBe(128);
+    expect(investCost('gula', 5)).toBe(Math.floor(50 * 1.6 ** 5)); // 524
   });
 
-  it('cumulativeInvestCost is the closed form C0 × (r^d − 1)/(r − 1)', () => {
-    expect(cumulativeInvestCost(0)).toBe(0);
-    expect(cumulativeInvestCost(1)).toBeCloseTo(50, 9);
-    expect(cumulativeInvestCost(2)).toBeCloseTo(130, 9); // 50 + 80
+  it('cumulativeInvestCost is the closed form C0 × (r^d − 1)/(r − 1) × costMul', () => {
+    expect(cumulativeInvestCost('gula', 0)).toBe(0);
+    expect(cumulativeInvestCost('gula', 1)).toBeCloseTo(50, 9);
+    expect(cumulativeInvestCost('gula', 2)).toBeCloseTo(130, 9); // 50 + 80
     const d = 7;
-    expect(cumulativeInvestCost(d)).toBeCloseTo(
+    expect(cumulativeInvestCost('gula', d)).toBeCloseTo(
       (MERCATUS_C0 * (MERCATUS_COST_RATIO ** d - 1)) / (MERCATUS_COST_RATIO - 1),
       9,
     );
@@ -130,9 +138,12 @@ describe('Mercatus — penetration and revenue (§1.2)', () => {
     expect(penetration(1000)).toBeLessThanOrEqual(1);
   });
 
-  it('revenue/s = spendPerCapita × reprobates × penetration(d)', () => {
-    const s = withReprobates(withDepths(fresh(), { gula: 5 }), 1000);
-    expect(mercatusRevenuePerSecond(s, 'gula')).toBeCloseTo(0.1 * 1000 * (1 - Math.exp(-0.75)), 9);
+  it('revenue/s = spendPerCapita × reprobates × penetration(d) for an unclaused trade', () => {
+    const s = withReprobates(withDepths(fresh(), { tristitia: 5 }), 1000);
+    expect(mercatusRevenuePerSecond(s, 'tristitia')).toBeCloseTo(
+      0.1 * 1000 * (1 - Math.exp(-0.75)),
+      9,
+    );
     expect(mercatusRevenuePerSecond(s, 'ira')).toBe(0); // depth 0 ⇒ no reach, no take
   });
 });
@@ -181,7 +192,7 @@ describe('Mercatus — divest refund, incl. Vine #45 (§1.1)', () => {
     expect(mercatusDepth(one.state, 'gula')).toBe(2);
     const all = divestMercatus(one.state, 'gula', 99); // clamped to the remaining 2
     if (!all.ok) throw new Error(all.reason);
-    expect(all.refund).toBe(Math.floor(0.25 * cumulativeInvestCost(2)));
+    expect(all.refund).toBe(Math.floor(0.25 * cumulativeInvestCost('gula', 2)));
     expect(mercatusDepth(all.state, 'gula')).toBe(0);
     expect('gula' in all.state.lifetime.mercatusDepths).toBe(false); // key dropped at 0
     expect(divestMercatus(all.state, 'gula').ok).toBe(false); // nothing left to cut
@@ -203,7 +214,7 @@ describe('Mercatus — Katabasis liquidation ordering (§1.4)', () => {
     const { recap } = commitKatabasis(s);
     // refund = floor(0.25 × cumulative(4)) = 115; kept = floor((1000 + 115) × 0.05) = 55 —
     // NOT floor(1000 × 0.05) + 115 = 165, which face-value ordering would give.
-    const refund = Math.floor(0.25 * cumulativeInvestCost(4));
+    const refund = Math.floor(0.25 * cumulativeInvestCost('gula', 4));
     expect(refund).toBe(115);
     expect(recap.goldKept.toNumber()).toBe(Math.floor((1000 + refund) * BASE_REMAINING_GOLD));
   });
@@ -212,7 +223,9 @@ describe('Mercatus — Katabasis liquidation ordering (§1.4)', () => {
     const s = withDepths(withGold(fresh(), 1000), { gula: 4, superbia: 2 });
     const entered = enterKatabasis(s);
     expect(Object.keys(entered.lifetime.mercatusDepths)).toHaveLength(0);
-    expect(goldOf(entered)).toBe(1000 + 115 + Math.floor(0.25 * cumulativeInvestCost(2)));
+    expect(goldOf(entered)).toBe(
+      1000 + 115 + Math.floor(0.25 * cumulativeInvestCost('superbia', 2) + 1e-9),
+    );
     // The defensive repeat at commit is a no-op on the already-liquidated state.
     const { state: risen } = commitKatabasis(entered);
     expect(Object.keys(risen.lifetime.mercatusDepths)).toHaveLength(0);
@@ -228,5 +241,98 @@ describe('Mercatus — offline catch-up equivalence (ADR-004)', () => {
     expect(small - s.lifetime.gold.toNumber()).toBeCloseTo(rate * 0.1, 9);
     const big = tick(s, 100).state.lifetime.gold.toNumber();
     expect(big - s.lifetime.gold.toNumber()).toBeCloseTo(rate * 100, 6);
+  });
+});
+
+describe('Mercatus — per-Sin signature clauses (§1.5, amended)', () => {
+  it('Gulae: its patrons spend a quarter more (revenue ×1.25)', () => {
+    const s = withReprobates(withDepths(fresh(), { gula: 5, tristitia: 5 }), 1000);
+    expect(mercatusRevenueClauseMul('gula')).toBeCloseTo(1.25, 9);
+    expect(mercatusRevenuePerSecond(s, 'gula')).toBeCloseTo(
+      mercatusRevenuePerSecond(s, 'tristitia') * 1.25,
+      9,
+    );
+  });
+
+  it('Luxuriae: its corruption breeds a quarter richer (generation ×1.25)', () => {
+    expect(mercatusGenerationClauseMul('luxuria')).toBeCloseTo(1.25, 9);
+    const s = withDepths(fresh(), { luxuria: 10 });
+    expect(mercatusGenerationPerSecond(s)).toBeCloseTo(0.02 * 10 * 1.25, 9);
+  });
+
+  it('Avaritiae: its depths come 0.5% cheaper, and refunds scale on the same basis', () => {
+    expect(mercatusCostMul('avaritia')).toBeCloseTo(0.995, 9);
+    expect(investCost('avaritia', 0)).toBe(49); // floor(50 × 0.995)
+    expect(cumulativeInvestCost('avaritia', 2)).toBeCloseTo(130 * 0.995, 6);
+    const s = withDepths(withGold(fresh(), 0), { avaritia: 3 });
+    const r = divestMercatus(s, 'avaritia', 1);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.refund).toBe(Math.floor(0.25 * 128 * 0.995 + 1e-9)); // 31
+  });
+
+  it('Superbiae: depths ×1.25 dearer; its take and breeding ×1.33 richer', () => {
+    expect(mercatusCostMul('superbia')).toBeCloseTo(1.25, 9);
+    expect(investCost('superbia', 0)).toBe(62); // floor(50 × 1.25)
+    expect(mercatusRevenueClauseMul('superbia')).toBeCloseTo(1.33, 9);
+    expect(mercatusGenerationClauseMul('superbia')).toBeCloseTo(1.33, 9);
+    const s = withReprobates(withDepths(fresh(), { superbia: 5, tristitia: 5 }), 1000);
+    expect(mercatusRevenuePerSecond(s, 'superbia')).toBeCloseTo(
+      mercatusRevenuePerSecond(s, 'tristitia') * 1.33,
+      9,
+    );
+    expect(mercatusGenerationPerSecond(withDepths(fresh(), { superbia: 10 }))).toBeCloseTo(
+      0.02 * 10 * 1.33,
+      9,
+    );
+  });
+
+  it('Tristitiae: +0.825% suicide-rate mul per depth', () => {
+    const base = computeModifiers(fresh()).reprobateSuicideRateMul;
+    const lifted = computeModifiers(withDepths(fresh(), { tristitia: 20 })).reprobateSuicideRateMul;
+    expect(lifted / base).toBeCloseTo(1 + MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH * 20, 9);
+  });
+
+  it('Irae: +0.825% murder-rate mul per depth', () => {
+    const base = computeModifiers(fresh()).murderRateMul;
+    const lifted = computeModifiers(withDepths(fresh(), { ira: 20 })).murderRateMul;
+    expect(lifted / base).toBeCloseTo(1 + MERCATUS_IRA_MURDER_PER_DEPTH * 20, 9);
+  });
+
+  it('Acediae: +0.825% offline gain rate mul per depth', () => {
+    const base = computeModifiers(fresh()).offlineTimeMul;
+    const lifted = computeModifiers(withDepths(fresh(), { acedia: 30 })).offlineTimeMul;
+    expect(lifted / base).toBeCloseTo(1 + MERCATUS_ACEDIA_OFFLINE_PER_DEPTH * 30, 9);
+  });
+
+  it('Acediae: its revenue is exempt from the ×0.5 offline efficiency factor', () => {
+    // Half-rate offline tick: every trade's take accrues over the SCALED delta, except Acediae's,
+    // which the tick restores to full wall-clock rate via the offlineEfficiency dep.
+    const s = withReprobates(withDepths(fresh(), { acedia: 10, tristitia: 10 }), 1000);
+    const mods = computeModifiers(s);
+    const realSeconds = 100;
+    const eff = 0.5;
+    const scaled = realSeconds * eff;
+    const after = tick(s, scaled, { offlineEfficiency: eff }).state.lifetime.gold.toNumber();
+    const acedia = mercatusRevenueWithFoedus(s, 'acedia');
+    const tristitia = mercatusRevenueWithFoedus(s, 'tristitia');
+    const expected =
+      (BASE_GOLD_PER_SECOND * scaled + // base income runs at the slowed clock…
+        tristitia * mods.vitiumMercaturaOutputMul * scaled + // …as does every other trade…
+        acedia * mods.vitiumMercaturaOutputMul * realSeconds) * // …but Acediae takes full time
+      mods.goldRateMul;
+    expect(after - s.lifetime.gold.toNumber()).toBeCloseTo(expected, 6);
+  });
+
+  it('Vanagloriae: +0.25% of effective max influence as flat influence/s per full 10 depths', () => {
+    const base = computeModifiers(fresh()).flatInfluencePerSecond;
+    const at9 = computeModifiers(withDepths(fresh(), { vanagloria: 9 })).flatInfluencePerSecond;
+    expect(at9).toBeCloseTo(base, 9); // stepped: below the first full 10, nothing
+    const s = withDepths(fresh(), { vanagloria: 25 });
+    const mods = computeModifiers(s);
+    const effectiveMax = s.lifetime.maxInfluence.toNumber() * mods.maxInfluenceMul;
+    expect(mods.flatInfluencePerSecond - base).toBeCloseTo(
+      MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS * 2 * effectiveMax, // floor(25/10) = 2
+      9,
+    );
   });
 });

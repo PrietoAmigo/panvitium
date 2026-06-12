@@ -8,6 +8,15 @@
 export const BASE_GOLD_PER_SECOND = 2;
 
 /**
+ * Player base offline efficiency (Globals row 8: 0.5×). Offline catch-up advances the logical
+ * clock at half rate — applied to the elapsed-time scaling in the web's `resumeGame`, alongside
+ * `offlineTimeMul` (which Procrastination / Dolce / Lemure / Mercatus Acediae lift). Previously a
+ * spreadsheet constant with no code counterpart; wired with the Mercatus signature clauses so the
+ * Acediae revenue exemption has a factor to be exempt FROM.
+ */
+export const PLAYER_OFFLINE_EFFICIENCY = 0.5;
+
+/**
  * Base passive influence gain, as a fraction of maxInfluence per second (Globals: 0.025, unit
  * "% of max infl / s"). Influence is generated as a percentage of the maximum and capped there
  * (02 §1) — so gain/s = BASE_INFLUENCE_RATE × maxInfluence. (Supersedes the doc's flat "5/s".)

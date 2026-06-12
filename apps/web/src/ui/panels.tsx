@@ -469,17 +469,17 @@ function MercaturaList(): ReactElement {
         const d = mercatusDepth(state, sin);
         const cap = mercatusDepthCap(state, sin);
         const atCap = unlocked && d >= cap;
-        const nextCost = investCost(d);
+        const nextCost = investCost(sin, d);
         const revenue = mercatusRevenuePerSecond(state, sin) * foedusRevenueMul(state, sin);
         const tier = highestFoedusTierForSin(state, sin);
         const cutBackRefund = Math.floor(
-          fraction * (cumulativeInvestCost(d) - cumulativeInvestCost(d - 1)),
+          fraction * (cumulativeInvestCost(sin, d) - cumulativeInvestCost(sin, d - 1)) + 1e-9,
         );
-        const sellOffRefund = Math.floor(fraction * cumulativeInvestCost(d));
+        const sellOffRefund = Math.floor(fraction * cumulativeInvestCost(sin, d) + 1e-9);
         return (
           <li key={sin} className={`vitium-row${unlocked ? '' : ' vitium-locked'}`}>
             <div className="vitium-meta">
-              <span className="vitium-name">
+              <span className="vitium-name" title={strings.mercatus.clauses[sin]}>
                 {name}
                 {tier >= 1 && (
                   <span className="foedus-badge" title={strings.mercatus.foedusTitle}>

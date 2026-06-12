@@ -20,6 +20,13 @@
  * for upkeep, `foedera.ts` for revenue — because it depends on per-VC active state and is
  * deliberately NOT a global modifier-bundle value (ADR-022 note in the spec).
  *
+ * SLICE 2 — per-Sin signature clauses (spec §1.5, table amended by the user): each trade carries
+ * one signature twist. Per-trade cost/revenue/generation multipliers live here; the global
+ * dynamics couplings (Tristitiae → suicide rate, Irae → murder rate, Acediae → offline gain rate,
+ * Vanagloriae → flat influence) are one line each in `computeModifiers`, and the Acediae offline
+ * REVENUE exemption is a tick dependency (the ×0.5 player offline efficiency is applied to the
+ * catch-up in `resumeGame`; that trade's take alone is restored to full rate).
+ *
  * Fully deterministic: no RNG, no timers, no pools.
  */
 import { add, floor, gte, sub } from './bignum.js';
@@ -56,6 +63,50 @@ export const FOEDUS_UPKEEP_DISCOUNT_PER_TIER = 0.125;
 /** Mercatus revenue multiplier = 1 + bonus × tier per active member VC (tier 4 → ×1.2). */
 export const FOEDUS_REVENUE_BONUS_PER_TIER = 0.05;
 
+// ── Per-Sin signature clauses (§1.5, amended) ────────────────────────────────
+
+/** Gulae: its patrons spend a quarter more — spendPerCapita ×1.25 for this trade. */
+export const MERCATUS_GULA_REVENUE_MUL = 1.25;
+/** Luxuriae: 25% more generation from its depths. */
+export const MERCATUS_LUXURIA_GENERATION_MUL = 1.25;
+/** Avaritiae: its depths come 0.5% cheaper (invest cost ×0.995; refunds scale on the same basis). */
+export const MERCATUS_AVARITIA_COST_MUL = 0.995;
+/** Superbiae: its depths cost 25% more… */
+export const MERCATUS_SUPERBIA_COST_MUL = 1.25;
+/** …but its take runs a third richer… */
+export const MERCATUS_SUPERBIA_REVENUE_MUL = 1.33;
+/** …and so does its breeding. */
+export const MERCATUS_SUPERBIA_GENERATION_MUL = 1.33;
+/** Tristitiae: +0.825% on the reprobate suicide-rate multiplier per depth (computeModifiers). */
+export const MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH = 0.00825;
+/** Irae: +0.825% on the murder-rate multiplier per depth (computeModifiers). */
+export const MERCATUS_IRA_MURDER_PER_DEPTH = 0.00825;
+/** Acediae: +0.825% on the offline gain rate multiplier per depth (computeModifiers). */
+export const MERCATUS_ACEDIA_OFFLINE_PER_DEPTH = 0.00825;
+/** Vanagloriae: +0.25% of (effective) max influence as flat influence/s per full 10 depths. */
+export const MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS = 0.0025;
+
+/** The per-trade invest-cost multiplier (Avaritiae cheaper, Superbiae dearer). */
+export function mercatusCostMul(sin: Sin): number {
+  if (sin === 'avaritia') return MERCATUS_AVARITIA_COST_MUL;
+  if (sin === 'superbia') return MERCATUS_SUPERBIA_COST_MUL;
+  return 1;
+}
+
+/** The per-trade revenue clause multiplier (Gulae's spend, Superbiae's richer take). */
+export function mercatusRevenueClauseMul(sin: Sin): number {
+  if (sin === 'gula') return MERCATUS_GULA_REVENUE_MUL;
+  if (sin === 'superbia') return MERCATUS_SUPERBIA_REVENUE_MUL;
+  return 1;
+}
+
+/** The per-trade generation clause multiplier (Luxuriae's richer corruption, Superbiae's breeding). */
+export function mercatusGenerationClauseMul(sin: Sin): number {
+  if (sin === 'luxuria') return MERCATUS_LUXURIA_GENERATION_MUL;
+  if (sin === 'superbia') return MERCATUS_SUPERBIA_GENERATION_MUL;
+  return 1;
+}
+
 // ── Depth / unlock / cost curves ─────────────────────────────────────────────
 
 /** Current depth of a Sin's trade (0 when never deepened). */
@@ -73,19 +124,26 @@ export function mercatusDepthCap(state: GameState, sin: Sin): number {
   return MERCATUS_DEPTH_CAP_PER_SIN_LEVEL * sinLevel(state.devotion[sin]);
 }
 
-/** Gold cost to deepen a trade from depth `d` to `d+1`: floor(C0 × r^d). */
-export function investCost(d: number): number {
-  return Math.floor(MERCATUS_C0 * Math.pow(MERCATUS_COST_RATIO, d));
+/**
+ * Gold cost to deepen a Sin's trade from depth `d` to `d+1`: floor(C0 × r^d × costMul(sin)).
+ * The per-trade clause multiplier (Avaritiae ×0.995, Superbiae ×1.25) scales INSIDE the floor.
+ */
+export function investCost(sin: Sin, d: number): number {
+  return Math.floor(MERCATUS_C0 * Math.pow(MERCATUS_COST_RATIO, d) * mercatusCostMul(sin));
 }
 
 /**
- * Cumulative invest cost to reach depth `d` from 0 — the closed form
- * `C0 × (r^d − 1)/(r − 1)` (spec §1.1: derive, never store). Divest refunds are computed
- * against this form, not against the per-step floored costs.
+ * Cumulative invest cost for a Sin's trade to reach depth `d` from 0 — the closed form
+ * `C0 × (r^d − 1)/(r − 1) × costMul(sin)` (spec §1.1: derive, never store). Divest refunds are
+ * computed against this form, not against the per-step floored costs; scaling it by the same
+ * clause multiplier keeps a refund = fraction × (what the curve says that trade actually cost).
  */
-export function cumulativeInvestCost(d: number): number {
+export function cumulativeInvestCost(sin: Sin, d: number): number {
   if (d <= 0) return 0;
-  return (MERCATUS_C0 * (Math.pow(MERCATUS_COST_RATIO, d) - 1)) / (MERCATUS_COST_RATIO - 1);
+  return (
+    ((MERCATUS_C0 * (Math.pow(MERCATUS_COST_RATIO, d) - 1)) / (MERCATUS_COST_RATIO - 1)) *
+    mercatusCostMul(sin)
+  );
 }
 
 /**
@@ -123,7 +181,12 @@ export function penetration(d: number): number {
 export function mercatusRevenuePerSecond(state: GameState, sin: Sin): number {
   const d = mercatusDepth(state, sin);
   if (d <= 0) return 0;
-  return MERCATUS_SPEND_PER_CAPITA * state.lifetime.reprobates * penetration(d);
+  return (
+    MERCATUS_SPEND_PER_CAPITA *
+    state.lifetime.reprobates *
+    penetration(d) *
+    mercatusRevenueClauseMul(sin)
+  );
 }
 
 /**
@@ -133,7 +196,8 @@ export function mercatusRevenuePerSecond(state: GameState, sin: Sin): number {
  */
 export function mercatusGenerationPerSecond(state: GameState): number {
   let s = 0;
-  for (const sin of SINS) s += MERCATUS_GEN_PER_DEPTH * mercatusDepth(state, sin);
+  for (const sin of SINS)
+    s += MERCATUS_GEN_PER_DEPTH * mercatusDepth(state, sin) * mercatusGenerationClauseMul(sin);
   return s;
 }
 
@@ -174,7 +238,7 @@ export function investMercatus(state: GameState, sin: Sin): MercatusResult {
   if (d >= mercatusDepthCap(state, sin)) {
     return { ok: false, reason: 'its roots can reach no deeper at this rank' };
   }
-  const cost = investCost(d);
+  const cost = investCost(sin, d);
   if (!gte(floor(state.lifetime.gold), cost)) {
     return { ok: false, reason: 'not enough gold' };
   }
@@ -198,7 +262,7 @@ export function divestMercatus(state: GameState, sin: Sin, depths = 1): DivestRe
   const d = mercatusDepth(state, sin);
   if (d <= 0) return { ok: false, reason: 'the trade has no roots to cut' };
   const k = Math.min(Math.max(1, Math.floor(depths)), d);
-  const span = cumulativeInvestCost(d) - cumulativeInvestCost(d - k);
+  const span = cumulativeInvestCost(sin, d) - cumulativeInvestCost(sin, d - k);
   const refund = floorRefund(divestFraction(state) * span);
   const cut = withDepth(state, sin, d - k);
   return {
@@ -218,7 +282,7 @@ export function liquidateMercatus(state: GameState): GameState {
   let refund = 0;
   for (const sin of SINS) {
     const d = mercatusDepth(state, sin);
-    if (d > 0) refund += floorRefund(divestFraction(state) * cumulativeInvestCost(d));
+    if (d > 0) refund += floorRefund(divestFraction(state) * cumulativeInvestCost(sin, d));
   }
   if (refund === 0 && Object.keys(state.lifetime.mercatusDepths).length === 0) return state;
   return {

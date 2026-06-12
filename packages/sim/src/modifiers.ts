@@ -37,6 +37,13 @@ import { SINS, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
+import {
+  MERCATUS_ACEDIA_OFFLINE_PER_DEPTH,
+  MERCATUS_IRA_MURDER_PER_DEPTH,
+  MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH,
+  MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS,
+  mercatusDepth,
+} from './mercatus.js';
 import { compositumOfflineGainBoost } from './compositum.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import {
@@ -325,6 +332,11 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + BEHEMOTH_STELLAR_FACTOR * playerEff * invEffFor('superbia') * behemothCount);
   }
 
+  // Max-influence multiplier, hoisted so the Mercatus Vanagloriae clause (a fraction of the
+  // EFFECTIVE max influence as flat influence/s) reads the same composed value the cap uses.
+  const maxInfluenceMulV =
+    skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul');
+
   return {
     goldRateMul:
       skillBonus(avaritiaIntensity) *
@@ -341,9 +353,16 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
       (hasDoppel ? 0.5 : 1) *
       sc('influenceRateMul'),
-    maxInfluenceMul: skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul'),
-    // Flat influence/s from the Decarabia #69 generator sigil (log curve).
-    flatInfluencePerSecond: flatGen.influence,
+    maxInfluenceMul: maxInfluenceMulV,
+    // Flat influence/s: the Decarabia #69 generator sigil (log curve) + the Mercatus Vanagloriae
+    // signature clause — 0.25% of the EFFECTIVE max influence per second per full 10 depths
+    // (stepped, like the Foedus ladder; "per 10 depths" in the amended §1.5 table).
+    flatInfluencePerSecond:
+      flatGen.influence +
+      MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS *
+        Math.floor(mercatusDepth(state, 'vanagloria') / 10) *
+        state.lifetime.maxInfluence.toNumber() *
+        maxInfluenceMulV,
     // Flat gold/s from the Haagenti #48 generator sigil (log curve).
     flatGoldPerSecond: flatGen.gold,
     // Additive increase to the base reprobate suicide rate (added to the per-capita base in
@@ -375,15 +394,20 @@ export function computeModifiers(state: GameState): Modifiers {
       skillBonus(luxuriaIntensity) *
       sc('reprobateGenerationRateMul'),
     // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
-    // Panvitium multiplies while active; Crocell #49 sigil composes.
+    // Panvitium multiplies while active; Mercatus Tristitiae adds +0.825% per depth (§1.5 amended);
+    // Crocell #49 sigil composes.
     reprobateSuicideRateMul:
       skillBonus(tristitiaIntensity) *
       2 ** tristitiaLvl *
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
+      (1 + MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH * mercatusDepth(state, 'tristitia')) *
       sc('reprobateSuicideRateMul'),
-    // Murder: Panvitium multiplies while active; Aim #23 sigil composes. Murder is now a per-capita
-    // cull of the whole population (subtypes removed).
-    murderRateMul: (panvitiumActive ? PANV_MURDER_MUL : 1) * sc('murderRateMul'),
+    // Murder: Panvitium multiplies while active; Mercatus Irae adds +0.825% per depth (§1.5
+    // amended); Aim #23 sigil composes. Murder is a per-capita cull of the whole population.
+    murderRateMul:
+      (panvitiumActive ? PANV_MURDER_MUL : 1) *
+      (1 + MERCATUS_IRA_MURDER_PER_DEPTH * mercatusDepth(state, 'ira')) *
+      sc('murderRateMul'),
     // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
     // multiplier scales Mercatus revenue + generation at the tick/dynamics call sites.
     vitiumMercaturaOutputMul:
@@ -400,12 +424,15 @@ export function computeModifiers(state: GameState): Modifiers {
     invocationEfficiencyMul: invEff,
     invocationSinEffectivenessMul: invSinEff,
     // Offline time scaling: Acedia's Procrastination skill lifts (03 §1, continuous); Dolce Far
-    // Niente lifts it ×(1 + boost) while active; Acedia's per-level effect compounds on top
-    // dynamically in `session.resumeGame` (it depends on the offline duration itself).
+    // Niente lifts it ×(1 + boost) while active; Mercatus Acediae adds +0.825% per depth (§1.5
+    // amended); Acedia's per-level effect compounds on top dynamically in `session.resumeGame`
+    // (it depends on the offline duration itself). The PLAYER_OFFLINE_EFFICIENCY 0.5 base is
+    // applied separately in `resumeGame`, NOT here, so this multiplier stays 1-neutral online.
     offlineTimeMul:
       skillBonus(acediaIntensity) *
       (1 + compositumOfflineGainBoost(state)) *
       (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEffFor('acedia') * lemureCount) *
+      (1 + MERCATUS_ACEDIA_OFFLINE_PER_DEPTH * mercatusDepth(state, 'acedia')) *
       sc('offlineTimeMul'),
   };
 }

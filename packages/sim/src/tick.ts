@@ -16,7 +16,7 @@ import { resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceInvocationRunners } from './invocations.js';
 import { applyInvocationTickEffects } from './apex.js';
-import { mercatusGoldPerSecond } from './foedera.js';
+import { mercatusGoldPerSecond, mercatusRevenueWithFoedus } from './foedera.js';
 import {
   advanceToggles,
   compositumGoldPerSecond,
@@ -42,6 +42,13 @@ export interface TickDeps {
    */
   readonly offlineGoldMul?: number;
   readonly offlineInfluenceMul?: number;
+  /**
+   * The base offline efficiency the CALLER already applied to `deltaSeconds` (resumeGame passes
+   * PLAYER_OFFLINE_EFFICIENCY = 0.5; online ticks pass nothing → 1). Used only to restore the
+   * Mercatus Acediae trade's revenue to full rate — its signature clause exempts that take from
+   * the ×0.5 factor, so its term is divided back by this value.
+   */
+  readonly offlineEfficiency?: number;
 }
 
 /** The result of advancing the game: the new state, outcome events, and transient notices. */
@@ -161,9 +168,18 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   // Offline-only income multipliers (Sallos #19 gold, Forneus #30 influence). 1× online.
   const offlineGoldMul = deps.offlineGoldMul ?? 1;
   const offlineInfluenceMul = deps.offlineInfluenceMul ?? 1;
+  // Mercatus Acediae signature clause (§1.5 amended): its revenue is exempt from the ×0.5 offline
+  // efficiency factor. `deltaSeconds` was already scaled by that factor in `resumeGame`, so the
+  // Acediae trade's term is divided back by it here — accruing at full wall-clock rate while every
+  // other source runs at the slowed clock. 1× online (no-op).
+  const offlineEfficiency = deps.offlineEfficiency ?? 1;
+  const acediaOfflineRestore =
+    offlineEfficiency < 1
+      ? mercatusRevenueWithFoedus(state, 'acedia') * (1 / offlineEfficiency - 1)
+      : 0;
   const goldPerSecond =
     (BASE_GOLD_PER_SECOND +
-      mercatusGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
+      (mercatusGoldPerSecond(state) + acediaOfflineRestore) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
     mods.goldRateMul *

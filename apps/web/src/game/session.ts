@@ -9,6 +9,7 @@
 import {
   ACEDIA_OFFLINE_COMPOUND_BASE,
   computeModifiers,
+  PLAYER_OFFLINE_EFFICIENCY,
   createInitialState,
   sigilOfflineResourceMul,
   sinLevel,
@@ -57,14 +58,25 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
   const acediaMinutes = Math.min(elapsedSeconds, ACEDIA_COMPOUND_CAP_SECONDS) / 60;
   const acediaCompound =
     acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (acediaMinutes * acediaLvl * acediaLvl) : 1;
-  const scaled = elapsedSeconds * offlineMul * acediaCompound;
+  // Player base offline efficiency (Globals: 0.5×) — the world runs at half rate while away.
+  // Wired with the Mercatus signature clauses; Mercatus Acediae's revenue alone is exempt (the
+  // tick dep below divides its term back out). offlineTimeMul (Procrastination, Dolce, Lemure,
+  // Mercatus Acediae's per-depth lift) and the Acedia level compound stack on top as before.
+  const scaled = elapsedSeconds * PLAYER_OFFLINE_EFFICIENCY * offlineMul * acediaCompound;
   // Sallos #19 / Forneus #30 lift offline gold / influence income specifically (online ticks pass
   // nothing, so these apply only to this catch-up).
   const offlineRes = sigilOfflineResourceMul(saved);
-  return tick(saved, scaled, {
+  const resumed = tick(saved, scaled, {
     offlineGoldMul: offlineRes.gold,
     offlineInfluenceMul: offlineRes.influence,
+    offlineEfficiency: PLAYER_OFFLINE_EFFICIENCY,
   }).state;
+  // Reconcile the logical clock to wall-clock: the tick advanced `lastTickAt` by the SCALED delta,
+  // which diverges from `now` whenever the offline scaling ≠ 1. Leaving it behind would re-count
+  // the unconsumed span on the next reload (double gains at 0.5×); leaving it ahead (Acedia
+  // compound > 1, the old quirk) silently ate the overshoot. After a resume the player is caught
+  // up to now, by definition.
+  return { ...resumed, lastTickAt: now };
 }
 
 /** Below this, a reload is treated as "still here" and no welcome-back recap is shown. */
