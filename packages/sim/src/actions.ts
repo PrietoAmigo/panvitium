@@ -84,87 +84,88 @@ export function actionUnlocked(state: GameState, def: ActionDef): boolean {
 
 const SUGGESTION_WEIGHTS: TierWeights = {
   stellar: 0.001,
-  excellent: 0.149,
-  good: 0.6,
-  neutral: 0.15,
-  bad: 0.075,
-  terrible: 0.025,
-  apocalyptic: 0,
+  excellent: 0.099,
+  good: 0.25,
+  neutral: 0.35,
+  bad: 0.2,
+  terrible: 0.099,
+  apocalyptic: 0.001,
 };
 
 /** Logismoi (Suasio sheet): mid-game reprobate/soul source; richer than Suggestion. */
 const LOGISMOI_WEIGHTS: TierWeights = {
-  stellar: 0.025,
-  excellent: 0.2,
-  good: 0.575,
-  neutral: 0.125,
-  bad: 0.06,
-  terrible: 0.015,
-  apocalyptic: 0,
+  stellar: 0.01,
+  excellent: 0.15,
+  good: 0.3,
+  neutral: 0.3,
+  bad: 0.17,
+  terrible: 0.069,
+  apocalyptic: 0.001,
 };
 
-/** Imperium (Suasio sheet): no distribution — a single fixed Good outcome (player in control). */
+/** Imperium (Suasio sheet rev 2026-06-12): a full distribution — the "player in control" fixed
+ * outcome is retired; the late rite now risks real failure and pays in souls at Stellar. */
 const IMPERIUM_WEIGHTS: TierWeights = {
-  stellar: 0,
-  excellent: 0,
-  good: 1,
-  neutral: 0,
-  bad: 0,
-  terrible: 0,
-  apocalyptic: 0,
+  stellar: 0.035,
+  excellent: 0.18,
+  good: 0.21,
+  neutral: 0.235,
+  bad: 0.15,
+  terrible: 0.155,
+  apocalyptic: 0.035,
 };
 
 const CAEDIS_WEIGHTS: TierWeights = {
   stellar: 0.01,
-  excellent: 0.04,
+  excellent: 0.05,
   good: 0.66,
   neutral: 0.15,
   bad: 0.1,
-  terrible: 0.03,
+  terrible: 0.02,
   apocalyptic: 0.01,
 };
 
-/** Pogrom (Decimatio sheet): same tier distribution as Caedis; a single-subtype mass cull. */
+/** Pogrom (Decimatio sheet rev 2026-06-12): a riskier mass cull with fatter tails. */
 const POGROM_WEIGHTS: TierWeights = {
-  stellar: 0.01,
-  excellent: 0.04,
-  good: 0.66,
+  stellar: 0.015,
+  excellent: 0.06,
+  good: 0.6,
   neutral: 0.15,
   bad: 0.1,
-  terrible: 0.03,
-  apocalyptic: 0.01,
+  terrible: 0.06,
+  apocalyptic: 0.015,
 };
 
-/** Purgatio (Decimatio sheet): same tier distribution; culls every subtype at once. */
+/** Purgatio (Decimatio sheet rev 2026-06-12): soul farming with heavy, gold-eating tails. */
 const PURGATIO_WEIGHTS: TierWeights = {
-  stellar: 0.01,
-  excellent: 0.04,
-  good: 0.66,
-  neutral: 0.15,
-  bad: 0.1,
-  terrible: 0.03,
-  apocalyptic: 0.01,
+  stellar: 0.025,
+  excellent: 0.1,
+  good: 0.3,
+  neutral: 0.3,
+  bad: 0.15,
+  terrible: 0.1,
+  apocalyptic: 0.025,
 };
 
 /** Indagatio (03 §2.5): mostly Good/Neutral; Stellar surfaces a profane+, Excellent a rare. */
 const INDAGATIO_WEIGHTS: TierWeights = {
   stellar: 0.001,
   excellent: 0.049,
-  good: 0.2,
+  good: 0.25,
   neutral: 0.5,
-  bad: 0.2,
-  terrible: 0.045,
-  apocalyptic: 0.005,
+  bad: 0.15,
+  terrible: 0.049,
+  apocalyptic: 0.001,
 };
 
-/** Emptio (03 §2.6): biased toward success since you've already committed the gold. Good/Bad are 0
- * in the current spreadsheet distribution — every non-failure outcome resolves the purchase. */
+/** Emptio (03 §2.6): biased toward success since you've already committed the gold; Good lands a
+ * half-price deal, Bad merely wastes the attempt. */
 const EMPTIO_WEIGHTS: TierWeights = {
   stellar: 0.01,
   excellent: 0.04,
-  good: 0,
-  neutral: 0.9,
-  bad: 0,
+  good: 0.1,
+  neutral: 0.7,
+  bad: 0.1,
   terrible: 0.049,
   apocalyptic: 0.001,
 };
@@ -172,7 +173,7 @@ const EMPTIO_WEIGHTS: TierWeights = {
 /**
  * The actions implemented so far. Numbers are from the economy spreadsheet (Suasio / Decimatio /
  * Indagatio / Emptio). Indagatio is 300 s baseline (sheet rev 2026-06-12) and
- * Emptio is 600 s — both efficiency-mode `time`, so player efficiency divides the duration.
+ * Emptio is 60 s — both efficiency-mode `time`, so player efficiency divides the duration.
  */
 export const ACTIONS: Record<string, ActionDef> = {
   suggestion: {
@@ -516,8 +517,8 @@ function caedisTierDelta(tier: Tier, units: number, pop: number, gold: number): 
     case 'apocalyptic':
       return {
         ...NO_DELTA,
-        gold: fixed(-Math.floor(0.66 * gold)),
-        reprobates: fixed(-Math.floor(0.5 * pop)),
+        gold: fixed(-Math.floor(0.33 * gold)),
+        reprobates: fixed(-Math.floor(0.25 * pop)),
       };
     default:
       return NO_DELTA; // neutral: the kill fails
@@ -529,15 +530,17 @@ function suggestionTierDelta(tier: Tier, units: number, pop: number): TierDelta 
     case 'stellar':
       return { ...NO_DELTA, reprobates: uniform(4, 8, units) };
     case 'excellent':
-      return { ...NO_DELTA, souls: fixed(units) };
+      return { ...NO_DELTA, reprobates: uniform(2, 4, units) };
     case 'good':
       return { ...NO_DELTA, reprobates: fixed(units) };
     case 'bad':
       return { ...NO_DELTA, reprobates: fixed(-Math.min(units, pop)) };
     case 'terrible':
       return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.09 * pop)) };
+    case 'apocalyptic':
+      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.5 * pop)) };
     default:
-      return NO_DELTA; // neutral / apocalyptic: nothing
+      return NO_DELTA; // neutral: nothing
   }
 }
 
@@ -666,7 +669,7 @@ export function resolveAction(
       next = resolveLogismoi(state, tier, rng, eff);
       break;
     case 'imperium':
-      next = resolveImperium(state, rng, eff);
+      next = resolveImperium(state, tier, rng, eff);
       break;
     case 'caedis':
       next = resolveCaedis(state, tier, rng, eff);
@@ -720,16 +723,17 @@ export function resolveSuggestion(
       // major sin → +randint(4,8) unconverted reprobates (Suasio sheet); efficiency scales the count.
       return addReprobates(state, randint(rng, 4, 8) * units);
     case 'excellent':
-      // target suicides → +1 soul (Suasio sheet); efficiency scales the soul count.
-      return mintSouls(state, units);
+      // sin spreads → +randint(2,4) reprobates (sheet rev); efficiency scales the count.
+      return addReprobates(state, randint(rng, 2, 4) * units);
     case 'good':
       return addReprobates(state, units);
     case 'bad':
       return removeReprobates(state, units).state; // rejects + redeems another
     case 'terrible':
       return loseReprobatesFraction(state, 0.09).state; // Church intervention
-    case 'neutral':
     case 'apocalyptic':
+      return loseReprobatesFraction(state, 0.5).state; // mass apostasy (sheet rev)
+    case 'neutral':
     default:
       return state;
   }
@@ -740,30 +744,57 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
   const units = Math.max(1, Math.floor(efficiency));
   switch (tier) {
     case 'stellar':
-      // group suicides → +randint(10,29) souls; efficiency scales the soul count.
-      return mintSouls(state, randint(rng, 10, 29) * units);
+      // the word catches fire → +3% of the current population (sheet rev); efficiency scales.
+      return addReprobates(
+        state,
+        Math.floor(totalReprobates(state) * 0.03 * Math.max(0, efficiency)),
+      );
     case 'excellent':
+      return addReprobates(state, randint(rng, 20, 58) * units); // sheet rev (owner answer #3)
     case 'good':
-      // (major) sin → +randint(10,29) unconverted reprobates.
       return addReprobates(state, randint(rng, 10, 29) * units);
     case 'bad':
       return removeReprobates(state, units).state; // reject + redeem
     case 'terrible':
       return loseReprobatesFraction(state, 0.09).state; // Church intervention
-    case 'neutral':
     case 'apocalyptic':
+      return loseReprobatesFraction(state, 0.5).state; // mass apostasy (sheet rev)
+    case 'neutral':
     default:
       return state;
   }
 }
 
 /**
- * Imperium outcome (Suasio sheet): a single fixed result — the player is in control, so it resolves
- * the Good outcome regardless of the rolled tier: +randint(360,1260) unconverted reprobates.
+ * Imperium outcomes (Suasio sheet rev 2026-06-12): the fixed "player in control" Good is retired —
+ * the late rite carries a full distribution. Stellar pays +3% of CURRENT SOULS; Excellent +3% of
+ * the population; Good +randint(100,1000) reprobates; the tails shed the flock.
  */
-export function resolveImperium(state: GameState, rng: Rng, efficiency = 1): GameState {
+export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
-  return addReprobates(state, randint(rng, 360, 1260) * units);
+  switch (tier) {
+    case 'stellar':
+      return mintSouls(
+        state,
+        Math.floor(floor(state.souls).toNumber() * 0.03 * Math.max(0, efficiency)),
+      );
+    case 'excellent':
+      return addReprobates(
+        state,
+        Math.floor(totalReprobates(state) * 0.03 * Math.max(0, efficiency)),
+      );
+    case 'good':
+      return addReprobates(state, randint(rng, 100, 1000) * units);
+    case 'bad':
+      return removeReprobates(state, units).state;
+    case 'terrible':
+      return loseReprobatesFraction(state, 0.05).state;
+    case 'apocalyptic':
+      return loseReprobatesFraction(state, 0.5).state;
+    case 'neutral':
+    default:
+      return state;
+  }
 }
 
 /** Caedis outcome effects (exported for direct testing of each tier). */
@@ -787,11 +818,11 @@ export function resolveCaedis(state: GameState, tier: Tier, rng: Rng, efficiency
     case 'terrible':
       return loseGoldFraction(state, 0.15);
     case 'apocalyptic': {
-      // A Higher Power stops the assassination and campaigns against you (Decimatio sheet):
-      // 66% current gold loss and 50% of all reprobates lost — taken from you, not harvested,
+      // A Higher Power stops the assassination and campaigns against you (Decimatio sheet rev):
+      // 33% current gold loss and 25% of all reprobates lost — taken from you, not harvested,
       // so no souls are minted (mirrors the Suggestion "Church" loss).
-      const afterGold = loseGoldFraction(state, 0.66);
-      return loseReprobatesFraction(afterGold, 0.5).state;
+      const afterGold = loseGoldFraction(state, 0.33);
+      return loseReprobatesFraction(afterGold, 0.25).state;
     }
     case 'neutral':
     default:
@@ -801,11 +832,10 @@ export function resolveCaedis(state: GameState, tier: Tier, rng: Rng, efficiency
 }
 
 /**
- * Pogrom outcome (Decimatio sheet): a mass cull of the reprobate pool. Stellar/Excellent/Good kill
- * 25 / 10 / 5 % of the population and harvest a soul per death; positive culls scale with efficiency
- * (clamped to 100%). Bad/Apocalyptic burn gold; Terrible lets the Church seize converts. (With
- * subtypes removed, Pogrom no longer targets a subtype — it is a smaller-fraction sibling of
- * Purgatio.)
+ * Pogrom outcome (Decimatio sheet rev 2026-06-12): a mass cull of the reprobate pool.
+ * Stellar/Excellent/Good kill 2.5 / 1 / 0.1 % of the population and harvest a soul per death;
+ * positive culls scale with efficiency (clamped to 100%). Bad burns gold; Terrible lets the Church
+ * seize the flock; Apocalyptic burns 66% of gold AND half the flock.
  */
 export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficiency = 1): GameState {
   // Efficiency lifts the positive cull share (02 §2: Decimatio efficiency modifies positive
@@ -817,17 +847,18 @@ export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficienc
   };
   switch (tier) {
     case 'stellar':
-      return purge(0.25);
+      return purge(0.025);
     case 'excellent':
-      return purge(0.1);
+      return purge(0.01);
     case 'good':
-      return purge(0.05);
+      return purge(0.001);
     case 'bad':
       return loseGoldFraction(state, 0.05); // mob turns
     case 'terrible':
-      return loseReprobatesFraction(state, 0.15).state; // Church seizes converts
+      return loseReprobatesFraction(state, 0.15).state; // Church seizes the flock
     case 'apocalyptic':
-      return loseGoldFraction(state, 0.65); // a Higher Power smites the operation
+      // A Higher Power smites the operation: 66% gold and half the flock (sheet rev).
+      return loseReprobatesFraction(loseGoldFraction(state, 0.66), 0.5).state;
     case 'neutral':
     default:
       return state; // mob disperses; gold already spent
@@ -835,10 +866,10 @@ export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficienc
 }
 
 /**
- * Purgatio outcome (Decimatio sheet): a mass cull of the reprobate pool — Stellar/Excellent/Good
- * kill 100 / 66 / 33 % of all reprobates, harvesting a soul per death (positive share scales with
- * efficiency, clamped to 100%). Bad burns gold; Terrible/Apocalyptic let the Church seize converts,
- * with Apocalyptic also taking 95 % of gold.
+ * Purgatio outcome (Decimatio sheet rev 2026-06-12): the great soul farm — Stellar/Excellent/Good
+ * kill 25 / 10 / 1 % of all reprobates, harvesting a soul per death (positive share scales with
+ * efficiency, clamped to 100%). Bad burns 5% of gold; Terrible burns ALL gold; Apocalyptic burns
+ * all gold and the whole flock.
  */
 export function resolvePurgatio(
   state: GameState,
@@ -854,18 +885,18 @@ export function resolvePurgatio(
   };
   switch (tier) {
     case 'stellar':
-      return harvest(1);
+      return harvest(0.25);
     case 'excellent':
-      return harvest(0.66);
+      return harvest(0.1);
     case 'good':
-      return harvest(0.33);
+      return harvest(0.01);
     case 'bad':
       return loseGoldFraction(state, 0.05); // mob turns
     case 'terrible':
-      return loseReprobatesFraction(state, 0.15).state; // Church seizes converts
+      return loseGoldFraction(state, 1); // the whole purse burns (sheet rev)
     case 'apocalyptic':
-      // Lose 95% of gold and a quarter of the converts.
-      return loseReprobatesFraction(loseGoldFraction(state, 0.95), 0.25).state;
+      // Everything burns: all gold AND the whole flock, none of it harvested.
+      return loseReprobatesFraction(loseGoldFraction(state, 1), 1).state;
     case 'neutral':
     default:
       return state; // mob disperses; gold already spent
@@ -998,7 +1029,20 @@ export function resolveEmptio(
       return { state: next, acquired: [target], lostFromList: [] };
     }
     case 'excellent': {
-      // Acquired with half refund.
+      // Purchase at 25% of the listed price (sheet rev): three quarters refunded.
+      const next: GameState = {
+        ...state,
+        lifetime: {
+          ...state.lifetime,
+          gold: add(state.lifetime.gold, Math.floor(def.cost * 0.75)),
+          maleficia: [...state.lifetime.maleficia, target],
+          emptioList: trimmedList,
+        },
+      };
+      return { state: next, acquired: [target], lostFromList: [] };
+    }
+    case 'good': {
+      // Purchase at half the listed price (sheet rev): half refunded.
       const next: GameState = {
         ...state,
         lifetime: {
@@ -1010,12 +1054,9 @@ export function resolveEmptio(
       };
       return { state: next, acquired: [target], lostFromList: [] };
     }
-    case 'good':
     case 'neutral': {
       // Purchase at the listed price (Indagatio & Emptio sheet): the item enters the inventory,
-      // cost as paid (already deducted at startAction), and the list entry is consumed. Neutral is
-      // the common successful purchase; Good — currently zero-weight in the spreadsheet — resolves
-      // identically as a straight buy.
+      // cost as paid (already deducted at startAction), and the list entry is consumed.
       const next: GameState = {
         ...state,
         lifetime: {

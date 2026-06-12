@@ -103,9 +103,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 709** (sim 481 · shared 56 · api 11 · web 161).
+**Current test count: 714** (sim 486 · shared 56 · api 11 · web 161).
 
-> **Latest change — economy retune, slice 1 of 6 (Globals & flat numbers; audit
+> **Latest change — economy retune, slice 2 of 6 (action tier tables; audit
+> `economy-audit-2026-06-12`).** All eight Opera tier distributions re-pinned to the revised
+> template, and every effect cell with them. Headlines: **Imperium loses its fixed "player in
+> control" Good** — it now rolls a full distribution (3.5% Stellar paying +3% of CURRENT SOULS,
+> 3.5% Apocalyptic shedding half the flock) — Suggestion/Logismoi gain real Apocalyptic tails
+> (mass apostasy, −50%), Logismoi Stellar pays +3% of the population and its Excellent
+> `randint(20,58)` (owner answer #3), **Pogrom's culls shrink to 2.5/1/0.1%** but its Apocalyptic
+> burns 66% gold AND half the flock, **Purgatio's culls become 25/10/1%** with Terrible burning
+> ALL gold and Apocalyptic burning everything, Caedis' Apocalyptic softens to 33% gold + 25%
+> flock, and Emptio gains real price tiers (Stellar free, Excellent 25% price, Good 50%,
+> Bad a wasted attempt). Forecast deltas (Suggestion/Caedis) mirror the new effects;
+> `resolveImperium` now takes the rolled tier. Test count 486 sim (+5).
+
+> **Prior change — economy retune, slice 1 of 6 (Globals & flat numbers; audit
 > `economy-audit-2026-06-12`).** The repo adopts the revised economy template and pins the
 > unambiguous number changes: base suicide / murder rates **0.0001 / 0.0002 per second** (were
 > 0.00023 / 0.0001 — murder now outpaces despair), Vanagloria **×1.33** influence per level (was
@@ -121,7 +134,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > 72-sigil re-pin, invocation retouches incl. Imp → Caedis-efficiency contributor) remain per the
 > audit.
 
-> **Prior change — documentation reconciliation (no code change).** The design docs and the ADR
+> **Earlier change — documentation reconciliation (no code change).** The design docs and the ADR
 > record are brought back in line with the shipped code: `03-content-catalog.md` §2.3 gains the
 > **amended** signature-clause table (and loses two factual errors — Furcas #50 never touched the
 > divest fraction, Sitri #12 never touched VM output); the ceremony table now states the honest

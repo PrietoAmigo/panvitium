@@ -101,10 +101,19 @@ describe('resolveEmptio (03 §2.6)', () => {
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(1000 + MALEFICIA.blackthorn_wand!.cost);
   });
 
-  it('Excellent acquires and refunds half the cost', () => {
+  it('Excellent acquires at a quarter of the price — 75% refunded (sheet rev)', () => {
     const state = listedWith('ritual_dagger', 0);
     const r = resolveEmptio(state, 'excellent', 'ritual_dagger');
     expect(r.state.lifetime.maleficia).toContain('ritual_dagger');
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(
+      Math.floor(MALEFICIA.ritual_dagger!.cost * 0.75),
+    );
+  });
+
+  it('Good acquires at half the price — 50% refunded (sheet rev)', () => {
+    const state = listedWith('ritual_dagger', 0);
+    const r = resolveEmptio(state, 'good', 'ritual_dagger');
+    expect(r.acquired).toEqual(['ritual_dagger']);
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(
       Math.floor(MALEFICIA.ritual_dagger!.cost / 2),
     );

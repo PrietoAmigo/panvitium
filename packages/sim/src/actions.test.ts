@@ -37,6 +37,11 @@ const withIra = (s: GameState, level: number): GameState => ({
   ...s,
   devotion: { ...s.devotion, ira: bn(180 ** level) },
 });
+const withReprobates = (s: GameState, n: number): GameState => ({
+  ...s,
+  lifetime: { ...s.lifetime, reprobates: n },
+});
+const withSouls = (s: GameState, n: number): GameState => ({ ...s, souls: bn(n) });
 
 describe('startAction', () => {
   it('queues caedis and deducts its gold cost when affordable', () => {
@@ -98,17 +103,22 @@ describe('action unlock gating (Suasio sheet)', () => {
 });
 
 describe('resolveLogismoi', () => {
-  it('good and excellent each mint 10–29 unconverted reprobates', () => {
-    for (const tier of ['good', 'excellent'] as const) {
-      const n = resolveLogismoi(fresh(), tier, rng()).lifetime.reprobates;
-      expect(n).toBeGreaterThanOrEqual(10);
-      expect(n).toBeLessThanOrEqual(29);
-    }
+  it('good adds 10–29 and excellent 20–58 reprobates (sheet rev)', () => {
+    const g = resolveLogismoi(fresh(), 'good', rng()).lifetime.reprobates;
+    expect(g).toBeGreaterThanOrEqual(10);
+    expect(g).toBeLessThanOrEqual(29);
+    const e = resolveLogismoi(fresh(), 'excellent', rng()).lifetime.reprobates;
+    expect(e).toBeGreaterThanOrEqual(20);
+    expect(e).toBeLessThanOrEqual(58);
   });
-  it('stellar mints 10–29 souls', () => {
-    const s = soulsOf(resolveLogismoi(fresh(), 'stellar', rng()));
-    expect(s).toBeGreaterThanOrEqual(10);
-    expect(s).toBeLessThanOrEqual(29);
+  it('stellar adds +3% of the current population (sheet rev)', () => {
+    const seeded = withReprobates(fresh(), 1000);
+    const after = resolveLogismoi(seeded, 'stellar', rng());
+    expect(totalReprobates(after) - 1000).toBe(30); // floor(1000 × 0.03)
+  });
+  it('apocalyptic sheds half the flock', () => {
+    const seeded = withReprobates(fresh(), 1000);
+    expect(totalReprobates(resolveLogismoi(seeded, 'apocalyptic', rng()))).toBe(500);
   });
   it('terrible culls reprobates; neutral does nothing', () => {
     const seeded = addReprobates(fresh(), 100);
@@ -122,10 +132,22 @@ describe('resolveImperium', () => {
     expect(ACTIONS.imperium!.baseTimeSeconds).toBe(10);
   });
 
-  it('always adds 360–1260 unconverted reprobates (fixed, player-controlled outcome)', () => {
-    const n = resolveImperium(fresh(), rng()).lifetime.reprobates;
-    expect(n).toBeGreaterThanOrEqual(360);
-    expect(n).toBeLessThanOrEqual(1260);
+  it('good adds 100–1000 reprobates (the fixed player-controlled outcome is retired)', () => {
+    const n = resolveImperium(fresh(), 'good', rng()).lifetime.reprobates;
+    expect(n).toBeGreaterThanOrEqual(100);
+    expect(n).toBeLessThanOrEqual(1000);
+  });
+
+  it('stellar pays +3% of current souls; excellent +3% of the population (sheet rev)', () => {
+    const seeded = withSouls(withReprobates(fresh(), 1000), 200);
+    expect(soulsOf(resolveImperium(seeded, 'stellar', rng()))).toBe(206); // +floor(200 × 0.03)
+    expect(totalReprobates(resolveImperium(seeded, 'excellent', rng()))).toBe(1030);
+  });
+
+  it('terrible sheds 5% and apocalyptic half of the flock', () => {
+    const seeded = withReprobates(fresh(), 1000);
+    expect(totalReprobates(resolveImperium(seeded, 'terrible', rng()))).toBe(950);
+    expect(totalReprobates(resolveImperium(seeded, 'apocalyptic', rng()))).toBe(500);
   });
 });
 
@@ -143,10 +165,17 @@ describe('resolveSuggestion', () => {
     expect(totalReprobates(s)).toBe(n); // all unconverted
   });
 
-  it('excellent mints a soul (target suicides) and adds no reprobate', () => {
+  it('excellent adds 2–4 reprobates and mints no soul (sheet rev)', () => {
     const s = resolveSuggestion(fresh(), 'excellent', rng());
-    expect(soulsOf(s)).toBe(1);
-    expect(totalReprobates(s)).toBe(0);
+    expect(soulsOf(s)).toBe(0);
+    expect(totalReprobates(s)).toBeGreaterThanOrEqual(2);
+    expect(totalReprobates(s)).toBeLessThanOrEqual(4);
+  });
+
+  it('apocalyptic sheds half the flock (sheet rev)', () => {
+    expect(
+      totalReprobates(resolveSuggestion(addReprobates(fresh(), 100), 'apocalyptic', rng())),
+    ).toBe(50);
   });
 
   it('bad removes a reprobate; terrible loses 9% of the population', () => {
@@ -185,11 +214,11 @@ describe('resolveCaedis', () => {
     expect(goldOf(resolveCaedis(withGold(fresh(), 1000), 'terrible', rng()))).toBe(850);
   });
 
-  it('apocalyptic loses 66% gold and 50% of all reprobates, minting no souls', () => {
+  it('apocalyptic loses 33% gold and 25% of all reprobates, minting no souls (sheet rev)', () => {
     const s0 = withGold(addReprobates(fresh(), 100), 1000);
     const s = resolveCaedis(s0, 'apocalyptic', rng());
-    expect(goldOf(s)).toBe(340); // 1000 → keep 34%
-    expect(totalReprobates(s)).toBe(50); // 100 → lose 50%
+    expect(goldOf(s)).toBe(670); // 1000 → keep 67%
+    expect(totalReprobates(s)).toBe(75); // 100 → lose 25%
     expect(soulsOf(s)).toBe(0); // taken by the Higher Power, not harvested
   });
 });
@@ -377,16 +406,19 @@ describe('Decimatio gating + Pogrom target', () => {
 
 describe('resolvePogrom', () => {
   const seed = (): GameState => withGold(addReprobates(fresh(), 200), 1000);
-  it('Good culls 5% of the reprobate pool and harvests a soul per death', () => {
-    const s = resolvePogrom(seed(), 'good', rng());
-    expect(s.lifetime.reprobates).toBe(190); // 200 - floor(200*0.05)
-    expect(soulsOf(s)).toBe(10);
+  it('Stellar culls 2.5% of the pool and harvests a soul per death (sheet rev)', () => {
+    const s = resolvePogrom(seed(), 'stellar', rng());
+    expect(s.lifetime.reprobates).toBe(195); // 200 - floor(200×0.025)
+    expect(soulsOf(s)).toBe(5);
   });
-  it('Terrible lets the Church seize 15% (no souls); Apocalyptic burns 65% gold', () => {
+  it('Terrible lets the Church seize 15% (no souls); Apocalyptic burns 66% gold AND half the flock', () => {
     const terrible = resolvePogrom(seed(), 'terrible', rng());
-    expect(terrible.lifetime.reprobates).toBe(170); // 200 - floor(200*0.15)
+    expect(terrible.lifetime.reprobates).toBe(170); // 200 - floor(200×0.15)
     expect(soulsOf(terrible)).toBe(0);
-    expect(goldOf(resolvePogrom(seed(), 'apocalyptic', rng()))).toBe(350);
+    const apoc = resolvePogrom(seed(), 'apocalyptic', rng());
+    expect(goldOf(apoc)).toBe(340); // keep 34%
+    expect(totalReprobates(apoc)).toBe(100); // lose half, unharvested
+    expect(soulsOf(apoc)).toBe(0);
   });
   it('Neutral does nothing', () => {
     const s = resolvePogrom(seed(), 'neutral', rng());
@@ -401,20 +433,24 @@ describe('resolvePurgatio', () => {
     s = addReprobates(s, 100);
     return withGold(s, 1000);
   };
-  it('Stellar kills every reprobate and harvests a soul each', () => {
+  it('Stellar kills a quarter of the flock and harvests a soul each (sheet rev)', () => {
     const s = resolvePurgatio(seed(), 'stellar', rng());
-    expect(totalReprobates(s)).toBe(0);
-    expect(soulsOf(s)).toBe(200);
+    expect(totalReprobates(s)).toBe(150); // 200 - floor(200×0.25)
+    expect(soulsOf(s)).toBe(50);
   });
-  it('Good culls a third of all reprobates', () => {
+  it('Good culls 1% of all reprobates (sheet rev)', () => {
     const s = resolvePurgatio(seed(), 'good', rng());
-    expect(totalReprobates(s)).toBe(134); // 200 - floor(200*0.33)
-    expect(soulsOf(s)).toBe(66);
+    expect(totalReprobates(s)).toBe(198); // 200 - floor(200×0.01)
+    expect(soulsOf(s)).toBe(2);
   });
-  it('Apocalyptic burns 95% gold and seizes 25% of the pool', () => {
-    const s = resolvePurgatio(seed(), 'apocalyptic', rng());
-    expect(goldOf(s)).toBe(50); // 1000 * 0.05
-    expect(totalReprobates(s)).toBe(150); // 200 - floor(200*0.25)
+  it('Terrible burns ALL gold; Apocalyptic burns all gold and the whole flock (sheet rev)', () => {
+    const terrible = resolvePurgatio(seed(), 'terrible', rng());
+    expect(goldOf(terrible)).toBe(0);
+    expect(totalReprobates(terrible)).toBe(200); // the flock survives Terrible
+    const apoc = resolvePurgatio(seed(), 'apocalyptic', rng());
+    expect(goldOf(apoc)).toBe(0);
+    expect(totalReprobates(apoc)).toBe(0);
+    expect(soulsOf(apoc)).toBe(0); // none of it harvested
   });
 });
 
@@ -453,10 +489,12 @@ describe('actionTierDistribution (oracular reveals, 5.1)', () => {
     for (const t of TIERS) expect(dist[t]).toBeGreaterThanOrEqual(0);
   });
 
-  it('mirrors a fixed-Good action (Imperium resolves Good with certainty)', () => {
+  it('reflects the full Imperium distribution (the fixed-Good certainty is retired)', () => {
     const s = createInitialState('oracle-test', 0);
     const dist = actionTierDistribution(s, 'imperium');
-    expect(dist.good).toBeCloseTo(1, 10);
+    expect(dist.good).toBeCloseTo(0.21, 10);
+    expect(dist.stellar).toBeCloseTo(0.035, 10);
+    expect(dist.apocalyptic).toBeCloseTo(0.035, 10);
   });
 
   it('reflects the base weights for Caedis (Good is the dominant tier)', () => {
