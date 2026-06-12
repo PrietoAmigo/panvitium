@@ -33,10 +33,10 @@ import type { OutcomeEvent } from './events.js';
 /**
  * Maximum acolytes given the current state, using the EFFECTIVE max influence (post-modifier).
  * Per the Acolytes sheet, the Nth acolyte unlocks once effective max influence reaches the Nth
- * threshold, where thresholds form a ×2.2 geometric series anchored at `ACOLYTE_THRESHOLD_BASE`
+ * threshold, where thresholds form a ×1.5 geometric series anchored at `ACOLYTE_THRESHOLD_BASE`
  * and each step is rounded to the nearest integer, compounding off the rounded previous value
- * (110 → 242 → 532 → 1170 → 2574 → …). A fresh lifetime (base 100 influence) has 0 acolytes; the
- * first unlocks at 242. Influence is floored before the integer comparison (resources are natural
+ * (110 → 165 → 248 → 371 → …). A fresh lifetime (base 100 influence) has 0 acolytes; the
+ * first unlocks at 110. Influence is floored before the integer comparison (resources are natural
  * numbers; `break_infinity` is a float bignum — ADR-005). The loop self-terminates: each threshold
  * grows ×2.2, so it exits as soon as one exceeds the (finite) influence, and a non-finite influence
  * exits when the threshold itself overflows to Infinity.
@@ -46,12 +46,15 @@ export function maxAcolytes(state: GameState, mods: Modifiers = computeModifiers
     floor(mul(state.lifetime.maxInfluence, mods.maxInfluenceMul)).toNumber(),
   );
   if (!(effective > 0)) return 0;
+  // Sheet rev 2026-06-12: acolyte N unlocks at round(BASE × GROWTH^(N−1)) — the FIRST at the base
+  // itself (110), then ×1.5 per acolyte (110 → 165 → 248 → 371 → …), rounded to the nearest
+  // integer per the sheet's continuation note.
   let count = 0;
   let threshold = ACOLYTE_THRESHOLD_BASE;
   while (Number.isFinite(threshold)) {
-    threshold = Math.round(threshold * ACOLYTE_THRESHOLD_GROWTH);
-    if (effective >= threshold) count++;
+    if (effective >= Math.round(threshold)) count++;
     else break;
+    threshold = threshold * ACOLYTE_THRESHOLD_GROWTH;
   }
   return count;
 }

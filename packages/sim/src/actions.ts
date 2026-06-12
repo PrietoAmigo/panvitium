@@ -171,7 +171,7 @@ const EMPTIO_WEIGHTS: TierWeights = {
 
 /**
  * The actions implemented so far. Numbers are from the economy spreadsheet (Suasio / Decimatio /
- * Indagatio / Emptio). Indagatio is 1800 s baseline (acolyte delegation will lift the wait) and
+ * Indagatio / Emptio). Indagatio is 300 s baseline (sheet rev 2026-06-12) and
  * Emptio is 600 s — both efficiency-mode `time`, so player efficiency divides the duration.
  */
 export const ACTIONS: Record<string, ActionDef> = {
@@ -228,8 +228,8 @@ export const ACTIONS: Record<string, ActionDef> = {
   purgatio: {
     id: 'purgatio',
     category: 'decimatio',
-    baseTimeSeconds: 3600, // sheet: "~3600s"
-    cost: { gold: 10000 }, // sheet-pinned
+    baseTimeSeconds: 360, // sheet: "~360s" (rev 2026-06-12)
+    cost: { gold: 1_000_000 }, // sheet-pinned (rev 2026-06-12)
     weights: PURGATIO_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'ira', level: 3 },

@@ -34,10 +34,10 @@ export const BASE_MAX_INFLUENCE = 100;
  * influence) therefore has 0 acolytes; the first unlocks at 242.
  */
 export const ACOLYTE_THRESHOLD_BASE = 110;
-export const ACOLYTE_THRESHOLD_GROWTH = 2.2;
+export const ACOLYTE_THRESHOLD_GROWTH = 1.5;
 
 /** Base reprobate suicide chance per second, applied to the whole population (Globals: 0.00023). */
-export const BASE_SUICIDE_RATE_PER_SECOND = 0.00023;
+export const BASE_SUICIDE_RATE_PER_SECOND = 0.0001;
 
 /**
  * Base reprobate generation per second, before *Vitium*-driven contributions (Globals).
@@ -60,7 +60,7 @@ export const PANVITIUM_RATE_BASE = 0.01;
  * of the single pool (re-anchored from the old per-Choleric rate). Placeholder pending the economy
  * sheet — the SHAPE (per-capita on total population) is authoritative; the magnitude is tuning.
  */
-export const BASE_MURDER_RATE_PER_SECOND = 0.0001;
+export const BASE_MURDER_RATE_PER_SECOND = 0.0002;
 
 /** Cumulative Devotion to reach Sin level X is DEVOTION_LEVEL_BASE^X souls (Globals: 180). */
 export const DEVOTION_LEVEL_BASE = 180;
@@ -125,12 +125,12 @@ export const IRA_ACOLYTE_INVOCATION_PER_LEVEL = 1.33;
 
 /**
  * Acedia per-level effect (03 §1, "Procrastination" / Belphegor): each level applies a
- * `1.00002^(X · L²)` multiplier to the offline-time duration used by `resumeGame`, where X is the
- * offline minutes and L is the Acedia level. Time-dependent — *not* a static modifier; applied at
+ * `1.0000002^(X · L²)` multiplier to the offline-time duration used by `resumeGame`, where X is the
+ * offline SECONDS (sheet: "s is seconds offline in a row") and L is the Acedia level. Time-dependent — *not* a static modifier; applied at
  * session-resume time. The sheet pins no value for this base, so 1.00002 is a genuine tuning
  * constant (not awaiting a sheet number); the shape (an exponential in `X · L²`) is authoritative.
  */
-export const ACEDIA_OFFLINE_COMPOUND_BASE = 1.00002;
+export const ACEDIA_OFFLINE_COMPOUND_BASE = 1.0000002; // per SECOND offline (sheet rev 2026-06-12)
 
 /**
  * Maleficia enhancer magnitudes (03 §4 / Maleficia sheet). Each is an Opera-efficiency multiplier
@@ -141,5 +141,5 @@ export const ARS_SERPENS_SUASIO_BONUS = 0.33;
 export const VOYNICH_SUASIO_BONUS = 0.66;
 export const RITUAL_DAGGER_DECIMATIO_BONUS = 0.33;
 /** Solomon's Ring: +50% to all sigil effect strength (mult). Iron Nails: +1% per equipped copy. */
-export const SOLOMON_RING_SIGIL_BONUS = 0.5;
+export const SOLOMON_RING_SIGIL_BONUS = 0.66;
 export const IRON_NAILS_SIGIL_BONUS = 0.01;

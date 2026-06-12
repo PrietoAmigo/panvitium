@@ -1,6 +1,6 @@
 /**
  * Reprobate dynamics tests (02 §9). Pins:
- *   - the canonical 0.023% population-wide suicide rate ("1 / 4.35 s at 1000 reprobates")
+ *   - the canonical 0.01%/s population-wide suicide rate ("1 / 10 s at 1000 reprobates")
  *   - per-tick fractional accrual is preserved across ticks (no sub-1 loss)
  *   - Tristitia / Resignation skill multiplies the rate via the modifier engine
  *   - Tristitia LEVEL applies a 2^level multiplier on top
@@ -35,34 +35,35 @@ describe('reprobate dynamics — suicide pool', () => {
   });
 
   it('rate × population × delta accumulates into the pool', () => {
-    // 1000 reprobates × 0.00023 / s × 0.1 s = 0.023 per tick.
+    // 1000 reprobates × 0.0001 / s × 0.1 s = 0.01 per tick.
     const after = applyReprobateDynamics(pop(1000), 0.1);
-    expect(after.lifetime.suicidePool).toBeCloseTo(0.023, 6);
+    expect(after.lifetime.suicidePool).toBeCloseTo(0.01, 6);
     expect(totalReprobates(after)).toBe(1000);
   });
 
-  it('worked example: ~4.35 s to the first natural suicide at 1000 reprobates', () => {
-    const after = applyReprobateDynamics(pop(1000), 4.4);
-    expect(totalReprobates(after)).toBe(999);
-    expect(after.souls.toNumber()).toBe(1);
-    expect(after.lifetime.suicidePool).toBeCloseTo(0.012, 6);
+  it('worked example: ~10 s to the first natural suicide at 1000 reprobates', () => {
+    // Suicide 0.0001/s → 1 at 10 s; murder 0.0002/s lands two by then (at 5 s and 10 s).
+    const after = applyReprobateDynamics(pop(1000), 10.5);
+    expect(totalReprobates(after)).toBe(997); // 1 suicide + 2 murders
+    expect(after.souls.toNumber()).toBe(3);
+    expect(after.lifetime.suicidePool).toBeCloseTo(0.05, 6);
   });
 
   it('long delta drains multiple deaths (suicides + murders) in one call', () => {
     const after = applyReprobateDynamics(pop(1000), 100);
-    // rate computed once on entry; suicide ~23 + murder ~10 = 33 deaths, each minting a soul.
+    // rate computed once on entry; suicide ~10 + murder ~20 = 30 deaths, each minting a soul.
     const removed = 1000 - totalReprobates(after);
     expect(after.souls.toNumber()).toBe(removed);
-    expect(removed).toBe(33);
+    expect(removed).toBe(30);
   });
 
   it('fractional progress persists across short ticks (no sub-1 loss)', () => {
     let s = pop(1000);
-    for (let i = 0; i < 43; i++) s = applyReprobateDynamics(s, 0.1);
+    for (let i = 0; i < 49; i++) s = applyReprobateDynamics(s, 0.1);
     expect(totalReprobates(s)).toBe(1000);
-    expect(s.lifetime.suicidePool).toBeCloseTo(0.989, 4);
+    expect(s.lifetime.murderPool).toBeCloseTo(0.98, 4); // 49 × 0.02, no sub-1 loss
 
-    s = applyReprobateDynamics(s, 0.1);
+    s = applyReprobateDynamics(s, 0.1); // the 50th tick tips the murder pool over 1
     expect(totalReprobates(s)).toBe(999);
     expect(s.souls.toNumber()).toBe(1);
   });
@@ -100,10 +101,10 @@ describe('reprobate dynamics — modifier wiring', () => {
   it('NEUTRAL_MODIFIERS leaves suicide rate at population × base', () => {
     const s = pop(1000);
     const rates = reprobateRates(s, NEUTRAL_MODIFIERS);
-    expect(rates.suicidePerSecond).toBeCloseTo(0.23, 6);
+    expect(rates.suicidePerSecond).toBeCloseTo(0.1, 6);
     expect(rates.generationPerSecond).toBe(0);
-    // Murder is now per-capita on the whole population: 0.0001 × 1000 = 0.1/s.
-    expect(rates.murderPerSecond).toBeCloseTo(0.1, 6);
+    // Murder is per-capita on the whole population: 0.0002 × 1000 = 0.2/s.
+    expect(rates.murderPerSecond).toBeCloseTo(0.2, 6);
   });
 
   it('Tristitia level 1 doubles the suicide rate (per-level 2× multiplier, 03 §1)', () => {
@@ -111,7 +112,7 @@ describe('reprobate dynamics — modifier wiring', () => {
     const withT1: GameState = { ...s, devotion: { ...s.devotion, tristitia: bn(180) } };
     const mods = computeModifiers(withT1);
     const rates = reprobateRates(withT1, mods);
-    expect(rates.suicidePerSecond).toBeGreaterThan(0.46);
+    expect(rates.suicidePerSecond).toBeGreaterThan(0.2); // > 2× the 0.1 base
   });
 
   it('no Tristitia devotion -> suicide multiplier is exactly 1', () => {

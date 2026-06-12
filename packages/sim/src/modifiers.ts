@@ -348,7 +348,7 @@ export function computeModifiers(state: GameState): Modifiers {
         : 1) *
       sc('goldRateMul'),
     influenceRateMul:
-      1.5 ** vanagloriaLvl *
+      1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
       (hasCodex ? 3 : 1) *
       (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
       (hasDoppel ? 0.5 : 1) *

@@ -57,12 +57,12 @@ describe('tick — modifiers (Sin level / Sin skill)', () => {
   });
 
   it('Vanagloria scales both influence rate (level) and the effective cap (Acclaim)', () => {
-    // L1 → influenceRateMul = 1.5. Skill intensity ≈ 0.41253 → maxInfluenceMul ≈ 1.4125.
-    // effectiveMax = 100 × 1.4125 = 141.25; influence/s = 141.25 × 0.01 × 1.5 ≈ 2.12.
+    // L1 → influenceRateMul = 1.33 (sheet retune). Skill intensity ≈ 0.41253 → maxInfluenceMul
+    // ≈ 1.4125. effectiveMax = 141.25; influence/s = 141.25 × 0.01 × 1.33 ≈ 1.88 → floor 1.
     const base = createInitialState('seed', 0);
     const state: GameState = { ...base, devotion: { ...base.devotion, vanagloria: bn(180) } };
     const { state: after } = tick(state, 1);
-    expect(floor(after.lifetime.influence).toNumber()).toBe(2);
+    expect(floor(after.lifetime.influence).toNumber()).toBe(1);
   });
 });
 

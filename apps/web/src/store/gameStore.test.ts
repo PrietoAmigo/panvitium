@@ -275,13 +275,13 @@ describe('gameStore — acolyte delegation', () => {
     expect(store().state?.lifetime.acolytes ?? []).toHaveLength(0);
     store().advance(0.1);
     expect(store().state?.lifetime.acolytes ?? []).toHaveLength(0); // base influence: still none
-    patchMaxInfluence(242);
+    patchMaxInfluence(110);
     store().advance(0.1);
     expect(store().state?.lifetime.acolytes ?? []).toHaveLength(1);
   });
 
   it('assigns and unassigns Indagatio without occupying the player slot', () => {
-    patchMaxInfluence(242);
+    patchMaxInfluence(110);
     store().advance(0.1); // recruit
     store().assignAcolyte('indagatio');
     const s = store().state as GameState;
@@ -302,7 +302,7 @@ describe('gameStore — acolyte delegation', () => {
   });
 
   it('refuses assignment when all acolytes are busy', () => {
-    patchMaxInfluence(242);
+    patchMaxInfluence(110);
     store().advance(0.1); // recruit (1 acolyte at this influence)
     store().assignAcolyte('indagatio');
     store().assignAcolyte('indagatio'); // no one left to assign

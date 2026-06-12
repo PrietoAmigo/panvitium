@@ -105,7 +105,23 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 709** (sim 481 · shared 56 · api 11 · web 161).
 
-> **Latest change — documentation reconciliation (no code change).** The design docs and the ADR
+> **Latest change — economy retune, slice 1 of 6 (Globals & flat numbers; audit
+> `economy-audit-2026-06-12`).** The repo adopts the revised economy template and pins the
+> unambiguous number changes: base suicide / murder rates **0.0001 / 0.0002 per second** (were
+> 0.00023 / 0.0001 — murder now outpaces despair), Vanagloria **×1.33** influence per level (was
+> 1.5), the Acedia offline compound rebased to **`1.0000002^(seconds × L²)`** (was per-minute
+> 1.00002 — ~1.7× gentler at the seven-day saturation), Solomon's Ring **×1.66** sigil effect,
+> Purgatio at **1,000,000 gold / ~360 s** (was 10,000 / 3600 s), and the acolyte ladder rebuilt as
+> **×1.5 from 110 with the first acolyte at 110 itself** (was ×2.2 with the first at 242).
+> Sheet errata fixed per the owner's answers: Panvitium's cost formula re-pointed to the Base-VC
+> rows (confirming the code's 1000·eᵗ / 100·eᵗ), Indagatio's Good weight 0.25 (sum now 1.0),
+> Logismoi Excellent `randint(20,58)`, the vestigial conversion-rate Globals row deleted, the
+> intensity-divisor prose corrected to 65.37. Maleficia prices and the action toggle gates were
+> verified already sheet-accurate. Slices 2–6 (action tier tables, VC Slice 3, the Sins remap, the
+> 72-sigil re-pin, invocation retouches incl. Imp → Caedis-efficiency contributor) remain per the
+> audit.
+
+> **Prior change — documentation reconciliation (no code change).** The design docs and the ADR
 > record are brought back in line with the shipped code: `03-content-catalog.md` §2.3 gains the
 > **amended** signature-clause table (and loses two factual errors — Furcas #50 never touched the
 > divest fraction, Sitri #12 never touched VM output); the ceremony table now states the honest
@@ -117,7 +133,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > open items and surfaced in `### Remaining` below. The stale "all 72 sigils wired" and
 > subtype-era claims in this README are corrected in place.
 
-> **Prior change — Mercatus per-Sin signature clauses (slice 2, §1.5 table amended in
+> **Earlier change — Mercatus per-Sin signature clauses (slice 2, §1.5 table amended in
 > session).** Each trade now carries one signature twist: **Gulae** patrons spend ×1.25;
 > **Luxuriae** generation ×1.25; **Avaritiae** each depth bargains the next 0.5% cheaper — the discount
 > COMPOUNDS per depth (effective cost ratio 1.6 × 0.995, refunds on the same basis); **Tristitiae** +0.825% suicide-rate mul per depth; **Irae** +0.825% murder-rate mul
@@ -459,7 +475,7 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   retarget destinations — depths, penetration, invest costs, Foedus tiers — but each needs a sheet
   decision. Registered as an ADR open item.
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. The **oracular reveals** (Phase 5 slice) have also shipped: owning Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather surfaces a live Opera tier-distribution readout in that item's cabinet detail (a stacked odds bar per action, via a read-only `actionTierDistribution` sim helper that reuses the exact `resolveAction` composition). With this, Maleficia is complete — roster, gating, and every effect.
-- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is complete: _Caedis_, _Pogrom_, and _Purgatio_, each gated by its Ira level. (Post-ADR-024 note: Pogrom culls the single pool — the old present-subtype picker and its no-delegation caveat retired with the subtypes.) Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (10000) gold costs are sheet-pinned.
+- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is complete: _Caedis_, _Pogrom_, and _Purgatio_, each gated by its Ira level. (Post-ADR-024 note: Pogrom culls the single pool — the old present-subtype picker and its no-delegation caveat retired with the subtypes.) Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (1,000,000) gold costs are sheet-pinned.
 - **Emails (PC program) — impact-feedback system** _(✓ shipped, content provisional)_. An inbox that
   surfaces the in-world consequences of the player's actions as incoming correspondence (newsletters as
   the corruption spreads, complaints / a class-action from people harmed by their Vitium Mercatura

@@ -1,7 +1,7 @@
 /**
  * Acolyte system tests (02 §10). Pins:
- *   - maxAcolytes follows the ×2.2 effective-maxInfluence threshold series (Acolytes sheet):
- *     0 at base, first acolyte at 242, then 532 / 1170 / 2574 / …
+ *   - maxAcolytes follows the ×1.5 effective-maxInfluence threshold series (Acolytes sheet):
+ *     0 at base, first acolyte at 110, then 165 / 248 / 371 / …
  *   - autoRecruitAcolytes appends idle acolytes up to the target, never removes
  *   - assignAcolyteToAction takes the LOWEST-id idle acolyte and starts its timer
  *   - unassignAcolyteFromAction takes the HIGHEST-id assigned (LIFO)
@@ -47,7 +47,7 @@ function withMaxInfluence(s: GameState, v: number): GameState {
 
 /** Fresh lifetime with max influence raised to unlock exactly `n` acolytes, then auto-recruited. */
 function recruited(n = 1): GameState {
-  const thresholds = [242, 532, 1170, 2574]; // Acolytes sheet ×2.2 series (1..4 acolytes)
+  const thresholds = [110, 165, 248, 371]; // Acolytes sheet ×1.5 series (1..4 acolytes)
   const infl = thresholds[n - 1] ?? thresholds[thresholds.length - 1]!;
   return autoRecruitAcolytes(withMaxInfluence(fresh(), infl));
 }
@@ -68,21 +68,21 @@ describe('maxAcolytes', () => {
     expect(maxAcolytes(fresh())).toBe(0);
   });
 
-  it('unlocks the Nth acolyte at the Nth ×2.2 threshold (242 / 532 / 1170 / 2574)', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 242))).toBe(1);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 532))).toBe(2);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 1170))).toBe(3);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 2574))).toBe(4);
+  it('unlocks the Nth acolyte at the Nth ×1.5 threshold (110 / 165 / 248 / 371)', () => {
+    expect(maxAcolytes(withMaxInfluence(fresh(), 110))).toBe(1);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 165))).toBe(2);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 248))).toBe(3);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 371))).toBe(4);
   });
 
   it('does not advance until the next threshold is reached', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 241))).toBe(0);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 531))).toBe(1);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 2573))).toBe(3);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 109))).toBe(0);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 164))).toBe(1);
+    expect(maxAcolytes(withMaxInfluence(fresh(), 370))).toBe(3);
   });
 
   it('keeps climbing past the visual cap (5th at 5663)', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 5663))).toBe(5); // round(2574 × 2.2)
+    expect(maxAcolytes(withMaxInfluence(fresh(), 557))).toBe(5); // round(371.25 × 1.5) = 557
   });
 
   it('is 0 below the first threshold — no minimum-of-1 floor anymore', () => {
@@ -97,29 +97,29 @@ describe('autoRecruitAcolytes', () => {
     expect(s.lifetime.acolytes).toHaveLength(0);
   });
 
-  it('recruits the first acolyte once influence reaches the first threshold (242)', () => {
-    const s = autoRecruitAcolytes(withMaxInfluence(fresh(), 242));
+  it('recruits the first acolyte once influence reaches the first threshold (110)', () => {
+    const s = autoRecruitAcolytes(withMaxInfluence(fresh(), 110));
     expect(s.lifetime.acolytes).toHaveLength(1);
     expect(s.lifetime.acolytes[0]!.assignedAction).toBeNull();
     expect(s.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
   });
 
-  it('appends one more when maxInfluence crosses the next threshold (242 → 532)', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 242)); // 1 acolyte
-    s = withMaxInfluence(s, 532);
+  it('appends one more when maxInfluence crosses the next threshold (110 → 165)', () => {
+    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 110)); // 1 acolyte
+    s = withMaxInfluence(s, 165);
     s = autoRecruitAcolytes(s);
     expect(s.lifetime.acolytes).toHaveLength(2);
     expect(s.lifetime.acolytes[1]!.id).toBe(2); // sequential ids
   });
 
   it('does nothing when the count already meets the target', () => {
-    const s = autoRecruitAcolytes(withMaxInfluence(fresh(), 242));
+    const s = autoRecruitAcolytes(withMaxInfluence(fresh(), 110));
     const same = autoRecruitAcolytes(s);
     expect(same).toBe(s); // reference equality — no churn
   });
 
   it('never removes existing acolytes when maxInfluence drops', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 1170)); // 3 acolytes
+    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 248)); // 3 acolytes
     s = withMaxInfluence(s, 50); // back below the first threshold
     const after = autoRecruitAcolytes(s);
     expect(after.lifetime.acolytes).toHaveLength(3); // no demotion
@@ -290,7 +290,7 @@ describe('tick — acolyte system end-to-end', () => {
   });
 
   it('auto-recruits the first acolyte on tick once influence reaches the first threshold', () => {
-    const s = withMaxInfluence(fresh(), 242);
+    const s = withMaxInfluence(fresh(), 110);
     expect(s.lifetime.acolytes).toHaveLength(0);
     const after = tick(s, 0.1).state;
     expect(after.lifetime.acolytes).toHaveLength(1);
@@ -310,7 +310,7 @@ describe('tick — acolyte system end-to-end', () => {
 
 describe('Katabasis — acolytes reset to empty', () => {
   it('rebirth wipes acolytes; auto-recruit re-seeds once influence is regrown', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 1170)); // 3 acolytes
+    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 248)); // 3 acolytes
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
@@ -319,7 +319,7 @@ describe('Katabasis — acolytes reset to empty', () => {
     // maxInfluence reset to BASE (100), still below the first threshold → no acolyte yet.
     expect(tick(after, 0.1).state.lifetime.acolytes).toHaveLength(0);
     // Regrow influence past the first threshold and the next tick re-seeds one.
-    const ticked = tick(withMaxInfluence(after, 242), 0.1).state;
+    const ticked = tick(withMaxInfluence(after, 110), 0.1).state;
     expect(ticked.lifetime.acolytes).toHaveLength(1);
     expect(ticked.lifetime.acolytes[0]!.assignedAction).toBeNull();
   });

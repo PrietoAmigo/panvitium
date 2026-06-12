@@ -97,11 +97,11 @@ describe('maleficia catalog — sheet parity (25 items)', () => {
     }
   });
 
-  it("sigilEffectMultiplier reflects Solomon's Ring (+50%) and Iron Nails (+1% each)", () => {
+  it("sigilEffectMultiplier reflects Solomon's Ring (+66%) and Iron Nails (+1% each)", () => {
     expect(sigilEffectMultiplier([])).toBe(1);
-    expect(sigilEffectMultiplier(['solomons_ring'])).toBeCloseTo(1.5, 9);
+    expect(sigilEffectMultiplier(['solomons_ring'])).toBeCloseTo(1.66, 9);
     expect(sigilEffectMultiplier(['iron_nails', 'iron_nails', 'iron_nails'])).toBeCloseTo(1.03, 9);
-    expect(sigilEffectMultiplier(['solomons_ring', 'iron_nails'])).toBeCloseTo(1.51, 9);
+    expect(sigilEffectMultiplier(['solomons_ring', 'iron_nails'])).toBeCloseTo(1.67, 9);
   });
 });
 

@@ -55,9 +55,11 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
   const elapsedSeconds = Math.max(0, (now - saved.lastTickAt) / 1000);
   const offlineMul = computeModifiers(saved).offlineTimeMul;
   const acediaLvl = sinLevel(saved.devotion.acedia);
-  const acediaMinutes = Math.min(elapsedSeconds, ACEDIA_COMPOUND_CAP_SECONDS) / 60;
+  // Sheet rev 2026-06-12: the compound exponent is in SECONDS (base 1.0000002^(s·L²)), capped at
+  // the seven-day saturation point as before.
+  const acediaSeconds = Math.min(elapsedSeconds, ACEDIA_COMPOUND_CAP_SECONDS);
   const acediaCompound =
-    acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (acediaMinutes * acediaLvl * acediaLvl) : 1;
+    acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (acediaSeconds * acediaLvl * acediaLvl) : 1;
   // Player base offline efficiency (Globals: 0.5×) — the world runs at half rate while away.
   // Wired with the Mercatus signature clauses; Mercatus Acediae's revenue alone is exempt (the
   // tick dep below divides its term back out). offlineTimeMul (Procrastination, Dolce, Lemure,

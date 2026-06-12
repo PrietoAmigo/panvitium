@@ -31,14 +31,14 @@ describe('computeModifiers — Sin level effects', () => {
     expect(playerEfficiency(withDevotion({ gula: bn(1049760000) }))).toBe(16); // L4
   });
 
-  it('Vanagloria levels scale influence rate 1.5× per level (multiplicative)', () => {
+  it('Vanagloria levels scale influence rate 1.33× per level (multiplicative)', () => {
     expect(computeModifiers(withDevotion({ vanagloria: bn(0) })).influenceRateMul).toBe(1);
     expect(computeModifiers(withDevotion({ vanagloria: bn(180) })).influenceRateMul).toBeCloseTo(
-      1.5,
+      1.33,
       6,
     );
     expect(computeModifiers(withDevotion({ vanagloria: bn(32400) })).influenceRateMul).toBeCloseTo(
-      2.25,
+      1.33 ** 2,
       6,
     );
   });
