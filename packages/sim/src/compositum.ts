@@ -443,32 +443,36 @@ export function compositumGenerationPerSecond(state: GameState): number {
   return s;
 }
 
-/** Π(1 + generationRateBoost) over active toggles (Bacchanal) — folds into the generation mul. */
-export function compositumGenerationRateMul(state: GameState): number {
+/**
+ * Π(1 + generationRateBoost × effectMul) over active toggles (Bacchanal) — folds into the
+ * generation mul. `effectMul` is the Gusion #11 / Naberius #24 ceremony-EFFECT channel (sheet rev
+ * 2026-06-12); it scales the boost magnitudes, never the gold/influence outputs.
+ */
+export function compositumGenerationRateMul(state: GameState, effectMul = 1): number {
   let mul = 1;
   for (const id of state.lifetime.activeToggles) {
     const def = COMPOSITA[id];
-    if (def?.generationRateBoost) mul *= 1 + def.generationRateBoost;
+    if (def?.generationRateBoost) mul *= 1 + def.generationRateBoost * effectMul;
   }
   return mul;
 }
 
-/** Π(1 + suicideRateBoost) over active toggles (Doom Gathering) — folds into the suicide mul. */
-export function compositumSuicideRateMul(state: GameState): number {
+/** Π(1 + suicideRateBoost × effectMul) over active toggles (Doom Gathering). */
+export function compositumSuicideRateMul(state: GameState, effectMul = 1): number {
   let mul = 1;
   for (const id of state.lifetime.activeToggles) {
     const def = COMPOSITA[id];
-    if (def?.suicideRateBoost) mul *= 1 + def.suicideRateBoost;
+    if (def?.suicideRateBoost) mul *= 1 + def.suicideRateBoost * effectMul;
   }
   return mul;
 }
 
-/** Π(1 + murderRateBoost) over active toggles (Enraging Broadcast) — folds into the murder mul. */
-export function compositumMurderRateMul(state: GameState): number {
+/** Π(1 + murderRateBoost × effectMul) over active toggles (Enraging Broadcast). */
+export function compositumMurderRateMul(state: GameState, effectMul = 1): number {
   let mul = 1;
   for (const id of state.lifetime.activeToggles) {
     const def = COMPOSITA[id];
-    if (def?.murderRateBoost) mul *= 1 + def.murderRateBoost;
+    if (def?.murderRateBoost) mul *= 1 + def.murderRateBoost * effectMul;
   }
   return mul;
 }

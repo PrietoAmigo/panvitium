@@ -52,6 +52,17 @@ export interface TickDeps {
    * the ×0.5 factor, so its term is divided back by this value.
    */
   readonly offlineEfficiency?: number;
+  /**
+   * Offline-only multiplier on the reprobate-generation pool accrual (Zepar #16). Default 1;
+   * `resumeGame` passes the sigil-derived value for the catch-up tick.
+   */
+  readonly offlineGenerationMul?: number;
+  /**
+   * Offline-only multiplier on ACTION-TIMER advancement (Marax #21 — "+offline action
+   * efficiency"): the in-flight Opera timers advance by `deltaSeconds × this` during the catch-up
+   * tick. Default 1.
+   */
+  readonly offlineActionTimeMul?: number;
 }
 
 /** The result of advancing the game: the new state, outcome events, and transient notices. */
@@ -108,7 +119,9 @@ function baseGainRates(state: GameState, mods: Modifiers): GainRates {
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const influenceGainPerSecond =
     effectiveMax.toNumber() * BASE_INFLUENCE_RATE * mods.influenceRateMul +
-    (compositumInfluencePerSecond(state) + mods.flatInfluencePerSecond) * mods.influenceRateMul;
+    (compositumInfluencePerSecond(state) * mods.vitiumCompositumInfluenceOutputMul +
+      mods.flatInfluencePerSecond) *
+      mods.influenceRateMul;
   return { goldGainPerSecond, influenceGainPerSecond };
 }
 
@@ -127,7 +140,7 @@ export function perSecondRates(state: GameState): PerSecondRates {
     bn(rates.influenceGainPerSecond),
     bn(
       compositumPercentInfluencePerSecond(state, rates) *
-        mods.vitiumCompositumOutputMul *
+        mods.vitiumCompositumInfluenceOutputMul *
         mods.influenceRateMul,
     ),
   );
@@ -223,9 +236,11 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
     effectiveMax,
     BASE_INFLUENCE_RATE * mods.influenceRateMul * offlineInfluenceMul * deltaSeconds,
   );
+  // VC influence output (flat ceremony influence + Vegas' percentage conversion) takes the
+  // dedicated Orias #59 multiplier; the gold side keeps `vitiumCompositumOutputMul` (Zagan #61).
   const vcInfluence = mul(
-    (compositumInfluencePerSecond(state) +
-      compositumPercentInfluencePerSecond(state, gainRates) * mods.vitiumCompositumOutputMul) *
+    (compositumInfluencePerSecond(state) + compositumPercentInfluencePerSecond(state, gainRates)) *
+      mods.vitiumCompositumInfluenceOutputMul *
       mods.influenceRateMul *
       offlineInfluenceMul,
     deltaSeconds,
@@ -262,10 +277,12 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   //    A large (offline) delta resolves every queued action at once. Emptio carries its target
   //    maleficium id on the timer so the resolver knows which item was being bought.
   if (working.lifetime.actionQueue.length > 0) {
+    // Marax #21: during the offline catch-up tick, the in-flight timers advance faster.
+    const actionDelta = deltaSeconds * (deps.offlineActionTimeMul ?? 1);
     const remaining: ActionTimer[] = [];
     const completed: ActionTimer[] = [];
     for (const timer of working.lifetime.actionQueue) {
-      const left = timer.remainingSeconds - deltaSeconds;
+      const left = timer.remainingSeconds - actionDelta;
       if (left > 0) {
         remaining.push(
           timer.target === undefined
@@ -292,7 +309,9 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer
   //    births / suicides / murders (02 §9). Each death mints 1 soul. The pools live on the
   //    lifetime state and persist across save/load (ADR-023 additive optional).
-  working = applyReprobateDynamics(working, deltaSeconds);
+  working = applyReprobateDynamics(working, deltaSeconds, {
+    generationMul: deps.offlineGenerationMul ?? 1,
+  });
 
   // 4b. Panvitium soul harvest (03 §2.3): while the ritual burns, it mints souls each second in
   //     proportion to the current soul total — R(t) × souls — compounding the hoard for as long as

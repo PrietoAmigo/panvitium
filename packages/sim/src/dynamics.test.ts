@@ -171,7 +171,9 @@ describe('reprobate dynamics — Vitium Mercatura output multiplier (Plutus / Va
     };
   }
 
-  it('mercatus generation scales with the VM-output multiplier (Plutus lifts it)', () => {
+  it('mercatus generation takes its OWN multiplier — Plutus (revenue) no longer leaks in', () => {
+    // Sigils sheet rev 2026-06-12: Sitri #12 owns the breeding channel; Plutus / Vapula scale
+    // revenue only, at the tick's income line.
     const base = withBusiness();
     const baseRate = reprobateRates(base, computeModifiers(base)).generationPerSecond;
     expect(baseRate).toBeGreaterThan(0);
@@ -180,10 +182,10 @@ describe('reprobate dynamics — Vitium Mercatura output multiplier (Plutus / Va
       ...base,
       lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, plutus: 1 } },
     };
-    const vmMul = computeModifiers(withPlutus).vitiumMercaturaOutputMul;
-    expect(vmMul).toBeGreaterThan(1);
+    expect(computeModifiers(withPlutus).vitiumMercaturaOutputMul).toBeGreaterThan(1);
+    expect(computeModifiers(withPlutus).vitiumMercaturaGenerationMul).toBe(1);
     const plutusRate = reprobateRates(withPlutus, computeModifiers(withPlutus)).generationPerSecond;
-    expect(plutusRate).toBeCloseTo(baseRate * vmMul, 6);
+    expect(plutusRate).toBeCloseTo(baseRate, 6);
   });
 
   it('the multiplier does not touch the base generation rate (no business → unchanged)', () => {

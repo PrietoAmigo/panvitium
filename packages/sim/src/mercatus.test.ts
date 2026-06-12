@@ -200,7 +200,8 @@ describe('Mercatus — divest refund, incl. Vine #45 (§1.1)', () => {
 
   it('a bound Vine #45 lifts the fraction the refund uses', () => {
     let s = withDepths(withGold(fresh(), 0), { gula: 3 });
-    s = bindSigil({ ...s, souls: bn(1_000_000) }, 45, 1_000_000);
+    // Sheet rev 2026-06-12: coeff 0.0001 → strength 1 needs 1e8 bound souls.
+    s = bindSigil({ ...s, souls: bn(100_000_000) }, 45, 100_000_000);
     expect(divestFraction(s)).toBeCloseTo(0.5, 6);
     const r = divestMercatus(s, 'gula', 1);
     if (!r.ok) throw new Error(r.reason);

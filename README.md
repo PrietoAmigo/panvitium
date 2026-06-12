@@ -103,9 +103,26 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 718** (sim 490 · shared 56 · api 11 · web 161).
+**Current test count: 722** (sim 494 · shared 56 · api 11 · web 161).
 
-> **Latest change — economy retune, slice 4 of 6: the Sins remap (ADR-028).** The Sins &
+> **Latest change — economy retune, slice 5 of 6: the 72-sigil respecification (ADR-029).** The
+> sigil catalog is rewritten wholesale from the revised Sigils sheet — every one of the 72 carries
+> its sheet effect, curve, and coefficient, and **no sigil is inert anymore** (the 16 ADR-024
+> orphans revive; old saves' bindings wake up with the new effects, no schema bump). Highlights:
+> Sitri #12 now owns a dedicated **VM generation** multiplier (Plutus/Vapula scale revenue only);
+> Gusion #11 / Naberius #24 scale **VC ceremony effects** (incomes excluded); Orias #59 owns the
+> **VC influence output** (Zagan keeps gold); Leraie #14 chains **murders into suicides** at the
+> rate level; **Crocell ⇄ Furcas** swap (double-find ⇄ divestment refund); Amy #58 turns CURSED
+> (−Indagatio & Emptio efficiency); Glasya #25 / Sabnock #43 / Ose #57 feed new flat murder /
+> suicide / generation channels. New mechanics: **duplicate-output** sigils (Agares / Malphas /
+> Focalor — positive tiers only), **Marax** offline action-timer speed, **Foras** accrual-window
+> extension, **Zepar** offline generation, whole-tier-group sigils (Bael / Balam / Amdusias),
+> **Gaap** inflating the maleficia enhancer stack, and **Semet** as the sigil-effect scaler
+> (acyclic by construction). Also repaired: the economy template's sigil-coefficient formulas
+> (broken `Globals!$B$22` refs from the row-21 deletion, re-pointed to `$B$21`). Test count 722
+> (sim 494 · web 161).
+
+> **Prior change — economy retune, slice 4 of 6: the Sins remap (ADR-028).** The Sins &
 > Devotion table is rewired to the revised sheet. **Gula**: the Insatiability skill now lifts
 > player efficiency; each LEVEL strips a quarter of the negative tiers' weight (level 4 → the
 > Opera cannot roll Bad/Terrible/Apocalyptic at all). **Luxuria** ×2 Suasio efficiency per level;
@@ -115,7 +132,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > through the Mercatus Tristitiae clause, Doom Gathering, and the suicide sigils. The ×1.33
 > Ira acolyte/invocation ladder is deleted. Test count unchanged at 718.
 
-> **Prior change — economy retune, slice 3 of 6: the Vitium Compositum rework (ADR-027).**
+> **Earlier change — economy retune, slice 3 of 6: the Vitium Compositum rework (ADR-027).**
 > The four subtype-era ceremonies (_Loan Shark Op_, _Outrage Cycle_, _No-babies Movement_,
 > _Ethnocentric Revolt_) are **deleted** — the roster is the sheet's canonical nine, and old
 > saves self-heal on the first tick (`advanceToggles` drops unknown ids unbilled). Their five
@@ -504,13 +521,6 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Sigils — the orphaned-sigils pass.** All 72 were once wired (the S1–S16 slices below record
-  that high-water mark), but **ADR-024 neutralized 16 subtype/conversion-keyed sigils to `inert`**
-  (#1 Bael, #15 Eligos, #25 Glasya-Labolas, #27 Ronove, #33 Gaap, #37 Phenex, #39 Malphas, #41
-  Focalor, #43 Sabnock, #47 Vual, #53 Camio, #56 Gremory, #57 Ose, #59 Orias, #62 Volac, #64
-  Haures), IDs preserved. With the Mercatus / Foedera systems in (ADR-025) they now have natural
-  retarget destinations — depths, penetration, invest costs, Foedus tiers — but each needs a sheet
-  decision. Registered as an ADR open item.
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. The **oracular reveals** (Phase 5 slice) have also shipped: owning Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather surfaces a live Opera tier-distribution readout in that item's cabinet detail (a stacked odds bar per action, via a read-only `actionTierDistribution` sim helper that reuses the exact `resolveAction` composition). With this, Maleficia is complete — roster, gating, and every effect.
 - **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is complete: _Caedis_, _Pogrom_, and _Purgatio_, each gated by its Ira level. (Post-ADR-024 note: Pogrom culls the single pool — the old present-subtype picker and its no-delegation caveat retired with the subtypes.) Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (1,000,000) gold costs are sheet-pinned.
 - **Emails (PC program) — impact-feedback system** _(✓ shipped, content provisional)_. An inbox that
@@ -803,10 +813,10 @@ _Blocked on a number or a model decision on `Panvitium_Economy_Template.xlsx`, n
 is settled it is a straightforward slice (the spreadsheet always wins on numbers and on a system's
 composition)._
 
-- **The last 4 sigils** _(✓ shipped, then superseded)_. **Haures #64**, **Ose #57 / Orias #59**, and
-  **Vual #47** landed with their subtype/conversion mechanics as recorded in the Status table —
-  and were later neutralized to `inert` along with twelve others when **ADR-024** removed subtypes
-  and conversion. Their re-targeting is the orphaned-sigils pass (see `### Remaining`).
+- **The last 4 sigils** _(✓ shipped, superseded twice)_. **Haures #64**, **Ose #57 / Orias #59**, and
+  **Vual #47** landed with their subtype/conversion mechanics, were neutralized to `inert` by
+  **ADR-024**, and now carry their revised-sheet effects per **ADR-029** — along with the other
+  twelve orphans. No sigil is inert anymore.
 - **Imperium's action time** _(✓ shipped)_. Decided at 10s (the _Suasio_ sheet had left it "Fill Time";
   was a flagged 60s placeholder).
 - **Placeholder sweep** _(✓ shipped)_. Audited every inline-flagged magnitude against the sheet. The

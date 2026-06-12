@@ -641,6 +641,8 @@ drop both fields, and seed `mercatusDepths` by omission.
   specifies percentage-of-income semantics. Tracked in the README backlog.
 - The 16 sigils neutralized to `inert` by ADR-024 now have natural retarget destinations (depths,
   penetration, Foedus tiers); the orphaned-sigils pass is unblocked. Tracked in the README backlog.
+  *(Resolved by ADR-029 [2026-06-12]: the revised Sigils sheet re-specified all 72; no sigil is
+  inert anymore.)*
 
 **Alternatives considered.**
 
@@ -765,6 +767,59 @@ signature clause (ADR-025). Avaritia / Acedia / Vanagloria / Superbia stand as a
 **Alternatives considered.** Keeping the suicide couplings alongside the new mapping — rejected:
 the sheet lists neither, and double-dipping despair (Devotion AND depth) would undercut the
 Mercatus clause as the deliberate price of that flavour.
+
+---
+
+## ADR-029: The 72-sigil respecification
+
+**Status.** Accepted [2026-06-12]. Implements the revised Sigils sheet (economy retune slice 5)
+and resolves the orphaned-sigils pass left open by ADR-024.
+
+**Context.** ADR-024 neutralized 16 subtype/conversion-keyed sigils to `inert`, and the surviving
+catalog carried near-uniform placeholder coefficients (0.001) with several effects parked on
+improvised targets. The revised template specifies every one of the 72: effect, curve (√ default,
+log where noted), and per-sigil coefficient (√ rows mostly 1e-4; Paimon 5e-5, Foras 2.5e-5; log
+rows 0.001–3), with √/log strengths reading as percentage increases/decreases and "(flat)" rows as
+flat amounts.
+
+**Decision.** The catalog is rewritten wholesale from the sheet — all 72 defs, no `inert` kind
+left. The 16 dead sigils revive on their sheet effects; the notable re-targets: Sitri #12 →
+a dedicated **Vitium Mercatura GENERATION multiplier** (revenue stays on `vitiumMercaturaOutputMul`
+— Plutus/Vapula no longer leak into breeding); Gusion #11 + Naberius #24 → a **VC ceremony-EFFECT
+multiplier** scaling the rate boosts ×(1 + boost × mul), incomes excluded; Orias #59 → a **VC
+influence-output multiplier** (the gold side keeps Zagan #61); Leraie #14 → **murder-triggers-
+suicide** (rate-level: suicides/s += chance × murders/s; the old murder-gold kind is retired);
+Eligos #15 → offline influence and Forneus #30 → invoking power (log 0.5), swapping their old
+roles; **Crocell #49 ⇄ Furcas #50** swap (double-find ⇄ divestment refund, Furcas composing with
+Vine); Amy #58 → a CURSED multi-field decrease on Indagatio AND Emptio efficiency; Glasya #25 /
+Sabnock #43 / Ose #57 → flat murder / suicide / generation channels through the modifier bundle.
+New mechanics: **duplicate-output** sigils (Agares #2 Indagatio, Malphas #39 Suasio, Focalor #41
+Decimatio — one roll per resolution, only positive tiers duplicate); **Marax #21** speeds offline
+action-timer advancement (a tick dep from `resumeGame`); **Foras #31** extends the Acedia-compound
+accrual window; **Zepar #16** multiplies offline reprobate generation (threaded
+tick→`applyReprobateDynamics`); **Bael #1 / Balam #51 / Amdusias #67** act on whole tier groups;
+**Gaap #33** inflates the bonus part of the maleficia sigil-enhancer stack (`1 + (raw − 1) ×
+(1 + gaap)`, read against the raw stack); **Semet #32** becomes the sigil-effect scaler — every
+OTHER sigil's strength is multiplied by `(1 + semet)`, with Semet's own strength read against the
+Gaap-inflated maleficia stack, so neither feeds itself.
+
+**Consequences.**
+
+- No catalog entry is inert; the ADR-024 open item closes. Save shapes are untouched (bindings are
+  id-keyed souls), so per ADR-023 no schema bump is needed — old bindings simply wake up with the
+  sheet effects.
+- The duplicate-output roll deliberately skips negative tiers: the curse never doubles a
+  catastrophe. The mirrored design risk (doubling an Apocalyptic) was judged un-fun rather than
+  interesting.
+- Gaap's reach is the maleficia→sigil ENHANCER stack only (Solomon's Ring et al.), not every
+  maleficia constant in the game — the narrow reading is well-defined and acyclic; widening it is
+  a future decision if the sheet ever demands it.
+- Purson #20 / Camio #53 / Cimejes #66 settle the three Katabasis carry-over rolls on log curves
+  with coefficient 1 (flat percentage points at the roll).
+
+**Alternatives considered.** Keeping `inert` as a kind for future retirements — rejected; an empty
+catalog state should be expressed by deleting the def, not by a dead enum member. A self-inclusive
+Semet (fixed-point) — rejected as numerically fragile for no design gain.
 
 ---
 

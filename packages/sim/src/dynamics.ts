@@ -26,8 +26,6 @@ import { mercatusGenerationPerSecond } from './mercatus.js';
 import { compositumGenerationPerSecond, panvitiumRate } from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobates } from './population.js';
-import { sigilMurderGoldPerKill } from './sigils.js';
-import { add } from './bignum.js';
 import { type GameState, totalReprobates } from './state.js';
 
 /**
@@ -46,39 +44,59 @@ export interface ReprobateRates {
 /** Compute the rates from the state, given a precomputed Modifiers bundle (tick already has it). */
 export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRates {
   const population = totalReprobates(state);
-  // Vitium Mercatura output multiplier (Plutus, Vapula #60) scales the MERCATUS contribution to
-  // generation — not the base or Vitium Compositum terms.
-  const vmMul = mods.vitiumMercaturaOutputMul;
+  // Sigils sheet rev 2026-06-12: the MERCATUS generation term takes the dedicated generation
+  // multiplier (Sitri #12); `vitiumMercaturaOutputMul` (Plutus, Vapula #60) now scales REVENUE
+  // only, at the tick's income line.
   const baseGen =
     BASE_REPROBATE_GENERATION_PER_SECOND +
-    mercatusGenerationPerSecond(state) * vmMul +
+    mercatusGenerationPerSecond(state) * mods.vitiumMercaturaGenerationMul +
     compositumGenerationPerSecond(state) +
-    panvitiumRate(state); // Panvitium: R(t) = 0.01·eᵗ is also a flat generation increase
+    panvitiumRate(state) + // Panvitium: R(t) = 0.01·eᵗ is also a flat generation increase
+    mods.flatGenerationPerSecond; // Ose #57 — flat births/s from the sigil channel
   // The ceremony rate BOOSTS (Bacchanal generation, Doom suicide, Enraging murder — sheet rev
   // 2026-06-12) live in the modifier bundle, so they arrive through the three multipliers below.
+  // The flat per-capita additions: Nightmares + Sabnock #43 (suicide), Glasya-Labolas #25 (murder).
   const suicideBase = BASE_SUICIDE_RATE_PER_SECOND + mods.flatBaseSuicideRatePerSecond;
+  const murderBase = BASE_MURDER_RATE_PER_SECOND + mods.flatBaseMurderRatePerSecond;
+  const murderPerSecond = murderBase * population * mods.murderRateMul;
+  // Leraie #14: each murder drives a witness to the rope with probability p — at the rate level,
+  // suicides gain p × the murder rate.
+  const suicidePerSecond =
+    suicideBase * population * mods.reprobateSuicideRateMul +
+    mods.murderTriggersSuicideChance * murderPerSecond;
   return {
     generationPerSecond: Math.max(0, baseGen) * mods.reprobateGenerationRateMul,
-    suicidePerSecond: suicideBase * population * mods.reprobateSuicideRateMul,
-    murderPerSecond: BASE_MURDER_RATE_PER_SECOND * population * mods.murderRateMul,
+    suicidePerSecond,
+    murderPerSecond,
   };
+}
+
+/** Offline-only scaling options for the pool accrual (Zepar #16 via `resumeGame`'s tick deps). */
+export interface ReprobateDynamicsOptions {
+  readonly generationMul?: number;
 }
 
 /**
  * Advance the three pools by `deltaSeconds` and apply any integer events that fall out.
  * Pure with respect to `state`. Returns the new state.
  */
-export function applyReprobateDynamics(state: GameState, deltaSeconds: number): GameState {
+export function applyReprobateDynamics(
+  state: GameState,
+  deltaSeconds: number,
+  opts: ReprobateDynamicsOptions = {},
+): GameState {
   if (deltaSeconds <= 0) return state;
 
   const mods = computeModifiers(state);
   const rates = reprobateRates(state, mods);
+  const generationMul = opts.generationMul ?? 1;
 
   let working: GameState = {
     ...state,
     lifetime: {
       ...state.lifetime,
-      generationPool: state.lifetime.generationPool + rates.generationPerSecond * deltaSeconds,
+      generationPool:
+        state.lifetime.generationPool + rates.generationPerSecond * generationMul * deltaSeconds,
       suicidePool: state.lifetime.suicidePool + rates.suicidePerSecond * deltaSeconds,
       murderPool: state.lifetime.murderPool + rates.murderPerSecond * deltaSeconds,
     },
@@ -105,9 +123,9 @@ export function applyReprobateDynamics(state: GameState, deltaSeconds: number): 
   }
 
   // 3. Murders. Each whole unit kills one reprobate; each kill yields 1 soul. If no reprobates
-  //    exist, the pool is left intact so progress isn't lost. Leraie #14: each murder also yields
-  //    gold (0 when unbound, so the gold ledger is untouched without the sigil).
-  const murderGoldPerKill = sigilMurderGoldPerKill(working);
+  //    exist, the pool is left intact so progress isn't lost. (Leraie #14's murder→suicide
+  //    coupling is rate-level, in `reprobateRates`; the old murder-gold effect is retired per the
+  //    Sigils sheet rev 2026-06-12.)
   while (working.lifetime.murderPool >= 1 && totalReprobates(working) > 0) {
     const r = removeReprobates(working, 1);
     if (r.removed === 0) break;
@@ -116,10 +134,6 @@ export function applyReprobateDynamics(state: GameState, deltaSeconds: number): 
       ...withSoul,
       lifetime: {
         ...withSoul.lifetime,
-        gold:
-          murderGoldPerKill > 0
-            ? add(withSoul.lifetime.gold, murderGoldPerKill)
-            : withSoul.lifetime.gold,
         murderPool: working.lifetime.murderPool - 1,
       },
     };

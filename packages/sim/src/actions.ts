@@ -39,7 +39,11 @@ import {
   sigilEffectMultiplier,
   type MaleficiumRarity,
 } from './maleficia.js';
-import { sigilCostReductionByChannel, sigilIndagatioDoubleFindChance } from './sigils.js';
+import {
+  sigilCostReductionByChannel,
+  sigilDuplicateOutputChance,
+  sigilIndagatioDoubleFindChance,
+} from './sigils.js';
 
 export interface ActionCost {
   readonly gold?: number;
@@ -661,29 +665,53 @@ export function resolveAction(
   let acquired: string[] = [];
   let lostFromList: string[] = [];
 
+  // Duplicate-output sigils (Sigils sheet rev 2026-06-12): Malphas #39 (Suasio), Focalor #41
+  // (Decimatio), Agares #2 (Indagatio). Rolled once per resolution; only POSITIVE tiers
+  // (Stellar/Excellent/Good) duplicate — the curse never doubles a catastrophe. Emptio has no
+  // duplication sigil. The second application re-rolls its own randomness against the same tier.
+  const dupCategory =
+    def.category === 'suasio' || def.category === 'decimatio' || def.category === 'indagatio'
+      ? def.category
+      : null;
+  const positiveTier = tier === 'stellar' || tier === 'excellent' || tier === 'good';
+  const applyTwice =
+    dupCategory !== null &&
+    positiveTier &&
+    rng.float() < sigilDuplicateOutputChance(state, dupCategory);
+  const passes = applyTwice ? 2 : 1;
+
   switch (def.id) {
     case 'suggestion':
       next = resolveSuggestion(state, tier, rng, eff);
+      if (applyTwice) next = resolveSuggestion(next, tier, rng, eff);
       break;
     case 'logismoi':
       next = resolveLogismoi(state, tier, rng, eff);
+      if (applyTwice) next = resolveLogismoi(next, tier, rng, eff);
       break;
     case 'imperium':
       next = resolveImperium(state, tier, rng, eff);
+      if (applyTwice) next = resolveImperium(next, tier, rng, eff);
       break;
     case 'caedis':
       next = resolveCaedis(state, tier, rng, eff);
+      if (applyTwice) next = resolveCaedis(next, tier, rng, eff);
       break;
     case 'pogrom':
       next = resolvePogrom(state, tier, rng, eff);
+      if (applyTwice) next = resolvePogrom(next, tier, rng, eff);
       break;
     case 'purgatio':
       next = resolvePurgatio(state, tier, rng, eff);
+      if (applyTwice) next = resolvePurgatio(next, tier, rng, eff);
       break;
     case 'indagatio': {
-      const r = resolveIndagatio(state, tier, rng);
-      next = r.state;
-      surfaced = r.surfaced;
+      surfaced = [];
+      for (let pass = 0; pass < passes; pass += 1) {
+        const r = resolveIndagatio(next, tier, rng);
+        next = r.state;
+        surfaced = surfaced.concat(r.surfaced);
+      }
       break;
     }
     case 'emptio': {

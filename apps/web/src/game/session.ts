@@ -11,6 +11,8 @@ import {
   computeModifiers,
   PLAYER_OFFLINE_EFFICIENCY,
   createInitialState,
+  sigilOfflineAccrualWindowMul,
+  sigilOfflineActionEfficiencyMul,
   sigilOfflineResourceMul,
   sinLevel,
   sub,
@@ -56,8 +58,9 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
   const offlineMul = computeModifiers(saved).offlineTimeMul;
   const acediaLvl = sinLevel(saved.devotion.acedia);
   // Sheet rev 2026-06-12: the compound exponent is in SECONDS (base 1.0000002^(s·L²)), capped at
-  // the seven-day saturation point as before.
-  const acediaSeconds = Math.min(elapsedSeconds, ACEDIA_COMPOUND_CAP_SECONDS);
+  // the seven-day saturation point — extended by Foras #31 (+offline accrual window).
+  const accrualCapSeconds = ACEDIA_COMPOUND_CAP_SECONDS * sigilOfflineAccrualWindowMul(saved);
+  const acediaSeconds = Math.min(elapsedSeconds, accrualCapSeconds);
   const acediaCompound =
     acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (acediaSeconds * acediaLvl * acediaLvl) : 1;
   // Player base offline efficiency (Globals: 0.5×) — the world runs at half rate while away.
@@ -65,12 +68,15 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
   // tick dep below divides its term back out). offlineTimeMul (Procrastination, Dolce, Lemure,
   // Mercatus Acediae's per-depth lift) and the Acedia level compound stack on top as before.
   const scaled = elapsedSeconds * PLAYER_OFFLINE_EFFICIENCY * offlineMul * acediaCompound;
-  // Sallos #19 / Forneus #30 lift offline gold / influence income specifically (online ticks pass
-  // nothing, so these apply only to this catch-up).
+  // Offline-only sigils (sheet rev 2026-06-12): Sallos #19 gold, Eligos #15 influence, Zepar #16
+  // reprobate generation, Marax #21 action-timer advancement. Online ticks pass nothing, so all
+  // four apply only to this catch-up.
   const offlineRes = sigilOfflineResourceMul(saved);
   const resumed = tick(saved, scaled, {
     offlineGoldMul: offlineRes.gold,
     offlineInfluenceMul: offlineRes.influence,
+    offlineGenerationMul: offlineRes.generation,
+    offlineActionTimeMul: sigilOfflineActionEfficiencyMul(saved),
     offlineEfficiency: PLAYER_OFFLINE_EFFICIENCY,
   }).state;
   // Reconcile the logical clock to wall-clock: the tick advanced `lastTickAt` by the SCALED delta,

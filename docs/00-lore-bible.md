@@ -33,11 +33,9 @@ verdict. You are not waiting for death to collect a reward. You corrupt and cull
 you descend a found altar across many lifetimes (*Katabasis*) to rise through Hell's hierarchy while
 still breathing. The end of the road is to become its apex yourself (§7).
 
-**Reconciliation with `01`.** `01`'s premise currently frames the climb as buying rank for when you
-finally arrive in Hell at death. That framing is retired. There is no arrival and no deferred
-sentence. You become the thing while alive, and death changes nothing because the soul is already
-what it will be. `01`'s premise paragraph should be rewritten as a **living apotheosis**, not a
-posthumous one.
+There is no arrival and no deferred sentence.
+You become the thing while alive, and death changes nothing because the soul is already
+what it will be. It is a **living apotheosis**, not a posthumous one.
 
 **Tone.** Grim-baroque, straight-faced, never parody. Latin and pseudo-ecclesiastical vocabulary is
 the product's voice. The theology is treated with the seriousness of a medieval grimoire even when
@@ -65,7 +63,7 @@ the underlying mechanic is an idle-game number.
 - **Above your acolytes.** The faithful are not innocents and are not loyal. They are lesser
   practitioners in your own vein, with you out of fear of you or hunger to shelter under your wing for
   the power it lends. They do the work's lower offices and keep vigil, but in your absence the
-  unfaithful desert and loot (§9). They grasp pieces only, never the whole: not the cosmology, not
+  unfaithful even loot (§9). They grasp pieces only, never the whole: not the cosmology, not
   what the altar truly is, not what you are becoming. You gain them, and hold them, as your influence
   grows.
 
@@ -153,16 +151,18 @@ not. "Her soul will not lie still" is good. "Her soul's frequency stays high" is
 - **The descent.** Lying on the altar drops you into a deep trance that lasts **months**. The body
   stays in near-stasis, spending almost no energy and needing little maintenance, kept by the
   acolytes as a group. The soul goes down to give Devotion and to bind souls to sigils.
-- **Liquidate and rebuild.** A months-long absence rots everything you hold, so you **sell
-  everything before each descent**: Gideon converts the businesses to cash, you go under, and you
-  rebuild from nothing on the way back up. Gideon runs them while you are awake, but he is a
-  caretaker, not a regent: their real engine is you, your influence, your occult work, your hand, and
-  without you for months they wither no matter who minds the desk. Worse, your own acolytes desert
-  and loot in your absence (§9), so a standing empire would be stripped, not merely neglected. Cash
-  is a durable store you can largely secure; you accept the looting of what is portable and
-  crystallize the rest before it evaporates. What cannot be sold is what scatters, the corrupted you
-  were cultivating and the standing you held, all to be won again. The periodic cash-out is a visible
-  pattern, a tell the wrong people can read (see §11).
+- **Liquidate and rebuild.** A months-long absence rots everything you hold and cannot manage, like
+  your opaque vice investments, so you sell every vice-related investment / business you cannot manage
+  yourself before each descent. Gideon manages the visible and legitimate-looking businesses to
+  provide sufficient cash to maintain operations while you go under, and you rebuild almost from nothing
+  on the way back up. The real engine of wealth is the vice industry and for that you, your influence,
+  your occult work and your hand are needed. Without you, absent for months, they wither no matter who
+  minds the desk. Worse, your household staff and even you own acolytes loot in your absence (§9), so a standing empire
+  could be taken from your hands or stripped, not merely neglected. Cash is a durable store you more easily secure; at the start
+  you accept the looting of what is portable and crystallize the rest before it evaporates.
+  What cannot be sold is what scatters, the corrupted you were cultivating and the standing you held,
+  all to be won again. The periodic cash-out is a visible pattern for people who can link the vice businesses and investments to you,
+  a tell the wrong people can read (see §11).
 - **The two lines.** Descent: ***Exspes in ima*** ("hopeless, into the depths"). Rising: ***Auctus
   ex imis*** ("augmented, out of the depths"). They are a matched pair. The rising line carries a
   quiet survivorship: coming back at all is the part a lesser soul could not do.
@@ -270,11 +270,10 @@ and the role-slots already known to be wanted, left unnamed on purpose.
   rival, no other corruptor at your level appears in your story.
 - **The acolytes are lesser practitioners, not innocents.** Occult-inclined people in your own vein,
   directly involved in your evil deeds. They are with you out of fear of you or hunger to shelter
-  under your wing for the power it lends, never loyalty. So during katabasis some desert and steal
-  whatever they can carry, betting either that you will not wake or that you will not win in the end,
-  and preferring a sure theft now to a share later. This eases as your influence grows, both in the
-  numbers (the mechanic) and in the fiction: the more terrible you become, the fewer dare. They
-  cannot descend, and they grasp pieces only, never the cosmology or what you are becoming.
+  under your wing for the power it lends, never loyalty. So during katabasis some steal, betting either that
+  you will not wake or that you will not know it was them, and preferring a sure theft now to a share later.
+  This eases as your influence grows, both in the numbers (the mechanic) and in the fiction: the more terrible
+  you become, the fewer dare. They cannot descend, and they grasp pieces only, never the cosmology or what you are becoming.
 - **Trusted minions are not acolytes.** The legitimate-looking side, the money, the businesses, the
   cover, is run by mundane functionaries who take no part in the occult work. Trusted, useful,
   kept at arm's length from the altar. Gideon is one (§11).
@@ -351,14 +350,14 @@ constraints in §9, and voices and channels follow the matrix in §10.
 **The household**
 
 - **Gideon Reyes**, the trusted minion. Not an acolyte and no part of the occult work. He runs the
-  legitimate-looking side while you are awake, the businesses, the money, the cleanup, and cashes it
-  all out before each descent, since none of it survives your months under (§5). A caretaker, not a
-  regent. Knows there is something downstairs and the one standing rule, never wake you during the
-  long sleeps, and keeps his eyes well away from it. Loyal, useful, kept clear of the altar. Voice:
-  logistics and cover, an overdue account, auditors sniffing, a sale to close before you go under.
+  legitimate-looking side of your businesses, which is the lesser part so to not raise suspicions.
+  Knows you have other investments which he's not managing and that there's a cause for it. He does
+  not care as long as his part of the cake remains.
+  Loyal, useful, kept clear of the altar and the occult. Voice: logistics and cover, an overdue account,
+  auditors sniffing.
 - **The acolytes** (unnamed group). Lesser practitioners in your own vein, the hands of your evil
   deeds: the corrupting, the culling, the rites. They are held by fear and by appetite for the power
-  of being yours, not loyalty, so in your absence the unfaithful desert and loot. Their number, and
+  of being yours, not loyalty, so in your absence the unfaithful sometimes even loot. Their number, and
   their nerve to stay, grow with your influence. They grasp pieces, never the whole.
 
 **The adversary (your one equal)**
@@ -371,11 +370,12 @@ constraints in §9, and voices and channels follow the matrix in §10.
   are a sadist. Because allocation is permanent, every soul he takes is one you never can. He
   deduced you exist because only an equal could read the signs, and the periodic liquidation is one
   of those signs: a man cashing out his whole estate on a cycle is a tell only a fellow descender
-  reads correctly. He makes contact, first courtesies, then a proposal to carve up the world's
-  uncommitted, then moves when you decline. The only sender who speaks the truth to you plainly, and
-  the only force that genuinely contests you. He grows more aggressive and menacing as the climb goes
-  on: the politeness burns off, the feelers become threats, and the threats become open moves against
-  you.
+  reads correctly. ALtough his katabasis are much more longer than yours as his catalyst (unkown) is
+  not as worn as yours. He makes contact, first courtesies, tests the waters so to confirm his suspicions,
+  then a proposal to carve up the world's uncommitted (probably a trap), then moves when you decline.
+  The only sender who speaks the truth to you plainly, and the only force that genuinely contests you.
+  He grows more aggressive and menacing as the climb goes on: the politeness burns off, the feelers
+  become threats, and the threats become open moves against you.
 
 **The Church (weather early, an active threat by the endgame)**
 

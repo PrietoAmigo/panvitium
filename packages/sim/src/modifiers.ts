@@ -53,7 +53,10 @@ import {
 import { compositumOfflineGainBoost } from './compositum.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import {
+  sigilMaleficiaEffectMul,
   sigilModifierContributions,
+  sigilMurderTriggersSuicideChance,
+  sigilSelfEffectMul,
   sigilCategoryTierContributions,
   sigilInvocationSinContributions,
   sigilInvocationEffectContributions,
@@ -91,6 +94,21 @@ export interface Modifiers {
    * then multiplied by population × `reprobateSuicideRateMul`. 0 when no source is active.
    */
   readonly flatBaseSuicideRatePerSecond: number;
+  /**
+   * Flat additive increase to the BASE per-capita murder rate (Glasya-Labolas #25 — the sheet's
+   * "+Murder rate (flat)"). Added to `BASE_MURDER_RATE_PER_SECOND` before ×population×mul. Default 0.
+   */
+  readonly flatBaseMurderRatePerSecond: number;
+  /**
+   * Flat additive births/s (Ose #57 — "+reprobate generation (flat)"). Added to the generation
+   * term in `reprobateRates` before the generation multiplier. Default 0.
+   */
+  readonly flatGenerationPerSecond: number;
+  /**
+   * Chance each murder also drives a witness to suicide (Leraie #14). Applied at the rate level:
+   * suicides/s += chance × murders/s. Default 0.
+   */
+  readonly murderTriggersSuicideChance: number;
   /** Multiplier on the lifetime `maxInfluence` (raises the cap). */
   readonly maxInfluenceMul: number;
   /** Multiplier on the player's own action efficiency (Gula). Stacks with category eff. */
@@ -129,10 +147,26 @@ export interface Modifiers {
    */
   readonly vitiumMercaturaOutputMul: number;
   /**
+   * Multiplier on the MERCATUS generation term only (Sitri #12 — "+VM reprobate generation").
+   * Sheet rev 2026-06-12 splits the trades' revenue and breeding channels. Default 1×.
+   */
+  readonly vitiumMercaturaGenerationMul: number;
+  /**
    * Multiplier on Vitium Compositum gold output (Zagan #61). Applied to `compositumGoldPerSecond`
    * at the tick's gold-income site, parallel to `vitiumMercaturaOutputMul` for the Mercatūs. Default 1×.
    */
   readonly vitiumCompositumOutputMul: number;
+  /**
+   * Multiplier on the VC INFLUENCE output (Orias #59) — the flat ceremony influence plus Vegas'
+   * percentage conversion — applied at the tick's influence line; the gold side keeps
+   * `vitiumCompositumOutputMul` (Zagan #61). Default 1×.
+   */
+  readonly vitiumCompositumInfluenceOutputMul: number;
+  /**
+   * Multiplier on the VC ceremonies' EFFECT magnitudes (Gusion #11 / Naberius #24): each rate
+   * boost composes as ×(1 + boost × this) — incomes are explicitly excluded. Default 1×.
+   */
+  readonly vitiumCompositumEffectMul: number;
   /**
    * Per-acolyte action efficiency (02 §10). Default 0.33: an acolyte runs an action at one-third
    * of the player's own efficiency. Future sources fold in multiplicatively: Bathin #18, Satan
@@ -167,6 +201,9 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   influenceRateMul: 1,
   flatInfluencePerSecond: 0,
   flatBaseSuicideRatePerSecond: 0,
+  flatBaseMurderRatePerSecond: 0,
+  flatGenerationPerSecond: 0,
+  murderTriggersSuicideChance: 0,
   flatGoldPerSecond: 0,
   maxInfluenceMul: 1,
   playerEfficiencyMul: 1,
@@ -179,7 +216,10 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   reprobateSuicideRateMul: 1,
   murderRateMul: 1,
   vitiumMercaturaOutputMul: 1,
+  vitiumMercaturaGenerationMul: 1,
   vitiumCompositumOutputMul: 1,
+  vitiumCompositumInfluenceOutputMul: 1,
+  vitiumCompositumEffectMul: 1,
   acolyteEfficiencyMul: 0.33,
   invocationEfficiencyMul: 1,
   invocationSinEffectivenessMul: {
@@ -277,10 +317,18 @@ export function computeModifiers(state: GameState): Modifiers {
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
   // just fold the aggregated contributions in. `sc(f)` is the sigil multiplier for field f (1 if none).
-  const sig = sigilModifierContributions(state, sigilEffectMultiplier(owned));
+  // The per-sigil effect multiplier (Sigils sheet rev 2026-06-12): the raw maleficia enhancer
+  // stack, inflated by Gaap #33 (+maleficia effect %), then scaled by Semet #32 (+sigil effect %).
+  // Gaap reads the raw stack and Semet reads the Gaap-inflated stack, so neither feeds itself.
+  const rawSigilMul = sigilEffectMultiplier(owned);
+  const maleficiaSigilMul = sigilMaleficiaEffectMul(state, rawSigilMul);
+  const sigMul = maleficiaSigilMul * sigilSelfEffectMul(state, maleficiaSigilMul);
+  const sig = sigilModifierContributions(state, sigMul);
   const sc = (f: ScalarModifierField): number => sig.scalar[f] ?? 1;
+  // Gusion #11 / Naberius #24: the VC ceremony-EFFECT channel, hoisted for the three rate lines.
+  const vcEffectMul = sc('vitiumCompositumEffectMul');
   // Flat per-second generators (Haagenti #48 gold, Decarabia #69 influence), scaled by enhancers.
-  const flatGen = sigilFlatGeneration(state, sigilEffectMultiplier(owned));
+  const flatGen = sigilFlatGeneration(state, sigMul);
 
   // Tier weights: accumulate per-tier products from every source, then apply locks LAST. Missing
   // keys mean 1 in `applyTierModifiers`; under exactOptionalPropertyTypes we assign only when ≠ 1.
@@ -325,7 +373,7 @@ export function computeModifiers(state: GameState): Modifiers {
     sc('invocationEfficiencyMul');
   // Per-INVOCATION effectiveness (Buer #10 → familiar, Sitri #12 → succubus), keyed by id. Scales a
   // specific invocation's effect coefficient; 1× when no such sigil is bound.
-  const invInvContrib = sigilInvocationEffectContributions(state, sigilEffectMultiplier(owned));
+  const invInvContrib = sigilInvocationEffectContributions(state, sigMul);
   const invEffForInv = (id: string): number => invInvContrib[id] ?? 1;
   // Gula's Insatiability SKILL (intensity, continuous) lifts online player efficiency (sheet rev
   // 2026-06-12); the old ×2-per-Gula-level ladder is retired (levels now strip negative tiers).
@@ -339,7 +387,7 @@ export function computeModifiers(state: GameState): Modifiers {
   // Per-Sin invocation effectiveness (the eight Sin-themed sigils). `invEffFor(sin)` is the global
   // invocation-effect multiplier × that Sin's sigil boost; every efficiency-derived invocation effect
   // below uses it in place of the bare `invEff`, keyed by the invocation's own Sin.
-  const invSinContrib = sigilInvocationSinContributions(state, sigilEffectMultiplier(owned));
+  const invSinContrib = sigilInvocationSinContributions(state, sigMul);
   const invSinEff = {} as Record<Sin, number>;
   for (const s of SINS) invSinEff[s] = invSinContrib[s] ?? 1;
   const invEffFor = (sin: Sin): number => invEff * invSinEff[sin];
@@ -388,7 +436,14 @@ export function computeModifiers(state: GameState): Modifiers {
     // Additive increase to the base reprobate suicide rate (added to the per-capita base in
     // `dynamics`, alongside the Doom toggle). Each Nightmare contributes its efficiency-scaled factor.
     flatBaseSuicideRatePerSecond:
-      NIGHTMARE_SUICIDE_FACTOR * playerEff * invEffFor('tristitia') * nightmareCount,
+      NIGHTMARE_SUICIDE_FACTOR * playerEff * invEffFor('tristitia') * nightmareCount +
+      flatGen.suicideRate, // Sabnock #43 (log curve, flat per-capita addition)
+    // Glasya-Labolas #25 (log curve): flat addition to the per-capita murder base.
+    flatBaseMurderRatePerSecond: flatGen.murderRate,
+    // Ose #57 (log curve): flat births/s, before the generation multiplier.
+    flatGenerationPerSecond: flatGen.generation,
+    // Leraie #14: chance each murder also triggers a suicide (rate-level coupling in dynamics).
+    murderTriggersSuicideChance: sigilMurderTriggersSuicideChance(state, sigMul),
     playerEfficiencyMul: playerEff,
     suasioEfficiencyMul:
       LUXURIA_SUASIO_EFF_PER_LEVEL ** luxuriaLvl * // ×2 per Luxuria level (sheet rev 2026-06-12)
@@ -412,7 +467,7 @@ export function computeModifiers(state: GameState): Modifiers {
       (panvitiumActive ? PANV_GEN_MUL : 1) *
       (state.lifetime.handOfGloryRemaining > 0 ? HAND_OF_GLORY_GENERATION_MUL : 1) *
       skillBonus(luxuriaIntensity) *
-      compositumGenerationRateMul(state) * // Bacchanal +10% while active (ADR-027)
+      compositumGenerationRateMul(state, vcEffectMul) * // Bacchanal +10% ×(Gusion/Naberius)
       sc('reprobateGenerationRateMul'),
     // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill)
     // moved to acolyte efficiency, and the per-level doubling is retired; the despair channel is
@@ -421,20 +476,27 @@ export function computeModifiers(state: GameState): Modifiers {
     reprobateSuicideRateMul:
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
       (1 + MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH * mercatusDepth(state, 'tristitia')) *
-      compositumSuicideRateMul(state) * // Doom Gathering +10% while active (ADR-027)
+      compositumSuicideRateMul(state, vcEffectMul) * // Doom Gathering +10% ×(Gusion/Naberius)
       sc('reprobateSuicideRateMul'),
     // Murder: Panvitium multiplies while active; Mercatus Irae adds +0.825% per depth (§1.5
     // amended); Aim #23 sigil composes. Murder is a per-capita cull of the whole population.
     murderRateMul:
       (panvitiumActive ? PANV_MURDER_MUL : 1) *
       (1 + MERCATUS_IRA_MURDER_PER_DEPTH * mercatusDepth(state, 'ira')) *
-      compositumMurderRateMul(state) * // Enraging Broadcast +10% while active (ADR-027)
+      compositumMurderRateMul(state, vcEffectMul) * // Enraging Broadcast +10% ×(Gusion/Naberius)
       sc('murderRateMul'),
-    // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
-    // multiplier scales Mercatus revenue + generation at the tick/dynamics call sites.
+    // Vitium Mercatura REVENUE: each Plutus lifts it (flat factor), Vapula #60 sigil composes;
+    // applied at the tick's gold-income line. (Generation has its own multiplier below.)
     vitiumMercaturaOutputMul:
       (1 + PLUTUS_VM_FACTOR * playerEff * invEffFor('avaritia') * plutusCount) *
       sc('vitiumMercaturaOutputMul'),
+    // Vitium Mercatura GENERATION (Sitri #12): scales the trades' breeding term in `dynamics`.
+    vitiumMercaturaGenerationMul: sc('vitiumMercaturaGenerationMul'),
+    // VC influence output (Orias #59): the ceremonies' influence line at the tick.
+    vitiumCompositumInfluenceOutputMul: sc('vitiumCompositumInfluenceOutputMul'),
+    // VC ceremony EFFECT magnitudes (Gusion #11 / Naberius #24), already folded into the three
+    // rate multipliers above; exported so analytics and tests can read the channel.
+    vitiumCompositumEffectMul: vcEffectMul,
     // Vitium Compositum gold output: Zagan #61 sigil composes; applied to compositumGoldPerSecond.
     vitiumCompositumOutputMul: sc('vitiumCompositumOutputMul'),
     // Acolyte efficiency: 0.33 baseline (02 §10); Tristitia's Resignation SKILL lifts it
