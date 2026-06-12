@@ -105,7 +105,17 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 718** (sim 490 · shared 56 · api 11 · web 161).
 
-> **Latest change — economy retune, slice 3 of 6: the Vitium Compositum rework (ADR-027).**
+> **Latest change — economy retune, slice 4 of 6: the Sins remap (ADR-028).** The Sins &
+> Devotion table is rewired to the revised sheet. **Gula**: the Insatiability skill now lifts
+> player efficiency; each LEVEL strips a quarter of the negative tiers' weight (level 4 → the
+> Opera cannot roll Bad/Terrible/Apocalyptic at all). **Luxuria** ×2 Suasio efficiency per level;
+> **Ira** ×2 Decimatio efficiency per level, with its Retribution skill moving to invocation
+> efficiency; **Tristitia**'s Resignation skill moves to acolyte efficiency, and BOTH old suicide
+> couplings (the skill lift and the 2×-per-level doubling) are removed — despair now flows
+> through the Mercatus Tristitiae clause, Doom Gathering, and the suicide sigils. The ×1.33
+> Ira acolyte/invocation ladder is deleted. Test count unchanged at 718.
+
+> **Prior change — economy retune, slice 3 of 6: the Vitium Compositum rework (ADR-027).**
 > The four subtype-era ceremonies (_Loan Shark Op_, _Outrage Cycle_, _No-babies Movement_,
 > _Ethnocentric Revolt_) are **deleted** — the roster is the sheet's canonical nine, and old
 > saves self-heal on the first tick (`advanceToggles` drops unknown ids unbilled). Their five
@@ -119,7 +129,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > VM sheet's Foedus opt-out table shrinks to nine. PC ceremony copy spells out the percentage
 > costs and conversions. Test count 718 (sim 490 · web 161).
 
-> **Prior change — economy retune, slice 2 of 6 (action tier tables; audit
+> **Earlier change — economy retune, slice 2 of 6 (action tier tables; audit
 > `economy-audit-2026-06-12`).** All eight Opera tier distributions re-pinned to the revised
 > template, and every effect cell with them. Headlines: **Imperium loses its fixed "player in
 > control" Good** — it now rolls a full distribution (3.5% Stellar paying +3% of CURRENT SOULS,

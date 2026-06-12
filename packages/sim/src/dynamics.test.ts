@@ -107,12 +107,13 @@ describe('reprobate dynamics — modifier wiring', () => {
     expect(rates.murderPerSecond).toBeCloseTo(0.2, 6);
   });
 
-  it('Tristitia level 1 doubles the suicide rate (per-level 2× multiplier, 03 §1)', () => {
+  it('Tristitia Devotion no longer scales the suicide rate (sheet rev 2026-06-12)', () => {
+    // Resignation moved to acolyte efficiency; the per-level doubling is retired. Despair flows
+    // through the Mercatus Tristitiae signature clause instead.
     const s = pop(1000);
     const withT1: GameState = { ...s, devotion: { ...s.devotion, tristitia: bn(180) } };
-    const mods = computeModifiers(withT1);
-    const rates = reprobateRates(withT1, mods);
-    expect(rates.suicidePerSecond).toBeGreaterThan(0.2); // > 2× the 0.1 base
+    const rates = reprobateRates(withT1, computeModifiers(withT1));
+    expect(rates.suicidePerSecond).toBeCloseTo(0.1, 6); // unchanged from the 0.1 base
   });
 
   it('no Tristitia devotion -> suicide multiplier is exactly 1', () => {

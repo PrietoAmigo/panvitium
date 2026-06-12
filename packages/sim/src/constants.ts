@@ -121,7 +121,17 @@ export const AUREVORA_EFFICIENCY_GROWTH_PER_SECOND = 1.05;
  * efficiency and invocation action efficiency by this factor. Doc text: "+33% per level". Folded
  * into `acolyteEfficiencyMul` and `invocationEfficiencyMul` by `computeModifiers`.
  */
-export const IRA_ACOLYTE_INVOCATION_PER_LEVEL = 1.33;
+/**
+ * Sins & Devotion sheet (rev 2026-06-12), per-level effects:
+ * - Gula: each level removes a quarter of the negative tiers' weight (Bad/Terrible/Apocalyptic
+ *   ×(1 − 0.25·L), level 4 → no negative outcomes; freed mass renormalizes across the rest).
+ * - Luxuria: ×2 overall Suasio efficiency per level. - Ira: ×2 overall Decimatio efficiency
+ *   per level. The old ×1.33 Ira acolyte/invocation ladder is retired — those channels are now
+ *   the Tristitia (acolytes) and Ira (invocations) SKILL intensities.
+ */
+export const GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL = 0.25;
+export const LUXURIA_SUASIO_EFF_PER_LEVEL = 2;
+export const IRA_DECIMATIO_EFF_PER_LEVEL = 2;
 
 /**
  * Acedia per-level effect (03 §1, "Procrastination" / Belphegor): each level applies a

@@ -4,15 +4,16 @@
  * and consumed by tick / actions / probability resolution. Pure; no I/O; reads only `GameState`.
  *
  * Sources wired so far:
- *   - Sin LEVELS:  Gula → playerEfficiencyMul (2× / level, 03 §1 / Sins & Devotion sheet)
- *                 Vanagloria → influenceRateMul (1.5× / level)
- *                 Tristitia → reprobateSuicideRateMul (2× / level, 03 §1: "+100% suicide rate")
+ *   - Sin LEVELS (sheet rev 2026-06-12):
+ *                 Gula → strips negative tier weight (−25% / level; L4 → none)
+ *                 Luxuria → suasioEfficiencyMul (×2 / level)
+ *                 Ira → decimatioEfficiencyMul (×2 / level)
+ *                 Vanagloria → influenceRateMul (×1.33 / level)
  *   - Sin SKILLS:  Avaritia  (Golden Hand)    → goldRateMul
  *                 Vanagloria (Acclaim)        → maxInfluenceMul
- *                 Leviathan  (Resignation)    → suasioEfficiencyMul  (per-category eff)
- *                                              + reprobateSuicideRateMul (02 §9)
- *                 Satan      (Retribution)    → decimatioEfficiencyMul
- *                 Gula       (Insatiability)  → tierWeightMul.{terrible, apocalyptic} (damped)
+ *                 Leviathan  (Resignation)    → acolyteEfficiencyMul
+ *                 Satan      (Retribution)    → invocationEfficiencyMul
+ *                 Gula       (Insatiability)  → playerEfficiencyMul
  *                 Lucifer    (Morning Star)   → tierWeightMul.stellar (lifted)
  *   - MALEFICIA:  Spear of Longinus           → maxInfluenceMul × 3
  *                 Codex Gigas                 → influenceRateMul × 3
@@ -61,7 +62,9 @@ import {
 } from './sigils.js';
 import {
   ARS_SERPENS_SUASIO_BONUS,
-  IRA_ACOLYTE_INVOCATION_PER_LEVEL,
+  GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL,
+  IRA_DECIMATIO_EFF_PER_LEVEL,
+  LUXURIA_SUASIO_EFF_PER_LEVEL,
   RITUAL_DAGGER_DECIMATIO_BONUS,
   VOYNICH_SUASIO_BONUS,
 } from './constants.js';
@@ -199,8 +202,8 @@ const skillBonus = (intensity: number): number => 1 + intensity;
 export function computeModifiers(state: GameState): Modifiers {
   // Sin levels (03 §1 "Per-level effect", confirmed in `Sins & Devotion` sheet).
   const gulaLvl = sinLevel(state.devotion.gula);
+  const luxuriaLvl = sinLevel(state.devotion.luxuria);
   const vanagloriaLvl = sinLevel(state.devotion.vanagloria);
-  const tristitiaLvl = sinLevel(state.devotion.tristitia);
   const iraLvl = sinLevel(state.devotion.ira);
 
   // Sin skill intensities (continuous; intensity = ln(devotion)² / SKILL_INTENSITY_DIVISOR).
@@ -285,9 +288,17 @@ export function computeModifiers(state: GameState): Modifiers {
   const bumpTier = (t: Tier, mul: number): void => {
     tierAcc[t] = (tierAcc[t] ?? 1) * mul;
   };
-  if (gulaIntensity > 0) bumpTier('terrible', 1 / (1 + gulaIntensity)); // Insatiability damps
+  // Gula per-level (sheet rev 2026-06-12): each level strips a quarter of the negative tiers'
+  // weight — Bad/Terrible/Apocalyptic ×(1 − 0.25·L), level 4 → no negative outcomes at all; the
+  // freed mass renormalizes across the remaining tiers. (Insatiability, the SKILL, moved to
+  // player efficiency — see `playerEff`.)
+  const gulaNegFactor = Math.max(0, 1 - GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL * gulaLvl);
+  if (gulaLvl > 0) {
+    bumpTier('bad', gulaNegFactor);
+    bumpTier('terrible', gulaNegFactor);
+    bumpTier('apocalyptic', gulaNegFactor);
+  }
   if (superbiaIntensity > 0) bumpTier('stellar', skillBonus(superbiaIntensity)); // Morning Star
-  if (gulaIntensity > 0) bumpTier('apocalyptic', 1 / (1 + gulaIntensity)); // Insatiability damps
   if (hasMidas) bumpTier('apocalyptic', 100); // Midas hundredfold
   for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Gusion #11, Foras #31, …
   const tierWeightMul: TierModifiers = {};
@@ -306,16 +317,20 @@ export function computeModifiers(state: GameState): Modifiers {
   // can read it. Invocation-effect multiplier: Ira's Retribution per level × Black Candles (+5%
   // each, stack-capped at 5 by the catalog). Both runner and passive invocation effects use it.
   const blackCandles = countCopies(owned, 'black_candles');
+  // Ira's Retribution SKILL (intensity, continuous) drives invocation efficiency (sheet rev
+  // 2026-06-12); the old ×1.33-per-Ira-level ladder is retired.
   const invEff =
-    IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl *
+    skillBonus(iraIntensity) *
     (1 + BLACK_CANDLES_INVOCATION_BONUS * blackCandles) *
     sc('invocationEfficiencyMul');
   // Per-INVOCATION effectiveness (Buer #10 → familiar, Sitri #12 → succubus), keyed by id. Scales a
   // specific invocation's effect coefficient; 1× when no such sigil is bound.
   const invInvContrib = sigilInvocationEffectContributions(state, sigilEffectMultiplier(owned));
   const invEffForInv = (id: string): number => invInvContrib[id] ?? 1;
+  // Gula's Insatiability SKILL (intensity, continuous) lifts online player efficiency (sheet rev
+  // 2026-06-12); the old ×2-per-Gula-level ladder is retired (levels now strip negative tiers).
   const playerEff =
-    2 ** gulaLvl *
+    skillBonus(gulaIntensity) *
     (hasDoppel ? 1.5 : 1) *
     (hasFamiliar ? 1 + 0.33 * invEffForInv('familiar') : 1) *
     aurevoraEff *
@@ -376,7 +391,7 @@ export function computeModifiers(state: GameState): Modifiers {
       NIGHTMARE_SUICIDE_FACTOR * playerEff * invEffFor('tristitia') * nightmareCount,
     playerEfficiencyMul: playerEff,
     suasioEfficiencyMul:
-      skillBonus(tristitiaIntensity) *
+      LUXURIA_SUASIO_EFF_PER_LEVEL ** luxuriaLvl * // ×2 per Luxuria level (sheet rev 2026-06-12)
       (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
       (1 + VOYNICH_SUASIO_BONUS * voynich) *
       (hasSuccubus
@@ -384,7 +399,7 @@ export function computeModifiers(state: GameState): Modifiers {
         : 1) *
       sc('suasioEfficiencyMul'),
     decimatioEfficiencyMul:
-      skillBonus(iraIntensity) *
+      IRA_DECIMATIO_EFF_PER_LEVEL ** iraLvl * // ×2 per Ira level (sheet rev 2026-06-12)
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
       (1 + HARPY_DECIMATIO_FACTOR * playerEff * invEffFor('ira') * harpyCount) *
       sc('decimatioEfficiencyMul'),
@@ -399,12 +414,11 @@ export function computeModifiers(state: GameState): Modifiers {
       skillBonus(luxuriaIntensity) *
       compositumGenerationRateMul(state) * // Bacchanal +10% while active (ADR-027)
       sc('reprobateGenerationRateMul'),
-    // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
-    // Panvitium multiplies while active; Mercatus Tristitiae adds +0.825% per depth (§1.5 amended);
-    // Crocell #49 sigil composes.
+    // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill)
+    // moved to acolyte efficiency, and the per-level doubling is retired; the despair channel is
+    // the Mercatus Tristitiae clause below. Panvitium multiplies while active; Doom Gathering and
+    // the suicide sigils compose.
     reprobateSuicideRateMul:
-      skillBonus(tristitiaIntensity) *
-      2 ** tristitiaLvl *
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
       (1 + MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH * mercatusDepth(state, 'tristitia')) *
       compositumSuicideRateMul(state) * // Doom Gathering +10% while active (ADR-027)
@@ -423,12 +437,11 @@ export function computeModifiers(state: GameState): Modifiers {
       sc('vitiumMercaturaOutputMul'),
     // Vitium Compositum gold output: Zagan #61 sigil composes; applied to compositumGoldPerSecond.
     vitiumCompositumOutputMul: sc('vitiumCompositumOutputMul'),
-    // Acolyte efficiency: 0.33 baseline (02 §10); Ira level lifts ×1.33/level (03 §1 Retribution);
-    // Bathin #18 sigil composes on top.
-    acolyteEfficiencyMul:
-      0.33 * IRA_ACOLYTE_INVOCATION_PER_LEVEL ** iraLvl * sc('acolyteEfficiencyMul'),
-    // Invocation efficiency: 1× baseline; Ira level lifts ×1.33/level (03 §1 Retribution shared
-    // with acolytes). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
+    // Acolyte efficiency: 0.33 baseline (02 §10); Tristitia's Resignation SKILL lifts it
+    // continuously (sheet rev 2026-06-12); Bathin #18 sigil composes on top.
+    acolyteEfficiencyMul: 0.33 * skillBonus(tristitiaIntensity) * sc('acolyteEfficiencyMul'),
+    // Invocation efficiency: 1× baseline; Ira's Retribution SKILL lifts it continuously (sheet
+    // rev 2026-06-12). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
     invocationEfficiencyMul: invEff,
     invocationSinEffectivenessMul: invSinEff,
     // Offline time scaling: Acedia's Procrastination skill lifts (03 §1, continuous); Dolce Far

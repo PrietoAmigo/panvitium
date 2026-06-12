@@ -4,6 +4,7 @@ import { hashSeed, makeRng } from './rng.js';
 import { createInitialState, type GameState } from './state.js';
 import { ACTIONS, resolveAction, resolveEmptio, resolveIndagatio, startAction } from './actions.js';
 import { MALEFICIA } from './maleficia.js';
+import { skillIntensity } from './progression.js';
 
 const fresh = (): GameState => createInitialState('seed', 0);
 const rng = () => makeRng(hashSeed('test'));
@@ -171,14 +172,16 @@ describe('startAction — Indagatio / Emptio', () => {
     }
   });
 
-  it('Indagatio time is divided by player efficiency (Gula L2 → 1800/4)', () => {
+  it('Indagatio time is divided by player efficiency (Gula skill, sheet rev)', () => {
     const base = fresh();
     const state: GameState = { ...base, devotion: { ...base.devotion, gula: bn(32400) } };
+    const eff = 1 + skillIntensity(bn(32400)); // Insatiability ≈ 2.6502
     const r = startAction(state, 'indagatio');
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.state.lifetime.actionQueue[0]!.remainingSeconds).toBe(
-        ACTIONS.indagatio!.baseTimeSeconds / 4,
+      expect(r.state.lifetime.actionQueue[0]!.remainingSeconds).toBeCloseTo(
+        ACTIONS.indagatio!.baseTimeSeconds / eff,
+        6,
       );
     }
   });

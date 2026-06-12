@@ -730,6 +730,44 @@ the same composition.
 
 ---
 
+## ADR-028: The Sins remap — skills and per-level effects per the revised template
+
+**Status.** Accepted [2026-06-12]. Implements the Sins & Devotion sheet (rev 2026-06-12).
+
+**Context.** The original mapping grew organically: Gula levels doubled player efficiency while
+its skill damped two negative tiers; Tristitia's skill drove Suasio efficiency AND the suicide
+rate, with a per-level suicide doubling on top; Ira's skill drove Decimatio while its levels fed a
+×1.33 acolyte+invocation ladder. The revised sheet redraws the whole table.
+
+**Decision.** Per the sheet: **Gula** — the Insatiability SKILL (intensity) lifts player
+efficiency; each LEVEL strips a quarter of the negative tiers' weight (Bad / Terrible /
+Apocalyptic ×(1 − 0.25·L), level 4 → no negative outcomes; the freed mass renormalizes).
+**Luxuria** — ×2 Suasio efficiency per level (Seduction skill keeps generation). **Ira** — ×2
+Decimatio efficiency per level; the Retribution SKILL moves to invocation efficiency.
+**Tristitia** — the Resignation SKILL moves to acolyte efficiency; both old suicide couplings
+(skill lift and 2×-per-level) are removed — the despair channel is the Mercatus Tristitiae
+signature clause (ADR-025). Avaritia / Acedia / Vanagloria / Superbia stand as already coded
+(slice 1 set Vanagloria ×1.33 and the per-second Acedia compound). The ×1.33
+`IRA_ACOLYTE_INVOCATION_PER_LEVEL` ladder is deleted.
+
+**Consequences.**
+
+- Action efficiency now splits cleanly: Gula's skill is the global throttle; Luxuria / Ira levels
+  are the category throttles — and since cost-outcome / time modes scale costs with efficiency,
+  Suasio rites get pricier exactly as they get stronger.
+- Acolytes and invocations each gain a dedicated, continuously-scaling Sin skill instead of
+  sharing one Ira ladder.
+- Suicide pressure no longer comes free with Tristitia Devotion; it must be bought through trade
+  depth (the clause), Doom Gathering, or the suicide sigils/maleficia.
+- Negative-outcome protection is a level milestone (a Katabasis goal), not a passive intensity
+  curve — and at Gula 4 the Opera cannot roll Bad, Terrible, or Apocalyptic at all.
+
+**Alternatives considered.** Keeping the suicide couplings alongside the new mapping — rejected:
+the sheet lists neither, and double-dipping despair (Devotion AND depth) would undercut the
+Mercatus clause as the deliberate price of that flavour.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.

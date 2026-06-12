@@ -23,12 +23,14 @@ describe('computeModifiers — Sin level effects', () => {
     expect(computeModifiers(fresh())).toEqual(NEUTRAL_MODIFIERS);
   });
 
-  it('Gula levels scale player efficiency 2× per level (multiplicative, 03 §1)', () => {
-    // 180^X thresholds: L1 = 180, L2 = 32 400, L4 = 1 049 760 000.
-    expect(playerEfficiency(withDevotion({ gula: bn(0) }))).toBe(1); // L0
-    expect(playerEfficiency(withDevotion({ gula: bn(180) }))).toBe(2); // L1
-    expect(playerEfficiency(withDevotion({ gula: bn(32400) }))).toBe(4); // L2
-    expect(playerEfficiency(withDevotion({ gula: bn(1049760000) }))).toBe(16); // L4
+  it("Gula's Insatiability SKILL scales player efficiency by (1 + intensity) — levels do not", () => {
+    // Sheet rev 2026-06-12: the old ×2-per-level ladder is retired; intensity(180) ≈ 0.41253.
+    expect(playerEfficiency(withDevotion({ gula: bn(0) }))).toBe(1);
+    expect(playerEfficiency(withDevotion({ gula: bn(180) }))).toBeCloseTo(1.4125, 3);
+    expect(playerEfficiency(withDevotion({ gula: bn(32400) }))).toBeCloseTo(
+      1 + skillIntensity(bn(32400)),
+      6,
+    );
   });
 
   it('Vanagloria levels scale influence rate 1.33× per level (multiplicative)', () => {
@@ -68,34 +70,38 @@ describe('computeModifiers — Sin skill effects (continuous)', () => {
 });
 
 describe('computeModifiers — per-category efficiency', () => {
-  it('Leviathan (Resignation) lifts suasioEfficiencyMul and only that', () => {
-    const m = computeModifiers(withDevotion({ tristitia: bn(180) }));
-    expect(m.suasioEfficiencyMul).toBeCloseTo(1.4125, 3);
+  it('Luxuria LEVELS lift suasioEfficiencyMul ×2 per level, and only that (sheet rev)', () => {
+    const m = computeModifiers(withDevotion({ luxuria: bn(180) }));
+    expect(m.suasioEfficiencyMul).toBeCloseTo(2, 6);
     expect(m.decimatioEfficiencyMul).toBe(1);
   });
 
-  it('Satan (Retribution) lifts decimatioEfficiencyMul and only that', () => {
-    const m = computeModifiers(withDevotion({ ira: bn(180) }));
-    expect(m.decimatioEfficiencyMul).toBeCloseTo(1.4125, 3);
+  it('Ira LEVELS lift decimatioEfficiencyMul ×2 per level, and only that (sheet rev)', () => {
+    const m = computeModifiers(withDevotion({ ira: bn(32400) })); // L2
+    expect(m.decimatioEfficiencyMul).toBeCloseTo(4, 6);
     expect(m.suasioEfficiencyMul).toBe(1);
   });
 
   it('categoryEfficiency stacks player × category multiplicatively', () => {
-    // Gula L1 → player 2×; Leviathan 180 → Suasio mul ≈ 1.4125. Total Suasio eff ≈ 2.825.
-    // Decimatio receives no category boost → just the player 2×.
-    const s = withDevotion({ gula: bn(180), tristitia: bn(180) });
-    expect(categoryEfficiency(s, 'suasio')).toBeCloseTo(2 * 1.4125, 2);
-    expect(categoryEfficiency(s, 'decimatio')).toBeCloseTo(2, 6);
+    // Gula 180 → player ≈ 1.4125 (skill); Luxuria L1 → Suasio mul 2. Total Suasio eff ≈ 2.825.
+    // Decimatio receives no category boost → just the player skill.
+    const s = withDevotion({ gula: bn(180), luxuria: bn(180) });
+    expect(categoryEfficiency(s, 'suasio')).toBeCloseTo(1.4125 * 2, 2);
+    expect(categoryEfficiency(s, 'decimatio')).toBeCloseTo(1.4125, 3);
   });
 });
 
 describe('computeModifiers — tier weight shifts', () => {
-  it('Gula (Insatiability) damps Terrible and Apocalyptic toward zero (never negative)', () => {
-    // intensity(180) ≈ 0.41253 → damp = 1 / 1.4125 ≈ 0.7079.
-    const mul = computeModifiers(withDevotion({ gula: bn(180) })).tierWeightMul;
-    expect(mul.terrible).toBeCloseTo(0.7079, 3);
-    expect(mul.apocalyptic).toBeCloseTo(0.7079, 3);
-    expect(mul.stellar).toBeUndefined();
+  it('Gula LEVELS strip negative tier weight: ×(1 − 0.25·L), level 4 → zero (sheet rev)', () => {
+    const l1 = computeModifiers(withDevotion({ gula: bn(180) })).tierWeightMul;
+    expect(l1.bad).toBeCloseTo(0.75, 9);
+    expect(l1.terrible).toBeCloseTo(0.75, 9);
+    expect(l1.apocalyptic).toBeCloseTo(0.75, 9);
+    expect(l1.stellar).toBeUndefined();
+    const l4 = computeModifiers(withDevotion({ gula: bn(1049760000) })).tierWeightMul;
+    expect(l4.bad).toBe(0);
+    expect(l4.terrible).toBe(0);
+    expect(l4.apocalyptic).toBe(0);
   });
 
   it('Lucifer (Morning Star) lifts the Stellar tier weight by 1 + intensity', () => {
@@ -196,21 +202,12 @@ describe('computeModifiers — reprobate-dynamics rate multipliers (02 §9)', ()
     expect(m.murderRateMul).toBe(1);
   });
 
-  it('Tristitia 180 Devotion (level 1 + Resignation skill) lifts suicide rate ~2.825×', () => {
-    // Level 1 contributes 2× outright; Resignation at devotion 180 has intensity ≈ 0.41253,
-    // so skill contributes (1 + 0.41253) ≈ 1.4125. Combined: 2 × 1.4125 ≈ 2.82505.
+  it('Tristitia Devotion no longer touches the suicide rate (sheet rev 2026-06-12)', () => {
+    // Resignation moved to acolyte efficiency; the per-level doubling is retired. The despair
+    // channel is the Mercatus Tristitiae signature clause (pinned in mercatus.test.ts).
     const s = fresh();
     const state: GameState = { ...s, devotion: { ...s.devotion, tristitia: bn(180) } };
-    expect(computeModifiers(state).reprobateSuicideRateMul).toBeCloseTo(2.825, 1);
-  });
-
-  it('Tristitia skill alone (sub-level devotion) lifts suicide rate but not by 2×', () => {
-    // Devotion 10 gives skill intensity ≈ 0.081; level still 0, so mul ≈ 1.081 (not doubled).
-    const s = fresh();
-    const state: GameState = { ...s, devotion: { ...s.devotion, tristitia: bn(10) } };
-    const mul = computeModifiers(state).reprobateSuicideRateMul;
-    expect(mul).toBeGreaterThan(1);
-    expect(mul).toBeLessThan(1.2);
+    expect(computeModifiers(state).reprobateSuicideRateMul).toBe(1);
   });
 });
 

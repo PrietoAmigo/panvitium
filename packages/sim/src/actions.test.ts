@@ -98,7 +98,9 @@ describe('action unlock gating (Suasio sheet)', () => {
     expect(startAction(withInf(fresh()), 'logismoi').ok).toBe(false);
     const ok = startAction(withInf(withLuxuria(fresh(), 2)), 'logismoi');
     expect(ok.ok).toBe(true);
-    if (ok.ok) expect(floor(ok.state.lifetime.influence).toNumber()).toBe(75); // 100 - 25
+    // Luxuria L2 also lifts Suasio efficiency ×4 (sheet rev), and cost-outcome mode scales the
+    // cost with it: 25 × 4 = 100 influence.
+    if (ok.ok) expect(floor(ok.state.lifetime.influence).toNumber()).toBe(0); // 100 - 100
   });
 });
 
@@ -267,8 +269,9 @@ describe('resolveAction', () => {
 });
 
 describe('modifier integration', () => {
-  it('startAction defaults its efficiency to playerEfficiency(state) — Gula scales cost', () => {
-    // Gula L2 (Devotion 32 400) → playerEfficiencyMul = 4. Suggestion costs 5 × 4 = 20 influence.
+  it('startAction defaults its efficiency to playerEfficiency(state) — Gula skill scales cost', () => {
+    // Gula Devotion 32 400 → Insatiability intensity ≈ 1.6502 (sheet rev: skill, not level) →
+    // playerEfficiencyMul ≈ 2.6502. Suggestion costs ceil(5 × 2.6502) = 14 influence.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -277,7 +280,7 @@ describe('modifier integration', () => {
     };
     const r = startAction(state, 'suggestion');
     expect(r.ok).toBe(true);
-    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(30); // 50 - 20
+    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(36); // 50 - 14
   });
 
   it('startAction with Gula L2 and only enough influence for L0 cost is refused', () => {
@@ -294,17 +297,17 @@ describe('modifier integration', () => {
 });
 
 describe('modifier integration — per-category efficiency', () => {
-  it('Leviathan (Resignation) scales Suggestion cost but not Caedis', () => {
-    // Tristitia 180 → suasioEffMul ≈ 1.4125. Suggestion influence cost = ceil(5 × 1.4125) = 8.
+  it('Luxuria levels scale Suggestion cost but not Caedis (sheet rev 2026-06-12)', () => {
+    // Luxuria L1 → suasioEffMul = 2. Suggestion influence cost = ceil(5 × 2) = 10.
     const base = fresh();
     const state: GameState = {
       ...base,
-      devotion: { ...base.devotion, tristitia: bn(180) },
+      devotion: { ...base.devotion, luxuria: bn(180) },
       lifetime: { ...base.lifetime, influence: bn(100), gold: bn(500) },
     };
     const r1 = startAction(state, 'suggestion');
     expect(r1.ok).toBe(true);
-    if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(92); // 100 − 8
+    if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(90); // 100 − 10
 
     // Caedis on the same state pays base 100 gold (no Decimatio boost in play).
     const r2 = startAction(state, 'caedis');
@@ -312,8 +315,8 @@ describe('modifier integration — per-category efficiency', () => {
     if (r2.ok) expect(floor(r2.state.lifetime.gold).toNumber()).toBe(400); // 500 − 100
   });
 
-  it('Satan (Retribution) scales Caedis cost but not Suggestion', () => {
-    // Ira 180 → decimatioEffMul ≈ 1.4125. Caedis gold cost = ceil(100 × 1.4125) = 142.
+  it('Ira levels scale Caedis cost but not Suggestion (sheet rev 2026-06-12)', () => {
+    // Ira L1 → decimatioEffMul = 2. Caedis gold cost = ceil(100 × 2) = 200.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -322,7 +325,7 @@ describe('modifier integration — per-category efficiency', () => {
     };
     const r1 = startAction(state, 'caedis');
     expect(r1.ok).toBe(true);
-    if (r1.ok) expect(floor(r1.state.lifetime.gold).toNumber()).toBe(858); // 1000 − 142
+    if (r1.ok) expect(floor(r1.state.lifetime.gold).toNumber()).toBe(800); // 1000 − 200
 
     const r2 = startAction(state, 'suggestion');
     expect(r2.ok).toBe(true);
