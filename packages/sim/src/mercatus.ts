@@ -69,7 +69,11 @@ export const FOEDUS_REVENUE_BONUS_PER_TIER = 0.05;
 export const MERCATUS_GULA_REVENUE_MUL = 1.25;
 /** Luxuriae: 25% more generation from its depths. */
 export const MERCATUS_LUXURIA_GENERATION_MUL = 1.25;
-/** Avaritiae: its depths come 0.5% cheaper (invest cost ×0.995; refunds scale on the same basis). */
+/**
+ * Avaritiae: each depth bargains the next 0.5% cheaper — the discount COMPOUNDS per depth
+ * (invest cost ×0.995^d, i.e. an effective cost ratio of r × 0.995 ≈ 1.592). Refunds are
+ * computed on the same compounded basis.
+ */
 export const MERCATUS_AVARITIA_COST_MUL = 0.995;
 /** Superbiae: its depths cost 25% more… */
 export const MERCATUS_SUPERBIA_COST_MUL = 1.25;
@@ -86,11 +90,27 @@ export const MERCATUS_ACEDIA_OFFLINE_PER_DEPTH = 0.00825;
 /** Vanagloriae: +0.25% of (effective) max influence as flat influence/s per full 10 depths. */
 export const MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS = 0.0025;
 
-/** The per-trade invest-cost multiplier (Avaritiae cheaper, Superbiae dearer). */
-export function mercatusCostMul(sin: Sin): number {
-  if (sin === 'avaritia') return MERCATUS_AVARITIA_COST_MUL;
+/**
+ * The per-trade invest-cost multiplier AT a given depth: Avaritiae's discount compounds
+ * (×0.995^d), Superbiae's surcharge is flat (×1.25 on every deepening), all others ×1.
+ */
+export function mercatusCostMul(sin: Sin, d: number): number {
+  if (sin === 'avaritia') return Math.pow(MERCATUS_AVARITIA_COST_MUL, d);
   if (sin === 'superbia') return MERCATUS_SUPERBIA_COST_MUL;
   return 1;
+}
+
+/**
+ * The per-trade cost CURVE: Avaritiae folds its compounding discount into the ratio itself
+ * (r × 0.995), so both the per-step cost and the cumulative closed form stay exact geometric
+ * expressions; Superbiae keeps the base ratio with a flat ×1.25 on top.
+ */
+function mercatusCostCurve(sin: Sin): { readonly ratio: number; readonly flatMul: number } {
+  if (sin === 'avaritia')
+    return { ratio: MERCATUS_COST_RATIO * MERCATUS_AVARITIA_COST_MUL, flatMul: 1 };
+  if (sin === 'superbia')
+    return { ratio: MERCATUS_COST_RATIO, flatMul: MERCATUS_SUPERBIA_COST_MUL };
+  return { ratio: MERCATUS_COST_RATIO, flatMul: 1 };
 }
 
 /** The per-trade revenue clause multiplier (Gulae's spend, Superbiae's richer take). */
@@ -125,25 +145,25 @@ export function mercatusDepthCap(state: GameState, sin: Sin): number {
 }
 
 /**
- * Gold cost to deepen a Sin's trade from depth `d` to `d+1`: floor(C0 × r^d × costMul(sin)).
- * The per-trade clause multiplier (Avaritiae ×0.995, Superbiae ×1.25) scales INSIDE the floor.
+ * Gold cost to deepen a Sin's trade from depth `d` to `d+1`: floor(C0 × ratio^d × flatMul) with
+ * the trade's own cost curve — Avaritiae's compounding discount lives in the ratio (×0.995/depth),
+ * Superbiae's flat ×1.25 in the multiplier. Clause scaling happens INSIDE the floor.
  */
 export function investCost(sin: Sin, d: number): number {
-  return Math.floor(MERCATUS_C0 * Math.pow(MERCATUS_COST_RATIO, d) * mercatusCostMul(sin));
+  const c = mercatusCostCurve(sin);
+  return Math.floor(MERCATUS_C0 * Math.pow(c.ratio, d) * c.flatMul);
 }
 
 /**
- * Cumulative invest cost for a Sin's trade to reach depth `d` from 0 — the closed form
- * `C0 × (r^d − 1)/(r − 1) × costMul(sin)` (spec §1.1: derive, never store). Divest refunds are
- * computed against this form, not against the per-step floored costs; scaling it by the same
- * clause multiplier keeps a refund = fraction × (what the curve says that trade actually cost).
+ * Cumulative invest cost for a Sin's trade to reach depth `d` from 0 — the geometric closed form
+ * `C0 × (ratio^d − 1)/(ratio − 1) × flatMul` on the trade's own curve (spec §1.1: derive, never
+ * store). Divest refunds are computed against this form, not against the per-step floored costs,
+ * so a refund is always fraction × (what the curve says that trade actually cost).
  */
 export function cumulativeInvestCost(sin: Sin, d: number): number {
   if (d <= 0) return 0;
-  return (
-    ((MERCATUS_C0 * (Math.pow(MERCATUS_COST_RATIO, d) - 1)) / (MERCATUS_COST_RATIO - 1)) *
-    mercatusCostMul(sin)
-  );
+  const c = mercatusCostCurve(sin);
+  return ((MERCATUS_C0 * (Math.pow(c.ratio, d) - 1)) / (c.ratio - 1)) * c.flatMul;
 }
 
 /**

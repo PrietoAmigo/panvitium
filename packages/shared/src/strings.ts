@@ -101,7 +101,7 @@ export const strings = {
     clauses: {
       gula: 'Its patrons spend a quarter more.',
       luxuria: 'Its corruption breeds a quarter richer.',
-      avaritia: 'Each deepening comes a sliver cheaper.',
+      avaritia: 'Each depth bargains the next a sliver cheaper.',
       tristitia: 'Every depth thickens the despair it feeds.',
       ira: 'Every depth sharpens the knives it sells.',
       acedia: 'Its take never sleeps, and its torpor stretches the hours away.',

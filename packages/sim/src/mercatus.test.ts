@@ -260,18 +260,24 @@ describe('Mercatus — per-Sin signature clauses (§1.5, amended)', () => {
     expect(mercatusGenerationPerSecond(s)).toBeCloseTo(0.02 * 10 * 1.25, 9);
   });
 
-  it('Avaritiae: its depths come 0.5% cheaper, and refunds scale on the same basis', () => {
-    expect(mercatusCostMul('avaritia')).toBeCloseTo(0.995, 9);
-    expect(investCost('avaritia', 0)).toBe(49); // floor(50 × 0.995)
-    expect(cumulativeInvestCost('avaritia', 2)).toBeCloseTo(130 * 0.995, 6);
+  it('Avaritiae: each depth bargains the next 0.5% cheaper — the discount compounds', () => {
+    const rEff = 1.6 * 0.995; // the effective cost ratio of the Avaritiae curve
+    expect(mercatusCostMul('avaritia', 1)).toBeCloseTo(0.995, 9);
+    expect(mercatusCostMul('avaritia', 3)).toBeCloseTo(0.995 ** 3, 9);
+    expect(investCost('avaritia', 0)).toBe(50); // depth 0 pays full — nothing to compound yet
+    expect(investCost('avaritia', 1)).toBe(Math.floor(50 * rEff)); // 79 vs the unclaused 80
+    expect(investCost('avaritia', 10)).toBe(Math.floor(50 * rEff ** 10));
+    expect(investCost('avaritia', 10)).toBeLessThan(investCost('tristitia', 10)); // gap widens
+    expect(cumulativeInvestCost('avaritia', 5)).toBeCloseTo((50 * (rEff ** 5 - 1)) / (rEff - 1), 6);
+    // Refunds ride the same compounded basis: cumulative(3) − cumulative(2) = 50 × rEff².
     const s = withDepths(withGold(fresh(), 0), { avaritia: 3 });
     const r = divestMercatus(s, 'avaritia', 1);
     if (!r.ok) throw new Error(r.reason);
-    expect(r.refund).toBe(Math.floor(0.25 * 128 * 0.995 + 1e-9)); // 31
+    expect(r.refund).toBe(Math.floor(0.25 * 50 * rEff ** 2 + 1e-9)); // 31
   });
 
   it('Superbiae: depths ×1.25 dearer; its take and breeding ×1.33 richer', () => {
-    expect(mercatusCostMul('superbia')).toBeCloseTo(1.25, 9);
+    expect(mercatusCostMul('superbia', 7)).toBeCloseTo(1.25, 9); // flat at any depth
     expect(investCost('superbia', 0)).toBe(62); // floor(50 × 1.25)
     expect(mercatusRevenueClauseMul('superbia')).toBeCloseTo(1.33, 9);
     expect(mercatusGenerationClauseMul('superbia')).toBeCloseTo(1.33, 9);

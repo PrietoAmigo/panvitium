@@ -107,8 +107,8 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 > **Latest change — Mercatus per-Sin signature clauses (slice 2, §1.5 table amended in
 > session).** Each trade now carries one signature twist: **Gulae** patrons spend ×1.25;
-> **Luxuriae** generation ×1.25; **Avaritiae** depths ×0.995 cheaper (refunds on the same
-> basis); **Tristitiae** +0.825% suicide-rate mul per depth; **Irae** +0.825% murder-rate mul
+> **Luxuriae** generation ×1.25; **Avaritiae** each depth bargains the next 0.5% cheaper — the discount
+> COMPOUNDS per depth (effective cost ratio 1.6 × 0.995, refunds on the same basis); **Tristitiae** +0.825% suicide-rate mul per depth; **Irae** +0.825% murder-rate mul
 > per depth; **Acediae** revenue exempt from the offline efficiency factor plus +0.825% offline
 > gain rate mul per depth; **Vanagloriae** +0.25% of effective max influence as flat
 > influence/s per full 10 depths (stepped); **Superbiae** depths ×1.25 dearer but its revenue
