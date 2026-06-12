@@ -21,7 +21,9 @@ import {
   compositumById,
   compositumGoldPerSecond,
   compositumInfluencePerSecond,
-  compositumPopulationGenerationPerSecond,
+  compositumGenerationRateMul,
+  compositumMurderRateMul,
+  compositumSuicideRateMul,
   compositumUnlocked,
   createInitialState,
   deactivateToggle,
@@ -49,6 +51,13 @@ function unlock(s: GameState, def = COMPOSITA.bacchanal!): GameState {
   return out;
 }
 
+/** Lift all eight Sins to `level` (Vegas/Crusade four-Sin gates). */
+function unlockAllSins(s: GameState, level: number): GameState {
+  let out = s;
+  for (const sin of Object.keys(s.devotion) as Sin[]) out = withSin(out, sin, level);
+  return out;
+}
+
 function withGold(s: GameState, g: number): GameState {
   return { ...s, lifetime: { ...s.lifetime, gold: bn(g) } };
 }
@@ -57,16 +66,12 @@ function withInfluence(s: GameState, i: number): GameState {
 }
 
 describe('Vitium Compositum — catalog', () => {
-  it('exposes the four two-Sin entries plus the apex Panvitium', () => {
+  it('exposes the canonical nine (ADR-027): six pairs, Vegas, Crusade, Panvitium', () => {
     expect(COMPOSITUM_IDS).toEqual([
       'bacchanal',
-      'loan-shark-op',
       'charity',
       'gala',
-      'outrage-cycle',
-      'no-babies-movement',
       'doom-gathering',
-      'ethnocentric-revolt',
       'enraging-broadcast',
       'dolce-far-niente',
       'vegas',
@@ -78,13 +83,9 @@ describe('Vitium Compositum — catalog', () => {
   it('the two-Sin ceremonies are minLevel 1 over two Sins', () => {
     for (const id of [
       'bacchanal',
-      'loan-shark-op',
       'charity',
       'gala',
-      'outrage-cycle',
-      'no-babies-movement',
       'doom-gathering',
-      'ethnocentric-revolt',
       'enraging-broadcast',
       'dolce-far-niente',
     ]) {
@@ -102,30 +103,45 @@ describe('Vitium Compositum — catalog', () => {
     expect(p.costGrowthPerSecond).toBeGreaterThan(1);
   });
 
-  it('every entry has at least one effect (except the Slice-3 redesign stubs)', () => {
-    // outrage-cycle / vegas / crusade lost their only effect (conversion / subtype penalties) when
-    // subtypes were removed; they are intentionally effectless until the VC rework (Slice 3).
-    const stubs = new Set(['outrage-cycle', 'vegas', 'crusade']);
+  it('every entry has at least one effect — no stubs survive ADR-027', () => {
     for (const id of COMPOSITUM_IDS) {
       const def = compositumById(id)!;
       const hasEffect =
         (def.goldPerSecond ?? 0) +
           (def.influencePerSecond ?? 0) +
           (def.generationPerSecond ?? 0) +
-          Math.abs(def.flatGenerationPerSecond ?? 0) +
-          (def.flatBaseSuicideRatePerSecond ?? 0) +
-          (def.flatBaseMurderRatePerSecond ?? 0) +
-          (def.populationGeneration?.fraction ?? 0) +
-          (def.deathFractionPerSecond ?? 0) +
+          (def.generationRateBoost ?? 0) +
+          (def.suicideRateBoost ?? 0) +
+          (def.murderRateBoost ?? 0) +
+          (def.percentOutput?.fraction ?? 0) +
           (def.offlineGainBoost ?? 0) +
           (def.panvitiumRateBase ?? 0) >
         0;
-      if (stubs.has(id)) continue; // intentionally effectless for now
       expect(hasEffect).toBe(true);
     }
-    // vegas/crusade keep income; outrage-cycle is fully effectless.
-    expect((compositumById('vegas')!.influencePerSecond ?? 0) > 0).toBe(true);
-    expect((compositumById('crusade')!.goldPerSecond ?? 0) > 0).toBe(true);
+  });
+
+  it('Vegas and Crusade carry the percentage semantics (sheet rev 2026-06-12)', () => {
+    const vegas = compositumById('vegas')!;
+    expect(vegas.percentCost).toEqual({ base: 'goldGain', fraction: 0.5 });
+    expect(vegas.percentOutput).toEqual({
+      base: 'goldGain',
+      resource: 'influence',
+      fraction: 0.01,
+    });
+    const crusade = compositumById('crusade')!;
+    expect(crusade.percentCost).toEqual({ base: 'influenceGain', fraction: 0.5 });
+    expect(crusade.percentOutput).toEqual({
+      base: 'influenceGain',
+      resource: 'gold',
+      fraction: 10,
+    });
+  });
+
+  it('Charity pays 100 gold + 25 influence for 200 gold per second (sheet rev)', () => {
+    const charity = compositumById('charity')!;
+    expect(charity.costPerSecond).toEqual({ gold: 100, influence: 25 });
+    expect(charity.goldPerSecond).toBe(200);
   });
 });
 
@@ -203,29 +219,68 @@ describe('advanceToggles — upkeep and auto-deactivation (02 §3)', () => {
   });
 
   it('deducts influence upkeep for influence-cost toggles', () => {
-    // loan-shark-op costs 10 influence/s. 100 influence, 2 s → 80 left.
-    let s = unlock(withInfluence(fresh(), 100), COMPOSITA['loan-shark-op']!);
-    const a = activateToggle(s, 'loan-shark-op');
+    // enraging-broadcast costs 25 influence/s. 100 influence, 2 s → 50 left.
+    let s = unlock(withInfluence(fresh(), 100), COMPOSITA['enraging-broadcast']!);
+    const a = activateToggle(s, 'enraging-broadcast');
     if (!a.ok) throw new Error('activate');
     s = a.state;
     const r = advanceToggles(s, 2);
     expect(r.deactivated).toHaveLength(0);
-    expect(r.state.lifetime.influence.toNumber()).toBe(80);
+    expect(r.state.lifetime.influence.toNumber()).toBe(50);
+  });
+
+  it('drops retired ceremony ids from old saves without billing them (ADR-027)', () => {
+    const s: GameState = {
+      ...fresh(),
+      lifetime: {
+        ...fresh().lifetime,
+        activeToggles: ['loan-shark-op', 'outrage-cycle'],
+        toggleDurations: { 'loan-shark-op': 5 },
+      },
+    };
+    const r = advanceToggles(s, 1);
+    expect(r.deactivated).toEqual(['loan-shark-op', 'outrage-cycle']);
+    expect(r.state.lifetime.activeToggles).toEqual([]);
+    expect(r.state.lifetime.toggleDurations).toEqual({});
+  });
+
+  it('Vegas pays 50% of the gold gain rate per second, in gold (ADR-027)', () => {
+    let s = unlockAllSins(withInfluence(withGold(fresh(), 1000), 1000), 2);
+    const a = activateToggle(s, 'vegas');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    const rates = { goldGainPerSecond: 40, influenceGainPerSecond: 7 };
+    const r = advanceToggles(s, 2, rates);
+    expect(r.deactivated).toHaveLength(0);
+    expect(r.state.lifetime.gold.toNumber()).toBe(1000 - 0.5 * 40 * 2); // 960
+    expect(r.state.lifetime.influence.toNumber()).toBe(1000); // influence untouched
+  });
+
+  it('Crusade pays 50% of the influence gain rate per second, in influence (ADR-027)', () => {
+    let s = unlockAllSins(withInfluence(withGold(fresh(), 1000), 1000), 2);
+    const a = activateToggle(s, 'crusade');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    const rates = { goldGainPerSecond: 40, influenceGainPerSecond: 8 };
+    const r = advanceToggles(s, 1, rates);
+    expect(r.deactivated).toHaveLength(0);
+    expect(r.state.lifetime.influence.toNumber()).toBe(996); // 1000 − 0.5 × 8
+    expect(r.state.lifetime.gold.toNumber()).toBe(1000);
   });
 });
 
 describe('tick — Vitium Compositum income and notices', () => {
-  it('an active gold-income toggle adds its income on top of base (loan-shark-op: 100 g/s)', () => {
-    // Reaching avaritia/ira level 2 inflates goldRateMul via the Golden Hand skill, so assert the
-    // DELTA the toggle adds rather than an absolute number: gold gain with the toggle minus
-    // without it should equal 8 (VC g/s) × goldRateMul over 1 s.
-    const base = unlock(withInfluence(withGold(fresh(), 0), 1000), COMPOSITA['loan-shark-op']!);
-    const a = activateToggle(base, 'loan-shark-op');
+  it('an active gold-income toggle adds its income on top of base (charity: 200 g/s)', () => {
+    // Reaching avaritia/vanagloria gates inflates goldRateMul via skills, so assert the DELTA the
+    // toggle adds rather than an absolute number: gold gain with the toggle minus without it is
+    // 200 (VC g/s) × goldRateMul minus the 100 g/s upkeep (paid pre-income, unscaled) over 1 s.
+    const base = unlock(withInfluence(withGold(fresh(), 1000), 1000), COMPOSITA.charity!);
+    const a = activateToggle(base, 'charity');
     if (!a.ok) throw new Error('activate');
     const goldRateMul = computeModifiers(base).goldRateMul;
     const withoutGold = tick(base, 1).state.lifetime.gold.toNumber();
-    const withGoldVal = tick(a.state, 1).state.lifetime.gold.toNumber();
-    expect(withGoldVal - withoutGold).toBeCloseTo(100 * goldRateMul, 3);
+    const withCharity = tick(a.state, 1).state.lifetime.gold.toNumber();
+    expect(withCharity - withoutGold).toBeCloseTo(200 * goldRateMul - 100, 3);
   });
 
   it('an active influence-income toggle adds its income (gala: 20 infl/s) under the cap', () => {
@@ -254,31 +309,65 @@ describe('tick — Vitium Compositum income and notices', () => {
 });
 
 describe('Vitium Compositum — income + generation sourcing', () => {
-  it('an active income toggle reflects its gold/influence (loan-shark-op)', () => {
-    // loan-shark-op: 100 gold/s income, 10 influence/s upkeep (conversion removed with subtypes).
-    let s = unlock(
-      withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
-      COMPOSITA['loan-shark-op']!,
-    );
-    const a = activateToggle(s, 'loan-shark-op');
+  it('an active income toggle reflects its gold/influence (charity)', () => {
+    // charity: 200 gold/s income; 100 gold + 25 influence/s upkeep (sheet rev 2026-06-12).
+    let s = unlock(withInfluence(withGold(fresh(), 1_000_000), 1_000_000), COMPOSITA.charity!);
+    const a = activateToggle(s, 'charity');
     if (!a.ok) throw new Error('activate');
     s = a.state;
-    expect(compositumGoldPerSecond(s)).toBe(100);
+    expect(compositumGoldPerSecond(s)).toBe(200);
     expect(compositumInfluencePerSecond(s)).toBe(0);
   });
 
-  it('Bacchanal generation is 10% of the whole population, folded into the generation rate', () => {
+  it('Bacchanal boosts the generation rate by 10% while active (sheet rev 2026-06-12)', () => {
     let s = unlock(withInfluence(withGold(fresh(), 1_000_000), 1_000_000)); // gula + luxuria L1
-    s = { ...s, lifetime: { ...s.lifetime, reprobates: 100 } };
+    s = { ...s, lifetime: { ...s.lifetime, mercatusDepths: { gula: 3 } } }; // a real birth rate
+    const off = reprobateRates(s, computeModifiers(s)).generationPerSecond;
     const a = activateToggle(s, 'bacchanal');
     if (!a.ok) throw new Error('activate');
-    s = a.state;
-    expect(compositumPopulationGenerationPerSecond(s)).toBeCloseTo(0.1 * 100, 6); // 10/s
-    const mods = computeModifiers(s);
-    expect(reprobateRates(s, mods).generationPerSecond).toBeCloseTo(
-      10 * mods.reprobateGenerationRateMul,
-      6,
+    expect(compositumGenerationRateMul(a.state)).toBeCloseTo(1.1, 9);
+    const on = reprobateRates(a.state, computeModifiers(a.state)).generationPerSecond;
+    expect(on / off).toBeCloseTo(1.1, 6);
+  });
+});
+
+describe('Vegas / Crusade through the tick (ADR-027)', () => {
+  it('Vegas drains ~50% of the gold gain and yields 1% of it as influence', () => {
+    // All eight Sins at L2 meet Vegas' four-Sin gate. Control = same state without the toggle;
+    // perSecondRates(control) IS the percentage base (no percent-VC active in the control).
+    const base = unlockAllSins(withInfluence(withGold(fresh(), 1_000_000), 0), 2);
+    const a = activateToggle(base, 'vegas');
+    if (!a.ok) throw new Error('activate');
+    const mods = computeModifiers(base);
+    const goldRate = tick(base, 1).state.lifetime.gold.toNumber() - 1_000_000; // control gain/s
+    const withVegas = tick(a.state, 1).state;
+    // Gold: full income still accrues, minus the 50% upkeep leg.
+    expect(withVegas.lifetime.gold.toNumber() - 1_000_000).toBeCloseTo(
+      goldRate - 0.5 * goldRate,
+      1,
     );
+    // Influence: the control's gain plus 1% of the gold gain × VC output × influence rate muls.
+    const controlInfl = tick(base, 1).state.lifetime.influence.toNumber();
+    const vegasBonus = 0.01 * goldRate * mods.vitiumCompositumOutputMul * mods.influenceRateMul;
+    expect(withVegas.lifetime.influence.toNumber()).toBeCloseTo(controlInfl + vegasBonus, 1);
+  });
+
+  it('Crusade converts the influence gain into a ×10 gold stream', () => {
+    // Stock 50 influence — under the effective cap, enough to pay the 50%-of-gain upkeep.
+    const base = unlockAllSins(withInfluence(withGold(fresh(), 1_000_000), 50), 2);
+    const a = activateToggle(base, 'crusade');
+    if (!a.ok) throw new Error('activate');
+    const mods = computeModifiers(base);
+    const control = tick(base, 1).state;
+    const inflRate = control.lifetime.influence.toNumber() - 50; // control influence gain/s
+    const withCrusade = tick(a.state, 1).state;
+    const crusadeGold = 10 * inflRate * mods.vitiumCompositumOutputMul * mods.goldRateMul;
+    expect(withCrusade.lifetime.gold.toNumber()).toBeCloseTo(
+      control.lifetime.gold.toNumber() + crusadeGold,
+      1,
+    );
+    // Influence: same accrual minus the 50% upkeep on the gain rate.
+    expect(withCrusade.lifetime.influence.toNumber()).toBeCloseTo(50 + 0.5 * inflRate, 1);
   });
 });
 
@@ -400,73 +489,33 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
   });
 });
 
-describe('Vitium Compositum — flat dynamics-rate ceremonies', () => {
-  it('Doom Gathering adds a flat increase to the base suicide rate', () => {
-    let s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['doom-gathering']!);
-    s = {
-      ...s,
-      lifetime: { ...s.lifetime, reprobates: 100 },
-    };
+describe('Vitium Compositum — dynamics-rate ceremonies (sheet rev 2026-06-12)', () => {
+  it('Doom Gathering boosts the suicide rate by 10% while active', () => {
+    let s = unlock(
+      withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
+      COMPOSITA['doom-gathering']!,
+    );
+    s = { ...s, lifetime: { ...s.lifetime, reprobates: 100 } };
     const off = reprobateRates(s, computeModifiers(s)).suicidePerSecond;
     const a = activateToggle(s, 'doom-gathering');
     if (!a.ok) throw new Error('activate');
+    expect(compositumSuicideRateMul(a.state)).toBeCloseTo(1.1, 9);
     const on = reprobateRates(a.state, computeModifiers(a.state)).suicidePerSecond;
-    const mul = computeModifiers(s).reprobateSuicideRateMul;
-    expect(on - off).toBeCloseTo(0.001 * 100 * mul, 6); // flat 0.001 added to the base per-capita rate
+    expect(on / off).toBeCloseTo(1.1, 6);
   });
 
-  it('Ethnocentric Revolt adds a flat increase to the base murder rate', () => {
-    let s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['ethnocentric-revolt']!);
-    s = { ...s, lifetime: { ...s.lifetime, reprobates: 50 } };
-    const off = reprobateRates(s, computeModifiers(s)).murderPerSecond;
-    const a = activateToggle(s, 'ethnocentric-revolt');
-    if (!a.ok) throw new Error('activate');
-    const on = reprobateRates(a.state, computeModifiers(a.state)).murderPerSecond;
-    const mul = computeModifiers(s).murderRateMul;
-    expect(on - off).toBeCloseTo(0.001 * 50 * mul, 6); // flat 0.001 added to the base per-capita rate
-  });
-
-  it('No-babies Movement flatly decreases generation and never charges upkeep', () => {
-    let s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['no-babies-movement']!);
-    s = { ...s, lifetime: { ...s.lifetime, mercatusDepths: { gula: 3 } } }; // 0.06 gen/s
-    const genMul = computeModifiers(s).reprobateGenerationRateMul;
-    const off = reprobateRates(s, computeModifiers(s)).generationPerSecond;
-    const a = activateToggle(s, 'no-babies-movement');
-    if (!a.ok) throw new Error('activate');
-    const on = reprobateRates(a.state, computeModifiers(a.state)).generationPerSecond;
-    expect(on - off).toBeCloseTo(-0.01 * genMul, 6);
-
-    // Free upkeep: stays active with 0 gold and 0 influence.
-    const broke = activateToggle(
-      withGold(unlock(fresh(), COMPOSITA['no-babies-movement']!), 0),
-      'no-babies-movement',
-    );
-    if (!broke.ok) throw new Error('activate broke');
-    expect(advanceToggles(broke.state, 1).deactivated).not.toContain('no-babies-movement');
-  });
-
-  it('generation never goes negative — No-babies on a state with no births clamps at 0', () => {
-    const s = unlock(withGold(fresh(), 1_000_000), COMPOSITA['no-babies-movement']!);
-    const a = activateToggle(s, 'no-babies-movement');
-    if (!a.ok) throw new Error('activate');
-    expect(reprobateRates(a.state, computeModifiers(a.state)).generationPerSecond).toBe(0);
-  });
-
-  it('Enraging Broadcast culls a flat fraction of the whole population per second', () => {
+  it('Enraging Broadcast boosts the murder rate by 10% while active', () => {
     let s = unlock(
       withInfluence(withGold(fresh(), 1_000_000), 1_000_000),
       COMPOSITA['enraging-broadcast']!,
     );
-    s = {
-      ...s,
-      lifetime: { ...s.lifetime, reprobates: 1000 },
-    };
-    const off = reprobateRates(s, computeModifiers(s)).suicidePerSecond;
+    s = { ...s, lifetime: { ...s.lifetime, reprobates: 1000 } };
+    const off = reprobateRates(s, computeModifiers(s)).murderPerSecond;
     const a = activateToggle(s, 'enraging-broadcast');
     if (!a.ok) throw new Error('activate');
-    const on = reprobateRates(a.state, computeModifiers(a.state)).suicidePerSecond;
-    // 0.1% of 1000 = 1 death/s, added on top of the rate-driven suicides (not scaled by the mul).
-    expect(on - off).toBeCloseTo(0.001 * 1000, 6);
+    expect(compositumMurderRateMul(a.state)).toBeCloseTo(1.1, 9);
+    const on = reprobateRates(a.state, computeModifiers(a.state)).murderPerSecond;
+    expect(on / off).toBeCloseTo(1.1, 6);
   });
 });
 

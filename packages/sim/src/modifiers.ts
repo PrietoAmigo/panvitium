@@ -44,6 +44,11 @@ import {
   MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS,
   mercatusDepth,
 } from './mercatus.js';
+import {
+  compositumGenerationRateMul,
+  compositumMurderRateMul,
+  compositumSuicideRateMul,
+} from './compositum.js';
 import { compositumOfflineGainBoost } from './compositum.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import {
@@ -392,6 +397,7 @@ export function computeModifiers(state: GameState): Modifiers {
       (panvitiumActive ? PANV_GEN_MUL : 1) *
       (state.lifetime.handOfGloryRemaining > 0 ? HAND_OF_GLORY_GENERATION_MUL : 1) *
       skillBonus(luxuriaIntensity) *
+      compositumGenerationRateMul(state) * // Bacchanal +10% while active (ADR-027)
       sc('reprobateGenerationRateMul'),
     // Suicide: Resignation lifts by (1 + intensity); Tristitia level doubles; each Nightmare +5%;
     // Panvitium multiplies while active; Mercatus Tristitiae adds +0.825% per depth (§1.5 amended);
@@ -401,12 +407,14 @@ export function computeModifiers(state: GameState): Modifiers {
       2 ** tristitiaLvl *
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
       (1 + MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH * mercatusDepth(state, 'tristitia')) *
+      compositumSuicideRateMul(state) * // Doom Gathering +10% while active (ADR-027)
       sc('reprobateSuicideRateMul'),
     // Murder: Panvitium multiplies while active; Mercatus Irae adds +0.825% per depth (§1.5
     // amended); Aim #23 sigil composes. Murder is a per-capita cull of the whole population.
     murderRateMul:
       (panvitiumActive ? PANV_MURDER_MUL : 1) *
       (1 + MERCATUS_IRA_MURDER_PER_DEPTH * mercatusDepth(state, 'ira')) *
+      compositumMurderRateMul(state) * // Enraging Broadcast +10% while active (ADR-027)
       sc('murderRateMul'),
     // Vitium Mercatura output: each Plutus lifts it (flat factor), Vapula #60 sigil composes; this
     // multiplier scales Mercatus revenue + generation at the tick/dynamics call sites.

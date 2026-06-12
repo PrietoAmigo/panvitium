@@ -135,12 +135,15 @@ The catalog (gates, per-second costs/outputs, and effects in the `Vitium Composi
 | **Panvitium** | All eight Sins (level gate in the sheet) | See below. |
 
 The previous revision's subtype-keyed ceremonies (*Outrage Cycle*, *Loan Shark Op*,
-*Ethnocentric Revolt*, *No-babies Movement*) are **retired from the canonical set with ADR-024**;
-the sheet's list above is canonical. *Code status:* the four still exist in `compositum.ts`
-(*Outrage Cycle* effectless; the other three with placeholder effects), and Vegas / Crusade carry
-flat placeholder costs and incomes where the sheet specifies percentage-of-income semantics — all
-pending the "Slice 3" ceremony rework (ADR-025 consequences; README backlog). The Foedera below
-already apply to every ceremony in code by its member-Sin set.
+*Ethnocentric Revolt*, *No-babies Movement*) are **retired** (ADR-024 removed their reason to
+exist; ADR-027 removed them from the code — old saves self-heal on the first tick). The roster is
+the canonical nine above. Vegas and Crusade are **percentage ceremonies** (ADR-027): Vegas pays
+50% of the current gold gain rate and yields 1% of it as influence; Crusade pays 50% of the
+current influence gain rate and yields 1000% (×10) of it as gold — each measured against the
+income WITHOUT percentage-VC outputs, so they can never feed each other. The pair ceremonies'
+effects are multiplicative ×1.1 rate boosts (Bacchanal → generation, Doom Gathering → suicide,
+Enraging Broadcast → murder) while active. The Foedera below apply to every ceremony by its
+member-Sin set.
 
 #### *Foedera* — the Mercatus ↔ Compositum coupling
 

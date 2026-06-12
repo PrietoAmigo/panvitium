@@ -15,6 +15,13 @@ export function compositumCostLine(def: CompositumDef): string {
   if (def.costPerSecond.gold) parts.push(`${def.costPerSecond.gold} ${strings.resources.gold}/s`);
   if (def.costPerSecond.influence)
     parts.push(`${def.costPerSecond.influence} ${strings.resources.influence}/s`);
+  if (def.percentCost) {
+    const src =
+      def.percentCost.base === 'goldGain'
+        ? strings.compositum.ofGoldGain
+        : strings.compositum.ofInfluenceGain;
+    parts.push(`${pctStr(def.percentCost.fraction)} ${src}`);
+  }
   let body = parts.length > 0 ? parts.join(' \u00B7 ') : strings.compositum.noCost;
   if (def.costGrowthPerSecond) body += ` (${strings.compositum.rising})`;
   return `${strings.compositum.cost}: ${body}`;
@@ -27,20 +34,19 @@ export function compositumOutcomesLine(def: CompositumDef): string {
   const inf = strings.resources.influence;
   if (def.goldPerSecond) e.push(`+${def.goldPerSecond} ${gold}/s`);
   if (def.influencePerSecond) e.push(`+${def.influencePerSecond} ${inf}/s`);
-  if (def.populationGeneration)
-    e.push(
-      `${strings.compositum.breeds} ${pctStr(def.populationGeneration.fraction)} ${strings.compositum.ofAll}`,
-    );
-  if ((def.flatGenerationPerSecond ?? 0) < 0)
-    e.push(`${strings.compositum.slowsBirths} ${Math.abs(def.flatGenerationPerSecond!)}/s`);
-  if (def.flatBaseSuicideRatePerSecond)
-    e.push(`${strings.compositum.raisesSuicide} ${def.flatBaseSuicideRatePerSecond}/s`);
-  if (def.flatBaseMurderRatePerSecond)
-    e.push(`${strings.compositum.raisesMurder} ${def.flatBaseMurderRatePerSecond}/s`);
-  if (def.deathFractionPerSecond)
-    e.push(
-      `${strings.compositum.culls} ${pctStr(def.deathFractionPerSecond)} ${strings.compositum.ofAll}`,
-    );
+  if (def.percentOutput) {
+    const src =
+      def.percentOutput.base === 'goldGain'
+        ? strings.compositum.ofGoldGain
+        : strings.compositum.ofInfluenceGain;
+    const dst = def.percentOutput.resource === 'gold' ? gold : inf;
+    e.push(`+${pctStr(def.percentOutput.fraction)} ${src} \u2192 ${dst}/s`);
+  }
+  if (def.generationRateBoost)
+    e.push(`+${pctStr(def.generationRateBoost)} ${strings.compositum.toBreeding}`);
+  if (def.suicideRateBoost)
+    e.push(`+${pctStr(def.suicideRateBoost)} ${strings.compositum.toDespair}`);
+  if (def.murderRateBoost) e.push(`+${pctStr(def.murderRateBoost)} ${strings.compositum.toKnives}`);
   if (def.offlineGainBoost)
     e.push(`+${pctStr(def.offlineGainBoost)} ${strings.compositum.offlineGain}`);
   if (def.panvitiumRateBase) e.push(strings.compositum.panvitiumEffect);

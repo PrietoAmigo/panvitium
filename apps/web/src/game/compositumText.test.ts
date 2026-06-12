@@ -5,18 +5,14 @@ import { compositumCostLine, compositumOutcomesLine } from './compositumText.js'
 
 describe('compositum text', () => {
   it('every toggle gets a labelled cost line and a non-empty outcomes line', () => {
-    // outrage-cycle / vegas / crusade lost their only subtype/conversion effect and await the VC
-    // rework (Slice 3); of these only outrage-cycle has no income, so its outcomes line is empty.
-    const effectlessStubs = new Set(['outrage-cycle']);
+    // ADR-027: the canonical nine all carry real effects — no stubs, no empty outcome lines.
     for (const id of COMPOSITUM_IDS) {
       const def = compositumById(id)!;
       const cost = compositumCostLine(def);
       const out = compositumOutcomesLine(def);
       expect(cost.startsWith(`${strings.compositum.cost}:`)).toBe(true);
       expect(out.startsWith(`${strings.compositum.outcomes}:`)).toBe(true);
-      if (!effectlessStubs.has(id)) {
-        expect(out).not.toBe(`${strings.compositum.outcomes}: ${strings.compositum.noOutcome}`);
-      }
+      expect(out).not.toBe(`${strings.compositum.outcomes}: ${strings.compositum.noOutcome}`);
     }
   });
 
@@ -24,28 +20,39 @@ describe('compositum text', () => {
     expect(compositumCostLine(compositumById('bacchanal')!)).toBe(
       `${strings.compositum.cost}: 100 ${strings.resources.gold}/s \u00B7 10 ${strings.resources.influence}/s`,
     );
-    // No-babies Movement has no upkeep.
-    expect(compositumCostLine(compositumById('no-babies-movement')!)).toBe(
+    // Dolce Far Niente has no upkeep.
+    expect(compositumCostLine(compositumById('dolce-far-niente')!)).toBe(
       `${strings.compositum.cost}: ${strings.compositum.noCost}`,
+    );
+    // Vegas states its percentage upkeep (ADR-027).
+    expect(compositumCostLine(compositumById('vegas')!)).toBe(
+      `${strings.compositum.cost}: 50% ${strings.compositum.ofGoldGain}`,
     );
     // Panvitium's upkeep ramps with time.
     expect(compositumCostLine(compositumById('panvitium')!)).toContain(strings.compositum.rising);
   });
 
   it('spells out the specific outcomes with numbers', () => {
-    // Income-only ceremony (conversion removed with subtypes).
-    expect(compositumOutcomesLine(compositumById('loan-shark-op')!)).toBe(
-      `${strings.compositum.outcomes}: +100 ${strings.resources.gold}/s`,
+    // Income-only ceremony.
+    expect(compositumOutcomesLine(compositumById('charity')!)).toBe(
+      `${strings.compositum.outcomes}: +200 ${strings.resources.gold}/s`,
     );
-    // The effectless Slice-3 stub reads as "no outcome".
-    expect(compositumOutcomesLine(compositumById('outrage-cycle')!)).toBe(
-      `${strings.compositum.outcomes}: ${strings.compositum.noOutcome}`,
+    // Rate boosts as percents (ADR-027).
+    expect(compositumOutcomesLine(compositumById('bacchanal')!)).toContain(
+      `+10% ${strings.compositum.toBreeding}`,
     );
-    // Population-proportional breeding as a percent.
-    expect(compositumOutcomesLine(compositumById('bacchanal')!)).toContain('10%');
-    // Percentage cull.
+    expect(compositumOutcomesLine(compositumById('doom-gathering')!)).toContain(
+      `+10% ${strings.compositum.toDespair}`,
+    );
     expect(compositumOutcomesLine(compositumById('enraging-broadcast')!)).toContain(
-      `${strings.compositum.culls} 0.1% ${strings.compositum.ofAll}`,
+      `+10% ${strings.compositum.toKnives}`,
+    );
+    // Percentage conversions (Vegas → influence, Crusade → gold).
+    expect(compositumOutcomesLine(compositumById('vegas')!)).toContain(
+      `+1% ${strings.compositum.ofGoldGain} \u2192 ${strings.resources.influence}/s`,
+    );
+    expect(compositumOutcomesLine(compositumById('crusade')!)).toContain(
+      `+1000% ${strings.compositum.ofInfluenceGain} \u2192 ${strings.resources.gold}/s`,
     );
     // Offline-gain ceremony.
     expect(compositumOutcomesLine(compositumById('dolce-far-niente')!)).toContain(

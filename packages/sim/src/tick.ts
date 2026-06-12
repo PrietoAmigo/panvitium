@@ -21,12 +21,15 @@ import {
   advanceToggles,
   compositumGoldPerSecond,
   compositumInfluencePerSecond,
+  compositumPercentGoldPerSecond,
+  compositumPercentInfluencePerSecond,
+  type GainRates,
   panvitiumRate,
 } from './compositum.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
-import { computeModifiers } from './modifiers.js';
+import { computeModifiers, type Modifiers } from './modifiers.js';
 import { removeReprobates, mintSouls } from './population.js';
 import { makeRng } from './rng.js';
 import { type ActionTimer, type GameState } from './state.js';
@@ -89,21 +92,44 @@ export interface PerSecondRates {
  * Zero while frozen (mid-descent or under Morpheus), since nothing accrues then. Influence is the
  * gross generation rate — it represents economy throughput, not the net change once the cap is hit.
  */
-export function perSecondRates(state: GameState): PerSecondRates {
-  if (state.inKatabasis === true || (state.lifetime.invocations.morpheus ?? 0) > 0) {
-    return { gold: 0, influence: ZERO };
-  }
-  const mods = computeModifiers(state);
-  const gold =
+/**
+ * The base gain rates the percentage-VC semantics (Vegas/Crusade) measure against: the full income
+ * lines WITHOUT any percentage-VC contributions, so the two ceremonies can never feed each other
+ * (sheet rev 2026-06-12 / ADR-027). Gold mirrors the tick's gold line; influence is the
+ * proportional base + flat VC/sigil influence, all × influenceRateMul.
+ */
+function baseGainRates(state: GameState, mods: Modifiers): GainRates {
+  const goldGainPerSecond =
     (BASE_GOLD_PER_SECOND +
       mercatusGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
     mods.goldRateMul;
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
+  const influenceGainPerSecond =
+    effectiveMax.toNumber() * BASE_INFLUENCE_RATE * mods.influenceRateMul +
+    (compositumInfluencePerSecond(state) + mods.flatInfluencePerSecond) * mods.influenceRateMul;
+  return { goldGainPerSecond, influenceGainPerSecond };
+}
+
+export function perSecondRates(state: GameState): PerSecondRates {
+  if (state.inKatabasis === true || (state.lifetime.invocations.morpheus ?? 0) > 0) {
+    return { gold: 0, influence: ZERO };
+  }
+  const mods = computeModifiers(state);
+  const rates = baseGainRates(state, mods);
+  const gold =
+    rates.goldGainPerSecond +
+    compositumPercentGoldPerSecond(state, rates) *
+      mods.vitiumCompositumOutputMul *
+      mods.goldRateMul;
   const influence = add(
-    mul(effectiveMax, BASE_INFLUENCE_RATE * mods.influenceRateMul),
-    bn((compositumInfluencePerSecond(state) + mods.flatInfluencePerSecond) * mods.influenceRateMul),
+    bn(rates.influenceGainPerSecond),
+    bn(
+      compositumPercentInfluencePerSecond(state, rates) *
+        mods.vitiumCompositumOutputMul *
+        mods.influenceRateMul,
+    ),
   );
   return { gold, influence };
 }
@@ -148,7 +174,9 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   //    the rest of the tick (modifiers, income, dynamics) sees the post-upkeep toggle set.
   const notices: string[] = [];
   {
-    const toggled = advanceToggles(state, deltaSeconds);
+    // Percentage-VC upkeep (Vegas/Crusade) measures the pre-toggle income rates (ADR-027).
+    const preMods = computeModifiers(state);
+    const toggled = advanceToggles(state, deltaSeconds, baseGainRates(state, preMods));
     state = toggled.state;
     for (const id of toggled.deactivated) {
       notices.push(`${id} ended \u2014 upkeep unpaid.`);
@@ -177,19 +205,29 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
     offlineEfficiency < 1
       ? mercatusRevenueWithFoedus(state, 'acedia') * (1 / offlineEfficiency - 1)
       : 0;
+  // The percentage-VC outputs (Vegas → influence, Crusade → gold) measure the base gain rates
+  // (no percentage terms inside, by construction) and ride the VC output multiplier like any
+  // ceremony income (ADR-027).
+  const gainRates = baseGainRates(state, mods);
   const goldPerSecond =
-    (BASE_GOLD_PER_SECOND +
+    ((BASE_GOLD_PER_SECOND +
       (mercatusGoldPerSecond(state) + acediaOfflineRestore) * mods.vitiumMercaturaOutputMul +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
-    mods.goldRateMul *
+      mods.goldRateMul +
+      compositumPercentGoldPerSecond(state, gainRates) *
+        mods.vitiumCompositumOutputMul *
+        mods.goldRateMul) *
     offlineGoldMul;
   const proportionalInfluence = mul(
     effectiveMax,
     BASE_INFLUENCE_RATE * mods.influenceRateMul * offlineInfluenceMul * deltaSeconds,
   );
   const vcInfluence = mul(
-    compositumInfluencePerSecond(state) * mods.influenceRateMul * offlineInfluenceMul,
+    (compositumInfluencePerSecond(state) +
+      compositumPercentInfluencePerSecond(state, gainRates) * mods.vitiumCompositumOutputMul) *
+      mods.influenceRateMul *
+      offlineInfluenceMul,
     deltaSeconds,
   );
   // Flat influence/s from invocations (Lemure). Additive, scaled by the influence-rate multiplier

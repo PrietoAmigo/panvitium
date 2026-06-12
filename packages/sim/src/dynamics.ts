@@ -23,15 +23,7 @@ import {
   BASE_MURDER_RATE_PER_SECOND,
 } from './constants.js';
 import { mercatusGenerationPerSecond } from './mercatus.js';
-import {
-  compositumGenerationPerSecond,
-  compositumFlatGenerationPerSecond,
-  compositumFlatBaseSuicideRatePerSecond,
-  compositumFlatBaseMurderRatePerSecond,
-  compositumPopulationGenerationPerSecond,
-  compositumDeathFractionPerSecond,
-  panvitiumRate,
-} from './compositum.js';
+import { compositumGenerationPerSecond, panvitiumRate } from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobates } from './population.js';
 import { sigilMurderGoldPerKill } from './sigils.js';
@@ -61,24 +53,14 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
     BASE_REPROBATE_GENERATION_PER_SECOND +
     mercatusGenerationPerSecond(state) * vmMul +
     compositumGenerationPerSecond(state) +
-    compositumFlatGenerationPerSecond(state) + // toggle flat add/decrease (No-babies); clamped below
-    compositumPopulationGenerationPerSecond(state) + // population-proportional (Bacchanal)
     panvitiumRate(state); // Panvitium: R(t) = 0.01·eᵗ is also a flat generation increase
-  // Toggle flat additions to the BASE per-capita rates (Doom → suicide, Ethnocentric → murder),
-  // applied before the ×population and the rate multipliers, so the ceremony raises the floor and
-  // the multipliers still scale it.
-  const suicideBase =
-    BASE_SUICIDE_RATE_PER_SECOND +
-    compositumFlatBaseSuicideRatePerSecond(state) +
-    mods.flatBaseSuicideRatePerSecond;
-  const murderBase = BASE_MURDER_RATE_PER_SECOND + compositumFlatBaseMurderRatePerSecond(state);
-  // Enraging Broadcast culls a flat fraction of the WHOLE population each second (not scaled by the
-  // suicide-rate multiplier) — added on top of the rate-driven suicides, routed through the same pool.
-  const enragingDeaths = compositumDeathFractionPerSecond(state) * population;
+  // The ceremony rate BOOSTS (Bacchanal generation, Doom suicide, Enraging murder — sheet rev
+  // 2026-06-12) live in the modifier bundle, so they arrive through the three multipliers below.
+  const suicideBase = BASE_SUICIDE_RATE_PER_SECOND + mods.flatBaseSuicideRatePerSecond;
   return {
     generationPerSecond: Math.max(0, baseGen) * mods.reprobateGenerationRateMul,
-    suicidePerSecond: suicideBase * population * mods.reprobateSuicideRateMul + enragingDeaths,
-    murderPerSecond: murderBase * population * mods.murderRateMul,
+    suicidePerSecond: suicideBase * population * mods.reprobateSuicideRateMul,
+    murderPerSecond: BASE_MURDER_RATE_PER_SECOND * population * mods.murderRateMul,
   };
 }
 

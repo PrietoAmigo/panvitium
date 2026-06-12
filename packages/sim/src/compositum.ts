@@ -20,7 +20,7 @@ import { floor, gte, sub } from './bignum.js';
 import { PANVITIUM_RATE_BASE } from './constants.js';
 import { foedusTier, foedusUpkeepMul } from './mercatus.js';
 import { sinLevel } from './progression.js';
-import { type GameState, type Sin, totalReprobates } from './state.js';
+import { type GameState, type Sin } from './state.js';
 
 export interface CompositumDef {
   readonly id: string;
@@ -37,37 +37,45 @@ export interface CompositumDef {
   /** Per-second reprobate generation contribution (fed into the generation pool). */
   readonly generationPerSecond?: number;
   /**
-   * Flat additive contribution to the per-second reprobate GENERATION rate while active (folded
-   * into the generation term alongside business/Compositum generation, before the generation
-   * multiplier; the total is clamped at ≥ 0). Negative for ceremonies that suppress births
-   * (No-babies Movement). Default 0.
+   * Multiplicative boost to the reprobate generation rate while active: the rate takes
+   * ×(1 + boost) (Bacchanal — "+10% online reprobate generation"). Folded into the modifier
+   * bundle's generation multiplier. Default 0.
    */
-  readonly flatGenerationPerSecond?: number;
+  readonly generationRateBoost?: number;
   /**
-   * Flat additive increase to the BASE per-capita suicide rate while active (added to
-   * `BASE_SUICIDE_RATE_PER_SECOND` before the ×population×mul). Doom Gathering. Default 0.
+   * Multiplicative boost to the suicide-rate multiplier while active: ×(1 + boost)
+   * (Doom Gathering — "+10% suicide rate"). Folded into `reprobateSuicideRateMul`. Default 0.
    */
-  readonly flatBaseSuicideRatePerSecond?: number;
+  readonly suicideRateBoost?: number;
   /**
-   * Flat additive increase to the BASE per-capita murder rate while active (added to
-   * `BASE_MURDER_RATE_PER_SECOND` before the ×population×mul). Ethnocentric Revolt. Default 0.
+   * Multiplicative boost to the murder-rate multiplier while active: ×(1 + boost)
+   * (Enraging Broadcast — "+10% murder rate"). Folded into `murderRateMul`. Default 0.
    */
-  readonly flatBaseMurderRatePerSecond?: number;
+  readonly murderRateBoost?: number;
   /**
-   * Population-proportional generation while active: adds `fraction × total reprobate population`
-   * reprobates per second to the generation term (Bacchanal — 10% of the population). Folded in
-   * alongside the other generation contributions, before the generation multiplier. Default: none.
+   * Percentage-of-income upkeep (sheet rev 2026-06-12): each second the ceremony costs
+   * `fraction × the current base gain rate` of the SAME resource the base measures — Vegas pays
+   * 50% of the gold income in gold, Crusade 50% of the influence income in influence. The base
+   * rates are computed by the tick WITHOUT any percentage-VC outputs (so the two can never feed
+   * each other) and passed into `advanceToggles`. Composes with the Foedus upkeep discount and
+   * (hypothetically) the eᵗ ramp like any flat cost. Default: none.
    */
-  readonly populationGeneration?: {
+  readonly percentCost?: {
+    readonly base: 'goldGain' | 'influenceGain';
     readonly fraction: number;
   };
   /**
-   * Per-second fraction of the TOTAL reprobate population that dies while active (Enraging
-   * Broadcast — "percentage death of total reprobates"). Routed through the suicide pool (one soul
-   * per death) but NOT scaled by the suicide-rate multiplier — it is a flat percentage cull.
-   * Default 0.
+   * Percentage-of-income output (sheet rev 2026-06-12): while active, the ceremony yields
+   * `fraction × the current base gain rate` per second AS the named resource — Vegas turns 1% of
+   * the gold income into influence; Crusade turns 1000% (×10) of the influence income into gold.
+   * Added to the income lines alongside the flat VC outputs (same `vitiumCompositumOutputMul`
+   * and rate multipliers). Default: none.
    */
-  readonly deathFractionPerSecond?: number;
+  readonly percentOutput?: {
+    readonly base: 'goldGain' | 'influenceGain';
+    readonly resource: 'gold' | 'influence';
+    readonly fraction: number;
+  };
   /**
    * While active, multiplies the offline-gain rate by `(1 + offlineGainBoost)` (Dolce Far Niente).
    * Folded into `offlineTimeMul`. Default 0.
@@ -106,24 +114,17 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     sins: ['gula', 'luxuria'],
     minLevel: 1,
     costPerSecond: { gold: 100, influence: 10 },
-    // Generates 10% of the total reprobate population as new reprobates per second.
-    populationGeneration: { fraction: 0.1 },
-  },
-  'loan-shark-op': {
-    id: 'loan-shark-op',
-    sins: ['avaritia', 'ira'],
-    minLevel: 1,
-    costPerSecond: { influence: 10 },
-    goldPerSecond: 100,
-    // Conversion effect removed with subtypes; kept as a gold-income toggle pending Slice 3 rework.
+    // Sheet rev 2026-06-12: +10% to the online reprobate generation rate while active.
+    generationRateBoost: 0.1,
   },
   charity: {
     id: 'charity',
     sins: ['avaritia', 'vanagloria'],
     minLevel: 1,
-    costPerSecond: { influence: 25 },
+    // Sheet rev 2026-06-12: 100 gold + 25 influence per second buys 200 gold per second back —
+    // an influence-to-gold pump with a thin margin.
+    costPerSecond: { gold: 100, influence: 25 },
     goldPerSecond: 200,
-    // Conversion effect removed with subtypes; kept as a gold-income toggle pending Slice 3 rework.
   },
   gala: {
     id: 'gala',
@@ -133,48 +134,24 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     influencePerSecond: 20,
     // Conversion effect removed with subtypes; kept as an influence-income toggle pending Slice 3.
   },
-  'outrage-cycle': {
-    id: 'outrage-cycle',
-    sins: ['ira', 'vanagloria'],
-    minLevel: 1,
-    costPerSecond: { gold: 50, influence: 5 },
-    // Conversion-only effect removed with subtypes; no income to fall back on. EFFECTLESS STUB —
-    // flagged for redesign in the Vitium Compositum rework (Slice 3).
-  },
-  'no-babies-movement': {
-    id: 'no-babies-movement',
-    sins: ['luxuria', 'acedia'],
-    minLevel: 1,
-    costPerSecond: {},
-    goldPerSecond: 100,
-    influencePerSecond: 10,
-    // Sheet: "conversion rate instead applies as a flat decrease to unconverted reprobate generation."
-    flatGenerationPerSecond: -0.01,
-  },
+  // Sheet rev 2026-06-12: the four subtype-era pairs (Loan Shark Op, Outrage Cycle, No-babies
+  // Movement, Ethnocentric Revolt) are RETIRED — the canonical roster is nine (ADR-027).
+  // `advanceToggles` drops their ids from old saves gracefully (unknown-id path).
   'doom-gathering': {
     id: 'doom-gathering',
     sins: ['tristitia', 'acedia'],
     minLevel: 1,
     costPerSecond: { gold: 100, influence: 10 },
-    // Sheet: "conversion rate instead applies as a flat increase to base reprobate suicide rate."
-    flatBaseSuicideRatePerSecond: 0.001,
-  },
-  'ethnocentric-revolt': {
-    id: 'ethnocentric-revolt',
-    sins: ['superbia', 'ira'],
-    minLevel: 1,
-    costPerSecond: { gold: 100, influence: 10 },
-    // Flat increase to the base reprobate murder rate while active.
-    flatBaseMurderRatePerSecond: 0.001,
+    // Sheet rev 2026-06-12: +10% to the suicide rate while active.
+    suicideRateBoost: 0.1,
   },
   'enraging-broadcast': {
     id: 'enraging-broadcast',
     sins: ['ira', 'tristitia'],
     minLevel: 1,
     costPerSecond: { influence: 25 },
-    // Sheet: "conversion rate instead applies as percentage death of total reprobates" — 0.1% of
-    // the whole population self-destructs each second, taking random reprobates with them.
-    deathFractionPerSecond: 0.001,
+    // Sheet rev 2026-06-12: +10% to the murder rate while active.
+    murderRateBoost: 0.1,
   },
   'dolce-far-niente': {
     id: 'dolce-far-niente',
@@ -188,17 +165,21 @@ export const COMPOSITA: Readonly<Record<string, CompositumDef>> = {
     id: 'vegas',
     sins: ['luxuria', 'avaritia', 'gula', 'acedia'],
     minLevel: 2,
-    costPerSecond: { gold: 1000 },
-    influencePerSecond: 100,
-    // Subtype-penalty effect removed with subtypes; kept as an influence-income toggle (Slice 3).
+    costPerSecond: {},
+    // Sheet rev 2026-06-12: the casino converts wealth into renown — pays 50% of the current
+    // gold income (in gold) and yields 1% of that income as influence per second.
+    percentCost: { base: 'goldGain', fraction: 0.5 },
+    percentOutput: { base: 'goldGain', resource: 'influence', fraction: 0.01 },
   },
   crusade: {
     id: 'crusade',
     sins: ['superbia', 'ira', 'vanagloria', 'tristitia'],
     minLevel: 2,
-    costPerSecond: { influence: 100 },
-    goldPerSecond: 1000,
-    // Subtype-penalty effect removed with subtypes; kept as a gold-income toggle (Slice 3).
+    costPerSecond: {},
+    // Sheet rev 2026-06-12: the holy war converts renown into plunder — pays 50% of the current
+    // influence income (in influence) and yields 1000% (×10) of that income as gold per second.
+    percentCost: { base: 'influenceGain', fraction: 0.5 },
+    percentOutput: { base: 'influenceGain', resource: 'gold', fraction: 10 },
   },
   // The endgame ritual (03 §2.3). Gated on ALL eight Sins at level 3. Cannot be turned off by
   // hand; its cost ramps exponentially with active duration so it can't become a steady state —
@@ -302,9 +283,64 @@ export function deactivateToggle(state: GameState, vcId: string): ToggleResult {
  * Costs are deducted BEFORE income is applied in the tick, so a toggle never earns on a tick it
  * couldn't afford. Unknown ids in `activeToggles` (e.g. from a future-version save) are dropped.
  */
+/**
+ * The base gain rates the percentage-VC semantics measure against (sheet rev 2026-06-12): the
+ * tick computes these WITHOUT any percentage-VC outputs — Vegas and Crusade can never feed each
+ * other — and passes them here for upkeep and into the income lines for output.
+ */
+export interface GainRates {
+  readonly goldGainPerSecond: number;
+  readonly influenceGainPerSecond: number;
+}
+
+const ZERO_GAIN_RATES: GainRates = { goldGainPerSecond: 0, influenceGainPerSecond: 0 };
+
+function percentCostPerSecond(
+  def: CompositumDef,
+  rates: GainRates,
+): { gold: number; influence: number } {
+  if (!def.percentCost) return { gold: 0, influence: 0 };
+  const base =
+    def.percentCost.base === 'goldGain' ? rates.goldGainPerSecond : rates.influenceGainPerSecond;
+  const amount = Math.max(0, base) * def.percentCost.fraction;
+  // The cost is paid in the same currency the base measures (Vegas: gold; Crusade: influence).
+  return def.percentCost.base === 'goldGain'
+    ? { gold: amount, influence: 0 }
+    : { gold: 0, influence: amount };
+}
+
+function percentOutputPerSecond(
+  state: GameState,
+  rates: GainRates,
+  resource: 'gold' | 'influence',
+): number {
+  let sum = 0;
+  for (const id of state.lifetime.activeToggles) {
+    const def = COMPOSITA[id];
+    if (!def?.percentOutput || def.percentOutput.resource !== resource) continue;
+    const base =
+      def.percentOutput.base === 'goldGain'
+        ? rates.goldGainPerSecond
+        : rates.influenceGainPerSecond;
+    sum += Math.max(0, base) * def.percentOutput.fraction;
+  }
+  return sum;
+}
+
+/** Σ percentage-VC gold output/s over active toggles (Crusade), given the base gain rates. */
+export function compositumPercentGoldPerSecond(state: GameState, rates: GainRates): number {
+  return percentOutputPerSecond(state, rates, 'gold');
+}
+
+/** Σ percentage-VC influence output/s over active toggles (Vegas), given the base gain rates. */
+export function compositumPercentInfluencePerSecond(state: GameState, rates: GainRates): number {
+  return percentOutputPerSecond(state, rates, 'influence');
+}
+
 export function advanceToggles(
   state: GameState,
   deltaSeconds: number,
+  rates: GainRates = ZERO_GAIN_RATES,
 ): { state: GameState; deactivated: string[] } {
   if (deltaSeconds <= 0 || state.lifetime.activeToggles.length === 0) {
     return { state, deactivated: [] };
@@ -327,8 +363,10 @@ export function advanceToggles(
     const dur = durations[vcId] ?? 0;
     const growth = def.costGrowthPerSecond ? Math.pow(def.costGrowthPerSecond, dur) : 1;
     const foedusMul = compositumFoedusUpkeepMul(state, def);
-    const goldCost = (def.costPerSecond.gold ?? 0) * growth * foedusMul * deltaSeconds;
-    const inflCost = (def.costPerSecond.influence ?? 0) * growth * foedusMul * deltaSeconds;
+    const pct = percentCostPerSecond(def, rates);
+    const goldCost = ((def.costPerSecond.gold ?? 0) + pct.gold) * growth * foedusMul * deltaSeconds;
+    const inflCost =
+      ((def.costPerSecond.influence ?? 0) + pct.influence) * growth * foedusMul * deltaSeconds;
     const canPay =
       Number.isFinite(goldCost) &&
       Number.isFinite(inflCost) &&
@@ -405,48 +443,34 @@ export function compositumGenerationPerSecond(state: GameState): number {
   return s;
 }
 
-/** Sum of `flatGenerationPerSecond` across active toggles (may be negative; caller clamps total). */
-export function compositumFlatGenerationPerSecond(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles)
-    s += compositumById(id)?.flatGenerationPerSecond ?? 0;
-  return s;
-}
-
-/** Sum of flat additive increases to the BASE suicide rate across active toggles. */
-export function compositumFlatBaseSuicideRatePerSecond(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles)
-    s += compositumById(id)?.flatBaseSuicideRatePerSecond ?? 0;
-  return s;
-}
-
-/** Sum of flat additive increases to the BASE murder rate across active toggles. */
-export function compositumFlatBaseMurderRatePerSecond(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles)
-    s += compositumById(id)?.flatBaseMurderRatePerSecond ?? 0;
-  return s;
-}
-
-/** Population-proportional generation across active toggles: Σ fraction × total population. */
-export function compositumPopulationGenerationPerSecond(state: GameState): number {
-  let s = 0;
-  const pop = totalReprobates(state);
+/** Π(1 + generationRateBoost) over active toggles (Bacchanal) — folds into the generation mul. */
+export function compositumGenerationRateMul(state: GameState): number {
+  let mul = 1;
   for (const id of state.lifetime.activeToggles) {
-    const def = compositumById(id);
-    if (!def?.populationGeneration) continue;
-    s += def.populationGeneration.fraction * pop;
+    const def = COMPOSITA[id];
+    if (def?.generationRateBoost) mul *= 1 + def.generationRateBoost;
   }
-  return s;
+  return mul;
 }
 
-/** Sum of per-second total-population death fractions across active toggles (Enraging Broadcast). */
-export function compositumDeathFractionPerSecond(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles)
-    s += compositumById(id)?.deathFractionPerSecond ?? 0;
-  return s;
+/** Π(1 + suicideRateBoost) over active toggles (Doom Gathering) — folds into the suicide mul. */
+export function compositumSuicideRateMul(state: GameState): number {
+  let mul = 1;
+  for (const id of state.lifetime.activeToggles) {
+    const def = COMPOSITA[id];
+    if (def?.suicideRateBoost) mul *= 1 + def.suicideRateBoost;
+  }
+  return mul;
+}
+
+/** Π(1 + murderRateBoost) over active toggles (Enraging Broadcast) — folds into the murder mul. */
+export function compositumMurderRateMul(state: GameState): number {
+  let mul = 1;
+  for (const id of state.lifetime.activeToggles) {
+    const def = COMPOSITA[id];
+    if (def?.murderRateBoost) mul *= 1 + def.murderRateBoost;
+  }
+  return mul;
 }
 
 /** Sum of offline-gain boosts across active toggles (Dolce Far Niente). */

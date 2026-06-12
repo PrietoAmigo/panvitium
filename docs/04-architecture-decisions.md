@@ -681,6 +681,55 @@ definition, catches the player up to the present, whatever the gains were scaled
 
 ---
 
+## ADR-027: Vitium Compositum — the canonical nine, with percentage ceremonies
+
+**Status.** Accepted [2026-06-12]. Implements the "Slice 3" rework registered as an open item by
+ADR-025, per the revised economy template.
+
+**Context.** After ADR-024 removed subtypes and conversion, four ceremonies survived only as
+placeholders (*Outrage Cycle* effectless; *Loan Shark Op* / *No-babies Movement* / *Ethnocentric
+Revolt* with improvised effects), and Vegas / Crusade carried flat placeholder costs and incomes
+where the sheet had always intended percentage-of-income semantics. The revised template fixes the
+canonical roster at nine and specifies every cost, output, and effect.
+
+**Decision.** The four subtype-era pairs are **deleted from the catalog**; `advanceToggles`'
+unknown-id path drops their ids from old saves without billing them (no migration needed — the
+field shapes are unchanged, so no schema bump per ADR-023). The five subtype-era plumbing fields
+(`flatGenerationPerSecond`, `flatBaseSuicideRatePerSecond`, `flatBaseMurderRatePerSecond`,
+`populationGeneration`, `deathFractionPerSecond`) and their helpers are removed with them. The
+pair ceremonies take their sheet effects as **multiplicative rate boosts** folded into the
+modifier bundle: Bacchanal ×1.1 generation, Doom Gathering ×1.1 suicide, Enraging Broadcast ×1.1
+murder, each while active; Charity's upkeep gains its missing 100 gold/s leg (100 g + 25 i → 200
+g/s); Dolce Far Niente and Gala stand as coded. **Vegas and Crusade become percentage ceremonies**:
+each second Vegas pays 50% of the current gold gain rate (in gold) and yields 1% of that rate as
+influence; Crusade pays 50% of the current influence gain rate (in influence) and yields 1000%
+(×10) of that rate as gold. The percentage base is computed by the tick **without any
+percentage-VC outputs** — Vegas and Crusade can never feed each other or themselves — and passed
+into `advanceToggles` (upkeep) and the income lines (output, riding `vitiumCompositumOutputMul`
+and the resource rate multipliers like any ceremony income). The HUD's `perSecondRates` mirrors
+the same composition.
+
+**Consequences.**
+
+- The roster, costs, outputs, and effects now match the sheet row for row; the VM sheet's Foedus
+  opt-out flag table shrinks to nine with it.
+- Old saves with retired ids self-heal on the first tick (dropped, unbilled, durations cleared).
+- A late-game loop emerges by design: deep trades feed gold gain → Vegas converts a slice to
+  influence → Crusade converts influence gain back to gold at ×10 — but since each measures the
+  PRE-percentage base, the loop cannot compound on itself.
+- The Foedera (ADR-025) apply unchanged: the percentage upkeeps take the per-tier discount on
+  their computed per-second cost, exactly like Panvitium's ramp.
+
+**Alternatives considered.**
+
+- *Keep the four with re-imagined effects.* Rejected — the sheet is canonical and lists nine; the
+  retired pairs' niches (gold income, murder/suicide pressure, birth suppression) are all covered
+  by the survivors or the Mercatus clauses.
+- *Percentage base measured post-output (self-referential).* Rejected — a fixed point that
+  compounds Vegas→Crusade→Vegas would be the dominant strategy and numerically fragile.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.
@@ -691,10 +740,9 @@ These are deliberate non-decisions, dated for revisit.
 - **Multi-device save chooser UI** [2026-05-14] — see ADR-010. The mechanism is decided; the in-game presentation is not.
 - **Sentry or equivalent error tracking** [2026-05-14] — deferred until error volume justifies the integration.
 - **Public ladder / Eternal Sin Ladder** [2026-05-14] — deliberately out of scope until ADR-011's anti-tampering posture has server-side replay validation.
-- **Vitium Compositum "Slice 3" — roster & effects** [2026-06-12] — reconcile the code's thirteen
-  ceremonies to the sheet's canonical nine (retiring the four subtype-era pairs needs care with
-  saved `activeToggles`), implement the Vegas / Crusade percentage-of-income upkeeps and their sheet
-  effects, and give *Outrage Cycle* (if it survives) an effect. See ADR-025 consequences.
+- **Vitium Compositum "Slice 3" — roster & effects** [2026-06-12] — **resolved by ADR-027**
+  [2026-06-12]: the four subtype-era pairs are retired, Vegas / Crusade carry the percentage
+  semantics, the pair effects are the sheet's ×1.1 rate boosts.
 - **Orphaned-sigils pass** [2026-06-12] — re-target the 16 sigils neutralized to `inert` by ADR-024
   (#1 Bael, #15 Eligos, #25 Glasya-Labolas, #27 Ronove, #33 Gaap, #37 Phenex, #39 Malphas,
   #41 Focalor, #43 Sabnock, #47 Vual, #53 Camio, #56 Gremory, #57 Ose, #59 Orias, #62 Volac,

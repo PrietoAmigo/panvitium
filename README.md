@@ -103,9 +103,23 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 714** (sim 486 · shared 56 · api 11 · web 161).
+**Current test count: 718** (sim 490 · shared 56 · api 11 · web 161).
 
-> **Latest change — economy retune, slice 2 of 6 (action tier tables; audit
+> **Latest change — economy retune, slice 3 of 6: the Vitium Compositum rework (ADR-027).**
+> The four subtype-era ceremonies (_Loan Shark Op_, _Outrage Cycle_, _No-babies Movement_,
+> _Ethnocentric Revolt_) are **deleted** — the roster is the sheet's canonical nine, and old
+> saves self-heal on the first tick (`advanceToggles` drops unknown ids unbilled). Their five
+> plumbing fields and helpers go with them. **Vegas and Crusade become percentage ceremonies**:
+> Vegas pays 50% of the current gold gain rate (in gold) and yields 1% of it as influence/s;
+> Crusade pays 50% of the current influence gain rate and yields 1000% (×10) of it as gold/s —
+> both measured against a base computed WITHOUT percentage-VC outputs, so the pair can never
+> compound on itself. The pair ceremonies take their sheet effects as ×1.1 rate boosts folded
+> into the modifier bundle (Bacchanal → generation, Doom Gathering → suicide, Enraging Broadcast
+> → murder), and Charity gains its missing 100 gold/s upkeep leg (100 g + 25 i → 200 g/s). The
+> VM sheet's Foedus opt-out table shrinks to nine. PC ceremony copy spells out the percentage
+> costs and conversions. Test count 718 (sim 490 · web 161).
+
+> **Prior change — economy retune, slice 2 of 6 (action tier tables; audit
 > `economy-audit-2026-06-12`).** All eight Opera tier distributions re-pinned to the revised
 > template, and every effect cell with them. Headlines: **Imperium loses its fixed "player in
 > control" Good** — it now rolls a full distribution (3.5% Stellar paying +3% of CURRENT SOULS,
@@ -118,7 +132,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > Bad a wasted attempt). Forecast deltas (Suggestion/Caedis) mirror the new effects;
 > `resolveImperium` now takes the rolled tier. Test count 486 sim (+5).
 
-> **Prior change — economy retune, slice 1 of 6 (Globals & flat numbers; audit
+> **Earlier change — economy retune, slice 1 of 6 (Globals & flat numbers; audit
 > `economy-audit-2026-06-12`).** The repo adopts the revised economy template and pins the
 > unambiguous number changes: base suicide / murder rates **0.0001 / 0.0002 per second** (were
 > 0.00023 / 0.0001 — murder now outpaces despair), Vanagloria **×1.33** influence per level (was
@@ -505,13 +519,6 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   are a first pass to be tuned in the 5.5 economy / Claude Design passes. New mail is surfaced by an
   unread-count **badge on the Emails tile** in the PC (via `unreadCount` + a generic `badges` prop on
   the PC window); there's no separate delivery toast yet, and no lair-level indicator on the PC prop.
-- **Vitium Compositum "Slice 3" — ceremony roster & effects.** The sheet's canonical roster is
-  **nine** ceremonies (six pairs + Vegas + Crusade + Panvitium); the code still carries the four
-  subtype-era pairs (_Outrage Cycle_ effectless; _Loan Shark Op_ / _No-babies Movement_ /
-  _Ethnocentric Revolt_ with placeholder effects), and Vegas / Crusade have flat placeholder
-  costs/incomes where the sheet specifies **percentage-of-income** semantics. Retiring the four
-  needs care with saved `activeToggles`. The Foedera (ADR-025) already give every ceremony its
-  coupling role; this slice settles their actual effects. Registered as an ADR open item.
 - **Smartphone code terminal (studio desk) — [pending design].** A smartphone prop resting on the
   desk in the studio. Tapping it opens a dial-pad where the player enters codes formatted as
   telephone numbers; a recognised number triggers an effect — an easter egg, bonus/extra content, a

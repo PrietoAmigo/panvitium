@@ -526,20 +526,27 @@ describe('Vitium Compositum output sigil (S14)', () => {
   });
 
   it('scales gold income from an active Compositum toggle', () => {
-    // loan-shark-op produces 100 gold/s but needs 10 influence/s upkeep; stock influence so it
+    // charity produces 200 gold/s but needs 100 gold + 25 influence/s upkeep; stock both so it
     // stays active, and force it on without going through activateToggle for the test.
     const withToggle = (s: GameState): GameState => ({
       ...s,
-      lifetime: { ...s.lifetime, activeToggles: ['loan-shark-op'], influence: bn(100) },
+      lifetime: {
+        ...s.lifetime,
+        activeToggles: ['charity'],
+        gold: bn(10_000),
+        influence: bn(100),
+      },
     });
     const gain = (s: GameState): number => {
       const after = tick(s, 1).state;
       return after.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
     };
     const base = gain(withToggle(fresh()));
-    const zagan = gain(withToggle(bound(61, 1_000_000)));
-    // Compositum's 100 gold/s doubles; the BASE_GOLD_PER_SECOND term is unaffected.
-    expect(zagan).toBeCloseTo(base + 100, 6);
+    const zagan = gain(
+      withToggle({ ...bound(61, 1_000_000), lifetime: { ...bound(61, 1_000_000).lifetime } }),
+    );
+    // Compositum's 200 gold/s doubles; base income and the upkeep leg are unaffected.
+    expect(zagan).toBeCloseTo(base + 200, 6);
   });
 });
 
