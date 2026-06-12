@@ -367,7 +367,8 @@ alongside the integer population:
 Each tick: compute the per-second rate from current state; add `rate × deltaSeconds` to the
 pool; while a pool ≥ 1, subtract 1 and apply one integer event. Pools persist across ticks and
 saves, so sub-1 contributions are never lost. Offline catch-up is the same tick with a large
-delta (ADR-004, uncapped).
+delta (ADR-004, uncapped), scaled by the player base offline efficiency (`Globals`, 0.5×) and the
+offline-gain modifiers; only *Mercatus Acediae*'s take is exempt from the 0.5 base (ADR-026).
 
 ### Suicide
 

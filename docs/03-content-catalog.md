@@ -88,14 +88,28 @@ no copies, and no build queue: deepening and divesting are instant gold transact
 - **Corruption:** each trade also breeds — `generation/s = genPerDepth × d`, folded into the
   generation pool (`02 §9`). Customers beget customers.
 - **Divest:** winding down refunds `divestFraction ×` the cumulative cost of the divested
-  depths (the `Globals` recovery constant, modified by Vine #45 and Furcas #50).
+  depths (the `Globals` recovery constant, lifted by Vine #45).
 - **Katabasis liquidation:** on descent, all Mercatūs auto-divest into gold **before** the
   remaining-gold roll (`02 §6`) and depths reset with the lifetime.
-- Mercatus revenue and corruption are both scaled by the *Vitium Mercatura* output modifiers
-  (Plutus invocation, Vapula #60, Sitri #12).
+- Mercatus revenue and corruption are both scaled by the *Vitium Mercatura* output multiplier
+  (the Plutus invocation, the Vapula #60 sigil).
 
 All constants (`C0`, `r`, `a`, `spendPerCapita`, `genPerDepth`, the depth cap, the divest
 fraction) live in the `Vitium Mercatura` sheet.
+
+**Per-Sin signature clauses** *(shipped — the spec's §1.5 table as amended in session; ADR-025;
+numbers on the sheet)*. Each trade carries one signature twist:
+
+| Mercatus | Clause |
+|---|---|
+| *Gulae* | Its patrons spend a quarter more — take ×1.25. |
+| *Luxuriae* | Its corruption breeds a quarter richer — generation ×1.25. |
+| *Avaritiae* | Each depth bargains the next 0.5% cheaper — the discount **compounds** (effective cost ratio `r × 0.995`); refunds on the same basis. |
+| *Tristitiae* | +0.825% on the reprobate suicide-rate multiplier per depth. |
+| *Irae* | +0.825% on the murder-rate multiplier per depth. |
+| *Acediae* | Its take is exempt from the ×0.5 offline efficiency factor (ADR-026); +0.825% on the offline gain rate per depth. |
+| *Vanagloriae* | +0.25% of **effective** max influence as flat influence/s per full 10 depths (stepped). It grants gain, never the cap. |
+| *Superbiae* | Depths ×1.25 dearer; its take and its breeding ×1.33 richer. |
 
 #### *Vitium Compositum* — multi-Sin ceremonies
 
@@ -121,8 +135,12 @@ The catalog (gates, per-second costs/outputs, and effects in the `Vitium Composi
 | **Panvitium** | All eight Sins (level gate in the sheet) | See below. |
 
 The previous revision's subtype-keyed ceremonies (*Outrage Cycle*, *Loan Shark Op*,
-*Ethnocentric Revolt*, *No-babies Movement*) are **retired with ADR-024**; the sheet's list
-above is the canonical set.
+*Ethnocentric Revolt*, *No-babies Movement*) are **retired from the canonical set with ADR-024**;
+the sheet's list above is canonical. *Code status:* the four still exist in `compositum.ts`
+(*Outrage Cycle* effectless; the other three with placeholder effects), and Vegas / Crusade carry
+flat placeholder costs and incomes where the sheet specifies percentage-of-income semantics — all
+pending the "Slice 3" ceremony rework (ADR-025 consequences; README backlog). The Foedera below
+already apply to every ceremony in code by its member-Sin set.
 
 #### *Foedera* — the Mercatus ↔ Compositum coupling
 
@@ -410,9 +428,14 @@ ceiling it can never cross.
 
 None of these block the current build; all should be tracked.
 
-- **Mercatus signature clauses** — the optional per-Sin clause set
-  (`vm-vc-redesign-spec.md` §1.5) is authored but explicitly held as a second slice pending
-  confirmation.
+- **Vitium Compositum "Slice 3"** — the ceremony roster / effects rework: reconcile the code's
+  thirteen ceremonies to the sheet's canonical nine, implement the Vegas / Crusade
+  percentage-of-income semantics, give *Outrage Cycle* an effect (or retire it). See the §2.3
+  ceremony-table note and ADR-025. *(The Mercatus signature clauses, formerly listed here as a
+  pending second slice, shipped with the amended table in §2.3.)*
+- **Orphaned-sigils pass** — re-target the 16 sigils ADR-024 neutralized to `inert` onto the new
+  Mercatus / Foedera surfaces; needs a per-sigil sheet decision (the
+  sixteen are listed under the ADR open items in `04-architecture-decisions.md`).
 - **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
 - **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)
   has its channels in the Studio (`02 §12`) but its message catalog is unwritten; the Katabasis

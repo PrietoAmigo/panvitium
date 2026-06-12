@@ -590,6 +590,97 @@ per ADR-023 this is a breaking change: bump `schemaVersion` 1 → 2 with a migra
 
 ---
 
+## ADR-025: Vitium Mercatura → the Mercatus system + the Foedera coupling
+
+**Status.** Accepted [2026-06-12]. Implements `vm-vc-redesign-spec.md`; the §1.5 clause table was
+amended in session before implementation (the amended values below are authoritative and mirrored
+on the `Vitium Mercatura` sheet).
+
+**Context.** The legacy *Vitium Mercatura* was a 32-business catalog (eight Sins × four tiers) with
+a build queue and flat per-business gold/generation emitters. After ADR-024 removed subtypes and the
+conversion mechanic, what remained added bookkeeping without depth: income was flat and decoupled
+from the population the game is about, build timers were dead time, and the two *Vitium* systems
+(Mercatura, Compositum) no longer coupled at all — conversion had been their only bridge.
+
+**Decision.** Replace the business system entirely with the **Mercatus** system: eight trades,
+exactly one per Cardinal Sin, each a single integer **depth** `d ≥ 0`. Deepening is an instant gold
+purchase (`investCost = floor(C0 × r^d)` on the trade's own cost curve; cap `10 × sinLevel`);
+divesting refunds the Globals shutdown-recovery fraction (0.25, Vine #45 still applies) of the
+**closed-form** cumulative cost — derived, never stored. Revenue is **demand-driven**
+(`spendPerCapita × reprobates × (1 − e^(−a·d))`), composed at the exact tick site the legacy
+`businessGoldPerSecond` held (`× vitiumMercaturaOutputMul × goldRateMul`); generation contributes
+`genPerDepth × d` to the pool. On Katabasis all trades auto-divest into gold **before** the
+remaining-gold roll. **Foedera** couple the two systems:
+`tier = min(floor(min member depth / 10), 4)`; an active ceremony's per-second upkeep takes
+`× (1 − 0.125 × tier)` on its **computed** cost (so Panvitium's eᵗ ramp is discounted — the
+late-game payoff), and each member Sin's trade revenue takes `× (1 + 0.05 × tier)`, stacking
+multiplicatively across active ceremonies sharing a Sin; a per-ceremony `foedusOptOut` flag
+defaults all-on. Each trade carries one **signature clause** (§1.5 as amended): Gulae take ×1.25;
+Luxuriae generation ×1.25; Avaritiae each depth bargains the next 0.5% cheaper (compounding —
+effective ratio `r × 0.995`, refunds on the same basis); Tristitiae / Irae +0.825% per depth on the
+suicide / murder rate multipliers; Acediae revenue exempt from the offline efficiency factor plus
++0.825% per depth on the offline gain rate; Vanagloriae +0.25% of **effective** max influence as
+flat influence/s per full 10 depths (stepped); Superbiae depths ×1.25 dearer, its take and breeding
+×1.33. Per ADR-023 the field removals (`businesses`, `buildQueue`) bump `schemaVersion` 2 → 3 with
+a migration (`migrations/v2-to-v3.ts`): credit 25% of each owned business's frozen legacy build
+cost as gold, fizzle the build queue without refund (matching the only prior teardown semantics),
+drop both fields, and seed `mercatusDepths` by omission.
+
+**Consequences.**
+
+- Income now rides the population curve — no population, no take — which is the design point: the
+  trades earn from the living damned, so growing and preserving reprobates matters to the economy.
+- The Foedera give every ceremony a structural role even where its sheet effect is still a
+  placeholder, and create the deep-trades-cheap-rituals late game intentionally.
+- The 32 business name strings, the build-queue UI tab, and `startBuild`/`advanceBuilds`/
+  `shutdownBusiness` retire; the email triggers re-key from owned-business counts to total depth.
+- **Deliberately not done here ("Slice 3"):** the Vitium Compositum roster / effects rework. The
+  sheet's canonical roster is nine ceremonies; the code still carries the four subtype-era pairs
+  (*Outrage Cycle* effectless, *Loan Shark Op* / *No-babies Movement* / *Ethnocentric Revolt* with
+  placeholder effects), and Vegas / Crusade have flat placeholder costs and incomes where the sheet
+  specifies percentage-of-income semantics. Tracked in the README backlog.
+- The 16 sigils neutralized to `inert` by ADR-024 now have natural retarget destinations (depths,
+  penetration, Foedus tiers); the orphaned-sigils pass is unblocked. Tracked in the README backlog.
+
+**Alternatives considered.**
+
+- *Keep the catalog, re-tune the emitters.* Rejected — flat emitters stay decoupled from the
+  population and the conversion-shaped hole between the two Vitium systems stays open.
+- *Per-business penetration curves.* Rejected — 32 curves to tune against the sheet instead of
+  eight; the per-Sin clause table delivers the same flavour variety at an eighth of the surface.
+
+---
+
+## ADR-026: Player offline efficiency — wired at 0.5×, with resume clock reconciliation
+
+**Status.** Accepted [2026-06-12]. Amends the resume semantics described in ADR-004 (whose uncap
+amendment stands unchanged).
+
+**Context.** Globals row 8 ("Player base offline efficiency", 0.5×) has been on the sheet from the
+start but never had a code counterpart — offline catch-up accrued at full rate. The Mercatus
+Acediae signature clause (ADR-025) exempts that trade's revenue from "the ×0.5 offline efficiency
+factor", which requires the factor to exist; the spreadsheet wins on numbers, so the gap is a
+parity bug, not a choice to preserve. Separately, `tick` advances `lastTickAt` by the (scaled)
+delta it consumed, so any offline scaling ≠ 1 desynchronized the logical clock from wall-clock:
+harmlessly eating the overshoot when scaling > 1 (the Acedia compound), but **double-counting** the
+unconsumed span on every reload at scaling < 1 — free gains, had the 0.5 shipped without the fix.
+
+**Decision.** `resumeGame` scales the offline catch-up by `PLAYER_OFFLINE_EFFICIENCY = 0.5`,
+composed with `offlineTimeMul` (Procrastination, Dolce Far Niente, Lemure, Mercatus Acediae's
+per-depth lift) and the Acedia level compound exactly as before, and passes the factor to the tick
+as a dependency (`offlineEfficiency`) so the Mercatus Acediae trade's revenue alone is divided back
+to full wall-clock rate. After the catch-up tick, `lastTickAt` is reconciled to `now`: a resume, by
+definition, catches the player up to the present, whatever the gains were scaled by.
+
+**Consequences.**
+
+- A global balance change: offline progression now runs at the half-rate base the spreadsheet
+  always specified. Flagged for playtest.
+- The latent clock bug is fixed in both directions and pinned in the session tests.
+- Online ticks pass no `offlineEfficiency`, so live play and the per-second readouts are untouched.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.
@@ -600,4 +691,13 @@ These are deliberate non-decisions, dated for revisit.
 - **Multi-device save chooser UI** [2026-05-14] — see ADR-010. The mechanism is decided; the in-game presentation is not.
 - **Sentry or equivalent error tracking** [2026-05-14] — deferred until error volume justifies the integration.
 - **Public ladder / Eternal Sin Ladder** [2026-05-14] — deliberately out of scope until ADR-011's anti-tampering posture has server-side replay validation.
+- **Vitium Compositum "Slice 3" — roster & effects** [2026-06-12] — reconcile the code's thirteen
+  ceremonies to the sheet's canonical nine (retiring the four subtype-era pairs needs care with
+  saved `activeToggles`), implement the Vegas / Crusade percentage-of-income upkeeps and their sheet
+  effects, and give *Outrage Cycle* (if it survives) an effect. See ADR-025 consequences.
+- **Orphaned-sigils pass** [2026-06-12] — re-target the 16 sigils neutralized to `inert` by ADR-024
+  (#1 Bael, #15 Eligos, #25 Glasya-Labolas, #27 Ronove, #33 Gaap, #37 Phenex, #39 Malphas,
+  #41 Focalor, #43 Sabnock, #47 Vual, #53 Camio, #56 Gremory, #57 Ose, #59 Orias, #62 Volac,
+  #64 Haures) onto the new Mercatus / Foedera surfaces (depths, penetration, invest costs, Foedus
+  tiers) — needs sheet decisions per sigil.
 - **Indagatio pre-acolyte UX** [2026-05-27] — Indagatio's baseline duration (1800 s, per spreadsheet) collides with the one-player-action-at-a-time rule before acolytes exist, so a solo player effectively locks their action queue for 30 minutes per search. The unblocking system is **acolyte delegation** — until that lands, the design tolerates the friction. Pinned here so we don't lower the baseline number reflexively when the real fix is the delegation system.

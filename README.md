@@ -105,7 +105,19 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 709** (sim 481 · shared 56 · api 11 · web 161).
 
-> **Latest change — Mercatus per-Sin signature clauses (slice 2, §1.5 table amended in
+> **Latest change — documentation reconciliation (no code change).** The design docs and the ADR
+> record are brought back in line with the shipped code: `03-content-catalog.md` §2.3 gains the
+> **amended** signature-clause table (and loses two factual errors — Furcas #50 never touched the
+> divest fraction, Sitri #12 never touched VM output); the ceremony table now states the honest
+> code status (the four subtype-era pairs and the Vegas / Crusade percentage semantics await the
+> "Slice 3" rework); `02-systems-and-mechanics.md` documents the 0.5 offline base;
+> **ADR-025** (Mercatus + Foedera, save v3, amended clauses) and **ADR-026** (player offline
+> efficiency wired at 0.5× + resume clock reconciliation) are recorded, with the **Vitium
+> Compositum Slice 3** and the **orphaned-sigils pass** (16 inert sigils listed) registered as ADR
+> open items and surfaced in `### Remaining` below. The stale "all 72 sigils wired" and
+> subtype-era claims in this README are corrected in place.
+
+> **Prior change — Mercatus per-Sin signature clauses (slice 2, §1.5 table amended in
 > session).** Each trade now carries one signature twist: **Gulae** patrons spend ×1.25;
 > **Luxuriae** generation ×1.25; **Avaritiae** each depth bargains the next 0.5% cheaper — the discount
 > COMPOUNDS per depth (effective cost ratio 1.6 × 0.995, refunds on the same basis); **Tristitiae** +0.825% suicide-rate mul per depth; **Irae** +0.825% murder-rate mul
@@ -122,7 +134,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > `lastTickAt` to wall-clock after the catch-up, so scaled offline time can neither double-count
 > (mul < 1) nor silently eat the overshoot (Acedia compound > 1). No save-schema change.
 
-> **Prior change — Vitium Mercatura replaced by the Mercatus system + the Foedera coupling
+> **Earlier change — Vitium Mercatura replaced by the Mercatus system + the Foedera coupling
 > (vm-vc-redesign-spec).** The legacy business system (32-business catalog, build queue, flat
 > emitters) is gone. In its place: eight trades, exactly one per Cardinal Sin (_Mercatus Gulae …
 > Superbiae_), each a single integer **depth** — deepening is an instant gold purchase
@@ -439,19 +451,21 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 
-- **Sigils** — **all 72 are wired** (see the per-slice S1–S16 table under Status). The final four
-  landed in the economy-finalization pass: **Haures #64** (the murder model now draws victims across
-  **all** subtypes, Cholerics included, and Haures biases that draw toward Cholerics), **Ose #57 /
-  Orias #59** (Vitium Compositum conversion re-roll toward the currently smallest / largest converted
-  subtype, via a `conversionRebalance` effect resolved in `conversionBiasMul`), and **Vual #47**
-  (softens the Degenerate suicide/murder dampening through a shared `degenerateDeathRates`
-  penalty-reduction channel). Nothing in the sigil catalog remains deferred.
+- **Sigils — the orphaned-sigils pass.** All 72 were once wired (the S1–S16 slices below record
+  that high-water mark), but **ADR-024 neutralized 16 subtype/conversion-keyed sigils to `inert`**
+  (#1 Bael, #15 Eligos, #25 Glasya-Labolas, #27 Ronove, #33 Gaap, #37 Phenex, #39 Malphas, #41
+  Focalor, #43 Sabnock, #47 Vual, #53 Camio, #56 Gremory, #57 Ose, #59 Orias, #62 Volac, #64
+  Haures), IDs preserved. With the Mercatus / Foedera systems in (ADR-025) they now have natural
+  retarget destinations — depths, penetration, invest costs, Foedus tiers — but each needs a sheet
+  decision. Registered as an ADR open item.
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. The **oracular reveals** (Phase 5 slice) have also shipped: owning Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather surfaces a live Opera tier-distribution readout in that item's cabinet detail (a stacked odds bar per action, via a read-only `actionTierDistribution` sim helper that reuses the exact `resolveAction` composition). With this, Maleficia is complete — roster, gating, and every effect.
-- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is now complete: _Caedis_ plus _Pogrom_ (with a present-subtype **picker** wiring `act('pogrom', subtype)`) and _Purgatio_, each gated by its Ira level, with delegation on Caedis/Purgatio but **not** Pogrom (a targetless delegated Pogrom would purge nothing yet still risk the bad-tier penalties — automating it awaits an acolyte target-selection design). Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (10000) gold costs are sheet-pinned.
+- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is complete: _Caedis_, _Pogrom_, and _Purgatio_, each gated by its Ira level. (Post-ADR-024 note: Pogrom culls the single pool — the old present-subtype picker and its no-delegation caveat retired with the subtypes.) Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (10000) gold costs are sheet-pinned.
 - **Emails (PC program) — impact-feedback system** _(✓ shipped, content provisional)_. An inbox that
   surfaces the in-world consequences of the player's actions as incoming correspondence (newsletters as
   the corruption spreads, complaints / a class-action from people harmed by their Vitium Mercatura
-  businesses), so the player _feels_ the impact rather than reading it only as numbers. Engineering
+  trades), so the player _feels_ the impact rather than reading it only as numbers. (Triggers were
+  re-keyed from owned-business counts to total Mercatus depth with ADR-025; the copy still speaks
+  the old businesses fiction and awaits the content-tuning pass.) Engineering
   shape as planned: an additive-optional `inbox` save field (ADR-023; resets per lifetime, omitted from
   the wire when empty), a pure sim engine (`packages/sim/src/emails.ts`) with a trigger catalog +
   `deliverEmails(state, now)` run as the final tick step (so offline catch-up fills the inbox too), and
@@ -462,6 +476,13 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   are a first pass to be tuned in the 5.5 economy / Claude Design passes. New mail is surfaced by an
   unread-count **badge on the Emails tile** in the PC (via `unreadCount` + a generic `badges` prop on
   the PC window); there's no separate delivery toast yet, and no lair-level indicator on the PC prop.
+- **Vitium Compositum "Slice 3" — ceremony roster & effects.** The sheet's canonical roster is
+  **nine** ceremonies (six pairs + Vegas + Crusade + Panvitium); the code still carries the four
+  subtype-era pairs (_Outrage Cycle_ effectless; _Loan Shark Op_ / _No-babies Movement_ /
+  _Ethnocentric Revolt_ with placeholder effects), and Vegas / Crusade have flat placeholder
+  costs/incomes where the sheet specifies **percentage-of-income** semantics. Retiring the four
+  needs care with saved `activeToggles`. The Foedera (ADR-025) already give every ceremony its
+  coupling role; this slice settles their actual effects. Registered as an ADR open item.
 - **Smartphone code terminal (studio desk) — [pending design].** A smartphone prop resting on the
   desk in the studio. Tapping it opens a dial-pad where the player enters codes formatted as
   telephone numbers; a recognised number triggers an effect — an easter egg, bonus/extra content, a
@@ -480,7 +501,8 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   former seven-day point (`ACEDIA_COMPOUND_CAP_SECONDS`), so the sloth bonus holds at its prior maximum
   while real time accrues without limit beyond it. The recap's old `capped` flag (and the seven-day
   note) are removed. **Sync note:** the canonical ADR-004 in project knowledge should be updated to match
-  the repo's amendment in `docs/04-architecture-decisions.md`.
+  the repo's amendment in `docs/04-architecture-decisions.md` — and the project-knowledge copies of
+  the docs should pick up **ADR-025 / ADR-026** and the reconciled `02`/`03` from this pass.
 
 **UI work — to be built with Claude Design.** Designed and built in Claude Design. The two items
 below — Emails and the smartphone code terminal — are new in-world features whose scope is still being
@@ -551,9 +573,10 @@ surface. All three have shipped (no new mechanic — the only sim addition was a
   Feather → _Indagatio_, Obsidian Mirror → all four. (The earlier README prose had Crossroads/Crow
   swapped — corrected here.) Pinned by `buildOracle` + `actionTierDistribution` unit tests.
 - **Complete the PC's Decimatio program** _(✓ shipped)_. The PC's _Decimatio_ program now carries
-  _Caedis_, _Pogrom_ (a present-subtype picker wiring `act('pogrom', subtype)`), and _Purgatio_, each
-  gated by its Ira level; delegation is offered on Caedis/Purgatio but not Pogrom (targetless
-  delegation would be a footgun). Decimatio lives entirely in the PC, never on the Suasio scroll.
+  _Caedis_, _Pogrom_ (then with a present-subtype picker wiring `act('pogrom', subtype)`), and
+  _Purgatio_, each gated by its Ira level; delegation was offered on Caedis/Purgatio but not Pogrom.
+  _(Post-ADR-024: Pogrom culls the single pool; the picker and the delegation caveat retired with
+  the subtypes.)_ Decimatio lives entirely in the PC, never on the Suasio scroll.
   Pinned by a `pogromTargets` adapter test; the Playwright e2e step is deferred to a machine with a
   browser.
 
@@ -603,7 +626,7 @@ be specified** — each needs a short design pass before it becomes a slice._
 
 - **Emails (PC program) — impact-feedback** _(✓ shipped, content provisional)_. An inbox that surfaces
   the in-world consequences of the player's actions as incoming correspondence (newsletters, a
-  class-action from people harmed by the player's _Vitium Mercatura_ businesses, and similar reactive
+  class-action from people harmed by the player's _Vitium Mercatura_ trades, and similar reactive
   mail), so the player _feels_ the impact rather than only reading numbers. Built as planned: an
   additive-optional inbox save field (ADR-023) plus a sim trigger catalog evaluated each tick. Triggers
   and copy are a provisional first pass.
@@ -656,8 +679,9 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   **Main** (default) folds the former Resources tab in and lists, in order: **Souls**, **Influence**,
   **Gold** (with `perSecondRates` and the influence cap), the **current player action** as a progress
   bar, **player action efficiency** as a labelled value, and the **vigil** clock; **Reprobates**
-  (unconverted vs converted counts by subtype, plus `reprobateRates` generation / conversion / death
-  rates — this also subsumes the old HUD reprobate count); **Acolytes** (a per-acolyte board showing
+  (the population count plus `reprobateRates` generation / death rates — this also subsumes the old
+  HUD reprobate count; the original tab's per-subtype and conversion readouts retired with
+  ADR-024); **Acolytes** (a per-acolyte board showing
   each one's current action, remaining cycle time, and a progress bar); and **Invocations** (every
   bound invocation type, **one line each** — no per-copy detail, for performance). A type that
   **carries actions** (the autonomous runners: Familiar, Imp, Upir, Lamia) shows its **action**, the
@@ -733,12 +757,10 @@ _Blocked on a number or a model decision on `Panvitium_Economy_Template.xlsx`, n
 is settled it is a straightforward slice (the spreadsheet always wins on numbers and on a system's
 composition)._
 
-- **The last 4 sigils** _(✓ shipped)_. **Haures #64** (the murder model now draws victims across all
-  subtypes — Cholerics killable by default — and Haures biases the draw toward Cholerics), **Ose #57 /
-  Orias #59** (conversion re-roll toward the minority / majority subtype via a `conversionRebalance`
-  effect that multiplies the current argmin / argmax converted subtype's weight in `conversionBiasMul`
-  by the sheet's sqrt%), and **Vual #47** (softens the Degenerate suicide/murder dampening through a
-  shared `degenerateDeathRates` penalty-reduction channel applied to both muls). All 72 sigils now bind.
+- **The last 4 sigils** _(✓ shipped, then superseded)_. **Haures #64**, **Ose #57 / Orias #59**, and
+  **Vual #47** landed with their subtype/conversion mechanics as recorded in the Status table —
+  and were later neutralized to `inert` along with twelve others when **ADR-024** removed subtypes
+  and conversion. Their re-targeting is the orphaned-sigils pass (see `### Remaining`).
 - **Imperium's action time** _(✓ shipped)_. Decided at 10s (the _Suasio_ sheet had left it "Fill Time";
   was a flagged 60s placeholder).
 - **Placeholder sweep** _(✓ shipped)_. Audited every inline-flagged magnitude against the sheet. The
@@ -748,19 +770,15 @@ composition)._
   costs / 0.01 conversion / eᵗ growth all derive from Globals; the invocation effect factors are the
   Invocatio sheet's Efficiency column. The genuinely unpinned tuning values (no sheet number, so they
   stay as-is) are the Acedia offline-compound base `1.00002`, the Panvitium churn multipliers
-  (gen/suicide/murder while active, in `modifiers.ts`), and the subtype **secondary**-effect magnitudes
-  (the sheet's per-unit 0.01 is the Vitium-gold boost, which matches `SUBTYPE_VM_GOLD_BOOST_PER_COUNT`;
-  the −suicide/−murder/−generation magnitudes have no separate sheet number). See "Open question" below.
+  (gen/suicide/murder while active, in `modifiers.ts`), and — at the time — the subtype
+  secondary-effect magnitudes, since removed wholesale by ADR-024.
 
-**Done when** no placeholder magnitudes remain flagged. **✓ Done** — the sweep above reconciled them;
-all 72 sigils bind.
+**Done when** no placeholder magnitudes remain flagged. **✓ Done** — the sweep above reconciled them.
+(All 72 sigils still _bind_; 16 are currently `inert` post-ADR-024 — the orphaned-sigils pass in
+`### Remaining` re-targets them.)
 
-> **Open question for the economy owner (not blocking):** the Reprobates sheet lists one "Effect per
-> unit = 0.01" per subtype. The code reads that as the **primary** Vitium-gold boost (0.01, matched) and
-> uses smaller tuning magnitudes (0.001 / 0.0001) for each subtype's **secondary** rate effect. If the
-> intent is that the secondary effects should _also_ be 0.01 per unit, that's a deliberate balance change
-> (e.g. 100 Degenerates would then halve suicide) — say the word and it's a one-line-per-constant edit
-> plus a test refresh.
+> **Open question for the economy owner** — _closed by ADR-024:_ the per-subtype "Effect per unit"
+> question is moot now that subtypes and their secondary rate effects are removed entirely.
 
 ### 5.6 — Production readiness & launch
 
