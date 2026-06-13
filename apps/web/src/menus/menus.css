@@ -4555,3 +4555,47 @@ body {
     display: none;
   }
 }
+
+/* ============================================================================
+   Maleficia Shelf — "Niches" rework (Claude Design).
+   The carved-alcove shelf paints its own dark background (and renders its own
+   close-up overlay + internal grid scroll), so it wears a near-frameless dark
+   shell rather than the old wooden display-case. The component is inline-styled;
+   these rules only supply the panel frame + hide the internal grid scrollbar.
+   ============================================================================ */
+
+.panel--niche {
+  width: min(880px, 94vw);
+  max-height: 82vh;
+  overflow: hidden;
+  padding: 0;
+  color: #e7d8b4;
+  background: #060507;
+  border: 1px solid #120b06;
+  box-shadow:
+    0 0 0 6px rgba(10, 8, 7, 0.62),
+    0 24px 60px rgba(0, 0, 0, 0.78);
+}
+.panel--niche .panel-body {
+  padding: 0;
+  overflow: hidden;
+}
+.panel--niche .panel-close--float {
+  color: #b3acc4;
+  opacity: 0.72;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+.panel--niche .panel-close--float:hover {
+  opacity: 1;
+}
+
+/* The niche grid scrolls internally when the shelf is full; hide its bar ("no scrollbars"). */
+.niche-grid-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.niche-grid-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}

@@ -19,12 +19,13 @@ import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
 /**
- * The themed shell each framed panel wears: the Altar's engraved stone and the Maleficia cabinet's
- * wood. (Ars Goetia, the PC, the Suasio scroll and Katabasis are their own full-surface overlays
- * and don't appear here.) The stone and cabinet hide the header in favour of a float close.
+ * The themed shell each framed panel wears. The Maleficia shelf wears the dark "niche" frame (the
+ * carved-alcove rework paints its own background, so it gets a near-frameless dark shell with a
+ * float close rather than the old wooden case). Ars Goetia, the PC, the Suasio scroll and Katabasis
+ * are their own full-surface overlays and don't appear here.
  */
 const PANEL_SHELL: Partial<Record<PanelId, { variant: PanelVariant; hideHeader?: boolean }>> = {
-  maleficia: { variant: 'cabinet', hideHeader: true },
+  maleficia: { variant: 'niche', hideHeader: true },
 };
 
 /**

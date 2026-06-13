@@ -103,9 +103,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 727** (sim 494 · shared 56 · api 11 · web 166).
+**Current test count: 732** (sim 494 · shared 56 · api 11 · web 171).
 
-> **Latest change — UI: the Opus Suasio scroll rework (Claude Design).** The Suasio menu is
+> **Latest change — UI: the Maleficia Shelf "Niches" rework (Claude Design).** The Maleficia shelf
+> is rebuilt from the delivered "Niches" design: the wooden glass-specimen cabinet becomes a wall of
+> carved **niches**, each owned maleficium recessed in a black alcove lit from within by its rarity
+> ember (common → gold, rare → teal, profane → red, anathema → violet), ordered anathema → common.
+> Clicking a niche opens a full-bleed **close-up** (the relic in an ember halo + rarity eyebrow, name,
+> flavour, effect, the single-use **Use** rite for consumables, and the oracular **odds reveal**). The
+> data contract is unchanged — same `{ items, onUse }`, fed by the existing `buildCabinet` adapter; no
+> sim/save work. The drop-in component is inline-styled (the old `.mal-*` / `.oracle*` rules are now
+> dead but retained, since `.rarity-*` is still used by Emptio). Mounted in a new near-frameless dark
+> **`niche`** `PanelShell` variant (the carved wall paints its own background, so the wooden case is
+> dropped); the close-up is bounded + scrollable so a full four-category reveal never clips. Five
+> render-smoke tests pin the wiring. Test count 732 (web 171).
+
+> **Prior change — UI: the Opus Suasio scroll rework (Claude Design).** The Suasio menu is
 > rebuilt from the delivered "Opus Suasio, the Honeyed Tongue" design as a self-framed, full-surface
 > overlay (mounted by `App` like Ars Goetia / the PC / Katabasis — it no longer rides `PanelShell`'s
 > parchment frame). It is an illuminated dark parchment with a drifting devotional-Latin backdrop and
@@ -119,7 +132,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > aware); the design artifact is archived under `docs/frontend/`. Five render-smoke tests pin the
 > wiring. Test count 727 (web 166).
 
-> **Prior change — economy retune, slice 5 of 6: the 72-sigil respecification (ADR-029).** The
+> **Earlier change — economy retune, slice 5 of 6: the 72-sigil respecification (ADR-029).** The
 > sigil catalog is rewritten wholesale from the revised Sigils sheet — every one of the 72 carries
 > its sheet effect, curve, and coefficient, and **no sigil is inert anymore** (the 16 ADR-024
 > orphans revive; old saves' bindings wake up with the new effects, no schema bump). Highlights:

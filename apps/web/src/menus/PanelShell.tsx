@@ -1,6 +1,6 @@
 import { type ReactNode, type ReactElement } from 'react';
 
-export type PanelVariant = 'scroll' | 'stone' | 'cabinet';
+export type PanelVariant = 'scroll' | 'stone' | 'cabinet' | 'niche';
 
 interface PanelShellProps {
   title: string;

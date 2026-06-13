@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: #060507; }
+  @keyframes mal-flicker { 0%,100% { opacity: .55; } 45% { opacity: .8; } 70% { opacity: .42; } }
+  @keyframes mal-smoke { 0% { opacity: 0; transform: translateY(8px) scale(.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+</style>
+</helmet>
+
+<div style="min-height:100%; background: radial-gradient(circle at 50% 0%, #131218 0%, #0b0a0e 60%, #060507 100%); font-family: 'EB Garamond', Georgia, serif; padding: 40px 24px 56px; color: #cfc6df; display:flex; justify-content:center;">
+
+  <section data-screen-label="Maleficia — Niches" style="width:100%; max-width:900px;">
+    <div style="position:relative; border-radius:6px; overflow:hidden; border:1px solid #100f14; box-shadow:0 22px 70px rgba(0,0,0,.7); background: radial-gradient(140% 90% at 50% 0%, #131119 0%, #09080c 60%, #040305 100%); padding:22px 24px 28px;">
+
+      <div style="display:flex; align-items:center; justify-content:flex-end; margin-bottom:18px; border-bottom:1px solid rgba(168,140,210,.12); padding-bottom:12px;">
+        <div style="font-family:'Cinzel',serif; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:#9a6fe0;">{{ invokingPowerLine }}</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(6, 1fr); gap:10px;">
+        <sc-for list="{{ items }}" as="it" hint-placeholder-count="18">
+          <button type="button" onClick="{{ it.selectNiche }}" title="{{ it.name }}"
+            style="position:relative; border:1px solid rgba(0,0,0,.7); border-radius:5px; padding:0; cursor:pointer; height:138px; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+                   background: linear-gradient(180deg,#0c0b10 0%,#070609 100%);
+                   box-shadow: inset 0 9px 20px rgba(0,0,0,.95), inset 0 -22px 26px {{ it.emberWash }}, inset 0 1px 0 rgba(255,255,255,.04);"
+            style-hover="box-shadow: inset 0 9px 20px rgba(0,0,0,.9), inset 0 -30px 34px {{ it.emberWash }}, 0 0 18px {{ it.emberWash }}; border-color:{{ it.emberRing }};">
+            <div style="position:relative; flex:1; width:100%; display:flex; align-items:center; justify-content:center; padding-top:8px;">
+              <sc-if value="{{ it.hasImg }}" hint-placeholder-val="{{ true }}">
+                <img src="{{ it.img }}" alt="{{ it.baseName }}" style="max-width:74px; max-height:84px; object-fit:contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,.8)) drop-shadow(0 0 6px {{ it.emberColor }}); opacity:.9;">
+              </sc-if>
+              <sc-if value="{{ it.noImg }}" hint-placeholder-val="{{ false }}">
+                <span style="width:64px; height:64px; border-radius:4px; border:1px dashed {{ it.emberRing }}; display:flex; align-items:center; justify-content:center; font-family:'IM Fell English SC',serif; font-size:10px; color:{{ it.emberColor }}; text-align:center; padding:0 5px;">{{ it.baseName }}</span>
+              </sc-if>
+              <sc-if value="{{ it.isStack }}" hint-placeholder-val="{{ false }}"><span style="position:absolute; top:4px; right:5px; font-family:'Cinzel',serif; font-size:9px; color:#e6e0f0; background:#1a1820; border-radius:7px; padding:1px 5px; border:1px solid rgba(255,255,255,.12);">{{ it.countLabel }}</span></sc-if>
+              <sc-if value="{{ it.isConsumable }}" hint-placeholder-val="{{ false }}"><span title="Single-use" style="position:absolute; top:5px; left:6px; width:7px; height:7px; border-radius:50%; background:#c2403f; box-shadow:0 0 6px #c2403f;"></span></sc-if>
+              <sc-if value="{{ it.isOracle }}" hint-placeholder-val="{{ false }}"><span title="Scrying" style="position:absolute; top:3px; left:5px; font-size:10px; color:#54b39b;">✦</span></sc-if>
+            </div>
+            <div style="position:relative; width:100%; padding:5px 4px 7px; border-top:1px solid rgba(255,255,255,.05); background:rgba(0,0,0,.35); display:flex; flex-direction:column; align-items:center; gap:2px;">
+              <span style="font-family:'IM Fell English',serif; font-size:10.5px; color:#b3acc4; text-align:center; line-height:1.1;">{{ it.baseName }}</span>
+              <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px; height:6px; border-radius:50%; background:{{ it.emberColor }};"></span><span style="font-family:'Cinzel',serif; font-size:7.5px; letter-spacing:.14em; text-transform:uppercase; color:#6a637a;">{{ it.rarityLabel }}</span></span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ openNiche }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; inset:0; background: radial-gradient(circle at 36% 45%, rgba(10,8,14,.86), rgba(3,2,4,.97)); display:flex; align-items:center; justify-content:center; padding:30px 46px; animation: mal-smoke .4s ease both;">
+          <div style="width:100%; max-width:720px; display:flex; gap:76px; align-items:center;">
+            <div style="flex:0 0 196px; position:relative; height:280px; display:flex; align-items:center; justify-content:center;">
+              <span style="position:absolute; width:228px; height:228px; border-radius:50%; background: radial-gradient(circle, {{ openNiche.emberWash }}, transparent 66%); animation: mal-flicker 3.6s ease-in-out infinite;"></span>
+              <span style="position:absolute; width:248px; height:248px; border-radius:50%; border:1px solid {{ openNiche.emberRing }};"></span>
+              <sc-if value="{{ openNiche.hasImg }}" hint-placeholder-val="{{ true }}">
+                <img src="{{ openNiche.img }}" alt="{{ openNiche.baseName }}" style="position:relative; max-width:168px; max-height:248px; object-fit:contain; filter: drop-shadow(0 0 18px {{ openNiche.emberColor }}) drop-shadow(0 10px 20px rgba(0,0,0,.8));">
+              </sc-if>
+              <sc-if value="{{ openNiche.noImg }}" hint-placeholder-val="{{ false }}">
+                <span style="position:relative; font-family:'IM Fell English SC',serif; font-size:18px; color:{{ openNiche.emberColor }}; text-align:center;">{{ openNiche.baseName }}</span>
+              </sc-if>
+            </div>
+            <div style="flex:1; min-width:0;">
+              <button type="button" onClick="{{ closeNiche }}" style="background:none; border:none; cursor:pointer; font-family:'Cinzel',serif; font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:#6a637a; padding:0; margin-bottom:14px;">‹ back to the niches</button>
+              <div style="font-family:'Cinzel',serif; font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:{{ openNiche.emberColor }};">{{ openNiche.rarityLabel }}</div>
+              <h3 style="font-family:'Cinzel',serif; font-weight:500; font-size:25px; letter-spacing:.04em; color:#e6e0f0; margin:8px 0 2px; line-height:1.1;">{{ openNiche.baseName }}</h3>
+              <sc-if value="{{ openNiche.isStack }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Cinzel',serif; font-size:11px; letter-spacing:.1em; color:#8b8499;">{{ openNiche.countLabel }} bound</span></sc-if>
+              <p style="font-family:'IM Fell English',serif; font-style:italic; font-size:15.5px; color:#a39bb4; line-height:1.55; margin:13px 0 0;">{{ openNiche.desc }}</p>
+              <sc-if value="{{ openNiche.effect }}" hint-placeholder-val="{{ false }}">
+                <p style="font-family:'Cinzel',serif; font-size:13.5px; letter-spacing:.03em; color:{{ openNiche.emberColor }}; margin:14px 0 0; padding-top:11px; border-top:1px solid rgba(255,255,255,.08);">{{ openNiche.effect }}</p>
+              </sc-if>
+              <sc-if value="{{ openNiche.use }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:16px;">
+                  <sc-if value="{{ openNiche.use.status }}" hint-placeholder-val="{{ false }}"><p style="font-family:'IM Fell English',serif; font-style:italic; font-size:13px; color:#9a7d6a; margin:0 0 8px;">{{ openNiche.use.status }}</p></sc-if>
+                  <button type="button" onClick="{{ openNiche.use.onUse }}" disabled="{{ openNiche.use.disabled }}" style="font-family:'Cinzel',serif; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#e6e0f0; background:rgba(124,20,23,.18); border:1px solid #7c1417; border-radius:3px; padding:10px 20px; cursor:pointer;" style-hover="background:rgba(160,30,34,.34); box-shadow:0 0 16px rgba(160,30,34,.5);">{{ openNiche.use.label }} — invoke</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{ openNiche.reveal }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:16px; border-top:1px solid rgba(255,255,255,.08); padding-top:12px;">
+                  <p style="font-family:'IM Fell English',serif; font-style:italic; font-size:12px; color:#7a7388; margin:0 0 9px;">{{ oracleCaption }}</p>
+                  <sc-for list="{{ openNiche.reveal }}" as="g" hint-placeholder-count="1">
+                    <div style="margin-bottom:9px;">
+                      <div style="font-family:'Cinzel',serif; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#a88cd2; margin-bottom:5px;">{{ g.label }}</div>
+                      <sc-for list="{{ g.actions }}" as="a" hint-placeholder-count="2">
+                        <div style="display:flex; align-items:center; gap:9px; margin-bottom:4px;">
+                          <span style="flex:0 0 92px; font-family:'IM Fell English',serif; font-size:12.5px; color:#a39bb4;">{{ a.name }}</span>
+                          <div style="flex:1; display:flex; height:11px; border-radius:2px; overflow:hidden; background:rgba(255,255,255,.05);">
+                            <sc-for list="{{ a.tiers }}" as="s" hint-placeholder-count="7"><span title="{{ s.title }}" style="width:{{ s.w }}; background:{{ s.colorDark }};"></span></sc-for>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 948, &quot;height&quot;: 720}}">
+class Component extends DCLogic {
+  state = { openNiche: null, defixioActive: false, hogRemaining: 0 };
+
+  RARITY = {
+    common:   { label: 'common',   rank: 1, ember: '#caa85f', wash: 'rgba(202,168,95,.22)', ring: 'rgba(202,168,95,.3)' },
+    rare:     { label: 'rare',     rank: 2, ember: '#54b39b', wash: 'rgba(84,179,155,.22)',  ring: 'rgba(84,179,155,.32)' },
+    profane:  { label: 'profane',  rank: 3, ember: '#c2403f', wash: 'rgba(194,64,63,.26)',   ring: 'rgba(194,64,63,.34)' },
+    anathema: { label: 'anathema', rank: 4, ember: '#9a6fe0', wash: 'rgba(154,111,224,.26)', ring: 'rgba(154,111,224,.34)' },
+  };
+
+  TIERS = [
+    { id: 'stellar',     label: 'Stellar',     dark: '#e8c75a' },
+    { id: 'excellent',   label: 'Excellent',   dark: '#9fbf7a' },
+    { id: 'good',        label: 'Good',        dark: '#6aa37e' },
+    { id: 'neutral',     label: 'Neutral',     dark: '#7a7388' },
+    { id: 'bad',         label: 'Bad',         dark: '#b0742e' },
+    { id: 'terrible',    label: 'Terrible',    dark: '#9c2f24' },
+    { id: 'apocalyptic', label: 'Apocalyptic', dark: '#7c1417' },
+  ];
+
+  DIST = {
+    Suggestion: [0.08, 0.17, 0.30, 0.22, 0.13, 0.07, 0.03],
+    Logismoi:   [0.05, 0.14, 0.28, 0.25, 0.15, 0.09, 0.04],
+    Caedis:     [0.10, 0.20, 0.31, 0.20, 0.11, 0.06, 0.02],
+    Indagatio:  [0.06, 0.12, 0.24, 0.28, 0.17, 0.09, 0.04],
+    Emptio:     [0.04, 0.11, 0.26, 0.30, 0.16, 0.09, 0.04],
+  };
+
+  ASSET = 'assets/maleficia';
+
+  CATALOG = [
+    { id: 'obsidian_mirror', name: 'Obsidian Mirror', rarity: 'profane', img: 'obsidian_mirror.png', desc: 'It shows what the future is already weighing.', effect: 'Reveals every Opera distribution.', oracle: ['suasio','decimatio','indagatio','emptio'] },
+    { id: 'codex_gigas', name: 'Codex Gigas', rarity: 'anathema', img: 'codex_gigas.png', desc: 'One scribe. One night. One signature in the margin no Pope has ever erased.', effect: '×3 influence gain rate.' },
+    { id: 'longinus', name: 'Spear of Longinus', rarity: 'anathema', img: 'longinus.png', desc: 'Just the tip.', effect: '×3 maximum influence.' },
+    { id: 'mark_of_cain', name: 'Mark of Cain', rarity: 'anathema', img: 'mark_of_cain.png', desc: 'The sevenfold vengeance was never a curse. It was a guarantee.', effect: 'Apocalyptic chance falls to zero.' },
+    { id: '30_pieces', name: 'Thirty Pieces of Silver', rarity: 'anathema', img: '30_pieces.png', desc: 'Counted out, refused, returned, refused again — coinage that always finds its way back into a hand.', effect: '×3 gold gain rate.' },
+    { id: 'solomon_ring', name: "Solomon's Ring", rarity: 'anathema', img: 'solomon_ring.png', desc: 'The seal that bound seventy-two kings. It still pinches.', effect: '+50% sigil effects.' },
+    { id: 'voynich_manuscript', name: 'The Voynich Manuscript', rarity: 'profane', img: 'voynich_manuscript.png', desc: 'Unreadable to the faithful; fluent to the fallen.', effect: '+66% Suasio efficiency.' },
+    { id: 'defixio', name: 'Defixio', rarity: 'profane', img: 'defixio.png', desc: 'A name, a nail, a curse folded into lead and buried.', effect: 'Single-use: culls a random subtype.', use: 'defixio' },
+    { id: 'hand_of_glory', name: 'Hand of Glory', rarity: 'rare', img: '', desc: 'A hanged thief\u2019s hand, pickled and wicked at the fingertips. While it burns, none who sleep may wake.', effect: 'Single-use: a fevered surge of generation.', use: 'hand_of_glory' },
+    { id: 'ars_serpens', name: 'Ars Serpens', rarity: 'rare', img: 'ars_serpens.png', desc: "The serpent's counsel, transcribed — every word a smoother lie.", effect: '+33% Suasio efficiency.' },
+    { id: 'ritual_dagger', name: 'Ritual Dagger', rarity: 'rare', img: 'ritual_dagger.png', desc: 'A rare hour of convergence: when offering and offerer cease to be separate.', effect: '+33% Decimatio efficiency.' },
+    { id: 'blood_chalk', name: 'Blood Chalk', rarity: 'rare', img: 'blood_chalk.png', desc: 'Drawn in a circle no priest will step inside.', effect: '+4 invoking power.' },
+    { id: 'blackthorn_wand', name: 'Blackthorn Wand', rarity: 'rare', img: 'blackthorn_wand.png', desc: 'Cut on a moonless night from a tree that took root over a grave.', effect: '+4 invoking power.' },
+    { id: 'crossroads_dirt', name: 'Crossroads Dirt', rarity: 'common', img: 'crossroads_dirt.png', desc: 'Gathered where four roads meet at midnight.', effect: 'Reveals the Emptio distribution.', count: 3, oracle: ['emptio'] },
+    { id: 'crow_feather', name: 'Crow Feather', rarity: 'common', img: 'crow_feather.png', desc: 'The bird that counts the dead leaves you one.', effect: 'Reveals the Indagatio distribution.', count: 2, oracle: ['indagatio'] },
+    { id: 'hollow_effigy', name: 'Hollow Effigy', rarity: 'common', img: 'hollow_effigy.png', desc: "Wax in your likeness, and in someone else's.", effect: 'Reveals the Suasio distribution.', oracle: ['suasio'] },
+    { id: 'witch_bottle', name: 'Witch Bottle', rarity: 'common', img: 'witch_bottle.png', desc: 'Urine, pins, and rosemary, corked against the dark — and aimed back at it.', effect: '+2 invoking power.' },
+    { id: 'sulfur_censer', name: 'Sulfur Censer', rarity: 'common', img: 'sulfur_censer.png', desc: 'Where it has burned, prayer no longer travels upward.', effect: '+2 invoking power.' },
+    { id: 'mandrake_root', name: 'Mandrake Root', rarity: 'common', img: 'mandrake_root.png', desc: 'It screamed when it was pulled. You kept it anyway.', effect: '+2 invoking power.' },
+    { id: 'iron_nails', name: 'Iron Nails', rarity: 'common', img: 'iron_nails.png', desc: 'Pulled from the True Cross, or near enough to sell.', effect: '+1% sigil effects & +1 invoking power each.', count: 12 },
+    { id: 'black_candle', name: 'Black Candles', rarity: 'common', img: 'black_candle.png', desc: 'Each flame a small renunciation of the light.', effect: '+5% invocation effect per candle.', count: 7 },
+    { id: 'black_salt_pouch', name: 'Black Salt Pouch', rarity: 'common', img: 'black_salt_pouch.png', desc: 'Drawn from ash, charcoal, and graveyard earth.', effect: '+1 invoking power.', count: 3 },
+  ];
+
+  OPERA_LABEL = { suasio: 'Suasio', decimatio: 'Decimatio', indagatio: 'Indagatio', emptio: 'Emptio' };
+  OPERA_ACTIONS = { suasio: ['Suggestion','Logismoi'], decimatio: ['Caedis'], indagatio: ['Indagatio'], emptio: ['Emptio'] };
+
+  doUse = (id) => {
+    if (id === 'defixio') this.setState({ defixioActive: true });
+    else if (id === 'hand_of_glory') this.setState({ hogRemaining: 180 });
+  };
+
+  fmt(sec) { const m = Math.floor(sec / 60), s = sec % 60; return `${m}:${String(s).padStart(2, '0')}`; }
+
+  buildReveal(cats) {
+    return cats.map((c) => ({
+      category: c, label: this.OPERA_LABEL[c],
+      actions: this.OPERA_ACTIONS[c].map((name) => ({
+        name,
+        tiers: this.TIERS.map((t, i) => {
+          const pct = this.DIST[name][i];
+          return { w: (pct * 100).toFixed(1) + '%', colorDark: t.dark, title: `${t.label} ${Math.round(pct * 100)}%` };
+        }),
+      })),
+    }));
+  }
+
+  useFor(item) {
+    if (!item || !item.use) return null;
+    if (item.use === 'defixio') {
+      const on = this.state.defixioActive;
+      return { label: 'Use', disabled: on, status: on ? 'A curse gnaws at the reprobates' : null, onUse: () => this.doUse('defixio') };
+    }
+    if (item.use === 'hand_of_glory') {
+      const r = this.state.hogRemaining;
+      return { label: 'Use', disabled: false, status: r > 0 ? `${this.fmt(r)} of fevered generation remain` : null, onUse: () => this.doUse('hand_of_glory') };
+    }
+    return null;
+  }
+
+  decorate(item) {
+    const R = this.RARITY[item.rarity];
+    const count = item.count || 1;
+    return {
+      id: item.id, name: item.name, baseName: item.name,
+      img: item.img ? `${this.ASSET}/${item.img}` : '', hasImg: !!item.img, noImg: !item.img,
+      rarity: item.rarity, rarityLabel: R.label,
+      desc: item.desc, effect: item.effect || '',
+      count, isStack: count > 1, countLabel: `\u00d7${count}`,
+      isConsumable: !!item.use, isOracle: !!item.oracle,
+      emberColor: R.ember, emberWash: R.wash, emberRing: R.ring,
+      selectNiche: () => this.setState({ openNiche: item.id }),
+    };
+  }
+
+  resolveOpen(id) {
+    if (!id) return null;
+    const raw = this.CATALOG.find((x) => x.id === id);
+    if (!raw) return null;
+    return { ...this.decorate(raw), use: this.useFor(raw), reveal: raw.oracle ? this.buildReveal(raw.oracle) : null };
+  }
+
+  renderVals() {
+    const sorted = [...this.CATALOG].sort((a, b) => this.RARITY[b.rarity].rank - this.RARITY[a.rarity].rank);
+    const items = sorted.map((it) => this.decorate(it));
+    const ip = this.CATALOG.reduce((sum, it) => {
+      const c = it.count || 1; const m = it.effect.match(/\+(\d+) invoking power/);
+      return m ? sum + Number(m[1]) * c : sum;
+    }, 0);
+    return {
+      items,
+      invokingPowerLine: `${ip} invoking power`,
+      oracleCaption: 'What the omens already weigh — the odds of each outcome, should you act now:',
+      openNiche: this.resolveOpen(this.state.openNiche),
+      closeNiche: () => this.setState({ openNiche: null }),
+    };
+  }
+}
+</script>
+</body>
+</html>
