@@ -120,6 +120,27 @@ describe('resolveEmptio (03 §2.6)', () => {
     );
   });
 
+  it('refunds against the rolled band price actually paid, not the catalog cost', () => {
+    // In real play resolveIndagatio rolls a price within the rarity band into maleficiaPrices, and
+    // startAction charges that. The refund tiers must mirror that basis, not the bare catalog cost.
+    const cost = MALEFICIA.ritual_dagger!.cost;
+    const rolled = cost + 777; // a band price deliberately distinct from the catalog cost
+    const base = listedWith('ritual_dagger', 0);
+    const state: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, maleficiaPrices: { ritual_dagger: rolled } },
+    };
+    expect(
+      floor(resolveEmptio(state, 'stellar', 'ritual_dagger').state.lifetime.gold).toNumber(),
+    ).toBe(rolled);
+    expect(
+      floor(resolveEmptio(state, 'excellent', 'ritual_dagger').state.lifetime.gold).toNumber(),
+    ).toBe(Math.floor(rolled * 0.75));
+    expect(
+      floor(resolveEmptio(state, 'good', 'ritual_dagger').state.lifetime.gold).toNumber(),
+    ).toBe(Math.floor(rolled / 2));
+  });
+
   it('Neutral acquires the item at the listed price — no refund, list entry consumed', () => {
     const state = listedWith('black_robe', 500);
     const r = resolveEmptio(state, 'neutral', 'black_robe');

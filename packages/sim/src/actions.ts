@@ -1035,6 +1035,11 @@ export function resolveEmptio(
     return { state, acquired: [], lostFromList: [] };
   }
   const def = MALEFICIA[target];
+  // Refunds are a fraction of the price actually paid at startAction — the price rolled within the
+  // rarity band when the item surfaced (maleficiaPrices), falling back to the catalog cost for items
+  // surfaced before rolled pricing landed. Refunding the bare catalog cost would gift or short the
+  // player by (cost − rolled price) on every Stellar/Excellent/Good draw.
+  const price = state.lifetime.maleficiaPrices[target] ?? def.cost;
   // Remove ONE matching entry from the list (stackable items can have multiple copies listed).
   const dropIndex = state.lifetime.emptioList.indexOf(target);
   const trimmedList = [
@@ -1049,7 +1054,7 @@ export function resolveEmptio(
         ...state,
         lifetime: {
           ...state.lifetime,
-          gold: add(state.lifetime.gold, def.cost),
+          gold: add(state.lifetime.gold, price),
           maleficia: [...state.lifetime.maleficia, target],
           emptioList: trimmedList,
         },
@@ -1062,7 +1067,7 @@ export function resolveEmptio(
         ...state,
         lifetime: {
           ...state.lifetime,
-          gold: add(state.lifetime.gold, Math.floor(def.cost * 0.75)),
+          gold: add(state.lifetime.gold, Math.floor(price * 0.75)),
           maleficia: [...state.lifetime.maleficia, target],
           emptioList: trimmedList,
         },
@@ -1075,7 +1080,7 @@ export function resolveEmptio(
         ...state,
         lifetime: {
           ...state.lifetime,
-          gold: add(state.lifetime.gold, Math.floor(def.cost / 2)),
+          gold: add(state.lifetime.gold, Math.floor(price / 2)),
           maleficia: [...state.lifetime.maleficia, target],
           emptioList: trimmedList,
         },
