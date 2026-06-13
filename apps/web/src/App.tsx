@@ -5,7 +5,7 @@ import { RoomView } from './menus/RoomView.js';
 import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
-import { PANELS, PcDesk } from './ui/panels.js';
+import { PANELS, PcDesk, SuasioScroll } from './ui/panels.js';
 import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
@@ -19,13 +19,12 @@ import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
 /**
- * The themed shell each framed panel wears: the Altar's engraved stone, the Maleficia cabinet's
- * wood, the Suasio scroll's parchment (Ars Goetia, the PC and Katabasis are their own full-screen
- * overlays and don't appear here). The stone and cabinet hide the header in favour of a float close.
+ * The themed shell each framed panel wears: the Altar's engraved stone and the Maleficia cabinet's
+ * wood. (Ars Goetia, the PC, the Suasio scroll and Katabasis are their own full-surface overlays
+ * and don't appear here.) The stone and cabinet hide the header in favour of a float close.
  */
 const PANEL_SHELL: Partial<Record<PanelId, { variant: PanelVariant; hideHeader?: boolean }>> = {
   maleficia: { variant: 'cabinet', hideHeader: true },
-  suasio: { variant: 'scroll' },
 };
 
 /**
@@ -102,8 +101,10 @@ export function App(): ReactElement {
     audio.play('panel-close');
   };
 
-  // Ars Goetia is its own full-screen overlay (the designed grimoire), not a framed Panel.
-  const activePanel = panel && panel !== 'ars-goetia' && panel !== 'pc' ? PANELS[panel] : null;
+  // Ars Goetia, the PC and the Suasio scroll are their own full-surface overlays (designed
+  // grimoire / desk / parchment), not framed Panels.
+  const activePanel =
+    panel && panel !== 'ars-goetia' && panel !== 'pc' && panel !== 'suasio' ? PANELS[panel] : null;
   const shell = panel ? PANEL_SHELL[panel] : undefined;
 
   return (
@@ -128,6 +129,7 @@ export function App(): ReactElement {
       <TitleSequence />
       {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
+      {panel === 'suasio' && <SuasioScroll onClose={closePanel} />}
       {activePanel && shell && (
         <PanelShell
           title={activePanel.title}

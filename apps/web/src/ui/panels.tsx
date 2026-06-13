@@ -157,50 +157,93 @@ function AcolyteControls({ actionId }: { actionId: string }): ReactElement | nul
   );
 }
 
-/** The Suasio scroll (Studio): tempt ordinary humans into reprobates. */
 /** True while a player-driven rite is in flight (02 §3: one action at a time). */
 function useUnderway(): boolean {
   return useGameStore((s) => (s.state ? s.state.lifetime.actionQueue.length > 0 : false));
 }
 
-/** The Suasio scroll (Studio): tempt ordinary humans into reprobates. Renders the designed scroll
- * fed by the real action/cost, with acolyte delegation preserved beneath it. (Resolved outcomes
- * live in the PC's Logs program, not on the scroll.) */
-function SuasioPanel(): ReactElement {
+/** The three temptations in scroll order, with their alchemical sigils (☿ Mercury, ✴ the eight
+ * voices, ☉ the crowned Sun) and Roman numerals. Suasio always presents exactly these three. */
+const SUASIO_ORDER = ['suggestion', 'logismoi', 'imperium'] as const;
+const SUASIO_GLYPHS: Record<string, string> = {
+  suggestion: '\u263F',
+  logismoi: '\u2734',
+  imperium: '\u2609',
+};
+const SUASIO_NUMERALS = ['I', 'II', 'III'] as const;
+/** Sin-level → Roman numeral for a sealed rite's gate ("Requires Luxuria III"). */
+const SUASIO_LEVEL_ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
+
+/**
+ * The Suasio scroll (Studio) — "Opus Suasio, the Honeyed Tongue" (Claude Design rework). A
+ * self-framed, full-surface overlay (mounted by App like Ars Goetia / the PC, NOT via PanelShell):
+ * it feeds the designed parchment with the real action, cost, and live progress, and preserves
+ * acolyte delegation per delegatable rite. A sealed (locked) rite shows redacted Latin + its Sin
+ * gate. Resolved outcomes live in the PC's Logs program, not on the scroll.
+ */
+export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
-  const underway = useUnderway();
-  if (!state) return <div className="opera" />;
+  const head = useGameStore((s) => s.state?.lifetime.actionQueue[0] ?? null);
+
+  const headerProps = {
+    eyebrow: strings.opera.suasioEyebrow,
+    title: strings.opera.suasioTitle,
+    maxim: strings.opera.suasioMaxim,
+    closeLabel: strings.opera.suasioClose,
+    onClose,
+  };
+  if (!state) return <DesignedSuasio {...headerProps} actions={[]} />;
+
   const influence = floor(state.lifetime.influence).toNumber();
   const eff = categoryEfficiency(state, 'suasio');
-  const cap = (w: string): string => w.charAt(0).toUpperCase() + w.slice(1);
+  const underway = state.lifetime.actionQueue.length > 0;
   const names: Record<string, string> = {
     suggestion: strings.opera.suggestion,
     logismoi: strings.opera.logismoi,
     imperium: strings.opera.imperium,
   };
-  // All three temptations live on the one scroll; locked ones show their Luxuria gate (02 §2.1).
-  const actions = (['suggestion', 'logismoi', 'imperium'] as const).map((id) => {
+  const cap = (w: string): string => w.charAt(0).toUpperCase() + w.slice(1);
+
+  const actions = SUASIO_ORDER.map((id, i) => {
     const def = ACTIONS[id]!;
     const influenceCost = Math.ceil((def.cost.influence ?? 0) * eff);
     const locked = !actionUnlocked(state, def);
+    const active = head?.actionId === id;
+    // Suasio is cost-outcome, so a rite's queued duration is exactly its baseTimeSeconds — which
+    // lets us reconstruct progress from the remaining time with no sim/save change.
+    const base = def.baseTimeSeconds;
+    const remaining = head?.remainingSeconds ?? base;
+    const progress =
+      active && base > 0 ? Math.min(100, Math.max(0, ((base - remaining) / base) * 100)) : 0;
+    const sealed = locked ? strings.opera.suasioSealed[id] : undefined;
+    const delegatable = state.lifetime.acolytes.length > 0 && isDelegatable(state, id);
     return {
       id,
-      name: names[id] ?? def.id,
+      numeral: SUASIO_NUMERALS[i] ?? '',
+      glyph: SUASIO_GLYPHS[id] ?? '',
+      name: locked ? (sealed?.name ?? '') : (names[id] ?? def.id),
+      quote: locked ? (sealed?.maxim ?? '') : (strings.opera.suasioQuote[id] ?? ''),
       cost: `${influenceCost} ${strings.resources.influence} · ${def.baseTimeSeconds}s`,
+      cta: strings.opera.suasioCta[id] ?? strings.opera.tempt,
+      status: strings.opera.suasioStatus[id] ?? '',
       locked,
+      active,
+      progress,
       disabled: underway || locked || influence < influenceCost,
-      ...(def.unlock ? { lockLabel: `${cap(def.unlock.sin)} ${def.unlock.level}` } : {}),
       onTempt: () => act(id),
+      ...(def.unlock
+        ? {
+            lockLabel: `${strings.opera.suasioRequires} ${cap(def.unlock.sin)} ${
+              SUASIO_LEVEL_ROMAN[def.unlock.level] ?? def.unlock.level
+            }`,
+          }
+        : {}),
+      ...(delegatable ? { delegation: <AcolyteControls actionId={id} /> } : {}),
     };
   });
-  return (
-    <div className="opera">
-      <DesignedSuasio intro={strings.opera.suasioIntro} actions={actions} />
-      <AcolyteControls actionId="suggestion" />
-      {underway && <p className="opera-hint">{strings.opera.underway}</p>}
-    </div>
-  );
+
+  return <DesignedSuasio {...headerProps} actions={actions} />;
 }
 
 /** The terminal log (02 §10): the last hundred outcomes, newest first. */
@@ -900,8 +943,12 @@ function ArsGoetiaPanel(): ReactElement {
   );
 }
 
-/** Placeholder copy in the game's voice; each panel's real menu lands with its system. */
-export const PANELS: Record<PanelId, PanelContent> = {
+/**
+ * Placeholder copy in the game's voice; each panel's real menu lands with its system. The Suasio
+ * scroll, like Ars Goetia and the PC, is a self-framed full-surface overlay (see `SuasioScroll`),
+ * so it is mounted directly by App rather than through this framed-panel map.
+ */
+export const PANELS: Partial<Record<PanelId, PanelContent>> = {
   'ars-goetia': {
     title: 'Ars Goetia',
     body: <ArsGoetiaPanel />,
@@ -913,9 +960,5 @@ export const PANELS: Record<PanelId, PanelContent> = {
   pc: {
     title: 'The Desk',
     body: <PcPanel />,
-  },
-  suasio: {
-    title: 'The Suasio Scroll',
-    body: <SuasioPanel />,
   },
 };

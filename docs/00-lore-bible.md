@@ -247,7 +247,7 @@ in principle, contested ground.
 **Where it begins.** The game opens at the moment the Lair is newly built and the climb is just
 starting. The long consequences develop over play, not at the outset: the months-long absences pile
 up, the periodic liquidations form a pattern, you return from each descent visibly wasted, and the
-suspicions of Kade, Reuben, and the Church's investigator (§11) escalate from nothing toward
+suspicions of Fausto, Reuben, and the Church's investigator (§11) escalate from nothing toward
 certainty. Turn one is fresh ground.
 
 **Communication runs through two devices.** A **PC** carries the email system. A **smartphone** sits
@@ -362,7 +362,7 @@ constraints in §9, and voices and channels follow the matrix in §10.
 
 **The adversary (your one equal)**
 
-- **Anselm Kade.** Another master on the same path, reached the opposite way. You found a natural
+- **Fausto Cescru.** Another master on the same path, reached the opposite way. You found a natural
   catalyst and read it alone; he inherited a lineage, a teacher, a stolen library, and spent a
   fortune trying to build what you got for free. That envy lives under every courtesy. Where you are
   an artisan working one perfect channel in private, he industrializes: institutions, media, a
@@ -422,11 +422,11 @@ constraints in §9, and voices and channels follow the matrix in §10.
 - **The Doppelgänger.** Two hours after you invoke it, if it is still active, it sends you an email
   from an address almost identical to your own. The uncanny double, writing to you as you. Quiet,
   wrong, and never to be mistaken for a sender from the world.
-- **Midas.** Sends you email that tears into your business and event structure and tells you how to
+- **Midas.** Sends you email that tears into your investments and event structure and tells you how to
   do it better. Crude, profane, and personal: he swears, he insults, he points the finger at you.
   Real advice in the mouth of something that despises your incompetence.
 
-**How they connect.** The pre-descent liquidation is one hinge: Kade reads it correctly as a fellow
+**How they connect.** The pre-descent liquidation and the long absences are hinges: Fausto reads it correctly as a fellow
 descender, Reuben reads it as proof of the thing he cannot name. The deaths around your work are the
 other hinge, and they are what eventually draws Stahl. Two readings of the cash-out, and a body count
 that brings the Church.

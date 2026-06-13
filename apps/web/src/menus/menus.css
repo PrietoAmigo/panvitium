@@ -4018,3 +4018,540 @@ body {
     animation: none;
   }
 }
+
+/* ============================================================================
+   Opus Suasio — "the Honeyed Tongue" (Claude Design rework).
+   A self-framed, full-surface overlay (mounted by App, not PanelShell): an
+   illuminated dark parchment of three temptations. Each rite is an alchemical
+   circle that fills into a progress ring while it is spoken; sealed (locked)
+   rites read as redacted Latin behind a blur until their Sin gate is met.
+   Class names map 1:1 to <SuasioPanel/>; the progress ring/bar are driven by
+   the real action queue (see SuasioScroll in ui/panels.tsx).
+   ============================================================================ */
+
+.suasio-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 40%, rgba(4, 3, 3, 0.72) 100%),
+    radial-gradient(circle at 50% 16%, #16110c 0%, #0b0907 52%, #050403 100%);
+  animation: fade-in 0.25s ease both;
+}
+
+.suasio-scroll {
+  position: relative;
+  width: min(880px, 92vw);
+  margin: 0 auto;
+  padding: 0 0 64px;
+  color: var(--parchment);
+  font-family: var(--font-body);
+  animation: suasio-rise 0.42s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.suasio-close {
+  position: absolute;
+  top: 18px;
+  right: 6px;
+  z-index: 3;
+  background: none;
+  border: none;
+  color: #9c8a64;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.suasio-close:hover {
+  color: var(--candle);
+}
+.suasio-close:focus-visible {
+  outline: 2px solid rgba(230, 162, 60, 0.8);
+  outline-offset: 4px;
+}
+
+/* ---- head ---- */
+.suasio-head {
+  text-align: center;
+  padding: 58px 32px 30px;
+}
+.suasio-eyebrow {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: 0.46em;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: #9c7b3e;
+}
+.suasio-title {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2.1rem;
+  letter-spacing: 0.06em;
+  color: #ece0c2;
+  text-shadow: 0 0 30px rgba(201, 162, 39, 0.2);
+}
+.suasio-rule {
+  display: block;
+  width: 60px;
+  height: 1px;
+  margin: 22px auto 0;
+  background: linear-gradient(90deg, transparent, #7a5a2e, transparent);
+}
+
+/* ---- card ---- */
+.suasio-card {
+  position: relative;
+  max-width: 880px;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: radial-gradient(130% 110% at 50% -10%, #1d1610 0%, #0d0a08 56%, #080605 100%);
+  border: 1px solid #2a2017;
+  box-shadow:
+    0 44px 100px rgba(0, 0, 0, 0.6),
+    inset 0 0 90px rgba(0, 0, 0, 0.55);
+}
+.suasio-card-inner {
+  position: relative;
+  z-index: 1;
+  padding: 24px 46px 44px;
+}
+
+/* ---- drifting devotional Latin (atmosphere) ---- */
+.suasio-drift {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.suasio-drift-line {
+  position: absolute;
+  left: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  will-change: transform;
+}
+.suasio-drift-line:nth-child(1) {
+  top: 3%;
+  font-weight: 600;
+  font-size: 3.4rem;
+  letter-spacing: 0.22em;
+  color: rgba(201, 162, 39, 0.055);
+  animation: suasio-drift-l 110s linear infinite;
+}
+.suasio-drift-line:nth-child(2) {
+  top: 15%;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 2.4rem;
+  letter-spacing: 0.04em;
+  color: rgba(216, 182, 88, 0.06);
+  animation: suasio-drift-r 78s linear infinite;
+}
+.suasio-drift-line:nth-child(3) {
+  top: 27%;
+  font-size: 1.8rem;
+  letter-spacing: 0.2em;
+  color: rgba(201, 162, 39, 0.05);
+  animation: suasio-drift-l 142s linear infinite;
+}
+.suasio-drift-line:nth-child(4) {
+  top: 40%;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 1.55rem;
+  letter-spacing: 0.05em;
+  color: rgba(230, 162, 60, 0.05);
+  animation: suasio-drift-r 120s linear infinite;
+}
+.suasio-drift-line:nth-child(5) {
+  top: 54%;
+  font-weight: 600;
+  font-size: 2.75rem;
+  letter-spacing: 0.24em;
+  color: rgba(201, 162, 39, 0.05);
+  animation: suasio-drift-l 96s linear infinite;
+}
+.suasio-drift-line:nth-child(6) {
+  top: 69%;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 1.9rem;
+  letter-spacing: 0.04em;
+  color: rgba(216, 182, 88, 0.055);
+  animation: suasio-drift-r 88s linear infinite;
+}
+.suasio-drift-line:nth-child(7) {
+  top: 84%;
+  font-size: 1.7rem;
+  letter-spacing: 0.2em;
+  color: rgba(201, 162, 39, 0.045);
+  animation: suasio-drift-l 134s linear infinite;
+}
+
+.suasio-maxim {
+  margin: 0;
+  padding: 12px 0 2px;
+  text-align: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.26em;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  color: var(--candle);
+  text-shadow: 0 0 18px rgba(201, 162, 39, 0.25);
+}
+
+/* ---- rows ---- */
+.suasio-rows {
+  margin-top: 12px;
+}
+.suasio-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 96px 1fr auto;
+  align-items: center;
+  gap: 22px;
+  padding: 24px 6px;
+  border-top: 1px solid rgba(201, 162, 39, 0.14);
+}
+.suasio-row--apex {
+  border-top-color: rgba(216, 182, 88, 0.4);
+  background: linear-gradient(90deg, rgba(201, 162, 39, 0.08), transparent 66%);
+  animation: suasio-rise 0.5s ease both;
+}
+
+.suasio-edge {
+  position: absolute;
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 2px;
+  background: linear-gradient(#e6a23c, #ffcf6a);
+  box-shadow: 0 0 11px rgba(255, 180, 60, 0.7);
+}
+
+.suasio-numeral {
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: #7c5a28;
+}
+.suasio-row--locked .suasio-numeral {
+  color: #6a4a28;
+}
+.suasio-row--apex .suasio-numeral {
+  color: #9c7a32;
+}
+
+/* ---- sigil circle + progress ring ---- */
+.suasio-sigil {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  justify-self: center;
+}
+.suasio-ring {
+  position: absolute;
+  border-radius: 50%;
+}
+.suasio-ring--outer {
+  inset: 0;
+  border: 1.5px solid rgba(201, 162, 39, 0.28);
+  box-shadow: inset 0 0 18px rgba(201, 162, 39, 0.08);
+}
+.suasio-ring--inner {
+  inset: 9px;
+  border: 1px solid rgba(201, 162, 39, 0.18);
+}
+.suasio-ring--spin {
+  animation: suasio-spin 30s linear infinite;
+}
+.suasio-row--apex .suasio-ring--outer {
+  border-color: rgba(216, 182, 88, 0.55);
+  box-shadow:
+    inset 0 0 22px rgba(216, 182, 88, 0.18),
+    0 0 22px rgba(216, 182, 88, 0.2);
+}
+.suasio-row--apex .suasio-ring--inner {
+  inset: 8px;
+  border-color: rgba(216, 182, 88, 0.3);
+}
+
+.suasio-arc {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(#ffcf6a var(--suasio-w, 0%), rgba(201, 162, 39, 0.07) 0);
+  -webkit-mask: radial-gradient(circle, transparent 80%, #000 81%);
+  mask: radial-gradient(circle, transparent 80%, #000 81%);
+  filter: drop-shadow(0 0 10px rgba(255, 170, 50, 0.85));
+}
+.suasio-row--apex .suasio-arc {
+  background: conic-gradient(#ffe49a var(--suasio-w, 0%), rgba(216, 182, 88, 0.08) 0);
+  filter: drop-shadow(0 0 12px rgba(255, 210, 90, 0.9));
+}
+
+.suasio-glyph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--candle);
+  text-shadow: 0 0 16px rgba(230, 162, 60, 0.5);
+}
+.suasio-row--apex .suasio-glyph {
+  font-size: 2.1rem;
+  color: #f0d28a;
+  text-shadow: 0 0 20px rgba(240, 210, 130, 0.7);
+}
+
+/* sealed: a blood-dashed circle with the numeral inside */
+.suasio-sigil--sealed {
+  opacity: 0.85;
+}
+.suasio-sigil--sealed .suasio-ring--outer {
+  border: 1.5px dashed rgba(160, 30, 34, 0.42);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.5);
+}
+.suasio-sigil--sealed .suasio-glyph {
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: #7c4a1e;
+  text-shadow: none;
+}
+
+/* ---- body ---- */
+.suasio-body {
+  min-width: 0;
+}
+.suasio-name {
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+  font-size: 1.3rem;
+  color: #f0e2c4;
+}
+.suasio-row--apex .suasio-name {
+  font-size: 1.36rem;
+  color: #f4e2b4;
+}
+.suasio-quote {
+  margin-top: 5px;
+  font-style: italic;
+  font-size: 1rem;
+  color: #9c8a64;
+}
+.suasio-row--apex .suasio-quote {
+  color: #b09a6e;
+}
+/* sealed name/quote: redacted, blurred, unreadable */
+.suasio-row--locked .suasio-name {
+  letter-spacing: 0.2em;
+  color: #7a6a4c;
+  filter: blur(1.9px);
+  opacity: 0.72;
+  user-select: none;
+}
+.suasio-row--locked .suasio-quote {
+  color: #6f5e44;
+  filter: blur(1.5px);
+  opacity: 0.62;
+  user-select: none;
+}
+
+.suasio-bar {
+  display: block;
+  height: 1.5px;
+  margin-top: 11px;
+  max-width: 100%;
+  background: linear-gradient(90deg, #c9822f, #ffcf6a);
+  box-shadow: 0 0 9px rgba(255, 180, 60, 0.7);
+  transition: width 0.12s linear;
+}
+.suasio-row--apex .suasio-bar {
+  height: 2px;
+  background: linear-gradient(90deg, #d8b658, #ffe49a);
+  box-shadow: 0 0 11px rgba(255, 210, 90, 0.8);
+}
+.suasio-status {
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--candle);
+  animation: suasio-flick 1.4s infinite;
+}
+.suasio-row--apex .suasio-status {
+  color: #f0d28a;
+}
+
+.suasio-deleg {
+  margin-top: 12px;
+}
+
+/* ---- aside (cost + action, or sealed gate) ---- */
+.suasio-aside {
+  text-align: right;
+}
+.suasio-cost {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: #8a7a52;
+}
+.suasio-row--apex .suasio-cost {
+  color: #9c8a52;
+}
+.suasio-act {
+  margin-top: 10px;
+  font-family: var(--font-display);
+  letter-spacing: 0.2em;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #120c07;
+  background: linear-gradient(180deg, #eaad4a, #c9822f);
+  border: none;
+  border-radius: 2px;
+  padding: 10px 22px;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(230, 162, 60, 0.28);
+  transition:
+    filter 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+.suasio-act:hover:not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow: 0 0 24px rgba(230, 162, 60, 0.5);
+}
+.suasio-act:focus-visible {
+  outline: 2px solid rgba(18, 12, 7, 0.9);
+  outline-offset: 2px;
+}
+.suasio-act:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.suasio-row--apex .suasio-act {
+  background: linear-gradient(180deg, #f0d88a, #d8b658);
+  box-shadow: 0 0 20px rgba(216, 182, 88, 0.4);
+}
+.suasio-row--apex .suasio-act:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.suasio-gate {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a0451e;
+}
+
+/* ---- keyframes ---- */
+@keyframes suasio-drift-l {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes suasio-drift-r {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes suasio-spin {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes suasio-rise {
+  0% {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes suasio-flick {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.82;
+  }
+  52% {
+    opacity: 0.66;
+  }
+}
+
+/* ---- mobile: collapse the wide grid ---- */
+@media (max-width: 560px) {
+  .suasio-card-inner {
+    padding: 20px 18px 30px;
+  }
+  .suasio-row {
+    grid-template-columns: 64px 1fr;
+    grid-template-areas:
+      'sigil body'
+      'sigil aside';
+    gap: 8px 16px;
+    align-items: start;
+  }
+  .suasio-numeral {
+    display: none;
+  }
+  .suasio-sigil {
+    grid-area: sigil;
+    width: 64px;
+    height: 64px;
+    align-self: center;
+  }
+  .suasio-body {
+    grid-area: body;
+  }
+  .suasio-aside {
+    grid-area: aside;
+    text-align: left;
+  }
+  .suasio-glyph {
+    font-size: 1.5rem;
+  }
+  .suasio-title {
+    font-size: 1.7rem;
+  }
+  .suasio-act {
+    padding: 9px 18px;
+  }
+}
+
+/* ---- reduced motion: still the ambient drift / spin / flicker / entrance ---- */
+@media (prefers-reduced-motion: reduce) {
+  .suasio-overlay,
+  .suasio-scroll,
+  .suasio-row--apex,
+  .suasio-drift-line,
+  .suasio-ring--spin,
+  .suasio-status {
+    animation: none;
+  }
+  .suasio-drift {
+    display: none;
+  }
+}

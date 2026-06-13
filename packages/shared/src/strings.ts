@@ -65,6 +65,43 @@ export const strings = {
     depraedatioIntro:
       'Eight trades, one to each Sin. A trade is deepened for gold; as its roots spread, its reach among the reprobates grows \u2014 and so does its take.',
     sinLocked: 'Locked',
+
+    // The Suasio scroll \u2014 \u201cOpus Suasio, the Honeyed Tongue\u201d (Claude Design rework).
+    suasioEyebrow: 'The Honeyed Tongue',
+    suasioTitle: 'Opus Suasio',
+    suasioMaxim: 'Veritatis simplex oratio est',
+    suasioClose: 'Close the scroll',
+    // Each temptation\u2019s flavour line, spoken on the parchment.
+    suasioQuote: {
+      suggestion: 'A word left where a thought will find it.',
+      logismoi: 'Eight intruding voices, each the sinner\u2019s own.',
+      imperium: 'No longer asked.',
+    } as Record<string, string>,
+    // Per-temptation verb on the action button.
+    suasioCta: {
+      suggestion: 'Speak',
+      logismoi: 'Infiltrate',
+      imperium: 'Command',
+    } as Record<string, string>,
+    // The flicker line shown while a temptation is underway.
+    suasioStatus: {
+      suggestion: 'A word is being left\u2026',
+      logismoi: 'The voices press in, and will not relent\u2026',
+      imperium: 'The command takes hold\u2026',
+    } as Record<string, string>,
+    // A locked temptation is sealed: its name and maxim show as unreadable, redacted Latin.
+    suasioSealed: {
+      logismoi: {
+        name: 'Vhorruz Lagneth',
+        maxim: 'Murn qellath sorvo, dum tacet quod clamat.',
+      },
+      imperium: {
+        name: 'Xherum Volctan',
+        maxim: 'Qoth velim sarnu, ut nescias quod petat.',
+      },
+    } as Record<string, { name: string; maxim: string }>,
+    // Gate prefix for a sealed row, e.g. \u201cRequires Luxuria III\u201d.
+    suasioRequires: 'Requires',
   },
   /**
    * The Mercatus system (Vitium Mercatura rework): eight trades, exactly one per Cardinal Sin.

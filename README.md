@@ -103,9 +103,23 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 722** (sim 494 · shared 56 · api 11 · web 161).
+**Current test count: 727** (sim 494 · shared 56 · api 11 · web 166).
 
-> **Latest change — economy retune, slice 5 of 6: the 72-sigil respecification (ADR-029).** The
+> **Latest change — UI: the Opus Suasio scroll rework (Claude Design).** The Suasio menu is
+> rebuilt from the delivered "Opus Suasio, the Honeyed Tongue" design as a self-framed, full-surface
+> overlay (mounted by `App` like Ars Goetia / the PC / Katabasis — it no longer rides `PanelShell`'s
+> parchment frame). It is an illuminated dark parchment with a drifting devotional-Latin backdrop and
+> three temptation rows — Suggestion (☿), Logismoi (✴), Imperium (☉) — each an alchemical circle that
+> fills into a live **progress ring + bar** while its rite is spoken, reconstructed from the real
+> action queue (Suasio is cost-outcome, so a rite's duration is its `baseTimeSeconds` — no sim/save
+> change). Per-rite verbs (Speak / Infiltrate / Command) and flicker status lines are keyed in
+> `strings.ts` (Latin left untranslated, ADR-020); a **sealed** (locked) rite shows redacted Latin
+> behind a blur with its Sin gate ("Requires Luxuria III") and offers no action; acolyte delegation is
+> preserved per delegatable rite. New `.suasio-*` class block in `menus.css` (reduced-motion + mobile
+> aware); the design artifact is archived under `docs/frontend/`. Five render-smoke tests pin the
+> wiring. Test count 727 (web 166).
+
+> **Prior change — economy retune, slice 5 of 6: the 72-sigil respecification (ADR-029).** The
 > sigil catalog is rewritten wholesale from the revised Sigils sheet — every one of the 72 carries
 > its sheet effect, curve, and coefficient, and **no sigil is inert anymore** (the 16 ADR-024
 > orphans revive; old saves' bindings wake up with the new effects, no schema bump). Highlights:
@@ -122,7 +136,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > (broken `Globals!$B$22` refs from the row-21 deletion, re-pointed to `$B$21`). Test count 722
 > (sim 494 · web 161).
 
-> **Prior change — economy retune, slice 4 of 6: the Sins remap (ADR-028).** The Sins &
+> **Earlier change — economy retune, slice 4 of 6: the Sins remap (ADR-028).** The Sins &
 > Devotion table is rewired to the revised sheet. **Gula**: the Insatiability skill now lifts
 > player efficiency; each LEVEL strips a quarter of the negative tiers' weight (level 4 → the
 > Opera cannot roll Bad/Terrible/Apocalyptic at all). **Luxuria** ×2 Suasio efficiency per level;
