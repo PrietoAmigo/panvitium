@@ -1,0 +1,203 @@
+/**
+ * Render smoke tests for the reworked Indagatio menu (Claude Design "Orbis Tenebrarum"): the old
+ * separate Indagatio and Emptio PC apps are merged into one surface — a draggable orthographic globe
+ * (the Search) on the left and the Emptio market ledger on the right. The Emptio app was removed; its
+ * buying flow now lives in this ledger.
+ *
+ * Two layers are pinned here. First, the presentational `OrbisTenebrarum` against mock finds: the
+ * Indagatio stage with the Cast button, the Emptio ledger with one row per located maleficium, the
+ * detail panel with its Acquire button, and the three callbacks (onCast/onSelect/onAcquire). Second,
+ * a single live-wiring smoke for `IndagatioEmptioProgram`, the store-backed wrapper that replaced the
+ * two old menus, confirming the merged surface mounts against fresh store state. The globe's canvas
+ * rendering degrades gracefully when no 2D context exists (jsdom), so these assert the JSX only.
+ */
+import { describe, it, expect, afterEach, beforeEach } from 'vitest';
+import { act, createElement, type ReactElement } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { useGameStore } from '../../store/gameStore.js';
+import { OrbisTenebrarum } from './index.js';
+import type { OrbisFind } from './index.js';
+import { IndagatioEmptioProgram } from '../../ui/panels.js';
+
+let container: HTMLDivElement | null = null;
+let root: Root | null = null;
+
+const store = (): ReturnType<typeof useGameStore.getState> => useGameStore.getState();
+
+function mount(element: ReactElement): void {
+  container = document.createElement('div');
+  document.body.appendChild(container);
+  root = createRoot(container);
+  act(() => root!.render(element));
+}
+
+function click(el: Element): void {
+  act(() => el.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+}
+
+const MOCK_FINDS: OrbisFind[] = [
+  {
+    id: 'ars_serpens',
+    name: 'Ars Serpens',
+    rarity: 'common',
+    effect: '+2 invoking power',
+    desc: 'A serpent coiled in ink.',
+    costLabel: '120 g',
+    acquired: false,
+    affordable: true,
+  },
+  {
+    id: 'obsidian_mirror',
+    name: 'Obsidian Mirror',
+    rarity: 'rare',
+    effect: '+5 invoking power',
+    desc: 'It reflects nothing.',
+    costLabel: '900 g',
+    acquired: false,
+    affordable: false,
+  },
+];
+
+const noop = (): void => {};
+
+beforeEach(() => {
+  localStorage.clear();
+  useGameStore.setState({ state: null, ready: false });
+  store().init();
+  // jsdom has no 2D canvas context; the globe is built to degrade when getContext returns null.
+  HTMLCanvasElement.prototype.getContext = (() =>
+    null) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+});
+
+afterEach(() => {
+  if (root) act(() => root!.unmount());
+  container?.remove();
+  container = null;
+  root = null;
+});
+
+describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
+  it('renders the Indagatio stage and one Emptio row per located maleficium', () => {
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds: MOCK_FINDS,
+        gold: '1,500',
+        searching: false,
+        onCast: noop,
+        onSelect: noop,
+        onAcquire: noop,
+      }),
+    );
+
+    // The two old menus are now one surface.
+    expect(container!.querySelector('.orbis-surface')).not.toBeNull();
+    expect((container!.querySelector('.orbis-eyebrow')?.textContent ?? '').trim()).toBe(
+      'Indagatio',
+    );
+    expect((container!.querySelector('.orbis-ledger-title')?.textContent ?? '').trim()).toBe(
+      'Emptio',
+    );
+
+    // The Cast (Search) control and the globe canvas are present.
+    const cast = container!.querySelector<HTMLButtonElement>('.orbis-cast-btn');
+    expect((cast?.textContent ?? '').trim()).toBe('Cast the Search');
+    expect(container!.querySelector('canvas.orbis-canvas')).not.toBeNull();
+
+    // One ledger row per find, carrying the real name + pre-formatted cost.
+    const rows = container!.querySelectorAll('.orbis-row');
+    expect(rows.length).toBe(MOCK_FINDS.length);
+    const text = container!.textContent ?? '';
+    expect(text).toContain('Ars Serpens');
+    expect(text).toContain('120 g');
+    expect(text).toContain('Obsidian Mirror');
+  });
+
+  it('selecting a find opens its detail and Acquire fires onAcquire with the find id', () => {
+    let acquired: string | null = null;
+    let selected: string | null = null;
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds: MOCK_FINDS,
+        gold: '1,500',
+        searching: false,
+        selectedId: 'ars_serpens',
+        onCast: noop,
+        onSelect: (id: string) => {
+          selected = id;
+        },
+        onAcquire: (id: string) => {
+          acquired = id;
+        },
+      }),
+    );
+
+    // Detail panel reflects the selected find.
+    const detail = container!.querySelector('.orbis-detail');
+    expect(detail).not.toBeNull();
+    expect(detail!.textContent ?? '').toContain('A serpent coiled in ink.');
+
+    // Affordable → the Acquire button is enabled and reports the cost.
+    const acquire = container!.querySelector<HTMLButtonElement>('.orbis-acquire');
+    expect(acquire).not.toBeNull();
+    expect(acquire!.disabled).toBe(false);
+    expect(acquire!.textContent ?? '').toContain('Acquire');
+    click(acquire!);
+    expect(acquired).toBe('ars_serpens');
+
+    // Clicking a ledger row selects it.
+    const row = container!.querySelector('.orbis-row');
+    click(row!);
+    expect(selected).toBe('ars_serpens');
+  });
+
+  it('Cast fires onCast, and is disabled while a search is underway', () => {
+    let casts = 0;
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds: MOCK_FINDS,
+        gold: '1,500',
+        searching: false,
+        onCast: () => {
+          casts += 1;
+        },
+        onSelect: noop,
+        onAcquire: noop,
+      }),
+    );
+    const cast = container!.querySelector<HTMLButtonElement>('.orbis-cast-btn');
+    expect(cast!.disabled).toBe(false);
+    click(cast!);
+    expect(casts).toBe(1);
+
+    // Re-render mid-search: the Cast control locks.
+    act(() =>
+      root!.render(
+        createElement(OrbisTenebrarum, {
+          finds: MOCK_FINDS,
+          gold: '1,500',
+          searching: true,
+          onCast: noop,
+          onSelect: noop,
+          onAcquire: noop,
+        }),
+      ),
+    );
+    expect(container!.querySelector<HTMLButtonElement>('.orbis-cast-btn')!.disabled).toBe(true);
+    expect(container!.querySelector('.orbis-status')).not.toBeNull();
+  });
+});
+
+describe('IndagatioEmptioProgram — live wiring', () => {
+  it('mounts the merged Indagatio + Emptio surface against fresh store state', () => {
+    mount(createElement(IndagatioEmptioProgram));
+    // The merge replaced the two old menus: one surface, Indagatio stage + Emptio ledger.
+    expect(container!.querySelector('.orbis-surface')).not.toBeNull();
+    expect((container!.querySelector('.orbis-eyebrow')?.textContent ?? '').trim()).toBe(
+      'Indagatio',
+    );
+    expect((container!.querySelector('.orbis-ledger-title')?.textContent ?? '').trim()).toBe(
+      'Emptio',
+    );
+    expect(container!.querySelector('.orbis-cast-btn')).not.toBeNull();
+  });
+});

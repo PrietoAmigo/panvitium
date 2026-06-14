@@ -46,6 +46,8 @@ import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
 import { buildCabinet } from '../game/maleficia.js';
+import { formatBigNum } from '../game/format.js';
+import { OrbisTenebrarum, type OrbisFind } from '../menus/orbis-tenebrarum/index.js';
 import { useGameStore } from '../store/gameStore.js';
 import { actionName } from '../game/labels.js';
 
@@ -348,7 +350,6 @@ type PcGroupId =
   | 'depraedatio'
   | 'decimatio'
   | 'indagatio'
-  | 'emptio'
   | 'analytics'
   | 'achievements'
   | 'emails'
@@ -358,7 +359,6 @@ const PC_GROUPS: { id: PcGroupId; label: string }[] = [
   { id: 'depraedatio', label: strings.opera.depraedatio },
   { id: 'decimatio', label: strings.opera.decimatio },
   { id: 'indagatio', label: strings.opera.indagatio },
-  { id: 'emptio', label: strings.opera.emptio },
   { id: 'analytics', label: strings.analytics.title },
   { id: 'achievements', label: strings.achievements.ledger },
   { id: 'emails', label: strings.emails.title },
@@ -366,106 +366,56 @@ const PC_GROUPS: { id: PcGroupId; label: string }[] = [
 ];
 
 /**
- * Inline summary of acolytes delegated to a given action — shown beneath the action row so the
- * player can see remaining cycle time per acolyte. A 5454-second Indagatio cycle is otherwise
- * invisible until something resolves; this is the feedback channel for "yes, they're working."
+ * Indagatio × Emptio (03 §2.5–2.6), merged into one surface — the "Orbis Tenebrarum" globe (Claude
+ * Design). Scry the world to surface maleficia, then bind them in the adjoining Emptio market.
+ * Indagatio is one no-cost search whose duration scales with efficiency; Emptio buys a surfaced
+ * relic for gold. The two were separate PC programs; this is the single replacement.
  */
-function AcolyteSummary({ actionId }: { actionId: string }): ReactElement | null {
-  const acolytes = useGameStore((s) => (s.state ? s.state.lifetime.acolytes : []));
-  const filtered = acolytes.filter((a) => a.assignedAction === actionId);
-  if (filtered.length === 0) return null;
-  return (
-    <ul className="acolyte-summary">
-      {filtered.map((a) => (
-        <li key={a.id} className="acolyte-summary-row">
-          <span className="acolyte-summary-name">
-            {strings.acolytes.acolyte} {a.id}
-          </span>
-          <span className="acolyte-summary-time">
-            {a.remainingSeconds === null
-              ? strings.acolytes.idle
-              : formatDuration(Math.max(0, Math.ceil(a.remainingSeconds)))}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** Indagatio (03 §2.5): one long, no-cost search button. Duration scales with player efficiency. */
-function IndagatioGroup(): ReactElement {
+export function IndagatioEmptioProgram(): ReactElement {
+  const state = useGameStore((s) => s.state);
   const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'indagatio') : 1));
-  const notice = useGameStore((s) => s.notice);
   const act = useGameStore((s) => s.act);
   const underway = useUnderway();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+
+  const goldNum = floor(state.lifetime.gold).toNumber();
+  const owned = state.lifetime.maleficia;
+  const prices = state.lifetime.maleficiaPrices;
+
+  const finds: OrbisFind[] = state.lifetime.emptioList.flatMap((id) => {
+    const def = MALEFICIA[id];
+    if (!def) return [];
+    const price = prices?.[id] ?? def.cost;
+    const acquired = owned.includes(id);
+    return [
+      {
+        id,
+        name: def.name,
+        rarity: def.rarity,
+        effect: `+${def.invokingPower} invoking power`,
+        desc: def.description,
+        costLabel: `${price} g`,
+        acquired,
+        affordable: !acquired && goldNum >= price,
+      },
+    ];
+  });
+
   const baseSec = ACTIONS.indagatio?.baseTimeSeconds ?? 1800;
   const actualSec = Math.max(1, Math.floor(baseSec / Math.max(eff, 1e-9)));
-  return (
-    <>
-      <p className="opera-intro">{strings.opera.indagatioIntro}</p>
-      <ActionRow
-        name={strings.opera.indagatio}
-        cost={formatDuration(actualSec)}
-        cta={strings.opera.indagatioCta}
-        disabled={underway}
-        onAct={() => act('indagatio')}
-        delegation={<AcolyteControls actionId="indagatio" />}
-      />
-      <AcolyteSummary actionId="indagatio" />
-      {underway && <p className="opera-hint">{strings.opera.underway}</p>}
-      {notice !== null && <p className="opera-notice">{notice}</p>}
-    </>
-  );
-}
 
-/** Emptio (03 §2.6): the listed maleficia, each with a buy button at the listed gold cost. */
-function EmptioGroup(): ReactElement {
-  const list = useGameStore((s) => (s.state ? s.state.lifetime.emptioList : []));
-  const prices = useGameStore((s) => s.state?.lifetime.maleficiaPrices);
-  const gold = useGameStore((s) => (s.state ? floor(s.state.lifetime.gold).toNumber() : 0));
-  const notice = useGameStore((s) => s.notice);
-  const act = useGameStore((s) => s.act);
-  const underway = useUnderway();
-  if (list.length === 0) {
-    return (
-      <>
-        <p className="opera-intro">{strings.opera.emptioIntro}</p>
-        <p className="pc-empty">{strings.opera.emptioEmpty}</p>
-      </>
-    );
-  }
   return (
-    <>
-      <p className="opera-intro">{strings.opera.emptioIntro}</p>
-      <ul className="emptio-list">
-        {list.map((id, idx) => {
-          const def = MALEFICIA[id];
-          if (!def) return null;
-          const price = prices?.[id] ?? def.cost;
-          return (
-            <li key={`${idx}-${id}`} className="emptio-row">
-              <span className={`rarity-badge rarity-${def.rarity}`}>
-                {strings.maleficia.rarity[def.rarity]}
-              </span>
-              <span className="emptio-name">{def.name}</span>
-              <span className="emptio-cost">
-                {price} {strings.resources.gold}
-              </span>
-              <button
-                type="button"
-                className="opera-btn emptio-buy"
-                disabled={underway || gold < price}
-                onClick={() => act('emptio', id)}
-              >
-                {strings.opera.buy}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      {underway && <p className="opera-hint">{strings.opera.underway}</p>}
-      {notice !== null && <p className="opera-notice">{notice}</p>}
-    </>
+    <OrbisTenebrarum
+      finds={finds}
+      gold={formatBigNum(floor(state.lifetime.gold))}
+      searching={underway}
+      searchDuration={formatDuration(actualSec)}
+      selectedId={selectedId}
+      onCast={() => act('indagatio')}
+      onSelect={setSelectedId}
+      onAcquire={(id) => act('emptio', id)}
+    />
   );
 }
 
@@ -1151,8 +1101,7 @@ function AchievementsGroup(): ReactElement {
 function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
   if (group === 'depraedatio') return <DepraedatioGroup />;
   if (group === 'decimatio') return <DecimatioGroup />;
-  if (group === 'indagatio') return <IndagatioGroup />;
-  if (group === 'emptio') return <EmptioGroup />;
+  if (group === 'indagatio') return <IndagatioEmptioProgram />;
   if (group === 'analytics') return <AnalyticsGroup />;
   if (group === 'emails') return <EmailsGroup />;
   if (group === 'achievements') return <AchievementsGroup />;

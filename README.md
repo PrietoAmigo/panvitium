@@ -103,9 +103,29 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 746** (sim 497 · shared 57 · api 11 · web 181).
+**Current test count: 750** (sim 497 · shared 57 · api 11 · web 185).
 
-> **Latest change — UI tweak: full-bleed PC programs now fill the desk.** The two full-bleed
+> **Latest change — UI: the Indagatio + Emptio merge into "Orbis Tenebrarum" (Claude Design).** The
+> two separate PC apps become one. The **Emptio** desktop app is removed (its tile, its `PcGroupId`
+> member, and its `PC_GROUPS` entry are gone), and **Indagatio** is rebuilt as the delivered design:
+> a draggable orthographic globe on the left is the Search (Cast spins the world while a search is
+> underway, with inertia and a stable per-find pin position), and an **Emptio** market ledger on the
+> right lists each located maleficium — rarity dot, name, one-line effect and pre-formatted cost —
+> with a detail panel whose Acquire button is the buy. All data is the live model: the ledger reads
+> `state.lifetime.emptioList` mapped through the `MALEFICIA` catalogue (name / effect from
+> `invokingPower` / flavour / price from the live `prices` map), `acquired` and `affordable` come from
+> `state.lifetime.maleficia` and gold, Cast runs `act('indagatio')`, Acquire runs `act('emptio', id)`,
+> and the search duration reflects `categoryEfficiency`. The wrapper `IndagatioEmptioProgram` replaces
+> the old `IndagatioGroup` / `EmptioGroup` (and the now-dead `AcolyteSummary`), and the program renders
+> full-bleed inside the PC window via the `FULLBLEED` set. The globe is hand-rolled (in-file
+> orthographic projection + graticule, no new dependencies); the design's optional d3-geo continent
+> outlines are dropped to keep the install-free apply flow intact — they can be restored later per the
+> archived `INTEGRATION.md`. One acolyte-delegation control the old Indagatio screen carried is not in
+> the new design (the underlying sim mechanic is untouched). Four render-smoke tests cover the globe
+> stage + Cast control, the Emptio rows, the detail + Acquire callbacks, the search-disabled state,
+> and the live-wired merged surface. Test count 750 (web 185).
+
+> **Prior change — UI tweak: full-bleed PC programs now fill the desk.** The two full-bleed
 > programs (Emails and Depraedatio) were floating in the dark Ubuntu desk wallpaper with a padded
 > border around them; they now fill the entire program area edge-to-edge so the desk behind is no
 > longer visible. `.pc-app--fullbleed` drops the padding/centring and becomes a plain block that
@@ -115,7 +135,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > centred 880px card is gone, so no desk-like background shows around it (scrollbar hidden, content
 > still scrollable). Pure style change — no test or behaviour change; count unchanged at 746.
 
-> **Prior change — UI: the Depraedatio "merged proposal" rework (Claude Design).** The Mercatus
+> **Earlier change — UI: the Depraedatio "merged proposal" rework (Claude Design).** The Mercatus
 > program (in the desk PC) is rebuilt from the delivered design: under one tab bar, **Vitium
 > Mercatura** becomes a Sigil Grid of eight per-Sin cards — a vertical depth bar (depth / cap), the
 > live revenue (gold/s) and reprobate generation (reprobates/s), the trade's standing effect, the
