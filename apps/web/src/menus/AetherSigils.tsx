@@ -129,6 +129,23 @@ export function effectDisplay(def: SigilDef | undefined, bound: BigNum): string 
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
+/** A seal's display name (falls back to the sim def name). */
+function sealName(idx: number): string {
+  const id = idx + 1;
+  const def = sigilById(id);
+  return strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
+}
+/** The browse bar's roman seal number (or an em dash when nothing is centred). */
+function browseNoText(idx: number): string {
+  return idx >= 0 ? `\u2116 ${toRoman(idx + 1)}` : '\u2014';
+}
+/** The browse bar's seal name line (handles "nothing centred" and the sealed Semet seal). */
+function browseNameText(idx: number, semetUnlocked: boolean): string {
+  if (idx < 0) return 'Look upon the seals';
+  if (idx + 1 === SEMET_ID && !semetUnlocked) return 'A seal unread';
+  return sealName(idx);
+}
+
 export function AetherSigils({
   state,
   onModalChange,
@@ -141,9 +158,10 @@ export function AetherSigils({
   const bindLess = useGameStore((s) => s.bindLess);
   const unbindAll = useGameStore((s) => s.unbindAll);
 
-  // selected/focus are seal INDICES (0..71); -1 = none. selected drives the panel + freezes the loop.
+  // selected drives the panel + freezes the loop. Focus (the centred seal) is NOT React state — it
+  // changes constantly during a drag, so it lives in focusRef and is painted to the browse bar by
+  // direct DOM, to avoid re-rendering on every frame.
   const [selected, setSelected] = useState(-1);
-  const [focusIdx, setFocusIdx] = useState(-1);
   const [interacted, setInteracted] = useState(false);
 
   // Live mirrors the rAF loop and pointer handlers read without re-subscribing.
@@ -155,6 +173,10 @@ export function AetherSigils({
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const sealRefs = useRef<(HTMLImageElement | null)[]>([]);
+  // Browse-bar elements, updated imperatively when the centred seal changes (no React re-render).
+  const bbNoRef = useRef<HTMLDivElement | null>(null);
+  const bbNameRef = useRef<HTMLDivElement | null>(null);
+  const focusBtnRef = useRef<HTMLButtonElement | null>(null);
   // Last glow filter written per seal — so we only touch style.filter (a paint) when it changes,
   // not every frame.
   const glowRef = useRef<string[]>([]);
@@ -290,7 +312,11 @@ export function AetherSigils({
       }
       if (bestIdx !== focusRef.current) {
         focusRef.current = bestIdx;
-        setFocusIdx(bestIdx);
+        // Update the browse bar by direct DOM — the centred seal changes constantly while dragging,
+        // so routing this through React state would re-render the whole sphere every few frames.
+        if (bbNoRef.current) bbNoRef.current.textContent = browseNoText(bestIdx);
+        if (bbNameRef.current) bbNameRef.current.textContent = browseNameText(bestIdx, semet);
+        if (focusBtnRef.current) focusBtnRef.current.disabled = bestIdx < 0;
       }
       raf = requestAnimationFrame(loop);
     };
@@ -360,12 +386,8 @@ export function AetherSigils({
   const anyBound = burning > 0;
   const poolZero = isZero(floor(state.souls));
 
-  const focusName = (idx: number): string => {
-    const id = idx + 1;
-    const def = sigilById(id);
-    return strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
-  };
-  const focusLocked = focusIdx >= 0 && focusIdx + 1 === SEMET_ID && !semetUnlocked;
+  // The browse bar mounts/refreshes from the live focusRef; the loop keeps it current via direct DOM.
+  const fi = focusRef.current;
 
   return (
     <div
@@ -420,15 +442,11 @@ export function AetherSigils({
       {selected < 0 && (
         <div className="aether-browsebar">
           <div className="bb-text">
-            <div className="bb-no">
-              {focusIdx >= 0 ? `\u2116 ${toRoman(focusIdx + 1)}` : '\u2014'}
+            <div className="bb-no" ref={bbNoRef}>
+              {browseNoText(fi)}
             </div>
-            <div className="bb-name">
-              {focusIdx < 0
-                ? 'Look upon the seals'
-                : focusLocked
-                  ? 'A seal unread'
-                  : focusName(focusIdx)}
+            <div className="bb-name" ref={bbNameRef}>
+              {browseNameText(fi, semetUnlocked)}
             </div>
           </div>
           <button
@@ -441,10 +459,11 @@ export function AetherSigils({
           </button>
           <button
             type="button"
+            ref={focusBtnRef}
             className="aether-btn aether-btn--blood"
-            disabled={focusIdx < 0}
+            disabled={fi < 0}
             onClick={() => {
-              if (focusIdx >= 0) setSelected(focusIdx);
+              if (focusRef.current >= 0) setSelected(focusRef.current);
             }}
           >
             Focus
