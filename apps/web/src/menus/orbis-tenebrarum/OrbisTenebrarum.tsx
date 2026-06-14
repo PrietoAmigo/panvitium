@@ -141,6 +141,61 @@ function traceLand(
   }
 }
 
+/** Trace land as FILLED spherical polygons. Front-facing vertices project normally; far-side
+ * vertices are clamped onto the limb (the globe's rim) so each landmass closes along the horizon
+ * instead of cutting a chord through the sphere. Everything is already clipped to the globe circle,
+ * so the clamped rim runs hug the edge. Rings with no visible vertex are skipped. */
+function traceLandFill(
+  ctx: CanvasRenderingContext2D,
+  cLon: number,
+  cLat: number,
+  R: number,
+  c: number,
+): void {
+  const la0 = cLon * DEG;
+  const ph0 = cLat * DEG;
+  const sph0 = Math.sin(ph0);
+  const cph0 = Math.cos(ph0);
+  ctx.beginPath();
+  for (const ring of WORLD_LAND) {
+    let anyFront = false;
+    for (let i = 0; i < ring.length; i += 2) {
+      const la = ring[i]! * DEG;
+      const ph = ring[i + 1]! * DEG;
+      if (sph0 * Math.sin(ph) + cph0 * Math.cos(ph) * Math.cos(la - la0) >= 0) {
+        anyFront = true;
+        break;
+      }
+    }
+    if (!anyFront) continue;
+    let started = false;
+    for (let i = 0; i < ring.length; i += 2) {
+      const la = ring[i]! * DEG;
+      const ph = ring[i + 1]! * DEG;
+      const vz = sph0 * Math.sin(ph) + cph0 * Math.cos(ph) * Math.cos(la - la0);
+      const vx = Math.cos(ph) * Math.sin(la - la0);
+      const vy = cph0 * Math.sin(ph) - sph0 * Math.cos(ph) * Math.cos(la - la0);
+      let x: number;
+      let y: number;
+      if (vz >= 0) {
+        x = c + R * vx;
+        y = c - R * vy;
+      } else {
+        const m = Math.hypot(vx, vy);
+        if (m < 1e-6) continue; // antipode: unstable azimuth, hold
+        x = c + (R * vx) / m;
+        y = c - (R * vy) / m;
+      }
+      if (started) ctx.lineTo(x, y);
+      else {
+        ctx.moveTo(x, y);
+        started = true;
+      }
+    }
+    ctx.closePath();
+  }
+}
+
 function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -334,17 +389,17 @@ function useOrbisGlobe(
       ctx.fill();
       ctx.clip();
       traceGraticule(ctx, e.cLon, e.cLat, R2, c);
-      ctx.strokeStyle = 'rgba(210,200,170,.1)';
-      ctx.lineWidth = W * 0.0012;
+      ctx.strokeStyle = 'rgba(210,200,170,.12)';
+      ctx.lineWidth = W * 0.0013;
       ctx.stroke();
-      // continents — traced once, stroked twice (soft jade body + crisp sand coast)
+      // continents — filled teal (far-side vertices clamped to the limb), then crisp visible coasts
+      traceLandFill(ctx, e.cLon, e.cLat, R2, c);
+      ctx.fillStyle = 'rgba(40,72,60,.95)';
+      ctx.fill();
       traceLand(ctx, e.cLon, e.cLat, R2, c);
       ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(120,196,170,.16)';
-      ctx.lineWidth = W * 0.006;
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(224,206,160,.62)';
-      ctx.lineWidth = W * 0.0017;
+      ctx.strokeStyle = 'rgba(126,182,150,.3)';
+      ctx.lineWidth = W * 0.0016;
       ctx.stroke();
       ctx.restore();
       const sg = ctx.createRadialGradient(c, c, R2 * 0.55, c, c, R2);
