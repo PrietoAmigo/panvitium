@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital@0;1&family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;background:#070504;overflow:hidden;}
+  *{box-sizing:border-box;}
+  @keyframes spinSlow{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+</style>
+</helmet>
+<div id="stage" style="position:fixed;inset:0;cursor:grab;touch-action:none;background:radial-gradient(circle at 50% 50%,rgba(230,162,60,.10),transparent 34%),radial-gradient(circle at 50% 50%,#140d08 0%,#0a0806 54%,#050403 92%);">
+
+  <!-- inner-vault curvature -->
+  <div style="position:absolute;left:50%;top:50%;width:46vmin;height:46vmin;border:1px solid rgba(201,162,39,.06);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;"></div>
+  <div style="position:absolute;left:50%;top:50%;width:78vmin;height:78vmin;border:1px solid rgba(201,162,39,.045);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;"></div>
+  <div style="position:absolute;left:50%;top:50%;width:120vmin;height:120vmin;border:1px solid rgba(201,162,39,.03);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;"></div>
+
+  <!-- the seals -->
+  <div id="mount" style="position:absolute;left:50%;top:50%;width:0;height:0;z-index:2;"></div>
+
+  <!-- enclosure vignette -->
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:3;background:radial-gradient(circle at 50% 50%,transparent 50%,rgba(5,4,3,.5) 84%,rgba(4,3,2,.92) 100%);"></div>
+
+  <!-- dim scrim while a seal is held in focus -->
+  <div id="scrim" style="position:absolute;inset:0;z-index:5;background:radial-gradient(circle at 50% 50%,transparent 0,transparent 15%,rgba(5,4,3,.5) 44%,rgba(5,4,3,.72) 100%);display:none;cursor:pointer;"></div>
+
+  <!-- HUD scrims -->
+  <div style="position:absolute;top:0;left:0;right:0;height:160px;pointer-events:none;z-index:6;background:linear-gradient(180deg,rgba(5,4,3,.86),rgba(5,4,3,.3) 55%,transparent);"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;height:150px;pointer-events:none;z-index:6;background:linear-gradient(0deg,rgba(5,4,3,.84),rgba(5,4,3,.3) 55%,transparent);"></div>
+
+  <!-- top: the soul pool -->
+  <div style="position:absolute;top:26px;left:30px;z-index:7;pointer-events:none;display:flex;align-items:baseline;gap:9px;">
+    <span id="souls" style="font-family:'Cinzel',serif;font-weight:600;font-size:30px;letter-spacing:.02em;color:#e6a23c;text-shadow:0 0 24px rgba(230,162,60,.32);font-variant-numeric:tabular-nums;">0</span>
+    <span style="font-family:'Fragment Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(231,216,180,.5);">souls unbound</span>
+  </div>
+
+  <!-- top-right: seals burning -->
+  <div style="position:absolute;top:30px;right:30px;font-family:'Fragment Mono',monospace;font-size:11.5px;letter-spacing:.06em;color:rgba(231,216,180,.46);z-index:7;text-align:right;"><span style="color:#e6a23c;"><span id="count">0</span></span> / 72 seals burning</div>
+
+  <!-- hint -->
+  <div id="hint" style="position:absolute;bottom:30px;left:30px;font-family:'Fragment Mono',monospace;font-size:11.5px;letter-spacing:.05em;color:rgba(231,216,180,.34);z-index:7;transition:opacity .6s;">drag to look about you · focus a seal to read &amp; bind it</div>
+
+  <!-- browse bar: the seal at the cross + Focus -->
+  <div id="browsebar" style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:13px;background:rgba(9,6,5,.94);border:1px solid rgba(201,162,39,.24);border-radius:8px;padding:7px 9px 7px 15px;backdrop-filter:blur(3px);box-shadow:0 8px 32px rgba(0,0,0,.5);transition:opacity .2s;">
+    <div style="display:flex;flex-direction:column;justify-content:center;text-align:right;">
+      <div id="no" style="font-family:'Fragment Mono',monospace;font-size:9px;letter-spacing:.08em;color:#c9822f;">—</div>
+      <div id="name" style="font-family:'Cinzel',serif;font-size:16px;color:#e7d8b4;line-height:1.1;">—</div>
+    </div>
+    <div id="bstate" style="font-family:'EB Garamond',serif;font-style:italic;font-size:12px;color:#e6a23c;"></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="unbindall" style="font-family:'Cinzel',serif;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#cdbf9c;background:rgba(40,29,18,.55);border:1px solid #5a4632;border-radius:5px;padding:8px 13px;cursor:pointer;opacity:.3;pointer-events:none;transition:opacity .15s,background .12s,transform .06s;">Unbind all</button>
+      <button id="focusbtn" style="font-family:'Cinzel',serif;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#e7d8b4;background:rgba(124,20,23,.85);border:1px solid #a01e22;border-radius:5px;padding:8px 15px;cursor:pointer;opacity:.35;pointer-events:none;transition:opacity .15s,background .12s,transform .06s;">Focus</button>
+    </div>
+  </div>
+
+  <!-- the seal panel (slides in on Focus; locks rotation) -->
+  <aside id="panel" style="position:absolute;right:34px;top:50%;transform:translateY(-50%);z-index:8;width:300px;background:linear-gradient(168deg,rgba(20,13,9,.98),rgba(9,6,5,.98));border:1px solid rgba(201,162,39,.32);border-radius:11px;padding:16px 20px;box-shadow:0 24px 80px rgba(0,0,0,.62);color:#e7d8b4;display:none;">
+    <button id="panel-close" style="position:absolute;top:13px;right:14px;font-family:'Fragment Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(231,216,180,.55);background:none;border:1px solid rgba(201,162,39,.25);border-radius:5px;padding:5px 9px;cursor:pointer;transition:color .15s,border-color .15s;">✕ Release</button>
+    <div id="p-no" style="font-family:'Fragment Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#c9822f;margin-top:2px;">№ —</div>
+    <h2 id="p-name" style="font-family:'Cinzel',serif;font-weight:600;font-size:21px;letter-spacing:.02em;margin:4px 0 0;color:#e7d8b4;">—</h2>
+
+    <div style="height:1px;background:rgba(201,162,39,.18);margin:15px 0;"></div>
+
+    <div id="p-boonwrap">
+      <div id="p-boonlabel" style="font-family:'Fragment Mono',monospace;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(201,130,47,.8);margin-bottom:5px;">Boon while bound</div>
+      <div id="p-boon" style="font-family:'EB Garamond',serif;font-size:16px;line-height:1.5;color:rgba(231,216,180,.9);">—</div>
+    </div>
+
+    <div id="p-stats">
+      <div style="height:1px;background:rgba(201,162,39,.18);margin:14px 0;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;"><span style="font-family:'EB Garamond',serif;font-size:14.5px;color:rgba(231,216,180,.62);white-space:nowrap;">Souls bound</span><span id="p-bound" style="font-family:'EB Garamond',serif;font-weight:600;font-size:16px;color:#e6a23c;font-variant-numeric:tabular-nums;">0</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;"><span style="font-family:'EB Garamond',serif;font-size:14.5px;color:rgba(231,216,180,.62);white-space:nowrap;">Effect</span><span id="p-eff" style="font-family:'EB Garamond',serif;font-weight:600;font-size:16px;color:#d8b658;font-variant-numeric:tabular-nums;">+0%</span></div>
+      <div style="display:flex;gap:9px;margin-top:14px;">
+        <button id="less" style="flex:1;font-family:'Cinzel',serif;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#cdbf9c;background:rgba(40,29,18,.7);border:1px solid #5a4632;border-radius:6px;padding:12px 8px;cursor:pointer;user-select:none;touch-action:none;opacity:.35;pointer-events:none;transition:opacity .15s,background .12s,transform .06s;">Hold to unbind</button>
+        <button id="more" style="flex:1;font-family:'Cinzel',serif;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#e7d8b4;background:#7c1417;border:1px solid #a01e22;border-radius:6px;padding:12px 8px;cursor:pointer;user-select:none;touch-action:none;opacity:.35;pointer-events:none;transition:opacity .15s,background .12s,transform .06s;">Hold to bind</button>
+      </div>
+      <div style="font-family:'EB Garamond',serif;font-style:italic;font-size:12px;line-height:1.4;color:rgba(231,216,180,.4);margin-top:12px;">Bindings persist through every descent. Unbind to reclaim the souls.</div>
+    </div>
+  </aside>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:720},&quot;souls&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:4800000000,&quot;min&quot;:0,&quot;max&quot;:100000000,&quot;tsType&quot;:&quot;number&quot;},&quot;semetUnlocked&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  NAMES = ['Bael','Agares','Vassago','Samigina','Marbas','Valefor','Amon','Barbatos','Paimon','Buer',
+    'Gusion','Sitri','Beleth','Leraje','Eligos','Zepar','Botis','Bathin','Sallos','Purson',
+    'Marax','Ipos','Aim','Naberius','Glasya-Labolas','Bune','Ronove','Berith','Astaroth','Forneus',
+    'Foras','Asmoday','Gaap','Furfur','Marchosias','Stolas','Phenex','Halphas','Malphas','Raum',
+    'Focalor','Vepar','Sabnock','Shax','Vine','Bifrons','Uvall','Haagenti','Crocell','Furcas',
+    'Balam','Alloces','Caim','Murmur','Orobas','Gremory','Ose','Amy','Oriax','Vapula',
+    'Zagan','Volac','Andras','Haures','Andrealphus','Cimejes','Amdusias','Belial','Decarabia','Seere',
+    'Dantalion','Andromalius'];
+  // Concise boon per seal (sim-derived, mirrors Katabasis GOETIA_BOON). ↑ raise · ↓ soften.
+  BOON = {1:'Conversion rate \u2191',2:'Indagatio fortune \u2191',3:'Profane finds \u2191',4:'Tristitia invocations \u2191',5:'Influence gain \u2191',6:'Gold gain \u2191',7:'Reprobate generation \u2191',8:'Gula invocations \u2191',9:'Influence costs \u2193',10:'The Familiar grows stronger',11:'Terrible outcomes \u2193',12:'The Succubus grows stronger',13:'Decimatio fortune \u2191',14:'Gold per Choleric kill',15:'Celebrity conversion \u2191',16:'Reprobate generation \u2193',17:'Suasio mishaps \u2193',18:'Acolyte efficiency \u2191',19:'Offline gold \u2191',20:'Gold kept on descent \u2191',21:'Offline time \u2191',22:'Decimatio mishaps \u2193',23:'Choleric murder rate \u2191',24:'Suasio success \u2191',25:'Murder favours Celebrities',26:'Vanagloria invocations \u2191',27:'Nihilist suicide \u2191',28:'Superbia invocations \u2191',29:'Stellar Indagatio \u2191',30:'Offline influence \u2191',31:'Apocalyptic outcomes \u2193',32:'All carried on descent \u2191',33:'Sigma influence penalty \u2193',34:'Luxuria invocations \u2191',35:'Maximum influence \u2191',36:'Rare finds \u2191',37:'Celebrity conversion \u2191',38:'Maleficia kept on descent \u2191',39:'Celebrity gold penalty \u2193',40:'Decimatio efficiency \u2191',41:'Nihilist suicide \u2191',42:'Ira invocations \u2191',43:'Murder favours Gluttons',44:'Avaritia invocations \u2191',45:'Shutdown refund \u2191',46:'Indagatio efficiency \u2191',47:'Degenerate death penalty \u2193',48:'Flat gold generation',49:'Reprobate suicide rate \u2191',50:'Double Indagatio find',51:'Terrible outcomes \u2193',52:'Acedia invocations \u2191',53:'Murder favours Degenerates',54:'Invocation efficiency \u2191',55:'Invocation soul cost \u2193',56:'Degenerate suicide penalty \u2193',57:'Convert toward the minority',58:'Emptio gold cost \u2193',59:'Convert toward the majority',60:'Vitium Mercatura output \u2191',61:'Vitium Compositum output \u2191',62:'Gambler generation penalty \u2193',63:'Stellar Emptio \u2191',64:'Cholerics murder Cholerics',65:'Invoking power \u2191',66:'Maleficia kept on descent \u2191',67:'Choleric murder rate \u2191',68:'Influence gain \u2191',69:'Flat influence generation',70:'Emptio efficiency \u2191',71:'Suasio efficiency \u2191',72:'Emptio fortune \u2191'};
+  SEMET_ID = 32;
+  bnd = {};
+  pool = 0;
+  focus = -1;       // index centred at the cross while browsing
+  selected = -1;    // index held in the open panel (rotation locked); -1 = none
+  HOLD_BASE=8; HOLD_GROWTH=22; HOLD_RAMP_MS=550; HOLD_STEP_MS=60; HOLD_MAX_STEP=2.5e9;
+  COLD='none';
+  LIT='brightness(1.15) sepia(.55) saturate(3) hue-rotate(-10deg) drop-shadow(0 0 9px rgba(230,162,60,.9)) drop-shadow(0 0 18px rgba(160,30,34,.5))';
+  FOCUS='brightness(1.2) drop-shadow(0 0 8px rgba(230,162,60,.6))';
+  SELGLOW='brightness(1.25) drop-shadow(0 0 14px rgba(230,162,60,.95)) drop-shadow(0 0 30px rgba(160,30,34,.6))';
+  SEALED='brightness(.42) grayscale(.55) contrast(.9)';
+
+  fmt(v){ const n=Math.floor(v); if(n<1e6) return n.toLocaleString('en-US');
+    const suf=['M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
+    const exp=Math.floor(Math.log10(n)), group=Math.floor(exp/3), idx=group-2;
+    if(idx>=0&&idx<suf.length){ const s=n/Math.pow(10,group*3); return (s.toFixed(2).replace(/\.?0+$/,''))+suf[idx]; }
+    return n.toExponential(2).replace('e+','e'); }
+  roman(n){ const m=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']]; let s=''; for(const [v,sym] of m){ while(n>=v){s+=sym;n-=v;} } return s; }
+  // effect shown as a % boost: coefficient × √(bound). Representative coeff (≈ game scale: 1e8 souls ≈ +100%).
+  effLabel(b){ if(b<=0) return '+0%'; const pct=Math.sqrt(Math.floor(b))*0.01; let s; if(pct<10) s=pct.toFixed(1).replace(/\.0$/,''); else if(pct<100000) s=Math.round(pct).toLocaleString('en-US'); else s=this.fmt(pct); return '+'+s+'%'; }
+  locked(id){ return id===this.SEMET_ID && !this._semet; }
+
+  makeSigil(id,size){
+    const nn=String(id).padStart(2,'0');
+    const el=document.createElement('img');
+    el.src='assets/sigils/'+nn+'.png?v=3'; el.draggable=false; el.alt='';
+    el.style.cssText='position:absolute;left:50%;top:50%;width:'+size+'px;height:'+size+'px;margin-left:'+(-size/2)+'px;margin-top:'+(-size/2)+'px;object-fit:contain;will-change:transform,opacity;pointer-events:none;-webkit-user-drag:none;user-select:none;opacity:0;filter:none;';
+    return el;
+  }
+
+  refreshPool(){ document.getElementById('souls').textContent=this.fmt(this.pool); }
+  refreshCount(){ let n=0,bound=0; for(const k in this.bnd) if(this.bnd[k]>0){ n++; bound+=this.bnd[k]; } document.getElementById('count').textContent=n; const ua=document.getElementById('unbindall'); if(ua) this.btn(ua, n>0, 'Unbind all'); this._anyBound=n>0; }
+  unbindAll(){ let back=0; for(const k in this.bnd){ back+=this.bnd[k]; } if(back<=0) return; this.pool+=back; this.bnd={}; this.afterPour(); }
+  relight(){ this._els.forEach((el,i)=>{ const id=i+1;
+    el.style.filter = this.locked(id)?this.SEALED:(i===this.selected?this.SELGLOW:((this.bnd[id]>0)?this.LIT:(i===this.focus?this.FOCUS:this.COLD))); }); }
+
+  // browse bar — the seal currently at the cross
+  updateBrowse(idx){
+    const g=(s)=>document.getElementById(s);
+    const no=g('no'),nm=g('name'),st=g('bstate'),fb=g('focusbtn');
+    if(idx<0){ no.textContent='—'; nm.textContent='—'; st.textContent='turn to read a seal'; st.style.color='#9c8a63'; this.btn(fb,false,'Focus'); return; }
+    const id=idx+1;
+    if(this.locked(id)){ no.textContent='—'; nm.textContent='A seal unread'; st.textContent='sealed'; st.style.color='#9c8a63'; this.btn(fb,true,'Focus'); return; }
+    no.textContent='№ '+this.roman(id); nm.textContent=this.NAMES[idx];
+    const b=this.bnd[id]||0;
+    st.textContent = '';
+    this.btn(fb,true,'Focus');
+  }
+  btn(el,on,label){ if(label!=null) el.textContent=label; el.style.opacity=on?'1':'.35'; el.style.pointerEvents=on?'auto':'none'; }
+
+  // the open seal panel
+  updatePanel(){
+    if(this.selected<0) return;
+    const id=this.selected+1, g=(s)=>document.getElementById(s);
+    const lock=this.locked(id);
+    g('p-name').textContent = lock?'A seal unread':this.NAMES[id-1];
+    g('p-no').textContent = lock?'—':('№ '+this.roman(id));
+    const boon=g('p-boon'), boonlabel=g('p-boonlabel'), stats=g('p-stats');
+    if(lock){
+      boonlabel.textContent='Sealed';
+      boon.textContent='The carving will not resolve. It answers only when every Cardinal Sin stands at Rank 2 or higher.';
+      stats.style.display='none';
+      return;
+    }
+    stats.style.display='';
+    boonlabel.textContent='Boon while bound';
+    boon.textContent=this.BOON[id]||'A seal of the lesser key.';
+    const b=this.bnd[id]||0;
+    g('p-bound').textContent=this.fmt(b);
+    g('p-eff').textContent=this.effLabel(b);
+    this.btn(g('more'), this.pool>0, this.pool>0?'Hold to bind':'No souls');
+    this.btn(g('less'), b>0, 'Hold to unbind');
+  }
+
+  openPanel(){
+    if(this.focus<0) return;
+    this.selected=this.focus;
+    document.getElementById('scrim').style.display='block';
+    document.getElementById('panel').style.display='block';
+    document.getElementById('browsebar').style.display='none';
+    const el=this._els[this.selected]; if(el) el.style.zIndex='6';
+    this.updatePanel(); this.relight();
+  }
+  closePanel(){
+    if(this.selected<0) return;
+    this.stopHold();
+    const el=this._els[this.selected]; if(el) el.style.zIndex='1';
+    this.selected=-1;
+    document.getElementById('scrim').style.display='none';
+    document.getElementById('panel').style.display='none';
+    document.getElementById('browsebar').style.display='flex';
+    this.relight();
+  }
+
+  bindMore(amt){ if(this.selected<0)return; const id=this.selected+1; if(this.locked(id))return; const give=Math.min(amt,this.pool); if(give<=0)return; this.pool-=give; this.bnd[id]=(this.bnd[id]||0)+give; this.afterPour(); }
+  bindLess(amt){ if(this.selected<0)return; const id=this.selected+1; const cur=this.bnd[id]||0; const take=Math.min(amt,cur); if(take<=0)return; const left=cur-take; if(left>0)this.bnd[id]=left; else delete this.bnd[id]; this.pool+=take; this.afterPour(); }
+  afterPour(){ this.refreshPool(); this.refreshCount(); this.updatePanel(); this.relight(); }
+
+  startHold(apply){ this.stopHold(); const start=performance.now(); let last=0; apply(this.HOLD_BASE);
+    const frame=(now)=>{ if(now-last>=this.HOLD_STEP_MS){ last=now; const held=now-start; const amt=Math.min(this.HOLD_MAX_STEP, Math.max(this.HOLD_BASE, Math.floor(this.HOLD_BASE*Math.pow(this.HOLD_GROWTH, held/this.HOLD_RAMP_MS)))); apply(amt); } this._hraf=requestAnimationFrame(frame); };
+    this._hraf=requestAnimationFrame(frame); }
+  stopHold(){ if(this._hraf){ cancelAnimationFrame(this._hraf); this._hraf=null; } }
+
+  componentDidMount(){ if(this._init) return; this._init=true; try{ this.setup(); }catch(e){ console.error(e); } }
+
+  setup(){
+    const stage=document.getElementById('stage'), mount=document.getElementById('mount');
+    if(!stage||!mount) return;
+    // ── integration seam: wire to live state ──  pool ← state.souls   semet ← sigilVisible(state, Semet)
+    this.pool = Number(this.props.souls ?? 48000);
+    this._semet = !!(this.props.semetUnlocked ?? false);
+    this.refreshPool(); this.refreshCount(); this.updateBrowse(-1);
+
+    const N=72, GA=Math.PI*(3-Math.sqrt(5)), focal=520;
+    const dir=[], els=[]; this._els=els;
+    for(let i=0;i<N;i++){
+      const y=1-(i/(N-1))*2, rr=Math.sqrt(Math.max(0,1-y*y)), th=GA*i;
+      dir.push({x:Math.cos(th)*rr,y:y,z:Math.sin(th)*rr});
+      const el=this.makeSigil(i+1,64); mount.appendChild(el); els.push(el);
+    }
+    let yaw=0,pitch=0,vYaw=0.0022,vPitch=0,drag=false,lx=0,ly=0,interacted=false;
+    const self=this;
+    const loop=()=>{
+      if(self.selected>=0){ requestAnimationFrame(loop); return; }   // frozen while a seal is held
+      if(!drag){ yaw+=vYaw; pitch+=vPitch; vYaw*=0.95; vPitch*=0.9;
+        if(Math.abs(vYaw)<0.0006) vYaw+=(0.0014-vYaw)*0.04;
+        if(Math.abs(vPitch)<0.0004) vPitch*=0.6;
+        pitch=Math.max(-1.5708,Math.min(1.5708,pitch));
+      }
+      const cyaw=Math.cos(yaw),syaw=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+      const fx=syaw*cp, fy=sp, fz=cyaw*cp;
+      const rx=cyaw, ry=0, rz=-syaw;
+      const ux=fy*rz-fz*ry, uy=fz*rx-fx*rz, uz=fx*ry-fy*rx;
+      const hw=stage.clientWidth/2+74, hh=stage.clientHeight/2+74;
+      let bd=1e9,bi=-1;
+      for(let i=0;i<N;i++){ const d=dir[i], el=els[i];
+        const z=d.x*fx+d.y*fy+d.z*fz;
+        if(z<0.14){ if(el.style.opacity!=='0'){el.style.opacity='0';el.style.zIndex='0';} continue; }
+        const x=d.x*rx+d.y*ry+d.z*rz, yv=d.x*ux+d.y*uy+d.z*uz;
+        const sx=focal*x/z, sy=-focal*yv/z;
+        if(sx<-hw||sx>hw||sy<-hh||sy>hh){ if(el.style.opacity!=='0'){el.style.opacity='0';el.style.zIndex='0';} continue; }
+        let fade=(z-0.14)/0.3; if(fade>1)fade=1; if(fade<0)fade=0;
+        const scale=0.6+Math.min(1,z)*0.66;
+        el.style.transform='translate3d('+sx.toFixed(1)+'px,'+sy.toFixed(1)+'px,0) scale('+scale.toFixed(3)+')';
+        el.style.opacity=(0.2+fade*0.8).toFixed(3);
+        el.style.zIndex=((z*100)|0);
+        if(z>0.55){ const dd=sx*sx+sy*sy; if(dd<bd){bd=dd;bi=i;} }
+      }
+      if(bi!==self.focus){ self.focus=bi; self.updateBrowse(bi); self.relight(); }
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+
+    const hideHint=()=>{ if(!interacted){ interacted=true; const h=document.getElementById('hint'); if(h) h.style.opacity='0'; } };
+    stage.addEventListener('pointerdown',(e)=>{ if(self.selected>=0)return; if(e.target.closest('#browsebar')||e.target.closest('#panel'))return; drag=true;lx=e.clientX;ly=e.clientY;stage.style.cursor='grabbing'; hideHint(); try{stage.setPointerCapture(e.pointerId);}catch(_){} });
+    stage.addEventListener('pointermove',(e)=>{ if(!drag||self.selected>=0)return; const dx=e.clientX-lx,dy=e.clientY-ly; lx=e.clientX;ly=e.clientY; yaw-=dx*0.0044; pitch=Math.max(-1.5708,Math.min(1.5708,pitch+dy*0.0044)); vYaw=-dx*0.0044; vPitch=dy*0.0044; });
+    const end=()=>{ drag=false; stage.style.cursor='grab'; };
+    stage.addEventListener('pointerup',end); stage.addEventListener('pointercancel',end); stage.addEventListener('pointerleave',(e)=>{ if(drag&&e.buttons===0) end(); });
+
+    // focus / release
+    document.getElementById('focusbtn').addEventListener('click',()=>{ self.openPanel(); });
+    document.getElementById('unbindall').addEventListener('click',()=>{ self.unbindAll(); });
+    document.getElementById('panel-close').addEventListener('click',()=>{ self.closePanel(); });
+    document.getElementById('scrim').addEventListener('pointerdown',(e)=>{ e.stopPropagation(); self.closePanel(); });
+    window.addEventListener('keydown',(e)=>{ if(e.key==='Escape') self.closePanel(); });
+
+    // hold-to-pour controls (inside the panel)
+    const more=document.getElementById('more'), less=document.getElementById('less');
+    const wire=(el,fn)=>{ const down=(e)=>{ e.preventDefault(); e.stopPropagation(); if(el.style.pointerEvents==='none')return; el.style.transform='scale(.96)'; self.startHold(fn); }; const up=()=>{ el.style.transform=''; self.stopHold(); };
+      el.addEventListener('pointerdown',down); el.addEventListener('pointerup',up); el.addEventListener('pointerleave',up); el.addEventListener('pointercancel',up); window.addEventListener('pointerup',up); };
+    wire(more,(a)=>self.bindMore(a)); wire(less,(a)=>self.bindLess(a));
+  }
+}
+</script>
+</body>
+</html>

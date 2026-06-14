@@ -35,6 +35,7 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
+import { AetherSigils } from './AetherSigils.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
 // the two carved-slab layers are placed here on apply (they live at the repo root + the design zip).
@@ -51,7 +52,7 @@ const HOLD_RAMP_MS = 550;
 const HOLD_STEP_MS = 60;
 const HOLD_MAX_STEP = 2.5e9;
 
-function HoldButton({
+export function HoldButton({
   onStep,
   disabled = false,
   variant = 'blood',
@@ -157,27 +158,12 @@ const STATUE_POS: Record<Sin, Pos> = {
 };
 const ETERNAL_POS: Pos = { x: 0.5, y: 0.55, w: 0.115, h: 0.78 };
 
-// ── Geometry: the 72-seal grid over the slab (10×8), fractions of the slab ────
-const SG = {
-  cols: 10,
-  rows: 8,
-  left: 0.145,
-  right: 0.861,
-  top: 0.108,
-  bottom: 0.892,
-  cellW: 0.074,
-  cellH: 0.1,
-};
-const cellX = (c: number): number => SG.left + (SG.right - SG.left) * (c / (SG.cols - 1));
-const cellY = (r: number): number => SG.top + (SG.bottom - SG.top) * (r / (SG.rows - 1));
-const idCol = (id: number): number => (id - 1) % SG.cols;
-const idRow = (id: number): number => Math.floor((id - 1) / SG.cols);
-const SEMET_ID = 32;
+export const SEMET_ID = 32;
 
 // Concise boon per seal (the design handoff's GOETIA_DESC, derived from sim/sigils.ts effects).
 // Used only as a fallback where `strings.sigils.descriptions` has no authoritative entry yet, so
 // every seal reads meaningfully in the panel. '↑'/'↓' = raise/soften. Effect accuracy is deferred.
-const GOETIA_BOON: Record<number, string> = {
+export const GOETIA_BOON: Record<number, string> = {
   1: 'Conversion rate \u2191',
   2: 'Indagatio fortune \u2191',
   3: 'Profane finds \u2191',
@@ -251,29 +237,6 @@ const GOETIA_BOON: Record<number, string> = {
   71: 'Suasio efficiency \u2191',
   72: 'Emptio fortune \u2191',
 };
-
-/** 0..1 aperture strength from the souls bound — bigger binds open a wider, hotter molten hole. */
-function maskStrength(bound: BigNum): number {
-  const n = floor(bound).toNumber();
-  if (!Number.isFinite(n)) return 1;
-  if (n <= 0) return 0;
-  return Math.min(1, Math.log10(Math.max(10, n)) / 9);
-}
-
-/** CSS mask revealing the molten layer only at bound cells (one soft aperture per bound seal). */
-function moltenMask(bound: Array<{ id: number; v: BigNum }>): string {
-  if (!bound.length) return 'radial-gradient(circle at -10% -10%, #000 0, transparent 0)';
-  return bound
-    .map(({ id, v }) => {
-      const cx = (cellX(idCol(id)) * 100).toFixed(2);
-      const cy = (cellY(idRow(id)) * 100).toFixed(2);
-      const s = maskStrength(v);
-      const rx = (4.6 + s * 1.4).toFixed(2);
-      const ry = (6.2 + s * 1.8).toFixed(2);
-      return `radial-gradient(ellipse ${rx}% ${ry}% at ${cx}% ${cy}%, #000 58%, rgba(0,0,0,0.35) 78%, transparent 100%)`;
-    })
-    .join(', ');
-}
 
 // ── Imperative lightning: sharp strikes that flash the bright frames, then snap to dark ──────────
 function Lightning({ intensity, paused }: { intensity: number; paused: boolean }): ReactElement {
@@ -655,196 +618,6 @@ function StatuesPlace({
 
       {sel !== null && sel !== 'eternal' && <PrinceModal sin={sel} state={state} onClose={close} />}
       {sel === 'eternal' && <EternalModal state={state} onClose={close} />}
-    </div>
-  );
-}
-
-// ── The seal inscription panel (slides from the right; text only) ────────────────────────────────
-function SigilPanel({
-  id,
-  state,
-  locked,
-  onClose,
-}: {
-  id: number;
-  state: GameState;
-  locked: boolean;
-  onClose: () => void;
-}): ReactElement {
-  const bindMore = useGameStore((s) => s.bindMore);
-  const bindLess = useGameStore((s) => s.bindLess);
-  const def = sigilById(id);
-  const name = strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
-  const desc = strings.sigils.descriptions[id] ?? GOETIA_BOON[id] ?? 'A seal of the lesser key.';
-  const bound = state.sigilBindings[id] ?? bn(0);
-  const has = !isZero(bound);
-  const strength = floor(bound).sqrt();
-  const lit = !locked && has;
-
-  return (
-    <aside className="panel panel--sigil" role="dialog" aria-label={name}>
-      <button className="panel-close" onClick={onClose} aria-label="Close">
-        {'\u2715'}
-      </button>
-
-      <div className="sigil-numplate">
-        {locked && id === SEMET_ID ? '\u2014' : `No. ${id} of LXXII`}
-      </div>
-      <div className="panel-eyebrow panel-eyebrow--center">Seal of the Goetia</div>
-      <h2 className="sigil-name">{locked && id === SEMET_ID ? 'A seal unread' : name}</h2>
-      <div className={`sigil-state${lit ? ' is-lit' : ''}`}>
-        {locked ? 'Sealed' : lit ? 'Bound \u00B7 the carving burns' : 'Cold \u00B7 unbound'}
-      </div>
-
-      <div className="panel-rule" />
-
-      {locked ? (
-        <div className="lore-block">
-          <div className="h">Sealed</div>
-          <div className="b dim">
-            The carving will not resolve. It answers only when every Cardinal Sin stands at Rank 2
-            or higher. Keep offering above; return when the eight have risen.
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="lore-block">
-            <div className="h">Boon while bound</div>
-            <div className="b">{desc}</div>
-          </div>
-
-          <div className="panel-rule" />
-
-          <div className="stat-row">
-            <span className="k">Souls bound</span>
-            <span className="v ember">{formatBigNum(bound)}</span>
-          </div>
-          <div className="stat-row">
-            <span className="k">Effect magnitude</span>
-            <span className="v">
-              {'\u221A'} {formatBigNum(strength)}
-            </span>
-          </div>
-          <div className="lore-block lore-block--note">
-            <div className="b dim sigil-sqrt-note">
-              The seal drinks the square root of what you give it &mdash; spread your souls across
-              many, not all into one.
-            </div>
-          </div>
-
-          <div className="panel-actions">
-            <div className="row">
-              <HoldButton
-                onStep={(a) => bindMore(id, a)}
-                disabled={poolEmpty(state)}
-                ariaLabel={`Bind souls to ${name}`}
-              >
-                Hold to bind
-              </HoldButton>
-              <HoldButton
-                variant="ash"
-                onStep={(a) => bindLess(id, a)}
-                disabled={!has}
-                ariaLabel={`Unbind souls from ${name}`}
-              >
-                Hold to unbind
-              </HoldButton>
-            </div>
-            <div className="offer-note">
-              Bindings persist through every descent. Unbind to reclaim the souls.
-            </div>
-          </div>
-        </>
-      )}
-    </aside>
-  );
-}
-
-// ── The Goetia: seventy-two seals carved into a slab of black basalt ─────────────────────────────
-function SigilsPlace({ state }: { state: GameState }): ReactElement {
-  const [sel, setSel] = useState<number | null>(null);
-
-  const boundCells: Array<{ id: number; v: BigNum }> = [];
-  for (let id = 1; id <= 72; id++) {
-    const v = state.sigilBindings[id];
-    const def = sigilById(id);
-    const semetLocked = def ? !sigilVisible(state, def) : false;
-    if (v !== undefined && !isZero(v) && !semetLocked) boundCells.push({ id, v });
-  }
-  const mask = moltenMask(boundCells);
-
-  const cells: ReactElement[] = [];
-  for (let id = 1; id <= 72; id++) {
-    const def = sigilById(id);
-    const semetLocked = def ? !sigilVisible(state, def) : false;
-    const v = state.sigilBindings[id];
-    const lit = v !== undefined && !isZero(v) && !semetLocked;
-    const active = sel === id;
-    const name = strings.sigils.names[id] ?? def?.name ?? String(id);
-    cells.push(
-      <button
-        key={id}
-        className={`sigil-cell${lit ? ' sigil-cell--bound' : ''}${active ? ' sigil-cell--active' : ''}${semetLocked ? ' sigil-cell--locked' : ''}`}
-        style={{
-          left: pct(cellX(idCol(id))),
-          top: pct(cellY(idRow(id))),
-          width: pct(SG.cellW),
-          height: pct(SG.cellH),
-        }}
-        onClick={() => setSel(active ? null : id)}
-        aria-label={`Seal ${id} \u2014 ${semetLocked ? '\u2014' : name}`}
-      >
-        <span className="sigil-cell-glow" aria-hidden="true" />
-        <span className="sigil-cell-mark">
-          {semetLocked ? `${id} \u00B7 \u2014` : `${id} \u00B7 ${name}`}
-        </span>
-      </button>,
-    );
-  }
-
-  const selDef = sel !== null ? sigilById(sel) : undefined;
-  const selLocked = sel !== null && selDef ? !sigilVisible(state, selDef) : false;
-
-  return (
-    <div className="scene goetia">
-      <div className="cavern-glow" aria-hidden="true" />
-
-      <div className="goetia-head">
-        <div className="eyebrow">Clavicula Salomonis</div>
-        <div className="t">The Lesser Key</div>
-        <div className="s">
-          Seventy-two seals cut into the black stone. Bind your souls; the carving takes fire.
-        </div>
-      </div>
-
-      <div className="slab-wrap">
-        <div className="slab-frame">
-          <img
-            className="slab-img"
-            src={`${ASSET}/sigil-slab-dark.png`}
-            alt="The seventy-two seals carved in stone"
-          />
-          <img
-            className="slab-molten"
-            src={`${ASSET}/sigil-slab-molten.png`}
-            alt=""
-            style={{ maskImage: mask, WebkitMaskImage: mask }}
-          />
-          <div className="slab-torch" aria-hidden="true" />
-          <div className="slab-edge" aria-hidden="true" />
-          <div className="kat-degrade-chrome" aria-hidden="true" />
-          {cells}
-        </div>
-      </div>
-
-      <div className="goetia-count">
-        <span className="flame-dot" aria-hidden="true" />
-        {boundCells.length} <span className="of">of 72 seals burning</span>
-      </div>
-
-      {sel !== null && (
-        <SigilPanel id={sel} state={state} locked={selLocked} onClose={() => setSel(null)} />
-      )}
     </div>
   );
 }
@@ -1445,7 +1218,7 @@ export function Katabasis(): ReactElement {
           onModalChange={setModalOpen}
         />
       )}
-      {screen === 'sigils' && <SigilsPlace state={state} />}
+      {screen === 'sigils' && <AetherSigils state={state} onModalChange={setModalOpen} />}
 
       {inHell && <Hud souls={state.souls} />}
       {inHell && !modalOpen && (

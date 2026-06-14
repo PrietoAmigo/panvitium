@@ -103,9 +103,28 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 732** (sim 494 · shared 56 · api 11 · web 171).
+**Current test count: 739** (sim 494 · shared 56 · api 11 · web 178).
 
-> **Latest change — UI: the Maleficia Shelf "Niches" rework (Claude Design).** The Maleficia shelf
+> **Latest change — UI: the Katabasis "Aether" sigil-binding sphere (Claude Design).** The Goetia
+> sigil page (the old carved-slab grid) is replaced by the delivered "Aether" design: the player
+> stands inside a spherical vault and looks outward at the 72 seals scattered on its surface (a
+> golden-angle distribution, projected each frame). Drag to look around; centre a seal; **Focus** it
+> to freeze the view and open a right-docked detail panel; **bind / unbind** souls with the held,
+> ramping pour. Bound seals glow, unbound stay cold, the Semet seal stays sealed until its gate. The
+> three handoff "pending" points are resolved against the live model: the pool is `state.souls`, the
+> Semet gate is the real `sigilVisible` predicate (all Cardinal Sins ≥ Rank 2), and bindings read
+> from / write to the persisted `state.sigilBindings` via the store's `bindMore` / `bindLess` /
+> `unbindAll` (so they survive every descent); the panel's **Effect** shows the real
+> `sigilStrength(def, bound)` per effect kind (%, flat/s, or invoking power), not the prototype's
+> √×0.01 stub; and the HTML prototype is ported to React, the projection loop mutating the seal
+> transforms/glow directly (no per-frame render). Per the brief, the design's own soul readout is
+> dropped — the souls count comes from the shared Katabasis `Hud` (the Eight Princes treatment) — and
+> the `#kat-degrade` pixelation + scanline/grain chrome is kept on the vault and seals. New
+> `AetherSigils.tsx`; the dead slab grid (`SigilsPlace`/`SigilPanel` + mask helpers) is retired; the
+> 72 seal PNGs ship under `katabasis/sigils/`. Seven tests cover the roman numbering, the real effect
+> formula, and the render. Test count 739 (web 178).
+
+> **Prior change — UI: the Maleficia Shelf "Niches" rework (Claude Design).** The Maleficia shelf
 > is rebuilt from the delivered "Niches" design: the wooden glass-specimen cabinet becomes a wall of
 > carved **niches**, each owned maleficium recessed in a black alcove lit from within by its rarity
 > ember (common → gold, rare → teal, profane → red, anathema → violet), ordered anathema → common.
@@ -118,7 +137,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > dropped); the close-up is bounded + scrollable so a full four-category reveal never clips. Five
 > render-smoke tests pin the wiring. Test count 732 (web 171).
 
-> **Prior change — UI: the Opus Suasio scroll rework (Claude Design).** The Suasio menu is
+> **Earlier change — UI: the Opus Suasio scroll rework (Claude Design).** The Suasio menu is
 > rebuilt from the delivered "Opus Suasio, the Honeyed Tongue" design as a self-framed, full-surface
 > overlay (mounted by `App` like Ars Goetia / the PC / Katabasis — it no longer rides `PanelShell`'s
 > parchment frame). It is an illuminated dark parchment with a drifting devotional-Latin backdrop and

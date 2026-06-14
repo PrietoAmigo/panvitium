@@ -4599,3 +4599,356 @@ body {
   height: 0;
   display: none;
 }
+
+/* ============================================================================
+   Katabasis — the "Aether" sigil-binding sphere (Claude Design).
+   The player stands inside a spherical vault; the 72 seals are projected &
+   lit every frame by AetherSigils' rAF loop (it mutates each .aether-seal's
+   transform / opacity / filter directly — those are NOT set here). These rules
+   are the static chrome: the vault backdrop, rings, vignette, the browse bar,
+   and the docked detail panel. Colours are the design's exact hexes; fonts use
+   the app tokens (Cinzel / EB Garamond / IM Fell inscribe) for consistency with
+   the rest of Katabasis and the shared soul HUD.
+
+   Degrade: the vault backdrop and the seal layer carry the Katabasis pixelation
+   filter (filter: url(#kat-degrade)), and the shared .kat-degrade-chrome adds
+   scanlines + grain over the field — so this screen reads at room fidelity like
+   the other descent scenes. PERF: the seal layer is re-rasterised by the SVG
+   filter each frame; if the sphere janks on low-end hardware, drop the filter
+   from `.aether-seals` (one line) — the vault + chrome keep the look.
+   ============================================================================ */
+
+.katabasis-flow .scene.aether {
+  cursor: grab;
+  touch-action: none;
+  overflow: hidden;
+  background: #050403;
+  user-select: none;
+}
+.katabasis-flow .scene.aether:active {
+  cursor: grabbing;
+}
+
+/* vault backdrop — two stacked radials, pixelated by the degrade filter */
+.katabasis-flow .aether-vault {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(230, 162, 60, 0.1), transparent 34%),
+    radial-gradient(circle at 50% 50%, #140d08 0%, #0a0806 54%, #050403 92%);
+  filter: url(#kat-degrade);
+}
+.katabasis-flow .aether-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.katabasis-flow .aether-ring--1 {
+  width: 46vmin;
+  height: 46vmin;
+  border: 1px solid rgba(201, 162, 39, 0.06);
+}
+.katabasis-flow .aether-ring--2 {
+  width: 78vmin;
+  height: 78vmin;
+  border: 1px solid rgba(201, 162, 39, 0.045);
+}
+.katabasis-flow .aether-ring--3 {
+  width: 120vmin;
+  height: 120vmin;
+  border: 1px solid rgba(201, 162, 39, 0.03);
+}
+
+/* the 72 seals — centred; the rAF loop translates/scales each from here */
+.katabasis-flow .aether-seals {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  filter: url(#kat-degrade);
+}
+.katabasis-flow .aether-seal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  object-fit: contain;
+  pointer-events: none;
+  will-change: transform, opacity, filter;
+}
+
+/* enclosure vignette (over the seals) + HUD legibility scrims */
+.katabasis-flow .aether-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    transparent 50%,
+    rgba(5, 4, 3, 0.5) 84%,
+    rgba(4, 3, 2, 0.92) 100%
+  );
+}
+.katabasis-flow .aether-scrim-top,
+.katabasis-flow .aether-scrim-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 11;
+  pointer-events: none;
+}
+.katabasis-flow .aether-scrim-top {
+  top: 0;
+  height: 160px;
+  background: linear-gradient(180deg, rgba(5, 4, 3, 0.86), rgba(5, 4, 3, 0.3) 55%, transparent);
+}
+.katabasis-flow .aether-scrim-bottom {
+  bottom: 0;
+  height: 150px;
+  background: linear-gradient(0deg, rgba(5, 4, 3, 0.84), rgba(5, 4, 3, 0.3) 55%, transparent);
+}
+.katabasis-flow .scene.aether > .kat-degrade-chrome {
+  z-index: 12;
+}
+
+/* top-right: seals-burning counter (the top-left soul count is the shared Hud) */
+.katabasis-flow .aether-count {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  z-index: 14;
+  font-family: var(--font-inscribe);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: rgba(231, 216, 180, 0.46);
+  text-align: right;
+  pointer-events: none;
+}
+.katabasis-flow .aether-count .ember {
+  color: #e6a23c;
+}
+
+/* bottom-left hint, fades on first interaction */
+.katabasis-flow .aether-hint {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  z-index: 14;
+  font-family: var(--font-inscribe);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: rgba(231, 216, 180, 0.34);
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+.katabasis-flow .aether-hint.is-gone {
+  opacity: 0;
+}
+
+/* ── State A: browse bar (lifted clear of the floor nav band) ── */
+.katabasis-flow .aether-browsebar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(11vh + 18px);
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 7px 9px 7px 15px;
+  background: rgba(9, 6, 5, 0.94);
+  border: 1px solid rgba(201, 162, 39, 0.24);
+  border-radius: 8px;
+  backdrop-filter: blur(3px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-width: min(92vw, 520px);
+}
+.katabasis-flow .bb-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.katabasis-flow .bb-no {
+  font-family: var(--font-inscribe);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: #c9822f;
+}
+.katabasis-flow .bb-name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.1;
+  color: #e7d8b4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.katabasis-flow .aether-btn {
+  flex: none;
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 5px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition:
+    opacity 0.15s,
+    background 0.12s,
+    transform 0.06s;
+}
+.katabasis-flow .aether-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.katabasis-flow .aether-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+.katabasis-flow .aether-btn--ash {
+  color: #cdbf9c;
+  background: rgba(40, 29, 18, 0.55);
+  border: 1px solid #5a4632;
+}
+.katabasis-flow .aether-btn--blood {
+  color: #e7d8b4;
+  background: rgba(124, 20, 23, 0.85);
+  border: 1px solid #a01e22;
+}
+
+/* ── State B: focus scrim + docked detail panel ── */
+.katabasis-flow .aether-focus-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  background: radial-gradient(circle at 36% 45%, rgba(10, 8, 14, 0.86), rgba(3, 2, 4, 0.97));
+}
+.katabasis-flow .aether-panel {
+  position: absolute;
+  right: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 32;
+  width: 300px;
+  max-width: calc(100vw - 60px);
+  padding: 16px 20px;
+  border-radius: 11px;
+  background: linear-gradient(168deg, rgba(20, 13, 9, 0.98), rgba(9, 6, 5, 0.98));
+  border: 1px solid rgba(201, 162, 39, 0.32);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.62);
+  color: #e7d8b4;
+}
+.katabasis-flow .ap-close {
+  position: absolute;
+  top: 13px;
+  right: 14px;
+  font-family: var(--font-inscribe);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(231, 216, 180, 0.55);
+  background: none;
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  border-radius: 5px;
+  padding: 5px 9px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.katabasis-flow .ap-close:hover {
+  color: #e7d8b4;
+  border-color: rgba(201, 162, 39, 0.5);
+}
+.katabasis-flow .ap-no {
+  font-family: var(--font-inscribe);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: #c9822f;
+  margin-bottom: 3px;
+}
+.katabasis-flow .ap-name {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.32rem;
+  line-height: 1.1;
+  color: #e7d8b4;
+  margin: 0;
+}
+.katabasis-flow .ap-rule {
+  height: 1px;
+  margin: 13px 0;
+  background: rgba(201, 162, 39, 0.18);
+}
+.katabasis-flow .ap-boonlabel {
+  font-family: var(--font-inscribe);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(201, 130, 47, 0.8);
+  margin-bottom: 5px;
+}
+.katabasis-flow .ap-boontext {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgba(231, 216, 180, 0.9);
+  margin: 0;
+}
+.katabasis-flow .ap-stats {
+  margin: 16px 0 4px;
+}
+.katabasis-flow .ap-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+}
+.katabasis-flow .ap-k {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  color: rgba(231, 216, 180, 0.62);
+  white-space: nowrap;
+}
+.katabasis-flow .ap-v {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.katabasis-flow .ap-v.ember {
+  color: #e6a23c;
+}
+.katabasis-flow .ap-v.gold {
+  color: #d8b658;
+}
+.katabasis-flow .ap-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.katabasis-flow .ap-actions .hold-btn {
+  flex: 1;
+}
+.katabasis-flow .ap-foot {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 0.82rem;
+  color: rgba(231, 216, 180, 0.4);
+  margin: 11px 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .katabasis-flow .aether-hint {
+    transition: none;
+  }
+}
