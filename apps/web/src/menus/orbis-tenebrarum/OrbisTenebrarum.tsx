@@ -141,58 +141,107 @@ function traceLand(
   }
 }
 
-/** Trace land as FILLED spherical polygons. Front-facing vertices project normally; far-side
- * vertices are clamped onto the limb (the globe's rim) so each landmass closes along the horizon
- * instead of cutting a chord through the sphere. Everything is already clipped to the globe circle,
- * so the clamped rim runs hug the edge. Rings with no visible vertex are skipped. */
-function traceLandFill(
+const ROW_STEP = 1; // degrees of latitude per land strip
+
+interface LandRow {
+  lat: number;
+  spans: ReadonlyArray<readonly [number, number]>;
+}
+
+/**
+ * Per-latitude land longitude intervals, built once from WORLD_LAND by scanline. Antimeridian-
+ * crossing edges are split at ±180 so the even–odd pairing of crossings stays correct. This is the
+ * data the globe fills from: stable horizontal strips, with no per-ring winding or limb-closure
+ * decisions that could invert (paint sea as land) while dragging.
+ */
+const LAND_ROWS: readonly LandRow[] = (() => {
+  const edges: Array<readonly [number, number, number, number]> = [];
+  for (const ring of WORLD_LAND) {
+    const n = ring.length / 2;
+    for (let i = 0; i < n; i += 1) {
+      const lo1 = ring[2 * i]!;
+      const la1 = ring[2 * i + 1]!;
+      const lo2 = ring[2 * ((i + 1) % n)]!;
+      const la2 = ring[2 * ((i + 1) % n) + 1]!;
+      if (Math.abs(lo2 - lo1) > 180) {
+        const dir = lo1 > 0 ? 1 : -1;
+        const lo2u = lo2 + dir * 360;
+        const t = (dir * 180 - lo1) / (lo2u - lo1);
+        const latX = la1 + t * (la2 - la1);
+        edges.push([lo1, la1, dir * 180, latX]);
+        edges.push([-dir * 180, latX, lo2, la2]);
+      } else {
+        edges.push([lo1, la1, lo2, la2]);
+      }
+    }
+  }
+  const rows: LandRow[] = [];
+  for (let lat = -89; lat <= 89; lat += ROW_STEP) {
+    const xs: number[] = [];
+    for (const [lo1, la1, lo2, la2] of edges) {
+      if ((la1 <= lat && la2 > lat) || (la2 <= lat && la1 > lat)) {
+        xs.push(lo1 + ((lat - la1) / (la2 - la1)) * (lo2 - lo1));
+      }
+    }
+    xs.sort((p, q) => p - q);
+    const spans: Array<readonly [number, number]> = [];
+    for (let i = 0; i + 1 < xs.length; i += 2) spans.push([xs[i]!, xs[i + 1]!]);
+    if (spans.length) rows.push({ lat, spans });
+  }
+  return rows;
+})();
+
+/**
+ * Fill the visible land as projected horizontal strips. Each latitude row's land intervals are
+ * clipped to that row's visible longitude window — for a horizontal strip that is always one clean
+ * interval, so there is nothing to invert — then drawn as a thin band between lat ± ½ row. This
+ * replaces the polygon limb-fill, which flipped to enclose ocean when a continent's hidden side
+ * passed near the antipode. Caller fills the assembled path once.
+ */
+function fillLandBands(
   ctx: CanvasRenderingContext2D,
   cLon: number,
   cLat: number,
   R: number,
   c: number,
 ): void {
-  const la0 = cLon * DEG;
-  const ph0 = cLat * DEG;
-  const sph0 = Math.sin(ph0);
-  const cph0 = Math.cos(ph0);
+  const tph0 = Math.tan(cLat * DEG);
+  const half = ROW_STEP / 2;
   ctx.beginPath();
-  for (const ring of WORLD_LAND) {
-    let anyFront = false;
-    for (let i = 0; i < ring.length; i += 2) {
-      const la = ring[i]! * DEG;
-      const ph = ring[i + 1]! * DEG;
-      if (sph0 * Math.sin(ph) + cph0 * Math.cos(ph) * Math.cos(la - la0) >= 0) {
-        anyFront = true;
-        break;
+  for (const row of LAND_ROWS) {
+    const k = -tph0 * Math.tan(row.lat * DEG);
+    if (k >= 1) continue; // whole row on the far hemisphere
+    const hw = k <= -1 ? 180 : Math.acos(k) / DEG; // visible half-width in longitude
+    const winLo = cLon - hw;
+    const winHi = cLon + hw;
+    for (const [A, B] of row.spans) {
+      for (const shift of [-360, 0, 360]) {
+        const a = Math.max(A, winLo + shift);
+        const b = Math.min(B, winHi + shift);
+        if (b - a <= 0.01) continue;
+        const steps = Math.max(1, Math.ceil((b - a) / 2));
+        let started = false;
+        for (let q = 0; q <= steps; q += 1) {
+          const p = project(a + ((b - a) * q) / steps, row.lat + half, cLon, cLat, R, c);
+          if (!p) continue;
+          if (started) ctx.lineTo(p[0], p[1]);
+          else {
+            ctx.moveTo(p[0], p[1]);
+            started = true;
+          }
+        }
+        for (let q = steps; q >= 0; q -= 1) {
+          const p = project(a + ((b - a) * q) / steps, row.lat - half, cLon, cLat, R, c);
+          if (!p) continue;
+          if (started) ctx.lineTo(p[0], p[1]);
+          else {
+            ctx.moveTo(p[0], p[1]);
+            started = true;
+          }
+        }
+        if (started) ctx.closePath();
       }
     }
-    if (!anyFront) continue;
-    let started = false;
-    for (let i = 0; i < ring.length; i += 2) {
-      const la = ring[i]! * DEG;
-      const ph = ring[i + 1]! * DEG;
-      const vz = sph0 * Math.sin(ph) + cph0 * Math.cos(ph) * Math.cos(la - la0);
-      const vx = Math.cos(ph) * Math.sin(la - la0);
-      const vy = cph0 * Math.sin(ph) - sph0 * Math.cos(ph) * Math.cos(la - la0);
-      let x: number;
-      let y: number;
-      if (vz >= 0) {
-        x = c + R * vx;
-        y = c - R * vy;
-      } else {
-        const m = Math.hypot(vx, vy);
-        if (m < 1e-6) continue; // antipode: unstable azimuth, hold
-        x = c + (R * vx) / m;
-        y = c - (R * vy) / m;
-      }
-      if (started) ctx.lineTo(x, y);
-      else {
-        ctx.moveTo(x, y);
-        started = true;
-      }
-    }
-    ctx.closePath();
   }
 }
 
@@ -392,8 +441,8 @@ function useOrbisGlobe(
       ctx.strokeStyle = 'rgba(210,200,170,.12)';
       ctx.lineWidth = W * 0.0013;
       ctx.stroke();
-      // continents — filled teal (far-side vertices clamped to the limb), then crisp visible coasts
-      traceLandFill(ctx, e.cLon, e.cLat, R2, c);
+      // continents — filled teal as stable horizontal strips, then crisp visible coasts
+      fillLandBands(ctx, e.cLon, e.cLat, R2, c);
       ctx.fillStyle = 'rgba(40,72,60,.95)';
       ctx.fill();
       traceLand(ctx, e.cLon, e.cLat, R2, c);

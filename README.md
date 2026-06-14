@@ -120,11 +120,14 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > full-bleed inside the PC window via the `FULLBLEED` set. The globe is hand-rolled with no new
 > dependencies — an in-file orthographic `project()` (back-hemisphere clipping) plus a graticule — and
 > the continents are filled in teal to match the proposal, from a bundled, compressed Natural Earth
-> 110m land outline (`orbis.land.ts`, ~50 KB, rounded to 0.1° with tiny islands dropped); far-side
-> vertices are clamped to the limb so each landmass closes cleanly along the horizon rather than
-> cutting a chord through the sphere, with the visible coasts stroked on top — all projected with that
-> same math, so the recognisable landmasses render without the d3-geo / topojson / world-atlas
-> packages the design assumed (the install-free apply flow stays intact). One acolyte-delegation control the old Indagatio screen
+> 110m land outline (`orbis.land.ts`, ~50 KB, rounded to 0.1° with tiny islands dropped). The fill is
+> rasterised as horizontal strips: at load the outline is scanned into per-latitude longitude
+> intervals (`LAND_ROWS`, antimeridian edges split at ±180), and each frame every strip is clipped to
+> its visible longitude window — one clean interval per row, so there is no winding or limb-closure to
+> get wrong. This replaces an earlier polygon limb-fill that could invert (paint sea as land) while
+> dragging, when a continent's hidden side passed near the antipode. The visible coasts are stroked on
+> top, all projected with that same math, so the recognisable landmasses render without the d3-geo /
+> topojson / world-atlas packages the design assumed (the install-free apply flow stays intact). One acolyte-delegation control the old Indagatio screen
 > carried is not in the new design (the underlying sim mechanic is untouched). Five render-smoke tests
 > cover the globe stage + Cast control, the Emptio rows, the detail + Acquire callbacks, the
 > search-disabled state, the live-wired merged surface, and the bundled coastline dataset. Test count
