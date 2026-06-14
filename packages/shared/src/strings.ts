@@ -64,6 +64,9 @@ export const strings = {
     indagatioCta: 'Begin the search',
     depraedatioIntro:
       'Eight trades, one to each Sin. A trade is deepened for gold; as its roots spread, its reach among the reprobates grows \u2014 and so does its take.',
+    mercaturaBlurb:
+      'Deepen an investment\u2019s depth with gold; as its reach among the reprobates grows, so does the gold it takes each second \u2014 plus a standing effect.',
+    compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
     // The Suasio scroll \u2014 \u201cOpus Suasio, the Honeyed Tongue\u201d (Claude Design rework).

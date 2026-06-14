@@ -21,7 +21,7 @@ const EXECUTABLES = [
 
 // Programs that render their own full window surface (e.g. the Emails mail client) rather than sitting
 // in the dark titled card. They fill the desk area directly; the PC titlebar already names them.
-const FULLBLEED = new Set<string>(['Emails']);
+const FULLBLEED = new Set<string>(['Emails', 'Depraedatio']);
 
 // The Studio desk PC — an Ubuntu-style file manager whose "files" are ritual programs. Full-screen
 // shell (does not use PanelShell). The chrome is the design; each launched program's body is the real

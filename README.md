@@ -103,9 +103,28 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 744** (sim 497 · shared 57 · api 11 · web 179).
+**Current test count: 746** (sim 497 · shared 57 · api 11 · web 181).
 
-> **Latest change — UI: the Emails two-pane mail client + a persisted reply/delete mechanic (Claude
+> **Latest change — UI: the Depraedatio "merged proposal" rework (Claude Design).** The Mercatus
+> program (in the desk PC) is rebuilt from the delivered design: under one tab bar, **Vitium
+> Mercatura** becomes a Sigil Grid of eight per-Sin cards — a vertical depth bar (depth / cap), the
+> live revenue (gold/s) and reprobate generation (reprobates/s), the trade's standing effect, the
+> next-depth gate, and Deepen / cut (−) / Sell-all — and **Vitium Compositum** becomes a Living
+> Grimoire of rite rows (status dot, cost · effect, or a "Requires ·" gate) with the **Panvitium**
+> altar beneath: a sealed, hatched teaser until every Sin reaches Level 3, then a pulsing panel whose
+> "Unleash" keeps the real two-step confirmation (it cannot be turned off by hand and ramps each
+> second). All wiring is the live model — `invest` / `divest` with `mercatusDepth` / `mercatusDepthCap`
+> / `investCost` / `mercatusRevenuePerSecond` / `foedusRevenueMul` / `divestFraction`, the
+> reprobate/s readout from `MERCATUS_GEN_PER_DEPTH × depth × mercatusGenerationClauseMul`, and the
+> ceremonies via `activateCeremony` / `deactivateCeremony` / `compositumUnlocked` / `isToggleActive`.
+> The program renders full-bleed inside the PC window (its own grimoire surface; the titlebar names
+> it) via the `FULLBLEED` set. The old list components (`MercaturaList` / `CompositumSection` /
+> `PanvitiumRow`) are replaced by `MercaturaGrid` / `CompositumGrimoire` / `PanvitiumPanel`; the
+> design's demo-only Panvitium toggle is dropped. Two render-smoke tests cover the tab bar, the eight
+> locked cards at a fresh start, and the tab switch to the rites plus the sealed gate. Test count 746
+> (web 181).
+
+> **Prior change — UI: the Emails two-pane mail client + a persisted reply/delete mechanic (Claude
 > Design).** The single-column inbox is replaced by the delivered desktop mail client: a (deliberately
 > light, diegetic) Ubuntu-style program with a decorative folder rail, a middle inbox list (unread dot,
 > sender, timestamp, answered `↩` marker, subject, snippet), and a reading pane (Reply / decorative
@@ -124,7 +143,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > tests cover the answer / delete / no-op-hook sim, the ADR-023 save round-trip, and the client
 > (auto-open + read-on-display, delete-falls-back). Test count 744 (web 179).
 
-> **Prior change — UI: the Katabasis "Aether" sigil-binding sphere (Claude Design).** The Goetia
+> **Earlier change — UI: the Katabasis "Aether" sigil-binding sphere (Claude Design).** The Goetia
 > sigil page (the old carved-slab grid) is replaced by the delivered "Aether" design: the player
 > stands inside a spherical vault and looks outward at the 72 seals scattered on its surface (a
 > golden-angle distribution, projected each frame). Drag to look around; centre a seal; **Focus** it

@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="cebcca64-e6df-4900-ab47-c25268709fa9"></script>
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<style>/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("c6856a5e-db96-46a2-9d77-c753500e546d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("8e9b7994-e584-4600-9f95-f89f11b6e627") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("c6856a5e-db96-46a2-9d77-c753500e546d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("8e9b7994-e584-4600-9f95-f89f11b6e627") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("c6856a5e-db96-46a2-9d77-c753500e546d") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("8e9b7994-e584-4600-9f95-f89f11b6e627") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("b42bad6e-1c26-42e7-be8b-0e0da062bd31") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6c407ecf-07e1-4bac-896d-1aeafe43f004") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("4ed8c32a-bd5c-43c9-9c77-cb0151168ed5") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("92666ac5-0aa8-42cd-b340-d69f97f42b81") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("5c22466a-784f-46e9-a7c7-e094c63004e6") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("1b6afe77-f2f1-4cee-b5ce-3ad463bd78f4") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("720cdb40-a169-43fc-b93e-1b19f745b3b3") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("5a39cd6b-b83f-425a-b9f8-6bfbd91e0eb9") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bda2b58e-fb00-406e-aec0-893c35a34aa0") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("e6f9c0c7-b61b-49e8-819b-a8f5fc110e5b") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d760d951-8b66-48f2-aac0-298776709540") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bb2be1c1-bba4-4dc6-9515-4f7350933695") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c272be3d-4ebf-4ef3-a3a3-495b2169689c") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("7bf71a00-3c47-41d8-9163-a146f4f7936f") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("5a39cd6b-b83f-425a-b9f8-6bfbd91e0eb9") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("bda2b58e-fb00-406e-aec0-893c35a34aa0") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("e6f9c0c7-b61b-49e8-819b-a8f5fc110e5b") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("d760d951-8b66-48f2-aac0-298776709540") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("bb2be1c1-bba4-4dc6-9515-4f7350933695") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("c272be3d-4ebf-4ef3-a3a3-495b2169689c") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("7bf71a00-3c47-41d8-9163-a146f4f7936f") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("3888b384-5e2a-4c0f-b1b4-b98c677cabbb") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("9b3bf048-2f0b-44b2-8445-9e7b08784c08") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("cad1dab1-8387-4a15-9f37-80769db04e61") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("24f0947b-21b6-43ad-8dc0-5b895084b662") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("082a57c1-1500-44eb-924c-85ec9d5ba27e") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("e7f904b7-8a94-48de-9641-44a21f4b1b9f") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("cc3b57ac-dbc6-4727-8774-36e1a1b4ff0f") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("729d4439-0cf3-4285-8514-b16a61ed0b06") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("c48479f0-ffaa-4f5d-bcd2-36f14f615774") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("9d0ab68e-44f1-4411-84ed-c0d478d3d18c") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("d9a453bc-18ae-413a-b9ce-e5c553285c54") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("4a4b7429-33f5-4c57-a102-d5275d902726") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("e0166b01-db09-4ee3-bce4-814414fa17a5") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("44a44f6c-6aae-4f0e-8ad6-94a791874fc7") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("1e48a02d-4277-43de-a06c-bee6272a0477") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("5b7ffb2b-326e-49e4-9950-283fcad3fdd2") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bef31005-ae77-4091-b1db-2b4a491684e0") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("5bb7b897-3800-44c0-ac1f-a189ea803973") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:#17171a;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#3a3a40;border-radius:5px;}
+  @keyframes panPulse{0%,100%{box-shadow:inset 0 0 16px rgba(212,72,72,.22),0 0 24px rgba(212,72,72,.12);}50%{box-shadow:inset 0 0 34px rgba(255,100,50,.5),0 0 40px rgba(255,90,40,.3);}}
+</style>
+</helmet>
+<div style="min-height:100vh;background:radial-gradient(120% 80% at 50% 0%,#1f1f23 0%,#161619 60%,#101012 100%);padding:52px 40px 100px;font-family:'EB Garamond',Georgia,serif;color:#e7d8b4;">
+
+  <header style="max-width:1100px;margin:0 auto 30px;">
+    <div style="font-family:'Ubuntu Mono',monospace;font-size:.74rem;letter-spacing:.32em;color:#8a7a5c;text-transform:uppercase;margin-bottom:12px;">Panvitium · Studio Desk · Depraedatio</div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:2.1rem;line-height:1.1;margin:0 0 10px;color:#ecd9a8;">Depraedatio — merged proposal</h1>
+    <p style="max-width:640px;margin:0;font-size:1.06rem;line-height:1.5;color:#b6a888;"><em>Vitium Mercatura</em> as the Sigil Grid of per-sin cards, <em>Vitium Compositum</em> as the Living Grimoire of rites — under one tab bar. Deepen a trade or begin a ceremony to see it respond.</p>
+  </header>
+
+  <div style="max-width:1100px;margin:0 auto;">
+    <div style="border-radius:13px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.62),0 0 0 1px rgba(0,0,0,.5);font-family:'Ubuntu',system-ui,sans-serif;">
+      <!-- window titlebar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;height:46px;padding:0 12px;background:linear-gradient(#3a373b,#2f2d31);border-bottom:1px solid #232125;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-family:'Ubuntu',sans-serif;font-size:.82rem;color:#cfc9d2;background:#56565c;padding:5px 11px;border-radius:6px;">‹ Files</span>
+          <span style="font-family:'Ubuntu Mono',monospace;font-size:.9rem;color:#bdb7c0;">Depraedatio</span>
+        </div>
+        <span style="width:28px;height:28px;border-radius:50%;background:#46444a;color:#ccc;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;">×</span>
+      </div>
+      <!-- app wallpaper + grimoire card -->
+      <div style="padding:30px;background:radial-gradient(circle at 26% 16%,rgba(233,84,32,.2),transparent 46%),radial-gradient(circle at 78% 82%,rgba(119,41,83,.4),transparent 56%),linear-gradient(150deg,#3a0f30 0%,#2c001e 55%,#1a0411 100%);">
+        <div style="background:linear-gradient(168deg,rgba(28,20,14,.96),rgba(16,12,10,.96));border:1px solid rgba(196,158,74,.2);border-radius:11px;padding:30px 32px;box-shadow:0 18px 50px rgba(0,0,0,.6),inset 0 0 60px rgba(0,0,0,.4);">
+
+          <!-- illuminated title -->
+          <div style="text-align:center;margin-bottom:22px;">
+            <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:1.7rem;margin:0;color:#ecd9a8;letter-spacing:.1em;">Depraedatio</h3>
+            <div style="width:130px;height:1px;background:linear-gradient(90deg,transparent,rgba(196,158,74,.6),transparent);margin:12px auto 0;"></div>
+          </div>
+
+          <!-- tabs -->
+          <div style="display:flex;gap:10px;margin-bottom:16px;">
+            <button type="button" onclick="{{ mercClick }}" style="{{ mercTab }}">Vitium Mercatura</button>
+            <button type="button" onclick="{{ compClick }}" style="{{ compTab }}">Vitium Compositum</button>
+          </div>
+
+          <!-- switching section explanation -->
+          <p style="font-style:italic;color:#9c8e74;margin:0 0 22px;font-size:1.02rem;line-height:1.45;text-align:center;max-width:660px;margin-left:auto;margin-right:auto;">{{ sectionBlurb }}</p>
+
+          <!-- ─────────── MERCATURA — Sigil Grid ─────────── -->
+          <sc-if value="{{ merc }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:13px;">
+            <sc-for list="{{ trades }}" as="t" hint-placeholder-count="8">
+              <div style="{{ t.cardStyleB }}">
+                <!-- header -->
+                <div style="display:flex;align-items:center;gap:13px;border-left:3px solid {{ t.accentLine }};padding-left:11px;">
+                  <div style="display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;">
+                    <span style="font-family:'Cinzel',serif;font-size:1.06rem;letter-spacing:.02em;color:#ecd9a8;line-height:1.1;">{{ t.name }}</span>
+                    <sc-if value="{{ t.hasFoedus }}" hint-placeholder-val="{{ true }}"><span style="font-family:'Ubuntu Mono',monospace;font-size:.62rem;letter-spacing:.1em;color:#c49e4a;text-transform:uppercase;">Foedus {{ t.roman }}</span></sc-if>
+                  </div>
+                </div>
+                <!-- body -->
+                <div style="display:flex;gap:15px;align-items:stretch;">
+                  <sc-if value="{{ t.notLocked }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex:0 0 auto;padding-top:3px;">
+                    <div style="position:relative;width:9px;height:64px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden;">
+                      <div style="position:absolute;left:0;bottom:0;width:100%;height:{{ t.pct }};background:{{ t.accent }};box-shadow:0 0 8px {{ t.accentLine }};transition:height .35s cubic-bezier(.2,.8,.3,1);"></div>
+                    </div>
+                    <span style="font-family:'Ubuntu Mono',monospace;font-size:.62rem;color:#8a7e66;letter-spacing:.04em;">{{ t.depth }}/{{ t.cap }}</span>
+                  </div>
+                  </sc-if>
+                  <div style="display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;flex:1;">
+                    <div style="line-height:1;">
+                      <span style="font-family:'Ubuntu Mono',monospace;font-size:1.5rem;color:#e6a23c;font-variant-numeric:tabular-nums;">{{ t.revDisplay }}</span>
+                      <span style="font-family:'Ubuntu Mono',monospace;font-size:.7rem;color:#8a7e66;margin-left:3px;">gold/s</span>
+                    </div>
+                    <div style="line-height:1;">
+                      <span style="font-family:'Ubuntu Mono',monospace;font-size:.92rem;color:#b59ad6;font-variant-numeric:tabular-nums;">{{ t.genDisplay }}</span>
+                      <span style="font-family:'Ubuntu Mono',monospace;font-size:.7rem;color:#8a7e66;margin-left:3px;">reprobates/s</span>
+                    </div>
+                    <span style="font-family:'Ubuntu Mono',monospace;font-size:.72rem;letter-spacing:.03em;color:#c79f63;line-height:1.35;">{{ t.effect }}</span>
+                  </div>
+                </div>
+                <!-- next-depth gate -->
+                <div style="display:flex;align-items:center;gap:7px;padding-top:10px;border-top:1px solid rgba(196,158,74,.12);">
+                  <span style="color:#7e7256;font-size:.8rem;flex:0 0 auto;">⤓</span>
+                  <span style="font-family:'Ubuntu Mono',monospace;font-size:.66rem;letter-spacing:.04em;color:#8a7e66;line-height:1.3;text-transform:uppercase;">{{ t.nextLock }}</span>
+                </div>
+                <!-- actions -->
+                <div style="display:flex;gap:7px;margin-top:auto;">
+                  <button type="button" onclick="{{ t.onDeepen }}" disabled="{{ t.deepDisabled }}" style="flex:1;font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.06em;font-size:.76rem;color:#f0e2c0;background:#7c1417;border:1px solid #a01e22;border-radius:4px;padding:9px;cursor:pointer;white-space:nowrap;opacity:{{ t.deepOpacity }};" style-hover="background:#a01e22;">{{ t.deepenLabel }}<sc-if value="{{ t.deepSub }}" hint-placeholder-val="{{ true }}"><span style="opacity:.72;"> · {{ t.deepSub }}</span></sc-if></button>
+                  <sc-if value="{{ t.showDivest }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onclick="{{ t.onCut }}" title="{{ t.cutLabel }}" style="font-family:'Ubuntu Mono',monospace;font-size:.95rem;color:#c8b48a;background:rgba(8,8,10,.5);border:1px solid rgba(196,158,74,.35);border-radius:4px;padding:0 13px;cursor:pointer;" style-hover="border-color:rgba(212,72,72,.5);color:#e6c993;">−</button>
+                    <button type="button" onclick="{{ t.onSell }}" title="{{ t.sellLabel }}" style="font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.05em;font-size:.73rem;color:#c8b48a;background:rgba(8,8,10,.5);border:1px solid rgba(196,158,74,.35);border-radius:4px;padding:0 12px;cursor:pointer;white-space:nowrap;" style-hover="border-color:rgba(212,72,72,.5);color:#e6c993;">Sell all</button>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+
+          <!-- ─────────── COMPOSITUM — Living Grimoire ─────────── -->
+          <sc-if value="{{ comp }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <sc-for list="{{ ceremonies }}" as="c" hint-placeholder-count="8">
+              <div style="{{ c.riteStyleC }}">
+                <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                  <span style="width:11px;height:11px;border-radius:50%;background:{{ c.dotColor }};box-shadow:0 0 10px {{ c.dotColor }};flex:0 0 auto;"></span>
+                  <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+                    <span style="font-family:'Cinzel',serif;font-size:1.1rem;letter-spacing:.04em;color:#ecd9a8;">{{ c.name }}</span>
+                    <sc-if value="{{ c.notLocked }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-family:'Ubuntu Mono',monospace;font-size:.7rem;letter-spacing:.04em;text-transform:uppercase;">
+                      <span style="color:#9c8e74;">Cost · {{ c.cost }}</span>
+                      <span style="color:#7fae7f;">Effect · {{ c.out }}</span>
+                    </div>
+                    </sc-if>
+                    <sc-if value="{{ c.locked }}" hint-placeholder-val="{{ true }}"><span style="font-family:'Ubuntu Mono',monospace;font-size:.7rem;letter-spacing:.04em;color:#c98a6a;text-transform:uppercase;">Requires · {{ c.gate }}</span></sc-if>
+                  </div>
+                </div>
+                <button type="button" onclick="{{ c.onToggle }}" disabled="{{ c.locked }}" style="{{ c.toggleBtn }}">{{ c.btnLabel }}</button>
+              </div>
+            </sc-for>
+          </div>
+          <!-- Panvitium — unlocked -->
+          <sc-if value="{{ panUnlocked }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px;padding:24px;border:1px solid rgba(212,72,72,.55);border-radius:10px;background:radial-gradient(circle at 50% 0%,rgba(80,16,12,.7),rgba(28,8,8,.7));text-align:center;animation:panPulse 1.5s ease-in-out infinite;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:1.7rem;letter-spacing:.1em;color:#ff8a4a;text-shadow:0 0 18px rgba(255,110,50,.6);margin-bottom:8px;">Panvitium</div>
+            <p style="font-family:'EB Garamond',serif;font-style:italic;color:#e0a684;font-size:1.1rem;letter-spacing:.04em;margin:0 auto 16px;max-width:460px;">{{ panMaxim }}</p>
+            <button type="button" style="font-family:'Cinzel',serif;text-transform:uppercase;letter-spacing:.16em;font-size:.9rem;color:#fff1da;background:rgba(124,20,23,.9);border:1px solid rgba(255,120,60,.7);border-radius:5px;padding:13px 38px;cursor:pointer;box-shadow:0 0 22px rgba(255,90,40,.3);" style-hover="background:rgba(170,32,34,.95);">Unleash</button>
+          </div>
+          </sc-if>
+          <!-- Panvitium — sealed / not yet unlocked -->
+          <sc-if value="{{ panLocked }}" hint-placeholder-val="{{ true }}">
+          <div style="position:relative;margin-top:16px;padding:34px 24px;border:1px dashed rgba(120,108,86,.4);border-radius:10px;background:repeating-linear-gradient(45deg,rgba(10,8,7,.85),rgba(10,8,7,.85) 11px,rgba(20,16,12,.85) 11px,rgba(20,16,12,.85) 22px);text-align:center;">
+            <p style="font-family:'Cinzel',serif;font-weight:600;font-size:1rem;letter-spacing:.16em;color:#9c8e74;text-transform:uppercase;margin:0;">Requires every Sin at Level 3</p>
+          </div>
+          </sc-if>
+          </sc-if>
+          <!-- demo: preview Panvitium state -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-top:14px;">
+            <span style="font-family:'Ubuntu Mono',monospace;font-size:.62rem;letter-spacing:.1em;color:#615640;text-transform:uppercase;">Demo · Panvitium</span>
+            <button type="button" onclick="{{ togglePan }}" style="font-family:'Ubuntu Mono',monospace;font-size:.62rem;letter-spacing:.08em;color:#8a7e66;background:rgba(8,8,10,.5);border:1px solid rgba(196,158,74,.25);border-radius:4px;padding:5px 10px;cursor:pointer;text-transform:uppercase;" style-hover="border-color:rgba(196,158,74,.5);color:#c8b48a;">{{ panToggleLabel }}</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="">
+class Component extends DCLogic {
+  BASE_SINS = [
+    { key:'gula', name:'Mercatus Gulae', sinLabel:'Gula', hue:32, depth:14, baseDepth:14, cap:20, rev:312, foedus:2, level:3, deepen:980, cut:120, sell:1640, state:'open', effect:'spendPerCapita \u00D71.25 for this trade' },
+    { key:'luxuria', name:'Mercatus Luxuriae', sinLabel:'Luxuria', hue:344, depth:11, baseDepth:11, cap:16, rev:248, foedus:1, level:2, deepen:760, cut:90, sell:980, state:'open', effect:'+25% generation from its depths' },
+    { key:'avaritia', name:'Mercatus Avaritiae', sinLabel:'Avaritia', hue:46, depth:20, baseDepth:20, cap:20, rev:540, foedus:3, level:3, deepen:1320, cut:160, sell:3200, state:'open', effect:'invest cost \u00D70.995 per depth (compounds)' },
+    { key:'tristitia', name:'Mercatus Tristitiae', sinLabel:'Tristitia', hue:222, depth:6, baseDepth:6, cap:12, rev:88, foedus:0, level:1, deepen:410, cut:40, sell:260, state:'open', effect:'+0.825% suicide-rate multiplier per depth' },
+    { key:'ira', name:'Mercatus Irae', sinLabel:'Ira', hue:6, depth:9, baseDepth:9, cap:16, rev:176, foedus:1, level:2, deepen:620, cut:70, sell:610, state:'open', effect:'+0.825% murder-rate multiplier per depth' },
+    { key:'acedia', name:'Mercatus Acediae', sinLabel:'Acedia', hue:188, depth:4, baseDepth:4, cap:12, rev:52, foedus:0, level:1, deepen:280, cut:24, sell:120, state:'open', effect:'+0.825% offline gain rate multiplier per depth' },
+    { key:'vanagloria', name:'Mercatus Vanagloriae', sinLabel:'Vanagloria', hue:286, depth:7, baseDepth:7, cap:16, rev:134, foedus:1, level:2, deepen:540, cut:60, sell:480, state:'open', effect:'+0.25% of max influence as flat influence/s per 10 depths' },
+    { key:'superbia', name:'Mercatus Superbiae', sinLabel:'Superbia', hue:266, depth:0, baseDepth:1, cap:18, rev:0, foedus:0, level:0, deepen:0, cut:0, sell:0, state:'locked', effect:'depths cost \u00D71.25; take \u00D71.33; breeding \u00D71.33' },
+  ];
+
+  BASE_CER = [
+    { key:'bacchanal', name:'Bacchanal', cost:'100 gold/s \u00B7 10 influence/s', out:'10% increased reprobate generation', active:true, locked:false, gate:'Gula L1 \u00B7 Luxuria L1' },
+    { key:'charity', name:'Charity Drive', cost:'100 gold/s \u00B7 25 influence/s', out:'+200 gold/s (burns influence for gold)', active:false, locked:false, gate:'Avaritia L1 \u00B7 Vanagloria L1' },
+    { key:'gala', name:'Gala', cost:'250 gold/s', out:'+20 influence/s', active:false, locked:false, gate:'Superbia L1 \u00B7 Vanagloria L1' },
+    { key:'doom', name:'Doom Gathering', cost:'100 gold/s \u00B7 10 influence/s', out:'10% increased suicide rate', active:false, locked:false, gate:'Tristitia L1 \u00B7 Acedia L1' },
+    { key:'enrage', name:'Enraging Broadcast', cost:'25 influence/s', out:'10% increased murder rate', active:true, locked:false, gate:'Ira L1 \u00B7 Tristitia L1' },
+    { key:'dolce', name:'Dolce Far Niente', cost:'no upkeep', out:'1% higher offline gain rate', active:false, locked:false, gate:'Gula L1 \u00B7 Acedia L1' },
+    { key:'vegas', name:'Vegas', cost:'50% of gold income', out:'earn 1% of gold income as influence/s', active:false, locked:false, gate:'Luxuria L2 \u00B7 Avaritia L2 \u00B7 Gula L2 \u00B7 Acedia L2' },
+    { key:'crusade', name:'Crusade', cost:'50% of influence income', out:'earn 10\u00D7 influence income as gold/s', active:false, locked:true, gate:'Superbia L2 \u00B7 Ira L2 \u00B7 Vanagloria L2 \u00B7 Tristitia L2' },
+  ];
+
+  state = {
+    tab: 'mercatura',
+    panUnlocked: this.BASE_SINS.every((s) => s.level >= 3),
+    depths: Object.fromEntries(this.BASE_SINS.map((s) => [s.key, s.depth])),
+    active: Object.fromEntries(this.BASE_CER.map((c) => [c.key, c.active])),
+  };
+
+  togglePan = () => this.setState((s) => ({ panUnlocked: !s.panUnlocked }));
+
+  setTab = (val) => this.setState({ tab: val });
+  capOf(key) { return (this.BASE_SINS.find((s) => s.key === key) || {}).cap || 0; }
+  isLocked(key) { return (this.BASE_SINS.find((s) => s.key === key) || {}).state === 'locked'; }
+
+  deepen = (key) => {
+    if (this.isLocked(key)) return;
+    this.setState((s) => {
+      const d = { ...s.depths };
+      d[key] = Math.min((d[key] || 0) + 1, this.capOf(key));
+      return { depths: d };
+    });
+  };
+  cut = (key) => this.setState((s) => ({ depths: { ...s.depths, [key]: Math.max((s.depths[key] || 0) - 1, 0) } }));
+  sell = (key) => this.setState((s) => ({ depths: { ...s.depths, [key]: 0 } }));
+  toggle = (key) => {
+    const c = this.BASE_CER.find((x) => x.key === key);
+    if (!c || c.locked) return;
+    this.setState((s) => ({ active: { ...s.active, [key]: !s.active[key] } }));
+  };
+
+  tabStyle(val) {
+    const active = this.state.tab === val;
+    const base = { flex: '1 1 0', fontFamily: "'Cinzel', serif", fontSize: '.9rem', letterSpacing: '.13em', textTransform: 'uppercase', padding: '12px', cursor: 'pointer', border: '1px solid rgba(196,158,74,.22)', background: 'rgba(10,8,7,.4)', color: '#8d8068', transition: 'all .2s ease' };
+    return active
+      ? { ...base, color: '#e6a23c', borderColor: 'rgba(230,162,60,.55)', background: 'rgba(44,16,10,.55)', boxShadow: 'inset 0 0 18px rgba(230,120,40,.18)' }
+      : base;
+  }
+
+  renderVals() {
+    const ROMAN = ['', 'I', 'II', 'III', 'IV'];
+    const fmt = (n) => (n >= 100 ? String(Math.floor(n)) : String(Math.round(n * 100) / 100));
+    const baseCardB = { display: 'flex', flexDirection: 'column', gap: '13px', padding: '16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,.08)', background: 'rgba(12,10,9,.6)' };
+
+    const trades = this.BASE_SINS.map((s) => {
+      const depth = this.state.depths[s.key];
+      const locked = s.state === 'locked';
+      const capped = !locked && depth >= s.cap;
+      const pct = s.cap ? Math.round((depth / s.cap) * 100) + '%' : '0%';
+      const perRoot = s.baseDepth > 0 ? s.rev / s.baseDepth : 0;
+      const revLive = Math.round(perRoot * depth);
+      // Reprobate generation/s = MERCATUS_GEN_PER_DEPTH(0.02) × depth × generation clause mul
+      // (Luxuriae ×1.25, Superbiae ×1.33, all others ×1) — straight from mercatus.ts.
+      const genMul = s.key === 'luxuria' ? 1.25 : s.key === 'superbia' ? 1.33 : 1;
+      const genLive = 0.02 * depth * genMul;
+      const nextLock = locked
+        ? `Locked · opens at ${s.sinLabel} Level 1`
+        : `Depths beyond ${s.cap} require ${s.sinLabel} Level ${s.level + 1}`;
+      return {
+        key: s.key, name: s.name, symbol: s.symbol, cap: s.cap, depth, pct,
+        foedus: s.foedus, roman: ROMAN[s.foedus], hasFoedus: s.foedus > 0,
+        locked, capped, notLocked: !locked,
+        effect: s.effect,
+        nextLock,
+        revDisplay: locked ? '\u2014' : fmt(revLive),
+        genDisplay: locked ? '\u2014' : String(Math.round(genLive * 100) / 100),
+        showDivest: !locked && depth > 0,
+        deepenLabel: capped ? 'Capped' : 'Deepen',
+        deepSub: (locked || capped) ? '' : (s.deepen + ' gold'),
+        deepDisabled: locked || capped,
+        deepOpacity: (locked || capped) ? '0.45' : '1',
+        cutLabel: 'Cut back \u00B7 +' + s.cut + ' gold',
+        sellLabel: 'Sell all \u00B7 +' + s.sell + ' gold',
+        accent: `hsl(${s.hue} 60% 65%)`,
+        accentSoft: `hsl(${s.hue} 45% 50% / 0.14)`,
+        accentLine: `hsl(${s.hue} 52% 56% / 0.55)`,
+        cardStyleB: locked ? { ...baseCardB, opacity: 0.55, borderStyle: 'dashed' } : baseCardB,
+        onDeepen: () => this.deepen(s.key),
+        onCut: () => this.cut(s.key),
+        onSell: () => this.sell(s.key),
+      };
+    });
+
+    const beginBtn = { fontFamily: "'Cinzel', serif", textTransform: 'uppercase', letterSpacing: '.07em', fontSize: '.78rem', color: '#f0e2c0', background: '#7c1417', border: '1px solid #a01e22', borderRadius: '4px', padding: '9px 18px', cursor: 'pointer', flex: '0 0 auto' };
+    const stopBtn = { ...beginBtn, color: '#c8b48a', background: 'rgba(8,8,10,.5)', border: '1px solid rgba(196,158,74,.4)' };
+    const lockedBtn = { ...beginBtn, color: '#8d8068', background: 'rgba(8,8,10,.4)', border: '1px solid rgba(196,158,74,.2)', cursor: 'not-allowed', opacity: 0.7 };
+    const baseRiteC = { position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', padding: '15px 18px', borderRadius: '6px', border: '1px solid rgba(196,158,74,.2)', background: 'rgba(12,10,9,.4)' };
+
+    const ceremonies = this.BASE_CER.map((c) => {
+      const active = this.state.active[c.key];
+      return {
+        key: c.key, name: c.name, cost: c.cost, out: c.out, gate: c.gate,
+        active, locked: c.locked, notLocked: !c.locked,
+        btnLabel: active ? 'End' : (c.locked ? 'Locked' : 'Begin'),
+        dotColor: active ? '#e0934a' : (c.locked ? '#7c1417' : 'rgba(200,180,138,.4)'),
+        toggleBtn: active ? stopBtn : (c.locked ? lockedBtn : beginBtn),
+        riteStyleC: c.locked
+          ? { ...baseRiteC, opacity: 0.5, borderStyle: 'dashed' }
+          : (active
+            ? { ...baseRiteC, border: '1px solid rgba(230,140,50,.55)', background: 'rgba(44,16,10,.55)', boxShadow: 'inset 0 0 16px rgba(230,120,40,.22)' }
+            : baseRiteC),
+        onToggle: () => this.toggle(c.key),
+      };
+    });
+
+    const merc = this.state.tab === 'mercatura';
+    return {
+      trades, ceremonies, merc, comp: this.state.tab === 'compositum',
+      panUnlocked: this.state.panUnlocked,
+      panLocked: !this.state.panUnlocked,
+      panMaxim: 'Per vitia, ad solium.',
+      panToggleLabel: this.state.panUnlocked ? 'Show locked' : 'Show unlocked',
+      togglePan: this.togglePan,
+      sectionBlurb: merc
+        ? 'Deepen a investment\u2019s depth with gold; as its reach among the reprobates grows, so does the gold it takes each second plus a standing effect.'
+        : 'Multi-Sin ceremonies. Bind a rite to warp the world.',
+      mercTab: this.tabStyle('mercatura'),
+      compTab: this.tabStyle('compositum'),
+      mercClick: () => this.setTab('mercatura'),
+      compClick: () => this.setTab('compositum'),
+    };
+  }
+}
+</script>
+
+
+</body></html>
