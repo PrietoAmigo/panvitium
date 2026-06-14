@@ -52,11 +52,58 @@ export function deliverEmails(state: GameState, now: number): GameState {
   };
 }
 
-/** Count of unread emails (readAt === null). */
+/** Count of unread emails (readAt === null), excluding deleted mail. */
 export function unreadCount(state: GameState): number {
   let n = 0;
-  for (const e of state.lifetime.inbox) if (e.readAt === null) n += 1;
+  for (const e of state.lifetime.inbox) if (e.readAt === null && !e.deleted) n += 1;
   return n;
+}
+
+/**
+ * Reply-effect hook — INTENTIONALLY EMPTY, to be defined in a later iteration.
+ *
+ * `answerEmail` calls this with the email id and the chosen reply index so that answering a letter can
+ * carry a real, persistent consequence for the run — e.g. Gideon shielding capital from katabasis, a
+ * parish tithe resuming, a rival noting your silence. The human-readable spec for each branch is the
+ * reply's `effect` string in the strings catalog (`strings.emails.catalog[id].replies[idx].effect`).
+ *
+ * Today it is a pure pass-through: replies are recorded and shown, but move no resources. To wire the
+ * economy, switch on `id` (then `replyIdx`) and return the mutated state. Keep it pure (no I/O, no
+ * Date.now) so saves stay deterministic.
+ */
+export function applyEmailReplyEffect(state: GameState, _id: string, _replyIdx: number): GameState {
+  // No effects defined yet. See the per-reply `effect` annotations in strings.emails.catalog.
+  return state;
+}
+
+/**
+ * Record the player's chosen reply to an email: store the reply index, mark the message read if it
+ * wasn't, then run the (currently empty) reply-effect hook. Idempotent — re-answering overwrites the
+ * recorded index and re-runs the hook. No-op (same reference) if the id isn't a live inbox entry.
+ */
+export function answerEmail(
+  state: GameState,
+  id: string,
+  replyIdx: number,
+  now: number,
+): GameState {
+  if (!state.lifetime.inbox.some((e) => e.id === id && !e.deleted)) return state;
+  const inbox = state.lifetime.inbox.map((e) =>
+    e.id === id ? { ...e, answeredReply: replyIdx, readAt: e.readAt ?? now } : e,
+  );
+  const answered: GameState = { ...state, lifetime: { ...state.lifetime, inbox } };
+  return applyEmailReplyEffect(answered, id, replyIdx);
+}
+
+/**
+ * Flag an email as deleted. A flag rather than a removal so the once-only delivery dedup in
+ * `deliverEmails` (which keys off inbox ids) can't be defeated by deleting then re-triggering. No-op
+ * (same reference) if the id is absent or already deleted.
+ */
+export function deleteEmail(state: GameState, id: string): GameState {
+  if (!state.lifetime.inbox.some((e) => e.id === id && !e.deleted)) return state;
+  const inbox = state.lifetime.inbox.map((e) => (e.id === id ? { ...e, deleted: true } : e));
+  return { ...state, lifetime: { ...state.lifetime, inbox } };
 }
 
 /** Mark a single email read (no-op if already read or absent). Pure. */

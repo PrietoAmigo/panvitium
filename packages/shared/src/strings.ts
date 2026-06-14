@@ -321,6 +321,26 @@ export const strings = {
     from: 'From',
     back: 'Back to inbox',
     markAllRead: 'Mark all read',
+    // Mail-client chrome (two-pane rework). The decorative folders/compose/search/forward/archive
+    // sell the diegetic email program; only Inbox, Reply and Delete are wired.
+    compose: 'Compose',
+    folders: 'Folders',
+    inboxLabel: 'Inbox',
+    starred: 'Starred',
+    sent: 'Sent',
+    drafts: 'Drafts',
+    junk: 'Junk',
+    search: 'Search',
+    reply: 'Reply',
+    forward: 'Forward',
+    archive: 'Archive',
+    deleteLabel: 'Delete',
+    replyHint: 'This message awaits your reply \u2014 use Reply to answer.',
+    chooseReply: 'Choose your reply',
+    cancel: 'Cancel',
+    repliedLabel: 'You replied',
+    noMessage: 'No message selected.',
+    noCorrespondence: 'No correspondence.',
     // Provisional content (Phase 5.2) — sender / subject / body keyed by the sim email id.
     catalog: {
       welcome: {

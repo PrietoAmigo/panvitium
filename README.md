@@ -103,9 +103,28 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 739** (sim 494 · shared 56 · api 11 · web 178).
+**Current test count: 744** (sim 497 · shared 57 · api 11 · web 179).
 
-> **Latest change — UI: the Katabasis "Aether" sigil-binding sphere (Claude Design).** The Goetia
+> **Latest change — UI: the Emails two-pane mail client + a persisted reply/delete mechanic (Claude
+> Design).** The single-column inbox is replaced by the delivered desktop mail client: a (deliberately
+> light, diegetic) Ubuntu-style program with a decorative folder rail, a middle inbox list (unread dot,
+> sender, timestamp, answered `↩` marker, subject, snippet), and a reading pane (Reply / decorative
+> Forward·Archive / Delete, an avatar + sender + date header, then the body). It renders full-bleed in
+> the dark desk — a new `FULLBLEED` set in `PcWindow` drops the titled card for Emails, since the window
+> titlebar already names it, which also mirrors the design's own dark backdrop framing a light window.
+> Beyond the look, this lands the **full persisted machinery** for multiple-choice **replies** and
+> **delete**, with the economy effects left as a documented empty hook for a later pass: `ReceivedEmail`
+> gains additive-optional `answeredReply` + `deleted` (ADR-023, in state + save encode/decode); the sim
+> gains `answerEmail` (records the choice, reads the message, runs the hook), `deleteEmail` (a
+> hide-_flag_, not a removal, so a deleted email can't defeat the once-only delivery dedup and
+> re-trigger), and `applyEmailReplyEffect` — a pure no-op today, the single place to wire real reply
+> consequences. Avatars, snippets and dates are derived in the client (the catalog has none). Reply
+> **content** is also left hanging: the catalog's five emails define no `replies` yet, so they render as
+> plain, unanswerable mail until authored (the consuming type already accepts `replies` + `addr`). Seven
+> tests cover the answer / delete / no-op-hook sim, the ADR-023 save round-trip, and the client
+> (auto-open + read-on-display, delete-falls-back). Test count 744 (web 179).
+
+> **Prior change — UI: the Katabasis "Aether" sigil-binding sphere (Claude Design).** The Goetia
 > sigil page (the old carved-slab grid) is replaced by the delivered "Aether" design: the player
 > stands inside a spherical vault and looks outward at the 72 seals scattered on its surface (a
 > golden-angle distribution, projected each frame). Drag to look around; centre a seal; **Focus** it
@@ -124,7 +143,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > 72 seal PNGs ship under `katabasis/sigils/`. Seven tests cover the roman numbering, the real effect
 > formula, and the render. Test count 739 (web 178).
 
-> **Prior change — UI: the Maleficia Shelf "Niches" rework (Claude Design).** The Maleficia shelf
+> **Earlier change — UI: the Maleficia Shelf "Niches" rework (Claude Design).** The Maleficia shelf
 > is rebuilt from the delivered "Niches" design: the wooden glass-specimen cabinet becomes a wall of
 > carved **niches**, each owned maleficium recessed in a black alcove lit from within by its rarity
 > ember (common → gold, rare → teal, profane → red, anathema → violet), ordered anathema → common.

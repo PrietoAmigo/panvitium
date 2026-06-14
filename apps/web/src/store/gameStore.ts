@@ -31,6 +31,8 @@ import {
   enterKatabasis,
   markEmailRead as markEmailReadSim,
   markAllEmailsRead as markAllEmailsReadSim,
+  answerEmail as answerEmailSim,
+  deleteEmail as deleteEmailSim,
   bn,
   add,
   sub,
@@ -207,6 +209,13 @@ interface GameStore {
   markEmailRead: (id: string) => void;
   /** Mark every unread inbox email read. */
   markAllEmailsRead: () => void;
+  /**
+   * Record the player's chosen reply to an email (persisted), running the reply-effect hook. The hook
+   * is an empty extension point today, so this only stores the choice and shows the reply.
+   */
+  answerEmail: (id: string, replyIdx: number) => void;
+  /** Delete an email (a hide-flag; the entry is kept so it can't re-trigger). */
+  deleteEmail: (id: string) => void;
   /** Serialize the current game to a portable save string, or null if no game is loaded. */
   exportSave: () => string | null;
   /** Replace the current game with a pasted save string. Returns false if it isn't a valid save. */
@@ -518,6 +527,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
   markAllEmailsRead: () => {
     const s = get().state;
     if (s) set({ state: markAllEmailsReadSim(s, Date.now()) });
+  },
+
+  answerEmail: (id, replyIdx) => {
+    const s = get().state;
+    if (s) set({ state: answerEmailSim(s, id, replyIdx, Date.now()) });
+  },
+
+  deleteEmail: (id) => {
+    const s = get().state;
+    if (s) set({ state: deleteEmailSim(s, id) });
   },
 
   exportSave: () => {

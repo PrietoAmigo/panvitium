@@ -1317,6 +1317,12 @@ body {
     radial-gradient(circle at 75% 80%, rgba(119, 41, 83, 0.4), transparent 55%),
     linear-gradient(150deg, #3a0f30 0%, #2c001e 55%, #1a0411 100%);
 }
+
+/* Fullbleed programs (the Emails client) bring their own light window surface, so centre it in the
+   dark desk like a floating app rather than top-anchoring it in a card. */
+.pc-app--fullbleed {
+  align-items: center;
+}
 .pc-app-card {
   width: 100%;
   /* 25% wider (840→1050) so the menus fill the enlarged window with room to spare, rather than the

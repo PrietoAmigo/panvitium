@@ -50,6 +50,9 @@ const inboxEntrySchema = z.object({
   id: z.string(),
   receivedAt: z.number().int(),
   readAt: z.number().int().nullable(),
+  // Reply/delete bookkeeping. Additive-optional (ADR-023): absent on pre-reply saves.
+  answeredReply: z.number().int().nullable().optional(),
+  deleted: z.boolean().optional(),
 });
 
 const lifetimeSchema = z.object({
@@ -201,6 +204,8 @@ export function serializeGameState(state: GameState): SerializedGameState {
               id: e.id,
               receivedAt: e.receivedAt,
               readAt: e.readAt,
+              ...(e.answeredReply != null ? { answeredReply: e.answeredReply } : {}),
+              ...(e.deleted ? { deleted: true } : {}),
             })),
           }
         : {}),
@@ -278,6 +283,8 @@ export function deserializeGameState(s: SerializedGameState): GameState {
         id: e.id,
         receivedAt: e.receivedAt,
         readAt: e.readAt,
+        ...(e.answeredReply != null ? { answeredReply: e.answeredReply } : {}),
+        ...(e.deleted ? { deleted: true } : {}),
       })),
       ...(s.lifetime.defixio ? { defixio: { elapsed: s.lifetime.defixio.elapsed } } : {}),
       // Apex Katabasis-modifier flags + Morpheus lockout: conditional spread keeps them optional

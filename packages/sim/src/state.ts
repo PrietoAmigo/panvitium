@@ -171,6 +171,18 @@ export interface ReceivedEmail {
   receivedAt: number;
   /** Wall-clock ms when first opened, or null while unread. */
   readAt: number | null;
+  /**
+   * Index of the reply the player chose (into the catalog email's `replies`), or null/absent if the
+   * message is unanswered. Persisted so a reply (and its eventual effect) sticks across reloads.
+   * Additive-optional on the wire (ADR-023): pre-reply saves load with every email unanswered.
+   */
+  answeredReply?: number | null;
+  /**
+   * True once the player deletes the email. A *flag*, not a removal: `deliverEmails` dedups by inbox
+   * id, so dropping the entry would free the id to re-trigger. Deleted mail is hidden in the client
+   * and skipped by `unreadCount`. Additive-optional (ADR-023): absent → not deleted.
+   */
+  deleted?: boolean;
 }
 
 /** The complete gameplay state. */

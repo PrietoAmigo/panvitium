@@ -133,6 +133,29 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
   });
 });
 
+describe('inbox reply / delete — ADR-023 additive-optional round-trip', () => {
+  it('answeredReply + deleted survive the wire; untouched mail carries neither (defaults omitted)', () => {
+    const fresh = createInitialState('seed', 0);
+    const withMail: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        inbox: [
+          { id: 'welcome', receivedAt: 10, readAt: 20, answeredReply: 2 },
+          { id: 'class-action', receivedAt: 30, readAt: null, deleted: true },
+          { id: 'first-business', receivedAt: 40, readAt: null },
+        ],
+      },
+    };
+    const back = deserializeGameState(serializeGameState(withMail)).lifetime.inbox;
+    expect(back.find((e) => e.id === 'welcome')!.answeredReply).toBe(2);
+    expect(back.find((e) => e.id === 'class-action')!.deleted).toBe(true);
+    const plain = back.find((e) => e.id === 'first-business')!;
+    expect(plain.answeredReply).toBeUndefined();
+    expect(plain.deleted).toBeUndefined();
+  });
+});
+
 describe('Mercatus depths — ADR-023 additive-optional (a/b/c round-trip)', () => {
   it('(a) a save without mercatusDepths loads with every depth defaulting to 0', () => {
     const fresh = createInitialState('seed', 0);

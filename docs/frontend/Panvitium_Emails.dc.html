@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="b69f9d92-9a99-44cb-a129-ef52cb8b255e"></script>
+</head>
+<body>
+
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<style>/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("21125270-6c29-4e5f-a9c2-d184614a4702") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("af1c0a6b-9951-4807-9c32-65c52bf8a2c2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("21125270-6c29-4e5f-a9c2-d184614a4702") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("af1c0a6b-9951-4807-9c32-65c52bf8a2c2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("21125270-6c29-4e5f-a9c2-d184614a4702") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("af1c0a6b-9951-4807-9c32-65c52bf8a2c2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("8cedbe39-48ba-4e00-bcbc-1c979b75e23a") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("9db58c9b-f205-4551-9d03-ad226db74c8b") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("1f37476d-5c76-4e92-9c8e-93a080e9a1ff") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("1f3384b7-29aa-4a72-9f01-8f35db3a9d5f") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("9551e487-f743-4a6a-9cff-e6b6a9f3198b") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6dcf3f1a-6b4c-4ae4-9a3d-95ce7423c5eb") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c0021da2-4083-4137-b0ba-47cfa1555e78") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("50a39b6c-97f8-4ed1-a578-8c0caf4d440d") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("816feec1-ad0b-468a-8699-aa5c4c1318e1") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("eae7edf0-60c1-44ee-af7b-ad91e01a00de") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("4bc61117-009b-4b90-ab8f-01393b7fd6e1") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("36595cb5-08e5-48b5-8f15-024fd87b2f62") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c5103bb9-77b7-4c99-a78a-f8412d4433f2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("1fada63e-25ae-42db-8418-db4af9ba43cc") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("333ff6aa-84ad-4fb6-bc87-714c762301c3") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("8d6e55c4-7bd8-4f89-9c8f-a313279772b1") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("ba0b49cc-dd2b-4c3f-9ea1-b01ebfb41076") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("40cc3a4a-10ec-4890-b66c-5666af8a4fde") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("f75477a9-f834-4f42-aaab-b3e3b67824f7") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6ecd26dc-8989-4b57-816b-71d55dc673ff") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("41e4fb33-0c68-46c7-a98a-1ebd3b6facaf") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("1a1e942c-eac7-44f8-8626-3bbe5d85d5f5") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("e640caa9-efc4-4019-b556-5fda76164db0") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("7a9e46b9-83b6-4279-ad1f-61ae7217d8eb") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("f72ac969-4cdb-4f60-8a2b-9d0ecce835e6") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("a22b4126-2796-4f81-b2e7-c47e0a4c78d7") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("2743c022-abb4-443c-911e-d7d4264ca81e") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("90218c16-1a77-46ac-af42-14c2dc3357cb") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("c4670930-4657-4019-b8f7-540a6153fd6d") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("c500d767-dc8c-47d8-ab28-4b321a3bcb34") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("0799771c-6347-4f87-ab07-3a24a93cb857") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("d2db24ab-6403-46eb-bc97-49ca043e76e2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fcc6e714-2bbe-43b3-a716-1906e0524335") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("dd135d9d-3857-4c02-b3e1-c33d60bdae00") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("99356286-c03d-4bd9-9503-da75ad52aecf") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("5dab1bbb-5f0a-4e8f-95f2-4da668497c9b") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("113ed3ac-c60c-4ae1-ac11-c4b6d33cdcbb") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("619fb594-f707-4ef2-b5b2-6fb9e57325de") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("ac038072-81a1-448a-bab6-7bea603a0b82") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("f400c564-940a-44da-a4a8-8253defacb3c") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* greek-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("8c606e64-cd20-4e6c-96eb-41aef95562dd") format('woff2');
+  unicode-range: U+1F00-1FFF;
+}
+/* greek */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("a5f8f5f2-bcd7-442a-b586-0e8861a601ea") format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("276722ad-f47d-4f0a-9265-da67021c64d7") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Ubuntu Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("86bc63f9-4f00-4346-89cc-d3b799eb2297") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>
+  body { margin: 0; }
+</style>
+</helmet>
+<div style="min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 32px; background:radial-gradient(circle at 50% 18%, #2a0d22 0%, #160510 52%, #0a0407 100%); font-family:'Ubuntu',system-ui,sans-serif;">
+  <div style="width:100%; max-width:1240px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:14px;">
+      <span style="font-family:'Cinzel',serif; font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:#d8b658;">Emails — Option A</span>
+      <span style="font-size:13px; color:#9a8a6a;">desktop client · with preset replies</span>
+    </div>
+    <div style="width:100%; height:680px; border-radius:12px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.72), 0 0 0 1px rgba(0,0,0,.45); display:flex; flex-direction:column; background:#fbfbfb;">
+      <div style="height:46px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 10px 0 12px; background:linear-gradient(#34343a,#2b2b30); border-bottom:1px solid #18181b;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="display:inline-flex; align-items:center; gap:6px; font-size:14px; color:#ededed; background:#47474c; border-radius:7px; padding:5px 12px; cursor:pointer;">‹ Files</span>
+          <span style="font-family:'Ubuntu Mono',monospace; font-size:15px; color:#cfcfcf; margin-left:8px;">Emails</span>
+        </div>
+        <span style="width:30px; height:30px; border-radius:50%; background:#47474c; color:#ddd; display:flex; align-items:center; justify-content:center; font-size:1.1rem; line-height:1; cursor:pointer;" style-hover="background:#e95420; color:#fff;">×</span>
+      </div>
+      <div style="flex:1; min-height:0; display:flex; background:#fbfbfb;">
+        <aside style="width:190px; flex:0 0 auto; background:#efeef0; border-right:1px solid #e0dfe2; padding:14px 10px; display:flex; flex-direction:column; gap:2px;">
+          <button type="button" style="display:flex; align-items:center; gap:8px; background:#E95420; color:#fff; border:none; border-radius:8px; padding:9px 12px; font-size:13.5px; font-weight:500; cursor:pointer; margin-bottom:12px;">✎ Compose</button>
+          <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#9a979f; padding:4px 10px 6px;">Folders</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:7px; background:#ddd9e0; font-size:13.5px; color:#1a1620; font-weight:600;">
+            <span style="display:flex; align-items:center; gap:8px;">📥 Inbox</span>
+            <sc-if value="{{ badge }}" hint-placeholder-val="{{ true }}"><span style="background:#E95420; color:#fff; font-size:11px; font-weight:700; border-radius:999px; padding:1px 7px;">{{ badge }}</span></sc-if>
+          </div>
+          <div style="padding:8px 10px; font-size:13.5px; color:#56535d;">⭐ Starred</div>
+          <div style="padding:8px 10px; font-size:13.5px; color:#56535d;">➤ Sent</div>
+          <div style="padding:8px 10px; font-size:13.5px; color:#56535d;">📝 Drafts</div>
+          <div style="padding:8px 10px; font-size:13.5px; color:#56535d;">🚫 Junk</div>
+        </aside>
+        <div style="width:362px; flex:0 0 auto; border-right:1px solid #e6e5e8; display:flex; flex-direction:column; min-height:0; background:#fff;">
+          <div style="height:46px; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:0 16px; border-bottom:1px solid #ececec;">
+            <span style="font-size:14px; font-weight:600; color:#1a1620;">Inbox</span>
+            <span style="font-size:12.5px; color:#9a979f;">⌕  Search</span>
+          </div>
+          <div style="flex:1; min-height:0; overflow:auto;">
+            <sc-for list="{{ list }}" as="item" hint-placeholder-count="6">
+              <button type="button" onclick="{{ item.onSelect }}" style="{{ item.rowStyle }}" style-hover="background:#f4f7fc;">
+                <span style="width:9px; flex:0 0 auto; display:flex; justify-content:center; padding-top:5px;">
+                  <sc-if value="{{ item.unreadShow }}" hint-placeholder-val="{{ true }}"><span style="width:8px; height:8px; border-radius:50%; background:#2c7bbe; display:block;"></span></sc-if>
+                </span>
+                <span style="flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:3px;">
+                  <span style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                    <span style="{{ item.fromStyle }}">{{ item.from }}</span>
+                    <span style="display:flex; align-items:center; gap:5px; flex:0 0 auto;">
+                      <sc-if value="{{ item.answered }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px; color:#3a8a5a;">↩</span></sc-if>
+                      <span style="font-size:11.5px; color:#9a979f;">{{ item.time }}</span>
+                    </span>
+                  </span>
+                  <span style="{{ item.subjStyle }}">{{ item.subject }}</span>
+                  <span style="font-size:12px; color:#8d8a92; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ item.snippet }}</span>
+                </span>
+              </button>
+            </sc-for>
+            <sc-if value="{{ listEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:34px 18px; text-align:center; color:#b3b0b8; font-size:13px;">No correspondence.</div></sc-if>
+          </div>
+        </div>
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; background:#fff;">
+          <sc-if value="{{ open.hasOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1; min-height:0; display:flex; flex-direction:column;">
+              <div style="height:52px; flex:0 0 auto; display:flex; align-items:center; gap:6px; padding:0 16px; border-bottom:1px solid #ececec;">
+                <button type="button" onclick="{{ open.onReply }}" style="{{ open.replyBtnStyle }}">↩ Reply</button>
+                <span style="font-size:12.5px; color:#c2bfc6; background:#f7f6f8; border:1px solid #efeef0; border-radius:6px; padding:7px 12px; cursor:default;">↪ Forward</span>
+                <span style="flex:1;"></span>
+                <span style="font-size:12.5px; color:#c2bfc6; background:#f7f6f8; border:1px solid #efeef0; border-radius:6px; padding:7px 12px; cursor:default;">🗄 Archive</span>
+                <button type="button" onclick="{{ open.onDelete }}" style="font-size:12.5px; color:#9a3a2a; background:#fbeeea; border:1px solid #f0d6cd; border-radius:6px; padding:7px 12px; cursor:pointer;" style-hover="background:#f6e0d8;">🗑 Delete</button>
+              </div>
+              <div style="flex:1; min-height:0; overflow:auto;">
+                <div style="padding:24px 28px 0;">
+                  <h2 style="font-size:21px; font-weight:600; color:#1a1620; margin:0 0 16px; line-height:1.3;">{{ open.subject }}</h2>
+                  <div style="display:flex; gap:13px; align-items:center; padding-bottom:18px; border-bottom:1px solid #eee;">
+                    <span style="width:44px; height:44px; border-radius:50%; flex:0 0 auto; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:600; font-size:15px; background:{{ open.avatarBg }};">{{ open.initials }}</span>
+                    <div style="flex:1; min-width:0;">
+                      <div style="font-size:14.5px; font-weight:600; color:#1a1620;">{{ open.from }}</div>
+                      <div style="font-size:12.5px; color:#8d8a92;">{{ open.addr }}</div>
+                    </div>
+                    <div style="font-size:12.5px; color:#9a979f; text-align:right;">{{ open.date }}</div>
+                  </div>
+                </div>
+                <sc-if value="{{ open.showReplyHint }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:16px 28px 0; display:flex; align-items:center; gap:9px; color:#9a979f; font-size:13px;">
+                    <span>↩</span><span>This message awaits your reply — use <span style="color:#E95420; font-weight:500;">Reply</span> to answer.</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ open.isReplying }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:18px 28px 4px;">
+                    <div style="border:1px solid #e4e3e6; border-radius:10px; background:#fafafb; overflow:hidden;">
+                      <div style="padding:12px 16px; border-bottom:1px solid #ececec; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#9a979f; display:flex; justify-content:space-between; align-items:center;">
+                        <span>Choose your reply</span>
+                        <span onclick="{{ open.onCancel }}" style="cursor:pointer; color:#8d8a92; text-transform:none; letter-spacing:0; font-size:12.5px;">Cancel</span>
+                      </div>
+                      <div style="display:flex; flex-direction:column;">
+                        <sc-for list="{{ open.replyOptions }}" as="opt" hint-placeholder-count="2">
+                          <button type="button" onclick="{{ opt.onPick }}" style="display:flex; align-items:flex-start; text-align:left; width:100%; padding:14px 16px; border:none; border-bottom:1px solid #f0eff1; background:#fff; cursor:pointer; font-size:14px; color:#1a1620; font-weight:500; line-height:1.4;" style-hover="background:#f4f7fc;">{{ opt.text }}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ open.answered }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin:18px 28px 4px;">
+                    <div style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:#9a979f; margin-bottom:9px; display:flex; align-items:center; gap:7px;"><span style="color:#3a8a5a;">↩</span>You replied · {{ open.date }}</div>
+                    <div style="background:#eef3fb; border:1px solid #dfe9f6; border-radius:10px 10px 10px 2px; padding:12px 16px; font-size:14px; color:#1a2a3a; line-height:1.5;">{{ open.answeredText }}</div>
+                  </div>
+                </sc-if>
+
+                <div style="padding:20px 28px 30px; font-size:14.5px; line-height:1.72; color:#2c2a30; white-space:pre-wrap;">{{ open.body }}</div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ open.isEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="flex:1; display:flex; align-items:center; justify-content:center; color:#b3b0b8; font-size:14px;">No message selected.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="">
+class Component extends DCLogic {
+  EMAILS = [
+    {
+      id: 'gideon', from: 'Gideon Reyes', addr: 'g.reyes@reyescapital.example',
+      subject: 'Re: your holdings while you were away',
+      initials: 'GR', avatarBg: '#5a6b8c', time: 'Yesterday', date: 'Fri, May 8, 2015, 9:14 AM',
+      unread: true,
+      snippet: "I'll be candid — the liquid accounts came within a hair of zero…",
+      body: "I'll be candid: the liquid accounts came within a hair of zero while you were away. The standing instructions kept the visible side of the house breathing, but only just.\n\nLet me manage a larger share — the usual percentage — and we won't sail this close again. The legitimate-looking holdings are the part that survives whatever it is you do when you go quiet. Keep them with me.\n\n— Gideon",
+      replies: [
+        { text: 'Take the larger share — keep us afloat.', effect: 'Gideon shields more capital from katabasis. Liquid gold falls now.' },
+        { text: "I'll manage my own coin, Gideon.", effect: 'No change. His tone cools a degree.' },
+      ],
+    },
+    {
+      id: 'brennan', from: 'Fr. Tom Brennan', addr: 't.brennan@stmichaels-vesper.org',
+      subject: "We've missed you at St. Michael's",
+      initials: 'TB', avatarBg: '#6f7a48', time: 'Wed', date: 'Wed, May 6, 2015, 6:02 PM',
+      unread: true,
+      snippet: "It's been a long while since we saw you in a pew…",
+      body: "It's been a long while since we saw you in a pew, and longer since the monthly gift came through — I think the standing order lapsed while you were travelling.\n\nNo matter. I only wanted to know you're well. You've been good to this parish, and a parish remembers. Come by when the road brings you back.\n\nWarmly,\nFr. Tom",
+      replies: [
+        { text: 'Reinstate the monthly gift, Father.', effect: 'A standing tithe resumes. The parish thinks well of you.' },
+        { text: "I've been away. Soon, I promise.", effect: 'Goodwill held. Nothing changes yet.' },
+      ],
+    },
+    {
+      id: 'cescru', from: 'Fausto Cescru', addr: 'f.cescru@gild-noctis.example',
+      subject: 'We should talk, you and I',
+      initials: 'FC', avatarBg: '#8c5a44', time: 'Tue', date: 'Tue, May 5, 2015, 11:48 PM',
+      unread: true,
+      snippet: "Forgive a stranger's familiarity — I've watched your rise…",
+      body: "Forgive a stranger's familiarity — I've watched your rise with great interest, and I think we are more alike than either of us would admit aloud.\n\nI'm not asking for anything. Only a reply. I find a man tells you everything in how he answers a letter he didn't expect.\n\nUntil soon,\nF.",
+      replies: [
+        { text: 'Who are you, exactly?', effect: 'He reveals a little more. He is pleased you answered.' },
+        { text: "I don't reply to strangers.", effect: 'He notes your caution. The silence intrigues him.' },
+        { text: 'Come find me, then.', effect: "You've shown your teeth. He will remember the invitation." },
+      ],
+    },
+    {
+      id: 'vale', from: 'Dorian Vale', addr: 'd.vale@vesper-post.example',
+      subject: 'I want to speak to someone',
+      initials: 'DV', avatarBg: '#6a6a72', time: 'May 4', date: 'Mon, May 4, 2015, 2:17 AM',
+      unread: true,
+      snippet: "I bought what you were selling and I have not been myself…",
+      body: "I bought what you were selling and I have not been myself since. My wife says my eyes have gone flat.\n\nWho do I write to about this? Is anyone even reading these?",
+      replies: [
+        { text: 'There is nothing wrong with you.', effect: 'The letter is answered. Whether he believes it is his concern.' },
+      ],
+    },
+    {
+      id: 'tribune', from: 'The Vesper Tribune', addr: 'digest@vespertribune.example',
+      subject: 'A curious malaise in the quarter',
+      initials: 'VT', avatarBg: '#8c6f48', time: 'May 2', date: 'Sat, May 2, 2015, 7:00 AM',
+      unread: false,
+      snippet: 'Residents of the lower wards report a creeping listlessness…',
+      body: "Residents of the lower wards report a creeping listlessness — a taste for small ruin, a flatness behind the eyes. Our correspondents can find no cause.\n\nWe are sure it is nothing. We are sure of very little lately.",
+    },
+    {
+      id: 'bishop', from: 'Bishop A. Crane', addr: 'chancery@diocese-vesper.org',
+      subject: 'A boundary, plainly stated',
+      initials: 'AC', avatarBg: '#6b5a7a', time: 'Apr 29', date: 'Wed, Apr 29, 2015, 10:31 AM',
+      unread: false,
+      snippet: 'I will not trade pleasantries. The diocese is grateful…',
+      body: "I will not trade pleasantries. The diocese is grateful for your gifts; the diocese is not for sale.\n\nIf your associations with the vice trades continue, no sum will purchase your welcome here. Consider this the one warning courtesy permits.",
+    },
+    {
+      id: 'attorneys', from: 'Holloway & Crane', addr: 'notice@holloway-crane.law',
+      subject: 'NOTICE OF PENDING ACTION',
+      initials: 'HC', avatarBg: '#7a5a5a', time: 'Apr 27', date: 'Mon, Apr 27, 2015, 4:55 PM',
+      unread: false,
+      snippet: 'You are named in a class action brought by some four hundred…',
+      body: "You are named in a class action brought by some four hundred claimants alleging harm arising from your enterprises.\n\nPlease retain all records. Settlement may be possible. Restitution, we suspect, is not.\n\nHolloway & Crane, Attorneys at Law",
+    },
+    {
+      id: 'management', from: 'The Management', addr: 'ops@thework.invalid',
+      subject: 'Welcome to the work',
+      initials: 'M', avatarBg: '#4f7a70', time: 'Apr 20', date: 'Mon, Apr 20, 2015, 12:00 AM',
+      unread: false,
+      snippet: 'Your terminal is provisioned. Correspondence will arrive here…',
+      body: "Your terminal is provisioned. Correspondence will arrive here as the world begins to feel your attentions.\n\nMost of it will be complaints. Read them, or do not — the rot proceeds either way.",
+    },
+  ];
+
+  ACTIVE_REPLY = 'font-size:12.5px;color:#444;background:#f3f2f4;border:1px solid #e4e3e6;border-radius:6px;padding:7px 12px;cursor:pointer;';
+  DISABLED_REPLY = 'font-size:12.5px;color:#c2bfc6;background:#f7f6f8;border:1px solid #efeef0;border-radius:6px;padding:7px 12px;cursor:default;';
+
+  state = { sel: 'gideon', read: null, deleted: {}, answered: {}, replyingId: null };
+
+  componentDidMount() {
+    const seed = {};
+    this.EMAILS.forEach((e) => { if (!e.unread) seed[e.id] = true; });
+    this.setState({ read: seed });
+  }
+
+  readMap() {
+    if (this.state.read) return this.state.read;
+    const seed = {};
+    this.EMAILS.forEach((e) => { if (!e.unread) seed[e.id] = true; });
+    return seed;
+  }
+
+  pick(id) {
+    this.setState((s) => ({ sel: id, read: { ...(s.read || {}), [id]: true }, replyingId: null }));
+  }
+
+  startReply() {
+    this.setState((s) => ({ replyingId: s.sel }));
+  }
+
+  cancelReply() {
+    this.setState({ replyingId: null });
+  }
+
+  choose(idx) {
+    this.setState((s) => ({ answered: { ...(s.answered || {}), [s.sel]: idx }, replyingId: null }));
+  }
+
+  del() {
+    this.setState((s) => {
+      const id = s.sel;
+      const deleted = { ...(s.deleted || {}), [id]: true };
+      const remaining = this.EMAILS.filter((e) => !deleted[e.id]);
+      const nextSel = remaining.length ? remaining[0].id : null;
+      const read = { ...(s.read || {}) };
+      if (nextSel) read[nextSel] = true;
+      return { deleted, sel: nextSel, read, replyingId: null };
+    });
+  }
+
+  decA(it) {
+    const accent = it.selected ? '#E95420' : 'transparent';
+    const bg = it.selected ? '#eef3fb' : '#fff';
+    it.rowStyle = `display:flex;gap:10px;width:100%;text-align:left;padding:11px 14px 12px;border:none;border-bottom:1px solid #ececec;border-left:3px solid ${accent};background:${bg};cursor:pointer;`;
+    it.fromStyle = `font-size:13.5px;color:#1c1c1c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:${it.unreadShow ? 700 : 500};`;
+    it.subjStyle = `font-size:12.5px;color:${it.unreadShow ? '#1a1620' : '#56535d'};font-weight:${it.unreadShow ? 600 : 400};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;`;
+    return it;
+  }
+
+  renderVals() {
+    const read = this.readMap();
+    const deleted = this.state.deleted || {};
+    const answeredMap = this.state.answered || {};
+    const visible = this.EMAILS.filter((e) => !deleted[e.id]);
+
+    const list = visible.map((e) => this.decA({
+      ...e,
+      selected: e.id === this.state.sel,
+      unreadShow: !read[e.id],
+      answered: answeredMap[e.id] != null,
+      onSelect: () => this.pick(e.id),
+    }));
+    const badgeCount = list.filter((it) => it.unreadShow).length;
+    const cur = visible.find((e) => e.id === this.state.sel) || null;
+
+    let open;
+    if (!cur) {
+      open = { hasOpen: false, isEmpty: true, subject: '', from: '', addr: '', date: '', body: '', initials: '', avatarBg: '#ccc', replyOptions: [], isReplying: false, answered: false, showReplyHint: false, answeredText: '', answeredEffect: '', replyBtnStyle: this.DISABLED_REPLY, onReply: () => {}, onCancel: () => {}, onDelete: () => {} };
+    } else {
+      const answerable = Array.isArray(cur.replies) && cur.replies.length > 0;
+      const ansIdx = answeredMap[cur.id];
+      const isAnswered = ansIdx != null;
+      const isReplying = this.state.replyingId === cur.id && answerable && !isAnswered;
+      const replyDisabled = !answerable || isAnswered;
+      open = {
+        ...cur,
+        hasOpen: true,
+        isEmpty: false,
+        answered: isAnswered,
+        isReplying,
+        showReplyHint: answerable && !isAnswered && !isReplying,
+        answeredText: isAnswered ? cur.replies[ansIdx].text : '',
+        answeredEffect: isAnswered ? cur.replies[ansIdx].effect : '',
+        replyOptions: (cur.replies || []).map((r, i) => ({ text: r.text, effect: r.effect, onPick: () => this.choose(i) })),
+        replyBtnStyle: replyDisabled ? this.DISABLED_REPLY : this.ACTIVE_REPLY,
+        onReply: replyDisabled ? () => {} : () => this.startReply(),
+        onCancel: () => this.cancelReply(),
+        onDelete: () => this.del(),
+      };
+    }
+
+    return { list, open, badge: badgeCount > 0 ? badgeCount : null, listEmpty: list.length === 0 };
+  }
+}
+</script>
+
+
+</body></html>

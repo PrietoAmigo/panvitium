@@ -19,6 +19,10 @@ const EXECUTABLES = [
   { id: 'Logs', color: '#3a3a3e', glyph: '>_' },
 ] as const;
 
+// Programs that render their own full window surface (e.g. the Emails mail client) rather than sitting
+// in the dark titled card. They fill the desk area directly; the PC titlebar already names them.
+const FULLBLEED = new Set<string>(['Emails']);
+
 // The Studio desk PC — an Ubuntu-style file manager whose "files" are ritual programs. Full-screen
 // shell (does not use PanelShell). The chrome is the design; each launched program's body is the real
 // system component, supplied by `renderProgram`.
@@ -95,11 +99,15 @@ export function PcWindow({ renderProgram, onClose, badges }: PcWindowProps): Rea
                 {'\u00D7'}
               </button>
             </div>
-            <div className="pc-app">
-              <div className="pc-app-card">
-                <h3 className="pc-app-title">{running}</h3>
-                {renderProgram(running)}
-              </div>
+            <div className={'pc-app' + (FULLBLEED.has(running) ? ' pc-app--fullbleed' : '')}>
+              {FULLBLEED.has(running) ? (
+                renderProgram(running)
+              ) : (
+                <div className="pc-app-card">
+                  <h3 className="pc-app-title">{running}</h3>
+                  {renderProgram(running)}
+                </div>
+              )}
             </div>
           </>
         )}
