@@ -110,8 +110,10 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > border around them; they now fill the entire program area edge-to-edge so the desk behind is no
 > longer visible. `.pc-app--fullbleed` drops the padding/centring and becomes a plain block that
 > stretches its child; the Emails client root fills 100% × 100% (losing its floating size, rounded
-> corners and shadow); and Depraedatio's wallpaper fills too, with its scrollbar hidden (content
-> stays scrollable). Pure style change — no test or behaviour change; count unchanged at 746.
+> corners and shadow); and Depraedatio's grimoire now fills the whole window edge-to-edge over a dark
+> surface — its wallpaper layer no longer reuses the Ubuntu desk's orange/purple radial glow, and the
+> centred 880px card is gone, so no desk-like background shows around it (scrollbar hidden, content
+> still scrollable). Pure style change — no test or behaviour change; count unchanged at 746.
 
 > **Prior change — UI: the Depraedatio "merged proposal" rework (Claude Design).** The Mercatus
 > program (in the desk PC) is rebuilt from the delivered design: under one tab bar, **Vitium
