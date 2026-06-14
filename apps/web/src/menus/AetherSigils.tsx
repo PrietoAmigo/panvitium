@@ -155,6 +155,9 @@ export function AetherSigils({
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const sealRefs = useRef<(HTMLImageElement | null)[]>([]);
+  // Last glow filter written per seal — so we only touch style.filter (a paint) when it changes,
+  // not every frame.
+  const glowRef = useRef<string[]>([]);
 
   // Pure view state (never persisted): yaw/pitch + their momentum, and the drag latch.
   const yaw = useRef(0);
@@ -176,7 +179,7 @@ export function AetherSigils({
       const locked = id === SEMET_ID && !semet;
       const v = st.sigilBindings[id];
       const lit = v !== undefined && !isZero(v);
-      el.style.filter = locked
+      const glow = locked
         ? SEALED
         : i === sel
           ? SELGLOW
@@ -185,6 +188,10 @@ export function AetherSigils({
             : i === focusRef.current
               ? FOCUS_GLOW
               : COLD;
+      if (glowRef.current[i] !== glow) {
+        el.style.filter = glow;
+        glowRef.current[i] = glow;
+      }
     }
   };
 
@@ -260,7 +267,7 @@ export function AetherSigils({
         const locked = id === SEMET_ID && !semet;
         const v = st.sigilBindings[id];
         const lit = v !== undefined && !isZero(v);
-        el.style.filter = locked
+        const glow = locked
           ? SEALED
           : i === sel
             ? SELGLOW
@@ -269,6 +276,10 @@ export function AetherSigils({
               : i === focusRef.current
                 ? FOCUS_GLOW
                 : COLD;
+        if (glowRef.current[i] !== glow) {
+          el.style.filter = glow;
+          glowRef.current[i] = glow;
+        }
         if (z > CENTER_Z) {
           const dd = sx * sx + sy * sy;
           if (dd < bestDist) {

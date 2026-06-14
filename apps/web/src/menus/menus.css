@@ -4669,7 +4669,10 @@ body {
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  filter: url(#kat-degrade);
+  /* No url(#kat-degrade) here: an SVG filter over this full-viewport layer is re-rasterised every
+     frame as the 72 seals move, which defeats GPU compositing and makes the sphere drag janky. The
+     vault stays pixelated and the scanline/grain chrome still degrades the seals — the seal art is
+     already low-fi — so the look holds while the rotation stays smooth. */
 }
 .katabasis-flow .aether-seal {
   position: absolute;
@@ -4680,7 +4683,7 @@ body {
   margin: -32px 0 0 -32px;
   object-fit: contain;
   pointer-events: none;
-  will-change: transform, opacity, filter;
+  will-change: transform, opacity;
 }
 
 /* enclosure vignette (over the seals) + HUD legibility scrims */
@@ -4763,10 +4766,9 @@ body {
   align-items: center;
   gap: 13px;
   padding: 7px 9px 7px 15px;
-  background: rgba(9, 6, 5, 0.94);
+  background: rgba(9, 6, 5, 0.96);
   border: 1px solid rgba(201, 162, 39, 0.24);
   border-radius: 8px;
-  backdrop-filter: blur(3px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   max-width: min(92vw, 520px);
 }
