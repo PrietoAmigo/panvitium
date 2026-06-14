@@ -103,15 +103,13 @@ function fmtDate(ms: number): string {
 // --- Static styles --------------------------------------------------------------------------------
 
 const ROOT: CSSProperties = {
-  width: 'min(1040px, 100%)',
-  height: 'clamp(360px, 80vh, 600px)',
+  width: '100%',
+  height: '100%',
   display: 'flex',
-  borderRadius: 12,
   overflow: 'hidden',
   background: '#fbfbfb',
   color: '#1a1620',
   fontFamily: "'Ubuntu', system-ui, -apple-system, sans-serif",
-  boxShadow: '0 24px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.4)',
 };
 
 const SIDEBAR: CSSProperties = {

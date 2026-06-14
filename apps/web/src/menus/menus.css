@@ -1318,10 +1318,13 @@ body {
     linear-gradient(150deg, #3a0f30 0%, #2c001e 55%, #1a0411 100%);
 }
 
-/* Fullbleed programs (the Emails client) bring their own light window surface, so centre it in the
-   dark desk like a floating app rather than top-anchoring it in a card. */
+/* Fullbleed programs (the Emails client, Depraedatio) fill the entire desk area edge-to-edge — no
+   padding, no centring — so the dark Ubuntu desk wallpaper behind them is fully covered. Each such
+   program's own root supplies its surface and manages its own internal scrolling. */
 .pc-app--fullbleed {
-  align-items: center;
+  display: block;
+  padding: 0;
+  overflow: hidden;
 }
 .pc-app-card {
   width: 100%;

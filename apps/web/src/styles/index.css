@@ -2465,13 +2465,18 @@ body {
    ============================================================================ */
 
 .dep-wallpaper {
+  width: 100%;
   height: 100%;
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox — keep scrollable, hide the visible bar */
   padding: 30px;
   background:
     radial-gradient(circle at 26% 16%, rgba(233, 84, 32, 0.2), transparent 46%),
     radial-gradient(circle at 78% 82%, rgba(119, 41, 83, 0.4), transparent 56%),
     linear-gradient(150deg, #3a0f30 0%, #2c001e 55%, #1a0411 100%);
+}
+.dep-wallpaper::-webkit-scrollbar {
+  display: none; /* WebKit/Chromium — hide the visible bar */
 }
 .dep-grimoire {
   max-width: 880px;

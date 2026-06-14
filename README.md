@@ -105,7 +105,15 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 746** (sim 497 · shared 57 · api 11 · web 181).
 
-> **Latest change — UI: the Depraedatio "merged proposal" rework (Claude Design).** The Mercatus
+> **Latest change — UI tweak: full-bleed PC programs now fill the desk.** The two full-bleed
+> programs (Emails and Depraedatio) were floating in the dark Ubuntu desk wallpaper with a padded
+> border around them; they now fill the entire program area edge-to-edge so the desk behind is no
+> longer visible. `.pc-app--fullbleed` drops the padding/centring and becomes a plain block that
+> stretches its child; the Emails client root fills 100% × 100% (losing its floating size, rounded
+> corners and shadow); and Depraedatio's wallpaper fills too, with its scrollbar hidden (content
+> stays scrollable). Pure style change — no test or behaviour change; count unchanged at 746.
+
+> **Prior change — UI: the Depraedatio "merged proposal" rework (Claude Design).** The Mercatus
 > program (in the desk PC) is rebuilt from the delivered design: under one tab bar, **Vitium
 > Mercatura** becomes a Sigil Grid of eight per-Sin cards — a vertical depth bar (depth / cap), the
 > live revenue (gold/s) and reprobate generation (reprobates/s), the trade's standing effect, the
@@ -124,7 +132,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > locked cards at a fresh start, and the tab switch to the rites plus the sealed gate. Test count 746
 > (web 181).
 
-> **Prior change — UI: the Emails two-pane mail client + a persisted reply/delete mechanic (Claude
+> **Earlier change — UI: the Emails two-pane mail client + a persisted reply/delete mechanic (Claude
 > Design).** The single-column inbox is replaced by the delivered desktop mail client: a (deliberately
 > light, diegetic) Ubuntu-style program with a decorative folder rail, a middle inbox list (unread dot,
 > sender, timestamp, answered `↩` marker, subject, snippet), and a reading pane (Reply / decorative
