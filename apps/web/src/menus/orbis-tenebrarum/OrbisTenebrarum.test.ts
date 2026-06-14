@@ -16,6 +16,7 @@ import { act, createElement, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useGameStore } from '../../store/gameStore.js';
 import { OrbisTenebrarum } from './index.js';
+import { WORLD_LAND } from './orbis.land.js';
 import type { OrbisFind } from './index.js';
 import { IndagatioEmptioProgram } from '../../ui/panels.js';
 
@@ -184,6 +185,25 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     );
     expect(container!.querySelector<HTMLButtonElement>('.orbis-cast-btn')!.disabled).toBe(true);
     expect(container!.querySelector('.orbis-status')).not.toBeNull();
+  });
+});
+
+describe('bundled world coastline data', () => {
+  it('ships non-empty rings of in-bounds [lon, lat] pairs for the globe to draw', () => {
+    expect(WORLD_LAND.length).toBeGreaterThan(50);
+    let points = 0;
+    let valid = true;
+    for (const ring of WORLD_LAND) {
+      if (ring.length % 2 !== 0 || ring.length < 8) valid = false;
+      for (let i = 0; i < ring.length; i += 2) {
+        const lon = ring[i]!;
+        const lat = ring[i + 1]!;
+        if (lon < -180 || lon > 180 || lat < -90 || lat > 90) valid = false;
+      }
+      points += ring.length / 2;
+    }
+    expect(valid).toBe(true);
+    expect(points).toBeGreaterThan(2000);
   });
 });
 

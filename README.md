@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 750** (sim 497 · shared 57 · api 11 · web 185).
+**Current test count: 751** (sim 497 · shared 57 · api 11 · web 186).
 
 > **Latest change — UI: the Indagatio + Emptio merge into "Orbis Tenebrarum" (Claude Design).** The
 > two separate PC apps become one. The **Emptio** desktop app is removed (its tile, its `PcGroupId`
@@ -117,13 +117,16 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > `state.lifetime.maleficia` and gold, Cast runs `act('indagatio')`, Acquire runs `act('emptio', id)`,
 > and the search duration reflects `categoryEfficiency`. The wrapper `IndagatioEmptioProgram` replaces
 > the old `IndagatioGroup` / `EmptioGroup` (and the now-dead `AcolyteSummary`), and the program renders
-> full-bleed inside the PC window via the `FULLBLEED` set. The globe is hand-rolled (in-file
-> orthographic projection + graticule, no new dependencies); the design's optional d3-geo continent
-> outlines are dropped to keep the install-free apply flow intact — they can be restored later per the
-> archived `INTEGRATION.md`. One acolyte-delegation control the old Indagatio screen carried is not in
-> the new design (the underlying sim mechanic is untouched). Four render-smoke tests cover the globe
-> stage + Cast control, the Emptio rows, the detail + Acquire callbacks, the search-disabled state,
-> and the live-wired merged surface. Test count 750 (web 185).
+> full-bleed inside the PC window via the `FULLBLEED` set. The globe is hand-rolled with no new
+> dependencies — an in-file orthographic `project()` (back-hemisphere clipping) plus a graticule — and
+> the continents are drawn from a bundled, compressed Natural Earth 110m coastline (`orbis.land.ts`,
+> ~50 KB, rounded to 0.1° with tiny islands dropped) projected with that same math, so the recognisable
+> landmasses render without the d3-geo / topojson / world-atlas packages the design assumed (the
+> install-free apply flow stays intact). One acolyte-delegation control the old Indagatio screen
+> carried is not in the new design (the underlying sim mechanic is untouched). Five render-smoke tests
+> cover the globe stage + Cast control, the Emptio rows, the detail + Acquire callbacks, the
+> search-disabled state, the live-wired merged surface, and the bundled coastline dataset. Test count
+> 751 (web 186).
 
 > **Prior change — UI tweak: full-bleed PC programs now fill the desk.** The two full-bleed
 > programs (Emails and Depraedatio) were floating in the dark Ubuntu desk wallpaper with a padded

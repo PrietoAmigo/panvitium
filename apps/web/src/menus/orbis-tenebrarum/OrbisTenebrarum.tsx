@@ -16,6 +16,7 @@
 
 import { useEffect, useRef, type RefObject, type ReactElement } from 'react';
 import { ORBIS_RARITY, coordForFind } from './orbis.data.js';
+import { WORLD_LAND } from './orbis.land.js';
 import type { OrbisFind, OrbisRarity, OrbisTenebrarumProps } from './orbis.types.js';
 
 const RARITIES: readonly OrbisRarity[] = ['common', 'rare', 'profane', 'anathema'];
@@ -104,6 +105,31 @@ function traceGraticule(
     let pen = false;
     for (let lon = -180; lon <= 180; lon += 3) {
       const p = project(lon, lat, cLon, cLat, R, c);
+      if (p) {
+        if (pen) ctx.lineTo(p[0], p[1]);
+        else {
+          ctx.moveTo(p[0], p[1]);
+          pen = true;
+        }
+      } else pen = false;
+    }
+  }
+}
+
+/** Trace the front-facing coastlines (bundled Natural Earth 110m land) into the path, breaking the
+ * pen at the horizon exactly as the graticule does. */
+function traceLand(
+  ctx: CanvasRenderingContext2D,
+  cLon: number,
+  cLat: number,
+  R: number,
+  c: number,
+): void {
+  ctx.beginPath();
+  for (const ring of WORLD_LAND) {
+    let pen = false;
+    for (let i = 0; i < ring.length; i += 2) {
+      const p = project(ring[i]!, ring[i + 1]!, cLon, cLat, R, c);
       if (p) {
         if (pen) ctx.lineTo(p[0], p[1]);
         else {
@@ -308,8 +334,17 @@ function useOrbisGlobe(
       ctx.fill();
       ctx.clip();
       traceGraticule(ctx, e.cLon, e.cLat, R2, c);
-      ctx.strokeStyle = 'rgba(210,200,170,.12)';
-      ctx.lineWidth = W * 0.0013;
+      ctx.strokeStyle = 'rgba(210,200,170,.1)';
+      ctx.lineWidth = W * 0.0012;
+      ctx.stroke();
+      // continents — traced once, stroked twice (soft jade body + crisp sand coast)
+      traceLand(ctx, e.cLon, e.cLat, R2, c);
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(120,196,170,.16)';
+      ctx.lineWidth = W * 0.006;
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(224,206,160,.62)';
+      ctx.lineWidth = W * 0.0017;
       ctx.stroke();
       ctx.restore();
       const sg = ctx.createRadialGradient(c, c, R2 * 0.55, c, c, R2);
