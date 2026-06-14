@@ -4635,9 +4635,9 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background:
-    radial-gradient(circle at 50% 50%, rgba(230, 162, 60, 0.1), transparent 34%),
-    radial-gradient(circle at 50% 50%, #140d08 0%, #0a0806 54%, #050403 92%);
+  /* Neutral dark falloff only. The design's warm centre glow is dropped: under #kat-degrade its
+     faint gold posterised to a dark red disc, and a soft gold haze wasn't wanted either. */
+  background: radial-gradient(circle at 50% 50%, #140d08 0%, #0a0806 54%, #050403 92%);
   filter: url(#kat-degrade);
 }
 .katabasis-flow .aether-ring {
