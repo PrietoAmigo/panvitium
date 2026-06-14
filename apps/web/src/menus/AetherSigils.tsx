@@ -14,7 +14,7 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
-import { HoldButton, SEMET_ID, GOETIA_BOON } from './Katabasis.js';
+import { HoldButton, SEMET_ID, GOETIA_BOON } from './katabasisShared.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // "Aether" — the sigil-binding screen of the Katabasis, ported from the Claude
