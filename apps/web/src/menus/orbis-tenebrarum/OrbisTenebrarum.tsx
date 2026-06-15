@@ -586,6 +586,8 @@ export function OrbisTenebrarum({
   gold,
   searching,
   searchDuration = '30:00',
+  searchRemaining = null,
+  emptioProgress = null,
   selectedId = null,
   onCast,
   onSelect,
@@ -624,8 +626,10 @@ export function OrbisTenebrarum({
             Cast the Search
           </button>
           <div className="orbis-meter">
-            <span className="orbis-meter-label">Duration</span>
-            <span className="orbis-meter-value">{searchDuration}</span>
+            <span className="orbis-meter-label">{searching ? 'Time left' : 'Duration'}</span>
+            <span className={`orbis-meter-value${searching ? ' is-counting' : ''}`}>
+              {searching ? (searchRemaining ?? searchDuration) : searchDuration}
+            </span>
           </div>
         </div>
 
@@ -647,21 +651,40 @@ export function OrbisTenebrarum({
         </div>
 
         <div className="orbis-list">
-          {finds.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              className={`orbis-row${f.id === selectedId ? ' is-selected' : ''}`}
-              onClick={() => onSelect(f.id)}
-            >
-              <span className={`orbis-dot orbis-dot--${f.rarity}`} aria-hidden="true" />
-              <span className="orbis-row-body">
-                <span className="orbis-row-name">{f.name}</span>
-                <span className="orbis-row-effect">{f.effect}</span>
-              </span>
-              <span className="orbis-row-cost">{f.costLabel}</span>
-            </button>
-          ))}
+          {finds.map((f) => {
+            const buying =
+              emptioProgress && emptioProgress.id === f.id ? emptioProgress.fraction : null;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                className={`orbis-row${f.id === selectedId ? ' is-selected' : ''}${buying !== null ? ' is-buying' : ''}`}
+                onClick={() => onSelect(f.id)}
+              >
+                <span className={`orbis-dot orbis-dot--${f.rarity}`} aria-hidden="true" />
+                <span className="orbis-row-body">
+                  <span className="orbis-row-name">{f.name}</span>
+                  {f.effect && <span className="orbis-row-effect">{f.effect}</span>}
+                  {buying !== null && (
+                    <span
+                      className="orbis-row-progress"
+                      role="progressbar"
+                      aria-label="Emptio in progress"
+                      aria-valuenow={Math.round(buying * 100)}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <span
+                        className="orbis-row-progress-fill"
+                        style={{ width: `${(buying * 100).toFixed(1)}%` }}
+                      />
+                    </span>
+                  )}
+                </span>
+                <span className="orbis-row-cost">{f.costLabel}</span>
+              </button>
+            );
+          })}
         </div>
 
         {selected && (
@@ -671,7 +694,7 @@ export function OrbisTenebrarum({
             </span>
             <h4 className="orbis-detail-name">{selected.name}</h4>
             <p className="orbis-detail-desc">{selected.desc}</p>
-            <p className="orbis-detail-effect">{selected.effect}</p>
+            {selected.effect && <p className="orbis-detail-effect">{selected.effect}</p>}
             <button
               type="button"
               className={`orbis-acquire ${selected.acquired ? 'is-owned' : selected.affordable ? 'is-affordable' : 'is-locked'}`}

@@ -15,7 +15,7 @@ export interface OrbisFind {
   name: string;
   /** Rarity band — REAL, from the sim catalog. Drives pin/badge colour. */
   rarity: OrbisRarity;
-  /** One-line effect — REAL, from the sim catalog. */
+  /** One-line effect — REAL, from the sim catalog. Empty string when the relic grants no effect to show. */
   effect: string;
   /** Grimoire flavour line — REAL, from the sim catalog. */
   desc: string;
@@ -42,6 +42,12 @@ export interface OrbisTenebrarumProps {
   searching: boolean;
   /** Indagatio cycle length, PRE-FORMATTED, e.g. `'30:00'`. Defaults to `'30:00'`. */
   searchDuration?: string;
+  /** PRE-FORMATTED time left in the running Indagatio, e.g. `'04:12'`; shown as a live countdown while
+   * `searching`. Null when idle, in which case the static `searchDuration` estimate is shown instead. */
+  searchRemaining?: string | null;
+  /** The in-flight Emptio buy, if any: which find id is being acquired and how far along (0→1). Drives a
+   * progress bar on that ledger row. Null when no Emptio is running. Emptio does NOT spin the globe. */
+  emptioProgress?: { id: string; fraction: number } | null;
   /** Currently inspected find id. Drives the globe's focus tween and the detail panel. */
   selectedId?: string | null;
   /** Begin an Indagatio search. */

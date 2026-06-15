@@ -163,9 +163,12 @@ function AcolyteControls({ actionId }: { actionId: string }): ReactElement | nul
   );
 }
 
-/** True while a player-driven rite is in flight (02 §3: one action at a time). */
+/** True while a player-driven rite holds the slot (02 §3: one at a time). Indagatio scries in the
+ * background and does NOT count, so Suasio/Decimatio/Emptio stay available while a search runs. */
 function useUnderway(): boolean {
-  return useGameStore((s) => (s.state ? s.state.lifetime.actionQueue.length > 0 : false));
+  return useGameStore((s) =>
+    s.state ? s.state.lifetime.actionQueue.some((t) => t.actionId !== 'indagatio') : false,
+  );
 }
 
 /** The three temptations in scroll order, with their alchemical sigils (☿ Mercury, ✴ the eight
@@ -190,7 +193,9 @@ const SUASIO_LEVEL_ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
 export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
-  const head = useGameStore((s) => s.state?.lifetime.actionQueue[0] ?? null);
+  const head = useGameStore(
+    (s) => s.state?.lifetime.actionQueue.find((t) => t.actionId !== 'indagatio') ?? null,
+  );
 
   const headerProps = {
     eyebrow: strings.opera.suasioEyebrow,
@@ -203,7 +208,7 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
 
   const influence = floor(state.lifetime.influence).toNumber();
   const eff = categoryEfficiency(state, 'suasio');
-  const underway = state.lifetime.actionQueue.length > 0;
+  const underway = state.lifetime.actionQueue.some((t) => t.actionId !== 'indagatio');
   const names: Record<string, string> = {
     suggestion: strings.opera.suggestion,
     logismoi: strings.opera.logismoi,
@@ -374,8 +379,8 @@ const PC_GROUPS: { id: PcGroupId; label: string }[] = [
 export function IndagatioEmptioProgram(): ReactElement {
   const state = useGameStore((s) => s.state);
   const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'indagatio') : 1));
+  const emptioEff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'emptio') : 1));
   const act = useGameStore((s) => s.act);
-  const underway = useUnderway();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
 
@@ -393,7 +398,8 @@ export function IndagatioEmptioProgram(): ReactElement {
         id,
         name: def.name,
         rarity: def.rarity,
-        effect: `+${def.invokingPower} invoking power`,
+        // Only surface the invoking-power line for relics that actually grant >= 1 (some are flavour).
+        effect: def.invokingPower >= 1 ? `+${def.invokingPower} invoking power` : '',
         desc: def.description,
         costLabel: `${price} g`,
         acquired,
@@ -402,15 +408,37 @@ export function IndagatioEmptioProgram(): ReactElement {
     ];
   });
 
+  // Indagatio scries in the background (its own timer, not the player slot); Emptio is a foreground
+  // buy. The globe spin + countdown read the Indagatio timer; a per-row bar reads the Emptio timer.
+  const queue = state.lifetime.actionQueue;
+  const indagatioTimer = queue.find((t) => t.actionId === 'indagatio') ?? null;
+  const emptioTimer = queue.find((t) => t.actionId === 'emptio') ?? null;
+
   const baseSec = ACTIONS.indagatio?.baseTimeSeconds ?? 1800;
   const actualSec = Math.max(1, Math.floor(baseSec / Math.max(eff, 1e-9)));
+
+  const emptioBase = ACTIONS.emptio?.baseTimeSeconds ?? 60;
+  const emptioTotal = Math.max(1, emptioBase / Math.max(emptioEff, 1e-9));
+  const emptioProgress = emptioTimer?.target
+    ? {
+        id: emptioTimer.target,
+        fraction: Math.min(
+          1,
+          Math.max(0, (emptioTotal - emptioTimer.remainingSeconds) / emptioTotal),
+        ),
+      }
+    : null;
 
   return (
     <OrbisTenebrarum
       finds={finds}
       gold={formatBigNum(floor(state.lifetime.gold))}
-      searching={underway}
+      searching={indagatioTimer !== null}
       searchDuration={formatDuration(actualSec)}
+      searchRemaining={
+        indagatioTimer ? formatDuration(Math.ceil(indagatioTimer.remainingSeconds)) : null
+      }
+      emptioProgress={emptioProgress}
       selectedId={selectedId}
       onCast={() => act('indagatio')}
       onSelect={setSelectedId}

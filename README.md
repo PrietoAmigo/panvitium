@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 754** (sim 497 · shared 57 · api 11 · web 189).
+**Current test count: 758** (sim 498 · shared 57 · api 11 · web 192).
 
 > **Latest change — UI: the Indagatio + Emptio merge into "Orbis Tenebrarum" (Claude Design).** The
 > two separate PC apps become one. The **Emptio** desktop app is removed (its tile, its `PcGroupId`
@@ -131,11 +131,18 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > Maleficia are pinned only on land: `orbis.land.ts` derives an `isLand` test and a spread of
 > `LAND_POINTS` anchors (4° grid, Antarctic cap excluded) once from the same outline, and
 > `coordForFind` snaps any sea coordinate to the nearest anchor while unlisted ids hash directly into
-> the set (memoised per id so the pin loop stays cheap). One acolyte-delegation control the old
-> Indagatio screen carried is not in the new design (the underlying sim mechanic is untouched). Eight
-> tests cover the globe stage + Cast control, the Emptio rows, the detail + Acquire callbacks, the
-> search-disabled state, the live-wired merged surface, the bundled coastline dataset, and that every
-> maleficium resolves onto land. Test count 754 (web 189).
+> the set (memoised per id so the pin loop stays cheap). Indagatio now scries in the **background**:
+> `startAction` no longer counts it toward the single player-action slot (02 §3), so a search runs
+> while the player still works Suasio/Decimatio/Emptio — and the slot-aware UI reads
+> `actionQueue.find(t => t.actionId !== 'indagatio')` so a running search never disables those rites.
+> The Cast control shows a live **time-left countdown** while a search runs; **Emptio** (which stays a
+> foreground, slot-holding buy) no longer spins the globe and instead draws a **progress bar** on the
+> maleficium row being acquired; and the `+N invoking power` line is shown only for relics that grant
+> at least 1. One acolyte-delegation control the old Indagatio screen carried is not in the new design
+> (the underlying sim mechanic is untouched). Twelve tests cover the globe stage + Cast control, the
+> Emptio rows, the detail + Acquire callbacks, the search-disabled state, the live-wired merged
+> surface, the bundled coastline dataset, on-land placement, the background-scry slot rule, the search
+> countdown, the Emptio progress bar, and the effect-line gating. Test count 758 (web 192).
 
 > **Prior change — UI tweak: full-bleed PC programs now fill the desk.** The two full-bleed
 > programs (Emails and Depraedatio) were floating in the dark Ubuntu desk wallpaper with a padded

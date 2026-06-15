@@ -297,8 +297,14 @@ export function startAction(
     return { ok: false, reason: 'The world is held in Morpheus\u2019s stillness.' };
   }
 
-  // One player-driven action at a time (02 §3).
-  if (state.lifetime.actionQueue.length > 0) {
+  // One player-driven action at a time (02 §3) — EXCEPT Indagatio, which scries in the background
+  // and does not occupy the player slot: it neither blocks nor is blocked by Suasio/Decimatio/Emptio.
+  // Only one Indagatio may run at once (the Cast control is single).
+  if (actionId === 'indagatio') {
+    if (state.lifetime.actionQueue.some((t) => t.actionId === 'indagatio')) {
+      return { ok: false, reason: 'A scrying is already underway.' };
+    }
+  } else if (state.lifetime.actionQueue.some((t) => t.actionId !== 'indagatio')) {
     return { ok: false, reason: 'A rite is already underway.' };
   }
 

@@ -208,6 +208,61 @@ describe('bundled world coastline data', () => {
   });
 });
 
+describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating', () => {
+  it('shows a live time-left countdown while searching', () => {
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds: MOCK_FINDS,
+        gold: '1,000',
+        searching: true,
+        searchDuration: '05:00',
+        searchRemaining: '02:30',
+        onCast: () => {},
+        onSelect: () => {},
+        onAcquire: () => {},
+      }),
+    );
+    const meter = container!.querySelector('.orbis-meter-value');
+    expect(meter?.textContent).toBe('02:30');
+    expect(meter?.className).toContain('is-counting');
+  });
+
+  it('renders an Emptio progress bar only on the row being bought', () => {
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds: MOCK_FINDS,
+        gold: '1,000',
+        searching: false,
+        emptioProgress: { id: MOCK_FINDS[0]!.id, fraction: 0.4 },
+        onCast: () => {},
+        onSelect: () => {},
+        onAcquire: () => {},
+      }),
+    );
+    const fill = container!.querySelector(
+      '.orbis-row.is-buying .orbis-row-progress-fill',
+    ) as HTMLElement | null;
+    expect(fill).not.toBeNull();
+    expect(fill!.style.width).toBe('40%');
+    expect(container!.querySelectorAll('.orbis-row-progress').length).toBe(1);
+  });
+
+  it('omits the effect line when a relic grants no effect to show', () => {
+    const finds: OrbisFind[] = [{ ...MOCK_FINDS[0]!, effect: '' }];
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds,
+        gold: '1,000',
+        searching: false,
+        onCast: () => {},
+        onSelect: () => {},
+        onAcquire: () => {},
+      }),
+    );
+    expect(container!.querySelector('.orbis-row-effect')).toBeNull();
+  });
+});
+
 describe('maleficia are placed on land', () => {
   it('the curated coordinate table sits entirely on land', () => {
     for (const [lon, lat] of Object.values(MALEFICIA_COORDS)) {
