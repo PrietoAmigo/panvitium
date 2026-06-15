@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 751** (sim 497 · shared 57 · api 11 · web 186).
+**Current test count: 754** (sim 497 · shared 57 · api 11 · web 189).
 
 > **Latest change — UI: the Indagatio + Emptio merge into "Orbis Tenebrarum" (Claude Design).** The
 > two separate PC apps become one. The **Emptio** desktop app is removed (its tile, its `PcGroupId`
@@ -127,11 +127,15 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > get wrong. This replaces an earlier polygon limb-fill that could invert (paint sea as land) while
 > dragging, when a continent's hidden side passed near the antipode. The visible coasts are stroked on
 > top, all projected with that same math, so the recognisable landmasses render without the d3-geo /
-> topojson / world-atlas packages the design assumed (the install-free apply flow stays intact). One acolyte-delegation control the old Indagatio screen
-> carried is not in the new design (the underlying sim mechanic is untouched). Five render-smoke tests
-> cover the globe stage + Cast control, the Emptio rows, the detail + Acquire callbacks, the
-> search-disabled state, the live-wired merged surface, and the bundled coastline dataset. Test count
-> 751 (web 186).
+> topojson / world-atlas packages the design assumed (the install-free apply flow stays intact).
+> Maleficia are pinned only on land: `orbis.land.ts` derives an `isLand` test and a spread of
+> `LAND_POINTS` anchors (4° grid, Antarctic cap excluded) once from the same outline, and
+> `coordForFind` snaps any sea coordinate to the nearest anchor while unlisted ids hash directly into
+> the set (memoised per id so the pin loop stays cheap). One acolyte-delegation control the old
+> Indagatio screen carried is not in the new design (the underlying sim mechanic is untouched). Eight
+> tests cover the globe stage + Cast control, the Emptio rows, the detail + Acquire callbacks, the
+> search-disabled state, the live-wired merged surface, the bundled coastline dataset, and that every
+> maleficium resolves onto land. Test count 754 (web 189).
 
 > **Prior change — UI tweak: full-bleed PC programs now fill the desk.** The two full-bleed
 > programs (Emails and Depraedatio) were floating in the dark Ubuntu desk wallpaper with a padded

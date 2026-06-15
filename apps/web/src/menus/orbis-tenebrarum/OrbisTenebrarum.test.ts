@@ -16,7 +16,8 @@ import { act, createElement, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useGameStore } from '../../store/gameStore.js';
 import { OrbisTenebrarum } from './index.js';
-import { WORLD_LAND } from './orbis.land.js';
+import { WORLD_LAND, isLand, LAND_POINTS } from './orbis.land.js';
+import { coordForFind, MALEFICIA_COORDS } from './orbis.data.js';
 import type { OrbisFind } from './index.js';
 import { IndagatioEmptioProgram } from '../../ui/panels.js';
 
@@ -204,6 +205,38 @@ describe('bundled world coastline data', () => {
     }
     expect(valid).toBe(true);
     expect(points).toBeGreaterThan(2000);
+  });
+});
+
+describe('maleficia are placed on land', () => {
+  it('the curated coordinate table sits entirely on land', () => {
+    for (const [lon, lat] of Object.values(MALEFICIA_COORDS)) {
+      expect(isLand(lon, lat)).toBe(true);
+    }
+  });
+
+  it('exposes a non-empty land-anchor set, every point on land', () => {
+    expect(LAND_POINTS.length).toBeGreaterThan(200);
+    for (const [lon, lat] of LAND_POINTS) {
+      expect(isLand(lon, lat)).toBe(true);
+    }
+  });
+
+  it('coordForFind lands unlisted ids on land via the hash fallback', () => {
+    const make = (id: string): OrbisFind => ({
+      id,
+      name: id,
+      rarity: 'common',
+      effect: '',
+      desc: '',
+      costLabel: '',
+      acquired: false,
+      affordable: true,
+    });
+    for (const id of ['unlisted_alpha', 'sea_ward_42', 'qzx', 'relic_of_the_deep']) {
+      const [lon, lat] = coordForFind(make(id));
+      expect(isLand(lon, lat)).toBe(true);
+    }
   });
 });
 
