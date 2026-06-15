@@ -12,8 +12,8 @@ import type { OrbisFind, OrbisRarity } from './orbis.types.js';
 export const ORBIS_RARITY: Record<OrbisRarity, { label: string; color: string; glow: string }> = {
   common: { label: 'Common', color: '#b6a884', glow: 'rgba(182,168,132,.55)' },
   rare: { label: 'Rare', color: '#56b3a3', glow: 'rgba(86,179,163,.6)' },
-  profane: { label: 'Profane', color: '#d05a4d', glow: 'rgba(208,90,77,.6)' },
-  anathema: { label: 'Anathema', color: '#a574d8', glow: 'rgba(165,116,216,.6)' },
+  profane: { label: 'Profane', color: '#a574d8', glow: 'rgba(165,116,216,.6)' },
+  anathema: { label: 'Anathema', color: '#d05a4d', glow: 'rgba(208,90,77,.6)' },
 };
 
 /** Hand-placed [lon, lat] for the known catalog ids — evocative, spread across the globe. */

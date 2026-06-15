@@ -21,8 +21,8 @@ import type { Maleficium, OracleGroup, Rarity } from './types.js';
 const RARITY: Record<Rarity, { ember: string; wash: string; ring: string }> = {
   common: { ember: '#caa85f', wash: 'rgba(202,168,95,.22)', ring: 'rgba(202,168,95,.30)' },
   rare: { ember: '#54b39b', wash: 'rgba(84,179,155,.22)', ring: 'rgba(84,179,155,.32)' },
-  profane: { ember: '#c2403f', wash: 'rgba(194,64,63,.26)', ring: 'rgba(194,64,63,.34)' },
-  anathema: { ember: '#9a6fe0', wash: 'rgba(154,111,224,.26)', ring: 'rgba(154,111,224,.34)' },
+  profane: { ember: '#9a6fe0', wash: 'rgba(154,111,224,.26)', ring: 'rgba(154,111,224,.34)' },
+  anathema: { ember: '#c2403f', wash: 'rgba(194,64,63,.26)', ring: 'rgba(194,64,63,.34)' },
 };
 
 // Display order: most potent first.

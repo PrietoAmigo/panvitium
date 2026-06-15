@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 758** (sim 498 · shared 57 · api 11 · web 192).
+**Current test count: 759** (sim 498 · shared 57 · api 11 · web 193).
 
 > **Latest change — UI: the Indagatio + Emptio merge into "Orbis Tenebrarum" (Claude Design).** The
 > two separate PC apps become one. The **Emptio** desktop app is removed (its tile, its `PcGroupId`
@@ -138,11 +138,15 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > The Cast control shows a live **time-left countdown** while a search runs; **Emptio** (which stays a
 > foreground, slot-holding buy) no longer spins the globe and instead draws a **progress bar** on the
 > maleficium row being acquired; and the `+N invoking power` line is shown only for relics that grant
-> at least 1. One acolyte-delegation control the old Indagatio screen carried is not in the new design
-> (the underlying sim mechanic is untouched). Twelve tests cover the globe stage + Cast control, the
+> at least 1. Anathema and Profane swap colours so **Anathema reads red** and Profane purple across
+> every maleficia surface — `ORBIS_RARITY` (globe pins + badges), the Orbis swatch/dot/badge CSS, and
+> the Maleficia cabinet's inline ember palette (the legacy `.rarity-*` classes in `menus.css` follow
+> suit). One acolyte-delegation control the old Indagatio screen carried is not in the new design
+> (the underlying sim mechanic is untouched). Thirteen tests cover the globe stage + Cast control, the
 > Emptio rows, the detail + Acquire callbacks, the search-disabled state, the live-wired merged
 > surface, the bundled coastline dataset, on-land placement, the background-scry slot rule, the search
-> countdown, the Emptio progress bar, and the effect-line gating. Test count 758 (web 192).
+> countdown, the Emptio progress bar, the effect-line gating, and the swapped rarity colours. Test
+> count 759 (web 193).
 
 > **Prior change — UI tweak: full-bleed PC programs now fill the desk.** The two full-bleed
 > programs (Emails and Depraedatio) were floating in the dark Ubuntu desk wallpaper with a padded

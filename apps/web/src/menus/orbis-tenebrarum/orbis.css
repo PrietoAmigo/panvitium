@@ -189,10 +189,10 @@
   background: #56b3a3;
 }
 .orbis-swatch--profane {
-  background: #d05a4d;
+  background: #a574d8;
 }
 .orbis-swatch--anathema {
-  background: #a574d8;
+  background: #d05a4d;
 }
 
 .orbis-list {
@@ -238,12 +238,12 @@
   box-shadow: 0 0 8px #56b3a3;
 }
 .orbis-dot--profane {
-  background: #d05a4d;
-  box-shadow: 0 0 8px #d05a4d;
-}
-.orbis-dot--anathema {
   background: #a574d8;
   box-shadow: 0 0 8px #a574d8;
+}
+.orbis-dot--anathema {
+  background: #d05a4d;
+  box-shadow: 0 0 8px #d05a4d;
 }
 .orbis-row-body {
   flex: 1;
@@ -327,10 +327,10 @@
   color: #56b3a3;
 }
 .orbis-badge--profane {
-  color: #d05a4d;
+  color: #a574d8;
 }
 .orbis-badge--anathema {
-  color: #a574d8;
+  color: #d05a4d;
 }
 .orbis-detail-name {
   margin: 8px 0 4px;

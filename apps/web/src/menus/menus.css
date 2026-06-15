@@ -684,10 +684,10 @@ body {
   color: #5fb6b0;
 }
 .panel--cabinet .rarity-profane {
-  color: #d4787b;
+  color: #b48fd6;
 }
 .panel--cabinet .rarity-anathema {
-  color: #b48fd6;
+  color: #d4787b;
 }
 
 .panel-header {
@@ -972,10 +972,10 @@ body {
   color: #2f6d6a;
 }
 .rarity-profane {
-  color: #7c1417;
+  color: #5a2d82;
 }
 .rarity-anathema {
-  color: #5a2d82;
+  color: #7c1417;
 }
 
 /* ---------- Maleficia — glass display cabinet ---------- */
@@ -1429,10 +1429,10 @@ body {
   color: #5fb6b0;
 }
 .pc-app-sub.rarity-profane {
-  color: #d4787b;
+  color: #b48fd6;
 }
 .pc-app-sub.rarity-anathema {
-  color: #b48fd6;
+  color: #d4787b;
 }
 .pc-app-count {
   font-family: 'Ubuntu', sans-serif;

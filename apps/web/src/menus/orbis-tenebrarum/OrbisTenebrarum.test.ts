@@ -17,7 +17,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { useGameStore } from '../../store/gameStore.js';
 import { OrbisTenebrarum } from './index.js';
 import { WORLD_LAND, isLand, LAND_POINTS } from './orbis.land.js';
-import { coordForFind, MALEFICIA_COORDS } from './orbis.data.js';
+import { coordForFind, MALEFICIA_COORDS, ORBIS_RARITY } from './orbis.data.js';
 import type { OrbisFind } from './index.js';
 import { IndagatioEmptioProgram } from '../../ui/panels.js';
 
@@ -260,6 +260,15 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
       }),
     );
     expect(container!.querySelector('.orbis-row-effect')).toBeNull();
+  });
+});
+
+describe('rarity colours', () => {
+  it('paints anathema red and profane purple (swapped)', () => {
+    expect(ORBIS_RARITY.anathema.color).toBe('#d05a4d'); // red
+    expect(ORBIS_RARITY.profane.color).toBe('#a574d8'); // purple
+    expect(ORBIS_RARITY.anathema.glow).toBe('rgba(208,90,77,.6)');
+    expect(ORBIS_RARITY.profane.glow).toBe('rgba(165,116,216,.6)');
   });
 });
 
