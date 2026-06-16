@@ -202,7 +202,7 @@ export const MALEFICIA: Maleficium[] = [
     effect: '\u00D73 influence gain rate.',
   },
   {
-    id: 'longinus',
+    id: 'spear_of_longinus',
     name: 'Spear of Longinus',
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/longinus.png`,
@@ -218,7 +218,7 @@ export const MALEFICIA: Maleficium[] = [
     effect: '×3 murder rate.',
   },
   {
-    id: '30_pieces',
+    id: 'thirty_pieces_of_silver',
     name: 'Thirty Pieces of Silver',
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/30_pieces.png`,
@@ -226,7 +226,7 @@ export const MALEFICIA: Maleficium[] = [
     effect: '+0.001% gold gain per current gold.',
   },
   {
-    id: 'solomon_ring',
+    id: 'solomons_ring',
     name: "Solomon's Ring",
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/solomon_ring.png`,
@@ -298,7 +298,7 @@ export const MALEFICIA: Maleficium[] = [
     effect: '+1 invoking power.',
   },
   {
-    id: 'black_candle',
+    id: 'black_candles',
     name: 'Black Candles',
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/black_candle.png`,
