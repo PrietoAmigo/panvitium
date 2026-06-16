@@ -106,7 +106,8 @@ test('persists state across a reload', async ({ page }) => {
   const blob = await page.evaluate(
     () => JSON.parse(localStorage.getItem('panvitium:save') ?? 'null') as Record<string, unknown>,
   );
-  expect(blob.schemaVersion).toBe(1);
+  // A valid save persisted (don't pin the exact schema version — it advances with each migration).
+  expect(blob.schemaVersion as number).toBeGreaterThanOrEqual(1);
   expect(blob.saveVersion as number).toBeGreaterThanOrEqual(1);
 
   const deviceIdAfter = await page.evaluate(() => localStorage.getItem('panvitium:deviceId'));
