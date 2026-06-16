@@ -75,12 +75,12 @@ describe('carry-over fractions', () => {
       devotion: {
         ...base.devotion,
         avaritia: bn(32400), // level 2
-        luxuria: bn(180), // level 1
+        tristitia: bn(180), // level 1 (Resignation → remaining reprobate %)
         superbia: bn(1049760000), // level 4
       },
     };
-    expect(remainingGoldFraction(s)).toBeCloseTo(0.05 + 0.0625 * 2, 6); // 0.175
-    expect(remainingReprobateFraction(s)).toBeCloseTo(0.05 + 0.0625 * 1, 6); // 0.1125
+    expect(remainingGoldFraction(s)).toBeCloseTo(0.05 + 0.125 * 2, 6); // 0.30
+    expect(remainingReprobateFraction(s)).toBeCloseTo(0.05 + 0.125 * 1, 6); // 0.175
     expect(remainingMaleficiaChance(s)).toBeCloseTo(0.05 + 0.125 * 4, 6); // 0.55
   });
 });

@@ -135,19 +135,21 @@ describe('computeModifiers — maleficia effects (anathema)', () => {
     expect(m.influenceRateMul).toBeCloseTo(3, 6);
   });
 
-  it('Thirty Pieces of Silver triples goldRateMul', () => {
-    const m = computeModifiers(equipped(['thirty_pieces_of_silver']));
-    expect(m.goldRateMul).toBeCloseTo(3, 6);
-  });
-
-  it('Mark of Cain zeroes the Apocalyptic tier outright (overrides Insatiability damping)', () => {
+  it('Thirty Pieces of Silver adds 0.001% of current gold as flat gold/s (not a multiplier)', () => {
     const s = fresh();
     const state: GameState = {
       ...s,
-      devotion: { ...s.devotion, gula: bn(180) }, // Insatiability would damp to ≈ 0.195
-      lifetime: { ...s.lifetime, maleficia: ['mark_of_cain'] },
+      lifetime: { ...s.lifetime, gold: bn(1_000_000), maleficia: ['thirty_pieces_of_silver'] },
     };
-    expect(computeModifiers(state).tierWeightMul.apocalyptic).toBe(0);
+    const m = computeModifiers(state);
+    expect(m.goldRateMul).toBeCloseTo(1, 6); // no longer a gold multiplier
+    expect(m.flatGoldPerSecond).toBeCloseTo(10, 6); // 0.001% of 1,000,000 = 10/s
+  });
+
+  it('Mark of Cain triples murder rate (no longer zeroes the Apocalyptic tier)', () => {
+    const m = computeModifiers(equipped(['mark_of_cain']));
+    expect(m.murderRateMul).toBeCloseTo(3, 6);
+    expect(m.tierWeightMul.apocalyptic).toBeUndefined();
   });
 
   it('Ars Serpens lifts Suasio efficiency by 33%', () => {
@@ -176,15 +178,15 @@ describe('computeModifiers — maleficia effects (anathema)', () => {
     expect(m.suasioEfficiencyMul).toBeCloseTo(baseSua, 6); // Suasio enhancers are independent
   });
 
-  it('Maleficia effects stack multiplicatively with Sin skills', () => {
-    // Avaritia 180 → goldRateMul ≈ 1.4125; + Silver triples it → ≈ 4.2376.
+  it('Maleficia effects stack multiplicatively with Sin effects', () => {
+    // Vanagloria L1 → influenceRateMul 1.33; + Codex Gigas ×3 → ≈ 3.99.
     const s = fresh();
     const state: GameState = {
       ...s,
-      devotion: { ...s.devotion, avaritia: bn(180) },
-      lifetime: { ...s.lifetime, maleficia: ['thirty_pieces_of_silver'] },
+      devotion: { ...s.devotion, vanagloria: bn(180) },
+      lifetime: { ...s.lifetime, maleficia: ['codex_gigas'] },
     };
-    expect(computeModifiers(state).goldRateMul).toBeCloseTo(1.4125 * 3, 2);
+    expect(computeModifiers(state).influenceRateMul).toBeCloseTo(1.33 * 3, 2);
   });
 });
 
@@ -292,21 +294,23 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     );
   });
 
-  it('Succubus lifts Suasio efficiency and cuts gold (not generation), scaled by player efficiency', () => {
+  it('Succubus no longer touches the rate modifiers — its effect is an Imperium runner, cost is upkeep', () => {
     const m = computeModifiers(withInvocation('succubus', 1));
-    // Baseline playerEff = invEff = 1, factor 0.99.
-    expect(m.suasioEfficiencyMul).toBeCloseTo(1 + 0.99, 6);
-    expect(m.goldRateMul).toBeCloseTo(1 / (1 + 0.99), 6);
-    expect(m.reprobateGenerationRateMul).toBe(NEUTRAL_MODIFIERS.reprobateGenerationRateMul); // no longer touched
+    expect(m.suasioEfficiencyMul).toBeCloseTo(1, 6); // no longer a Suasio-efficiency source (#8 retarget)
+    expect(m.goldRateMul).toBeCloseTo(1, 6); // the 99% gold gain is upkeep (tick 1a), not a rate cut
+    expect(m.reprobateGenerationRateMul).toBe(NEUTRAL_MODIFIERS.reprobateGenerationRateMul);
   });
 
-  it('Succubus gold cut composes with other gold sources (Silver ×3)', () => {
-    const s = withInvocation('succubus', 1);
-    const withSilver: GameState = {
+  it('Midas still triples goldRateMul independent of Succubus (whose cost is now upkeep)', () => {
+    const s = fresh();
+    const both: GameState = {
       ...s,
-      lifetime: { ...s.lifetime, maleficia: ['thirty_pieces_of_silver'] },
+      lifetime: {
+        ...s.lifetime,
+        invocations: { ...s.lifetime.invocations, succubus: 1, midas: 1 },
+      },
     };
-    expect(computeModifiers(withSilver).goldRateMul).toBeCloseTo(3 / (1 + 0.99), 6);
+    expect(computeModifiers(both).goldRateMul).toBeCloseTo(3, 6);
   });
 
   it('invocation effects scale with player efficiency (Model 1)', () => {

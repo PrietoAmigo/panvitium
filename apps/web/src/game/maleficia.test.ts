@@ -32,6 +32,23 @@ describe('buildCabinet view-model (W5)', () => {
   it('skips ids absent from the catalog', () => {
     expect(buildCabinet(owning(['not_a_real_maleficium']))).toHaveLength(0);
   });
+
+  it('links design art + effect for ids that differ in spelling from the sim catalog', () => {
+    // Regression: design entries were keyed 30_pieces / black_candle / longinus / solomon_ring,
+    // which never matched the sim ids — so the cabinet showed no specimen art or effect line.
+    const cases: Array<[string, string]> = [
+      ['thirty_pieces_of_silver', '30_pieces.png'],
+      ['black_candles', 'black_candle.png'],
+      ['spear_of_longinus', 'longinus.png'],
+      ['solomons_ring', 'solomon_ring.png'],
+    ];
+    for (const [id, file] of cases) {
+      const [item] = buildCabinet(owning([id]));
+      expect(item, id).toBeDefined();
+      expect(item!.img, id).toContain(file);
+      expect(item!.effect.length, id).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe('buildCabinet — single-use affordance (5.1)', () => {

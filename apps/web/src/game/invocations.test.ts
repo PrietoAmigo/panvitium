@@ -78,9 +78,9 @@ describe('buildGoetia effect lines (sim-derived, not stale static copy)', () => 
     }
   });
 
-  it('Harpy reads as Decimatio efficiency, not the stale "Suasio"', () => {
+  it('Harpy reads as its Pogrom runner (#8), not the stale "Suasio"', () => {
     const eff = effectOf('harpy');
-    expect(eff).toMatch(/Decimatio/i);
+    expect(eff).toMatch(/Pogrom/i);
     expect(eff).not.toMatch(/Suasio/i);
   });
 
@@ -91,7 +91,7 @@ describe('buildGoetia effect lines (sim-derived, not stale static copy)', () => 
   });
 
   it('runner invocations (Lamia, Imp) describe an action + cadence, not a passive blurb', () => {
-    expect(effectOf('lamia')).toMatch(/Suggestion/i);
+    expect(effectOf('lamia')).toMatch(/Logismoi/i);
     expect(effectOf('lamia')).toContain('every');
     expect(effectOf('imp')).toMatch(/Caedis/i);
     expect(effectOf('imp')).toContain('every');

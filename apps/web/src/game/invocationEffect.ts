@@ -50,8 +50,10 @@ function passiveEffectText(state: GameState, id: string): string {
   switch (id) {
     case 'fama':
       return ok(b.influenceRateMul) ? up(w.influenceRateMul, b.influenceRateMul, L.influence) : '';
-    case 'harpy':
-      return up(w.decimatioEfficiencyMul, b.decimatioEfficiencyMul, L.decimatioEff);
+    case 'specunitas':
+      return ok(b.influenceRateMul)
+        ? times(w.influenceRateMul, b.influenceRateMul, L.influence)
+        : '';
     case 'plutus':
       return up(w.vitiumMercaturaOutputMul, b.vitiumMercaturaOutputMul, L.vmOutput);
     case 'behemoth': {
@@ -65,8 +67,6 @@ function passiveEffectText(state: GameState, id: string): string {
       const d = w.flatBaseSuicideRatePerSecond - b.flatBaseSuicideRatePerSecond;
       return `+${Number(d.toFixed(3))}/s ${L.baseSuicide}`;
     }
-    case 'succubus':
-      return `${up(w.suasioEfficiencyMul, b.suasioEfficiencyMul, L.suasioEff)} \u00B7 ${down(w.goldRateMul, b.goldRateMul, L.gold)}`;
     case 'doppelgaenger':
       return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} \u00B7 ${down(w.influenceRateMul, b.influenceRateMul, L.influence)}`;
     case 'midas': {

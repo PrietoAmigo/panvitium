@@ -14,7 +14,7 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
-import { HoldButton, SEMET_ID, GOETIA_BOON } from './katabasisShared.js';
+import { HoldButton, SEMET_ID } from './katabasisShared.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // "Aether" — the sigil-binding screen of the Katabasis, ported from the Claude
@@ -518,7 +518,7 @@ function SealPanel({
   const id = idx + 1;
   const def = sigilById(id);
   const name = strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
-  const boon = strings.sigils.descriptions[id] ?? GOETIA_BOON[id] ?? 'A seal of the lesser key.';
+  const boon = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
   const bound = state.sigilBindings[id] ?? bn(0);
   const has = !isZero(bound);
 

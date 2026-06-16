@@ -17,8 +17,12 @@
  *                 Lucifer    (Morning Star)   → tierWeightMul.stellar (lifted)
  *   - MALEFICIA:  Spear of Longinus           → maxInfluenceMul × 3
  *                 Codex Gigas                 → influenceRateMul × 3
- *                 Thirty Pieces of Silver     → goldRateMul × 3
- *                 Mark of Cain                → tierWeightMul.apocalyptic = 0
+ *                 Thirty Pieces of Silver     → flat gold/s = 0.001% of current gold
+ *                 Mark of Cain                → murderRateMul × 3
+ *                 Witch Ladder                → reprobateSuicideRateMul × 1.05
+ *                 Adder Stone                 → reprobateGenerationRateMul × 1.05
+ *                 Poppet                      → murderRateMul × 1.05
+ *                 Galdrabók                   → murderRateMul × 1.15
  *
  * Other Sin effects (Ira → acolyte/invocation eff, Acedia → offline, Luxuria → reprobate
  * generation) attach as their target systems land — same module, same signature, just a new line
@@ -262,6 +266,11 @@ export function computeModifiers(state: GameState): Modifiers {
   const hasCodex = countCopies(owned, 'codex_gigas') > 0;
   const hasSilver = countCopies(owned, 'thirty_pieces_of_silver') > 0;
   const hasMarkOfCain = countCopies(owned, 'mark_of_cain') > 0;
+  // Rate enhancers (Maleficia sheet rev 2026-06-12), each a flat multiplier on its rate. Non-stackable.
+  const hasPoppet = countCopies(owned, 'poppet') > 0; // ×1.05 murder rate
+  const hasGaldrabok = countCopies(owned, 'galdrabok') > 0; // ×1.15 murder rate
+  const hasWitchLadder = countCopies(owned, 'witch_ladder') > 0; // ×1.05 suicide rate
+  const hasAdderStone = countCopies(owned, 'adder_stone') > 0; // ×1.05 reprobate generation
   // Opera-efficiency enhancers (Maleficia sheet): each a separate multiplicative `(1 + bonus)`
   // factor on its category's efficiency mul. Non-stackable, so the count is 0 or 1.
   const arsSerpens = countCopies(owned, 'ars_serpens');
@@ -275,12 +284,11 @@ export function computeModifiers(state: GameState): Modifiers {
   const hasFamiliar = (inv.familiar ?? 0) > 0; // +33% player efficiency (02 §3 hybrid)
   const famaCount = inv.fama ?? 0; // each: additive influence increase (× playerEff × invEff)
   const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× playerEff × invEff)
-  const harpyCount = inv.harpy ?? 0; // each: Decimatio efficiency up (× playerEff × invEff)
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× playerEff × invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (× playerEff × invEff)
   const lemureCount = inv.lemure ?? 0; // each: additive offline gain rate (× playerEff × invEff)
-  const hasSuccubus = (inv.succubus ?? 0) > 0; // Suasio efficiency up + gold cut (× playerEff × invEff)
+  const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×2 influence gain/s (sheet)
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
   // (apex.ts owns the curve and the paired gold drain). 1× when absent.
@@ -305,12 +313,9 @@ export function computeModifiers(state: GameState): Modifiers {
   // efficiency (`playerEff`) × the invocation-effect multiplier (`invEff`), so the demonic court
   // scales with the build (Model 1).
   const FAMA_INFLUENCE_FACTOR = 0.05; // additive increase to influence rate
-  const HARPY_DECIMATIO_FACTOR = 0.05; // multiplicative increase to Decimatio efficiency
   const PLUTUS_VM_FACTOR = 0.05; // increase to Vitium Mercatura output
-  const SUCCUBUS_SUASIO_FACTOR = 0.99; // multiplicative increase to Suasio efficiency
-  const SUCCUBUS_GOLD_FACTOR = 0.99; // multiplicative decrease to overall gold gain
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
-  const NIGHTMARE_SUICIDE_FACTOR = 0.05; // additive increase to base reprobate suicide rate
+  const NIGHTMARE_SUICIDE_FACTOR = 5e-5; // additive increase to base reprobate suicide rate (sheet)
   const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
   const LEMURE_OFFLINE_FACTOR = 0.025; // additive increase to offline gain rate
 
@@ -351,10 +356,6 @@ export function computeModifiers(state: GameState): Modifiers {
   for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Gusion #11, Foras #31, …
   const tierWeightMul: TierModifiers = {};
   for (const [t, mul] of Object.entries(tierAcc)) if (mul !== 1) tierWeightMul[t as Tier] = mul;
-  if (hasMarkOfCain) {
-    // Anathema lock: the sevenfold guarantee zeroes the worst draw outright — overrides all above.
-    tierWeightMul.apocalyptic = 0;
-  }
 
   // (Per-subtype reprobate effects removed with subtypes: the Sin-themed VM gold boost and the
   // eight secondary rate penalties — Glutton/Degenerate/Gambler/Nihilist/Choleric/Husk/Celebrity/
@@ -406,20 +407,14 @@ export function computeModifiers(state: GameState): Modifiers {
     skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul');
 
   return {
-    goldRateMul:
-      skillBonus(avaritiaIntensity) *
-      (hasSilver ? 3 : 1) *
-      (hasMidas ? 3 : 1) *
-      (hasSuccubus
-        ? 1 /
-          (1 + SUCCUBUS_GOLD_FACTOR * playerEff * invEffFor('luxuria') * invEffForInv('succubus'))
-        : 1) *
-      sc('goldRateMul'),
+    // Succubus' "99% gold gain" cost is now per-second upkeep (tick.ts 1a), not a rate cut here.
+    goldRateMul: skillBonus(avaritiaIntensity) * (hasMidas ? 3 : 1) * sc('goldRateMul'),
+    // Doppelgänger's "50% influence gain" cost is now per-second upkeep (tick.ts 1a), not a cut here.
     influenceRateMul:
       1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
       (hasCodex ? 3 : 1) *
       (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
-      (hasDoppel ? 0.5 : 1) *
+      (hasSpecunitas ? 2 : 1) * // Specunitas (apex Vanagloria): ×2 influence gain/s
       sc('influenceRateMul'),
     maxInfluenceMul: maxInfluenceMulV,
     // Flat influence/s: the Decarabia #69 generator sigil (log curve) + the Mercatus Vanagloriae
@@ -431,8 +426,9 @@ export function computeModifiers(state: GameState): Modifiers {
         Math.floor(mercatusDepth(state, 'vanagloria') / 10) *
         state.lifetime.maxInfluence.toNumber() *
         maxInfluenceMulV,
-    // Flat gold/s from the Haagenti #48 generator sigil (log curve).
-    flatGoldPerSecond: flatGen.gold,
+    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + Thirty Pieces of Silver, which
+    // adds 0.001% of the current gold pool per second (Maleficia sheet rev 2026-06-12).
+    flatGoldPerSecond: flatGen.gold + (hasSilver ? 1e-5 * state.lifetime.gold.toNumber() : 0),
     // Additive increase to the base reprobate suicide rate (added to the per-capita base in
     // `dynamics`, alongside the Doom toggle). Each Nightmare contributes its efficiency-scaled factor.
     flatBaseSuicideRatePerSecond:
@@ -445,18 +441,18 @@ export function computeModifiers(state: GameState): Modifiers {
     // Leraie #14: chance each murder also triggers a suicide (rate-level coupling in dynamics).
     murderTriggersSuicideChance: sigilMurderTriggersSuicideChance(state, sigMul),
     playerEfficiencyMul: playerEff,
+    // Succubus no longer lifts Suasio efficiency — its effect is now an autonomous Imperium runner
+    // (invocations.ts), amplified by the Luxuria per-Sin term like any Luxuria runner.
     suasioEfficiencyMul:
       LUXURIA_SUASIO_EFF_PER_LEVEL ** luxuriaLvl * // ×2 per Luxuria level (sheet rev 2026-06-12)
       (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
       (1 + VOYNICH_SUASIO_BONUS * voynich) *
-      (hasSuccubus
-        ? 1 + SUCCUBUS_SUASIO_FACTOR * playerEff * invEffFor('luxuria') * invEffForInv('succubus')
-        : 1) *
       sc('suasioEfficiencyMul'),
+    // Harpy no longer lifts blanket Decimatio efficiency — its effect is now a Pogrom runner
+    // (invocations.ts), amplified by the Ira per-Sin term like any Ira runner.
     decimatioEfficiencyMul:
       IRA_DECIMATIO_EFF_PER_LEVEL ** iraLvl * // ×2 per Ira level (sheet rev 2026-06-12)
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
-      (1 + HARPY_DECIMATIO_FACTOR * playerEff * invEffFor('ira') * harpyCount) *
       sc('decimatioEfficiencyMul'),
     indagatioEfficiencyMul: sc('indagatioEfficiencyMul'),
     emptioEfficiencyMul: sc('emptioEfficiencyMul'),
@@ -465,6 +461,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // Seduction skill lifts it continuously (03 §1); sigils (Aamon #7 up, Zepar #16 down) compose.
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
+      (hasAdderStone ? 1.05 : 1) * // Adder Stone ×1.05 reprobate generation
       (state.lifetime.handOfGloryRemaining > 0 ? HAND_OF_GLORY_GENERATION_MUL : 1) *
       skillBonus(luxuriaIntensity) *
       compositumGenerationRateMul(state, vcEffectMul) * // Bacchanal +10% ×(Gusion/Naberius)
@@ -475,6 +472,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // the suicide sigils compose.
     reprobateSuicideRateMul:
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
+      (hasWitchLadder ? 1.05 : 1) * // Witch Ladder ×1.05 suicide rate
       (1 + MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH * mercatusDepth(state, 'tristitia')) *
       compositumSuicideRateMul(state, vcEffectMul) * // Doom Gathering +10% ×(Gusion/Naberius)
       sc('reprobateSuicideRateMul'),
@@ -482,6 +480,9 @@ export function computeModifiers(state: GameState): Modifiers {
     // amended); Aim #23 sigil composes. Murder is a per-capita cull of the whole population.
     murderRateMul:
       (panvitiumActive ? PANV_MURDER_MUL : 1) *
+      (hasMarkOfCain ? 3 : 1) * // Mark of Cain ×3 murder rate (sheet rev 2026-06-12)
+      (hasPoppet ? 1.05 : 1) * // Poppet ×1.05 murder rate
+      (hasGaldrabok ? 1.15 : 1) * // Galdrabók ×1.15 murder rate
       (1 + MERCATUS_IRA_MURDER_PER_DEPTH * mercatusDepth(state, 'ira')) *
       compositumMurderRateMul(state, vcEffectMul) * // Enraging Broadcast +10% ×(Gusion/Naberius)
       sc('murderRateMul'),

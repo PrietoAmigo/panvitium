@@ -61,6 +61,35 @@ export interface GoetiaView {
   readonly entries: GoetiaEntry[];
 }
 
+/**
+ * The grimoire's cost line. Morpheus carries a one-time %-of-pool cost (soulCost/goldCost); every
+ * other paid invocation carries per-second upkeep (Invocatio sheet). Free invocations read "free".
+ */
+function invocationCostLabel(def: InvocationDef): string {
+  const r = strings.resources;
+  const pct = (x: number): number => Math.round(x * 100);
+  if (def.soulCost || def.goldCost) {
+    const parts: string[] = [];
+    if (def.soulCost) parts.push(`${pct(def.soulCost.fraction)}% ${r.souls}`);
+    if (def.goldCost) parts.push(`${pct(def.goldCost.fraction)}% ${r.gold}`);
+    return parts.join(' + ');
+  }
+  const u = def.upkeep;
+  if (!u) return strings.invocations.free;
+  const parts: string[] = [];
+  if (u.gold) parts.push(`${u.gold} ${r.gold}/s`);
+  if (u.influence) parts.push(`${u.influence} ${r.influence}/s`);
+  if (u.goldGainFraction && u.goldGainFraction === u.influenceGainFraction) {
+    parts.push(`${pct(u.goldGainFraction)}% ${r.gold} + ${r.influence} gain/s`);
+  } else {
+    if (u.goldGainFraction) parts.push(`${pct(u.goldGainFraction)}% ${r.gold} gain/s`);
+    if (u.influenceGainFraction)
+      parts.push(`${pct(u.influenceGainFraction)}% ${r.influence} gain/s`);
+  }
+  if (u.maxInfluenceFraction) parts.push(`${pct(u.maxInfluenceFraction)}% max ${r.influence}/s`);
+  return parts.length > 0 ? parts.join(' · ') : strings.invocations.free;
+}
+
 /** Build the grimoire's presentation view from authoritative sim state. */
 export function buildGoetia(state: GameState): GoetiaView {
   const power = currentInvokingPower(state);
@@ -71,7 +100,6 @@ export function buildGoetia(state: GameState): GoetiaView {
     const unlocked = invocationUnlocked(state, def);
     const soulCost = invocationSoulCost(state, def);
     const goldCost = invocationGoldCost(state, def);
-    const cost = floor(soulCost).toNumber();
     const active = activeInvocationCount(state, def.id);
     const atCap = def.maxActive !== undefined && active >= def.maxActive;
     const affordable =
@@ -92,7 +120,7 @@ export function buildGoetia(state: GameState): GoetiaView {
       name: strings.invocations.names[id] ?? flavour?.name ?? id,
       // The Familiar is the base creature, not one of the ranked seals — it carries no numeral.
       rank: id === 'familiar' ? '' : (flavour?.rank ?? roman(i + 1)),
-      cost: cost > 0 ? `${cost} ${strings.resources.souls}` : strings.invocations.free,
+      cost: invocationCostLabel(def),
       unlocked,
       active,
       atCap,

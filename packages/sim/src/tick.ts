@@ -11,10 +11,10 @@
  * Returns the new state plus the outcome events generated this tick (02 §2) — transient, not
  * persisted; the caller surfaces them in the log / pop-ups.
  */
-import { add, bn, min, mul, ZERO, type BigNum } from './bignum.js';
+import { add, bn, lt, max, min, mul, sub, ZERO, type BigNum } from './bignum.js';
 import { resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
-import { advanceInvocationRunners } from './invocations.js';
+import { advanceInvocationRunners, invocationUpkeep } from './invocations.js';
 import { applyInvocationTickEffects } from './apex.js';
 import { mercatusGoldPerSecond, mercatusRevenueWithFoedus } from './foedera.js';
 import {
@@ -131,18 +131,27 @@ export function perSecondRates(state: GameState): PerSecondRates {
   }
   const mods = computeModifiers(state);
   const rates = baseGainRates(state, mods);
-  const gold =
+  const grossGold =
     rates.goldGainPerSecond +
     compositumPercentGoldPerSecond(state, rates) *
       mods.vitiumCompositumOutputMul *
       mods.goldRateMul;
-  const influence = add(
+  const grossInfluence = add(
     bn(rates.influenceGainPerSecond),
     bn(
       compositumPercentInfluencePerSecond(state, rates) *
         mods.vitiumCompositumInfluenceOutputMul *
         mods.influenceRateMul,
     ),
+  );
+  // Net of invocation upkeep (Invocatio sheet): %-of-gain costs cut the gain, flat costs subtract
+  // an absolute amount — mirroring the tick's step 1a, so the readout matches realised net income.
+  const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
+  const up = invocationUpkeep(state, effectiveMax.toNumber());
+  const gold = Math.max(0, grossGold * (1 - up.goldGainFraction) - up.flatGoldPerSecond);
+  const influence = max(
+    ZERO,
+    sub(mul(grossInfluence, 1 - up.influenceGainFraction), bn(up.flatInfluencePerSecond)),
   );
   return { gold, influence };
 }
@@ -261,6 +270,41 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   };
   let working: GameState = { ...state, lifetime };
   const events: OutcomeEvent[] = [];
+
+  // 1a. Invocation upkeep (Invocatio sheet): each active invocation pays its per-second cost out of
+  //     this tick's income. %-of-gain costs consume a fraction of what was just gained; flat costs
+  //     subtract an absolute amount. A flat drain the pool can't cover dispels its invocation(s)
+  //     (generalising Aurevora's "dispel at gold 0"); the %-of-gain part alone can only zero a gain,
+  //     never bankrupt, so it never triggers a dispel.
+  {
+    const up = invocationUpkeep(state, effectiveMax.toNumber());
+    const goldGain = sub(working.lifetime.gold, state.lifetime.gold);
+    const inflGain = sub(working.lifetime.influence, state.lifetime.influence);
+    const goldFracCost = mul(goldGain, up.goldGainFraction);
+    const inflFracCost = mul(inflGain, up.influenceGainFraction);
+    const goldFlat = mul(bn(up.flatGoldPerSecond), deltaSeconds);
+    const inflFlat = mul(bn(up.flatInfluencePerSecond), deltaSeconds);
+    let gold = sub(sub(working.lifetime.gold, goldFracCost), goldFlat);
+    let influence = sub(sub(working.lifetime.influence, inflFracCost), inflFlat);
+    const dispelled: string[] = [];
+    if (lt(gold, ZERO)) {
+      gold = max(ZERO, sub(working.lifetime.gold, goldFracCost)); // pay the fraction, not the flat
+      dispelled.push(...up.flatGoldDrainers);
+    }
+    if (lt(influence, ZERO)) {
+      influence = max(ZERO, sub(working.lifetime.influence, inflFracCost));
+      dispelled.push(...up.flatInfluenceDrainers);
+    }
+    let invocations = working.lifetime.invocations;
+    if (dispelled.length > 0) {
+      invocations = { ...invocations };
+      for (const id of dispelled) {
+        delete invocations[id];
+        notices.push(`${id} dispelled — upkeep unpaid.`);
+      }
+    }
+    working = { ...working, lifetime: { ...working.lifetime, gold, influence, invocations } };
+  }
 
   // 1b. Apex invocation per-tick effects (03 §2.4): Aurevora's exponentially-rising gold drain paid
   //     against its rising efficiency boost (dispels at gold 0), and Astiwihad's per-second chance

@@ -1,6 +1,6 @@
 /**
  * Erinyes + Morpheus apex tests (03 §2.4). Pins:
- *   - catalog entries (gates, free / 66%-souls + 66%-gold cost, max 1)
+ *   - catalog entries (gates, free / 90%-souls + 90%-gold cost, max 1)
  *   - Erinyes invoke: kills every reprobate (mints one soul each), dispels active Morpheus,
  *     clears pendingMorpheus, sets pendingErinyes and morpheusLockedOut
  *   - Morpheus invoke: deducts soul + gold cost; refused while morpheusLockedOut
@@ -48,7 +48,7 @@ function withGates(opts: {
   reprobates?: number;
 }): GameState {
   const s = fresh();
-  // 17 Black Salt Pouches (each +1 IP, stackable) covers either gate (Erinyes 17, Morpheus 14).
+  // Black Salt Pouches (each +1 IP, stackable) cover either gate (Erinyes 10, Morpheus 10).
   const maleficia = Array.from({ length: 20 }, () => 'black_salt_pouch');
   const sin = opts.apex === 'erinyes' ? 'ira' : 'acedia';
   const reprobates = opts.reprobates ?? 0;
@@ -66,30 +66,30 @@ function withGates(opts: {
 }
 
 describe('Catalog', () => {
-  it('Erinyes (Ira apex) is free, max 1, IP 17, Sin level 3', () => {
+  it('Erinyes (Ira apex) is free, max 1, IP 10, Sin level 3', () => {
     const def = invocationById('erinyes')!;
     expect(def.sin).toBe('ira');
-    expect(def.invokingPower).toBe(17);
+    expect(def.invokingPower).toBe(10);
     expect(def.sinLevel).toBe(3);
     expect(def.maxActive).toBe(1);
     expect(def.soulCost).toBeUndefined();
     expect(def.goldCost).toBeUndefined();
   });
 
-  it('Morpheus (Acedia apex) costs 66% souls + 66% gold, max 1, IP 14, Sin level 3', () => {
+  it('Morpheus (Acedia apex) costs 90% souls + 90% gold, max 1, IP 10, Sin level 3', () => {
     const def = invocationById('morpheus')!;
     expect(def.sin).toBe('acedia');
-    expect(def.invokingPower).toBe(14);
+    expect(def.invokingPower).toBe(10);
     expect(def.sinLevel).toBe(3);
     expect(def.maxActive).toBe(1);
-    expect(def.soulCost).toEqual({ fraction: 0.66, minimum: 0 });
-    expect(def.goldCost).toEqual({ fraction: 0.66 });
+    expect(def.soulCost).toEqual({ fraction: 0.9, minimum: 0 });
+    expect(def.goldCost).toEqual({ fraction: 0.9 });
   });
 
-  it('invocationGoldCost computes the floored 66% gold fraction; 0 for the others', () => {
+  it('invocationGoldCost computes the floored 90% gold fraction; 0 for the others', () => {
     const s = withGates({ apex: 'morpheus', gold: 1000 });
     const morpheus = invocationById('morpheus')!;
-    expect(floor(invocationGoldCost(s, morpheus)).toNumber()).toBe(660);
+    expect(floor(invocationGoldCost(s, morpheus)).toNumber()).toBe(900);
     expect(floor(invocationGoldCost(s, invocationById('erinyes')!)).toNumber()).toBe(0);
   });
 });
@@ -132,9 +132,9 @@ describe('Morpheus invoke', () => {
     const r = invoke(before, 'morpheus');
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    // 66% of 10_000 souls = 6_600, leaving 3_400; 66% of 1_000_000 gold = 660_000, leaving 340_000.
-    expect(soulsOf(r.state)).toBe(3_400);
-    expect(goldOf(r.state)).toBe(340_000);
+    // 90% of 10_000 souls = 9_000, leaving 1_000; 90% of 1_000_000 gold = 900_000, leaving 100_000.
+    expect(soulsOf(r.state)).toBe(1_000);
+    expect(goldOf(r.state)).toBe(100_000);
     expect(r.state.lifetime.pendingMorpheus).toBe(true);
   });
 

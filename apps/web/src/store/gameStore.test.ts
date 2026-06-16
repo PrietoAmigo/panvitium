@@ -375,14 +375,14 @@ describe('gameStore — invocations', () => {
     expect(store().state?.lifetime.invocations.behemoth ?? 0).toBe(0);
   });
 
-  it('summons when gated and paid, deducting souls', () => {
-    equipPower(3);
+  it('summons when gated — normals are free upfront (cost is per-second upkeep)', () => {
+    equipPower(2);
     patchSuperbia(1);
     patchSouls(1000);
-    store().summon('behemoth'); // cost = max(100, 10% of 1000) = 100
+    store().summon('behemoth'); // no upfront cost; upkeep is paid per tick
     const s = store().state as GameState;
     expect(s.lifetime.invocations.behemoth).toBe(1);
-    expect(floor(s.souls).toNumber()).toBe(900);
+    expect(floor(s.souls).toNumber()).toBe(1000); // souls untouched
     expect(store().notice).toBeNull();
   });
 

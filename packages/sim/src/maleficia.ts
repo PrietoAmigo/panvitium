@@ -7,7 +7,7 @@
  * ones (oracular reveals, targeted single-use items like Hand of Glory / Defixio) attach as their
  * target systems land — they have a slot here ready for it.
  *
- * Roster, rarity, invoking power and stack caps are pinned to the `Maleficia` sheet (25 items).
+ * Roster, rarity, invoking power and stack caps are pinned to the `Maleficia` sheet (29 items).
  * Effects beyond raw invoking power are listed in each entry's `description`; the enhancer
  * multipliers (Suasio/Decimatio/invocation/sigil), the oracular reveals, and the targeted
  * single-use items are wired into their consuming systems in later slices.
@@ -52,7 +52,7 @@ export const MALEFICIUM_PRICE_RANGE: Record<
   anathema: { min: 66666, max: 93456 },
 };
 
-/** The full 25-item catalog (sheet order). Effects past invoking power are wired in later slices. */
+/** The full 29-item catalog (sheet order). Effects past invoking power are wired in later slices. */
 export const MALEFICIA: Record<string, MaleficiumDef> = {
   ars_serpens: {
     id: 'ars_serpens',
@@ -203,8 +203,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   mark_of_cain: {
     id: 'mark_of_cain',
     name: 'Mark of Cain',
-    description:
-      'The sevenfold vengeance was never a curse. It was a guarantee. Apocalyptic chance falls to zero.',
+    description: 'The sevenfold vengeance was never a curse. It was a guarantee. ×3 murder rate.',
     rarity: 'anathema',
     cost: 80000,
     invokingPower: 0,
@@ -213,7 +212,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
     id: 'thirty_pieces_of_silver',
     name: 'Thirty Pieces of Silver',
     description:
-      'Counted out, refused, returned, refused again. Coinage that always finds its way back into a hand. x3 gold gain rate.',
+      'Counted out, refused, returned, refused again. Coinage that always finds its way back into a hand. Gold gain rises by 0.001% of your current gold.',
     rarity: 'anathema',
     cost: 80000,
     invokingPower: 0,
@@ -221,9 +220,43 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   solomons_ring: {
     id: 'solomons_ring',
     name: "Solomon's Ring",
-    description: 'The seal that bound seventy-two kings. It still pinches. +50% sigil effects.',
+    description: 'The seal that bound seventy-two kings. It still pinches. +66% sigil effects.',
     rarity: 'anathema',
     cost: 85000,
+    invokingPower: 0,
+  },
+  galdrabok: {
+    id: 'galdrabok',
+    name: 'Galdrabók',
+    description: 'A book of staves bound in hide, each page a small undoing. ×1.15 murder rate.',
+    rarity: 'profane',
+    cost: 15000,
+    invokingPower: 0,
+  },
+  witch_ladder: {
+    id: 'witch_ladder',
+    name: 'Witch Ladder',
+    description: 'Forty-and-one knots, a feather worked into each. ×1.05 suicide rate.',
+    rarity: 'common',
+    cost: 600,
+    invokingPower: 0,
+  },
+  adder_stone: {
+    id: 'adder_stone',
+    name: 'Adder Stone',
+    description:
+      'A holed stone the serpents bored; look through it and see what breeds. ×1.05 reprobate generation.',
+    rarity: 'common',
+    cost: 600,
+    invokingPower: 0,
+  },
+  poppet: {
+    id: 'poppet',
+    name: 'Poppet',
+    description:
+      'A cloth figure sewn to a likeness; what it suffers, they suffer. ×1.05 murder rate.',
+    rarity: 'common',
+    cost: 600,
     invokingPower: 0,
   },
   iron_nails: {

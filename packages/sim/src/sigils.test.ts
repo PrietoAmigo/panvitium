@@ -20,7 +20,9 @@ import {
   createInitialState,
   currentInvokingPower,
   invocationById,
+  invocationRunnerEfficiency,
   invocationSoulCost,
+  invocationUpkeep,
   makeRng,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
@@ -313,10 +315,11 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     const base = computeModifiers(fama).influenceRateMul;
     const boosted = computeModifiers(bound(26, 100_000, fama)).influenceRateMul;
     expect(boosted).toBeGreaterThan(base);
-    // Harpy (Ira) is unaffected by a Vanagloria sigil.
+    // Harpy (Ira) is unaffected by a Vanagloria sigil — its Pogrom-runner efficiency is unchanged.
     const harpy = withInv('harpy', 2);
-    const harpyBase = computeModifiers(harpy).decimatioEfficiencyMul;
-    expect(computeModifiers(bound(26, 100_000, harpy)).decimatioEfficiencyMul).toBeCloseTo(
+    const harpyDef = invocationById('harpy')!;
+    const harpyBase = invocationRunnerEfficiency(harpy, harpyDef);
+    expect(invocationRunnerEfficiency(bound(26, 100_000, harpy), harpyDef)).toBeCloseTo(
       harpyBase,
       6,
     );
@@ -332,10 +335,13 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     );
   });
 
-  it('Furfur #34 (Luxuria) amplifies the Succubus Suasio effect', () => {
+  it('Furfur #34 (Luxuria) amplifies the Succubus Imperium runner', () => {
+    // Succubus' effect is now an autonomous Imperium runner; the Luxuria per-Sin term folds into its
+    // runner efficiency (invocationRunnerEfficiency), so Furfur lifts it.
     const succ = withInv('succubus', 1);
-    const base = computeModifiers(succ).suasioEfficiencyMul;
-    const boosted = computeModifiers(bound(34, 100_000, succ)).suasioEfficiencyMul;
+    const def = invocationById('succubus')!;
+    const base = invocationRunnerEfficiency(succ, def);
+    const boosted = invocationRunnerEfficiency(bound(34, 100_000, succ), def);
     expect(boosted).toBeGreaterThan(base);
   });
 });
@@ -420,11 +426,26 @@ describe('Cost-reduction sigils (S8)', () => {
     expect(100 - paimon.state.lifetime.influence.toNumber()).toBe(3); // ceil(5 / 2)
   });
 
-  it('Orobas #55 softens invocation soul cost (piercing the nominal minimum)', () => {
-    const imp = invocationById('imp');
-    expect(imp).toBeDefined();
-    expect(invocationSoulCost(fresh(), imp!).toNumber()).toBe(100); // minimum
-    expect(invocationSoulCost(bound(55, 100_000_000), imp!).toNumber()).toBe(50); // halved
+  it('Orobas #55 softens the one-time invocation soul cost (Morpheus 90% of pool)', () => {
+    // Normals no longer carry a soul cost (per-second upkeep instead); Morpheus is the only
+    // soul-cost invocation. Its cost is 90% of the current pool; Orobas #55 halves it.
+    const morpheus = invocationById('morpheus')!;
+    const withPool = (s: GameState): GameState => ({ ...s, souls: bn(1000) });
+    expect(invocationSoulCost(withPool(fresh()), morpheus).toNumber()).toBe(900); // 90% of 1000
+    expect(invocationSoulCost(withPool(bound(55, 100_000_000)), morpheus).toNumber()).toBe(450); // halved
+  });
+
+  it('Orobas #55 also softens flat invocation upkeep (cost of all invocations)', () => {
+    // An active Imp drains 10 gold/s flat; Orobas halves it. %-of-gain apex costs stay untouched.
+    const withImp = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, invocations: { imp: 1 } },
+    });
+    expect(invocationUpkeep(withImp(fresh()), 0).flatGoldPerSecond).toBe(10);
+    expect(invocationUpkeep(withImp(bound(55, 100_000_000)), 0).flatGoldPerSecond).toBeCloseTo(
+      5,
+      6,
+    );
   });
 });
 

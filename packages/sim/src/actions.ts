@@ -202,7 +202,8 @@ export const ACTIONS: Record<string, ActionDef> = {
   imperium: {
     id: 'imperium',
     // Action time decided at 10s (the Suasio sheet left it "Fill Time"); cost/effect/gating are
-    // from the sheet. Late-game, single fixed outcome — a short cast for its big influence price.
+    // from the sheet. A full-distribution late rite (Stellar pays +3% souls, the tails shed the
+    // flock) — a short cast for its big influence price.
     baseTimeSeconds: 10,
     category: 'suasio',
     cost: { influence: 100 },

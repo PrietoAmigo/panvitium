@@ -21,7 +21,7 @@ import {
   BASE_REMAINING_REPROBATE,
   REMAINING_GOLD_PER_AVARITIA_LEVEL,
   REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL,
-  REMAINING_REPROBATE_PER_LUXURIA_LEVEL,
+  REMAINING_REPROBATE_PER_TRISTITIA_LEVEL,
 } from './constants.js';
 import { sinLevel } from './progression.js';
 import { makeRng } from './rng.js';
@@ -44,7 +44,7 @@ export function remainingGoldFraction(state: GameState, sigilBonus = 0): number 
 export function remainingReprobateFraction(state: GameState, sigilBonus = 0): number {
   return clamp01(
     BASE_REMAINING_REPROBATE +
-      REMAINING_REPROBATE_PER_LUXURIA_LEVEL * sinLevel(state.devotion.luxuria) +
+      REMAINING_REPROBATE_PER_TRISTITIA_LEVEL * sinLevel(state.devotion.tristitia) +
       sigilBonus,
   );
 }

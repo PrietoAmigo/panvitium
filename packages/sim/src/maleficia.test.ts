@@ -53,9 +53,15 @@ describe('maleficia catalog', () => {
   });
 });
 
-describe('maleficia catalog — sheet parity (25 items)', () => {
-  it('has the full 25-item roster', () => {
-    expect(MALEFICIUM_IDS.length).toBe(25);
+describe('maleficia catalog — sheet parity (29 items)', () => {
+  it('has the full 29-item roster', () => {
+    expect(MALEFICIUM_IDS.length).toBe(29);
+  });
+
+  it('includes the four rate enhancers', () => {
+    for (const id of ['witch_ladder', 'adder_stone', 'poppet', 'galdrabok']) {
+      expect(MALEFICIA[id]).toBeDefined();
+    }
   });
 
   it('pins the sheet invoking-power values for the power sources', () => {
