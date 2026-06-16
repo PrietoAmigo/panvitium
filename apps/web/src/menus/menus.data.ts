@@ -215,7 +215,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/mark_of_cain.png`,
     desc: 'The sevenfold vengeance was never a curse. It was a guarantee.',
-    effect: 'Apocalyptic chance falls to zero.',
+    effect: '×3 murder rate.',
   },
   {
     id: '30_pieces',
@@ -223,7 +223,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/30_pieces.png`,
     desc: 'Counted out, refused, returned, refused again \u2014 coinage that always finds its way back into a hand.',
-    effect: '\u00D73 gold gain rate.',
+    effect: '+0.001% gold gain per current gold.',
   },
   {
     id: 'solomon_ring',

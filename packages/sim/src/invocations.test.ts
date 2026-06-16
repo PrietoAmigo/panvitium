@@ -9,7 +9,7 @@
  *   - modifier effects: Midas (3× gold, 100× apoc), Doppelgaenger (1.5× eff, ½ infl),
  *     Fama (+infl/stack), Nightmare (+5% suicide/stack), Harpy (+Decimatio eff/stack),
  *     Behemoth (+50% stellar/stack)
- *   - Mark of Cain still wins the apocalyptic lock over Midas
+ *   - Mark of Cain ×3 murder rate (no longer zeroes apocalyptic)
  *   - Katabasis dispels everything
  */
 import { describe, expect, it } from 'vitest';
@@ -102,13 +102,13 @@ describe('Invocation catalog', () => {
 
   it('the new per-tick apexes carry their gates and are free, max-1', () => {
     const astiwihad = invocationById('astiwihad')!;
-    expect(astiwihad.invokingPower).toBe(15);
+    expect(astiwihad.invokingPower).toBe(10);
     expect(astiwihad.sin).toBe('tristitia');
     expect(astiwihad.sinLevel).toBe(3);
     expect(astiwihad.maxActive).toBe(1);
     expect(astiwihad.soulCost).toBeUndefined();
     const aurevora = invocationById('aurevora')!;
-    expect(aurevora.invokingPower).toBe(10);
+    expect(aurevora.invokingPower).toBe(7);
     expect(aurevora.sin).toBe('gula');
     expect(aurevora.sinLevel).toBe(3);
     expect(aurevora.maxActive).toBe(1);
@@ -123,14 +123,14 @@ describe('Invoking power + gates', () => {
   });
 
   it('an invocation is visible at half its required invoking power', () => {
-    const def = invocationById('behemoth')!; // requires 3
-    expect(invocationVisible(withPower(fresh(), 1), def)).toBe(false); // 1 < 1.5
-    expect(invocationVisible(withPower(fresh(), 2), def)).toBe(true); // 2 ≥ 1.5
+    const def = invocationById('behemoth')!; // requires 2
+    expect(invocationVisible(withPower(fresh(), 0), def)).toBe(false); // 0 < 1
+    expect(invocationVisible(withPower(fresh(), 1), def)).toBe(true); // 1 ≥ 1 (half of 2)
   });
 
   it('unlock requires full invoking power AND the Sin level', () => {
-    const def = invocationById('behemoth')!; // IP 3, Superbia 1
-    let s = withPower(fresh(), 3);
+    const def = invocationById('behemoth')!; // IP 2, Superbia 1
+    let s = withPower(fresh(), 2);
     expect(invocationUnlocked(s, def)).toBe(false); // Superbia 0
     s = withSin(s, 'superbia', 1);
     expect(invocationUnlocked(s, def)).toBe(true);
@@ -217,10 +217,12 @@ describe('Invocation modifier effects', () => {
     expect(mid.tierWeightMul.apocalyptic).toBeCloseTo(100, 6);
   });
 
-  it('Mark of Cain still locks apocalyptic to 0 even with Midas active', () => {
+  it('Mark of Cain triples murder rate and no longer zeroes apocalyptic (Midas ×100 stands)', () => {
     let s = withInvocation(fresh(), 'midas', 1);
     s = { ...s, lifetime: { ...s.lifetime, maleficia: ['mark_of_cain'] } };
-    expect(computeModifiers(s).tierWeightMul.apocalyptic).toBe(0);
+    const m = computeModifiers(s);
+    expect(m.tierWeightMul.apocalyptic).toBeCloseTo(100, 6); // Midas hundredfold; no Cain lock
+    expect(m.murderRateMul).toBeCloseTo(3, 6); // Mark of Cain ×3 murder (sheet rev 2026-06-12)
   });
 
   it('Doppelgaenger: +50% player efficiency, half influence', () => {
@@ -290,8 +292,8 @@ describe('Familiar — the hybrid (02 §3)', () => {
     expect(def.sin).toBeNull();
     expect(def.autonomous).toEqual({ action: 'indagatio', efficiency: 0.05 });
     expect(invocationSoulCost(fresh(), def).toNumber()).toBe(0);
-    expect(invocationUnlocked(withPower(fresh(), 3), def)).toBe(true);
-    expect(invocationUnlocked(withPower(fresh(), 2), def)).toBe(false);
+    expect(invocationUnlocked(withPower(fresh(), 2), def)).toBe(true);
+    expect(invocationUnlocked(withPower(fresh(), 1), def)).toBe(false);
   });
 
   it('lifts player efficiency by +33% while active', () => {
@@ -343,10 +345,10 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
   const impGold = (s: GameState): number =>
     actionCycleCost('caedis', 0.05 * computeModifiers(s).playerEfficiencyMul).gold;
 
-  it('is gated on power 4 + Ira 1, stackable, and runs a Good-only Caedis channel', () => {
+  it('is gated on power 2 + Ira 1, stackable, and runs a Good-only Caedis channel', () => {
     const def = invocationById('imp')!;
     expect(def.sin).toBe('ira');
-    expect(def.invokingPower).toBe(4);
+    expect(def.invokingPower).toBe(2);
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // Normal type → stacks (one channel per copy)
     expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
@@ -363,10 +365,10 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
   });
 
-  it('Lamia is the Luxuria Suasio runner — power 8 + Luxuria 2, stackable', () => {
+  it('Lamia is the Luxuria Suasio runner — power 4 + Luxuria 2, stackable', () => {
     const def = invocationById('lamia')!;
     expect(def.sin).toBe('luxuria');
-    expect(def.invokingPower).toBe(8);
+    expect(def.invokingPower).toBe(4);
     expect(def.sinLevel).toBe(2);
     // Normal type → no cap. Each summoned copy runs its own channel, so stacking scales throughput.
     expect(def.maxActive).toBeUndefined();
@@ -382,30 +384,30 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(r.state.lifetime.actionQueue).toHaveLength(0); // player action slot untouched
   });
 
-  it('Plutus is a stackable Avaritia output booster — power 8 + Avaritia 2', () => {
+  it('Plutus is a stackable Avaritia output booster — power 5 + Avaritia 2', () => {
     const def = invocationById('plutus')!;
     expect(def.sin).toBe('avaritia');
-    expect(def.invokingPower).toBe(8);
+    expect(def.invokingPower).toBe(5);
     expect(def.sinLevel).toBe(2);
     expect(def.maxActive).toBeUndefined(); // stackable
     expect(def.autonomous).toBeUndefined();
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(25_000); // 25%
   });
 
-  it('Succubus is the apex Luxuria — power 12 + Luxuria 3, capped at 1, free', () => {
+  it('Succubus is the apex Luxuria — power 9 + Luxuria 3, capped at 1, free', () => {
     const def = invocationById('succubus')!;
     expect(def.sin).toBe('luxuria');
-    expect(def.invokingPower).toBe(12);
+    expect(def.invokingPower).toBe(9);
     expect(def.sinLevel).toBe(3);
     expect(def.maxActive).toBe(1);
     expect(def.soulCost).toBeUndefined(); // free (apex)
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(0);
   });
 
-  it('Lemure is a stackable Acedia influence source — power 7 + Acedia 1', () => {
+  it('Lemure is a stackable Acedia influence source — power 3 + Acedia 1', () => {
     const def = invocationById('lemure')!;
     expect(def.sin).toBe('acedia');
-    expect(def.invokingPower).toBe(7);
+    expect(def.invokingPower).toBe(3);
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // stackable
     expect(def.autonomous).toBeUndefined();

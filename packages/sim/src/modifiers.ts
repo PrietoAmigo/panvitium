@@ -17,8 +17,12 @@
  *                 Lucifer    (Morning Star)   → tierWeightMul.stellar (lifted)
  *   - MALEFICIA:  Spear of Longinus           → maxInfluenceMul × 3
  *                 Codex Gigas                 → influenceRateMul × 3
- *                 Thirty Pieces of Silver     → goldRateMul × 3
- *                 Mark of Cain                → tierWeightMul.apocalyptic = 0
+ *                 Thirty Pieces of Silver     → flat gold/s = 0.001% of current gold
+ *                 Mark of Cain                → murderRateMul × 3
+ *                 Witch Ladder                → reprobateSuicideRateMul × 1.05
+ *                 Adder Stone                 → reprobateGenerationRateMul × 1.05
+ *                 Poppet                      → murderRateMul × 1.05
+ *                 Galdrabók                   → murderRateMul × 1.15
  *
  * Other Sin effects (Ira → acolyte/invocation eff, Acedia → offline, Luxuria → reprobate
  * generation) attach as their target systems land — same module, same signature, just a new line
@@ -262,6 +266,11 @@ export function computeModifiers(state: GameState): Modifiers {
   const hasCodex = countCopies(owned, 'codex_gigas') > 0;
   const hasSilver = countCopies(owned, 'thirty_pieces_of_silver') > 0;
   const hasMarkOfCain = countCopies(owned, 'mark_of_cain') > 0;
+  // Rate enhancers (Maleficia sheet rev 2026-06-12), each a flat multiplier on its rate. Non-stackable.
+  const hasPoppet = countCopies(owned, 'poppet') > 0; // ×1.05 murder rate
+  const hasGaldrabok = countCopies(owned, 'galdrabok') > 0; // ×1.15 murder rate
+  const hasWitchLadder = countCopies(owned, 'witch_ladder') > 0; // ×1.05 suicide rate
+  const hasAdderStone = countCopies(owned, 'adder_stone') > 0; // ×1.05 reprobate generation
   // Opera-efficiency enhancers (Maleficia sheet): each a separate multiplicative `(1 + bonus)`
   // factor on its category's efficiency mul. Non-stackable, so the count is 0 or 1.
   const arsSerpens = countCopies(owned, 'ars_serpens');
@@ -351,10 +360,6 @@ export function computeModifiers(state: GameState): Modifiers {
   for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Gusion #11, Foras #31, …
   const tierWeightMul: TierModifiers = {};
   for (const [t, mul] of Object.entries(tierAcc)) if (mul !== 1) tierWeightMul[t as Tier] = mul;
-  if (hasMarkOfCain) {
-    // Anathema lock: the sevenfold guarantee zeroes the worst draw outright — overrides all above.
-    tierWeightMul.apocalyptic = 0;
-  }
 
   // (Per-subtype reprobate effects removed with subtypes: the Sin-themed VM gold boost and the
   // eight secondary rate penalties — Glutton/Degenerate/Gambler/Nihilist/Choleric/Husk/Celebrity/
@@ -408,7 +413,6 @@ export function computeModifiers(state: GameState): Modifiers {
   return {
     goldRateMul:
       skillBonus(avaritiaIntensity) *
-      (hasSilver ? 3 : 1) *
       (hasMidas ? 3 : 1) *
       (hasSuccubus
         ? 1 /
@@ -431,8 +435,9 @@ export function computeModifiers(state: GameState): Modifiers {
         Math.floor(mercatusDepth(state, 'vanagloria') / 10) *
         state.lifetime.maxInfluence.toNumber() *
         maxInfluenceMulV,
-    // Flat gold/s from the Haagenti #48 generator sigil (log curve).
-    flatGoldPerSecond: flatGen.gold,
+    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + Thirty Pieces of Silver, which
+    // adds 0.001% of the current gold pool per second (Maleficia sheet rev 2026-06-12).
+    flatGoldPerSecond: flatGen.gold + (hasSilver ? 1e-5 * state.lifetime.gold.toNumber() : 0),
     // Additive increase to the base reprobate suicide rate (added to the per-capita base in
     // `dynamics`, alongside the Doom toggle). Each Nightmare contributes its efficiency-scaled factor.
     flatBaseSuicideRatePerSecond:
@@ -465,6 +470,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // Seduction skill lifts it continuously (03 §1); sigils (Aamon #7 up, Zepar #16 down) compose.
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
+      (hasAdderStone ? 1.05 : 1) * // Adder Stone ×1.05 reprobate generation
       (state.lifetime.handOfGloryRemaining > 0 ? HAND_OF_GLORY_GENERATION_MUL : 1) *
       skillBonus(luxuriaIntensity) *
       compositumGenerationRateMul(state, vcEffectMul) * // Bacchanal +10% ×(Gusion/Naberius)
@@ -475,6 +481,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // the suicide sigils compose.
     reprobateSuicideRateMul:
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
+      (hasWitchLadder ? 1.05 : 1) * // Witch Ladder ×1.05 suicide rate
       (1 + MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH * mercatusDepth(state, 'tristitia')) *
       compositumSuicideRateMul(state, vcEffectMul) * // Doom Gathering +10% ×(Gusion/Naberius)
       sc('reprobateSuicideRateMul'),
@@ -482,6 +489,9 @@ export function computeModifiers(state: GameState): Modifiers {
     // amended); Aim #23 sigil composes. Murder is a per-capita cull of the whole population.
     murderRateMul:
       (panvitiumActive ? PANV_MURDER_MUL : 1) *
+      (hasMarkOfCain ? 3 : 1) * // Mark of Cain ×3 murder rate (sheet rev 2026-06-12)
+      (hasPoppet ? 1.05 : 1) * // Poppet ×1.05 murder rate
+      (hasGaldrabok ? 1.15 : 1) * // Galdrabók ×1.15 murder rate
       (1 + MERCATUS_IRA_MURDER_PER_DEPTH * mercatusDepth(state, 'ira')) *
       compositumMurderRateMul(state, vcEffectMul) * // Enraging Broadcast +10% ×(Gusion/Naberius)
       sc('murderRateMul'),

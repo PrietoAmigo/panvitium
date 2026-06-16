@@ -10,7 +10,7 @@ describe('tick — passive generation', () => {
   it('generates base gold and influence over one second', () => {
     const { state } = tick(createInitialState('seed', 0), 1);
     expect(eq(state.lifetime.gold, bn(2))).toBe(true); // 2/s
-    expect(eq(state.lifetime.influence, bn(1))).toBe(true); // 0.01 × maxInfluence(100) = 1/s
+    expect(eq(state.lifetime.influence, bn(0.5))).toBe(true); // 0.005 × maxInfluence(100) = 0.5/s
   });
 
   it('accumulates sub-unit gains across 100 ms ticks (online == offline)', () => {
@@ -20,14 +20,14 @@ describe('tick — passive generation', () => {
     expect(goldOf(online)).toBe(goldOf(offline));
     expect(influenceOf(online)).toBe(influenceOf(offline));
     expect(goldOf(online)).toBe(2);
-    expect(influenceOf(online)).toBe(1); // floor(1.0)
+    expect(influenceOf(online)).toBe(0); // floor(0.5)
   });
 
   it('caps influence at maxInfluence but lets gold run free', () => {
-    const { state } = tick(createInitialState('seed', 0), 100); // 100 influence (reaches the cap)
+    const { state } = tick(createInitialState('seed', 0), 200); // 0.5/s × 200s = 100 (reaches the cap)
     expect(eq(state.lifetime.influence, state.lifetime.maxInfluence)).toBe(true);
     expect(influenceOf(state)).toBe(100);
-    expect(goldOf(state)).toBe(200);
+    expect(goldOf(state)).toBe(400);
   });
 
   it('advances the logical clock and is a no-op for non-positive deltas', () => {
@@ -58,11 +58,11 @@ describe('tick — modifiers (Sin level / Sin skill)', () => {
 
   it('Vanagloria scales both influence rate (level) and the effective cap (Acclaim)', () => {
     // L1 → influenceRateMul = 1.33 (sheet retune). Skill intensity ≈ 0.41253 → maxInfluenceMul
-    // ≈ 1.4125. effectiveMax = 141.25; influence/s = 141.25 × 0.01 × 1.33 ≈ 1.88 → floor 1.
+    // ≈ 1.4125. effectiveMax = 141.25; influence/s = 141.25 × 0.005 × 1.33 ≈ 0.94 → floor 0.
     const base = createInitialState('seed', 0);
     const state: GameState = { ...base, devotion: { ...base.devotion, vanagloria: bn(180) } };
     const { state: after } = tick(state, 1);
-    expect(floor(after.lifetime.influence).toNumber()).toBe(1);
+    expect(floor(after.lifetime.influence).toNumber()).toBe(0);
   });
 });
 
@@ -90,7 +90,7 @@ describe('perSecondRates — read-only income readout', () => {
   it('matches base gold/influence on a fresh state', () => {
     const r = perSecondRates(createInitialState('seed', 0));
     expect(r.gold).toBe(2); // BASE_GOLD_PER_SECOND
-    expect(eq(r.influence, bn(1))).toBe(true); // 0.01 × maxInfluence(100)
+    expect(eq(r.influence, bn(0.5))).toBe(true); // 0.005 × maxInfluence(100)
   });
 
   it('agrees with the gold the tick actually accrues over one second', () => {

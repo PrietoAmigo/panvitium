@@ -48,7 +48,7 @@ function withGates(opts: {
   reprobates?: number;
 }): GameState {
   const s = fresh();
-  // 17 Black Salt Pouches (each +1 IP, stackable) covers either gate (Erinyes 17, Morpheus 14).
+  // Black Salt Pouches (each +1 IP, stackable) cover either gate (Erinyes 10, Morpheus 10).
   const maleficia = Array.from({ length: 20 }, () => 'black_salt_pouch');
   const sin = opts.apex === 'erinyes' ? 'ira' : 'acedia';
   const reprobates = opts.reprobates ?? 0;
@@ -66,20 +66,20 @@ function withGates(opts: {
 }
 
 describe('Catalog', () => {
-  it('Erinyes (Ira apex) is free, max 1, IP 17, Sin level 3', () => {
+  it('Erinyes (Ira apex) is free, max 1, IP 10, Sin level 3', () => {
     const def = invocationById('erinyes')!;
     expect(def.sin).toBe('ira');
-    expect(def.invokingPower).toBe(17);
+    expect(def.invokingPower).toBe(10);
     expect(def.sinLevel).toBe(3);
     expect(def.maxActive).toBe(1);
     expect(def.soulCost).toBeUndefined();
     expect(def.goldCost).toBeUndefined();
   });
 
-  it('Morpheus (Acedia apex) costs 66% souls + 66% gold, max 1, IP 14, Sin level 3', () => {
+  it('Morpheus (Acedia apex) costs 66% souls + 66% gold, max 1, IP 10, Sin level 3', () => {
     const def = invocationById('morpheus')!;
     expect(def.sin).toBe('acedia');
-    expect(def.invokingPower).toBe(14);
+    expect(def.invokingPower).toBe(10);
     expect(def.sinLevel).toBe(3);
     expect(def.maxActive).toBe(1);
     expect(def.soulCost).toEqual({ fraction: 0.66, minimum: 0 });

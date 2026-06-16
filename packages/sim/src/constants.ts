@@ -17,11 +17,11 @@ export const BASE_GOLD_PER_SECOND = 2;
 export const PLAYER_OFFLINE_EFFICIENCY = 0.5;
 
 /**
- * Base passive influence gain, as a fraction of maxInfluence per second (Globals: 0.025, unit
+ * Base passive influence gain, as a fraction of maxInfluence per second (Globals: 0.005, unit
  * "% of max infl / s"). Influence is generated as a percentage of the maximum and capped there
  * (02 §1) — so gain/s = BASE_INFLUENCE_RATE × maxInfluence. (Supersedes the doc's flat "5/s".)
  */
-export const BASE_INFLUENCE_RATE = 0.01;
+export const BASE_INFLUENCE_RATE = 0.005;
 
 /** Base maximum influence for a fresh lifetime; sin/sigil/maleficia modifiers raise it later. */
 export const BASE_MAX_INFLUENCE = 100;
@@ -77,16 +77,16 @@ export const SKILL_INTENSITY_DIVISOR = 65.37;
 
 /**
  * Katabasis carry-over base fractions (Globals). Each is raised additively by a Sin's per-level
- * effect (Sins & Devotion sheet) and, later, by sigils:
- *   - remaining gold %:           +6.25%/level Avaritia (Mammon)
- *   - remaining reprobate %:      +6.25%/level Luxuria (Asmodeus)
- *   - remaining maleficia chance: +12.5%/level Superbia (Lucifer)
+ * effect (Sins & Devotion sheet rev 2026-06-12 — all three at +12.5%/level):
+ *   - remaining gold %:           +12.5%/level Avaritia (Mammon, "Golden Hand")
+ *   - remaining reprobate %:      +12.5%/level Tristitia (Leviathan, "Resignation")
+ *   - remaining maleficia chance: +12.5%/level Superbia (Lucifer, "Morning Star")
  */
 export const BASE_REMAINING_GOLD = 0.05; // Globals: 0.05 (5%)
 export const BASE_REMAINING_MALEFICIA = 0.05; // Globals value 0.05 (the "(25%)" note is superseded)
 export const BASE_REMAINING_REPROBATE = 0.05; // Globals: 0.05
-export const REMAINING_GOLD_PER_AVARITIA_LEVEL = 0.0625;
-export const REMAINING_REPROBATE_PER_LUXURIA_LEVEL = 0.0625;
+export const REMAINING_GOLD_PER_AVARITIA_LEVEL = 0.125;
+export const REMAINING_REPROBATE_PER_TRISTITIA_LEVEL = 0.125;
 export const REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL = 0.125;
 
 /** Souls offered to the Eternal Sin to end the game (Globals: 8 × 180^4). */

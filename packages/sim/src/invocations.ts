@@ -77,7 +77,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   familiar: {
     id: 'familiar',
     sin: null,
-    invokingPower: 3,
+    invokingPower: 2,
     maxActive: 1,
     // The lone "Special" invocation: only one Familiar may be bound (unlike the stackable Normals).
     // Hybrid (02 §3): a flat +33% to player efficiency (applied in modifiers.ts alongside the other
@@ -87,7 +87,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   imp: {
     id: 'imp',
     sin: 'ira',
-    invokingPower: 4,
+    invokingPower: 2,
     sinLevel: 1,
     soulCost: { fraction: 0.1, minimum: 100 },
     // Stackable (Normal type). Background Decimatio (cost-outcome): each cycle pays
@@ -111,28 +111,28 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   fama: {
     id: 'fama',
     sin: 'vanagloria',
-    invokingPower: 7,
+    invokingPower: 3,
     sinLevel: 1,
     soulCost: { fraction: 0.1, minimum: 100 },
   },
   nightmare: {
     id: 'nightmare',
     sin: 'tristitia',
-    invokingPower: 6,
+    invokingPower: 3,
     sinLevel: 1,
     soulCost: { fraction: 0.1, minimum: 100 },
   },
   harpy: {
     id: 'harpy',
     sin: 'ira',
-    invokingPower: 7,
+    invokingPower: 4,
     sinLevel: 2,
     soulCost: { fraction: 0.25, minimum: 1500 },
   },
   lamia: {
     id: 'lamia',
     sin: 'luxuria',
-    invokingPower: 8,
+    invokingPower: 4,
     sinLevel: 2,
     soulCost: { fraction: 0.25, minimum: 1500 },
     // Stackable (Normal type). A background Suasio runner at `efficiency × the player's efficiency`
@@ -144,7 +144,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   lemure: {
     id: 'lemure',
     sin: 'acedia',
-    invokingPower: 7,
+    invokingPower: 3,
     sinLevel: 1,
     soulCost: { fraction: 0.1, minimum: 100 },
     // Stackable. Effect (modifiers.ts): an additive boost to the offline gain rate (Invocatio sheet),
@@ -153,21 +153,21 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   behemoth: {
     id: 'behemoth',
     sin: 'superbia',
-    invokingPower: 3,
+    invokingPower: 2,
     sinLevel: 1,
     soulCost: { fraction: 0.1, minimum: 100 },
   },
   midas: {
     id: 'midas',
     sin: 'avaritia',
-    invokingPower: 11,
+    invokingPower: 7,
     sinLevel: 3,
     maxActive: 1,
   },
   plutus: {
     id: 'plutus',
     sin: 'avaritia',
-    invokingPower: 8,
+    invokingPower: 5,
     sinLevel: 2,
     soulCost: { fraction: 0.25, minimum: 1500 },
     // Stackable. Effect (modifiers.ts): lifts Vitium Mercatura output (gold + generation +
@@ -176,7 +176,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   succubus: {
     id: 'succubus',
     sin: 'luxuria',
-    invokingPower: 12,
+    invokingPower: 9,
     sinLevel: 3,
     maxActive: 1,
     // Apex Luxuria (free). Effect (modifiers.ts): dramatically multiplies reprobate generation, but
@@ -185,14 +185,14 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   doppelgaenger: {
     id: 'doppelgaenger',
     sin: 'superbia',
-    invokingPower: 12,
+    invokingPower: 8,
     sinLevel: 3,
     maxActive: 1,
   },
   astiwihad: {
     id: 'astiwihad',
     sin: 'tristitia',
-    invokingPower: 15,
+    invokingPower: 10,
     sinLevel: 3,
     maxActive: 1,
     // Apex Tristitia (free). Effect (apex.ts): each second a small chance the whole reprobate
@@ -201,7 +201,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   aurevora: {
     id: 'aurevora',
     sin: 'gula',
-    invokingPower: 10,
+    invokingPower: 7,
     sinLevel: 3,
     maxActive: 1,
     // Apex Gula (free). Effect (apex.ts): an exponentially-rising gold drain paid against a
@@ -211,7 +211,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   erinyes: {
     id: 'erinyes',
     sin: 'ira',
-    invokingPower: 17,
+    invokingPower: 10,
     sinLevel: 3,
     maxActive: 1,
     // Apex Ira (free, one-shot at the next Katabasis). Effects on invoke (see `invoke`): kills the
@@ -222,7 +222,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   morpheus: {
     id: 'morpheus',
     sin: 'acedia',
-    invokingPower: 14,
+    invokingPower: 10,
     sinLevel: 3,
     soulCost: { fraction: 0.66, minimum: 0 },
     goldCost: { fraction: 0.66 },
@@ -235,7 +235,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
   specunitas: {
     id: 'specunitas',
     sin: 'vanagloria',
-    invokingPower: 13,
+    invokingPower: 9,
     sinLevel: 3,
     maxActive: 1,
     // Apex Vanagloria (free). Its only effect was the conversion-bias hook (Celebrity subtype),
