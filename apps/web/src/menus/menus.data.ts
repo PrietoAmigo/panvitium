@@ -1,21 +1,16 @@
-// Placeholder catalogs for the menu layer, lifted from the prototype.
+// Static config + design flavour for the menu layer. What remains here is live:
 //
-// ⚠️  These are DISPLAY STAND-INS. Your authoritative data already lives in
-// `packages/sim` (e.g. maleficia.ts) and your game store. The intended end
-// state is to delete most of this file and feed the components from real
-// selectors — see INTEGRATION.md §"Wiring to real state". Kept here so the
-// components compile and render in isolation.
+// - ROOMS: the room/hotspot layout the `RoomView` reads (real config, not a stand-in).
+// - INVOCATIONS / INVOCATION_BY_ID and MALEFICIA: the illustrated entries' art / lore (and the
+//   maleficia split flavour/effect), merged onto the authoritative sim catalogs by the view-models
+//   (game/invocations.ts, game/maleficia.ts). Mechanics — counts, costs, effects — always come from
+//   `packages/sim`, never from here.
+//
+// The prototype's mock catalogs (the Sin / Sigil / Business / Achievement / Emptio stand-ins, the
+// per-invocation effect copy) were dropped once every panel was wired to real state — those entities
+// now feed from the sim and the store. See INTEGRATION.md §"Wiring to real state".
 
-import type {
-  RoomId,
-  RoomDef,
-  Sin,
-  Invocation,
-  Maleficium,
-  Sigil,
-  Business,
-  Achievement,
-} from './types.js';
+import type { RoomId, RoomDef, Invocation, Maleficium } from './types.js';
 
 // All art is served from apps/web/public/assets/panvitium/ (Vite serves public/ at root).
 export const ASSET_BASE = '/assets/panvitium';
@@ -98,25 +93,10 @@ export const ROOMS: Record<RoomId, RoomDef> = {
   },
 };
 
-export const MAX_SIN_LEVEL = 4;
-export function pips(level: number): string {
-  let out = '';
-  for (let i = 0; i < MAX_SIN_LEVEL; i++) out += i < level ? '\u25CF' : '\u25CB';
-  return out;
-}
-
-export const SINS: Sin[] = [
-  { prince: 'Lucifer', latin: 'Superbia', english: 'Pride', level: 3, devotion: '4.21K' },
-  { prince: 'Mammon', latin: 'Avaritia', english: 'Greed', level: 3, devotion: '3.88K' },
-  { prince: 'Asmodeus', latin: 'Luxuria', english: 'Lust', level: 2, devotion: '1.94K' },
-  { prince: 'Satan', latin: 'Ira', english: 'Wrath', level: 2, devotion: '1.50K' },
-  { prince: 'Beelzebub', latin: 'Gula', english: 'Gluttony', level: 2, devotion: '1.12K' },
-  { prince: 'Leviathan', latin: 'Tristitia', english: 'Sorrow', level: 1, devotion: '640' },
-  { prince: 'Belphegor', latin: 'Acedia', english: 'Sloth', level: 1, devotion: '590' },
-  { prince: 'Rosier', latin: 'Vanagloria', english: 'Vainglory', level: 0, devotion: '120' },
-];
-
-export const INVOCATIONS: Invocation[] = [
+// Design flavour (art / lore / rank) for the illustrated invocations, merged onto the authoritative
+// sim catalog by the view-models. Effect copy is sim-derived (see game/invocationEffect.ts), never
+// from here, so no effect line is carried.
+const INVOCATIONS: Invocation[] = [
   {
     id: 'imp',
     name: 'Imp',
@@ -126,7 +106,6 @@ export const INVOCATIONS: Invocation[] = [
     gate: null,
     unlocked: true,
     img: `${ASSET_BASE}/invocations/imp.png`,
-    effect: '+10% reprobate generation while bound.',
     lore: 'A minor familiar, eager and spiteful. It scuttles where it is told and bites what it is shown.',
   },
   {
@@ -138,7 +117,6 @@ export const INVOCATIONS: Invocation[] = [
     gate: null,
     unlocked: true,
     img: `${ASSET_BASE}/invocations/upir.png`,
-    effect: '+25% Decimatio yield.',
     lore: 'A revenant that feeds in the dark and does not tire. It thins the herd cleanly, and asks only that you look away.',
   },
   {
@@ -150,7 +128,6 @@ export const INVOCATIONS: Invocation[] = [
     gate: null,
     unlocked: true,
     img: `${ASSET_BASE}/invocations/harpy.png`,
-    effect: '+25% Suasio efficiency.',
     lore: 'She carries whispers between the living, and leaves each one heavier than she found it.',
   },
   {
@@ -162,7 +139,6 @@ export const INVOCATIONS: Invocation[] = [
     gate: 'Vanagloria L1',
     unlocked: false,
     img: `${ASSET_BASE}/invocations/fama.png`,
-    effect: '+50% influence gain.',
     lore: 'Rumour given a thousand mouths and wings to carry them. By the time it is denied, it is already believed.',
   },
   {
@@ -174,7 +150,6 @@ export const INVOCATIONS: Invocation[] = [
     gate: 'Tristitia L2',
     unlocked: false,
     img: `${ASSET_BASE}/invocations/nightmare.png`,
-    effect: 'Raises the base suicide rate.',
     lore: 'It rides the sleeping and rides them down. The waking call it despair and never name the rider.',
   },
   {
@@ -186,7 +161,6 @@ export const INVOCATIONS: Invocation[] = [
     gate: 'Gula L3',
     unlocked: false,
     img: `${ASSET_BASE}/invocations/behemoth.png`,
-    effect: '\u00D72 reprobate generation.',
     lore: 'The glutton-beast, first of the appetites. Where it treads, the ground is never sated and neither are they.',
   },
 ];
@@ -371,59 +345,4 @@ export const MALEFICIA: Maleficium[] = [
     desc: "Wax in your likeness, and in someone else's.",
     effect: 'Reveals the Suasio distribution.',
   },
-];
-
-export const SIGILS: Sigil[] = [
-  { n: 5, name: 'Marbas', desc: 'Influence gain \u2191' },
-  { n: 6, name: 'Valefor', desc: 'Gold gain \u2191' },
-  { n: 7, name: 'Aamon', desc: 'Reprobate generation \u2191' },
-  { n: 11, name: 'Gusion', desc: 'Terrible chance \u2193' },
-  { n: 16, name: 'Zepar', desc: 'Reprobate generation \u2193' },
-  { n: 18, name: 'Bathin', desc: 'Acolyte efficiency \u2191' },
-  { n: 20, name: 'Purson', desc: 'Gold kept on descent \u2191' },
-  { n: 23, name: 'Aim', desc: 'Choleric murder rate \u2191' },
-  { n: 31, name: 'Foras', desc: 'Apocalyptic chance \u2193' },
-  { n: 35, name: 'Marchosias', desc: 'Maximum influence \u2191' },
-  { n: 38, name: 'Halphas', desc: 'Maleficia kept on descent \u2191' },
-  { n: 40, name: 'Raum', desc: 'Decimatio efficiency \u2191' },
-  { n: 49, name: 'Crocell', desc: 'Reprobate suicide rate \u2191' },
-  { n: 60, name: 'Vapula', desc: 'Vitium Mercatura output \u2191' },
-  { n: 71, name: 'Dantalion', desc: 'Suasio efficiency \u2191' },
-];
-
-export const BUSINESSES: Business[] = [
-  { name: 'Street food stand', sub: 'Gula', cost: '50 Gold \u00B7 30s', unlocked: true },
-  { name: 'Pimp', sub: 'Luxuria', cost: '120 Gold \u00B7 1m', unlocked: true },
-  { name: 'Garage sale', sub: 'Avaritia', cost: '80 Gold \u00B7 45s', unlocked: true },
-  { name: 'Arms dealer', sub: 'Ira L1', cost: 'Locked \u00B7 Ira L1', unlocked: false },
-  { name: 'Casino', sub: 'Avaritia L3', cost: 'Locked \u00B7 Avaritia L3', unlocked: false },
-];
-
-export const DECIMATIO = {
-  name: 'Caedis',
-  sub: 'Cull the reprobate throng for souls.',
-  cost: '40 Gold \u00B7 10s',
-  cta: 'Cull',
-};
-export const INDAGATIO = {
-  name: 'Indagatio',
-  sub: 'A long, patient search of the world\u2019s corners.',
-  cost: '30m 00s',
-  cta: 'Begin the search',
-};
-export const EMPTIO = [
-  { rarity: 'common', name: 'Tallow Stub', cost: '40 Gold' },
-  { rarity: 'rare', name: 'Hand of Glory', cost: '220 Gold' },
-  { rarity: 'profane', name: 'Goetic Seal of Purson', cost: '900 Gold' },
-  { rarity: 'common', name: 'Cracked Scrying Glass', cost: '60 Gold' },
-] as const;
-export const ACHIEVEMENTS: Achievement[] = [
-  { name: 'First Stain', desc: 'Generate your first reprobate.', got: true },
-  { name: 'First Harvest', desc: 'Earn your first soul.', got: true },
-  { name: 'First Descent', desc: 'Complete your first Katabasis.', got: true },
-  { name: 'First Bargain', desc: 'Acquire your first maleficium.', got: true },
-  { name: 'The Council Convenes', desc: 'Reach Level 1 in every Cardinal Sin.', got: false },
-  { name: 'Profane Possession', desc: 'Own a profane maleficium.', got: false },
-  { name: 'Eight at the Table', desc: 'Reach Level 3 in every Cardinal Sin.', got: false },
-  { name: 'The Crown of Hell', desc: 'Reach Level 4 in every Cardinal Sin.', got: false },
 ];

@@ -11,4 +11,3 @@ export type { GoetiaEntry, ArsGoetiaBookProps } from './ars-goetia.types.js';
 export { DegradedScene } from './DegradedScene.js';
 export { DegradePass, DEFAULT_DEGRADE } from './degrade.js';
 export { Katabasis } from './Katabasis.js';
-export { useHold } from './useHold.js';
