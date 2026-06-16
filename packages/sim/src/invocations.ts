@@ -148,6 +148,11 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 4,
     sinLevel: 2,
     upkeep: { influence: 5 }, // 5 influence/s (Invocatio sheet)
+    // Stackable (Normal type). A background Pogrom runner (Invocatio sheet #8: "action efficiency
+    // applies to Pogrom") — replacing its old blanket Decimatio-efficiency boost. Forced to Good
+    // like the other stackable Decimatio runners (Imp/Upir, 03 §2.4), so a passive channel can't roll
+    // Pogrom's catastrophic tails; it steadily culls + harvests souls per cycle instead.
+    autonomous: { action: 'pogrom', efficiency: 0.05, forcedTier: 'good' },
   },
   lamia: {
     id: 'lamia',
@@ -155,11 +160,11 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 4,
     sinLevel: 2,
     upkeep: { influence: 3 }, // 3 influence/s (Invocatio sheet)
-    // Stackable (Normal type). A background Suasio runner at `efficiency × the player's efficiency`
-    // (Invocatio sheet: "action efficiency applies to Suasio"), without occupying the player's action
-    // slot. `suggestion` is the Suasio-category action; natural tier rolls. Each summoned copy runs
-    // its own channel (advanceInvocationRunners), so N lamiae work at ~N× the rate.
-    autonomous: { action: 'suggestion', efficiency: 0.05 },
+    // Stackable (Normal type). A background Logismoi runner at `efficiency × the player's efficiency`
+    // (Invocatio sheet #8: "action efficiency applies to Logismoi"), without occupying the player's
+    // action slot. Logismoi is the L2 Suasio action; natural tier rolls. Each summoned copy runs its
+    // own channel (advanceInvocationRunners), so N lamiae work at ~N× the rate.
+    autonomous: { action: 'logismoi', efficiency: 0.05 },
   },
   lemure: {
     id: 'lemure',

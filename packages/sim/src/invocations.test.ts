@@ -286,10 +286,15 @@ describe('Invocation modifier effects', () => {
     expect(three.reprobateSuicideRateMul).toBe(NEUTRAL_MODIFIERS.reprobateSuicideRateMul); // mul untouched
   });
 
-  it('Harpy: lifts Decimatio efficiency (not murder), scaled by player efficiency', () => {
+  it('Harpy no longer lifts Decimatio efficiency — its effect is now a Pogrom runner (#8)', () => {
     const two = computeModifiers(withInvocation(fresh(), 'harpy', 2));
-    expect(two.decimatioEfficiencyMul).toBeCloseTo(1 + 0.05 * 2, 6); // baseline playerEff/invEff = 1
+    expect(two.decimatioEfficiencyMul).toBeCloseTo(1, 6); // blanket Decimatio boost retired
     expect(two.murderRateMul).toBe(NEUTRAL_MODIFIERS.murderRateMul); // murder untouched
+    expect(invocationById('harpy')!.autonomous).toEqual({
+      action: 'pogrom',
+      efficiency: 0.05,
+      forcedTier: 'good',
+    });
   });
 
   it('Behemoth: additive increase to Stellar weight (efficiency-scaled, 0.0005/stack baseline)', () => {
@@ -406,20 +411,20 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(def.upkeep).toEqual({ influence: 1 }); // 1 influence/s upkeep
   });
 
-  it('Lamia is the Luxuria Suasio runner — power 4 + Luxuria 2, stackable', () => {
+  it('Lamia is the Luxuria Logismoi runner — power 4 + Luxuria 2, stackable', () => {
     const def = invocationById('lamia')!;
     expect(def.sin).toBe('luxuria');
     expect(def.invokingPower).toBe(4);
     expect(def.sinLevel).toBe(2);
     // Normal type → no cap. Each summoned copy runs its own channel, so stacking scales throughput.
     expect(def.maxActive).toBeUndefined();
-    expect(def.autonomous).toEqual({ action: 'suggestion', efficiency: 0.05 }); // background Suasio runner
+    expect(def.autonomous).toEqual({ action: 'logismoi', efficiency: 0.05 }); // background Suasio runner (#8)
     expect(def.upkeep).toEqual({ influence: 3 }); // 3 influence/s upkeep
   });
 
-  it('Lamia runs a background Suasio (suggestion) channel without touching the player slot', () => {
+  it('Lamia runs a background Suasio (logismoi) channel without touching the player slot', () => {
     let s = withInvocation(fresh(), 'lamia', 1);
-    s = { ...s, lifetime: { ...s.lifetime, influence: bn(1000) } }; // afford the suggestion cost
+    s = { ...s, lifetime: { ...s.lifetime, influence: bn(1000) } }; // afford the logismoi cost
     const r = advanceInvocationRunners(s, 0.1, makeRng(1));
     expect(r.state.lifetime.invocationRunners.lamia).toBeGreaterThan(0); // a runner timer started
     expect(r.state.lifetime.actionQueue).toHaveLength(0); // player action slot untouched

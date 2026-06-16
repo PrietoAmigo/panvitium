@@ -54,8 +54,6 @@ function passiveEffectText(state: GameState, id: string): string {
       return ok(b.influenceRateMul)
         ? times(w.influenceRateMul, b.influenceRateMul, L.influence)
         : '';
-    case 'harpy':
-      return up(w.decimatioEfficiencyMul, b.decimatioEfficiencyMul, L.decimatioEff);
     case 'plutus':
       return up(w.vitiumMercaturaOutputMul, b.vitiumMercaturaOutputMul, L.vmOutput);
     case 'behemoth': {

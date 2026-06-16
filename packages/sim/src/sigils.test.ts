@@ -315,10 +315,11 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     const base = computeModifiers(fama).influenceRateMul;
     const boosted = computeModifiers(bound(26, 100_000, fama)).influenceRateMul;
     expect(boosted).toBeGreaterThan(base);
-    // Harpy (Ira) is unaffected by a Vanagloria sigil.
+    // Harpy (Ira) is unaffected by a Vanagloria sigil — its Pogrom-runner efficiency is unchanged.
     const harpy = withInv('harpy', 2);
-    const harpyBase = computeModifiers(harpy).decimatioEfficiencyMul;
-    expect(computeModifiers(bound(26, 100_000, harpy)).decimatioEfficiencyMul).toBeCloseTo(
+    const harpyDef = invocationById('harpy')!;
+    const harpyBase = invocationRunnerEfficiency(harpy, harpyDef);
+    expect(invocationRunnerEfficiency(bound(26, 100_000, harpy), harpyDef)).toBeCloseTo(
       harpyBase,
       6,
     );

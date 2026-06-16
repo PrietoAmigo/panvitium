@@ -284,7 +284,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const hasFamiliar = (inv.familiar ?? 0) > 0; // +33% player efficiency (02 §3 hybrid)
   const famaCount = inv.fama ?? 0; // each: additive influence increase (× playerEff × invEff)
   const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× playerEff × invEff)
-  const harpyCount = inv.harpy ?? 0; // each: Decimatio efficiency up (× playerEff × invEff)
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× playerEff × invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (× playerEff × invEff)
@@ -314,7 +313,6 @@ export function computeModifiers(state: GameState): Modifiers {
   // efficiency (`playerEff`) × the invocation-effect multiplier (`invEff`), so the demonic court
   // scales with the build (Model 1).
   const FAMA_INFLUENCE_FACTOR = 0.05; // additive increase to influence rate
-  const HARPY_DECIMATIO_FACTOR = 0.05; // multiplicative increase to Decimatio efficiency
   const PLUTUS_VM_FACTOR = 0.05; // increase to Vitium Mercatura output
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const NIGHTMARE_SUICIDE_FACTOR = 5e-5; // additive increase to base reprobate suicide rate (sheet)
@@ -450,10 +448,11 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
       (1 + VOYNICH_SUASIO_BONUS * voynich) *
       sc('suasioEfficiencyMul'),
+    // Harpy no longer lifts blanket Decimatio efficiency — its effect is now a Pogrom runner
+    // (invocations.ts), amplified by the Ira per-Sin term like any Ira runner.
     decimatioEfficiencyMul:
       IRA_DECIMATIO_EFF_PER_LEVEL ** iraLvl * // ×2 per Ira level (sheet rev 2026-06-12)
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
-      (1 + HARPY_DECIMATIO_FACTOR * playerEff * invEffFor('ira') * harpyCount) *
       sc('decimatioEfficiencyMul'),
     indagatioEfficiencyMul: sc('indagatioEfficiencyMul'),
     emptioEfficiencyMul: sc('emptioEfficiencyMul'),
