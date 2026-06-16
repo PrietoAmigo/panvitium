@@ -347,6 +347,9 @@ export interface InvocationUpkeep {
  * Sum the upkeep of every active invocation. `effectiveMax` is the current effective max influence
  * (for Lemure's 1%-of-max drain). The gain fractions are clamped to 1 so a stack can at most zero a
  * resource's gain, never invert it; flat drains are absolute and can bankrupt a pool (→ dispel).
+ *
+ * Orobas #55 ("− cost of all invocations") softens the flat, out-of-pocket drains — dividing them by
+ * its `(1 + strength)` channel — but leaves the %-of-gain costs (the apex tradeoffs) untouched.
  */
 export function invocationUpkeep(state: GameState, effectiveMax: number): InvocationUpkeep {
   let goldGainFraction = 0;
@@ -374,6 +377,15 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
       flatInfluencePerSecond += u.maxInfluenceFraction * n * effectiveMax;
       flatInfluenceDrainers.push(id);
     }
+  }
+  // Orobas #55 discount on the flat drains (same channel as the one-time soul price).
+  const red = sigilCostReductionByChannel(
+    state,
+    sigilEffectMultiplier(state.lifetime.maleficia),
+  ).invocationSoul;
+  if (red && red > 1) {
+    flatGoldPerSecond /= red;
+    flatInfluencePerSecond /= red;
   }
   return {
     goldGainFraction: Math.min(1, goldGainFraction),

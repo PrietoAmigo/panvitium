@@ -21,6 +21,7 @@ import {
   currentInvokingPower,
   invocationById,
   invocationSoulCost,
+  invocationUpkeep,
   makeRng,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
@@ -427,6 +428,19 @@ describe('Cost-reduction sigils (S8)', () => {
     const withPool = (s: GameState): GameState => ({ ...s, souls: bn(1000) });
     expect(invocationSoulCost(withPool(fresh()), morpheus).toNumber()).toBe(900); // 90% of 1000
     expect(invocationSoulCost(withPool(bound(55, 100_000_000)), morpheus).toNumber()).toBe(450); // halved
+  });
+
+  it('Orobas #55 also softens flat invocation upkeep (cost of all invocations)', () => {
+    // An active Imp drains 10 gold/s flat; Orobas halves it. %-of-gain apex costs stay untouched.
+    const withImp = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, invocations: { imp: 1 } },
+    });
+    expect(invocationUpkeep(withImp(fresh()), 0).flatGoldPerSecond).toBe(10);
+    expect(invocationUpkeep(withImp(bound(55, 100_000_000)), 0).flatGoldPerSecond).toBeCloseTo(
+      5,
+      6,
+    );
   });
 });
 
