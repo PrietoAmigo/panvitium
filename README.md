@@ -633,9 +633,15 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 .scene-*`) but there's no furnish trigger for those two yet — turning them on as the player
     progresses is a design call. Hotspots are boxless: hovering reveals the label (and door glyph)
     without a highlight box. Note runtime art is served from `apps/web/public/assets/panvitium/`; the
-    repo-root `assets/` tree is source/staging and unused at runtime. Optional cleanup: the orphaned
-    `useHold` export, the superseded text panels, and the unused `menus.data.ts` mock arrays. Plus
-    the content backlog (art/lore for the un-illustrated invocations & maleficia, audio).
+    repo-root `assets/` tree is source/staging and unused at runtime. _Dead-weight cleanup done:_ the
+    orphaned `useHold` hook, the superseded text panels (`PcPanel`, `ArsGoetiaPanel`) and their dead
+    `PANELS` entries, and the unused `menus.data.ts` mock arrays (the `SINS` / `SIGILS` / `BUSINESSES`
+    / `DECIMATIO` / `INDAGATIO` / `EMPTIO` / `ACHIEVEMENTS` stand-ins, `MAX_SIN_LEVEL` / `pips`, and
+    the per-invocation `effect` copy) were removed, along with the now-orphaned `Sin`-adjacent types
+    (`Sigil` / `Business` / `Achievement` / `LogLine`) and the dead sim imports they pulled in;
+    `menus.data.ts` now carries only the live `ROOMS` config and the merged-in art/lore flavour. Gate
+    stays green. What remains is the content backlog (art/lore for the un-illustrated invocations &
+    maleficia, audio).
   - _Ars Goetia effect lines made authoritative._ The grimoire's per-invocation **Effect** line was
     reading hand-authored copy from `menus.data.ts` (`INVOCATION_BY_ID[id].effect`), which had gone
     stale and wrong: Harpy listed _Suasio_ (it's **Decimatio** efficiency), Behemoth listed _×2

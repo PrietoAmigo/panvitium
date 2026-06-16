@@ -50,7 +50,6 @@ export interface Invocation {
   gate: string | null; // unlock requirement, or null if always available
   unlocked: boolean;
   img: string;
-  effect: string;
   lore: string;
 }
 
@@ -111,27 +110,6 @@ export interface MaleficiumUse {
   enabled: boolean;
   /** A line describing the current effect status (remaining buff time, the cursed subtype), if any. */
   status?: string;
-}
-
-export interface Sigil {
-  n: number;
-  name: string;
-  desc: string;
-}
-export interface Business {
-  name: string;
-  sub: string;
-  cost: string;
-  unlocked: boolean;
-}
-export interface Achievement {
-  name: string;
-  desc: string;
-  got: boolean;
-}
-export interface LogLine {
-  tier: 'good' | 'excellent' | 'stellar' | 'neutral' | 'bad';
-  text: string;
 }
 
 // ── Degradation layer (degradation-pass handoff) ────────────────────────────

@@ -24,13 +24,6 @@ import {
   compositumById,
   compositumUnlocked,
   isToggleActive,
-  INVOCATION_IDS,
-  invocationById,
-  invocationVisible,
-  invocationUnlocked,
-  invocationSoulCost,
-  activeInvocationCount,
-  currentInvokingPower,
   assignedCount,
   isDelegatable,
   ACHIEVEMENTS,
@@ -359,16 +352,6 @@ type PcGroupId =
   | 'achievements'
   | 'emails'
   | 'logs';
-
-const PC_GROUPS: { id: PcGroupId; label: string }[] = [
-  { id: 'depraedatio', label: strings.opera.depraedatio },
-  { id: 'decimatio', label: strings.opera.decimatio },
-  { id: 'indagatio', label: strings.opera.indagatio },
-  { id: 'analytics', label: strings.analytics.title },
-  { id: 'achievements', label: strings.achievements.ledger },
-  { id: 'emails', label: strings.emails.title },
-  { id: 'logs', label: strings.opera.logs },
-];
 
 /**
  * Indagatio × Emptio (03 §2.5–2.6), merged into one surface — the "Orbis Tenebrarum" globe (Claude
@@ -1153,147 +1136,19 @@ export function PcDesk({ onClose }: { onClose: () => void }): ReactElement {
   );
 }
 
-/**
- * The desk terminal (Studio, 02 §10): a simple Win95-style menu of action groups; selecting one
- * opens that group's actions, with a way back to the menu.
- */
-function PcPanel(): ReactElement {
-  const [group, setGroup] = useState<PcGroupId | null>(null);
-
-  if (group === null) {
-    return (
-      <div className="pc">
-        <p className="pc-prompt">
-          {'C:\\LAIR> '}
-          {strings.opera.selectLedger}
-        </p>
-        <div className="pc-menu">
-          {PC_GROUPS.map((g) => (
-            <button key={g.id} type="button" className="pc-menu-btn" onClick={() => setGroup(g.id)}>
-              {g.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const label = PC_GROUPS.find((g) => g.id === group)?.label ?? group;
-  return (
-    <div className="pc">
-      <button type="button" className="pc-back" onClick={() => setGroup(null)}>
-        ← {strings.opera.back}
-      </button>
-      <h3 className="pc-heading">{label}</h3>
-      <PcGroupBody group={group} />
-    </div>
-  );
-}
-
 interface PanelContent {
   title: string;
   body: ReactNode;
 }
 
 /**
- * Ars Goetia (Invocation Room, 02 §12): the invocation list. An entry appears once invoking power
- * reaches half its requirement (a teaser). Each shows its gate, soul cost, and active count, with a
- * Summon button (gated) and a Dispel button when ≥1 active. Invoking power is shown at the top.
- */
-function ArsGoetiaPanel(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const summon = useGameStore((s) => s.summon);
-  const banish = useGameStore((s) => s.banish);
-  const notice = useGameStore((s) => s.notice);
-  if (!state) return <p className="pc-empty">{strings.invocations.empty}</p>;
-
-  const power = currentInvokingPower(state);
-  const souls = floor(state.souls).toNumber();
-  const visible = INVOCATION_IDS.map(invocationById).filter(
-    (def): def is NonNullable<typeof def> => !!def && invocationVisible(state, def),
-  );
-
-  return (
-    <div className="invocations">
-      <p className="invocations-power">
-        {strings.invocations.power}: {power}
-      </p>
-      <p className="opera-intro">{strings.invocations.intro}</p>
-      {visible.length === 0 ? (
-        <p className="pc-empty">{strings.invocations.empty}</p>
-      ) : (
-        <ul className="vitium-list">
-          {visible.map((def) => {
-            const unlocked = invocationUnlocked(state, def);
-            const count = activeInvocationCount(state, def.id);
-            const cost = floor(invocationSoulCost(state, def)).toNumber();
-            const name = strings.invocations.names[def.id] ?? def.id;
-            const gate =
-              def.sinLevel !== undefined && def.sin !== null
-                ? `${def.invokingPower} ${strings.maleficia.invokingPower} · ${def.sin} L${def.sinLevel}`
-                : `${def.invokingPower} ${strings.maleficia.invokingPower}`;
-            const costLabel =
-              cost > 0 ? `${cost} ${strings.resources.souls}` : strings.invocations.free;
-            const atCap = def.maxActive !== undefined && count >= def.maxActive;
-            return (
-              <li
-                key={def.id}
-                className={`vitium-row${unlocked ? '' : ' vitium-locked'}${count > 0 ? ' vitium-active' : ''}`}
-              >
-                <div className="vitium-meta">
-                  <span className="vitium-name">{name}</span>
-                  <span className="vitium-sub">
-                    {unlocked ? costLabel : gate}
-                    {count > 0 ? ` · ${count} ${strings.invocations.active}` : ''}
-                  </span>
-                </div>
-                <div className="vitium-actions">
-                  <button
-                    type="button"
-                    className="opera-btn"
-                    disabled={!unlocked || atCap || souls < cost}
-                    onClick={() => summon(def.id)}
-                    aria-label={`${strings.invocations.summon} ${name}`}
-                  >
-                    {unlocked ? strings.invocations.summon : `${strings.opera.sinLocked} · ${gate}`}
-                  </button>
-                  {count > 0 && (
-                    <button
-                      type="button"
-                      className="opera-btn opera-btn--stop"
-                      onClick={() => banish(def.id)}
-                      aria-label={`${strings.invocations.dispel} ${name}`}
-                    >
-                      {strings.invocations.dispel}
-                    </button>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {notice !== null && <p className="opera-notice">{notice}</p>}
-    </div>
-  );
-}
-
-/**
- * Placeholder copy in the game's voice; each panel's real menu lands with its system. The Suasio
- * scroll, like Ars Goetia and the PC, is a self-framed full-surface overlay (see `SuasioScroll`),
- * so it is mounted directly by App rather than through this framed-panel map.
+ * The framed-panel map. Only the Maleficia shelf is a framed Panel; Ars Goetia, the PC and the
+ * Suasio scroll are self-framed full-surface overlays (see `GoetiaBook`, `PcDesk`, `SuasioScroll`)
+ * mounted directly by App rather than through this map.
  */
 export const PANELS: Partial<Record<PanelId, PanelContent>> = {
-  'ars-goetia': {
-    title: 'Ars Goetia',
-    body: <ArsGoetiaPanel />,
-  },
   maleficia: {
     title: 'The Maleficia Shelf',
     body: <MaleficiaShelf />,
-  },
-  pc: {
-    title: 'The Desk',
-    body: <PcPanel />,
   },
 };
