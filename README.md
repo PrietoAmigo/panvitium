@@ -973,8 +973,8 @@ composition)._
   secondary-effect magnitudes, since removed wholesale by ADR-024.
 
 **Done when** no placeholder magnitudes remain flagged. **✓ Done** — the sweep above reconciled them.
-(All 72 sigils still _bind_; 16 are currently `inert` post-ADR-024 — the orphaned-sigils pass in
-`### Remaining` re-targets them.)
+(All 72 sigils _bind_ and **none are `inert`** — the orphaned-sigils pass shipped as **ADR-029**,
+giving the 16 sigils that ADR-024 had neutralized their revised-sheet effects.)
 
 > **Open question for the economy owner** — _closed by ADR-024:_ the per-subtype "Effect per unit"
 > question is moot now that subtypes and their secondary rate effects are removed entirely.
@@ -990,9 +990,10 @@ the other tracks being substantially done._
 - **Backups.** Nightly `age`-encrypted `pg_dump` to B2/R2, with the weekly restore test actually running
   (ADR-018).
 - **Observability.** Dozzle + UptimeRobot live now; self-hosted PostHog later (ADR-019).
-- **Hardening before it bites.** Turn on HMAC-signed saves (ADR-011) and dry-run the first real save
-  migration (`migrations/v1→v2`, ADR-023) so the path is proven before a schema change forces it — none
-  exists yet (the dir holds a `_noop` placeholder + harness).
+- **Hardening before it bites.** Turn on HMAC-signed saves (ADR-011). The save-migration path
+  (ADR-023) is already live and proven — two real migrations ship with unit tests (`v1→v2` ADR-024,
+  `v2→v3` ADR-025; the schema is at **v3**) — so what remains is exercising a real migrated save
+  through a production `pg_dump` → restore as part of the backup test (ADR-018).
 - **Performance & accessibility.** Offline catch-up at large capped deltas, the `DegradePass` canvas cost,
   and keyboard / assistive-tech reach across the diegetic panels.
 - **Beta → launch.** A closed beta cohort, then launch.
