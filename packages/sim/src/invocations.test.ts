@@ -267,6 +267,12 @@ describe('Invocation modifier effects', () => {
     expect(invocationById('doppelgaenger')!.upkeep).toEqual({ influenceGainFraction: 0.5 });
   });
 
+  it('Specunitas (apex Vanagloria): ×2 influence gain/s', () => {
+    const base = computeModifiers(fresh()).influenceRateMul;
+    const spec = computeModifiers(withInvocation(fresh(), 'specunitas', 1)).influenceRateMul;
+    expect(spec).toBeCloseTo(base * 2, 6);
+  });
+
   it('Fama: additive influence increase scaled by player efficiency (0.05/stack at baseline)', () => {
     const two = computeModifiers(withInvocation(fresh(), 'fama', 2));
     // Baseline playerEff = invEff = 1, so each Fama adds 0.05 to the influence-rate multiplier.
@@ -275,8 +281,8 @@ describe('Invocation modifier effects', () => {
 
   it('Nightmare: additive increase to base suicide rate, not the multiplier', () => {
     const three = computeModifiers(withInvocation(fresh(), 'nightmare', 3));
-    // Baseline playerEff = invEff = 1, so each Nightmare adds 0.05 to the per-capita base rate.
-    expect(three.flatBaseSuicideRatePerSecond).toBeCloseTo(0.05 * 3, 6);
+    // Baseline playerEff = invEff = 1, so each Nightmare adds 5e-5 to the per-capita base rate (sheet).
+    expect(three.flatBaseSuicideRatePerSecond).toBeCloseTo(5e-5 * 3, 9);
     expect(three.reprobateSuicideRateMul).toBe(NEUTRAL_MODIFIERS.reprobateSuicideRateMul); // mul untouched
   });
 
@@ -325,7 +331,7 @@ describe('Familiar — the hybrid (02 §3)', () => {
     const def = invocationById('familiar')!;
     expect(def.maxActive).toBe(1);
     expect(def.sin).toBeNull();
-    expect(def.autonomous).toEqual({ action: 'indagatio', efficiency: 0.05 });
+    expect(def.autonomous).toEqual({ action: 'indagatio', efficiency: 0.01 });
     expect(invocationSoulCost(fresh(), def).toNumber()).toBe(0);
     expect(invocationUnlocked(withPower(fresh(), 2), def)).toBe(true);
     expect(invocationUnlocked(withPower(fresh(), 1), def)).toBe(false);
@@ -345,11 +351,11 @@ describe('Familiar — the hybrid (02 §3)', () => {
     expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });
 
-  it('resolves Indagatio cycles at 5% of player efficiency over a large (offline) delta', () => {
+  it('resolves Indagatio cycles at 1% of player efficiency over a large (offline) delta', () => {
     const s = withInvocation(fresh(), 'familiar', 1);
-    // Cycle time = 300 / (0.05 × playerEff). playerEff = 1.33 (Familiar boost) → ~4511 s/cycle.
-    // A 24h delta should resolve ~19 cycles; assert it produced at least a handful of events.
-    const r = advanceInvocationRunners(s, 86_400, makeRng(7));
+    // Cycle time = 300 / (0.01 × playerEff). playerEff = 1.33 (Familiar boost) → ~22.6k s/cycle.
+    // A 7-day delta resolves ~26 cycles; assert it produced at least a handful of events.
+    const r = advanceInvocationRunners(s, 604_800, makeRng(7));
     expect(r.events.length).toBeGreaterThanOrEqual(5);
     expect(r.events.every((e) => e.actionId === 'indagatio')).toBe(true);
     expect(r.state.lifetime.invocationRunners.familiar).toBeGreaterThan(0); // mid next cycle

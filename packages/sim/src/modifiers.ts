@@ -290,6 +290,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (× playerEff × invEff)
   const lemureCount = inv.lemure ?? 0; // each: additive offline gain rate (× playerEff × invEff)
   const hasSuccubus = (inv.succubus ?? 0) > 0; // Suasio efficiency up + gold cut (× playerEff × invEff)
+  const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×2 influence gain/s (sheet)
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
   // (apex.ts owns the curve and the paired gold drain). 1× when absent.
@@ -318,7 +319,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const PLUTUS_VM_FACTOR = 0.05; // increase to Vitium Mercatura output
   const SUCCUBUS_SUASIO_FACTOR = 0.99; // multiplicative increase to Suasio efficiency
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
-  const NIGHTMARE_SUICIDE_FACTOR = 0.05; // additive increase to base reprobate suicide rate
+  const NIGHTMARE_SUICIDE_FACTOR = 5e-5; // additive increase to base reprobate suicide rate (sheet)
   const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
   const LEMURE_OFFLINE_FACTOR = 0.025; // additive increase to offline gain rate
 
@@ -417,6 +418,7 @@ export function computeModifiers(state: GameState): Modifiers {
       1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
       (hasCodex ? 3 : 1) *
       (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
+      (hasSpecunitas ? 2 : 1) * // Specunitas (apex Vanagloria): ×2 influence gain/s
       sc('influenceRateMul'),
     maxInfluenceMul: maxInfluenceMulV,
     // Flat influence/s: the Decarabia #69 generator sigil (log curve) + the Mercatus Vanagloriae

@@ -100,8 +100,9 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     maxActive: 1,
     // The lone "Special" invocation: only one Familiar may be bound (unlike the stackable Normals).
     // Hybrid (02 §3): a flat +33% to player efficiency (applied in modifiers.ts alongside the other
-    // invocation magnitudes) AND a background Indagatio runner at 5% of the player's efficiency.
-    autonomous: { action: 'indagatio', efficiency: 0.05 },
+    // invocation magnitudes) AND a background Indagatio runner at 1% of the player's efficiency
+    // (Invocatio sheet efficiency column).
+    autonomous: { action: 'indagatio', efficiency: 0.01 },
   },
   imp: {
     id: 'imp',

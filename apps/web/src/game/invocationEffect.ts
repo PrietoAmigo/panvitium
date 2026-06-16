@@ -50,6 +50,10 @@ function passiveEffectText(state: GameState, id: string): string {
   switch (id) {
     case 'fama':
       return ok(b.influenceRateMul) ? up(w.influenceRateMul, b.influenceRateMul, L.influence) : '';
+    case 'specunitas':
+      return ok(b.influenceRateMul)
+        ? times(w.influenceRateMul, b.influenceRateMul, L.influence)
+        : '';
     case 'harpy':
       return up(w.decimatioEfficiencyMul, b.decimatioEfficiencyMul, L.decimatioEff);
     case 'plutus':
