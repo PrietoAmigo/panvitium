@@ -289,7 +289,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (× playerEff × invEff)
   const lemureCount = inv.lemure ?? 0; // each: additive offline gain rate (× playerEff × invEff)
-  const hasSuccubus = (inv.succubus ?? 0) > 0; // Suasio efficiency up + gold cut (× playerEff × invEff)
   const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×2 influence gain/s (sheet)
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
@@ -317,7 +316,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const FAMA_INFLUENCE_FACTOR = 0.05; // additive increase to influence rate
   const HARPY_DECIMATIO_FACTOR = 0.05; // multiplicative increase to Decimatio efficiency
   const PLUTUS_VM_FACTOR = 0.05; // increase to Vitium Mercatura output
-  const SUCCUBUS_SUASIO_FACTOR = 0.99; // multiplicative increase to Suasio efficiency
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const NIGHTMARE_SUICIDE_FACTOR = 5e-5; // additive increase to base reprobate suicide rate (sheet)
   const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
@@ -445,13 +443,12 @@ export function computeModifiers(state: GameState): Modifiers {
     // Leraie #14: chance each murder also triggers a suicide (rate-level coupling in dynamics).
     murderTriggersSuicideChance: sigilMurderTriggersSuicideChance(state, sigMul),
     playerEfficiencyMul: playerEff,
+    // Succubus no longer lifts Suasio efficiency — its effect is now an autonomous Imperium runner
+    // (invocations.ts), amplified by the Luxuria per-Sin term like any Luxuria runner.
     suasioEfficiencyMul:
       LUXURIA_SUASIO_EFF_PER_LEVEL ** luxuriaLvl * // ×2 per Luxuria level (sheet rev 2026-06-12)
       (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
       (1 + VOYNICH_SUASIO_BONUS * voynich) *
-      (hasSuccubus
-        ? 1 + SUCCUBUS_SUASIO_FACTOR * playerEff * invEffFor('luxuria') * invEffForInv('succubus')
-        : 1) *
       sc('suasioEfficiencyMul'),
     decimatioEfficiencyMul:
       IRA_DECIMATIO_EFF_PER_LEVEL ** iraLvl * // ×2 per Ira level (sheet rev 2026-06-12)

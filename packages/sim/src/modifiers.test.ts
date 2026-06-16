@@ -294,12 +294,11 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     );
   });
 
-  it('Succubus lifts Suasio efficiency; its gold cost is now per-tick upkeep (not a rate cut)', () => {
+  it('Succubus no longer touches the rate modifiers — its effect is an Imperium runner, cost is upkeep', () => {
     const m = computeModifiers(withInvocation('succubus', 1));
-    // Baseline playerEff = invEff = 1, factor 0.99.
-    expect(m.suasioEfficiencyMul).toBeCloseTo(1 + 0.99, 6);
-    expect(m.goldRateMul).toBeCloseTo(1, 6); // no longer cut here — the 99% is upkeep (tick 1a)
-    expect(m.reprobateGenerationRateMul).toBe(NEUTRAL_MODIFIERS.reprobateGenerationRateMul); // no longer touched
+    expect(m.suasioEfficiencyMul).toBeCloseTo(1, 6); // no longer a Suasio-efficiency source (#8 retarget)
+    expect(m.goldRateMul).toBeCloseTo(1, 6); // the 99% gold gain is upkeep (tick 1a), not a rate cut
+    expect(m.reprobateGenerationRateMul).toBe(NEUTRAL_MODIFIERS.reprobateGenerationRateMul);
   });
 
   it('Midas still triples goldRateMul independent of Succubus (whose cost is now upkeep)', () => {

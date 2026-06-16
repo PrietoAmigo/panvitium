@@ -200,8 +200,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 3,
     maxActive: 1,
     upkeep: { goldGainFraction: 0.99 }, // 99% of current gold gain/s (Invocatio sheet)
-    // Apex Luxuria (free). Effect (modifiers.ts): dramatically multiplies reprobate generation, but
-    // cuts gold gain to 1% of total — a generation-at-all-costs ritual.
+    // Apex Luxuria. Effect (Invocatio sheet #8): an autonomous Imperium runner at 0.99 × player
+    // efficiency — the apex "player in control" rite cast on its own, full distribution (it can roll
+    // Stellar's soul payout AND Apocalyptic's cull). It keeps the 99%-gold-gain upkeep as its cost.
+    autonomous: { action: 'imperium', efficiency: 0.99 },
   },
   doppelgaenger: {
     id: 'doppelgaenger',

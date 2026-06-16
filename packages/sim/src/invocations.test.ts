@@ -441,8 +441,25 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(def.invokingPower).toBe(9);
     expect(def.sinLevel).toBe(3);
     expect(def.maxActive).toBe(1);
-    expect(def.soulCost).toBeUndefined(); // free (apex)
+    expect(def.soulCost).toBeUndefined(); // no one-time soul cost (its cost is upkeep)
     expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(0);
+    expect(def.upkeep).toEqual({ goldGainFraction: 0.99 }); // 99% gold gain/s upkeep
+    expect(def.autonomous).toEqual({ action: 'imperium', efficiency: 0.99 }); // #8: Imperium runner
+  });
+
+  it('Succubus runs an autonomous Imperium channel (pays influence, leaves the player slot free)', () => {
+    let s = withInvocation(fresh(), 'succubus', 1);
+    // A big influence cushion so the 100-influence Imperium cycles can pay; high max so it isn't capped.
+    s = {
+      ...s,
+      lifetime: { ...s.lifetime, influence: bn(1_000_000), maxInfluence: bn(10_000_000) },
+    };
+    // 25 s over ~10 s cost-outcome cycles → a couple of Imperium resolutions plus a partial timer.
+    const r = advanceInvocationRunners(s, 25, makeRng(3));
+    expect(r.state.lifetime.invocationRunners.succubus).toBeGreaterThan(0); // a runner timer started
+    expect(r.state.lifetime.actionQueue).toHaveLength(0); // player action slot untouched
+    expect(r.events.length).toBeGreaterThan(0);
+    expect(r.events.every((e) => e.actionId === 'imperium')).toBe(true);
   });
 
   it('Lemure is a stackable Acedia influence source — power 3 + Acedia 1', () => {

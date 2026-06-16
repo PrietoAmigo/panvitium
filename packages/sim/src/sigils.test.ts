@@ -20,6 +20,7 @@ import {
   createInitialState,
   currentInvokingPower,
   invocationById,
+  invocationRunnerEfficiency,
   invocationSoulCost,
   invocationUpkeep,
   makeRng,
@@ -333,10 +334,13 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     );
   });
 
-  it('Furfur #34 (Luxuria) amplifies the Succubus Suasio effect', () => {
+  it('Furfur #34 (Luxuria) amplifies the Succubus Imperium runner', () => {
+    // Succubus' effect is now an autonomous Imperium runner; the Luxuria per-Sin term folds into its
+    // runner efficiency (invocationRunnerEfficiency), so Furfur lifts it.
     const succ = withInv('succubus', 1);
-    const base = computeModifiers(succ).suasioEfficiencyMul;
-    const boosted = computeModifiers(bound(34, 100_000, succ)).suasioEfficiencyMul;
+    const def = invocationById('succubus')!;
+    const base = invocationRunnerEfficiency(succ, def);
+    const boosted = invocationRunnerEfficiency(bound(34, 100_000, succ), def);
     expect(boosted).toBeGreaterThan(base);
   });
 });

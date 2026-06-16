@@ -69,8 +69,6 @@ function passiveEffectText(state: GameState, id: string): string {
       const d = w.flatBaseSuicideRatePerSecond - b.flatBaseSuicideRatePerSecond;
       return `+${Number(d.toFixed(3))}/s ${L.baseSuicide}`;
     }
-    case 'succubus':
-      return `${up(w.suasioEfficiencyMul, b.suasioEfficiencyMul, L.suasioEff)} \u00B7 ${down(w.goldRateMul, b.goldRateMul, L.gold)}`;
     case 'doppelgaenger':
       return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} \u00B7 ${down(w.influenceRateMul, b.influenceRateMul, L.influence)}`;
     case 'midas': {
