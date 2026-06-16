@@ -1,9 +1,12 @@
 /**
  * Invocations (02 §7, 03 §2.4) — summon hellish entities that grant passive effects. Each has an
  * **invoking-power** requirement (sum of equipped maleficia `invokingPower`, plus sigils once those
- * land) and may also require a Cardinal Sin level. Summoning costs souls (a percentage of the
- * current pool with a floor) or nothing for the apex entities. Most are persistent and dispellable
- * at will; on Katabasis all are dispelled (handled in katabasis.ts — `invocations` reset to {}).
+ * land) and may also require a Cardinal Sin level. Summoning is free up front for most entities;
+ * the cost is a per-second **upkeep** paid out of income while active (Invocatio sheet — see
+ * `invocationUpkeep` + tick.ts step 1a), and a flat drain the pool can't sustain dispels the
+ * invocation. Morpheus is the exception: it pays a one-time %-of-pool soul+gold cost on invoke.
+ * Most are persistent and dispellable at will; on Katabasis all are dispelled (handled in
+ * katabasis.ts — `invocations` reset to {}).
  *
  * Visibility (02 §12): an invocation appears in the Ars Goetia list once the player has at least
  * HALF its required invoking power — a teaser that the entity is within reach.
@@ -58,6 +61,22 @@ export interface InvocationDef {
   /** Maximum simultaneously active (the apex entities cap at 1). Default unlimited (stackable). */
   readonly maxActive?: number;
   /**
+   * Per-second upkeep paid while active (Invocatio sheet, "Cost" column). Charged each tick out of
+   * this tick's income and pools (see tick.ts "1a"); a flat cost that can't be covered dispels the
+   * invocation (cf. Aurevora at gold 0). All fields are per copy. Apex one-time invoke costs
+   * (Morpheus) stay on `soulCost`/`goldCost`; Aurevora's exponential drain lives in apex.ts.
+   *   - `gold` / `influence`: flat amount per second.
+   *   - `goldGainFraction` / `influenceGainFraction`: fraction of that resource's gross gain/second.
+   *   - `maxInfluenceFraction`: fraction of the effective max influence per second (Lemure).
+   */
+  readonly upkeep?: {
+    readonly gold?: number;
+    readonly influence?: number;
+    readonly goldGainFraction?: number;
+    readonly influenceGainFraction?: number;
+    readonly maxInfluenceFraction?: number;
+  };
+  /**
    * Autonomous background runner (02 §3): this invocation runs `action` in its own channel at
    * `efficiency` × the player's efficiency, without occupying the player's action slot. The Familiar
    * runs Indagatio (time-mode, free); the Imp runs Decimatio (cost-outcome) — its channel pays
@@ -89,7 +108,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'ira',
     invokingPower: 2,
     sinLevel: 1,
-    soulCost: { fraction: 0.1, minimum: 100 },
+    upkeep: { gold: 10 }, // 10 gold/s (Invocatio sheet)
     // Stackable (Normal type). Background Decimatio (cost-outcome): each cycle pays
     // ceil(caedisCost × 0.05×playerEff) and resolves a Good kill. Good-only so a passive entity can
     // never roll Apocalyptic and gut the player's gold/reprobates unprompted (03 §2.4). Each summoned
@@ -101,7 +120,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'gula',
     invokingPower: 3,
     sinLevel: 1,
-    soulCost: { fraction: 0.1, minimum: 100 },
+    upkeep: { influence: 1 }, // 1 influence/s (Invocatio sheet)
     // Stackable (Normal type). Gula's background culler. The spreadsheet frames Upir as a Caedis
     // runner at 0.05 (the doc's "kills 1 / 30 s" was the older mechanic); per the
     // spreadsheet-wins-on-numbers rule we model it as the engine's cost-outcome runner, Good-only
@@ -113,28 +132,28 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'vanagloria',
     invokingPower: 3,
     sinLevel: 1,
-    soulCost: { fraction: 0.1, minimum: 100 },
+    upkeep: { goldGainFraction: 0.25 }, // 25% of current gold gain/s (Invocatio sheet)
   },
   nightmare: {
     id: 'nightmare',
     sin: 'tristitia',
     invokingPower: 3,
     sinLevel: 1,
-    soulCost: { fraction: 0.1, minimum: 100 },
+    upkeep: { influence: 3 }, // 3 influence/s (Invocatio sheet)
   },
   harpy: {
     id: 'harpy',
     sin: 'ira',
     invokingPower: 4,
     sinLevel: 2,
-    soulCost: { fraction: 0.25, minimum: 1500 },
+    upkeep: { influence: 5 }, // 5 influence/s (Invocatio sheet)
   },
   lamia: {
     id: 'lamia',
     sin: 'luxuria',
     invokingPower: 4,
     sinLevel: 2,
-    soulCost: { fraction: 0.25, minimum: 1500 },
+    upkeep: { influence: 3 }, // 3 influence/s (Invocatio sheet)
     // Stackable (Normal type). A background Suasio runner at `efficiency × the player's efficiency`
     // (Invocatio sheet: "action efficiency applies to Suasio"), without occupying the player's action
     // slot. `suggestion` is the Suasio-category action; natural tier rolls. Each summoned copy runs
@@ -146,7 +165,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'acedia',
     invokingPower: 3,
     sinLevel: 1,
-    soulCost: { fraction: 0.1, minimum: 100 },
+    upkeep: { maxInfluenceFraction: 0.01 }, // 1% of max influence/s (Invocatio sheet)
     // Stackable. Effect (modifiers.ts): an additive boost to the offline gain rate (Invocatio sheet),
     // 0.025 × player/invocation efficiency per copy.
   },
@@ -155,7 +174,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'superbia',
     invokingPower: 2,
     sinLevel: 1,
-    soulCost: { fraction: 0.1, minimum: 100 },
+    upkeep: { goldGainFraction: 0.05, influenceGainFraction: 0.05 }, // 5% gold+infl gain/s (sheet)
   },
   midas: {
     id: 'midas',
@@ -169,7 +188,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'avaritia',
     invokingPower: 5,
     sinLevel: 2,
-    soulCost: { fraction: 0.25, minimum: 1500 },
+    upkeep: { influence: 3 }, // 3 influence/s (Invocatio sheet)
     // Stackable. Effect (modifiers.ts): lifts Vitium Mercatura output (gold + generation +
     // conversion) by a flat factor per copy. A passive modifier source, no autonomous channel.
   },
@@ -179,6 +198,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 9,
     sinLevel: 3,
     maxActive: 1,
+    upkeep: { goldGainFraction: 0.99 }, // 99% of current gold gain/s (Invocatio sheet)
     // Apex Luxuria (free). Effect (modifiers.ts): dramatically multiplies reprobate generation, but
     // cuts gold gain to 1% of total — a generation-at-all-costs ritual.
   },
@@ -188,6 +208,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 8,
     sinLevel: 3,
     maxActive: 1,
+    upkeep: { influenceGainFraction: 0.5 }, // 50% of current influence gain/s (Invocatio sheet)
   },
   astiwihad: {
     id: 'astiwihad',
@@ -195,6 +216,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 10,
     sinLevel: 3,
     maxActive: 1,
+    upkeep: { influenceGainFraction: 1 }, // 100% of current influence gain/s (Invocatio sheet)
     // Apex Tristitia (free). Effect (apex.ts): each second a small chance the whole reprobate
     // population suicides at once — every death mints a soul, so a wipe banks the lot.
   },
@@ -224,8 +246,8 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'acedia',
     invokingPower: 10,
     sinLevel: 3,
-    soulCost: { fraction: 0.66, minimum: 0 },
-    goldCost: { fraction: 0.66 },
+    soulCost: { fraction: 0.9, minimum: 0 },
+    goldCost: { fraction: 0.9 },
     maxActive: 1,
     // Apex Acedia (66% souls + 66% gold). Effect on invoke (see `invoke`): refused while
     // `morpheusLockedOut` is set. Effect while active (see tick.ts): the lifetime is held in
@@ -238,6 +260,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 9,
     sinLevel: 3,
     maxActive: 1,
+    upkeep: { goldGainFraction: 0.99 }, // 99% of current gold gain/s (Invocatio sheet)
     // Apex Vanagloria (free). Its only effect was the conversion-bias hook (Celebrity subtype),
     // which was removed with reprobate subtypes. EFFECTLESS for now — flagged for re-homing in the
     // orphaned-sigils/invocations slice (Slice 4).
@@ -302,6 +325,64 @@ export function invocationGoldCost(state: GameState, def: InvocationDef): BigNum
   const pct = floor(mul(state.lifetime.gold, def.goldCost.fraction));
   const min = def.goldCost.minimum ?? 0;
   return max(pct, min);
+}
+
+/** Aggregated per-second invocation upkeep (Invocatio sheet), summed across all active copies. */
+export interface InvocationUpkeep {
+  /** Fraction of gross gold gain/s consumed (clamped to ≤ 1). */
+  readonly goldGainFraction: number;
+  /** Fraction of gross influence gain/s consumed (clamped to ≤ 1). */
+  readonly influenceGainFraction: number;
+  /** Absolute gold/s drained (flat costs). */
+  readonly flatGoldPerSecond: number;
+  /** Absolute influence/s drained (flat costs + Lemure's %-of-max-influence). */
+  readonly flatInfluencePerSecond: number;
+  /** Ids contributing a flat gold drain — dispelled together if the drain can't be paid. */
+  readonly flatGoldDrainers: readonly string[];
+  /** Ids contributing a flat influence drain — dispelled together if the drain can't be paid. */
+  readonly flatInfluenceDrainers: readonly string[];
+}
+
+/**
+ * Sum the upkeep of every active invocation. `effectiveMax` is the current effective max influence
+ * (for Lemure's 1%-of-max drain). The gain fractions are clamped to 1 so a stack can at most zero a
+ * resource's gain, never invert it; flat drains are absolute and can bankrupt a pool (→ dispel).
+ */
+export function invocationUpkeep(state: GameState, effectiveMax: number): InvocationUpkeep {
+  let goldGainFraction = 0;
+  let influenceGainFraction = 0;
+  let flatGoldPerSecond = 0;
+  let flatInfluencePerSecond = 0;
+  const flatGoldDrainers: string[] = [];
+  const flatInfluenceDrainers: string[] = [];
+  for (const id of INVOCATION_IDS) {
+    const n = activeInvocationCount(state, id);
+    if (n <= 0) continue;
+    const u = INVOCATIONS[id]?.upkeep;
+    if (!u) continue;
+    if (u.goldGainFraction) goldGainFraction += u.goldGainFraction * n;
+    if (u.influenceGainFraction) influenceGainFraction += u.influenceGainFraction * n;
+    if (u.gold) {
+      flatGoldPerSecond += u.gold * n;
+      flatGoldDrainers.push(id);
+    }
+    if (u.influence) {
+      flatInfluencePerSecond += u.influence * n;
+      flatInfluenceDrainers.push(id);
+    }
+    if (u.maxInfluenceFraction) {
+      flatInfluencePerSecond += u.maxInfluenceFraction * n * effectiveMax;
+      flatInfluenceDrainers.push(id);
+    }
+  }
+  return {
+    goldGainFraction: Math.min(1, goldGainFraction),
+    influenceGainFraction: Math.min(1, influenceGainFraction),
+    flatGoldPerSecond,
+    flatInfluencePerSecond,
+    flatGoldDrainers,
+    flatInfluenceDrainers,
+  };
 }
 
 export type InvokeResult =

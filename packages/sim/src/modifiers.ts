@@ -317,7 +317,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const HARPY_DECIMATIO_FACTOR = 0.05; // multiplicative increase to Decimatio efficiency
   const PLUTUS_VM_FACTOR = 0.05; // increase to Vitium Mercatura output
   const SUCCUBUS_SUASIO_FACTOR = 0.99; // multiplicative increase to Suasio efficiency
-  const SUCCUBUS_GOLD_FACTOR = 0.99; // multiplicative decrease to overall gold gain
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const NIGHTMARE_SUICIDE_FACTOR = 0.05; // additive increase to base reprobate suicide rate
   const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
@@ -411,19 +410,13 @@ export function computeModifiers(state: GameState): Modifiers {
     skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul');
 
   return {
-    goldRateMul:
-      skillBonus(avaritiaIntensity) *
-      (hasMidas ? 3 : 1) *
-      (hasSuccubus
-        ? 1 /
-          (1 + SUCCUBUS_GOLD_FACTOR * playerEff * invEffFor('luxuria') * invEffForInv('succubus'))
-        : 1) *
-      sc('goldRateMul'),
+    // Succubus' "99% gold gain" cost is now per-second upkeep (tick.ts 1a), not a rate cut here.
+    goldRateMul: skillBonus(avaritiaIntensity) * (hasMidas ? 3 : 1) * sc('goldRateMul'),
+    // Doppelgänger's "50% influence gain" cost is now per-second upkeep (tick.ts 1a), not a cut here.
     influenceRateMul:
       1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
       (hasCodex ? 3 : 1) *
       (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
-      (hasDoppel ? 0.5 : 1) *
       sc('influenceRateMul'),
     maxInfluenceMul: maxInfluenceMulV,
     // Flat influence/s: the Decarabia #69 generator sigil (log curve) + the Mercatus Vanagloriae

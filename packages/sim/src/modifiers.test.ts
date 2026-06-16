@@ -294,15 +294,15 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     );
   });
 
-  it('Succubus lifts Suasio efficiency and cuts gold (not generation), scaled by player efficiency', () => {
+  it('Succubus lifts Suasio efficiency; its gold cost is now per-tick upkeep (not a rate cut)', () => {
     const m = computeModifiers(withInvocation('succubus', 1));
     // Baseline playerEff = invEff = 1, factor 0.99.
     expect(m.suasioEfficiencyMul).toBeCloseTo(1 + 0.99, 6);
-    expect(m.goldRateMul).toBeCloseTo(1 / (1 + 0.99), 6);
+    expect(m.goldRateMul).toBeCloseTo(1, 6); // no longer cut here — the 99% is upkeep (tick 1a)
     expect(m.reprobateGenerationRateMul).toBe(NEUTRAL_MODIFIERS.reprobateGenerationRateMul); // no longer touched
   });
 
-  it('Succubus gold cut composes with other gold sources (Midas ×3)', () => {
+  it('Midas still triples goldRateMul independent of Succubus (whose cost is now upkeep)', () => {
     const s = fresh();
     const both: GameState = {
       ...s,
@@ -311,7 +311,7 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
         invocations: { ...s.lifetime.invocations, succubus: 1, midas: 1 },
       },
     };
-    expect(computeModifiers(both).goldRateMul).toBeCloseTo(3 / (1 + 0.99), 6);
+    expect(computeModifiers(both).goldRateMul).toBeCloseTo(3, 6);
   });
 
   it('invocation effects scale with player efficiency (Model 1)', () => {

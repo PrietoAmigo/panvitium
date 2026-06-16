@@ -420,11 +420,13 @@ describe('Cost-reduction sigils (S8)', () => {
     expect(100 - paimon.state.lifetime.influence.toNumber()).toBe(3); // ceil(5 / 2)
   });
 
-  it('Orobas #55 softens invocation soul cost (piercing the nominal minimum)', () => {
-    const imp = invocationById('imp');
-    expect(imp).toBeDefined();
-    expect(invocationSoulCost(fresh(), imp!).toNumber()).toBe(100); // minimum
-    expect(invocationSoulCost(bound(55, 100_000_000), imp!).toNumber()).toBe(50); // halved
+  it('Orobas #55 softens the one-time invocation soul cost (Morpheus 90% of pool)', () => {
+    // Normals no longer carry a soul cost (per-second upkeep instead); Morpheus is the only
+    // soul-cost invocation. Its cost is 90% of the current pool; Orobas #55 halves it.
+    const morpheus = invocationById('morpheus')!;
+    const withPool = (s: GameState): GameState => ({ ...s, souls: bn(1000) });
+    expect(invocationSoulCost(withPool(fresh()), morpheus).toNumber()).toBe(900); // 90% of 1000
+    expect(invocationSoulCost(withPool(bound(55, 100_000_000)), morpheus).toNumber()).toBe(450); // halved
   });
 });
 

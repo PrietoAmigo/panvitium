@@ -29,10 +29,12 @@ import {
   invocationRunnerKey,
   invocationSoulCost,
   invocationUnlocked,
+  invocationUpkeep,
   invocationVisible,
   invoke,
   makeRng,
   NEUTRAL_MODIFIERS,
+  perSecondRates,
   tick,
   type GameState,
   type Sin,
@@ -137,13 +139,12 @@ describe('Invoking power + gates', () => {
   });
 });
 
-describe('Soul cost', () => {
-  it('is max(fraction × pool, minimum)', () => {
-    const fama = invocationById('fama')!; // 10%, min 100
-    // pool 2000 → 10% = 200 > 100 → cost 200.
-    expect(invocationSoulCost(withSouls(fresh(), 2000), fama).toNumber()).toBe(200);
-    // pool 100 → 10% = 10 < 100 → floor at the minimum 100.
-    expect(invocationSoulCost(withSouls(fresh(), 100), fama).toNumber()).toBe(100);
+describe('Soul cost (one-time, Morpheus only)', () => {
+  it('is a fraction of the current pool (Morpheus 90%)', () => {
+    const morpheus = invocationById('morpheus')!;
+    // pool 2000 → 90% = 1800. Normals no longer carry a soul cost (per-second upkeep instead).
+    expect(invocationSoulCost(withSouls(fresh(), 2000), morpheus).toNumber()).toBe(1800);
+    expect(invocationById('fama')!.soulCost).toBeUndefined();
   });
 
   it('is zero for free apex invocations', () => {
@@ -153,28 +154,61 @@ describe('Soul cost', () => {
   });
 });
 
+describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
+  it('aggregates flat, %-of-gain, and %-of-max-influence drains across active copies', () => {
+    let s = withInvocation(fresh(), 'imp', 2); // 2 × 10 gold/s
+    s = withInvocation(s, 'fama', 1); // 25% gold gain/s
+    s = withInvocation(s, 'succubus', 1); // 99% gold gain/s → clamps total to 1
+    s = withInvocation(s, 'lemure', 1); // 1% of max influence/s
+    const up = invocationUpkeep(s, 100);
+    expect(up.flatGoldPerSecond).toBe(20);
+    expect(up.goldGainFraction).toBe(1); // 0.25 + 0.99 clamped to 1
+    expect(up.flatInfluencePerSecond).toBeCloseTo(1, 6); // 1% of max 100
+    expect(up.flatGoldDrainers).toContain('imp');
+  });
+
+  it('reduces the net per-second influence rate (perSecondRates), e.g. Plutus 3/s', () => {
+    // High max influence so the gross gain dwarfs the upkeep (no clamp at 0). Plutus has a flat
+    // 3 influence/s upkeep and no gold runner, so the net rate drops by exactly 3.
+    const big: GameState = {
+      ...fresh(),
+      lifetime: { ...fresh().lifetime, maxInfluence: bn(1_000_000) },
+    };
+    const without = perSecondRates(big).influence.toNumber();
+    const withPlutus = perSecondRates(withInvocation(big, 'plutus', 1)).influence.toNumber();
+    expect(without - withPlutus).toBeCloseTo(3, 6);
+  });
+
+  it('dispels a flat-drain invocation the pool can’t sustain', () => {
+    let s = withSin(withPower(fresh(), 2), 'ira', 1);
+    s = { ...s, lifetime: { ...s.lifetime, gold: bn(3), invocations: { imp: 1 } } };
+    const r = tick(s, 1); // 3 + 2 income − 10 upkeep < 0 → Imp dispels, gold keeps the income
+    expect(r.state.lifetime.invocations.imp ?? 0).toBe(0);
+    expect(r.state.lifetime.gold.toNumber()).toBeCloseTo(5, 6); // 3 + 2 income, flat not paid
+    expect(r.notices.some((n) => n.includes('imp'))).toBe(true);
+  });
+});
+
 describe('invoke / dispel', () => {
   it('rejects when gates are unmet', () => {
     const r = invoke(withSouls(fresh(), 1e6), 'behemoth'); // no power, no Superbia
     expect(r.ok).toBe(false);
   });
 
-  it('rejects when souls are insufficient', () => {
-    let s = withSin(withPower(fresh(), 3), 'superbia', 1);
-    s = withSouls(s, 50); // behemoth min cost is 100
+  it('summons a normal with no souls — normals have no upfront cost (upkeep is per-tick)', () => {
+    const s = withSin(withPower(fresh(), 2), 'superbia', 1); // 0 souls
     const r = invoke(s, 'behemoth');
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toMatch(/souls/);
+    expect(r.ok).toBe(true);
   });
 
-  it('summons, deducts souls, increments the count', () => {
-    let s = withSin(withPower(fresh(), 3), 'superbia', 1);
+  it('summons a free normal and increments the count without deducting souls', () => {
+    let s = withSin(withPower(fresh(), 2), 'superbia', 1);
     s = withSouls(s, 1000);
-    const r = invoke(s, 'behemoth'); // cost = max(100, 10% of 1000 = 100) = 100
+    const r = invoke(s, 'behemoth');
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(activeInvocationCount(r.state, 'behemoth')).toBe(1);
-    expect(r.state.souls.toNumber()).toBe(900);
+    expect(r.state.souls.toNumber()).toBe(1000); // no upfront soul cost
   });
 
   it('stacks a stackable invocation', () => {
@@ -225,11 +259,12 @@ describe('Invocation modifier effects', () => {
     expect(m.murderRateMul).toBeCloseTo(3, 6); // Mark of Cain ×3 murder (sheet rev 2026-06-12)
   });
 
-  it('Doppelgaenger: +50% player efficiency, half influence', () => {
+  it('Doppelgaenger: +50% player efficiency; its influence cost is now per-tick upkeep', () => {
     const base = computeModifiers(fresh());
     const dop = computeModifiers(withInvocation(fresh(), 'doppelgaenger', 1));
     expect(dop.playerEfficiencyMul).toBeCloseTo(base.playerEfficiencyMul * 1.5, 6);
-    expect(dop.influenceRateMul).toBeCloseTo(base.influenceRateMul * 0.5, 6);
+    expect(dop.influenceRateMul).toBeCloseTo(base.influenceRateMul, 6); // no longer halved here
+    expect(invocationById('doppelgaenger')!.upkeep).toEqual({ influenceGainFraction: 0.5 });
   });
 
   it('Fama: additive influence increase scaled by player efficiency (0.05/stack at baseline)', () => {
@@ -352,7 +387,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // Normal type → stacks (one channel per copy)
     expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
-    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
+    expect(def.upkeep).toEqual({ gold: 10 }); // 10 gold/s upkeep
   });
 
   it('Upir is the Gula counterpart — power 3 + Gula 1, a stackable Good-only Caedis channel', () => {
@@ -362,7 +397,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // Normal type → stacks
     expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
-    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
+    expect(def.upkeep).toEqual({ influence: 1 }); // 1 influence/s upkeep
   });
 
   it('Lamia is the Luxuria Suasio runner — power 4 + Luxuria 2, stackable', () => {
@@ -373,7 +408,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     // Normal type → no cap. Each summoned copy runs its own channel, so stacking scales throughput.
     expect(def.maxActive).toBeUndefined();
     expect(def.autonomous).toEqual({ action: 'suggestion', efficiency: 0.05 }); // background Suasio runner
-    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(25_000); // 25%
+    expect(def.upkeep).toEqual({ influence: 3 }); // 3 influence/s upkeep
   });
 
   it('Lamia runs a background Suasio (suggestion) channel without touching the player slot', () => {
@@ -391,7 +426,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(def.sinLevel).toBe(2);
     expect(def.maxActive).toBeUndefined(); // stackable
     expect(def.autonomous).toBeUndefined();
-    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(25_000); // 25%
+    expect(def.upkeep).toEqual({ influence: 3 }); // 3 influence/s upkeep
   });
 
   it('Succubus is the apex Luxuria — power 9 + Luxuria 3, capped at 1, free', () => {
@@ -411,7 +446,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // stackable
     expect(def.autonomous).toBeUndefined();
-    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(10_000); // 10%
+    expect(def.upkeep).toEqual({ maxInfluenceFraction: 0.01 }); // 1% max influence/s upkeep
   });
 
   it('runs Decimatio in its own channel — pays gold, mints souls, leaves the player slot free', () => {
