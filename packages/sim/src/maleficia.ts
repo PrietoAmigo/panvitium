@@ -221,7 +221,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   solomons_ring: {
     id: 'solomons_ring',
     name: "Solomon's Ring",
-    description: 'The seal that bound seventy-two kings. It still pinches. +50% sigil effects.',
+    description: 'The seal that bound seventy-two kings. It still pinches. +66% sigil effects.',
     rarity: 'anathema',
     cost: 85000,
     invokingPower: 0,

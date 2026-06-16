@@ -167,7 +167,7 @@ describe('Katabasis flow — orchestrator', () => {
   });
 
   it('lists a bound sigil in the Ledger by effect only (no seal name)', () => {
-    // Marbas #5 — always visible, wired effect "Influence gain ↑".
+    // Marbas #5 — always visible; sheet effect "Indagatio positive outcomes ↑".
     patch({ sigilBindings: { 5: bn(100) } });
     act(() => store().openKatabasis());
     render();
@@ -175,7 +175,7 @@ describe('Katabasis flow — orchestrator', () => {
     const sig = container!.querySelector('.ledger-sigil');
     expect(sig).not.toBeNull();
     const effect = sig!.querySelector('.ls-effect')?.textContent ?? '';
-    expect(effect).toContain('Influence gain');
+    expect(effect).toContain('Indagatio positive outcomes');
     expect(effect).not.toContain('Marbas'); // effects only — never the seal name
     expect(sig!.querySelector('.ls-dir')?.textContent).toContain('\u2191');
   });

@@ -34,7 +34,7 @@ import {
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
 import { AetherSigils } from './AetherSigils.js';
-import { HoldButton, GOETIA_BOON } from './katabasisShared.js';
+import { HoldButton } from './katabasisShared.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
 // the two carved-slab layers are placed here on apply (they live at the repo root + the design zip).
@@ -768,8 +768,7 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
       if (v === undefined || isZero(v)) continue;
       const def = sigilById(id);
       if (def && !sigilVisible(state, def)) continue;
-      const desc =
-        strings.sigils.descriptions[id] ?? GOETIA_BOON[id] ?? 'A seal of the lesser key.';
+      const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
       const { text, dir } = splitBoon(desc);
       rows.push({ id, text, dir, bound: v });
     }

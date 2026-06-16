@@ -231,7 +231,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/solomon_ring.png`,
     desc: 'The seal that bound seventy-two kings. It still pinches.',
-    effect: '+50% sigil effects.',
+    effect: '+66% sigil effects.',
   },
   {
     id: 'ars_serpens',
