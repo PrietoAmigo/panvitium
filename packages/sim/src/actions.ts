@@ -371,7 +371,10 @@ export function startAction(
  * the Suasio/Decimatio sheets' "toggle" level) and the player has reached it. This is the same gate
  * that opens acolyte delegation; the player's own one-shot rite gains its auto-repeat toggle at the
  * same Sin level (02 §3). Actions without a `delegateUnlock` (Indagatio/Emptio) are never
- * player-auto-repeatable.
+ * player-auto-repeatable. Every action's toggle level sits at or above its availability gate
+ * (`unlock`), so a reached toggle level implies the rite is also castable — `ensureAutoRepeatStarted`
+ * still routes through `startAction`, which re-checks availability, so a future inversion would
+ * simply leave the toggle inert rather than misbehave.
  */
 export function isAutoRepeatable(state: GameState, actionId: string): boolean {
   const def = ACTIONS[actionId];

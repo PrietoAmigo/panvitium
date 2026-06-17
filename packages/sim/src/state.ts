@@ -122,6 +122,11 @@ export interface LifetimeState {
    * player-driven rite occupies the slot at a time (02 §3), at most one non-Indagatio id is active
    * here. Reset on Katabasis with the rest of the lifetime. Additive-optional on the wire (ADR-023);
    * empty by default — old saves load with nothing auto-repeating.
+   *
+   * Online-only: like any player-slot rite, an auto-repeating one advances only while the game is
+   * open (the tick re-queues at most one cycle per tick, including the single offline catch-up tick).
+   * Unattended progress is what acolyte delegation and invocation runners are for — they loop and
+   * catch up across a long absence; the player's own slot does not.
    */
   autoRepeat: string[];
   /**

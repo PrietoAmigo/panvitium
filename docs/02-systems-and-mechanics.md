@@ -144,7 +144,9 @@ The Opera is the action surface of a lifetime: everything the player does betwee
   reaches the spreadsheet's toggle level (the same gate that opens delegation): flip it on and the
   rite re-casts itself in the player's slot — paying each cycle, retrying after a stall — until the
   player flips it off or can no longer afford it. Because only one player-driven rite holds the slot
-  (§3 below), enabling auto-repeat on one rite turns it off on any other.
+  (§3 below), enabling auto-repeat on one rite turns it off on any other. It is an *online* loop:
+  like any player-slot rite it does not catch up across a long absence — that is what acolyte and
+  invocation delegation are for.
 - **Transactions** — instant, deterministic exchanges that are not actions at all and never
   occupy the action slot: Mercatus invest/divest, sigil binding, equipping maleficia, summoning
   an invocation.
