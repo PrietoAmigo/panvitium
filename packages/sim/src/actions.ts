@@ -574,10 +574,12 @@ export function resolveAction(
       ? def.category
       : null;
   const positiveTier = tier === 'stellar' || tier === 'excellent' || tier === 'good';
-  const applyTwice =
-    dupCategory !== null &&
-    positiveTier &&
-    rng.float() < sigilDuplicateOutputChance(state, dupCategory);
+  // Compute the duplication chance FIRST and only draw from the RNG when it is live. An unbound
+  // dup-sigil roster yields chance 0, so gating the draw keeps the seeded stream byte-identical to
+  // the pre-sigil sequence (ADR-011) — mirroring the Furcas double-find guard in resolveIndagatio.
+  const dupChance =
+    dupCategory !== null && positiveTier ? sigilDuplicateOutputChance(state, dupCategory) : 0;
+  const applyTwice = dupChance > 0 && rng.float() < dupChance;
   const passes = applyTwice ? 2 : 1;
 
   switch (def.id) {
@@ -942,6 +944,17 @@ export function resolveEmptio(
     return { state, acquired: [], lostFromList: [] };
   }
   const def = MALEFICIA[target];
+  // Refunds are relative to the gold actually PAID at startAction — the in-band rolled price
+  // (Maleficia sheet Randint per rarity), softened by the Amy Emptio-gold reduction — NOT the flat
+  // catalog `def.cost`. Recompute it the same way startAction did (actions.ts ~166) so a Stellar
+  // "full refund" truly zeroes the purchase and the partial tiers refund the right fraction of the
+  // listed price. Falls back to `def.cost` for items surfaced before rolled pricing landed.
+  const rolled = state.lifetime.maleficiaPrices[target] ?? def.cost;
+  const costRed = sigilCostReductionByChannel(
+    state,
+    sigilEffectMultiplier(state.lifetime.maleficia),
+  );
+  const paid = costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled;
   // Remove ONE matching entry from the list (stackable items can have multiple copies listed).
   const dropIndex = state.lifetime.emptioList.indexOf(target);
   const trimmedList = [
@@ -956,7 +969,7 @@ export function resolveEmptio(
         ...state,
         lifetime: {
           ...state.lifetime,
-          gold: add(state.lifetime.gold, def.cost),
+          gold: add(state.lifetime.gold, paid),
           maleficia: [...state.lifetime.maleficia, target],
           emptioList: trimmedList,
         },
@@ -969,7 +982,7 @@ export function resolveEmptio(
         ...state,
         lifetime: {
           ...state.lifetime,
-          gold: add(state.lifetime.gold, Math.floor(def.cost * 0.75)),
+          gold: add(state.lifetime.gold, Math.floor(paid * 0.75)),
           maleficia: [...state.lifetime.maleficia, target],
           emptioList: trimmedList,
         },
@@ -982,7 +995,7 @@ export function resolveEmptio(
         ...state,
         lifetime: {
           ...state.lifetime,
-          gold: add(state.lifetime.gold, Math.floor(def.cost / 2)),
+          gold: add(state.lifetime.gold, Math.floor(paid / 2)),
           maleficia: [...state.lifetime.maleficia, target],
           emptioList: trimmedList,
         },

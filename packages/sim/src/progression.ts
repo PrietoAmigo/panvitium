@@ -29,8 +29,9 @@ export function sinLevel(devotion: BigNum): number {
 
 /**
  * Skill intensity for a Sin from its total Devotion x (Sins & Devotion sheet):
- *   intensity = ln(x)² / 6.537
- * Verified against the sheet's sampled table (x=10 → 0.811, x=180 → 4.125, x=1049760000 → 66.004).
+ *   intensity = ln(x)² / SKILL_INTENSITY_DIVISOR  (divisor = 65.37; see constants.ts)
+ * Verified against the sheet's sampled table (x=180 → 0.4125, x=1e9 → 6.60). The sheet's
+ * formula-text "/0.6537" is a typo; the sampled values are authoritative (constants.ts).
  * x ≤ 1 grants no skill (ln(1) = 0; a fresh Sin has 0 Devotion). Per-Sin scaling arrives later.
  */
 export function skillIntensity(devotion: BigNum): number {
