@@ -448,8 +448,9 @@ function StatuesPlace({
             onClick={() => open('eternal')}
             aria-label="The Ninth"
           >
-            <span className="obelisk-flame" aria-hidden="true" />
-            <span className="obelisk-tag">The Eternal Sin</span>
+            {/* Once all eight are maxed and Semet stands revealed in the end-state art, the monolith
+                carries no candle flame and no hover hotspot — it is the statue itself, not a lit
+                drop target. The button stays as an (invisible) click region into the Eternal modal. */}
           </button>
         )}
       </div>

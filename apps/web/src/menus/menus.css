@@ -2669,46 +2669,9 @@ body {
   background: transparent;
   padding: 0;
   border-radius: 12% / 4%;
-  transition:
-    box-shadow 0.3s,
-    background 0.3s;
 }
-.katabasis-flow .obelisk:hover {
-  box-shadow: 0 0 80px rgba(255, 40, 20, 0.5);
-  background: radial-gradient(ellipse at 50% 40%, rgba(255, 40, 20, 0.2), transparent 60%);
-}
-.katabasis-flow .obelisk-flame {
-  position: absolute;
-  top: -0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 30px;
-  border-radius: 50% 50% 45% 45%;
-  background: radial-gradient(circle at 50% 35%, #ffd0a0, var(--eternal) 55%, rgba(255, 40, 20, 0));
-  filter: blur(0.5px);
-  animation: kat-flame 1.4s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-.katabasis-flow .obelisk-tag {
-  position: absolute;
-  bottom: -1.7rem;
-  left: 50%;
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-family: var(--font-display);
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  font-size: 0.82rem;
-  color: #ffd9cf;
-  text-shadow: 0 0 18px rgba(255, 40, 20, 0.9);
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  pointer-events: none;
-}
-.katabasis-flow .obelisk:hover .obelisk-tag {
-  opacity: 1;
-}
+/* Revealed Semet carries no hover hotspot and no candle flame (it is the statue in the end-state
+   art, not a lit drop target); the button stays an invisible click region into the Eternal modal. */
 .katabasis-flow .hell-caption {
   position: absolute;
   top: 13vh;
@@ -3558,7 +3521,6 @@ body {
   .katabasis-flow .bg-strike,
   .katabasis-flow .bg-whiteflash,
   .katabasis-flow .end-glow,
-  .katabasis-flow .obelisk-flame,
   .katabasis-flow .slab-torch,
   .katabasis-flow .sigil-cell--bound .sigil-cell-glow,
   .katabasis-flow .slab-molten,
