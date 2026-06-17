@@ -20,6 +20,7 @@ import {
   dispel,
   assignAcolyteToAction,
   unassignAcolyteFromAction,
+  setAutoRepeat,
   activateMaleficium as activateMaleficiumSim,
   isSignatureTier,
   unbindAllSigils,
@@ -107,6 +108,12 @@ interface GameStore {
   advance: (deltaSeconds: number) => void;
   /** Begin an Opera action (pays its cost and queues it), or set a notice if it can't start. */
   act: (actionId: string, target?: string) => void;
+  /**
+   * Turn auto-repeat on or off for a player rite (02 §3) — once on, the tick keeps a cycle of it
+   * running in the player's slot until toggled off. Enabling is mutually exclusive among player-slot
+   * rites and starts the first cycle immediately. A no-op if the rite isn't auto-repeatable yet.
+   */
+  toggleAutoRepeat: (actionId: string, on: boolean) => void;
   /**
    * Activate a single-use maleficium from the owned inventory (Hand of Glory, Defixio). Consumes one
    * copy and applies its effect via the sim's `activateMaleficium`. Sets a notice on failure (none
@@ -327,6 +334,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const result = startAction(current, actionId, target === undefined ? {} : { target });
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
+  },
+  toggleAutoRepeat: (actionId, on) => {
+    const current = get().state;
+    if (!current) return;
+    set({ state: setAutoRepeat(current, actionId, on), notice: null });
   },
   activateMaleficium: (id) => {
     const current = get().state;

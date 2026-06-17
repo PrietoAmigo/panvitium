@@ -16,6 +16,10 @@ import {
   actionUnlocked,
   actionTierDistribution,
   actionOutcomeForecast,
+  isAutoRepeatable,
+  isAutoRepeating,
+  setAutoRepeat,
+  ensureAutoRepeatStarted,
   ACTIONS,
 } from './actions.js';
 import { MALEFICIA, MALEFICIUM_PRICE_RANGE } from './maleficia.js';
@@ -585,5 +589,87 @@ describe('actionOutcomeForecast — expected outcome + variance', () => {
     const f = actionOutcomeForecast(fresh(), 'nope', 1);
     expect(f.souls.mean).toBe(0);
     expect(f.reprobates.sd).toBe(0);
+  });
+});
+
+describe('auto-repeat (player-slot looping, 02 §3)', () => {
+  it('gates on the action’s toggle level (delegateUnlock); never Indagatio/Emptio', () => {
+    // Caedis toggles at Ira 1: sealed at Ira 0, open at Ira 1.
+    expect(isAutoRepeatable(fresh(), 'caedis')).toBe(false);
+    expect(isAutoRepeatable(withIra(fresh(), 1), 'caedis')).toBe(true);
+    // Pogrom toggles at Ira 3 — still sealed at Ira 1.
+    expect(isAutoRepeatable(withIra(fresh(), 1), 'pogrom')).toBe(false);
+    expect(isAutoRepeatable(withIra(fresh(), 3), 'pogrom')).toBe(true);
+    // No toggle level → never player-auto-repeatable.
+    expect(isAutoRepeatable(withIra(fresh(), 3), 'indagatio')).toBe(false);
+    expect(isAutoRepeatable(withIra(fresh(), 3), 'emptio')).toBe(false);
+  });
+
+  it('enabling adds the id and starts the first cycle immediately', () => {
+    const s = withIra(withGold(fresh(), 1000), 1);
+    const next = setAutoRepeat(s, 'caedis', true);
+    expect(isAutoRepeating(next, 'caedis')).toBe(true);
+    expect(next.lifetime.autoRepeat).toEqual(['caedis']);
+    // The loop kicked off in the player's slot and paid its first cycle up front (cost is scaled by
+    // the Ira-driven Decimatio efficiency, so just assert it was charged, not the exact amount).
+    expect(next.lifetime.actionQueue).toEqual([{ actionId: 'caedis', remainingSeconds: 10 }]);
+    expect(goldOf(next)).toBeLessThan(1000);
+  });
+
+  it('is a no-op when the action is not auto-repeatable yet', () => {
+    const s = withGold(fresh(), 1000); // Ira 0 — caedis not toggle-unlocked
+    const next = setAutoRepeat(s, 'caedis', true);
+    expect(next).toBe(s);
+  });
+
+  it('enabling one player rite is mutually exclusive with another (one slot)', () => {
+    let s = withIra(withGold(fresh(), 5000), 3); // both caedis and pogrom open
+    s = setAutoRepeat(s, 'caedis', true);
+    expect(s.lifetime.autoRepeat).toEqual(['caedis']);
+    s = setAutoRepeat(s, 'pogrom', true);
+    expect(s.lifetime.autoRepeat).toEqual(['pogrom']); // caedis dropped — only one rite loops
+  });
+
+  it('disabling drops the id but leaves the in-flight cycle to finish', () => {
+    let s = setAutoRepeat(withIra(withGold(fresh(), 1000), 1), 'caedis', true);
+    expect(s.lifetime.actionQueue).toHaveLength(1);
+    s = setAutoRepeat(s, 'caedis', false);
+    expect(isAutoRepeating(s, 'caedis')).toBe(false);
+    expect(s.lifetime.actionQueue).toHaveLength(1); // the running cycle is not cancelled
+  });
+
+  it('the tick re-queues an auto-repeating rite after its cycle resolves', () => {
+    const s = setAutoRepeat(
+      withReprobates(withIra(withGold(fresh(), 5000), 1), 100),
+      'caedis',
+      true,
+    );
+    expect(s.lifetime.actionQueue).toHaveLength(1);
+    // Advance exactly one cycle: the running caedis resolves, then a fresh one is queued.
+    const after = tick(s, 10).state;
+    const queued = after.lifetime.actionQueue.filter((t) => t.actionId === 'caedis');
+    expect(queued).toHaveLength(1);
+    expect(queued[0]!.remainingSeconds).toBeCloseTo(10, 3); // a fresh full cycle
+  });
+
+  it('a stalled auto-repeat rite retries on a later tick once affordable', () => {
+    // Ira 1 (toggle open) but too poor to pay caedis's 100 gold: enabling stalls (no timer).
+    let s = setAutoRepeat(withIra(withGold(fresh(), 50), 1), 'caedis', true);
+    expect(s.lifetime.autoRepeat).toEqual(['caedis']);
+    expect(s.lifetime.actionQueue).toHaveLength(0); // couldn't afford the first cycle
+    // A tick while still broke does not start it.
+    s = tick(s, 1).state;
+    expect(s.lifetime.actionQueue).toHaveLength(0);
+    // Fund it, then the next tick picks the loop back up.
+    s = withGold(s, 1000);
+    s = tick(s, 1).state;
+    expect(s.lifetime.actionQueue.some((t) => t.actionId === 'caedis')).toBe(true);
+  });
+
+  it('ensureAutoRepeatStarted is idempotent when the rite is already running', () => {
+    const s = setAutoRepeat(withIra(withGold(fresh(), 1000), 1), 'caedis', true);
+    const again = ensureAutoRepeatStarted(s);
+    expect(again.lifetime.actionQueue).toHaveLength(1); // not double-queued
+    expect(goldOf(again)).toBe(goldOf(s)); // not double-charged
   });
 });

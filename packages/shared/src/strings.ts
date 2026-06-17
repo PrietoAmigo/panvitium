@@ -160,6 +160,14 @@ export const strings = {
     delegationLabel: 'Delegated acolytes',
     idle: 'idle',
   },
+  autoRepeat: {
+    /** The control's label when the rite is NOT looping (click to start). */
+    start: 'Auto',
+    /** …and when it IS looping (click to stop). */
+    stop: 'Auto · on',
+    /** Accessible / tooltip text. */
+    label: 'Repeat this rite automatically',
+  },
   compositum: {
     heading: 'Vitium Compositum',
     start: 'Begin',

@@ -366,6 +366,66 @@ export function startAction(
   return { ok: true, state: { ...state, lifetime } };
 }
 
+/**
+ * Whether `actionId` may be set to AUTO-REPEAT: it carries a toggle-level gate (`delegateUnlock` —
+ * the Suasio/Decimatio sheets' "toggle" level) and the player has reached it. This is the same gate
+ * that opens acolyte delegation; the player's own one-shot rite gains its auto-repeat toggle at the
+ * same Sin level (02 §3). Actions without a `delegateUnlock` (Indagatio/Emptio) are never
+ * player-auto-repeatable. Every action's toggle level sits at or above its availability gate
+ * (`unlock`), so a reached toggle level implies the rite is also castable — `ensureAutoRepeatStarted`
+ * still routes through `startAction`, which re-checks availability, so a future inversion would
+ * simply leave the toggle inert rather than misbehave.
+ */
+export function isAutoRepeatable(state: GameState, actionId: string): boolean {
+  const def = ACTIONS[actionId];
+  if (!def?.delegateUnlock) return false;
+  return sinLevel(state.devotion[def.delegateUnlock.sin]) >= def.delegateUnlock.level;
+}
+
+/** Whether `actionId` is currently set to auto-repeat in the player's slot. */
+export function isAutoRepeating(state: GameState, actionId: string): boolean {
+  return state.lifetime.autoRepeat.includes(actionId);
+}
+
+/**
+ * Keep every auto-repeating action running in the player's slot: for each id in `autoRepeat` that has
+ * no in-flight timer, (re)start a cycle when it's affordable and unlocked. Called by the tick after
+ * resolving completed timers (so a finished cycle re-queues and a stalled one retries) and the moment
+ * the player toggles it on (so the loop begins without waiting a tick). `startAction` enforces the
+ * one-player-rite-at-a-time slot and the Morpheus freeze, so a busy or frozen slot simply leaves the
+ * action waiting for a later tick — no partial state, no error.
+ */
+export function ensureAutoRepeatStarted(state: GameState): GameState {
+  let working = state;
+  for (const id of working.lifetime.autoRepeat) {
+    if (working.lifetime.actionQueue.some((t) => t.actionId === id)) continue; // already running
+    const r = startAction(working, id);
+    if (r.ok) working = r.state;
+  }
+  return working;
+}
+
+/**
+ * Turn auto-repeat on or off for a player rite. Enabling is mutually exclusive among the
+ * player-slot rites — only one fills the slot at a time (02 §3) — so it replaces any other
+ * auto-repeating rite and immediately starts a first cycle (via `ensureAutoRepeatStarted`). Disabling
+ * drops the id: the in-flight cycle finishes and the slot frees. A no-op (returns the input) when
+ * enabling an action that is not yet auto-repeatable.
+ */
+export function setAutoRepeat(state: GameState, actionId: string, on: boolean): GameState {
+  const current = state.lifetime.autoRepeat;
+  if (on) {
+    if (!isAutoRepeatable(state, actionId)) return state;
+    const next = current.includes(actionId) ? current : [actionId];
+    return ensureAutoRepeatStarted({ ...state, lifetime: { ...state.lifetime, autoRepeat: next } });
+  }
+  if (!current.includes(actionId)) return state;
+  return {
+    ...state,
+    lifetime: { ...state.lifetime, autoRepeat: current.filter((a) => a !== actionId) },
+  };
+}
+
 export interface CycleCost {
   readonly gold: number;
   readonly influence: number;

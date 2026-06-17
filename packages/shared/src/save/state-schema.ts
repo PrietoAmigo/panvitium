@@ -76,6 +76,9 @@ const lifetimeSchema = z.object({
   // (ADR-023): absent in old saves → {} at runtime; omitted from the wire when empty.
   toggleDurations: z.record(z.string(), z.number().nonnegative()).optional(),
   actionQueue: z.array(actionTimerSchema),
+  // Player rites set to auto-repeat (02 §3). Additive-optional (ADR-023): absent → [] at runtime;
+  // omitted from the wire when empty.
+  autoRepeat: z.array(z.string()).optional(),
   // Reprobate-dynamics accrual pools (02 §9). Optional for back-compat with v1 saves predating
   // their existence — when absent, the deserializer defaults each to 0 (ADR-023). New saves
   // round-trip them when non-zero, omit them when 0 to keep wire size minimal for fresh games.
@@ -188,6 +191,10 @@ export function serializeGameState(state: GameState): SerializedGameState {
           ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
           : { actionId: t.actionId, remainingSeconds: t.remainingSeconds, target: t.target },
       ),
+      // Auto-repeat set: omit when empty (additive-optional per ADR-023).
+      ...(state.lifetime.autoRepeat.length > 0
+        ? { autoRepeat: [...state.lifetime.autoRepeat] }
+        : {}),
       // Only emit pool fields when non-zero (additive-optional per ADR-023): keeps fresh-game
       // saves identical to their pre-pool wire form, and only spends bytes when there's progress.
       ...(state.lifetime.generationPool > 0
@@ -274,6 +281,8 @@ export function deserializeGameState(s: SerializedGameState): GameState {
           ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
           : { actionId: t.actionId, remainingSeconds: t.remainingSeconds, target: t.target },
       ),
+      // Auto-repeat set is additive-optional (ADR-023): missing in old saves means [] at runtime.
+      autoRepeat: [...(s.lifetime.autoRepeat ?? [])],
       // Pool fields are additive-optional (ADR-023): missing in old saves means 0 at runtime.
       generationPool: s.lifetime.generationPool ?? 0,
       suicidePool: s.lifetime.suicidePool ?? 0,

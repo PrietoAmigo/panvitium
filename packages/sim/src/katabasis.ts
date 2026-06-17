@@ -138,6 +138,7 @@ export function enterKatabasis(state: GameState): GameState {
       activeToggles: [], // toggles stop
       toggleDurations: {},
       actionQueue: [], // uncompleted player actions fizzle
+      autoRepeat: [], // auto-repeating rites stop with the slot
       invocations: {}, // all invocations dispelled (02 §7)
       invocationRunners: {}, // …and their autonomous channels stop
       invocationDurations: {}, // …and any apex duration counters (Aurevora) clear
@@ -234,6 +235,7 @@ export function commitKatabasis(
     activeToggles: [], // toggles stop
     toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle
+    autoRepeat: [], // and nothing carries an auto-repeat into the new lifetime
     mercatusDepths: {}, // all trades liquidated at descent (refund folded into goldAtDescent)
     generationPool: 0, // pools reset with the fresh lifetime
     suicidePool: 0,
