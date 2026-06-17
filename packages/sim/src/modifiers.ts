@@ -326,6 +326,12 @@ export function computeModifiers(state: GameState): Modifiers {
   // The per-sigil effect multiplier (Sigils sheet rev 2026-06-12): the raw maleficia enhancer
   // stack, inflated by Gaap #33 (+maleficia effect %), then scaled by Semet #32 (+sigil effect %).
   // Gaap reads the raw stack and Semet reads the Gaap-inflated stack, so neither feeds itself.
+  // SCOPE (deliberate): this inflated `sigMul` enhances only the PASSIVE modifier-bundle sigil
+  // contributions folded in below. Resolution-time / cost-time channels computed in their own
+  // standalone functions — per-category tier shifts (`categoryTierModifiers`), invoking power and
+  // invocation cost/upkeep (invocations.ts), action cost reductions (actions.ts), and Katabasis
+  // carry-over (katabasis.ts) — intentionally take the RAW `sigilEffectMultiplier` instead, so Gaap
+  // and Semet do not reach those channels. Keep that split when adding sigil sources.
   const rawSigilMul = sigilEffectMultiplier(owned);
   const maleficiaSigilMul = sigilMaleficiaEffectMul(state, rawSigilMul);
   const sigMul = maleficiaSigilMul * sigilSelfEffectMul(state, maleficiaSigilMul);
@@ -553,7 +559,9 @@ export function categoryTierModifiers(
   }
   if (successMul !== 1) for (const t of SUCCESS_TIERS) out[t] = successMul;
   // Per-category sigil contributions (Agares/Beleth/Botis/Ipos/Astaroth/Andras/Andromalius/Naberius),
-  // scaled by the sigil-effect enhancers (Solomon's Ring / Iron Nails); compose onto `out`.
+  // scaled by the RAW sigil-effect enhancers only (Solomon's Ring / Iron Nails). This resolution-time
+  // channel deliberately does NOT receive the Gaap #33 / Semet #32 inflation that `computeModifiers`
+  // applies to the passive modifier bundle — see the scope note at the `sigMul` chain there.
   const sigCat = sigilCategoryTierContributions(
     state,
     category,
