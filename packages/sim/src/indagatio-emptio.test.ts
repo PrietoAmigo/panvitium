@@ -139,6 +139,23 @@ describe('resolveEmptio (03 §2.6)', () => {
     );
   });
 
+  it('refunds the price actually PAID (rolled in-band price), not the flat catalog cost', () => {
+    // ritual_dagger is rare (band 1000–3333) with catalog cost 3000; a cheap roll of 1200 is the
+    // price the player paid at startAction. The refunds must track 1200, never the 3000 catalog
+    // value — otherwise a Stellar steal would mint free gold (regression: refunds used def.cost).
+    const rolledPrice = 1200;
+    const withRolled = (id: string): GameState => {
+      const s = listedWith(id, 0);
+      return { ...s, lifetime: { ...s.lifetime, maleficiaPrices: { [id]: rolledPrice } } };
+    };
+    const stellar = resolveEmptio(withRolled('ritual_dagger'), 'stellar', 'ritual_dagger');
+    expect(floor(stellar.state.lifetime.gold).toNumber()).toBe(rolledPrice); // full refund of paid
+    const excellent = resolveEmptio(withRolled('ritual_dagger'), 'excellent', 'ritual_dagger');
+    expect(floor(excellent.state.lifetime.gold).toNumber()).toBe(Math.floor(rolledPrice * 0.75));
+    const good = resolveEmptio(withRolled('ritual_dagger'), 'good', 'ritual_dagger');
+    expect(floor(good.state.lifetime.gold).toNumber()).toBe(Math.floor(rolledPrice / 2));
+  });
+
   it('Neutral acquires the item at the listed price — no refund, list entry consumed', () => {
     const state = listedWith('black_robe', 500);
     const r = resolveEmptio(state, 'neutral', 'black_robe');

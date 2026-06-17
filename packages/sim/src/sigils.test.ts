@@ -737,6 +737,17 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
     expect(totalReprobates(bad.state) - totalReprobates(seeded)).toBe(-1);
   });
 
+  it('without a duplicate-output sigil the dup roll is NOT drawn (RNG stream stays byte-identical)', () => {
+    // ADR-011: an un-triggered feature must leave the seeded stream untouched. A Good Suggestion
+    // makes no internal RNG draw, so with no Malphas/Focalor/Agares bound resolveAction must consume
+    // zero floats — the dup-chance draw is gated behind chance > 0. (Regression: it used to draw
+    // unconditionally, shifting every downstream roll for saves without these sigils.)
+    const rng = makeRng(fresh().rngState);
+    const before = rng.state;
+    resolveAction(fresh(), 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
+    expect(rng.state).toBe(before);
+  });
+
   it('Foras #31 extends the offline accrual window; Marax #21 speeds offline action timers', () => {
     expect(sigilOfflineAccrualWindowMul(fresh())).toBe(1);
     // 2.5e-05 × sqrt(1e8) = 0.25 → ×1.25 on the seven-day cap.
