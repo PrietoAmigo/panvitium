@@ -33,7 +33,7 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
-import { AetherSigils, effectDisplay } from './AetherSigils.js';
+import { AetherSigils, effectDisplay, toRoman } from './AetherSigils.js';
 import { HoldButton } from './katabasisShared.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
@@ -218,7 +218,7 @@ function PrinceModal({
           <div className="tk-rankline">
             <Pips level={level} max={MAX_SIN_LEVEL} />
             <span className="tk-rankword">
-              {maxed ? 'Mastered' : `Rank ${level} of ${MAX_SIN_LEVEL}`}
+              {maxed ? 'Mastered' : `Rank ${toRoman(level) || '0'} of ${toRoman(MAX_SIN_LEVEL)}`}
             </span>
           </div>
 
@@ -241,7 +241,7 @@ function PrinceModal({
                 <span className="tk-meter-fill" style={{ width: pct(prog) }} />
               </div>
               <div className="tk-meter-cap">
-                <span>Toward Rank {level + 1}</span>
+                <span>Toward Rank {toRoman(level + 1)}</span>
                 <span>
                   {formatBigNum(devotion)} / {formatBigNum(next)}
                 </span>
@@ -735,7 +735,7 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
           </span>
         </div>
         <div className="ledger-eff is-lvl">
-          <span className="ls-tag is-lvl">Level {level}</span>
+          <span className="ls-tag is-lvl">Rank {toRoman(level) || '0'}</span>
           <span className="ls-txt">{info.levelEffect}</span>
         </div>
       </div>

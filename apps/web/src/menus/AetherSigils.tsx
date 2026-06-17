@@ -537,7 +537,7 @@ function SealPanel({
         <div className="ap-boon">
           <div className="ap-boonlabel">Sealed</div>
           <p className="ap-boontext">
-            The carving will not resolve. It answers only when every Cardinal Sin stands at Rank 2
+            The carving will not resolve. It answers only when every Cardinal Sin stands at Rank II
             or higher.
           </p>
         </div>

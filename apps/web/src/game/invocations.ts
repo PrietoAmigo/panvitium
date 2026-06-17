@@ -50,7 +50,7 @@ function roman(n: number): string {
 /** The invoking-power (+ optional Sin level) requirement, shown as the "Seal" on a locked leaf. */
 function gateLabel(def: InvocationDef): string {
   return def.sinLevel !== undefined && def.sin !== null
-    ? `${def.invokingPower} ${strings.maleficia.invokingPower} \u00B7 ${def.sin} L${def.sinLevel}`
+    ? `${def.invokingPower} ${strings.maleficia.invokingPower} \u00B7 ${def.sin} ${roman(def.sinLevel)}`
     : `${def.invokingPower} ${strings.maleficia.invokingPower}`;
 }
 

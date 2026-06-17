@@ -15,7 +15,7 @@ export interface GoetiaEntry {
   rank: string;
   /** Pre-formatted soul/power cost, e.g. '12 Souls'. REAL. */
   cost: string;
-  /** Pre-formatted gate label, e.g. 'Gula L3'. REAL. Omit if ungated. */
+  /** Pre-formatted gate label, e.g. 'Gula III'. REAL. Omit if ungated. */
   gate?: string;
   /** Effect copy. REAL string where one exists, else omit. */
   effect?: string;
