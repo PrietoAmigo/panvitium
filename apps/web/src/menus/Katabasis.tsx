@@ -938,7 +938,13 @@ export function Katabasis(): ReactElement {
   const begin = useGameStore((s) => s.beginKatabasis);
   const close = useGameStore((s) => s.closeKatabasis);
 
-  const [screen, setScreen] = useState<Screen>('altar');
+  // A descent already in progress (a save written mid-Katabasis, reopened) resumes on the Princes —
+  // the player was down in Hell, not at the commit gate. A fresh open from the room has
+  // `inKatabasis === false` and starts at the Altar seal. Lazy init: mount-time state only, so the
+  // later `begin()` flow (altar → descending → statues) is unaffected.
+  const [screen, setScreen] = useState<Screen>(() =>
+    state?.inKatabasis === true ? 'statues' : 'altar',
+  );
   const [caption, setCaption] = useState(false);
   const [riseArmed, setRiseArmed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);

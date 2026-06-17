@@ -192,4 +192,22 @@ describe('Katabasis flow — orchestrator', () => {
     expect(container!.querySelector('.altar-gate')).not.toBeNull();
     expect(container!.querySelector('.kat-seal-btn')).not.toBeNull();
   });
+
+  it('resumes a mid-descent save on the Princes, not the Altar gate', () => {
+    // A save written while down in Katabasis reopens frozen (`inKatabasis`) with the menu phase
+    // patched back in (gameStore.init). The player was in Hell, so the flow should land on the
+    // Court of Princes where they left off — not back at the (already-committed) commit gate.
+    patch({ inKatabasis: true });
+    useGameStore.setState({ katabasisPhase: 'menu' });
+    render();
+    // The eight Princes are seated in the statue field…
+    expect(container!.querySelector('.statue-field')).not.toBeNull();
+    expect(container!.querySelectorAll('.statue').length).toBe(8);
+    // …the soul HUD + Hell floor (crawl to Goetia / rise) are up — the in-Hell chrome…
+    expect(container!.querySelector('.kat-hud')).not.toBeNull();
+    expect(container!.querySelector('.floor')).not.toBeNull();
+    // …and the Altar commit gate is gone (we did not rewind to it).
+    expect(container!.querySelector('.altar-gate')).toBeNull();
+    expect(container!.querySelector('.kat-seal-btn')).toBeNull();
+  });
 });
