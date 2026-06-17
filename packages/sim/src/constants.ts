@@ -1,7 +1,12 @@
 /**
  * Cross-cutting economy constants. These mirror the `Globals` sheet of the economy spreadsheet,
- * which is the source of truth for numbers (the per-action tables arrive with their systems). Where
- * a design-doc prose value disagreed with the spreadsheet, the spreadsheet wins — noted inline.
+ * which is the source of truth for numbers. Where a design-doc prose value disagreed with the
+ * spreadsheet, the spreadsheet wins — noted inline.
+ *
+ * This file holds the cross-cutting SCALARS; the per-system tables (the other editable economy
+ * knobs) live alongside their engines as pure data: `actions.data.ts`, `compositum.data.ts`,
+ * `invocations.data.ts`, `maleficia.data.ts`, `sigils.data.ts`. See DEVELOPMENT.md "Tuning the
+ * economy" for the full map.
  */
 
 /** Base passive gold gain per second (Globals: 2 gold/s). */

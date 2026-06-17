@@ -39,6 +39,22 @@ The host needs `DATABASE_URL=postgres://panvitium:panvitium@localhost:5432/panvi
 `localhost`, not `postgres`). Put it in `apps/api/.env` or export it. The API's other config has
 safe dev defaults (see `apps/api/.env.example`).
 
+## Tuning the economy
+
+All editable economy numbers live in one tier of files under `packages/sim/src/`, separated from
+the logic that consumes them so a quick tweak never means reading through engine code:
+
+- `constants.ts` — cross-cutting scalars (base rates, growth factors, thresholds, per-level effects).
+- `actions.data.ts` — Opera action costs/times/gates + tier-weight distributions (`ACTIONS`).
+- `compositum.data.ts` — Vitium Compositum ceremony catalog (`COMPOSITA`).
+- `invocations.data.ts` — invocation catalog (`INVOCATIONS`).
+- `maleficia.data.ts` — Emptio price bands + the 29-item catalog (`MALEFICIA`).
+- `sigils.data.ts` — the 72-sigil catalog (`SIGILS`).
+
+Each `*.data.ts` is pure, typed, commented data (the type and behaviour stay in the sibling
+`*.ts`), so edits are type-checked and Vite hot-reloads them in dev. The spreadsheet remains the
+source of truth; the inline comments record each reconciliation.
+
 ## Verifying end-to-end
 
 The web app does not call the API yet (that wiring is a later step), so exercise the backend
