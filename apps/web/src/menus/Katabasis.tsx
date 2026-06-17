@@ -448,8 +448,9 @@ function StatuesPlace({
             onClick={() => open('eternal')}
             aria-label="The Ninth"
           >
-            <span className="obelisk-flame" aria-hidden="true" />
-            <span className="obelisk-tag">The Eternal Sin</span>
+            {/* Once all eight are maxed and Semet stands revealed in the end-state art, the monolith
+                carries no candle flame and no hover hotspot — it is the statue itself, not a lit
+                drop target. The button stays as an (invisible) click region into the Eternal modal. */}
           </button>
         )}
       </div>
@@ -938,7 +939,13 @@ export function Katabasis(): ReactElement {
   const begin = useGameStore((s) => s.beginKatabasis);
   const close = useGameStore((s) => s.closeKatabasis);
 
-  const [screen, setScreen] = useState<Screen>('altar');
+  // A descent already in progress (a save written mid-Katabasis, reopened) resumes on the Princes —
+  // the player was down in Hell, not at the commit gate. A fresh open from the room has
+  // `inKatabasis === false` and starts at the Altar seal. Lazy init: mount-time state only, so the
+  // later `begin()` flow (altar → descending → statues) is unaffected.
+  const [screen, setScreen] = useState<Screen>(() =>
+    state?.inKatabasis === true ? 'statues' : 'altar',
+  );
   const [caption, setCaption] = useState(false);
   const [riseArmed, setRiseArmed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
