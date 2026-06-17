@@ -173,8 +173,9 @@ const SUASIO_GLYPHS: Record<string, string> = {
   imperium: '\u2609',
 };
 const SUASIO_NUMERALS = ['I', 'II', 'III'] as const;
-/** Sin-level → Roman numeral for a sealed rite's gate ("Requires Luxuria III"). */
-const SUASIO_LEVEL_ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
+/** Sin level → Roman numeral for inline "<Sin> <level>" gate labels (e.g. "Luxuria III"). */
+const SIN_LEVEL_ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'] as const;
+const romanLevel = (n: number): string => SIN_LEVEL_ROMAN[n] ?? String(n);
 
 /**
  * The Suasio scroll (Studio) — "Opus Suasio, the Honeyed Tongue" (Claude Design rework). A
@@ -238,9 +239,9 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
       onTempt: () => act(id),
       ...(def.unlock
         ? {
-            lockLabel: `${strings.opera.suasioRequires} ${cap(def.unlock.sin)} ${
-              SUASIO_LEVEL_ROMAN[def.unlock.level] ?? def.unlock.level
-            }`,
+            lockLabel: `${strings.opera.suasioRequires} ${cap(def.unlock.sin)} ${romanLevel(
+              def.unlock.level,
+            )}`,
           }
         : {}),
       ...(delegatable ? { delegation: <AcolyteControls actionId={id} /> } : {}),
@@ -316,7 +317,7 @@ function DecimatioGroup(): ReactElement {
           pogromDef.unlock && (
             <LockedRow
               name={strings.opera.pogrom}
-              gate={`${cap(pogromDef.unlock.sin)} ${pogromDef.unlock.level}`}
+              gate={`${cap(pogromDef.unlock.sin)} ${romanLevel(pogromDef.unlock.level)}`}
             />
           )
         ))}
@@ -334,7 +335,7 @@ function DecimatioGroup(): ReactElement {
           purgatioDef.unlock && (
             <LockedRow
               name={strings.opera.purgatio}
-              gate={`${cap(purgatioDef.unlock.sin)} ${purgatioDef.unlock.level}`}
+              gate={`${cap(purgatioDef.unlock.sin)} ${romanLevel(purgatioDef.unlock.level)}`}
             />
           )
         ))}
@@ -533,8 +534,8 @@ function MercaturaGrid(): ReactElement {
         const accent = `hsl(${hue} 60% 65%)`;
         const accentLine = `hsl(${hue} 52% 56% / 0.55)`;
         const nextLock = locked
-          ? `Locked \u00B7 opens at ${capitalize(sin)} Level 1`
-          : `Depths beyond ${cap} require ${capitalize(sin)} Level ${level + 1}`;
+          ? `Locked \u00B7 opens at ${capitalize(sin)} ${romanLevel(1)}`
+          : `Depths beyond ${cap} require ${capitalize(sin)} ${romanLevel(level + 1)}`;
         return (
           <div
             key={sin}
@@ -794,7 +795,9 @@ function CompositumGrimoire(): ReactElement {
         const locked = !unlocked;
         const active = isToggleActive(state, id);
         const name = strings.compositum.names[id] ?? id;
-        const gate = def.sins.map((s) => `${capitalize(s)} L${def.minLevel}`).join(' \u00B7 ');
+        const gate = def.sins
+          .map((s) => `${capitalize(s)} ${romanLevel(def.minLevel)}`)
+          .join(' \u00B7 ');
         const dotColor = active ? '#e0934a' : locked ? '#7c1417' : 'rgba(200,180,138,.4)';
         const riteStyle: CSSProperties = locked
           ? { ...baseRite, opacity: 0.5, borderStyle: 'dashed' }

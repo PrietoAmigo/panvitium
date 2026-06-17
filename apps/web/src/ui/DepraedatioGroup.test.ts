@@ -66,7 +66,7 @@ describe('DepraedatioGroup — Sigil Grid + Living Grimoire', () => {
     // The grid (deepen buttons) is gone; ceremony toggles are shown instead.
     expect(container!.querySelectorAll('.dep-deepen').length).toBe(0);
     expect(container!.querySelectorAll('.dep-rite').length).toBeGreaterThan(0);
-    // Panvitium is sealed until every Sin reaches Level 3.
-    expect(container!.textContent ?? '').toContain('Requires every Sin at Level 3');
+    // Panvitium is sealed until every Sin reaches Level III.
+    expect(container!.textContent ?? '').toContain('Requires every Sin at Level III');
   });
 });
