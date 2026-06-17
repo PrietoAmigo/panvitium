@@ -1,5 +1,13 @@
 # Panvitium — Economy Template Audit (2026-06-12)
 
+> **Status (2026-06-17): Slice 1 (Globals & flat numbers) is LANDED.** Every numeric item in
+> sequencing step 1 below now matches the sheet in code — suicide 0.0001/s, murder 0.0002/s,
+> Vanagloria ×1.33/lvl, Acedia `1.0000002^(s·L²)`, Solomon's Ring ×1.66, Galdrabók ×1.15, Purgatio
+> 1,000,000 g, Indagatio 300 s, acolyte ×1.5 ladder (first at 110), and the four maleficia price
+> bands. The per-row tables below are the original 2026-06-12 snapshot and still show those as ✗;
+> trust this banner and the code over them for Slice-1 rows. Slices 2–6 remain open. The "Questions
+> back to you" at the foot are still blocking their slices.
+
 **Scope.** The newly uploaded `Panvitium_Economy_Template.xlsx` audited sheet-by-sheet against the
 current repo (post Mercatus/Foedera, clauses, and doc-reconciliation slices; gate green at 709
 tests). Convention: **the spreadsheet always wins** on numbers and on a system's composition.
@@ -157,9 +165,10 @@ Authoring template only (weights zeroed, renormalisation formulas). Nothing to r
 
 ## Proposed fix sequencing (each its own gate-green slice)
 
-1. **Globals & flat numbers** — suicide/murder bases, Vanagloria 1.33, Acedia compound
+1. ~~**Globals & flat numbers** — suicide/murder bases, Vanagloria 1.33, Acedia compound
    (base+unit), Solomon's Ring 1.66, Purgatio cost, Indagatio 300s, acolyte ladder, maleficia
-   prices. Mostly constants + test re-pins.
+   prices. Mostly constants + test re-pins.~~ **DONE (2026-06-17)** — all values match the sheet;
+   the stale comments that still described the pre-fix numbers were corrected.
 2. **Action tier tables** — all eight distributions and effect cells re-pinned to the sheet
    (incl. the Imperium full-distribution retouch).
 3. **VC Slice 3** — roster retirement (with `activeToggles` care), percentage upkeeps/outputs for

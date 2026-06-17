@@ -38,7 +38,7 @@ import type { OutcomeEvent } from './events.js';
  * (110 → 165 → 248 → 371 → …). A fresh lifetime (base 100 influence) has 0 acolytes; the
  * first unlocks at 110. Influence is floored before the integer comparison (resources are natural
  * numbers; `break_infinity` is a float bignum — ADR-005). The loop self-terminates: each threshold
- * grows ×2.2, so it exits as soon as one exceeds the (finite) influence, and a non-finite influence
+ * grows ×1.5, so it exits as soon as one exceeds the (finite) influence, and a non-finite influence
  * exits when the threshold itself overflows to Infinity.
  */
 export function maxAcolytes(state: GameState, mods: Modifiers = computeModifiers(state)): number {

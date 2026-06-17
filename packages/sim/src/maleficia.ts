@@ -105,7 +105,7 @@ export function totalInvokingPower(owned: readonly string[]): number {
 
 /**
  * Multiplier applied to every sigil's effect strength from equipped sigil-enhancer maleficia
- * (Solomon's Ring +50%, Iron Nails +1% per copy). 1 when none are equipped. Consumed by
+ * (Solomon's Ring +66%, Iron Nails +1% per copy). 1 when none are equipped. Consumed by
  * `sigilModifierContributions` and `sigilKatabasisBonus` so it scales modifier, tier, and
  * Katabasis-carryover sigils alike.
  */

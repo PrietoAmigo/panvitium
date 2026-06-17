@@ -32,16 +32,16 @@ export const BASE_INFLUENCE_RATE = 0.005;
 export const BASE_MAX_INFLUENCE = 100;
 
 /**
- * Acolyte count thresholds (Acolytes sheet). The Nth acolyte unlocks once effective max influence
- * reaches the Nth threshold; the thresholds form a ×2.2 geometric series anchored at the base,
- * each step rounded to the nearest integer and compounding off the rounded previous value (matching
- * the sheet's `=prev*2.2` columns: 110 → 242 → 532 → 1170 → 2574 → …). A fresh lifetime (base 100
- * influence) therefore has 0 acolytes; the first unlocks at 242.
+ * Acolyte count thresholds (Acolytes sheet rev 2026-06-12). The Nth acolyte unlocks once effective
+ * max influence reaches the Nth threshold; the thresholds form a ×1.5 geometric series anchored at
+ * the base, each step rounded to the nearest integer and compounding off the rounded previous value
+ * (110 → 165 → 248 → 371 → …). A fresh lifetime (base 100 influence) therefore has 0 acolytes; the
+ * first unlocks at 110.
  */
 export const ACOLYTE_THRESHOLD_BASE = 110;
 export const ACOLYTE_THRESHOLD_GROWTH = 1.5;
 
-/** Base reprobate suicide chance per second, applied to the whole population (Globals: 0.00023). */
+/** Base reprobate suicide chance per second, applied to the whole population (Globals: 0.0001). */
 export const BASE_SUICIDE_RATE_PER_SECOND = 0.0001;
 
 /**
@@ -62,8 +62,8 @@ export const PANVITIUM_RATE_BASE = 0.01;
 /**
  * Base reprobate murder rate (kills / reprobate / second), applied to the whole population, before
  * sigil/maleficium/ceremony modifiers. With reprobate subtypes removed, murder is a per-capita cull
- * of the single pool (re-anchored from the old per-Choleric rate). Placeholder pending the economy
- * sheet — the SHAPE (per-capita on total population) is authoritative; the magnitude is tuning.
+ * of the single pool (re-anchored from the old per-Choleric rate). Pinned to the Globals sheet
+ * (0.0002/s); the SHAPE (per-capita on total population) is likewise authoritative.
  */
 export const BASE_MURDER_RATE_PER_SECOND = 0.0002;
 
@@ -155,6 +155,6 @@ export const ACEDIA_OFFLINE_COMPOUND_BASE = 1.0000002; // per SECOND offline (sh
 export const ARS_SERPENS_SUASIO_BONUS = 0.33;
 export const VOYNICH_SUASIO_BONUS = 0.66;
 export const RITUAL_DAGGER_DECIMATIO_BONUS = 0.33;
-/** Solomon's Ring: +50% to all sigil effect strength (mult). Iron Nails: +1% per equipped copy. */
+/** Solomon's Ring: +66% to all sigil effect strength (×1.66, Maleficia sheet). Iron Nails: +1% per copy. */
 export const SOLOMON_RING_SIGIL_BONUS = 0.66;
 export const IRON_NAILS_SIGIL_BONUS = 0.01;
