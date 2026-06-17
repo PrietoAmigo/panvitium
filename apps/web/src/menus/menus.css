@@ -2328,10 +2328,18 @@ body {
   padding: 13px 4px;
   border-bottom: 1px solid rgba(120, 40, 40, 0.18);
 }
+.katabasis-flow .ls-name {
+  font-family: var(--font-inscribe);
+  letter-spacing: 0.05em;
+  font-size: 0.92rem;
+  color: var(--gold);
+  white-space: nowrap;
+}
 .katabasis-flow .ls-effect {
   font-family: var(--font-body);
   font-size: 1.04rem;
   color: var(--bone);
+  flex: 1 1 auto;
 }
 .katabasis-flow .ls-dir {
   color: var(--ember);

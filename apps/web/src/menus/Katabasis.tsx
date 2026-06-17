@@ -16,6 +16,7 @@ import {
   MAX_SIN_LEVEL,
   sigilById,
   sigilVisible,
+  totalBound,
   eternalSinVisible,
   eternalSinRevealed,
   eternalProgress,
@@ -23,7 +24,6 @@ import {
   floor,
   isZero,
   bn,
-  add,
   sub,
   div,
   gt,
@@ -33,7 +33,7 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
-import { AetherSigils } from './AetherSigils.js';
+import { AetherSigils, effectDisplay } from './AetherSigils.js';
 import { HoldButton } from './katabasisShared.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
@@ -751,18 +751,27 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
  * bound), and a derived summary. Sealed sigils (Semet, until every Sin is Rank ≥ 2) never surface.
  */
 function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): ReactElement {
-  // Total Devotion = the sum offered across the eight Princes (not the Eternal column).
-  const totalDevotion = useMemo(
-    () => SINS.reduce((acc, key) => add(acc, state.devotion[key]), bn(0)),
+  // Total Sin Level = the sum of every Cardinal Sin's rank.
+  const totalSinLevel = useMemo(
+    () => SINS.reduce((acc, key) => acc + sinLevel(state.devotion[key]), 0),
     [state.devotion],
   );
-  const seated = SINS.filter((key) => sinLevel(state.devotion[key]) >= 1).length;
+  // Total Souls bound = every soul currently bound across all sigils.
+  const totalSoulsBound = useMemo(() => totalBound(state), [state]);
 
-  // Bound sigils — effects only, sorted most-bound first. A seal appears only once it has souls
-  // bound and is visible (Semet stays sealed until the gate opens). Effect text + arrow come from
-  // the authoritative `strings.sigils.descriptions`, falling back to the local boon table.
+  // Bound sigils — name + current effect, sorted most-bound first. A seal appears only once it has
+  // souls bound and is visible (Semet stays sealed until the gate opens). Effect text + arrow come
+  // from the authoritative `strings.sigils.descriptions`, falling back to the local boon table; the
+  // magnitude (%) is the live `effectDisplay` at the current binding.
   const boundSigils = useMemo(() => {
-    const rows: Array<{ id: number; text: string; dir: string; bound: BigNum }> = [];
+    const rows: Array<{
+      id: number;
+      name: string;
+      effect: string;
+      text: string;
+      dir: string;
+      bound: BigNum;
+    }> = [];
     for (let id = 1; id <= 72; id++) {
       const v = state.sigilBindings[id];
       if (v === undefined || isZero(v)) continue;
@@ -770,7 +779,8 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
       if (def && !sigilVisible(state, def)) continue;
       const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
       const { text, dir } = splitBoon(desc);
-      rows.push({ id, text, dir, bound: v });
+      const name = strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
+      rows.push({ id, name, effect: effectDisplay(def, v), text, dir, bound: v });
     }
     rows.sort((a, b) => (gt(b.bound, a.bound) ? 1 : gt(a.bound, b.bound) ? -1 : a.id - b.id));
     return rows;
@@ -790,23 +800,22 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
           <div className="ledger-eyebrow">Status Quo</div>
           <h1 className="ledger-title">The Ledger</h1>
           <p className="ledger-dek">
-            The Devotion owed each Prince and the rank it buys you, the powers your Sins now exert,
-            and the effects of every sigil bound to your soul.
+            The disgrace Cardinal Sins now exert, and the effects of every sigil by bound souls.
           </p>
         </div>
 
         <div className="ledger-summary">
           <div className="ls-stat">
-            <div className="ls-num">{formatBigNum(totalDevotion)}</div>
-            <div className="ls-lab">Total Devotion</div>
+            <div className="ls-num">{totalSinLevel}</div>
+            <div className="ls-lab">Total Sin Level</div>
           </div>
           <div className="ls-stat">
-            <div className="ls-num">{seated} / 8</div>
-            <div className="ls-lab">Princes Seated</div>
+            <div className="ls-num">{formatBigNum(totalSoulsBound)}</div>
+            <div className="ls-lab">Total Souls Bound</div>
           </div>
           <div className="ls-stat">
             <div className="ls-num">{boundSigils.length}</div>
-            <div className="ls-lab">Sigils Bound</div>
+            <div className="ls-lab">Number of Sigils Bound</div>
           </div>
         </div>
 
@@ -834,12 +843,13 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
           <div className="ledger-sigils">
             {boundSigils.map((g) => (
               <div className="ledger-sigil" key={g.id}>
+                <span className="ls-name">{g.name}</span>
                 <span className="ls-effect">
                   {g.text}
                   {g.dir && <span className="ls-dir"> {g.dir}</span>}
                 </span>
                 <span className="ls-bound">
-                  <b>{formatBigNum(g.bound)}</b> souls
+                  <b>{g.effect}</b> effect
                 </span>
               </div>
             ))}

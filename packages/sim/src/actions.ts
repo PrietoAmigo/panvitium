@@ -35,6 +35,7 @@ import { type OutcomeEvent } from './events.js';
 import {
   MALEFICIA,
   MALEFICIUM_PRICE_RANGE,
+  MAX_EMPTIO_LIST_SIZE,
   findableIds,
   sigilEffectMultiplier,
   type MaleficiumRarity,
@@ -970,10 +971,17 @@ export function resolveIndagatio(
       if (ids.length === 0) continue;
       const picked = ids[rng.int(ids.length)];
       if (!picked) continue; // defensive: rng.int could (in theory) land out of range
+      // The Emptio surfaces at most MAX_EMPTIO_LIST_SIZE items; finding the next one drops the
+      // oldest (FIFO) so the list never grows past the cap.
+      const grown = [...st.lifetime.emptioList, picked];
+      const capped =
+        grown.length > MAX_EMPTIO_LIST_SIZE
+          ? grown.slice(grown.length - MAX_EMPTIO_LIST_SIZE)
+          : grown;
       return {
         state: {
           ...st,
-          lifetime: { ...st.lifetime, emptioList: [...st.lifetime.emptioList, picked] },
+          lifetime: { ...st.lifetime, emptioList: capped },
         },
         picked,
       };

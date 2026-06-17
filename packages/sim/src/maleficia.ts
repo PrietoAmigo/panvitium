@@ -306,6 +306,12 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
 
 export const MALEFICIUM_IDS: readonly string[] = Object.keys(MALEFICIA);
 
+/**
+ * Maximum number of items the Indagatio's Emptio list can hold at once. Finding a new item past
+ * this cap drops the oldest surfaced item (FIFO).
+ */
+export const MAX_EMPTIO_LIST_SIZE = 20;
+
 /** Whether a maleficium can be stacked (owned in multiple copies). */
 export function isStackable(def: MaleficiumDef): boolean {
   return def.stackMax !== undefined;
