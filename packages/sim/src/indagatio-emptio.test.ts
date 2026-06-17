@@ -57,6 +57,25 @@ describe('resolveIndagatio (03 §2.5)', () => {
     ).toBe(200);
   });
 
+  it('caps the Emptio list at 20, dropping the oldest find (FIFO) on the 21st', () => {
+    // Pre-fill the list with 20 sentinels — a stackable common so a fresh Neutral find can still
+    // surface (the catalog item is never exhausted). 'marker-0' is the oldest.
+    const base = fresh();
+    const filled = Array.from({ length: 20 }, (_, i) =>
+      i === 0 ? 'marker-0' : 'black_salt_pouch',
+    );
+    const seeded: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, emptioList: filled },
+    };
+    const { state, surfaced } = resolveIndagatio(seeded, 'neutral', rng());
+    expect(surfaced.length).toBe(1);
+    // Still exactly 20: the 21st find pushed the oldest ('marker-0') out the front.
+    expect(state.lifetime.emptioList.length).toBe(20);
+    expect(state.lifetime.emptioList).not.toContain('marker-0');
+    expect(state.lifetime.emptioList[19]).toBe(surfaced[0]!);
+  });
+
   it('falls back to a lower rarity when the picked one is exhausted', () => {
     // Owning every anathema item locks the Stellar pick away — it falls back to profane.
     const base = fresh();

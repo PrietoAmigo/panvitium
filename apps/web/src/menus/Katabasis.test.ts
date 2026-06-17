@@ -161,12 +161,12 @@ describe('Katabasis flow — orchestrator', () => {
     const stats = Array.from(container!.querySelectorAll('.ls-stat')).map(
       (s) => s.textContent ?? '',
     );
-    expect(stats.some((t) => t.includes('0 / 8') && t.includes('Princes Seated'))).toBe(true);
+    expect(stats.some((t) => t.includes('0') && t.includes('Total Sin Level'))).toBe(true);
     expect(container!.querySelector('.ledger-sigils-empty')).not.toBeNull();
     expect(container!.querySelector('.ledger-sigil')).toBeNull();
   });
 
-  it('lists a bound sigil in the Ledger by effect only (no seal name)', () => {
+  it('lists a bound sigil in the Ledger by name, effect, and current magnitude', () => {
     // Marbas #5 — always visible; sheet effect "Indagatio positive outcomes ↑".
     patch({ sigilBindings: { 5: bn(100) } });
     act(() => store().openKatabasis());
@@ -174,9 +174,10 @@ describe('Katabasis flow — orchestrator', () => {
     act(() => action('Status quo').click());
     const sig = container!.querySelector('.ledger-sigil');
     expect(sig).not.toBeNull();
+    expect(sig!.querySelector('.ls-name')?.textContent).toContain('Marbas'); // seal name shown
+    expect(sig!.querySelector('.ls-bound')?.textContent).toContain('%'); // current effect magnitude
     const effect = sig!.querySelector('.ls-effect')?.textContent ?? '';
     expect(effect).toContain('Indagatio positive outcomes');
-    expect(effect).not.toContain('Marbas'); // effects only — never the seal name
     expect(sig!.querySelector('.ls-dir')?.textContent).toContain('\u2191');
   });
 
