@@ -1,12 +1,26 @@
 # Panvitium — Economy Template Audit (2026-06-12)
 
-> **Status (2026-06-17): Slice 1 (Globals & flat numbers) is LANDED.** Every numeric item in
-> sequencing step 1 below now matches the sheet in code — suicide 0.0001/s, murder 0.0002/s,
-> Vanagloria ×1.33/lvl, Acedia `1.0000002^(s·L²)`, Solomon's Ring ×1.66, Galdrabók ×1.15, Purgatio
-> 1,000,000 g, Indagatio 300 s, acolyte ×1.5 ladder (first at 110), and the four maleficia price
-> bands. The per-row tables below are the original 2026-06-12 snapshot and still show those as ✗;
-> trust this banner and the code over them for Slice-1 rows. Slices 2–6 remain open. The "Questions
-> back to you" at the foot are still blocking their slices.
+> **Status (2026-06-17): ALL SIX SLICES ARE LANDED.** A line-by-line reconciliation against the
+> current code found every numeric mismatch and ⚠ retouch in this audit already implemented:
+> - **Slice 1 (Globals/flat):** suicide 0.0001/s, murder 0.0002/s, Vanagloria ×1.33/lvl, Acedia
+>   `1.0000002^(s·L²)`, Solomon's Ring ×1.66, Galdrabók ×1.15, Purgatio 1,000,000 g, Indagatio
+>   300 s, acolyte ×1.5 ladder (first at 110), the four maleficia price bands.
+> - **Slice 2 (action tiers):** Logismoi/Imperium/Caedis/Pogrom/Purgatio distributions re-pinned;
+>   Imperium is a full distribution (0.035 Stellar/Apocalyptic); Purgatio Terrible/Apocalyptic shed
+>   100% gold (+ reprobates) — all in `actions.data.ts` / `actions.ts`.
+> - **Slice 3 (Vitium Compositum):** roster is the canonical nine; Vegas/Crusade percentage
+>   cost/output semantics and the four pair effects (±10%) all wired in `compositum.data.ts`.
+> - **Slice 4 (Sins remap):** Gula −25%/lvl negative-tier reduction, Luxuria/Ira ×2 category
+>   efficiency, Tristitia→acolytes, Ira→invocations; the orphaned per-level suicide doubling removed.
+> - **Slice 5 (sigils):** all 72 carry effects with per-sigil coefficients/curves; the 16 revivals
+>   and the re-targets (incl. the Crocell/Furcas swap and Amy's negative sign) are present.
+> - **Slice 6 (invocations):** Specunitas ×2 influence, Lamia→Logismoi, Succubus→Imperium,
+>   Harpy→Pogrom, Nightmare 5e-05, Thirty Pieces of Silver +0.001%/current-gold.
+>
+> The "Questions back to you" were resolved in code's favour (Imp stayed an autonomous forced-Good
+> Caedis runner; Logismoi Excellent/Good differentiated to `randint(20,58)`/`randint(10,29)`; the
+> 65.37 divisor stands). **The per-row ✗/⚠ tables below are the original 2026-06-12 snapshot — trust
+> the code and this banner over them.** This audit is effectively closed; kept for history.
 
 **Scope.** The newly uploaded `Panvitium_Economy_Template.xlsx` audited sheet-by-sheet against the
 current repo (post Mercatus/Foedera, clauses, and doc-reconciliation slices; gate green at 709
@@ -169,16 +183,18 @@ Authoring template only (weights zeroed, renormalisation formulas). Nothing to r
    (base+unit), Solomon's Ring 1.66, Purgatio cost, Indagatio 300s, acolyte ladder, maleficia
    prices. Mostly constants + test re-pins.~~ **DONE (2026-06-17)** — all values match the sheet;
    the stale comments that still described the pre-fix numbers were corrected.
-2. **Action tier tables** — all eight distributions and effect cells re-pinned to the sheet
-   (incl. the Imperium full-distribution retouch).
-3. **VC Slice 3** — roster retirement (with `activeToggles` care), percentage upkeeps/outputs for
-   Vegas/Crusade, the four pair effects re-verified at 10%/1%.
-4. **Sins remap** — the skill/per-level retargeting (Gula negative-chance ladder, Luxuria/Ira ×2
+2. ~~**Action tier tables** — all eight distributions and effect cells re-pinned to the sheet
+   (incl. the Imperium full-distribution retouch).~~ **DONE** — `actions.data.ts` / `actions.ts`.
+3. ~~**VC Slice 3** — roster retirement (with `activeToggles` care), percentage upkeeps/outputs for
+   Vegas/Crusade, the four pair effects re-verified at 10%/1%.~~ **DONE** — `compositum.data.ts`.
+4. ~~**Sins remap** — the skill/per-level retargeting (Gula negative-chance ladder, Luxuria/Ira ×2
    category efficiency, Tristitia→acolytes, Ira→invocations; remove the orphaned suicide
-   doubling). Touches `modifiers.ts` broadly.
-5. **Sigils re-pin** — the 16 revivals, the re-targets, and the full 72-coefficient/curve sweep.
-6. **Invocation retouches** — Specunitas, Lamia/Harpy/Succubus re-targets, Nightmare factor,
-   Silver's per-gold scaling (with Maleficia oddballs).
+   doubling).~~ **DONE** — `constants.ts` / `modifiers.ts`.
+5. ~~**Sigils re-pin** — the 16 revivals, the re-targets, and the full 72-coefficient/curve sweep.~~
+   **DONE** — all 72 in `sigils.data.ts`.
+6. ~~**Invocation retouches** — Specunitas, Lamia/Harpy/Succubus re-targets, Nightmare factor,
+   Silver's per-gold scaling (with Maleficia oddballs).~~ **DONE** — `invocations.data.ts` /
+   `modifiers.ts`.
 
 ## Questions back to you (blocking the relevant slices)
 

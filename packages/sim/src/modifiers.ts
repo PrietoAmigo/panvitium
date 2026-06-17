@@ -133,9 +133,10 @@ export interface Modifiers {
    */
   readonly reprobateGenerationRateMul: number;
   /**
-   * Multiplier on the population-wide reprobate suicide rate (02 §9). Tristitia / Resignation
-   * raises it (via skill intensity); Tristitia level applies a per-level 2× on top. Nihilist
-   * count, Crocell #49, Focalor #41, Ronove #27 will attach here as their systems land.
+   * Multiplier on the population-wide reprobate suicide rate (02 §9). Raised by Panvitium, the Doom
+   * Gathering ceremony, the Witch Ladder maleficium, the Mercatus Tristitiae clause, and the suicide
+   * sigils (Ronove #27, Sabnock #43). The old Tristitia per-level 2× was retired in the Sins remap —
+   * Tristitia's skill now feeds acolyte efficiency, not suicide.
    */
   readonly reprobateSuicideRateMul: number;
   /**

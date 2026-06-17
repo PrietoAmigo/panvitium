@@ -184,8 +184,8 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 3,
     maxActive: 1,
     upkeep: { goldGainFraction: 0.99 }, // 99% of current gold gain/s (Invocatio sheet)
-    // Apex Vanagloria (free). Its only effect was the conversion-bias hook (Celebrity subtype),
-    // which was removed with reprobate subtypes. EFFECTLESS for now — flagged for re-homing in the
-    // orphaned-sigils/invocations slice (Slice 4).
+    // Apex Vanagloria (free, upkeep aside). Re-targeted from its retired conversion-bias hook to
+    // "×2 influence gain/s" (Invocatio sheet rev 2026-06-12); applied in modifiers.ts via
+    // `hasSpecunitas` on influenceRateMul.
   },
 } as const;
