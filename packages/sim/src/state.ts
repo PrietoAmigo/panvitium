@@ -115,6 +115,16 @@ export interface LifetimeState {
   /** In-flight timed actions. */
   actionQueue: ActionTimer[];
   /**
+   * Player-driven actions the player has set to AUTO-REPEAT (02 §3: the "toggle" variant a one-shot
+   * rite gains once its Sin reaches the sheet's toggle level). While an id is here the tick keeps a
+   * cycle of it running in the player's own slot — re-queuing it on completion and retrying after a
+   * stall — until the player toggles it off (or it can no longer be afforded). Because only one
+   * player-driven rite occupies the slot at a time (02 §3), at most one non-Indagatio id is active
+   * here. Reset on Katabasis with the rest of the lifetime. Additive-optional on the wire (ADR-023);
+   * empty by default — old saves load with nothing auto-repeating.
+   */
+  autoRepeat: string[];
+  /**
    * Mercatus depths (Vitium Mercatura rework): one trade per Cardinal Sin, each a single integer
    * depth ≥ 0 (spec §1). Sparse — an absent Sin means depth 0, and the serializer omits the whole
    * record when empty. Reset to {} on Katabasis after the liquidation refund.
@@ -271,6 +281,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       activeToggles: [],
       toggleDurations: {},
       actionQueue: [],
+      autoRepeat: [],
       mercatusDepths: {},
       generationPool: 0,
       suicidePool: 0,

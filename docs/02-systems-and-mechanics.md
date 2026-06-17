@@ -140,8 +140,11 @@ The Opera is the action surface of a lifetime: everything the player does betwee
 
 - **One-shot** actions with a duration (e.g. *Suggestion*, *Caedis*, *Indagatio*).
 - **Toggles** that consume resources per second while active (e.g. the *Vitium Compositum*
-  ceremonies, *Panvitium*). One-shot actions gain a toggle (auto-repeat) variant at the Sin
-  levels noted in the spreadsheet.
+  ceremonies, *Panvitium*). A one-shot action also gains an **auto-repeat** toggle once its Sin
+  reaches the spreadsheet's toggle level (the same gate that opens delegation): flip it on and the
+  rite re-casts itself in the player's slot — paying each cycle, retrying after a stall — until the
+  player flips it off or can no longer afford it. Because only one player-driven rite holds the slot
+  (§3 below), enabling auto-repeat on one rite turns it off on any other.
 - **Transactions** — instant, deterministic exchanges that are not actions at all and never
   occupy the action slot: Mercatus invest/divest, sigil binding, equipping maleficia, summoning
   an invocation.
@@ -183,7 +186,9 @@ reprobate. In `time` mode the same total would instead divide the duration: `10 
 ### Parallelism rules
 
 - **One** player-driven action at a time. The action queue holds the player's currently-running
-  rite plus any acolyte- or invocation-delegated rites, each in its own channel.
+  rite plus any acolyte- or invocation-delegated rites, each in its own channel. A rite set to
+  **auto-repeat** simply keeps re-occupying that single player slot — it is the same one-at-a-time
+  slot, looped, not a second channel.
 - **Toggles** may be active concurrently with player-driven actions and with each other, subject
   to per-second resource costs.
 - **Transactions** (Mercatus invest/divest and the rest listed above) resolve instantly and
@@ -399,9 +404,12 @@ Lesser practitioners who do the work's lower offices (`00-lore-bible.md` §9). M
   threshold of a geometric series anchored at the base threshold (both in the `Acolytes` sheet).
   Influence resets on Katabasis, so each lifetime re-earns its retinue.
 - **Delegation.** Each acolyte runs at most one delegated action at the acolyte efficiency (base
-  fraction in `Globals`, raised by Tristitia's Resignation skill and Bathin #18). Delegated
-  one-shot tasks retire the acolyte to idle on completion; acolytes can instead be assigned to
-  help run a *Vitium Compositum* ceremony, summing into its efficiency.
+  fraction in `Globals`, raised by Tristitia's Resignation skill and Bathin #18). Delegation
+  **loops**: the acolyte runs its action cycle after cycle — paying each one, stalling when it
+  can't afford the next and retrying when it can — and stays assigned until the player recalls it
+  (or Katabasis clears the retinue). It is set-and-forget automation, not a single errand.
+  Acolytes can instead be assigned to help run a *Vitium Compositum* ceremony, summing into its
+  efficiency.
 - **Limits.** Acolytes cannot run actions that require specific maleficia. At most four are
   visualized in the Altar room (per-count background plates); further acolytes work unseen.
 - **Desertion** is a Katabasis-time fiction beat (the unfaithful loot what is portable) — it is
@@ -425,8 +433,9 @@ Current per-save state to track:
 - the lifetime state: gold, influence, `maxInfluence`, the reprobate population (one integer),
   **Mercatus depths per Sin**, the acolyte list with assignment state, active invocations and
   their runner timers, owned maleficia (duplicates for stackables), the *Emptio* list, active
-  toggles and toggle durations, the action queue (timers, optional `target` for Emptio), and the
-  accrual pools (`generationPool`, `suicidePool`, `murderPool`);
+  toggles and toggle durations, the action queue (timers, optional `target` for Emptio), the
+  set of auto-repeating rites, and the accrual pools (`generationPool`, `suicidePool`,
+  `murderPool`);
 - achievements, the Katabasis count, the run's start timestamp;
 - the seeded RNG state and the timestamp of the last applied tick.
 

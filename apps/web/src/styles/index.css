@@ -1409,6 +1409,37 @@ body {
 }
 
 /* ── Acolyte delegation controls ────────────────────────────────────────── */
+.rite-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.auto-repeat-btn {
+  background: rgba(8, 8, 10, 0.5);
+  border: 1px solid rgba(196, 158, 74, 0.4);
+  color: var(--ash, #c8b48a);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  padding: 0.28rem 0.55rem;
+  line-height: 1;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+.auto-repeat-btn:hover {
+  background: rgba(40, 16, 16, 0.55);
+  border-color: rgba(212, 72, 72, 0.5);
+  color: #e6c993;
+}
+.auto-repeat-btn--on {
+  background: rgba(44, 16, 10, 0.6);
+  border-color: rgba(230, 140, 50, 0.55);
+  color: #e0934a;
+  box-shadow: inset 0 0 10px rgba(230, 120, 40, 0.25);
+}
 .acolyte-controls {
   display: inline-flex;
   align-items: center;

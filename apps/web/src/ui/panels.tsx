@@ -26,6 +26,8 @@ import {
   isToggleActive,
   assignedCount,
   isDelegatable,
+  isAutoRepeatable,
+  isAutoRepeating,
   ACHIEVEMENTS,
   isUnlocked,
   unreadCount,
@@ -156,6 +158,44 @@ function AcolyteControls({ actionId }: { actionId: string }): ReactElement | nul
   );
 }
 
+/**
+ * Auto-repeat toggle for a player rite (02 §3). Appears once the rite passes its "toggle" Sin level
+ * (`isAutoRepeatable`); flipping it on loops the rite in the player's own slot until flipped off.
+ * Distinct from acolyte delegation — this is the player's hands, not a follower's.
+ */
+function AutoRepeatToggle({ actionId }: { actionId: string }): ReactElement | null {
+  const state = useGameStore((s) => s.state);
+  const toggleAutoRepeat = useGameStore((s) => s.toggleAutoRepeat);
+  if (!state || !isAutoRepeatable(state, actionId)) return null;
+  const on = isAutoRepeating(state, actionId);
+  return (
+    <button
+      type="button"
+      className={'auto-repeat-btn' + (on ? ' auto-repeat-btn--on' : '')}
+      aria-pressed={on}
+      onClick={() => toggleAutoRepeat(actionId, !on)}
+      title={strings.autoRepeat.label}
+      aria-label={strings.autoRepeat.label}
+    >
+      {'↻'} {on ? strings.autoRepeat.stop : strings.autoRepeat.start}
+    </button>
+  );
+}
+
+/**
+ * The per-rite control cluster shown beneath an unlocked Opera action: the player's own auto-repeat
+ * toggle plus the acolyte delegation `+/−`. Each piece self-hides when it doesn't apply, so this
+ * renders nothing for a plain rite with neither unlocked.
+ */
+function RiteControls({ actionId }: { actionId: string }): ReactElement {
+  return (
+    <div className="rite-controls">
+      <AutoRepeatToggle actionId={actionId} />
+      <AcolyteControls actionId={actionId} />
+    </div>
+  );
+}
+
 /** True while a player-driven rite holds the slot (02 §3: one at a time). Indagatio scries in the
  * background and does NOT count, so Suasio/Decimatio/Emptio stay available while a search runs. */
 function useUnderway(): boolean {
@@ -222,7 +262,12 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
     const progress =
       active && base > 0 ? Math.min(100, Math.max(0, ((base - remaining) / base) * 100)) : 0;
     const sealed = locked ? strings.opera.suasioSealed[id] : undefined;
-    const delegatable = state.lifetime.acolytes.length > 0 && isDelegatable(state, id);
+    // The control cluster (auto-repeat toggle + acolyte delegation) shows on any unlocked rite that
+    // has at least one of them available — the toggle needs no acolytes, delegation needs them.
+    const hasControls =
+      !locked &&
+      (isAutoRepeatable(state, id) ||
+        (state.lifetime.acolytes.length > 0 && isDelegatable(state, id)));
     return {
       id,
       numeral: SUASIO_NUMERALS[i] ?? '',
@@ -244,7 +289,7 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
             )}`,
           }
         : {}),
-      ...(delegatable ? { delegation: <AcolyteControls actionId={id} /> } : {}),
+      ...(hasControls ? { delegation: <RiteControls actionId={id} /> } : {}),
     };
   });
 
@@ -301,7 +346,7 @@ function DecimatioGroup(): ReactElement {
         cta={strings.opera.cull}
         disabled={underway || gold < caedisCost}
         onAct={() => act('caedis')}
-        delegation={<AcolyteControls actionId="caedis" />}
+        delegation={<RiteControls actionId="caedis" />}
       />
       {pogromDef &&
         (actionUnlocked(state, pogromDef) ? (
@@ -311,7 +356,7 @@ function DecimatioGroup(): ReactElement {
             cta={strings.opera.purge}
             disabled={underway || gold < goldCost('pogrom')}
             onAct={() => act('pogrom')}
-            delegation={<AcolyteControls actionId="pogrom" />}
+            delegation={<RiteControls actionId="pogrom" />}
           />
         ) : (
           pogromDef.unlock && (
@@ -329,7 +374,7 @@ function DecimatioGroup(): ReactElement {
             cta={strings.opera.purge}
             disabled={underway || gold < goldCost('purgatio')}
             onAct={() => act('purgatio')}
-            delegation={<AcolyteControls actionId="purgatio" />}
+            delegation={<RiteControls actionId="purgatio" />}
           />
         ) : (
           purgatioDef.unlock && (

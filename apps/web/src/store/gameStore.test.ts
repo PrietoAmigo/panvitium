@@ -310,6 +310,38 @@ describe('gameStore — acolyte delegation', () => {
   });
 });
 
+/** Set a Sin's devotion to a given level so toggle-gated rites unlock. */
+function patchSin(sin: 'ira', level: number): void {
+  const s = store().state as GameState;
+  useGameStore.setState({ state: { ...s, devotion: { ...s.devotion, [sin]: bn(180 ** level) } } });
+}
+
+describe('gameStore — auto-repeat wiring', () => {
+  it('toggling auto-repeat on a toggle-unlocked rite starts a looping cycle and clears notices', () => {
+    patchSin('ira', 1); // caedis toggles at Ira 1
+    patchGold(5000);
+    store().toggleAutoRepeat('caedis', true);
+    const s = store().state as GameState;
+    expect(s.lifetime.autoRepeat).toEqual(['caedis']);
+    expect(s.lifetime.actionQueue.some((t) => t.actionId === 'caedis')).toBe(true);
+    expect(store().notice).toBeNull();
+  });
+
+  it('toggling off removes the rite from the auto-repeat set', () => {
+    patchSin('ira', 1);
+    patchGold(5000);
+    store().toggleAutoRepeat('caedis', true);
+    store().toggleAutoRepeat('caedis', false);
+    expect((store().state as GameState).lifetime.autoRepeat).toEqual([]);
+  });
+
+  it('is a no-op (no crash, empty set) for a rite that is not toggle-unlocked yet', () => {
+    patchGold(5000); // Ira 0 — caedis auto-repeat not yet available
+    store().toggleAutoRepeat('caedis', true);
+    expect((store().state as GameState).lifetime.autoRepeat).toEqual([]);
+  });
+});
+
 describe('gameStore — Vitium Compositum ceremonies', () => {
   function patchTwoSins(a: 'gula' | 'avaritia', b: 'luxuria' | 'ira', level: number): void {
     const s = store().state as GameState;

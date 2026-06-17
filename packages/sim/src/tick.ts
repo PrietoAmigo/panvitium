@@ -12,7 +12,7 @@
  * persisted; the caller surfaces them in the log / pop-ups.
  */
 import { add, bn, lt, max, min, mul, sub, ZERO, type BigNum } from './bignum.js';
-import { resolveAction } from './actions.js';
+import { ensureAutoRepeatStarted, resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceInvocationRunners, invocationUpkeep } from './invocations.js';
 import { applyInvocationTickEffects } from './apex.js';
@@ -348,6 +348,13 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
       working = resolved.state;
       if (resolved.event) events.push(resolved.event);
     }
+  }
+
+  // 2b. Auto-repeat (02 §3): re-queue any player rite the player has toggled to loop and that isn't
+  //     currently in flight — both a just-completed cycle and one that stalled on a prior tick. Free
+  //     and harmless when nothing is set to auto-repeat.
+  if (working.lifetime.autoRepeat.length > 0) {
+    working = ensureAutoRepeatStarted(working);
   }
 
   // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer

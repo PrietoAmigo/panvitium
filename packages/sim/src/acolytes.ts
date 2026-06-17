@@ -170,11 +170,12 @@ export function assignedCount(state: GameState, actionId: string): number {
  * outcome (Suasio/Decimatio) pays `ceil(cost × efficiency)` per cycle and stalls when broke. A
  * stalled acolyte carries `remainingSeconds = null` and is retried here each tick.
  *
- * Acolyte tasks are ONE-SHOT (oneShot): every currently-delegatable action is a non-toggle, so once
- * the acolyte completes its action it is retired to idle (`assignedAction = null`) rather than
- * looping — the player re-assigns to run another. (Toggle delegation, e.g. helping run a Vitium
- * Compositum, goes through a different path and is not subject to this.) Events from acolyte
- * resolutions are returned in the same shape as player events.
+ * Delegation LOOPS: an assigned acolyte runs its action cycle after cycle — resolving one, paying for
+ * and starting the next, catching up multiple cycles within one (possibly offline) delta — and stays
+ * assigned until the player recalls it (or Katabasis clears the retinue). It is set-and-forget
+ * automation, not a single errand. (Acolytes can instead be assigned to help run a Vitium Compositum
+ * ceremony — a different path.) Events from acolyte resolutions are returned in the same shape as
+ * player events.
  */
 export function advanceAcolytes(
   state: GameState,
@@ -201,15 +202,15 @@ export function advanceAcolytes(
       deltaSeconds,
       rng,
       undefined, // acolytes roll their own tier (no forced outcome)
-      true, // one-shot: a single non-toggle task, then retire
+      // oneShot is left false: the channel loops cycle after cycle until the player recalls it.
     );
     working = r.state;
     for (const e of r.events) events.push(e);
 
+    // The acolyte keeps its assignment and loops; `remaining` is the in-flight cycle (or null when
+    // stalled on resources, retried next tick).
     const nextAcolytes = [...working.lifetime.acolytes];
-    nextAcolytes[i] = r.completed
-      ? { ...working.lifetime.acolytes[i]!, assignedAction: null, remainingSeconds: null }
-      : { ...working.lifetime.acolytes[i]!, remainingSeconds: r.remaining };
+    nextAcolytes[i] = { ...working.lifetime.acolytes[i]!, remainingSeconds: r.remaining };
     working = { ...working, lifetime: { ...working.lifetime, acolytes: nextAcolytes } };
   }
 

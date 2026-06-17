@@ -42,8 +42,8 @@ const MAX_CYCLES_PER_CALL = 100_000;
  * null, counts it down, and on completion resolves the outcome at `efficiency` then attempts the
  * next cycle with any leftover budget. Pass `deltaSeconds = 0` to (lazily) start the first cycle at
  * assignment time without advancing it. `forcedTier` pins the outcome tier (the Imp's Caedis).
- * `oneShot` stops after the first cycle resolves (acolytes do a single non-toggle task, then retire);
- * persistent runners (invocations) leave it false and loop.
+ * `oneShot` stops after the first cycle resolves and reports `completed` so a caller can retire the
+ * channel; persistent runners (acolyte delegation and invocations) leave it false and loop.
  */
 export function advanceRunnerCycles(
   state: GameState,
