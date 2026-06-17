@@ -2330,7 +2330,6 @@ body {
   background:
     radial-gradient(ellipse 60% 50% at 50% 38%, rgba(230, 162, 60, 0.12), transparent 70%),
     radial-gradient(circle at 50% 120%, rgba(124, 20, 23, 0.18), transparent 60%), var(--void);
-  animation: fade-in 0.6s ease both;
 }
 .title-veil {
   position: absolute;
@@ -2344,6 +2343,9 @@ body {
   padding: 2rem;
   max-width: 540px;
   width: 100%;
+  /* Fade in the wordmark/menu only — keep the opaque backdrop solid from the first frame so the
+     altar room and offline recap underneath never flash through before the title settles. */
+  animation: fade-in 0.6s ease both;
 }
 .title-wordmark {
   margin: 0;
