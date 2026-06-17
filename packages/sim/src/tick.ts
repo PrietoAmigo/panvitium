@@ -410,7 +410,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   }
 
   // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; unlocks on a
-  //    ×2.2 effective-maxInfluence threshold series — 0 at base, first at 242). Then advance each
+  //    ×1.5 effective-maxInfluence threshold series — 0 at base, first at 110). Then advance each
   //    assigned acolyte's timer; completed cycles
   //    resolve at the acolyte's efficiency and immediately start the next cycle. Acolyte events
   //    fold into the same outcome stream as player events.
