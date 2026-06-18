@@ -96,6 +96,11 @@
   font-size: 18px;
   color: #e7cd7c;
   font-variant-numeric: tabular-nums;
+  /* Reserve a stable footprint and right-align: the number grows leftward within its own box as it
+     changes width, so the Cast button and Duration meter beside it never reflow. 9ch covers the full
+     pre-suffix integer range ("9,999,999") — beyond that the suffix/scientific forms are shorter. */
+  min-width: 9ch;
+  text-align: right;
 }
 .orbis-cast-btn {
   font-family: 'Cinzel', serif;

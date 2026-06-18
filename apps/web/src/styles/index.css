@@ -2178,7 +2178,30 @@ body {
   background: linear-gradient(90deg, var(--candle-soft), var(--candle));
 }
 
-/* ---------- Analytics → Invocations tab ---------- */
+/* ---------- Analytics → Actions tab (Player / Acolytes / Invocations) ---------- */
+.analytics-section {
+  margin-top: 1rem;
+}
+.analytics-section:first-child {
+  margin-top: 0.4rem;
+}
+.analytics-section-title {
+  margin: 0 0 0.1rem;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+/* Efficiency chip, shared by acolyte + invocation runner rows. */
+.analytics-acolyte-eff,
+.analytics-inv-eff {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  color: var(--candle);
+  white-space: nowrap;
+}
+
 .analytics-invocations {
   display: flex;
   flex-direction: column;
@@ -2196,6 +2219,15 @@ body {
 .analytics-inv-name {
   font-family: var(--font-display, Georgia, serif);
   letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.analytics-inv-action {
+  flex: 1 1 auto;
+  opacity: 0.9;
+}
+.analytics-inv-time {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
   white-space: nowrap;
 }
 .analytics-inv-detail {
