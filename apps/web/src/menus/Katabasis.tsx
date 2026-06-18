@@ -14,6 +14,13 @@ import {
   skillIntensity,
   devotionForLevel,
   MAX_SIN_LEVEL,
+  GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL,
+  LUXURIA_SUASIO_EFF_PER_LEVEL,
+  IRA_DECIMATIO_EFF_PER_LEVEL,
+  REMAINING_GOLD_PER_AVARITIA_LEVEL,
+  REMAINING_REPROBATE_PER_TRISTITIA_LEVEL,
+  REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL,
+  ACEDIA_OFFLINE_COMPOUND_BASE,
   sigilById,
   sigilVisible,
   totalBound,
@@ -698,7 +705,7 @@ function AltarGate({
   );
 }
 
-/** Split a boon string's trailing direction arrow off so the ledger can colour it separately. */
+/** Strip a boon string's trailing direction arrow (↑/↓); the ledger shows the live magnitude there. */
 function splitBoon(desc: string): { text: string; dir: string } {
   const trimmed = desc.trimEnd();
   const last = trimmed.slice(-1);
@@ -708,13 +715,49 @@ function splitBoon(desc: string): { text: string; dir: string } {
   return { text: trimmed, dir: '' };
 }
 
-// One Cardinal Sin's row in the Ledger: Latin/English name, rank pips, Prince + epithet, and the
-// two effect lines (the always-on Skill, and the per-rank Level effect). Dormant (Rank 0) sins dim
-// their level row, matching the handoff.
+// Vanagloria's influence-rate lift per level mirrors the literal in the modifier engine
+// (`1.33 ** vanagloriaLvl`, modifiers.ts). Kept local so the ledger reads the same factor.
+const VANAGLORIA_INFLUENCE_PER_LEVEL = 1.33;
+
+// The live numeric magnitude of a Sin's per-rank (Level) effect, in its natural unit, matching the
+// modifier engine exactly. Returns '' while the rank contributes nothing (Rank 0). Units differ by
+// Sin: the multiplicative efficiency ladders read '×N', the descent carry-over fractions read the
+// rank's marginal '+X%', Gula strips the negative tiers ('−X%'), and Acedia compounds offline gains
+// by L² in the exponent (session.ts: BASE^(seconds × L²)).
+function sinLevelEffectValue(sin: Sin, level: number): string {
+  if (level <= 0) return '';
+  switch (sin) {
+    case 'gula':
+      return `−${Math.round(Math.min(1, GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL * level) * 100)}%`;
+    case 'luxuria':
+      return `×${LUXURIA_SUASIO_EFF_PER_LEVEL ** level}`;
+    case 'ira':
+      return `×${IRA_DECIMATIO_EFF_PER_LEVEL ** level}`;
+    case 'vanagloria':
+      return `×${(VANAGLORIA_INFLUENCE_PER_LEVEL ** level).toFixed(2)}`;
+    case 'avaritia':
+      return `+${(REMAINING_GOLD_PER_AVARITIA_LEVEL * level * 100).toFixed(1)}%`;
+    case 'tristitia':
+      return `+${(REMAINING_REPROBATE_PER_TRISTITIA_LEVEL * level * 100).toFixed(1)}%`;
+    case 'superbia':
+      return `+${(REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL * level * 100).toFixed(1)}%`;
+    case 'acedia':
+      return `×${ACEDIA_OFFLINE_COMPOUND_BASE}^(${level * level}·s)`;
+  }
+}
+
+// One Cardinal Sin's row in the Ledger: Latin/English name, rank pips, Prince + souls devoted, and
+// the two effect lines (the always-on Skill, and the per-rank Level effect) — each carries its live
+// magnitude (the Skill's +X% intensity bonus, the rank's natural-unit value) beside the nominal
+// effect. Dormant (Rank 0) sins dim their level row, matching the handoff.
 function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): ReactElement {
   const info = strings.sins[sinKey];
-  const level = sinLevel(state.devotion[sinKey]);
+  const devotion = state.devotion[sinKey];
+  const level = sinLevel(devotion);
   const dormant = level === 0;
+  // Every Sin skill couples as ×(1 + intensity) in the engine, so its live magnitude is +intensity%.
+  const skillValue = `+${(skillIntensity(devotion) * 100).toFixed(1)}%`;
+  const levelValue = sinLevelEffectValue(sinKey, level);
   return (
     <div className={`ledger-sin${dormant ? ' is-dormant' : ''}`}>
       <div className="ledger-sin-top">
@@ -726,18 +769,27 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
       </div>
       <div className="ledger-sin-prince">
         {info.prince} <span aria-hidden="true">&middot;</span>{' '}
-        <span className="ls-epithet">{info.epithet}</span>
+        <span className="ls-devoted">{formatBigNum(devotion)} devoted souls</span>
       </div>
       <div className="ledger-sin-effects">
         <div className="ledger-eff">
           <span className="ls-tag">Skill</span>
           <span className="ls-txt">
-            <span className="ls-skill">{info.skill}</span> &mdash; {info.skillEffect}
+            <span className="ls-skill">{info.skill}</span>: {info.skillEffect}{' '}
+            <b className="ls-now">{skillValue}</b>
           </span>
         </div>
         <div className="ledger-eff is-lvl">
           <span className="ls-tag is-lvl">Rank {toRoman(level) || '0'}</span>
-          <span className="ls-txt">{info.levelEffect}</span>
+          <span className="ls-txt">
+            {info.levelEffect}
+            {levelValue && (
+              <>
+                {' '}
+                <b className="ls-now">{levelValue}</b>
+              </>
+            )}
+          </span>
         </div>
       </div>
     </div>
@@ -761,16 +813,15 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
   const totalSoulsBound = useMemo(() => totalBound(state), [state]);
 
   // Bound sigils — name + current effect, sorted most-bound first. A seal appears only once it has
-  // souls bound and is visible (Semet stays sealed until the gate opens). Effect text + arrow come
-  // from the authoritative `strings.sigils.descriptions`, falling back to the local boon table; the
-  // magnitude (%) is the live `effectDisplay` at the current binding.
+  // souls bound and is visible (Semet stays sealed until the gate opens). The effect text comes from
+  // the authoritative `strings.sigils.descriptions` (its trailing ↑/↓ direction arrow stripped, the
+  // live magnitude shown in its place); the souls-bound count is the binding itself.
   const boundSigils = useMemo(() => {
     const rows: Array<{
       id: number;
       name: string;
       effect: string;
       text: string;
-      dir: string;
       bound: BigNum;
     }> = [];
     for (let id = 1; id <= 72; id++) {
@@ -779,9 +830,9 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
       const def = sigilById(id);
       if (def && !sigilVisible(state, def)) continue;
       const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
-      const { text, dir } = splitBoon(desc);
+      const { text } = splitBoon(desc);
       const name = strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
-      rows.push({ id, name, effect: effectDisplay(def, v), text, dir, bound: v });
+      rows.push({ id, name, effect: effectDisplay(def, v), text, bound: v });
     }
     rows.sort((a, b) => (gt(b.bound, a.bound) ? 1 : gt(a.bound, b.bound) ? -1 : a.id - b.id));
     return rows;
@@ -812,7 +863,7 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
           </div>
           <div className="ls-stat">
             <div className="ls-num">{formatBigNum(totalSoulsBound)}</div>
-            <div className="ls-lab">Total Souls Bound</div>
+            <div className="ls-lab">sigil-bound souls</div>
           </div>
           <div className="ls-stat">
             <div className="ls-num">{boundSigils.length}</div>
@@ -846,11 +897,10 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
               <div className="ledger-sigil" key={g.id}>
                 <span className="ls-name">{g.name}</span>
                 <span className="ls-effect">
-                  {g.text}
-                  {g.dir && <span className="ls-dir"> {g.dir}</span>}
+                  {g.text} <b className="ls-now">{g.effect}</b>
                 </span>
                 <span className="ls-bound">
-                  <b>{g.effect}</b> effect
+                  <b>{formatBigNum(g.bound)}</b> souls bound
                 </span>
               </div>
             ))}

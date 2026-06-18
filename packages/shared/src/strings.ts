@@ -425,8 +425,8 @@ export const strings = {
       english: 'Gluttony',
       epithet: 'Lord of the Flies',
       skill: 'Insatiability',
-      skillEffect: 'Decreases overall Terrible and Apocalyptic outcomes.',
-      levelEffect: 'Each level raises your online action efficiency.',
+      skillEffect: 'Raises your online action efficiency.',
+      levelEffect: 'Each level strips away Bad, Terrible and Apocalyptic outcomes.',
     },
     luxuria: {
       prince: 'Asmodeus',
@@ -435,7 +435,7 @@ export const strings = {
       epithet: 'King of the Nine Hells',
       skill: 'Seduction',
       skillEffect: 'Increases overall reprobate generation rate.',
-      levelEffect: 'Each level keeps more reprobates on descent.',
+      levelEffect: 'Each level doubles your Suasio action efficiency.',
     },
     avaritia: {
       prince: 'Mammon',
@@ -453,7 +453,7 @@ export const strings = {
       epithet: 'The Coiled Deep',
       skill: 'Resignation',
       skillEffect: 'Increases Suasio success and action efficiency.',
-      levelEffect: 'Each level raises the base reprobate suicide chance.',
+      levelEffect: 'Each level keeps more reprobates on descent.',
     },
     ira: {
       prince: 'Satan',
@@ -462,7 +462,7 @@ export const strings = {
       epithet: 'The Adversary',
       skill: 'Retribution',
       skillEffect: 'Increases Decimatio success and action efficiency.',
-      levelEffect: 'Each level raises acolyte and invocation efficiency.',
+      levelEffect: 'Each level doubles your Decimatio action efficiency.',
     },
     acedia: {
       prince: 'Belphegor',

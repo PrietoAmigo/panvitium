@@ -2274,8 +2274,8 @@ body {
   color: var(--faint);
   letter-spacing: 0.04em;
 }
-.katabasis-flow .ls-epithet {
-  font-style: italic;
+.katabasis-flow .ls-devoted {
+  color: var(--ember-soft);
 }
 .katabasis-flow .ledger-sin-effects {
   margin-top: 13px;
@@ -2315,6 +2315,14 @@ body {
 .katabasis-flow .ls-skill {
   color: #f0e4d8;
 }
+/* The live, current magnitude shown beside a Sin skill/rank effect (and a bound sigil's effect). */
+.katabasis-flow .ls-now {
+  font-family: var(--font-inscribe);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--gold);
+  white-space: nowrap;
+}
 .katabasis-flow .ledger-sigils {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2340,10 +2348,6 @@ body {
   font-size: 1.04rem;
   color: var(--bone);
   flex: 1 1 auto;
-}
-.katabasis-flow .ls-dir {
-  color: var(--ember);
-  font-weight: 600;
 }
 .katabasis-flow .ls-bound {
   font-family: var(--font-inscribe);

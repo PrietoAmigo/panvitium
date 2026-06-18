@@ -166,7 +166,7 @@ describe('Katabasis flow — orchestrator', () => {
     expect(container!.querySelector('.ledger-sigil')).toBeNull();
   });
 
-  it('lists a bound sigil in the Ledger by name, effect, and current magnitude', () => {
+  it('lists a bound sigil in the Ledger by name, effect + magnitude, and souls bound', () => {
     // Marbas #5 — always visible; sheet effect "Indagatio positive outcomes ↑".
     patch({ sigilBindings: { 5: bn(100) } });
     act(() => store().openKatabasis());
@@ -175,10 +175,14 @@ describe('Katabasis flow — orchestrator', () => {
     const sig = container!.querySelector('.ledger-sigil');
     expect(sig).not.toBeNull();
     expect(sig!.querySelector('.ls-name')?.textContent).toContain('Marbas'); // seal name shown
-    expect(sig!.querySelector('.ls-bound')?.textContent).toContain('%'); // current effect magnitude
+    // The effect text now carries the live magnitude in place of the direction arrow\u2026
     const effect = sig!.querySelector('.ls-effect')?.textContent ?? '';
     expect(effect).toContain('Indagatio positive outcomes');
-    expect(sig!.querySelector('.ls-dir')?.textContent).toContain('\u2191');
+    expect(effect).toContain('%'); // current effect magnitude
+    expect(effect).not.toContain('\u2191'); // the arrow is gone
+    // \u2026and the trailing field reads the souls bound, not the effect.
+    expect(sig!.querySelector('.ls-bound')?.textContent).toContain('souls bound');
+    expect(sig!.querySelector('.ls-bound')?.textContent).toContain('100');
   });
 
   it('returns to the gate from the Ledger via the back link', () => {
