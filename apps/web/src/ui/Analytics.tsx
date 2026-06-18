@@ -106,14 +106,22 @@ function MainTab(): ReactElement {
         <EfficiencyRow />
       </div>
       <div className="analytics-rates">
+        <StatRow label={strings.analytics.reprobates} value={num(reps)} />
         <StatRow
           label={strings.analytics.generation}
           value={repPerSec(repRates.generationPerSecond)}
         />
         <StatRow label={strings.analytics.deaths} value={repPerSec(-deaths)} />
-      </div>
-      <div className="analytics-list">
-        <StatRow label={strings.analytics.reprobates} value={num(reps)} />
+        <StatRow
+          label={strings.analytics.byMurder}
+          value={repPerSec(-repRates.murderPerSecond)}
+          indent
+        />
+        <StatRow
+          label={strings.analytics.bySuicide}
+          value={repPerSec(-repRates.suicidePerSecond)}
+          indent
+        />
       </div>
     </div>
   );
@@ -156,20 +164,23 @@ export function AnalyticsGroup(): ReactElement {
   );
 }
 
-/** Row: a label, a primary value, and an optional per-second rate / suffix detail. */
+/** Row: a label, a primary value, and an optional per-second rate / suffix detail. `indent` marks a
+ *  sub-row (e.g. a death-cause breakdown nested under its total). */
 function StatRow({
   label,
   value,
   rate,
   detail,
+  indent,
 }: {
   label: string;
   value: string;
   rate?: string;
   detail?: string;
+  indent?: boolean;
 }): ReactElement {
   return (
-    <div className="analytics-row">
+    <div className={'analytics-row' + (indent ? ' analytics-row--indent' : '')}>
       <span className="analytics-label">{label}</span>
       <span className="analytics-value">{value}</span>
       {detail !== undefined && <span className="analytics-detail">{detail}</span>}
