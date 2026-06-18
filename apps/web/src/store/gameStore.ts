@@ -65,6 +65,7 @@ import {
   requestMagicLink,
   signOut as apiSignOut,
 } from '../api/sync.js';
+import { audio } from '../audio/audio.js';
 
 /** How many recent outcomes the PC log keeps (02 §10). */
 const LOG_CAP = 100;
@@ -300,7 +301,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // gold, no soul minting). The RAF accumulator drains harmlessly through these no-op calls, so
     // there is no catch-up burst when the screen closes.
     if (get().katabasisPhase !== null || get().titleOpen) return;
-    const { state, events, notices, achievementsUnlocked } = tick(current, deltaSeconds);
+    const { state, events, notices, achievementsUnlocked, emailsDelivered } = tick(
+      current,
+      deltaSeconds,
+    );
+    // Fausto Cescru #5's delivery knocks at the door (05 / ADR-014); other mail arrives silently.
+    if (emailsDelivered.includes('fausto-5')) audio.play('email-knock');
     // A toggle that auto-deactivated this tick surfaces as the transient notice (02 §3). The
     // sim has already removed it; this just tells the player. Latest wins if several fired.
     const noticePatch = notices.length > 0 ? { notice: notices[notices.length - 1]! } : {};

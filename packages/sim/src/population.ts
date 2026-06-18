@@ -6,10 +6,19 @@
 import { add, mul } from './bignum.js';
 import { type GameState, totalReprobates } from './state.js';
 
-/** Mint `n` souls (1 soul per corrupted death; 03 §3). */
+/**
+ * Mint `n` souls (1 soul per corrupted death; 03 §3). The minted amount also accrues into
+ * `totalSoulsObtained` — the monotonic lifetime-spanning tally that drives the soul-threshold
+ * emails (05) — so every mint site feeds it through this one helper.
+ */
 export function mintSouls(state: GameState, n: number): GameState {
   if (n <= 0) return state;
-  return { ...state, souls: add(state.souls, Math.floor(n)) };
+  const minted = Math.floor(n);
+  return {
+    ...state,
+    souls: add(state.souls, minted),
+    totalSoulsObtained: add(state.totalSoulsObtained, minted),
+  };
 }
 
 /** Add `n` reprobates to the pool. */
