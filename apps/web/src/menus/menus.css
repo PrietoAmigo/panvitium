@@ -2366,13 +2366,6 @@ body {
   color: var(--faint);
   font-size: 0.95rem;
 }
-.katabasis-flow .ledger-sigils-note {
-  margin-top: 18px;
-  font-family: var(--font-inscribe);
-  font-style: italic;
-  color: var(--faint);
-  font-size: 0.88rem;
-}
 
 /* ── gate + ledger responsiveness ─────────────────────────────────────────── */
 @media (max-width: 720px) {

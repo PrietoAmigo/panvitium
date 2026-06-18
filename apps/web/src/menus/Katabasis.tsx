@@ -885,7 +885,6 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
         <div className="ledger-section-head">
           <h2>Bound Sigils</h2>
           <div className="ls-rule" aria-hidden="true" />
-          <div className="ls-count">effects only</div>
         </div>
         {boundSigils.length === 0 ? (
           <p className="ledger-sigils-empty">
@@ -906,9 +905,6 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
             ))}
           </div>
         )}
-        <p className="ledger-sigils-note">
-          A sigil shows here only once enough souls are bound for it to bite.
-        </p>
       </div>
     </div>
   );
