@@ -24,7 +24,7 @@ import { actionProgress } from '../game/progress.js';
 import { actionName } from '../game/labels.js';
 import { invocationEffectText } from '../game/invocationEffect.js';
 
-type AnalyticsTab = 'main' | 'reprobates' | 'acolytes' | 'invocations';
+type AnalyticsTab = 'main' | 'acolytes' | 'invocations';
 
 const NO_TIMERS: readonly ActionTimer[] = [];
 
@@ -59,20 +59,6 @@ function ActiveActions(): ReactElement {
   );
 }
 
-/** The vigil indicator: logical session time, advancing with the 10 Hz tick loop. */
-function Vigil(): ReactElement {
-  const lastTickAt = useGameStore((s) => s.state?.lastTickAt ?? 0);
-  const seconds = Math.floor(lastTickAt / 1000) % 3600;
-  const mm = Math.floor(seconds / 60);
-  const ss = (seconds % 60).toString().padStart(2, '0');
-  return (
-    <div className="vigil" title="The tick loop is running">
-      <span className="vigil-dot" />
-      vigil kept · {mm}:{ss}
-    </div>
-  );
-}
-
 /** Player action efficiency (Sin levels / skills / invocations), as a labelled list value. */
 function EfficiencyRow(): ReactElement {
   const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
@@ -81,9 +67,9 @@ function EfficiencyRow(): ReactElement {
 }
 
 /**
- * The Main tab (the old Main + Resources folded together, in this order): the live resource readouts
- * — Souls, Influence, Gold — then the in-flight player action as a 0→100% progress bar, the player's
- * action efficiency, and the vigil indicator.
+ * The Main tab (the old Main + Resources + Reprobates folded together, in this order): the live
+ * resource readouts — Souls, Influence, Gold — then the in-flight player action as a 0→100% progress
+ * bar, the player's action efficiency, and the reprobate population with its generation / death rates.
  */
 function MainTab(): ReactElement {
   const state = useGameStore((s) => s.state);
@@ -92,6 +78,12 @@ function MainTab(): ReactElement {
   const rates = perSecondRates(state);
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const perSec = (v: string): string => `+${v}/s`;
+
+  const repRates = reprobateRates(state, mods);
+  const reps = state.lifetime.reprobates;
+  const deaths = repRates.suicidePerSecond + repRates.murderPerSecond;
+  const num = (n: number): string => Math.floor(n).toLocaleString('en-US');
+  const repPerSec = (n: number): string => `${n >= 0 ? '+' : ''}${n.toFixed(2)}/s`;
 
   return (
     <div className="analytics-main">
@@ -113,16 +105,25 @@ function MainTab(): ReactElement {
       <div className="analytics-list">
         <EfficiencyRow />
       </div>
-      <Vigil />
+      <div className="analytics-rates">
+        <StatRow
+          label={strings.analytics.generation}
+          value={repPerSec(repRates.generationPerSecond)}
+        />
+        <StatRow label={strings.analytics.deaths} value={repPerSec(-deaths)} />
+      </div>
+      <div className="analytics-list">
+        <StatRow label={strings.analytics.reprobates} value={num(reps)} />
+      </div>
     </div>
   );
 }
 
 /**
  * The PC's Analytics program (5.4): the live numeric readouts pulled out of the always-on HUD into
- * an on-demand panel. Four tabs — Main (resources + rates, the in-flight action, efficiency, vigil),
- * the reprobate population (unconverted vs converted by subtype) + dynamics rates, a per-acolyte
- * work board, and the bound invocations (count, runner channel efficiency / total effect).
+ * an on-demand panel. Three tabs — Main (resources + rates, the in-flight action, efficiency, and the
+ * reprobate population + dynamics rates), a per-acolyte work board, and the bound invocations (count,
+ * runner channel efficiency / total effect).
  */
 export function AnalyticsGroup(): ReactElement {
   const [tab, setTab] = useState<AnalyticsTab>('main');
@@ -145,12 +146,10 @@ export function AnalyticsGroup(): ReactElement {
     <>
       <div className="kat-pager" role="tablist">
         {tabBtn('main', strings.analytics.main)}
-        {tabBtn('reprobates', strings.analytics.reprobates)}
         {tabBtn('acolytes', strings.analytics.acolytes)}
         {tabBtn('invocations', strings.analytics.invocations)}
       </div>
       {tab === 'main' && <MainTab />}
-      {tab === 'reprobates' && <ReprobatesTab />}
       {tab === 'acolytes' && <AcolytesTab />}
       {tab === 'invocations' && <InvocationsTab />}
     </>
@@ -176,29 +175,6 @@ function StatRow({
       {detail !== undefined && <span className="analytics-detail">{detail}</span>}
       {rate !== undefined && <span className="analytics-rate">{rate}</span>}
     </div>
-  );
-}
-
-function ReprobatesTab(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const mods = computeModifiers(state);
-  const rates = reprobateRates(state, mods);
-  const reps = state.lifetime.reprobates;
-  const deaths = rates.suicidePerSecond + rates.murderPerSecond;
-  const num = (n: number): string => Math.floor(n).toLocaleString('en-US');
-  const perSec = (n: number): string => `${n >= 0 ? '+' : ''}${n.toFixed(2)}/s`;
-
-  return (
-    <>
-      <div className="analytics-rates">
-        <StatRow label={strings.analytics.generation} value={perSec(rates.generationPerSecond)} />
-        <StatRow label={strings.analytics.deaths} value={perSec(-deaths)} />
-      </div>
-      <div className="analytics-list">
-        <StatRow label={strings.analytics.reprobates} value={num(reps)} />
-      </div>
-    </>
   );
 }
 

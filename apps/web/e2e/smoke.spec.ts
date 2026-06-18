@@ -3,9 +3,9 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * Smoke coverage for the current web shell (ADR-012): every launch opens on the title menu; Continue
  * fades into the lair (Altar room). From there the three rooms navigate by their doors, a diegetic
- * overlay (the desk PC) and a framed panel (the Maleficia cabinet) open and close, the tick loop
- * visibly advances (the vigil readout lives in the PC's Analytics program now that the HUD is gone),
- * and state survives a reload via localStorage (ADR-006).
+ * overlay (the desk PC) and a framed panel (the Maleficia cabinet) open and close, the live readouts
+ * live in the PC's Analytics program now that the HUD is gone, and state survives a reload via
+ * localStorage (ADR-006).
  */
 
 /**
@@ -71,21 +71,18 @@ test('opens the Maleficia cabinet without crashing (no render loop)', async ({ p
   await expect(cabinet).toBeHidden();
 });
 
-test('keeps vigil — the tick loop advances', async ({ page }) => {
+test('opens the Analytics program with its live readouts', async ({ page }) => {
   await page.goto('/');
   await enterLair(page);
-  // The vigil readout lives in the PC's Analytics program.
+  // The live readouts live in the PC's Analytics program.
   await page.getByRole('button', { name: 'To the Studio' }).click();
   await page.getByRole('button', { name: 'PC', exact: true }).click();
   await page.getByRole('button', { name: 'Analytics' }).click();
 
-  const vigil = page.locator('.vigil');
-  await expect(vigil).toContainText('vigil kept');
-
-  const before = await vigil.textContent();
-  await page.waitForTimeout(2500);
-  const after = await vigil.textContent();
-  expect(after).not.toBe(before);
+  // The Main tab folds in the resources and the reprobate readouts.
+  const main = page.locator('.analytics-main');
+  await expect(main).toContainText('Souls');
+  await expect(main).toContainText('Reprobates');
 });
 
 test('persists state across a reload', async ({ page }) => {
