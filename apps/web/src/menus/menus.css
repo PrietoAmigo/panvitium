@@ -3890,9 +3890,9 @@ body {
 .scene-invocation {
   background-image: url('/assets/panvitium/backgrounds/invocation.png');
 }
-.scene-altar {
-  background-image: url('/assets/panvitium/backgrounds/altar.jpg');
-}
+/* The Altar deliberately has NO static background-image: its plate is acolyte-dependent
+   (altar_by_acolytes/…{0–4}acolytes.png) and is painted by the canvas (altarPlateForAcolytes,
+   RoomView). The index.css gradient is the non-image base behind that canvas. */
 .scene-studio {
   /* Use the complete plate so the desk PC and the Suasio scroll are actually drawn — the clean plate
      left the PC and scroll hotspots sitting over empty space. */
@@ -3900,9 +3900,6 @@ body {
 }
 .furnished .scene-invocation {
   background-image: url('/assets/panvitium/backgrounds/invocation_complete.png');
-}
-.furnished .scene-altar {
-  background-image: url('/assets/panvitium/backgrounds/altar_complete.png');
 }
 .furnished .scene-studio {
   background-image: url('/assets/panvitium/backgrounds/studio_complete.png');
