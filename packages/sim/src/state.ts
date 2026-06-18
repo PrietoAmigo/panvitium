@@ -176,6 +176,28 @@ export interface LifetimeState {
    * additive-optional on the wire per ADR-023 — pre-inbox saves load with an empty inbox.
    */
   inbox: ReceivedEmail[];
+  /**
+   * Arm timestamps (wall-clock ms) for the timed/random impact-feedback emails (05 §triggers):
+   * the moment each delayed email's precondition FIRST held this lifetime. A timed email fires
+   * `delaySeconds` after its arm; a random newsletter fires after a deterministic per-lifetime
+   * offset past it. Keyed by email id; an absent key means "not yet eligible". Reset with the
+   * lifetime on Katabasis. Always defined at runtime ({}); additive-optional on the wire (ADR-023).
+   */
+  emailArmedAt: Record<string, number>;
+  /**
+   * True once the player has sent the threat reply to Fausto Cescru #1 (05, the adversary). Closes
+   * the "friendly" branch — Fausto #2/#3 never fire — and routes the arc straight to #4/#5. Scoped
+   * to the lifetime (the inbox it gates resets each descent). Additive-optional (ADR-023); absent ≡
+   * the friendly branch is still open.
+   */
+  flagFCThreatSent?: boolean;
+  /**
+   * True while Fausto Cescru #4's curse is in force (05): set on its delivery, cleared by deleting
+   * that email. While true, reprobate generation, influence gain and gold gain are each ×0.67
+   * (folded in by `computeModifiers`). Scoped to the lifetime, like the email that carries it.
+   * Additive-optional (ADR-023); absent ≡ no curse.
+   */
+  flagFaustoCurse?: boolean;
 }
 
 /** One delivered email in the player's inbox (Phase 5.2). Content (sender/subject/body) is keyed by
@@ -204,6 +226,13 @@ export interface ReceivedEmail {
 export interface GameState {
   /** Unspent soul pool — the meta-currency carried across lifetimes. */
   souls: BigNum;
+  /**
+   * Monotonic, never-decreasing running total of every soul ever MINTED across the whole game
+   * (spans lifetimes) — bumped wherever souls are minted (`mintSouls`, the Panvitium harvest), never
+   * decremented by spending. Drives the parish / adversary soul-threshold emails (05). Permanent.
+   * Additive-optional on the wire (ADR-023); old saves default it to the current `souls`.
+   */
+  totalSoulsObtained: BigNum;
   /** Total Devotion (souls offered, permanent) per Sin. Sin levels are derived from this. */
   devotion: Record<Sin, BigNum>;
   /**
@@ -238,6 +267,19 @@ export interface GameState {
    */
   katabasisCount: number;
   /**
+   * Set true once the player sends Father Tom Brennan #2's cruel reply (05, the Church). Reroutes
+   * the Church/adversary arc: it gates the Bishop Crane / Father Stahl branches and the late
+   * Fausto #5 / Parish #3 beats. Permanent (a game-long story flag), carried across lifetimes.
+   * Additive-optional on the wire (ADR-023); absent ≡ false.
+   */
+  flagFatherMad?: boolean;
+  /**
+   * Set true once the player agrees to "meet and explain" to Reuben Marsh (05, the madman) — a reply
+   * that also mints one soul. Stops the later Reuben letters and feeds the Fausto #5 gate. Permanent
+   * (a game-long story flag), carried across lifetimes. Additive-optional (ADR-023); absent ≡ false.
+   */
+  flagReubenDead?: boolean;
+  /**
    * Number of Katabases on which Erinyes was pending — each one stacks a ×2 player-efficiency
    * multiplier folded in by `computeModifiers`. Permanent, carried across lifetimes; only ever
    * increments. Additive-optional on the wire (ADR-023), defaults to 0.
@@ -268,6 +310,7 @@ function zeroDevotion(): Record<Sin, BigNum> {
 export function createInitialState(seed: string, now: number = Date.now()): GameState {
   return {
     souls: ZERO,
+    totalSoulsObtained: ZERO,
     devotion: zeroDevotion(),
     eternalDevotion: ZERO,
     sigilBindings: {},
@@ -293,6 +336,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       murderPool: 0,
       handOfGloryRemaining: 0,
       inbox: [],
+      emailArmedAt: {},
     },
     rngState: hashSeed(seed),
     lastTickAt: now,

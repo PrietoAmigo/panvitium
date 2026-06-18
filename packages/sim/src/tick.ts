@@ -81,6 +81,11 @@ export interface TickResult {
    * `state.achievements` already; returned so the UI can raise a toast. Empty on most ticks.
    */
   readonly achievementsUnlocked: string[];
+  /**
+   * Ids of impact-feedback emails delivered on this tick (05), in catalog order. Already appended to
+   * the inbox; surfaced so the UI can cue per-email SFX (the Fausto #5 door-knock). Empty on most ticks.
+   */
+  readonly emailsDelivered: string[];
 }
 
 /** Drop the optional Defixio curse from a state's lifetime (EOPT-safe: omits, never sets undefined). */
@@ -158,7 +163,8 @@ export function perSecondRates(state: GameState): PerSecondRates {
 
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
 export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}): TickResult {
-  if (deltaSeconds <= 0) return { state, events: [], notices: [], achievementsUnlocked: [] };
+  if (deltaSeconds <= 0)
+    return { state, events: [], notices: [], achievementsUnlocked: [], emailsDelivered: [] };
 
   // Frozen during the descent (02 §6): while the Katabasis menu is open the lifetime is in trance.
   // Absorb the elapsed time (advance the clock) but run NO simulation — no income, no reprobate
@@ -170,6 +176,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
       events: [],
       notices: [],
       achievementsUnlocked: [],
+      emailsDelivered: [],
     };
   }
 
@@ -185,7 +192,14 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
       lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
     };
     const ach = evaluateAchievements(finalState);
-    return { state: ach.state, events: [], notices: [], achievementsUnlocked: ach.unlocked };
+    // Mail does not arrive while the world is held in Morpheus's stillness (parallel to income/dynamics).
+    return {
+      state: ach.state,
+      events: [],
+      notices: [],
+      achievementsUnlocked: ach.unlocked,
+      emailsDelivered: [],
+    };
   }
 
   const rng = makeRng(state.rngState);
@@ -371,9 +385,13 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   {
     const panvRate = panvitiumRate(working);
     if (panvRate > 0) {
+      // Souls minted this tick = souls × R(t) × δ; accrue them on the pool AND on the monotonic
+      // totalSoulsObtained tally (05 soul-threshold emails), so the harvest counts like any mint.
+      const harvested = mul(working.souls, panvRate * deltaSeconds);
       working = {
         ...working,
-        souls: add(working.souls, mul(working.souls, panvRate * deltaSeconds)),
+        souls: add(working.souls, harvested),
+        totalSoulsObtained: add(working.totalSoulsObtained, harvested),
       };
     }
   }
@@ -435,14 +453,16 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   };
   const ach = evaluateAchievements(finalState);
 
-  // 7. Impact-feedback mail (5.2). Deliver any newly-triggered emails against the fully-advanced
-  //    state — last, like achievements, so one big offline tick also catches up the inbox.
+  // 7. Impact-feedback mail (5.2 / content 05). Arm and deliver any newly-triggered emails against
+  //    the fully-advanced state — last, like achievements, so one big offline tick also catches up
+  //    the inbox (and its arm timers). `delivered` surfaces this tick's new mail for SFX cues.
   const mailed = deliverEmails(ach.state, finalState.lastTickAt);
 
   return {
-    state: mailed,
+    state: mailed.state,
     events,
     notices,
     achievementsUnlocked: ach.unlocked,
+    emailsDelivered: mailed.delivered,
   };
 }

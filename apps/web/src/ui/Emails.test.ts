@@ -47,30 +47,28 @@ describe('EmailsGroup (two-pane client)', () => {
   });
 
   it('auto-opens the newest message and reads its body', () => {
-    seed([{ id: 'welcome', receivedAt: 1, readAt: null }]);
+    seed([{ id: 'gideon-1', receivedAt: 1, readAt: null }]);
     render();
     // Listed (sender + subject) and the reading pane shows the body without a click.
-    expect(container!.textContent).toContain('Welcome to the work');
-    expect(container!.textContent).toContain('Your terminal is provisioned');
+    expect(container!.textContent).toContain('Welcome home, and a frank word about the float');
+    expect(container!.textContent).toContain('I will be blunt, because you pay me to be');
     // Displaying it marked it read in the live state.
     expect(useGameStore.getState().state!.lifetime.inbox[0]!.readAt).not.toBeNull();
   });
 
   it('deletes the open message and falls back to the next', () => {
     seed([
-      { id: 'welcome', receivedAt: 1, readAt: 0 },
-      { id: 'class-action', receivedAt: 2, readAt: 0 },
+      { id: 'gideon-1', receivedAt: 1, readAt: 0 },
+      { id: 'fr-stahl-1', receivedAt: 2, readAt: 0 },
     ]);
     render();
-    // Newest (class-action) is selected and open.
-    expect(container!.textContent).toContain('NOTICE OF PENDING ACTION');
+    // Newest (fr-stahl-1) is selected and open.
+    expect(container!.textContent).toContain('This is not an inquiry');
     clickButtonWith('Delete');
-    // It is flagged deleted (kept in state so it can't re-trigger) and hidden; welcome takes over.
-    const entry = useGameStore
-      .getState()
-      .state!.lifetime.inbox.find((e) => e.id === 'class-action')!;
+    // It is flagged deleted (kept in state so it can't re-trigger) and hidden; gideon-1 takes over.
+    const entry = useGameStore.getState().state!.lifetime.inbox.find((e) => e.id === 'fr-stahl-1')!;
     expect(entry.deleted).toBe(true);
-    expect(container!.textContent).not.toContain('NOTICE OF PENDING ACTION');
-    expect(container!.textContent).toContain('Welcome to the work');
+    expect(container!.textContent).not.toContain('This is not an inquiry');
+    expect(container!.textContent).toContain('Welcome home, and a frank word about the float');
   });
 });

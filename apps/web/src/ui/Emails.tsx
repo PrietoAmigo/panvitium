@@ -95,9 +95,14 @@ function fmtTime(ms: number): string {
   return fmtMonthDay.format(d);
 }
 
-/** Full reading-pane date. */
+/**
+ * Full reading-pane date. Per the email-content date rule (05), the displayed year is ALWAYS 2015 —
+ * the real receipt date, re-stamped to the game's fixed year — so the inbox reads as period mail.
+ */
 function fmtDate(ms: number): string {
-  return fmtFull.format(new Date(ms));
+  const d = new Date(ms);
+  d.setFullYear(2015);
+  return fmtFull.format(d);
 }
 
 // --- Static styles --------------------------------------------------------------------------------

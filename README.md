@@ -103,9 +103,33 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 759** (sim 498 · shared 57 · api 11 · web 193).
+**Current test count: 798** (sim 523 · shared 57 · api 20 · web 198).
 
-> **Latest change — UI: the Indagatio + Emptio merge into "Orbis Tenebrarum" (Claude Design).** The
+> **Latest change — Emails: the authored content set + a real trigger/flag/effect engine (05).** The
+> five provisional placeholder emails are replaced by the full authored catalog from
+> `docs/05-email-content.md` — ~30 letters across the household steward (Gideon ×4), twelve world
+> newsletters, the Church (Father Tom, the parish bulletins, Bishop Crane, Father Stahl), the
+> adversary (Fausto Cescru ×5) and the madman (Reuben Marsh ×4), each with sender, address, subject,
+> body and (where authored) multiple-choice **replies**. The sim engine grows from boolean predicates
+> into three trigger kinds: **immediate** (soul thresholds, Sin-level / all-sins gates), **timed**
+> (armed on first eligibility, delivered a fixed delay later — the "X minutes after the Nth katabasis
+> / after Plutus / after a Sin threshold" beats, with an arm-time recorded on a new per-lifetime
+> `emailArmedAt` map), and **random** newsletters (armed on a Mercatus-depth gate, delivered a
+> _deterministic per-lifetime offset_ derived from a side hash so the shared mulberry32 stream stays
+> byte-identical, ADR-011). **Reply effects** are now wired through `applyEmailReplyEffect`: Father
+> Tom #2's cruel reply sets a permanent `flagFatherMad` (rerouting the Church/adversary arc), agreeing
+> to meet Reuben mints +1 soul and sets `flagReubenDead` (idempotent — no double-mint), and Fausto #1's
+> threat closes his friendly branch. **Fausto #4 lays a curse** (`flagFaustoCurse`) folded into
+> `computeModifiers` as ×0.67 on gold, influence and reprobate generation, lifted the moment the email
+> is deleted; **Fausto #5 cues a door-knock** SFX (`audio.play('email-knock')`) surfaced via a new
+> `TickResult.emailsDelivered`. A monotonic, lifetime-spanning `totalSoulsObtained` (bumped in
+> `mintSouls` and the Panvitium harvest) drives the soul-threshold beats. All new fields are
+> additive-optional on the wire (ADR-023); the reading-pane date now always renders the year as 2015
+> per the content doc. The doc's Fausto/Reuben Sin-level ladders (10/20/30/40, 5/15/25/35) are rescaled
+> to fit the live MAX_SIN_LEVEL of 4 (total ≤ 32). Thirteen sim tests cover the trigger kinds, the
+> reply effects, the curse and inbox bookkeeping; the save round-trip and UI tests are updated.
+
+> **Earlier change — UI: the Indagatio + Emptio merge into "Orbis Tenebrarum" (Claude Design).** The
 > two separate PC apps become one. The **Emptio** desktop app is removed (its tile, its `PcGroupId`
 > member, and its `PC_GROUPS` entry are gone), and **Indagatio** is rebuilt as the delivered design:
 > a draggable orthographic globe on the left is the Search (Cast spins the world while a search is
@@ -666,22 +690,20 @@ Economy-parity tracks still to reconcile against the spreadsheet:
 
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. The **oracular reveals** (Phase 5 slice) have also shipped: owning Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather surfaces a live Opera tier-distribution readout in that item's cabinet detail (a stacked odds bar per action, via a read-only `actionTierDistribution` sim helper that reuses the exact `resolveAction` composition). With this, Maleficia is complete — roster, gating, and every effect.
 - **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is complete: _Caedis_, _Pogrom_, and _Purgatio_, each gated by its Ira level. (Post-ADR-024 note: Pogrom culls the single pool — the old present-subtype picker and its no-delegation caveat retired with the subtypes.) Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (1,000,000) gold costs are sheet-pinned.
-- **Emails (PC program) — impact-feedback system** _(✓ shipped, content provisional)_. An inbox that
-  surfaces the in-world consequences of the player's actions as incoming correspondence (newsletters as
-  the corruption spreads, complaints / a class-action from people harmed by their Vitium Mercatura
-  trades), so the player _feels_ the impact rather than reading it only as numbers. (Triggers were
-  re-keyed from owned-business counts to total Mercatus depth with ADR-025; the copy still speaks
-  the old businesses fiction and awaits the content-tuning pass.) Engineering
-  shape as planned: an additive-optional `inbox` save field (ADR-023; resets per lifetime, omitted from
-  the wire when empty), a pure sim engine (`packages/sim/src/emails.ts`) with a trigger catalog +
-  `deliverEmails(state, now)` run as the final tick step (so offline catch-up fills the inbox too), and
-  `markEmailRead` / `markAllEmailsRead` helpers. Surfaced as the **Emails** PC program (inbox list with
-  unread markers, click-to-read, mark-all-read); content lives in `strings.emails.catalog` keyed by id.
-  Placed in the PC (the program list is effectively the Opera menu). **Provisional:** the trigger set
-  (`welcome`, `first-reprobates`, `first-business`, `newsletter-influence`, `class-action`) and the copy
-  are a first pass to be tuned in the 5.5 economy / Claude Design passes. New mail is surfaced by an
-  unread-count **badge on the Emails tile** in the PC (via `unreadCount` + a generic `badges` prop on
-  the PC window); there's no separate delivery toast yet, and no lair-level indicator on the PC prop.
+- **Emails (PC program) — impact-feedback system** _(✓ shipped, content authored — 05)_. An inbox that
+  surfaces the in-world consequences of the player's descent as incoming correspondence, so the player
+  _feels_ the impact rather than reading it only as numbers. The full authored catalog (`docs/05-email-content.md`)
+  is in: the household steward, twelve world newsletters, the Church arc, the adversary Fausto Cescru,
+  and the madman Reuben Marsh, each with sender / address / subject / body and (where authored) replies.
+  Engineering shape: an additive-optional `inbox` save field (ADR-023; resets per lifetime), a pure sim
+  engine (`packages/sim/src/emails.ts`) with the trigger catalog + `deliverEmails(state, now)` run as the
+  final tick step (so offline catch-up fills the inbox too), and `markEmailRead` / `markAllEmailsRead`
+  helpers. Triggers are immediate / timed (armed on `emailArmedAt`) / random (deterministic offset, no
+  shared-RNG consumption); replies carry real effects (`flagFatherMad`, `flagReubenDead` + a minted soul,
+  Fausto's friendly-branch close and his ×0.67 curse, the door-knock SFX), driven by a monotonic
+  `totalSoulsObtained`. Content lives in `strings.emails.catalog` keyed by id. Placed in the PC. New mail
+  is surfaced by an unread-count **badge on the Emails tile** (via `unreadCount` + a generic `badges`
+  prop on the PC window); there's no separate delivery toast yet, and no lair-level indicator on the PC prop.
 - **Smartphone code terminal (studio desk) — [pending design].** A smartphone prop resting on the
   desk in the studio. Tapping it opens a dial-pad where the player enters codes formatted as
   telephone numbers; a recognised number triggers an effect — an easter egg, bonus/extra content, a
@@ -823,12 +845,11 @@ and an e2e step on a browser-capable machine.
 _Net-new in-world systems already named in the backlog; **scope, triggers, and presentation are still to
 be specified** — each needs a short design pass before it becomes a slice._
 
-- **Emails (PC program) — impact-feedback** _(✓ shipped, content provisional)_. An inbox that surfaces
-  the in-world consequences of the player's actions as incoming correspondence (newsletters, a
-  class-action from people harmed by the player's _Vitium Mercatura_ trades, and similar reactive
-  mail), so the player _feels_ the impact rather than only reading numbers. Built as planned: an
-  additive-optional inbox save field (ADR-023) plus a sim trigger catalog evaluated each tick. Triggers
-  and copy are a provisional first pass.
+- **Emails (PC program) — impact-feedback** _(✓ shipped, content authored — 05)_. An inbox that surfaces
+  the in-world consequences of the player's descent as incoming correspondence, so the player _feels_ the
+  impact rather than only reading numbers. The authored catalog (`docs/05-email-content.md`) and its
+  trigger / flag / reply-effect engine are in (immediate / timed / random triggers, reply consequences,
+  the Fausto curse, the door-knock SFX), all on additive-optional save fields (ADR-023).
 - **Smartphone code terminal (studio desk).** A smartphone prop on the studio desk that opens a dial-pad;
   a recognised telephone-number code triggers an easter egg, bonus content, a lore snippet, or a gameplay
   **buff**. Informational/easter-egg codes are UI-only; any buff-granting code needs a sim hook (and, if it

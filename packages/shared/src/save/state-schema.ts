@@ -93,6 +93,13 @@ const lifetimeSchema = z.object({
   handOfGloryRemaining: z.number().nonnegative().optional(),
   // Impact-feedback inbox (Phase 5.2). Additive-optional (ADR-023): absent → empty inbox at load.
   inbox: z.array(inboxEntrySchema).optional(),
+  // Email arm timers (05): email id -> wall-clock ms its delayed trigger first became eligible.
+  // Additive-optional (ADR-023): absent → {} at runtime; omitted from the wire when empty.
+  emailArmedAt: z.record(z.string(), z.number().int()).optional(),
+  // Fausto-arc per-lifetime flags (05): the threat reply was sent (#2/#3 suppressed), and the #4
+  // curse is in force. Additive-optional (ADR-023): absent ≡ false; omitted from the wire when false.
+  flagFCThreatSent: z.boolean().optional(),
+  flagFaustoCurse: z.boolean().optional(),
   defixio: z.object({ elapsed: z.number().nonnegative() }).optional(),
   // Apex Katabasis-modifier pending flags + Morpheus lockout (03 §2.4). Additive-optional
   // (ADR-023): absent in old saves → false at runtime; omitted when false.
@@ -104,6 +111,9 @@ const lifetimeSchema = z.object({
 /** Zod schema for the serialized gameplay state. */
 export const serializedGameStateSchema = z.object({
   souls: bigNumString,
+  // Monotonic lifetime-spanning souls-minted tally (05 soul-threshold emails). Additive-optional
+  // (ADR-023): absent → defaults to `souls` at load (the best lower bound for a pre-feature save).
+  totalSoulsObtained: bigNumString.optional(),
   devotion: recordOf(SINS, bigNumString),
   // Cumulative Eternal-Sin devotion (03 §8). Additive-optional (ADR-023): absent → ZERO at load.
   eternalDevotion: bigNumString.optional(),
@@ -119,6 +129,10 @@ export const serializedGameStateSchema = z.object({
   achievements: z.array(z.string()).optional(),
   // Completed-Katabasis counter. Additive-optional; old saves default to 0.
   katabasisCount: z.number().int().nonnegative().optional(),
+  // Permanent story flags (05): Father Tom turned against the player, Reuben Marsh resolved.
+  // Additive-optional (ADR-023): absent ≡ false; omitted from the wire when false.
+  flagFatherMad: z.boolean().optional(),
+  flagReubenDead: z.boolean().optional(),
   // Permanent ×2-per-stack player-efficiency multiplier from past Erinyes commits (03 §2.4).
   // Additive-optional (ADR-023); old saves default to 0.
   erinyesEfficiencyStacks: z.number().int().nonnegative().optional(),
@@ -152,6 +166,10 @@ export function serializeGameState(state: GameState): SerializedGameState {
 
   return {
     souls: serializeBigNum(state.souls),
+    // Monotonic souls-minted tally (05): omit when zero so fresh saves keep the prior wire form.
+    ...(state.totalSoulsObtained.gt(0)
+      ? { totalSoulsObtained: serializeBigNum(state.totalSoulsObtained) }
+      : {}),
     devotion,
     // Omit eternalDevotion when zero so fresh / pre-Eternal saves keep the prior wire form.
     ...(state.eternalDevotion.gt(0)
@@ -216,6 +234,13 @@ export function serializeGameState(state: GameState): SerializedGameState {
             })),
           }
         : {}),
+      // Email arm timers (05): omit when empty so fresh games keep a minimal wire form (ADR-023).
+      ...(Object.keys(state.lifetime.emailArmedAt).length > 0
+        ? { emailArmedAt: { ...state.lifetime.emailArmedAt } }
+        : {}),
+      // Fausto-arc per-lifetime flags (05): omit when false (additive-optional, ADR-023).
+      ...(state.lifetime.flagFCThreatSent === true ? { flagFCThreatSent: true } : {}),
+      ...(state.lifetime.flagFaustoCurse === true ? { flagFaustoCurse: true } : {}),
       ...(state.lifetime.defixio ? { defixio: { elapsed: state.lifetime.defixio.elapsed } } : {}),
       // Apex Katabasis-modifier flags + Morpheus lockout: omit when false so fresh / pre-apex
       // saves keep the prior wire form (ADR-023 additive-optional discipline).
@@ -233,6 +258,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
     // Omit when empty/zero so fresh and pre-achievements saves keep the prior wire form.
     ...(state.achievements.length > 0 ? { achievements: [...state.achievements] } : {}),
     ...(state.katabasisCount > 0 ? { katabasisCount: state.katabasisCount } : {}),
+    // Permanent story flags (05): omit when false (additive-optional, ADR-023).
+    ...(state.flagFatherMad === true ? { flagFatherMad: true } : {}),
+    ...(state.flagReubenDead === true ? { flagReubenDead: true } : {}),
     ...(typeof state.erinyesEfficiencyStacks === 'number' && state.erinyesEfficiencyStacks > 0
       ? { erinyesEfficiencyStacks: state.erinyesEfficiencyStacks }
       : {}),
@@ -252,6 +280,9 @@ export function deserializeGameState(s: SerializedGameState): GameState {
 
   return {
     souls: deserializeBigNum(s.souls),
+    // Monotonic souls-minted tally (05): absent in pre-feature saves → default to the soul pool,
+    // the tightest lower bound we have (anything spent is already gone, so this never overcounts).
+    totalSoulsObtained: deserializeBigNum(s.totalSoulsObtained ?? s.souls),
     devotion,
     // Additive-optional: absent → ZERO. (Decimal from string; deserializeBigNum handles it.)
     eternalDevotion: s.eternalDevotion
@@ -295,6 +326,11 @@ export function deserializeGameState(s: SerializedGameState): GameState {
         ...(e.answeredReply != null ? { answeredReply: e.answeredReply } : {}),
         ...(e.deleted ? { deleted: true } : {}),
       })),
+      // Email arm timers (05): additive-optional (ADR-023) — absent in old saves means {}.
+      emailArmedAt: { ...(s.lifetime.emailArmedAt ?? {}) },
+      // Fausto-arc per-lifetime flags: conditional spread keeps them optional under EOPT.
+      ...(s.lifetime.flagFCThreatSent === true ? { flagFCThreatSent: true } : {}),
+      ...(s.lifetime.flagFaustoCurse === true ? { flagFaustoCurse: true } : {}),
       ...(s.lifetime.defixio ? { defixio: { elapsed: s.lifetime.defixio.elapsed } } : {}),
       // Apex Katabasis-modifier flags + Morpheus lockout: conditional spread keeps them optional
       // under exactOptionalPropertyTypes (assigning undefined would type-error).
@@ -313,6 +349,9 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     // Old saves predating achievements default to none / zero; the next tick re-evaluates.
     achievements: s.achievements ? [...s.achievements] : [],
     katabasisCount: s.katabasisCount ?? 0,
+    // Permanent story flags (05): conditional spread keeps them optional under EOPT (absent ≡ false).
+    ...(s.flagFatherMad === true ? { flagFatherMad: true } : {}),
+    ...(s.flagReubenDead === true ? { flagReubenDead: true } : {}),
     ...(typeof s.erinyesEfficiencyStacks === 'number' && s.erinyesEfficiencyStacks > 0
       ? { erinyesEfficiencyStacks: s.erinyesEfficiencyStacks }
       : {}),

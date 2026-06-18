@@ -354,30 +354,263 @@ export const strings = {
     noCorrespondence: 'No correspondence.',
     // Provisional content (Phase 5.2) — sender / subject / body keyed by the sim email id.
     catalog: {
-      welcome: {
-        from: 'The Management',
-        subject: 'Welcome to the work',
-        body: 'Your terminal is provisioned. You will receive correspondence here as the world begins to feel your attentions. Most of it will be complaints. Read them, or do not — the rot proceeds either way.',
+      // ── Household — Gideon Reyes, the steward ──
+      'gideon-1': {
+        from: 'Gideon Reyes',
+        addr: 'g.reyes@reyes-stewardship.com',
+        subject: 'Welcome home, and a frank word about the float',
+        body: 'Welcome back. I will be blunt, because you pay me to be: while you were away the cash ran perilously close to the bone, closer than I am comfortable with. The visible holdings I steward, the shops, the property, the dull legitimate book, kept the lights on and the staff paid, which is precisely why they are the part that survives a long absence. The rest of what you keep your own counsel on does not survive you being unreachable, and that is your affair, not mine. My proposal is simple: hand me a larger share to manage on the usual percentage, and the next time you vanish for months the floor under you sits higher. Think on it. Glad you are home.\nGideon',
       },
-      'first-reprobates': {
-        from: 'The Vesper Tribune',
-        subject: 'A curious malaise in the quarter',
-        body: 'Residents report a creeping listlessness, a taste for small ruin. Our correspondents can find no cause. We are sure it is nothing. We are sure of very little lately.',
+      'gideon-2': {
+        from: 'Gideon Reyes',
+        addr: 'g.reyes@reyes-stewardship.com',
+        subject: 'A delicate matter about the house',
+        body: 'A delicate one. I have had word, more than once now, that the household helps itself while you are away. Silver, small valuables, the odd thing that never makes it onto a list. I will not put names in an email I do not control. Several of my clients in your bracket use Hearthstone Protective: discreet, bonded, and they ask no questions about what is behind which door. I can make the introduction today if you want the house watched the next time you travel. Your call, as ever.\nGideon',
       },
-      'first-business': {
-        from: 'A former customer',
-        subject: 'I want to speak to someone',
-        body: 'I bought what you were selling and I am not myself since. My wife says my eyes have gone flat. Who do I write to about this? Is anyone reading these?',
+      'gideon-3': {
+        from: 'Gideon Reyes',
+        addr: 'g.reyes@reyes-stewardship.com',
+        subject: "Whoever it is, don't let them poach you",
+        body: 'I have to say it: your last few calls have been inspired. The timing on the new ventures, the way the legitimate book is suddenly throwing off cash like it never has, it is the cleanest run I have seen from you. Either you have found yourself a second advisor you are not telling me about, or you have gotten frightening good at this. Whoever is whispering in your ear, do not you dare let them poach you off me. I would be lost without the percentage, and the company.\nGideon',
       },
-      'newsletter-influence': {
-        from: 'The Vesper Tribune',
-        subject: 'On the new patron everyone is whispering about',
-        body: 'A quiet hand is said to move beneath the city\u2019s affairs — generous, they say, and never seen. We would request an interview, but our editor has developed a sudden and total disinterest in the story.',
+      'gideon-4': {
+        from: 'Gideon Reyes',
+        addr: 'g.reyes@reyes-stewardship.com',
+        subject: 'I have stopped asking questions',
+        body: 'I do not know what you did, and I have decided not to ask. Everything, and I mean everything, is up. The shops, the property, the side of the book that usually limps, all of it printing money this month as though the stars lined up over your head and agreed you had earned it. I have stopped trying to explain it to the accountant and started simply enjoying it. Keep doing whatever it is.\nYour humble and slightly bewildered steward,\nGideon',
       },
-      'class-action': {
-        from: 'Holloway & Crane, Attorneys',
-        subject: 'NOTICE OF PENDING ACTION',
-        body: 'You are named in a class action brought by some four hundred claimants alleging harm arising from your enterprises. Please retain all records. Settlement may be possible; restitution, we suspect, is not.',
+
+      // ── The world / commerce — newsletters and reactive mail ──
+      'newsletter-markets': {
+        from: 'Cinder & Vale Research',
+        addr: 'brief@cindervale-research.com',
+        subject: 'The quiet money is in vice',
+        body: 'Weekly note. The sin trades lead the tape again: gaming, lending, and private leisure outpacing the broad market for a fifth straight week, with a cluster of privately held operators rumoured to be behind the move. Analysts cannot name the buyers; the flows are off exchange and patient. Our read: where appetite is the product, the cycle never turns. Positioned accordingly.',
+      },
+      'newsletter-class-action': {
+        from: 'Hollis, Renner & Pratt LLP',
+        addr: 'claims@hrp-massaction.com',
+        subject: 'Were you or a loved one harmed? You may be entitled to compensation',
+        body: "Legal notice. Our firm is investigating a major processed and fast food operator for knowingly engineering its products to be over consumed, and for the downstream harm to its customers' health. If you or someone you know suffered as a result, you may qualify to join a class action. No fee unless we recover. Time limits apply.",
+      },
+      'newsletter-health': {
+        from: 'County Health Dispatch',
+        addr: 'dispatch@countyhealth.org',
+        subject: 'Overdose deaths climb for the eleventh straight quarter',
+        body: 'Public bulletin. The county coroner reports another record quarter for fatal overdoses, concentrated in prescription sedatives and pain medication. Officials note that a small number of high volume clinics and pharmacies sit far outside the normal range, but name no parties pending review. Families are urged to secure medication and to seek help. Resources are listed below.',
+      },
+      'newsletter-local': {
+        from: 'The Riverside Almanac',
+        addr: 'editor@riverside-almanac.com',
+        subject: 'Fair results, a record squash, and a note on the footbridge',
+        body: 'This week: congratulations to the Pelham family, whose squash took first at the county fair at a frankly alarming forty one pounds. The relay team placed third at regionals; well run, all. The footbridge by the mill is closed for repair through the month, so plan the long way round. Lost: a grey terrier answering to Biscuit, last seen near the canal. Be kind to one another.',
+      },
+      'newsletter-broker': {
+        from: 'Aldous Pike, Acquisitions',
+        addr: 'apike@pike-acquisitions.com',
+        subject: 'Off market, discreet, yours first',
+        body: 'A mutual acquaintance suggested you appreciate opportunity that others find distasteful. A private nightlife and adult entertainment group one county over is quietly distressed; the family wants out fast and clean, no press. The figures are better than they have any right to be, for a buyer who is not squeamish about the trade. I show this to three people. You are the first. Say the word.',
+      },
+      'newsletter-outrage': {
+        from: 'PARSE Daily',
+        addr: 'team@parsedaily.com',
+        subject: 'The internet has decided. Again.',
+        body: "Today's cycle: a daytime personality's old footage resurfaced, the pile on hit critical mass by lunch, three sponsors fled by dinner, and a tearful apology video is already past four million views. By tomorrow no one will remember the cause, only the appetite for the next one. The outrage machine is the only thing in this country that never sleeps, and business has never been better for the people who feed it.",
+      },
+      'newsletter-charity': {
+        from: "Brightwater Children's Fund",
+        addr: 'give@brightwaterfund.org',
+        subject: 'A warm coat is a small thing. To a child it is everything.',
+        body: 'Winter is coming early this year, and our coat drive is short by two hundred. For the price of a coffee you can keep a child warm on the walk to school. We are a small fund, and every gift reaches a child in the county directly. Thank you for caring. However you can help, it matters.',
+      },
+      'newsletter-wealth': {
+        from: 'Meridian Private, The Quiet Letter',
+        addr: 'letter@meridian-private.com',
+        subject: 'For clients who prefer not to be seen',
+        body: 'This month: why visible wealth is a liability, and how our clients structure theirs to be neither here nor there. We do not advertise, we do not appear in rankings, and our best clients like it that way. If your affairs have grown complicated enough to need this letter, you already know who to call. Discretion is the only product worth paying for.',
+      },
+      'newsletter-crime': {
+        from: 'The Aldermoor Courier, Morning Wire',
+        addr: 'wire@aldermoor-courier.com',
+        subject: 'Violent incidents up sharply; a quiet boom in the trade behind them',
+        body: 'Morning wire. Reported assaults and weapons seizures are up across the county for the third month running, and a regional fight promotion is under scrutiny after a death in the cage. Off the record, two distributors are doing the best business of their careers and saying nothing about it. Our editorial asks the question no one wants asked: who profits when a place turns mean?',
+      },
+      'newsletter-attention': {
+        from: 'Loop Weekly',
+        addr: 'hello@loopweekly.com',
+        subject: 'We cannot put it down (and neither can you)',
+        body: 'The numbers are in and they are obscene: average daily watch time crossed five hours this quarter, a new record, with one platform quietly capturing most of the gain. Designers call it engagement. Everyone else calls it not being able to stop. Whatever you call it, a great many people did very little else this week, and someone made a fortune from exactly that.',
+      },
+      'newsletter-discipline': {
+        from: 'ASCEND, the discipline letter',
+        addr: 'coach@ascend-letter.com',
+        subject: 'Comfort is the enemy. Day 47.',
+        body: 'Most men are asleep at the wheel of their own lives. Not you, because you opened this. The clinics are full of men finally optimising, the schools are full of men finally grinding, and the ones who laugh at us are the ones we left behind. Pain is just weakness leaving. Reply ASCEND to lock in next quarter at the founder rate.',
+      },
+      'newsletter-seismic': {
+        from: 'Regional Micro Seismic Watch',
+        addr: 'bulletin@geomonitor-network.org',
+        subject: 'Tremor swarm with no mapped fault, and a second cluster abroad',
+        body: 'Volunteer bulletin. Our sensors logged a small swarm of micro tremors under the county this month, none above 2.1 on the Richter scale, all from a point with no fault on any map we hold. Odder still, a colleague in Spain reports a near identical swarm under no fault either, the two clusters keeping a strange sort of time with one another. Probably instrument error at both ends. Probably. We will keep watching.',
+      },
+
+      // The Church - Father Tom, the parish bulletins, the diocese
+      'fr-tom-1': {
+        from: 'Fr. Tom Brennan',
+        addr: 'frtom@sacredheart-parish.org',
+        subject: 'It has been an age, my friend',
+        body: 'My friend, it has been an age. I notice these things, you know: an empty pew where a familiar face used to be, and I worry, the way a man in my line is prone to. Your standing gift lapsed while you were away, which I would never have mentioned except that it is the one thing that made me wonder if something were wrong. The parish misses your kindness, but I miss the man more than the giving, and I want you to know that. Whatever has kept you, I hope it is nothing heavy, and that you are well. Come by when you can. The kettle is always on.\nFr. Tom',
+        replies: [
+          {
+            text: 'Of course, Father. You can count with me in every sense, I will keep on my contributions. I hope everything is fine. Best.',
+            effect: 'No mechanical effect.',
+          },
+        ],
+      },
+      'parish-1': {
+        from: 'Sacred Heart Parish',
+        addr: 'bulletin@sacredheart-parish.org',
+        subject: 'Weekly bulletin: hard months, and a little grace',
+        body: 'Sacred Heart Parish, weekly bulletin. It would be untrue to say these have been easy months. Costs are up, hands are fewer, and the old chapel stays cold no matter what we feed the boiler. And yet there is grace to report: Maren Holt, who sits with our dying up at the county hospital, has brought more than a few hard passings to something like peace this season, and those souls are safe now, past all trouble. We hold to that. Mass times unchanged. The pantry needs tinned goods. God keep you.',
+      },
+      'fr-tom-2': {
+        from: 'Fr. Tom Brennan',
+        addr: 'frtom@sacredheart-parish.org',
+        subject: 'Bless you, and pay the whispers no mind',
+        body: 'Bless you, truly. The gift came through and it has already done real good: the boiler in the old chapel is finally fit to replace, the pantry shelves are full for the first time since spring, and the after school room has a roof that no longer weeps when it rains. I will make the obligatory joke about your accountant loving the write off, and then I will tell you it was a joke, because I know why you really give. I will be honest with you, since we are friends: I have heard the whispers, the ugly ones, that you have a hand in unsavoury trades. I do not believe a word of it. Men who climb as high as you do always draw the small and the envious, who would rather pull a good man into the mud than look at their own feet. Pay them no mind. You have a friend in me.\nFr. Tom',
+        replies: [
+          {
+            text: 'Thank YOU, Father. I would do anything to keep this Parish standing. As you know the evil is always lurking, the lies will not stop me from bringing good to this world. TY&KR.',
+            effect: 'No mechanical effect.',
+          },
+          {
+            text: "you're such a dumb cunt ahahah",
+            effect: 'Sets flagFatherMad = 1 (the priest turns against the player).',
+          },
+        ],
+      },
+      'bishop-crane': {
+        from: 'Bishop Adelard Crane',
+        addr: 'a.crane@aldermoor-diocese.org',
+        subject: 'A courtesy, and a line money does not move',
+        body: 'We have not met, and I will keep this brief and plain, as my office requires. Your contributions to Sacred Heart have been noted, and the diocese is grateful for them in the ordinary way. I must be equally plain about a line that money does not move. It is the settled view of people I trust that your fortune is bound up in trades this Church cannot bless, and were that to remain so, no gift, of any size, would purchase you a welcome in our pews or our company. I tell you this as a courtesy, not a threat. You would do well to consider where your house truly stands.\nYours in Christ,\nAdelard Crane',
+      },
+      'fr-stahl-1': {
+        from: 'Fr. Emil Stahl',
+        addr: 'e.stahl@aldermoor-diocese.org',
+        subject: 'This is not an inquiry',
+        body: 'You do not know me. I have known you for some time. I will not insult either of us by pretending this is an inquiry. I know the nature of the things you keep, and the rites you keep them for. I know the trades your wealth truly springs from, and I know that wherever your interests reach, people die in numbers a place this size should not produce. I have set it all down, carefully, and I have placed it before those who answer to the law and those who answer to God. You will hear from both. I would say repent, but I no longer think you capable of it.\nFr. Emil Stahl',
+      },
+      'parish-2': {
+        from: 'Sacred Heart Parish',
+        addr: 'bulletin@sacredheart-parish.org',
+        subject: 'Weekly bulletin: be the rock the storm breaks against',
+        body: 'Sacred Heart Parish, weekly bulletin. There is no soft way to say it: the world outside these doors has gone strange and mean this year, and many of you have felt it in your own homes. We will not pretend otherwise, and we will not be moved by it either. A parish is a rock the storm breaks against, and that is the whole of our job in a season like this. Our thanks again to Maren Holt, whose work for the hospital and for us has been a steady light, sitting with those at the end and seeing them safely out. Hold to one another. We will weather this.',
+      },
+      'fr-stahl-2': {
+        from: 'Fr. Emil Stahl',
+        addr: 'e.stahl@aldermoor-diocese.org',
+        subject: 'I have stood in the street and watched it',
+        body: 'God forgive me, I did not want to believe it of any living soul, and now I have stood in the street and watched it and I cannot unsee it. This is you. The madness loose in this city tonight, the appetite in every gutter, all of it pours from one source, and I know its name and its address. I am done building a quiet case. I am gathering everyone who will listen, with everything I have, and we are coming for the thing you have made of yourself. I will not stop. And though it will do no good, I pray for your soul, because someone must.\nStahl',
+        replies: [
+          {
+            text: "It's pandemonium, but specifically it's panvitium. The latter could be considered a subset of the former. You're welcome.",
+            effect: 'No mechanical effect.',
+          },
+        ],
+      },
+      'parish-3': {
+        from: 'Sacred Heart Parish',
+        addr: 'bulletin@sacredheart-parish.org',
+        subject: 'Weekly bulletin: what are we for, if not this',
+        body: 'Sacred Heart Parish, weekly bulletin. We have lost more of our own this year, good people who slid into the bottle, the pill, the screen, the easy ruin, and did not climb back out. It forces the hard question on a parish: what are we for, if not to stand between a soul and that long fall. We do not have a clever answer. We have only the old one, that grace is real and the Greater Good is worth the keeping, and we will go on saying so into the dark. A word of thanks, finally, to our new friend and benefactor Fausto Cescru, whose generosity and steady counsel have carried us through a season we could not have weathered alone. God keep you all.',
+      },
+
+      // The adversary - Fausto Cescru
+      'fausto-1': {
+        from: 'Fausto Cescru',
+        addr: 'fausto.cescru@cescru.es',
+        subject: 'I have decided to notice you',
+        body: 'I do not write to strangers, and you will understand that this letter is itself a thing very few men living have ever been handed. My house has held a certain road for nine generations: teacher to heir, blood to blood, a library no eyes but ours have ever read, a fortune spent without one word of complaint on the privilege of the climb. In all of that time I have never once met my equal, and now, against every expectation I had of the world, it appears that I may have. You have not earned your place beside me, that much is plain to anyone of breeding, yet here you stand at it regardless, and that interests me rather more than I will say twice. So you will tell me who you are. Write to me, and promptly, for I am not a man who is kept waiting by anyone. Your silence I will take as the deference it so plainly is, and we will speak again.\nFausto Cescru',
+        replies: [
+          {
+            text: 'I will use your blood as catalyst for my next katabasis, torment your soul and end your lineage, you unworthy speck of shit :)',
+            effect:
+              'Closes the friendly branch (flagFCThreatSent = true): Fausto #2 and #3 never fire.',
+          },
+        ],
+      },
+      'fausto-2': {
+        from: 'Fausto Cescru',
+        addr: 'fausto.cescru@cescru.es',
+        subject: 'I will make something of you',
+        body: 'I am impressed, and you should grasp how rarely I permit myself the word. What you have built, and in how little time, would have cost my house a full generation and a treasury to match it. I will be direct, because men of rank do not haggle and I never learned how. I am offering to raise you. I hold knowledge gathered across lifetimes and no heir living worthy to receive it, and you, for all your low beginnings, are very nearly worthy of the gift. Come and take your place beneath my hand, and I will spare you the centuries of error that I have already paid for in full. Do not mistake any part of this for a request. Men like me do not extend the offer twice, and men like you do not refuse it and go on prospering.\nFausto',
+      },
+      'fausto-3': {
+        from: 'Fausto Cescru',
+        addr: 'fausto.cescru@cescru.es',
+        subject: 'You will tell me how you do it',
+        body: 'Since you will not take what I held out to you, you will hand me something in its place instead. I have watched you closely: the vanishings, the fortune sunk into the ground and risen again, and your cycles turning over in a fraction of the time any inheritance on earth permits. No bloodline moves that quickly. You hold an instrument and I have decided that I will know what it is. So you will tell me by what means you descend, and you will not make me ask a third time. I have been patient with you as a king is patient with a clever servant, which is to say only for as long as the cleverness keeps amusing him. Do not mistake that patience for a thing that lasts.\nFausto',
+      },
+      'fausto-4': {
+        from: 'Fausto Cescru',
+        addr: 'fausto.cescru@cescru.es',
+        subject: 'Take this with you',
+        body: 'Enough. I have spent upon you a courtesy that your blood was never owed, and you have answered it with silence and the low cunning of the gutter you crawled out of. Do you imagine a man of my house cannot see you climbing your way up a stair my line bled nine generations to mount? You are base blood. You found a thing in the dirt that was meant for better men than you, and you rode it up without earning a single step of the ascent. I will not stoop to beg a guttersnipe for his trick. I will do what my name has done to upstarts since before your grandfathers were filth on a road. Take this with you, then, since you have taken everything else that was ever mine:\n\nQui hanc epistulam legit aut tenet, maledictus esto. Marcescat sanguis eius, deficiant manus eius, et aurum eius in cinerem vertatur. Quamdiu haec verba manent, manet maledictio.',
+      },
+      'fausto-5': {
+        from: 'Fausto Cescru',
+        addr: 'fausto.cescru@cescru.es',
+        subject: 'Little pig',
+        body: "Then I'll huff, and I'll puff...",
+      },
+
+      // The madman - Reuben Marsh
+      'reuben-1': {
+        from: 'Reuben Marsh',
+        addr: 'reubenmarsh.mason@gmail.com',
+        subject: 'about your bottom room what i built',
+        body: "Know what, I done your bottom room, the one with the black shiny floor and them white posts. All this time I kept me mouth shut, but the thing down there won't leave me be. There was a funny old stone set in that floor, sir, and the cuts on it weren't like no stone I ever cut in me life. At night that shape comes back in me head, bits of it I shouldn't even be able to mind. Believe me, I ain't a soft sort of man, I lay brick and I sleep sound, mostly. A pull comes off that stone, a sideways sort of feeling, like the floor's been tipped up the wrong way. Strange dreams ever since, same room every time, going down and down and never back up. I only write cos I reckon you, of all folk, might know what got put in your house. Sorry to bother a big busy man, write us back if any of this means owt to you, and pardon a daft old mason for fretting.\nReuben Marsh",
+      },
+      'reuben-2': {
+        from: 'Reuben Marsh',
+        addr: 'reubenmarsh.mason@gmail.com',
+        subject: 'i touched it and im sorry i had to tell someone',
+        body: "Ok, I'll just say it, I put me bare hand flat on the stone to feel the cut of them carvings. Before that day I never once dreamed the same thing twice, and now I dream the one room every single night. Something's down there and it's awake and it waits, and it counts, sir, counts and counts. I can't put the dreams down in a letter proper, the words just slide off them like water off a slate. Down is the only way they ever go, always down, the steps wore smooth on the going-down side. I started writing on the wall under me wallpaper at home, and don't ask me why cos I can't stop. A black slab, smooth like a still pond, and a man stood up on top of it what I reckon is you. Never mind a daft old man's nerves, just tell me, did you stick a dark thing under your house?\nReuben Marsh",
+        replies: [
+          {
+            text: "If you contact me again I'll call the police.",
+            effect: 'No mechanical effect.',
+          },
+          {
+            text: "You're right about everything, let's meet and I'll explain.",
+            effect:
+              'Mints +1 soul and sets flagReubenDead = 1 (ends the mason; stops his later letters).',
+          },
+        ],
+      },
+      'reuben-3': {
+        from: 'Reuben Marsh',
+        addr: 'reubenmarsh.mason@gmail.com',
+        subject: 'theres others, i been mapping it',
+        body: "I been at this with pins and a big map and I'm not mad, whatever you lot think. There's others like you, sir, bad spots I call them, places the wrong feeling pours out of, and I found two more besides your house. One of them sits over in Spain, a proper powerful fella by the size of him, near as strong on me readings as you are, near enough that I felt him before I ever found him on the paper. Did you know the biggest shake there ever was happened over in Chile, donkey's years back, and they reckon the ground down there still ain't sat quiet even now. Soft ground shakes worse than hard ground, see, me old foreman learnt me that, a soft patch rings like a hit bucket while the hard stuff barely passes it on. I could go on about this for hours, and me wife, God rest her, used to let me. Anyhow. That Spanish one is the only other I'd put near as strong as you, and I thought you ought to know you ain't the only door left stood open.\nReuben Marsh",
+        replies: [
+          {
+            text: 'Stop writing to me. Go pester your Spanish friend and leave me out of your maps.',
+            effect: 'No mechanical effect.',
+          },
+          {
+            text: "You're right about everything, let's meet and I'll explain.",
+            effect:
+              'Mints +1 soul and sets flagReubenDead = 1 (ends the mason; stops his later letters).',
+          },
+        ],
+      },
+      'reuben-4': {
+        from: 'Reuben Marsh',
+        addr: 'reubenmarsh.mason@gmail.com',
+        subject: 'i cant carry your room anymore',
+        body: "When I shut me eyes I'm down in your bottom room, on the down side of the stone, going under with all the rest. And I seen what you do at the bottom of it, you get on your knees at a black post and you bite at it, teeth and nails, working it into a shape. Knelt over the eight of them you are, the eight with crowns on, chewing that black stone into the shape of your own self stood up over the lot of them. Eight chairs and a ninth one that's you, and the biting is how you climb up, I see it, I see it. Unforgivable, the whole of it, and you're the near dark, the big one, so I wrote off to the other fella to come and stop you. Pray forgive a broke old man, but I can't hold your room in me head one more night, God keep the three of us.\nReuben",
       },
     },
   },

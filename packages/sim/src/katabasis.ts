@@ -241,6 +241,9 @@ export function commitKatabasis(
     suicidePool: 0,
     murderPool: 0,
     inbox: [], // impact-feedback inbox resets with the fresh lifetime (5.2)
+    emailArmedAt: {}, // …and so do the email arm timers (05): the next run re-arms from scratch
+    // flagFCThreatSent / flagFaustoCurse are intentionally omitted — the Fausto arc is per-lifetime
+    // (absent ≡ false / no curse). flagFatherMad / flagReubenDead are top-level and carry across.
     // pendingErinyes / pendingMorpheus / morpheusLockedOut are intentionally omitted — the new
     // lifetime starts clean (they're additive-optional and absent ≡ false).
   };
