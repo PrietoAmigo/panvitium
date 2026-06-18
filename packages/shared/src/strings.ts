@@ -321,6 +321,8 @@ export const strings = {
     invocations: 'Invocations',
     generation: 'Generation',
     deaths: 'Deaths',
+    byMurder: 'by murder',
+    bySuicide: 'by suicide',
     noAcolytes: 'No acolytes recruited yet.',
     ofMax: 'of',
     playerEfficiency: 'Player action efficiency',
