@@ -17,8 +17,15 @@ export interface ServerDeps {
   repos: Repositories;
 }
 
+/**
+ * Cap on request body size. A legitimate save is a few KB; this bounds the otherwise-unbounded
+ * `z.record(...)` fields of the save state (tightening Fastify's implicit 1 MB default) so a
+ * malicious client cannot bloat the stored JSONB. 512 KB leaves generous headroom for late-game saves.
+ */
+const BODY_LIMIT_BYTES = 512 * 1024;
+
 export async function buildServer(deps: ServerDeps): Promise<FastifyInstance> {
-  const app = Fastify({ logger: deps.config.NODE_ENV !== 'test' });
+  const app = Fastify({ logger: deps.config.NODE_ENV !== 'test', bodyLimit: BODY_LIMIT_BYTES });
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);

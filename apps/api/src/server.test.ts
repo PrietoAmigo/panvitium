@@ -111,4 +111,16 @@ describe('save sync', () => {
     const res = await app.inject({ method: 'GET', url: SAVE_SYNC_PATHS.get });
     expect(res.statusCode).toBe(401);
   });
+
+  it('rejects an over-large request body with 413', async () => {
+    // Exceed the 512 KB body limit; the size check fires in the parser, before auth/validation.
+    const oversized = 'x'.repeat(600 * 1024);
+    const res = await app.inject({
+      method: 'PUT',
+      url: SAVE_SYNC_PATHS.put,
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ junk: oversized }),
+    });
+    expect(res.statusCode).toBe(413);
+  });
 });
