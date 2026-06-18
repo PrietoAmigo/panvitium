@@ -43,20 +43,20 @@ function clickTab(label: string): void {
 }
 
 describe('AnalyticsGroup', () => {
-  it('renders the Acolytes tab with no acolytes without looping', () => {
+  it('renders the Actions tab with no acolytes without looping', () => {
     seed([]);
     render();
-    clickTab('Acolytes');
+    clickTab('Actions');
     expect(container!.textContent).toContain('No acolytes');
   });
 
-  it('renders a row per acolyte with its current action', () => {
+  it('renders a row per acolyte with its current action on the Actions tab', () => {
     seed([
       { id: 1, assignedAction: 'caedis', remainingSeconds: 30 },
       { id: 2, assignedAction: null, remainingSeconds: null },
     ]);
     render();
-    clickTab('Acolytes');
+    clickTab('Actions');
     expect(container!.textContent).toContain('Acolyte 1');
     expect(container!.textContent).toContain('Acolyte 2');
   });
@@ -64,14 +64,22 @@ describe('AnalyticsGroup', () => {
   it('defaults to the Main tab with resources and reprobates folded in', () => {
     seed([]);
     render();
-    // Main now carries the resources, the player action efficiency, and the reprobate readouts in one
-    // tab. There is no longer a separate Reprobates tab or a vigil line.
+    // Main now carries the resources and the reprobate readouts. The player action + efficiency moved
+    // to the Actions tab, so they must NOT appear here (no overlapping information). There is no longer
+    // a separate Reprobates tab or a vigil line.
     expect(container!.textContent).toContain('Souls');
-    expect(container!.textContent).toContain('Player action efficiency');
     expect(container!.textContent).toContain('Reprobates');
+    expect(container!.textContent).not.toContain('Player action efficiency');
     expect(container!.textContent).not.toContain('vigil kept');
     const tabLabels = Array.from(container!.querySelectorAll('button')).map((b) => b.textContent);
-    expect(tabLabels).not.toContain('Reprobates');
+    expect(tabLabels).toEqual(['Main', 'Actions']);
+  });
+
+  it('shows the player efficiency on the Actions tab, not the Main tab', () => {
+    seed([]);
+    render();
+    clickTab('Actions');
+    expect(container!.textContent).toContain('Player action efficiency');
   });
 });
 
@@ -82,27 +90,30 @@ function seedLifetime(over: Partial<GameState['lifetime']>): void {
   useGameStore.setState({ state });
 }
 
-describe('AnalyticsGroup — Invocations tab', () => {
+describe('AnalyticsGroup — Actions tab invocations', () => {
   it('shows the empty state when nothing is bound', () => {
     seed([]);
     render();
-    clickTab('Invocations');
+    clickTab('Actions');
     expect(container!.textContent).toContain('No invocations are bound');
   });
 
   it('lists a passive invocation with its count and a live quantified total effect', () => {
     seedLifetime({ invocations: { fama: 2 } });
     render();
-    clickTab('Invocations');
+    clickTab('Actions');
     const text = container!.textContent ?? '';
     expect(text).toContain('Fama');
     expect(text).toContain('\u00D72'); // number bound
     expect(text).toContain('influence gain'); // the effect label
     expect(/[+\-\u2212]\d+%/.test(text)).toBe(true); // a computed magnitude, not a static phrase
-    expect(text).not.toContain('every'); // passive ⇒ no action/cadence
+    // Passive ⇒ no progress bar (those belong to runner channels).
+    expect(
+      container!.querySelectorAll('.analytics-invocation--passive .analytics-bar').length,
+    ).toBe(0);
   });
 
-  it('lists a runner with its expected per-cycle outcome (mean) and cadence — no bars/dropdown', () => {
+  it('lists a runner with its efficiency, action, and a progress bar — no dropdown/buttons', () => {
     const base = createInitialState('seed', 0);
     const withReps = addReprobates(base, 200);
     const state: GameState = {
@@ -111,19 +122,31 @@ describe('AnalyticsGroup — Invocations tab', () => {
     };
     useGameStore.setState({ state });
     render();
-    clickTab('Invocations');
+    clickTab('Actions');
     const text = container!.textContent ?? '';
     expect(text).toContain('Imp');
     expect(text).toContain('\u00D72'); // number bound
-    expect(text).toContain('Caedis'); // the action
-    // The expected outcome, not a qualitative phrase: forced-Good Caedis culls 1 / mints 1 per cycle.
-    expect(text).toContain('soul');
-    expect(text).toContain('reprobate');
-    expect(/[+\u2212]\d/.test(text)).toBe(true); // a signed expected magnitude
-    expect(text).not.toContain('culls reprobates'); // qualitative phrase replaced
-    expect(text).toContain('every'); // cadence
-    // The performance change: no expandable head button, no per-copy channel rows/bars.
+    expect(text).toContain('Caedis'); // the action it runs
+    expect(/\d\u00d7|\u00d7\d/.test(text)).toBe(true); // the efficiency chip (e.g. "0.05\u00d7")
+    // A runner row carries a progress bar (the same shape the player/acolyte rows use).
+    expect(container!.querySelectorAll('.analytics-invocation .analytics-bar').length).toBe(1);
+    // Still no expandable head button or per-copy channel rows.
     expect(container!.querySelectorAll('.analytics-inv-channel').length).toBe(0);
     expect(container!.querySelectorAll('.analytics-invocations button').length).toBe(0);
+  });
+
+  it('orders bound invocations by required Sin level (desc) then name (asc)', () => {
+    // imp (Ira L1), harpy (Ira L2), midas (Avaritia L3), doppelgaenger (Superbia L3): both L3 sort
+    // first, alphabetical within the tier (Doppelg\u00e4nger before Midas), then Harpy (L2), then Imp.
+    seedLifetime({ invocations: { imp: 1, harpy: 1, midas: 1, doppelgaenger: 1 } });
+    render();
+    clickTab('Actions');
+    const names = Array.from(container!.querySelectorAll('.analytics-inv-name')).map(
+      (n) => n.textContent ?? '',
+    );
+    const idx = (label: string): number => names.findIndex((n) => n.startsWith(label));
+    expect(idx('Doppelg')).toBeLessThan(idx('Midas'));
+    expect(idx('Midas')).toBeLessThan(idx('Harpy'));
+    expect(idx('Harpy')).toBeLessThan(idx('Imp'));
   });
 });

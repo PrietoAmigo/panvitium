@@ -315,6 +315,8 @@ export const strings = {
   analytics: {
     title: 'Analytics',
     main: 'Main',
+    actions: 'Actions',
+    player: 'Player',
     resources: 'Resources',
     reprobates: 'Reprobates',
     acolytes: 'Acolytes',
