@@ -74,6 +74,18 @@ describe('auth', () => {
     const res = await app.inject({ method: 'GET', url: AUTH_PATHS.discordStart });
     expect(res.statusCode).toBe(501);
   });
+
+  it('rate-limits repeated magic-link requests from the same client', async () => {
+    const payload = { email: 'spammer@hell.example' };
+    const codes: number[] = [];
+    // The route caps at 5 per window; the sixth request from the same IP must be throttled.
+    for (let i = 0; i < 6; i += 1) {
+      const res = await app.inject({ method: 'POST', url: AUTH_PATHS.magicLinkRequest, payload });
+      codes.push(res.statusCode);
+    }
+    expect(codes.slice(0, 5)).toEqual([200, 200, 200, 200, 200]);
+    expect(codes[5]).toBe(429);
+  });
 });
 
 describe('save sync', () => {
