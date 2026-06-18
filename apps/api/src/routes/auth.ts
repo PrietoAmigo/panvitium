@@ -21,7 +21,11 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: ServerDeps):
 
   app.post(
     AUTH_PATHS.magicLinkRequest,
-    { schema: { body: magicLinkRequestSchema } },
+    {
+      schema: { body: magicLinkRequestSchema },
+      // Tight cap: issuing a link emails a stranger and probes account existence. Throttle hard.
+      config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    },
     async (request) => {
       const { email } = request.body;
       const existing = await repos.userRepo.findByEmail(email);
@@ -39,7 +43,11 @@ export function registerAuthRoutes(instance: FastifyInstance, deps: ServerDeps):
 
   app.get(
     AUTH_PATHS.magicLinkCallback,
-    { schema: { querystring: z.object({ token: z.string() }) } },
+    {
+      schema: { querystring: z.object({ token: z.string() }) },
+      // Looser than the request cap but still bounds token-guessing attempts against the callback.
+      config: { rateLimit: { max: 20, timeWindow: '15 minutes' } },
+    },
     async (request, reply) => {
       const verified = verifyMagicToken(request.query.token, config.MAGIC_LINK_SECRET, Date.now());
       if (!verified) {

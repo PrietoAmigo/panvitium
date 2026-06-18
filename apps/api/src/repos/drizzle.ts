@@ -3,12 +3,12 @@
  * Save blobs are HMAC-signed on write (ADR-011) and the per-user history is pruned to ten
  * (ADR-010). The opaque blob is stored as JSONB.
  */
-import { createHmac } from 'node:crypto';
 import { and, desc, eq, notInArray } from 'drizzle-orm';
 import { type SaveBlob, type User } from '@panvitium/shared';
 import { type Config } from '../config.js';
 import { type Db } from '../db/client.js';
 import { saveHistory, saves, sessions, users } from '../db/schema.js';
+import { signBlob, verifyBlob } from '../save/signing.js';
 import {
   type Repositories,
   type SaveRepository,
@@ -82,17 +82,19 @@ class DrizzleSaveRepository implements SaveRepository {
     private readonly signingSecret: string,
   ) {}
 
-  private sign(blob: SaveBlob): string {
-    return createHmac('sha256', this.signingSecret).update(JSON.stringify(blob)).digest('hex');
-  }
-
   async getLatest(userId: string): Promise<SaveBlob | null> {
     const row = (await this.db.select().from(saves).where(eq(saves.userId, userId)).limit(1))[0];
-    return row ? (row.blob as SaveBlob) : null;
+    if (!row) return null;
+    const blob = row.blob as SaveBlob;
+    // Re-verify the stored HMAC (ADR-011): a row tampered with directly in the database must not be
+    // served back as authoritative. On mismatch we treat the save as absent rather than throwing —
+    // the client keeps its local-first save and a fresh push re-establishes a signed row.
+    if (!verifyBlob(blob, row.signature, this.signingSecret)) return null;
+    return blob;
   }
 
   async put(userId: string, blob: SaveBlob): Promise<void> {
-    const signature = this.sign(blob);
+    const signature = signBlob(blob, this.signingSecret);
     await this.db
       .insert(saves)
       .values({

@@ -74,6 +74,18 @@ describe('auth', () => {
     const res = await app.inject({ method: 'GET', url: AUTH_PATHS.discordStart });
     expect(res.statusCode).toBe(501);
   });
+
+  it('rate-limits repeated magic-link requests from the same client', async () => {
+    const payload = { email: 'spammer@hell.example' };
+    const codes: number[] = [];
+    // The route caps at 5 per window; the sixth request from the same IP must be throttled.
+    for (let i = 0; i < 6; i += 1) {
+      const res = await app.inject({ method: 'POST', url: AUTH_PATHS.magicLinkRequest, payload });
+      codes.push(res.statusCode);
+    }
+    expect(codes.slice(0, 5)).toEqual([200, 200, 200, 200, 200]);
+    expect(codes[5]).toBe(429);
+  });
 });
 
 describe('save sync', () => {
@@ -110,5 +122,17 @@ describe('save sync', () => {
   it('requires authentication', async () => {
     const res = await app.inject({ method: 'GET', url: SAVE_SYNC_PATHS.get });
     expect(res.statusCode).toBe(401);
+  });
+
+  it('rejects an over-large request body with 413', async () => {
+    // Exceed the 512 KB body limit; the size check fires in the parser, before auth/validation.
+    const oversized = 'x'.repeat(600 * 1024);
+    const res = await app.inject({
+      method: 'PUT',
+      url: SAVE_SYNC_PATHS.put,
+      headers: { 'content-type': 'application/json' },
+      payload: JSON.stringify({ junk: oversized }),
+    });
+    expect(res.statusCode).toBe(413);
   });
 });
