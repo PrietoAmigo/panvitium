@@ -8,7 +8,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { bn, type GameState } from '@panvitium/sim';
+import { bn, computeModifiers, mul, type GameState } from '@panvitium/sim';
+import { formatBigNum } from '../game/format.js';
 import { useGameStore } from '../store/gameStore.js';
 import { InfluenceGoldHud } from './InfluenceGoldHud.js';
 
@@ -28,6 +29,12 @@ function patchLifetime(over: { influence?: number; maxInfluence?: number; gold?:
       },
     },
   });
+}
+
+/** Patch a single Sin's Devotion onto the live state (Vanagloria raises `maxInfluenceMul`). */
+function patchDevotion(over: Partial<GameState['devotion']>): void {
+  const s = useGameStore.getState().state as GameState;
+  useGameStore.setState({ state: { ...s, devotion: { ...s.devotion, ...over } } });
 }
 
 function render(): void {
@@ -67,6 +74,21 @@ describe('Influence & Gold HUD', () => {
     render();
     expect(container!.querySelector('.ig-hud-value--influence')?.textContent).toBe('62M / 100M');
     expect(container!.querySelector('.ig-hud-value--gold')?.textContent).toBe('1.45M');
+  });
+
+  it('reads against the EFFECTIVE max (base × maxInfluenceMul), not the base cap', () => {
+    // Vanagloria Devotion raises `maxInfluenceMul` above 1 — the same boost the tick caps influence
+    // at. The HUD must show that raised denominator, otherwise the bar overflows past a hardcoded
+    // base and the readout lies about the cap.
+    patchLifetime({ influence: 50, maxInfluence: 100, gold: 0 });
+    patchDevotion({ vanagloria: bn(180) });
+    const s = useGameStore.getState().state as GameState;
+    const effectiveMax = mul(s.lifetime.maxInfluence, computeModifiers(s).maxInfluenceMul);
+    expect(effectiveMax.toNumber()).toBeGreaterThan(100); // sanity: the boost is live
+    render();
+    expect(container!.querySelector('.ig-hud-value--influence')?.textContent).toBe(
+      `50 / ${formatBigNum(effectiveMax)}`,
+    );
   });
 
   it('paints the pixelation canvas at the design grid resolution', () => {

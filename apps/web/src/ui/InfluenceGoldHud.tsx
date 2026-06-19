@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactElement } from 'react';
-import { div, gt, type BigNum } from '@panvitium/sim';
+import { computeModifiers, div, gt, mul, type BigNum } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
 
@@ -122,9 +122,14 @@ function VesselCanvas({ frac }: { frac: number }): ReactElement {
 export function InfluenceGoldHud(): ReactElement | null {
   const state = useGameStore((s) => s.state);
   if (!state) return null;
-  const { influence, maxInfluence, gold } = state.lifetime;
-  const frac = fillFraction(influence, maxInfluence);
-  const influenceLabel = `${formatBigNum(influence)} / ${formatBigNum(maxInfluence)}`;
+  const { influence, gold } = state.lifetime;
+  // The live cap is the base `maxInfluence` raised by every modifier source (Vanagloria, Sin skills,
+  // the Spear of Longinus, sigils) — the same effective max the tick caps influence at. The raw
+  // `state.lifetime.maxInfluence` is only the base (100), so the HUD must apply `maxInfluenceMul` or
+  // the bar overflows and the readout shows the wrong denominator once any boost is active.
+  const effectiveMax = mul(state.lifetime.maxInfluence, computeModifiers(state).maxInfluenceMul);
+  const frac = fillFraction(influence, effectiveMax);
+  const influenceLabel = `${formatBigNum(influence)} / ${formatBigNum(effectiveMax)}`;
   const goldLabel = formatBigNum(gold);
 
   return (
