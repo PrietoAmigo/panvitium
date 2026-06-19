@@ -2371,6 +2371,9 @@ body {
   font-weight: 700;
   font-size: clamp(2.6rem, 9vw, 4.4rem);
   letter-spacing: 0.2em;
+  /* Counter the trailing letter-spacing so the centred wordmark sits dead-centre
+     (text-align:center otherwise shifts the glyphs left by half the tracking). */
+  text-indent: 0.2em;
   text-transform: uppercase;
   color: var(--gold-leaf);
   text-shadow:
@@ -2401,6 +2404,8 @@ body {
   font-family: var(--font-display);
   font-size: 0.95rem;
   letter-spacing: 0.14em;
+  /* Match the wordmark fix: balance the trailing tracking on these centred labels. */
+  text-indent: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
   transition:
@@ -2429,6 +2434,7 @@ body {
   border-color: transparent;
   color: var(--parchment-shadow);
   letter-spacing: 0.1em;
+  text-indent: 0.1em;
 }
 .title-entry--ghost:hover {
   color: var(--parchment);
