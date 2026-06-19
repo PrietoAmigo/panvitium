@@ -15,7 +15,6 @@ import { ConflictModal } from './ui/ConflictModal.js';
 import { WelcomeBackModal } from './ui/WelcomeBackModal.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
-import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
@@ -120,9 +119,6 @@ export function App(): ReactElement {
           onAction={handleAction}
         />
         <div className="room-name">{ROOMS[room].title}</div>
-        {/* Always-on Influence/Gold HUD — every room and menu except the Altar and the Katabasis
-            descent (where the resource frame would intrude on those full-surface screens). */}
-        {room !== 'altar' && katabasisPhase === null && <InfluenceGoldHud />}
       </main>
       <SignaturePopup />
       <AchievementToast />
