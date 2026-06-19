@@ -15,7 +15,6 @@ import { ConflictModal } from './ui/ConflictModal.js';
 import { WelcomeBackModal } from './ui/WelcomeBackModal.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
-import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
@@ -121,17 +120,6 @@ export function App(): ReactElement {
         />
         <div className="room-name">{ROOMS[room].title}</div>
       </main>
-      {/* Always-on Influence/Gold HUD — every room and menu except the Altar and the Katabasis
-          descent. It rides its own layer (above the full-screen menu overlays, below the title /
-          settings modals) rather than inside the stage, so it stays visible over the Suasio scroll,
-          Ars Goetia and PC. The inner box mirrors the stage geometry to pin it to the scene corner. */}
-      {room !== 'altar' && katabasisPhase === null && (
-        <div className="hud-layer">
-          <div className="hud-layer__stage">
-            <InfluenceGoldHud />
-          </div>
-        </div>
-      )}
       <SignaturePopup />
       <AchievementToast />
       <KatabasisModal />
