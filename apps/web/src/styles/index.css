@@ -145,33 +145,16 @@ body {
 /* ---------- Influence & Gold HUD (design handoff) ---------- */
 /* Top-left resource cluster, persistent over the rooms and the Maleficia / Ars Goetia / Suasio
    menus. Rendered at the app level (a sibling of those menu overlays, after them in DOM) rather than
-   inside .stage, so it isn't trapped beneath the full-surface overlays it must show through: the
-   layer mirrors .stage's centred 16:9 box exactly so the cluster still hugs the room frame's
-   top-left, and carries z-index 85 — above the Ars Goetia (80) / Suasio / Maleficia (40) overlays,
-   below the system modals (Title 90, Settings 95, the entry fade 96). Visibility is owned by App. */
-.ig-hud-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 85;
-  display: flex;
-  pointer-events: none;
-}
-
-/* Mirror .stage's geometry so the HUD pins to the same top-left as the room frame, whatever the
-   viewport's letterboxing. */
-.ig-hud-frame {
-  position: relative;
-  margin: auto;
-  width: min(100%, 1280px);
-  aspect-ratio: 16 / 9;
-  max-height: 100%;
-  overflow: hidden;
-}
-
+   inside .stage, so it isn't trapped beneath the full-surface overlays it must show through, and
+   carries z-index 85 — above the Ars Goetia (80) / Suasio / Maleficia (40) overlays, below the
+   system modals (Title 90, Settings 95, the entry fade 96). It pins to the viewport's top-left edge
+   (not the centred stage box), and the vessel's negative left margin pulls its transparent left
+   edge off-screen so the glass sits hard against the screen edge. Visibility is owned by App. */
 .ig-hud {
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 85;
   padding: 1.1rem 1.2rem 1.1rem 0;
   display: flex;
   flex-direction: row;

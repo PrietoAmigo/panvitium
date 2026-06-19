@@ -151,14 +151,8 @@ export function App(): ReactElement {
         </PanelShell>
       )}
       {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars
-          Goetia / Suasio surfaces. The frame mirrors .stage so the cluster hugs the room's top-left. */}
-      {hudVisible && (
-        <div className="ig-hud-layer">
-          <div className="ig-hud-frame">
-            <InfluenceGoldHud />
-          </div>
-        </div>
-      )}
+          Goetia / Suasio surfaces, pinned to the viewport's top-left edge. */}
+      {hudVisible && <InfluenceGoldHud />}
     </div>
   );
 }
