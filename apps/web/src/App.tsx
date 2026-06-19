@@ -110,12 +110,12 @@ export function App(): ReactElement {
     panel && panel !== 'ars-goetia' && panel !== 'pc' && panel !== 'suasio' ? PANELS[panel] : null;
   const shell = panel ? PANEL_SHELL[panel] : undefined;
 
-  // The persistent Influence/Gold HUD rides over the three rooms and over the Maleficia shelf, the
-  // Ars Goetia book and the Suasio scroll — but not over the PC desk or the Altar gate, not during a
-  // descent (the Altar gate + an ongoing Katabasis both hold `katabasisPhase !== null`), and not
-  // behind the launch title menu. It mounts at the app level (below) so it layers over those menu
-  // overlays rather than under them.
-  const hudVisible = katabasisPhase === null && panel !== 'pc' && !titleOpen;
+  // The persistent Influence/Gold HUD rides over the Invocation and Studio rooms and over the
+  // Maleficia shelf, the Ars Goetia book and the Suasio scroll — but not in the Altar room, not over
+  // the PC desk or the Altar gate, not during a descent (the Altar gate + an ongoing Katabasis both
+  // hold `katabasisPhase !== null`), and not behind the launch title menu. It mounts at the app
+  // level (below) so it layers over those menu overlays rather than under them.
+  const hudVisible = katabasisPhase === null && room !== 'altar' && panel !== 'pc' && !titleOpen;
 
   return (
     <div className="app">

@@ -115,8 +115,9 @@ function VesselCanvas({ frac }: { frac: number }): ReactElement {
  * (Influence above, Gold below). Reads live state from the game store and follows the repo's Zustand
  * selector guidance — select the stable `state`, derive the fill ratio + formatted values in render.
  *
- * Mounting/visibility is owned by `App` (shown in the three rooms and over the Maleficia / Ars Goetia
- * / Suasio menus; hidden over the Altar gate, the PC, and during Katabasis).
+ * Mounting/visibility is owned by `App` (shown in the Invocation / Studio rooms and over the
+ * Maleficia / Ars Goetia / Suasio menus; hidden in the Altar room, over the Altar gate, the PC, and
+ * during Katabasis).
  */
 export function InfluenceGoldHud(): ReactElement | null {
   const state = useGameStore((s) => s.state);
