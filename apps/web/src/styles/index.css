@@ -2371,11 +2371,16 @@ body {
   font-weight: 700;
   font-size: clamp(2.6rem, 9vw, 4.4rem);
   letter-spacing: 0.2em;
-  /* Counter the trailing letter-spacing so the centred wordmark sits dead-centre.
-     The wordmark is wider than its capped container, so it overflows and text-align
-     can't re-balance the indent — it acts as a pure shift. Half the tracking exactly
-     cancels the trailing-space left-shift (a full 0.2em would overshoot to the right). */
-  text-indent: 0.1em;
+  /* The wordmark is wider than the menu's narrow text column, so plain text-align:center
+     lets the overflow bias it sideways. Size the heading to its own text and centre that
+     box explicitly, so it stays put at any viewport width. The 0.1em left margin (half the
+     tracking) offsets the trailing letter-spacing so the glyphs — not the box — read as
+     centred over the buttons below. */
+  width: max-content;
+  position: relative;
+  left: 50%;
+  margin-left: 0.1em;
+  transform: translateX(-50%);
   text-transform: uppercase;
   color: var(--gold-leaf);
   text-shadow:
