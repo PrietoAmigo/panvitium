@@ -56,6 +56,7 @@ export function App(): ReactElement {
   const [panel, setPanel] = useState<PanelId | null>(null);
   const katabasisPhase = useGameStore((s) => s.katabasisPhase);
   const openKatabasis = useGameStore((s) => s.openKatabasis);
+  const titleOpen = useGameStore((s) => s.titleOpen);
 
   // The Studio's red "panvitium" glow while that ritual runs (03 §2.3).
   const signature = useGameStore(
@@ -110,9 +111,11 @@ export function App(): ReactElement {
   const shell = panel ? PANEL_SHELL[panel] : undefined;
 
   // The persistent Influence/Gold HUD rides over the three rooms and over the Maleficia shelf, the
-  // Ars Goetia book and the Suasio scroll — but not over the PC desk or the Altar gate, and not
-  // during a descent (the Altar gate + an ongoing Katabasis both hold `katabasisPhase !== null`).
-  const hudVisible = katabasisPhase === null && panel !== 'pc';
+  // Ars Goetia book and the Suasio scroll — but not over the PC desk or the Altar gate, not during a
+  // descent (the Altar gate + an ongoing Katabasis both hold `katabasisPhase !== null`), and not
+  // behind the launch title menu. It mounts at the app level (below) so it layers over those menu
+  // overlays rather than under them.
+  const hudVisible = katabasisPhase === null && panel !== 'pc' && !titleOpen;
 
   return (
     <div className="app">
@@ -125,7 +128,6 @@ export function App(): ReactElement {
           onAction={handleAction}
         />
         <div className="room-name">{ROOMS[room].title}</div>
-        {hudVisible && <InfluenceGoldHud />}
       </main>
       <SignaturePopup />
       <AchievementToast />
@@ -147,6 +149,15 @@ export function App(): ReactElement {
         >
           {activePanel.body}
         </PanelShell>
+      )}
+      {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars
+          Goetia / Suasio surfaces. The frame mirrors .stage so the cluster hugs the room's top-left. */}
+      {hudVisible && (
+        <div className="ig-hud-layer">
+          <div className="ig-hud-frame">
+            <InfluenceGoldHud />
+          </div>
+        </div>
       )}
     </div>
   );
