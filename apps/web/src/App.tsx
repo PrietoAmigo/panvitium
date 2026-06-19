@@ -120,18 +120,10 @@ export function App(): ReactElement {
           onAction={handleAction}
         />
         <div className="room-name">{ROOMS[room].title}</div>
+        {/* Always-on Influence/Gold HUD — every room and menu except the Altar and the Katabasis
+            descent (where the resource frame would intrude on those full-surface screens). */}
+        {room !== 'altar' && katabasisPhase === null && <InfluenceGoldHud />}
       </main>
-      {/* Always-on Influence/Gold HUD — every room and menu except the Altar and the Katabasis
-          descent. It rides its own layer (above the full-screen menu overlays, below the title /
-          settings modals) rather than inside the stage, so it stays visible over the Suasio scroll,
-          Ars Goetia and PC. The inner box mirrors the stage geometry to pin it to the scene corner. */}
-      {room !== 'altar' && katabasisPhase === null && (
-        <div className="hud-layer">
-          <div className="hud-layer__stage">
-            <InfluenceGoldHud />
-          </div>
-        </div>
-      )}
       <SignaturePopup />
       <AchievementToast />
       <KatabasisModal />
