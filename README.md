@@ -103,9 +103,23 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 798** (sim 523 · shared 57 · api 20 · web 198).
+**Current test count: 804** (sim 523 · shared 57 · api 20 · web 204).
 
-> **Latest change — Emails: the authored content set + a real trigger/flag/effect engine (05).** The
+> **Latest change — the persistent Influence & Gold HUD (design handoff).** A top-left resource
+> cluster now rides over the game: the carved **vessel** (Influence — its glass globe fills with
+> pink/purple liquid to `influence / maxInfluence`) beside two numeric readouts (Influence above,
+> Gold below), both formatted through `formatBigNum`. The vessel's liquid + carved frame are
+> composited onto a low-res `<canvas>` upscaled with `image-rendering: pixelated` — the whole vessel
+> reads as pixel art (spatial pixelation only, full colour kept); a persistent rAF loop tweens the
+> displayed fill toward the live target for a smooth rise/fall. The HUD reads live state via the
+> store (selecting the stable `state`, deriving in render per the Zustand guidance) and is mounted by
+> `App`: shown in all three rooms and over the Maleficia shelf, the Ars Goetia book and the Suasio
+> scroll, and hidden over the Altar gate, the PC desk and during a Katabasis (both the gate and an
+> ongoing descent hold `katabasisPhase !== null`). The vessel art ships under
+> `public/assets/panvitium/hud/`; four web render tests pin the cluster, the `value / max` readout
+> and the canvas grid.
+
+> **Earlier change — Emails: the authored content set + a real trigger/flag/effect engine (05).** The
 > five provisional placeholder emails are replaced by the full authored catalog from
 > `docs/05-email-content.md` — ~30 letters across the household steward (Gideon ×4), twelve world
 > newsletters, the Church (Father Tom, the parish bulletins, Bishop Crane, Father Stahl), the
