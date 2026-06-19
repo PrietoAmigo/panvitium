@@ -2371,9 +2371,11 @@ body {
   font-weight: 700;
   font-size: clamp(2.6rem, 9vw, 4.4rem);
   letter-spacing: 0.2em;
-  /* Counter the trailing letter-spacing so the centred wordmark sits dead-centre
-     (text-align:center otherwise shifts the glyphs left by half the tracking). */
-  text-indent: 0.2em;
+  /* Counter the trailing letter-spacing so the centred wordmark sits dead-centre.
+     The wordmark is wider than its capped container, so it overflows and text-align
+     can't re-balance the indent — it acts as a pure shift. Half the tracking exactly
+     cancels the trailing-space left-shift (a full 0.2em would overshoot to the right). */
+  text-indent: 0.1em;
   text-transform: uppercase;
   color: var(--gold-leaf);
   text-shadow:
