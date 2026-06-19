@@ -7,16 +7,30 @@ import { formatBigNum } from '../game/format.js';
 /**
  * The always-on top-left resource cluster (design handoff "Influence & Gold HUD", 2026-06):
  * Influence rendered as liquid filling the carved vessel, with Influence and Gold readouts to its
- * top-right. Non-interactive (`pointer-events: none`); App mounts it over every room and menu except
- * the Altar and the Katabasis descent.
+ * top-right. Non-interactive (`pointer-events: none`); App mounts it (via `.hud-layer`) over every
+ * room and menu except the Altar and the Katabasis descent.
  *
  * The vessel art (`influence-vessel-frame.png`) has its glass interior knocked out to transparent, so
  * the liquid behind it shows through while the bronze hand, rim and reflections stay opaque on top.
  * The fill is driven by `scaleY(fraction)` — NOT a percentage height, which resolves incorrectly
- * under the `aspect-ratio` box (see the handoff). The clip px values are tuned to the 130px vessel.
+ * under the `aspect-ratio` box (see the handoff). Clip px are derived from the vessel width so the
+ * whole cluster scales from one constant.
+ *
+ * The vessel (frame + liquid, but NOT the readouts) is passed through `#hud-vessel-degrade` — an SVG
+ * posterise + warm-grade filter that echoes the room's "cursed CD-ROM" degradation pass (ADR-021),
+ * so the carved art reads at the same fidelity as the scene while the numbers stay crisp.
  */
 
-const VESSEL_WIDTH = 130;
+// One knob scales the whole vessel. The glass-clip rectangle is a fixed fraction of the vessel width
+// (handoff: 0.2087 / 0.2308 / 0.5615 / 0.5692), so deriving it here keeps the liquid registered to
+// the art at any size.
+const VESSEL_WIDTH = 160;
+const CLIP = {
+  left: VESSEL_WIDTH * 0.2087,
+  top: VESSEL_WIDTH * 0.2308,
+  width: VESSEL_WIDTH * 0.5615,
+  height: VESSEL_WIDTH * 0.5692,
+};
 
 const liquidBody: CSSProperties = {
   position: 'absolute',
@@ -45,7 +59,7 @@ const liquidMeniscus: CSSProperties = {
   left: '-6%',
   right: '-6%',
   top: -3,
-  height: 8,
+  height: 10,
   borderRadius: '50%',
   background:
     'radial-gradient(ellipse at 50% 0%, rgba(255,205,248,0.95), rgba(247,150,227,0.55) 60%, transparent 76%)',
@@ -59,7 +73,7 @@ const curvatureShadow: CSSProperties = {
 
 const labelBase: CSSProperties = {
   fontFamily: "'Cinzel', serif",
-  fontSize: '0.46rem',
+  fontSize: '0.56rem',
   letterSpacing: '0.3em',
   textTransform: 'uppercase',
   textShadow: '0 1px 4px rgba(0,0,0,0.9)',
@@ -67,10 +81,41 @@ const labelBase: CSSProperties = {
 const valueBase: CSSProperties = {
   fontFamily: "'Cinzel', serif",
   fontWeight: 600,
-  fontSize: '0.92rem',
+  fontSize: '1.12rem',
   lineHeight: 1.1,
   fontVariantNumeric: 'tabular-nums',
 };
+
+/**
+ * The degradation filter applied to the vessel only. Two component transfers: a contrast/black-crush
+ * tone curve, then a discrete posterise (~6 levels) whose blue channel steps slightly lower to cast
+ * the warm grimoire grade. `color-interpolation-filters="sRGB"` keeps the posterise bands true.
+ */
+function VesselDegradeDefs(): ReactElement {
+  return (
+    <svg aria-hidden="true" width="0" height="0" style={{ position: 'absolute' }}>
+      <filter
+        id="hud-vessel-degrade"
+        x="-30%"
+        y="-30%"
+        width="160%"
+        height="160%"
+        colorInterpolationFilters="sRGB"
+      >
+        <feComponentTransfer>
+          <feFuncR type="linear" slope="1.25" intercept="-0.12" />
+          <feFuncG type="linear" slope="1.25" intercept="-0.12" />
+          <feFuncB type="linear" slope="1.25" intercept="-0.12" />
+        </feComponentTransfer>
+        <feComponentTransfer>
+          <feFuncR type="discrete" tableValues="0 0.2 0.4 0.6 0.8 1" />
+          <feFuncG type="discrete" tableValues="0 0.2 0.4 0.6 0.8 1" />
+          <feFuncB type="discrete" tableValues="0 0.16 0.36 0.58 0.78 1" />
+        </feComponentTransfer>
+      </filter>
+    </svg>
+  );
+}
 
 export function InfluenceGoldHud(): ReactElement | null {
   // Select the stable `state` and derive in the render body (the Zustand selector trap in CLAUDE.md:
@@ -90,12 +135,14 @@ export function InfluenceGoldHud(): ReactElement | null {
 
   return (
     <div className="influence-gold-hud" aria-hidden="true">
-      {/* INFLUENCE — the ornate vessel, filling with pink/purple liquid */}
+      <VesselDegradeDefs />
+      {/* INFLUENCE — the ornate vessel, filling with pink/purple liquid. The vessel composite (frame
+          + liquid) runs through the degradation filter; the readouts beside it stay crisp. */}
       <div
         style={{
           position: 'relative',
           width: VESSEL_WIDTH,
-          filter: 'drop-shadow(0 6px 13px rgba(0,0,0,0.6))',
+          filter: 'url(#hud-vessel-degrade) drop-shadow(0 6px 13px rgba(0,0,0,0.6))',
         }}
       >
         <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1' }}>
@@ -103,10 +150,10 @@ export function InfluenceGoldHud(): ReactElement | null {
           <div
             style={{
               position: 'absolute',
-              left: 27,
-              top: 30,
-              width: 73,
-              height: 74,
+              left: CLIP.left,
+              top: CLIP.top,
+              width: CLIP.width,
+              height: CLIP.height,
               borderRadius: '50%',
               overflow: 'hidden',
               zIndex: 1,
@@ -145,16 +192,25 @@ export function InfluenceGoldHud(): ReactElement | null {
         </div>
       </div>
 
-      {/* readouts — to the top-right of the vessel */}
+      {/* readouts — to the top-right of the vessel; flex-start pins Influence and Gold to the same
+          left edge so both hug the vessel equally. */}
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.5rem',
+          alignItems: 'flex-start',
+          gap: '0.55rem',
           marginTop: '0.4rem',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.12 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            lineHeight: 1.12,
+          }}
+        >
           <span style={{ ...labelBase, color: '#7fa0d8' }}>{strings.resources.influence}</span>
           <span
             style={{
@@ -166,7 +222,14 @@ export function InfluenceGoldHud(): ReactElement | null {
             {influenceLabel}
           </span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.12 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            lineHeight: 1.12,
+          }}
+        >
           <span style={{ ...labelBase, color: '#c9822f' }}>{strings.resources.gold}</span>
           <span
             style={{
