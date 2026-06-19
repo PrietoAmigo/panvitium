@@ -6,6 +6,7 @@ import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
 import { PANELS, PcDesk, SuasioScroll } from './ui/panels.js';
+import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
@@ -108,6 +109,11 @@ export function App(): ReactElement {
     panel && panel !== 'ars-goetia' && panel !== 'pc' && panel !== 'suasio' ? PANELS[panel] : null;
   const shell = panel ? PANEL_SHELL[panel] : undefined;
 
+  // The persistent Influence/Gold HUD rides over the three rooms and over the Maleficia shelf, the
+  // Ars Goetia book and the Suasio scroll — but not over the PC desk or the Altar gate, and not
+  // during a descent (the Altar gate + an ongoing Katabasis both hold `katabasisPhase !== null`).
+  const hudVisible = katabasisPhase === null && panel !== 'pc';
+
   return (
     <div className="app">
       <main className="stage">
@@ -119,6 +125,7 @@ export function App(): ReactElement {
           onAction={handleAction}
         />
         <div className="room-name">{ROOMS[room].title}</div>
+        {hudVisible && <InfluenceGoldHud />}
       </main>
       <SignaturePopup />
       <AchievementToast />

@@ -142,6 +142,110 @@ body {
   pointer-events: none;
 }
 
+/* ---------- Influence & Gold HUD (design handoff) ---------- */
+/* Top-left resource cluster, persistent over the rooms and the Maleficia / Ars Goetia / Suasio
+   menus. Mounted inside .stage so it hugs the room frame's top-left and is clipped to it; the
+   negative margins pull the vessel's transparent left edge off that edge. z-index sits above the
+   overlays it must show through (Ars Goetia/Suasio are 80/40). Visibility is owned by App. */
+.ig-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 90;
+  padding: 1.1rem 1.2rem 1.1rem 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.35rem;
+  pointer-events: none;
+  animation: fade-in 1.2s ease 0.15s both;
+}
+
+.ig-hud-vessel {
+  position: relative;
+  width: 210px;
+  margin-left: -0.9rem;
+  filter: drop-shadow(0 6px 13px rgba(0, 0, 0, 0.6));
+}
+
+.ig-hud-vessel-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+/* The liquid + carved frame composited onto a low-res canvas, upscaled nearest-neighbour so the
+   whole vessel reads as pixel art (spatial pixelation only, full colour kept). Use only `pixelated`
+   — adding `crisp-edges` after it reverts to `auto` in Chromium and kills the effect. */
+.ig-hud-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.ig-hud-readouts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+}
+
+.ig-hud-block {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.12;
+}
+
+/* The two blocks are independently offset so they don't crowd the vessel artwork. */
+.ig-hud-block--influence {
+  margin-left: -3rem;
+}
+
+.ig-hud-block--gold {
+  margin-left: -1.7rem;
+}
+
+.ig-hud-label {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.ig-hud-label--influence {
+  color: #7fa0d8;
+}
+
+.ig-hud-label--gold {
+  color: var(--candle-soft);
+}
+
+.ig-hud-value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.28rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ig-hud-value--influence {
+  color: #c4d4f2;
+  text-shadow:
+    0 0 12px rgba(70, 120, 230, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+.ig-hud-value--gold {
+  color: var(--parchment);
+  text-shadow:
+    0 0 12px rgba(201, 162, 39, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
 /* ---------- Hotspots (diegetic click regions) ---------- */
 
 .hotspot {
