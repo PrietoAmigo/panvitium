@@ -90,6 +90,35 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Influence & Gold HUD (design handoff 2026-06): the always-on top-left resource cluster — the
+   filling vessel + Influence/Gold readouts. Mounted inside the stage so it tracks the scene's
+   top-left corner; z-index clears the full-screen menu overlays (.goetia-overlay etc. at 80) so it
+   stays visible over them, while the 90+ modals (title, settings) still cover it. Non-interactive. */
+@keyframes hud-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.influence-gold-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 85;
+  padding: 0.85rem 0.95rem;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.7rem;
+  animation: hud-fade-in 1.2s ease 0.15s both;
+  pointer-events: none;
+}
+
 /* ---------- Stage & rooms ---------- */
 
 .stage {
