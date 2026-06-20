@@ -106,8 +106,9 @@ export interface EngineSprite {
       dark enveloping drop-shadow. Composited BEFORE the pass, so it degrades with the frame. The
       float is dropped under `reducedMotion`; the shadow stays. */
   float?: boolean;
-  /** Dark enveloping shadow blur, as a fraction of stage height (0 / omitted = none). Drawn into
-      the same buffer as the figure, so it crushes and pixelates uniformly with everything else. */
+  /** Dark enveloping shadow — the widest cast's blur as a fraction of stage height (0 / omitted =
+      none). Several stacked black casts off the silhouette build the halo that wraps the figure;
+      drawn into the same buffer as the figure, so it crushes and pixelates uniformly with the rest. */
   shadow?: number;
 }
 
@@ -362,19 +363,30 @@ export class DegradePass {
       const baseY = sp.y * h + bob;
       const dw = drawW * breathe;
       const dh = drawH * breathe;
+      const dx = cx - dw / 2;
+      const dy = baseY - dh;
       ctx.save();
-      if (sp.shadow && sp.shadow > 0) {
-        ctx.shadowColor = 'rgba(0,0,0,1)';
-        ctx.shadowBlur = sp.shadow * h;
-        ctx.shadowOffsetY = 0.02 * h;
-      }
       if (roll) {
         const my = baseY - dh / 2;
         ctx.translate(cx, my);
         ctx.rotate(roll);
         ctx.translate(-cx, -my);
       }
-      ctx.drawImage(img, cx - dw / 2, baseY - dh, dw, dh);
+      // Enveloping shadow — several stacked black casts off the silhouette (mirroring the original
+      // stacked drop-shadows): each pass deepens the dark halo wrapping the figure. It lives in the
+      // scene buffer, so it crushes/pixelates with the frame, and is distinct from the room's focal
+      // vignette (which dims the whole altar). A single soft cast washes out on the dark plate.
+      if (sp.shadow && sp.shadow > 0) {
+        ctx.shadowColor = 'rgba(0,0,0,1)';
+        ctx.shadowOffsetY = 0.015 * h;
+        for (const f of [1, 0.6, 0.35]) {
+          ctx.shadowBlur = sp.shadow * h * f;
+          ctx.drawImage(img, dx, dy, dw, dh);
+        }
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+      }
+      ctx.drawImage(img, dx, dy, dw, dh);
       ctx.restore();
     }
   }
