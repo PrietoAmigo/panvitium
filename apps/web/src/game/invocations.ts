@@ -104,12 +104,9 @@ export function buildGoetia(state: GameState): GoetiaView {
     const atCap = def.maxActive !== undefined && active >= def.maxActive;
     const affordable =
       gte(floor(state.souls), soulCost) && gte(floor(state.lifetime.gold), goldCost);
-    const bound =
-      active <= 0
-        ? undefined
-        : active === 1
-          ? strings.invocations.active
-          : `${strings.invocations.active} \u00D7${active}`;
+    // Stackable invocations may hold multiple copies, but we never advertise the count: a stacked
+    // invocation reads as a single "bound" badge, not "bound \u00D7N".
+    const bound = active > 0 ? strings.invocations.active : undefined;
     const flavour = INVOCATION_BY_ID[id]; // design art/lore for the illustrated entries
     // Effect is a MECHANIC, so it comes from the authoritative sim (same source as the Analytics
     // Invocations tab) — never the static menus.data.ts copy, which went stale. Lore/art stay flavour.

@@ -98,13 +98,13 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     expect(container!.textContent).toContain('No invocations are bound');
   });
 
-  it('lists a passive invocation with its count and a live quantified total effect', () => {
+  it('lists a passive invocation (no copy count) with a live quantified total effect', () => {
     seedLifetime({ invocations: { fama: 2 } });
     render();
     clickTab('Actions');
     const text = container!.textContent ?? '';
     expect(text).toContain('Fama');
-    expect(text).toContain('\u00D72'); // number bound
+    expect(text).not.toContain('\u00D72'); // stacked copies are not advertised
     expect(text).toContain('influence gain'); // the effect label
     expect(/[+\-\u2212]\d+%/.test(text)).toBe(true); // a computed magnitude, not a static phrase
     // Passive ⇒ no progress bar (those belong to runner channels).
@@ -125,7 +125,7 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     clickTab('Actions');
     const text = container!.textContent ?? '';
     expect(text).toContain('Imp');
-    expect(text).toContain('\u00D72'); // number bound
+    expect(text).not.toContain('\u00D72'); // stacked copies are not advertised (the only \u00D7 is the eff chip)
     expect(text).toContain('Caedis'); // the action it runs
     expect(/\d\u00d7|\u00d7\d/.test(text)).toBe(true); // the efficiency chip (e.g. "0.05\u00d7")
     // A runner row carries a progress bar (the same shape the player/acolyte rows use).

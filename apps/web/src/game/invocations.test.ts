@@ -44,7 +44,7 @@ describe('buildGoetia view-model adapter', () => {
     }
   });
 
-  it('reports the bound count, cap, affordability, and the bound badge', () => {
+  it('reports the cap, affordability, and a single bound badge (no copy count)', () => {
     const base = richState();
     // Stack a stackable invocation and bind a singleton apex (set directly on state).
     const s = {
@@ -56,7 +56,8 @@ describe('buildGoetia view-model adapter', () => {
     const fama = view.entries.find((e) => e.id === 'fama')!;
     expect(fama.active).toBe(2);
     expect(fama.atCap).toBe(false); // stackable — never caps
-    expect(fama.bound).toBe(`${strings.invocations.active} \u00D72`); // 'bound ×2'
+    // Stacked copies are never advertised: a stackable invocation reads as a single 'bound' badge.
+    expect(fama.bound).toBe(strings.invocations.active); // 'bound' — no copy count for stacked copies
 
     const midas = view.entries.find((e) => e.id === 'midas')!;
     expect(midas.active).toBe(1);
