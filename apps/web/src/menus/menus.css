@@ -3519,6 +3519,14 @@ body {
   font-style: italic;
   text-wrap: pretty;
 }
+.katabasis-flow .reveal-subtitle {
+  font-family: var(--font-display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 1.05rem;
+  color: var(--ember);
+  margin-top: 0.2rem;
+}
 .katabasis-flow .reveal-time {
   display: flex;
   flex-direction: column;

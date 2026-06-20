@@ -27,6 +27,7 @@ import {
   eternalSinVisible,
   eternalSinRevealed,
   eternalProgress,
+  gameRuntimeMs,
   floor,
   isZero,
   sub,
@@ -37,7 +38,7 @@ import {
   type GameState,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
-import { formatBigNum } from '../game/format.js';
+import { formatBigNum, formatDuration } from '../game/format.js';
 import { AetherSigils, effectDisplay, toRoman } from './AetherSigils.js';
 import { HoldButton } from './katabasisShared.js';
 
@@ -331,43 +332,47 @@ function EternalModal({ state, onClose }: { state: GameState; onClose: () => voi
           {'\u2715'}
         </button>
         <div className="tk-info-col">
-          <h1
-            className="tk-name tk-name--eternal"
-            style={{ color: revealed ? 'var(--eternal)' : '#6a605c' }}
-          >
-            {revealed ? strings.eternal.name : strings.eternal.ninth}
-          </h1>
-          {revealed && (
-            <div className="tk-sin tk-sin--eternal">
-              {`Peccatum \u00C6ternum \u00B7 The Eternal Sin`}
-            </div>
-          )}
-
-          <div className="tk-rule" />
-
-          <div className="tk-meter">
-            <div className="tk-meter-track">
-              <span className="tk-meter-fill tk-meter-fill--eternal" style={{ width: pct(prog) }} />
-            </div>
-            <div className="tk-meter-cap">
-              <span>Taking form</span>
-              <span>{(prog * 100).toFixed(1)}%</span>
-            </div>
-          </div>
-
           {revealed ? (
-            <div className="tk-mastered tk-mastered--eternal">{strings.eternal.complete}</div>
+            <>
+              <h1 className="reveal-name">{strings.eternal.name}</h1>
+              <div className="reveal-subtitle">{`Peccatum \u00C6ternum`}</div>
+              <div className="reveal-time">
+                <span className="reveal-time-label">{strings.eternal.runtimeLabel}</span>
+                <span className="reveal-time-value">{formatDuration(gameRuntimeMs(state))}</span>
+              </div>
+            </>
           ) : (
-            <div className="tk-actions">
-              <HoldButton
-                onStep={(d) => offerEternal(d)}
-                disabled={poolEmpty(state)}
-                ariaLabel="Offer souls to the Ninth"
-                onHoldChange={setHolding}
-              >
-                {verb}
-              </HoldButton>
-            </div>
+            <>
+              <h1 className="tk-name tk-name--eternal" style={{ color: '#6a605c' }}>
+                {strings.eternal.ninth}
+              </h1>
+
+              <div className="tk-rule" />
+
+              <div className="tk-meter">
+                <div className="tk-meter-track">
+                  <span
+                    className="tk-meter-fill tk-meter-fill--eternal"
+                    style={{ width: pct(prog) }}
+                  />
+                </div>
+                <div className="tk-meter-cap">
+                  <span>Taking form</span>
+                  <span>{(prog * 100).toFixed(1)}%</span>
+                </div>
+              </div>
+
+              <div className="tk-actions">
+                <HoldButton
+                  onStep={(d) => offerEternal(d)}
+                  disabled={poolEmpty(state)}
+                  ariaLabel="Offer souls to the Ninth"
+                  onHoldChange={setHolding}
+                >
+                  {verb}
+                </HoldButton>
+              </div>
+            </>
           )}
         </div>
       </div>
