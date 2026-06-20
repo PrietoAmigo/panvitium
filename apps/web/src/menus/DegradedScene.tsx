@@ -45,6 +45,9 @@ function figureToSprite(v: BoundInvocationVisual, img: HTMLImageElement): Engine
     // Flat contact/ground shadow under the feet, when the figure requests one (grounded figures).
     // Omitted (not set to undefined) per exactOptionalPropertyTypes when there is no ground shadow.
     ...(v.groundShadow ? { groundShadow: v.groundShadow } : {}),
+    // Long directional cast shadow trailing from the feet, when the figure requests one (the
+    // Succubus). Omitted (not set to undefined) per exactOptionalPropertyTypes when absent.
+    ...(v.shadowCast ? { castShadow: v.shadowCast } : {}),
   };
 }
 

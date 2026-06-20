@@ -152,6 +152,23 @@ export interface BoundInvocationVisual {
    *  the ground at the baseline (it does NOT bob with the figure). Distinct from `float`'s enveloping
    *  halo: grounded figures use this to read as standing ON the floor rather than hovering. */
   groundShadow?: number;
+  /** Long directional cast shadow on the floor — a soft, blurred ellipse trailing from the figure's
+   *  feet across the room (e.g. the Succubus). Unlike `groundShadow`'s centred pool, this offsets and
+   *  tilts away from the baseline so the figure reads as casting a long shadow from a low side light.
+   *  Composited before the figure, through the same degradation pass. Omit for no cast shadow. */
+  shadowCast?: {
+    /** Ellipse centre, stage fractions, relative to the figure's baseline anchor (`left`, the foot
+     *  line at `top + height`). (0,0) = directly under the feet; negative x = to the figure's left. */
+    offset: { x: number; y: number };
+    /** Major-axis length, fraction of stage WIDTH. */
+    length: number;
+    /** Minor-axis length, fraction of stage HEIGHT. */
+    thickness: number;
+    /** Rotation in degrees; 0 = horizontal, negative tilts the far end up toward the figure's left. */
+    angle: number;
+    /** Peak ink alpha (0..1) at the dense (feet) end. */
+    ink: number;
+  };
 }
 
 /** Props for the room scene layer (degraded backdrop + sprites + bound invocation figures). */

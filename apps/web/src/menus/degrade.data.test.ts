@@ -82,6 +82,25 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['doppelgaenger'])).toEqual([]);
   });
 
+  it('returns the Succubus visual only in the invocation room, grounded with a long cast shadow', () => {
+    const room = boundVisualsFor('invocation', ['succubus']);
+    expect(room.map((v) => v.id)).toEqual(['succubus']);
+    // Stands in the circle: no levitation, no room-dimming glow — instead a long directional cast
+    // shadow trailing from her feet (offset/tilted, not a centred pool).
+    expect(room[0]?.float).toBeUndefined();
+    expect(room[0]?.vignette).toBeUndefined();
+    expect(room[0]?.groundShadow).toBeUndefined();
+    expect(room[0]?.shadowCast).toEqual({
+      offset: { x: -0.11, y: -0.02 },
+      length: 0.4,
+      thickness: 0.13,
+      angle: -6,
+      ink: 0.85,
+    });
+    // Same id, wrong room → nothing (her designed display lives in the invocation room).
+    expect(boundVisualsFor('altar', ['succubus'])).toEqual([]);
+  });
+
   it('a present Doppelgaenger overrides every other figure in the studio', () => {
     // Specunitas + Familiar both have studio displays, but a bound Doppelgaenger is the sole figure.
     const studio = boundVisualsFor('studio', ['specunitas', 'familiar', 'doppelgaenger']);

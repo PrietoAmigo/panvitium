@@ -119,6 +119,23 @@ export interface EngineSprite {
       squashed ellipse pinned to the ground (it does NOT bob with the figure), drawn into the scene
       buffer so it crushes/pixelates with the frame. Distinct from `shadow` (the enveloping halo). */
   groundShadow?: number;
+  /** Long directional cast shadow — a soft, blurred ellipse trailing from the figure's feet across
+      the floor (0 / omitted = none). Unlike `groundShadow`'s centred pool, it is offset and tilted
+      from the baseline so the figure reads as casting a long shadow from a low side light. Lengths
+      are stage fractions; the ellipse is densest toward the feet end and tapers to nothing. Pinned
+      to the ground (does NOT bob), drawn into the scene buffer so it crushes/pixelates with the frame. */
+  castShadow?: {
+    /** Ellipse centre, stage fractions, relative to the baseline anchor (`x`, `y`). */
+    offset: { x: number; y: number };
+    /** Major-axis length, fraction of stage width. */
+    length: number;
+    /** Minor-axis length, fraction of stage height. */
+    thickness: number;
+    /** Rotation in degrees (0 = horizontal). */
+    angle: number;
+    /** Peak ink alpha (0..1) at the dense (feet) end. */
+    ink: number;
+  };
 }
 
 /** A composed scene: one backdrop plate + any sprites + the studio ritual glow. */
@@ -396,6 +413,34 @@ export class DegradePass {
         ctx.beginPath();
         ctx.arc(0, 0, rx, 0, Math.PI * 2);
         ctx.fill();
+        ctx.restore();
+      }
+      // Long directional cast shadow — a soft ellipse trailing from the feet across the floor (the
+      // Succubus). Offset and tilted from the baseline anchor, denser toward the feet end and tapering
+      // to nothing along its length, so the figure reads as casting a long shadow from a low side
+      // light. Drawn BEFORE the figure (she stands on it) and off the UN-bobbed baseline (sp.y) so it
+      // stays pinned to the ground. Lives in the scene buffer, so it crushes/pixelates with the frame.
+      if (sp.castShadow) {
+        const cs = sp.castShadow;
+        const scx = (sp.x + cs.offset.x) * w;
+        const scy = (sp.y + cs.offset.y) * h;
+        const hw = (cs.length * w) / 2; // half major axis (along stage width)
+        const hh = (cs.thickness * h) / 2; // half minor axis (along stage height)
+        ctx.save();
+        ctx.translate(scx, scy);
+        ctx.rotate((cs.angle * Math.PI) / 180);
+        ctx.scale(1, hh / hw); // squash the circular gradient into the long ground ellipse
+        // Gradient origin shifted toward the feet end (the dense side), matching the design's
+        // `radial-gradient(ellipse at 74% 50%, …)`: peak ink at the feet, fading out along the trail.
+        const gx = 0.48 * hw;
+        const grad = ctx.createRadialGradient(gx, 0, 0, gx, 0, 1.48 * hw);
+        grad.addColorStop(0, `rgba(0,0,0,${0.95 * cs.ink})`);
+        grad.addColorStop(0.28, `rgba(0,0,0,${0.6 * cs.ink})`);
+        grad.addColorStop(0.54, `rgba(0,0,0,${0.28 * cs.ink})`);
+        grad.addColorStop(0.8, 'rgba(0,0,0,0)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(-1.5 * hw, -1.5 * hw, 3 * hw, 3 * hw);
         ctx.restore();
       }
       ctx.save();
