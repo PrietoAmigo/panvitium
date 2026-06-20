@@ -25,6 +25,11 @@ interface EmailMeta {
 
 const CATALOG = E.catalog as Record<string, EmailMeta | undefined>;
 
+/** The id of Fausto Cescru's fourth letter — the one that carries his curse (sim: `flagFaustoCurse`,
+ *  set on its delivery, lifted when it is deleted). While the curse is in force this email glows in
+ *  the inbox list, so the player can find — and break — the words holding it. */
+const CURSE_EMAIL_ID = 'fausto-4';
+
 function meta(id: string): EmailMeta {
   return CATALOG[id] ?? { from: E.from, subject: id, body: '' };
 }
@@ -261,6 +266,8 @@ export function EmailsGroup(): ReactElement {
 
   const inbox: ReceivedEmail[] = state ? state.lifetime.inbox : [];
   const visible = inbox.filter((e) => !e.deleted).sort((a, b) => b.receivedAt - a.receivedAt);
+  // Fausto's curse in force — the letter carrying it glows in the list until it's deleted.
+  const curseActive = state?.lifetime.flagFaustoCurse === true;
 
   // Resolve the active selection (default to the newest) without storing derived state.
   const current =
@@ -577,11 +584,13 @@ export function EmailsGroup(): ReactElement {
               const unread = e.readAt === null;
               const selected = e.id === current?.id;
               const answered = e.answeredReply != null;
+              const cursed = curseActive && e.id === CURSE_EMAIL_ID;
               return (
                 <button
                   key={e.id}
                   type="button"
                   onClick={() => select(e.id)}
+                  className={cursed ? 'email-row-cursed' : undefined}
                   style={{
                     display: 'flex',
                     gap: 10,
@@ -590,8 +599,14 @@ export function EmailsGroup(): ReactElement {
                     padding: '11px 14px 12px',
                     border: 'none',
                     borderBottom: '1px solid #ececec',
-                    borderLeft: `3px solid ${selected ? '#E95420' : 'transparent'}`,
-                    background: selected ? '#eef3fb' : '#fff',
+                    borderLeft: `3px solid ${cursed ? '#2faa5a' : selected ? '#E95420' : 'transparent'}`,
+                    background: cursed
+                      ? selected
+                        ? '#e2f6ea'
+                        : '#eefbf2'
+                      : selected
+                        ? '#eef3fb'
+                        : '#fff',
                     cursor: 'pointer',
                   }}
                 >
@@ -636,11 +651,11 @@ export function EmailsGroup(): ReactElement {
                       <span
                         style={{
                           fontSize: 13.5,
-                          color: '#1c1c1c',
+                          color: cursed ? '#1d7a44' : '#1c1c1c',
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          fontWeight: unread ? 700 : 500,
+                          fontWeight: cursed || unread ? 700 : 500,
                         }}
                       >
                         {m.from}

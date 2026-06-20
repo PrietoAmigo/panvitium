@@ -54,8 +54,8 @@ additive-optional pattern.
 - **`flagReubenDead`**: default 0. Set to 1 (and +1 soul minted) by Reuben Marsh #2 Answer (2) or
   Reuben Marsh #3 Answer (2).
 - **`flagFaustoCurse`**: default false. New. Set true on receipt of Fausto Cescru #4. While true,
-  reprobate generation rate, influence gain rate and gold gain rate are each multiplied by 0.67 (a
-  33% reduction). The debuff is shown in the HUD. Deleting Fausto #4 sets it false and clears the
+  reprobate generation rate, influence gain rate and gold gain rate are each multiplied by 0.33 (a
+  67% reduction). The debuff is shown in the HUD. Deleting Fausto #4 sets it false and clears the
   debuff. Add as an additive-optional field.
 - **Door-knock SFX**: a one-shot sound played on receipt of Fausto Cescru #5 (Howler, per ADR-014).
 
@@ -506,7 +506,7 @@ built. None carry mechanical effects unless stated.
 - **Answers:** none.
 - **Trigger:** 7 minutes after `totalSinLevel >= 40`.
 - **Effect:** on receipt, set `flagFaustoCurse = true`. While true, reprobate generation rate,
-  influence gain rate and gold gain rate are each multiplied by 0.67 (a 33% reduction). The debuff is
+  influence gain rate and gold gain rate are each multiplied by 0.33 (a 67% reduction). The debuff is
   shown in the HUD as an active curse. **Deleting this email** sets `flagFaustoCurse = false` and
   removes the debuff.
 - *Author note (translation, not shown to the player): "Whoever reads or holds this letter, be

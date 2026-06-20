@@ -138,16 +138,16 @@ describe('emails — reply effects', () => {
 });
 
 describe('emails — the Fausto curse', () => {
-  it('lays the ×0.67 curse on delivery and lifts it on delete', () => {
+  it('lays the ×0.33 curse on delivery and lifts it on delete', () => {
     const base = withAllSins(createInitialState('seed', 1_000_000), 4); // total sin level 32 ≥ 31
     const armed = deliverEmails(base, 1_000_000); // arms fausto-4 (and others)
     const delivered = deliverEmails(armed.state, 1_000_000 + 8 * MIN);
     expect(delivered.delivered).toContain('fausto-4');
     expect(delivered.state.lifetime.flagFaustoCurse).toBe(true);
-    // The curse cuts gold / influence / generation to 0.67×.
+    // The curse cuts gold / influence / generation to 0.33×.
     const cursed = computeModifiers(delivered.state);
     const clean = computeModifiers(armed.state);
-    expect(cursed.goldRateMul / clean.goldRateMul).toBeCloseTo(0.67, 5);
+    expect(cursed.goldRateMul / clean.goldRateMul).toBeCloseTo(0.33, 5);
     // Deleting the letter lifts the curse.
     const cleared = deleteEmail(delivered.state, 'fausto-4');
     expect(cleared.lifetime.flagFaustoCurse).toBe(false);

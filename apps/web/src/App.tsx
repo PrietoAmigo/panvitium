@@ -30,6 +30,26 @@ const PANEL_SHELL: Partial<Record<PanelId, { variant: PanelVariant; hideHeader?:
 };
 
 /**
+ * Tracks the `prefers-reduced-motion: reduce` media query, reactively. Used to soften the Fausto-curse
+ * "Vertigo" layer (its sway/zoom/double-vision are vestibular triggers). SSR-safe: defaults to false
+ * when `matchMedia` is unavailable.
+ */
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(
+    () =>
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const mq = matchMedia('(prefers-reduced-motion: reduce)');
+    const onChange = (): void => setReduced(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return reduced;
+}
+
+/**
  * The full-screen Ars Goetia grimoire, wired to real state. Kept as its own subscriber so its
  * per-tick re-render (soul cost tracks the pool) stays local and doesn't re-render the room shell.
  */
@@ -62,6 +82,11 @@ export function App(): ReactElement {
   const signature = useGameStore(
     (s) => s.state?.lifetime.activeToggles.includes('panvitium') ?? false,
   );
+  // Fausto's curse (05): while his fourth letter sits unbroken in the inbox, the room sways and
+  // doubles — the "Vertigo" degrade layer. Read straight off the flag; the pass eases it in/out.
+  const curseActive = useGameStore((s) => s.state?.lifetime.flagFaustoCurse === true);
+  // The curse's sway/zoom/double-vision are vestibular triggers; honour prefers-reduced-motion.
+  const reducedMotion = usePrefersReducedMotion();
   // The bound invocations standing in the Invocation circle. Select a stable primitive key (the
   // sorted set of active ids) so the room only re-renders when the summoned set actually changes,
   // not every 10 Hz tick; SummonedCreatures skips any id without art.
@@ -127,6 +152,8 @@ export function App(): ReactElement {
           signature={signature}
           summoned={summoned}
           acolytes={acolytes}
+          curseActive={curseActive}
+          reducedMotion={reducedMotion}
           onAction={handleAction}
         />
         <div className="room-name">{ROOMS[room].title}</div>

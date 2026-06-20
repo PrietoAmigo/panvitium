@@ -193,7 +193,7 @@ export interface LifetimeState {
   flagFCThreatSent?: boolean;
   /**
    * True while Fausto Cescru #4's curse is in force (05): set on its delivery, cleared by deleting
-   * that email. While true, reprobate generation, influence gain and gold gain are each ×0.67
+   * that email. While true, reprobate generation, influence gain and gold gain are each ×0.33
    * (folded in by `computeModifiers`). Scoped to the lifetime, like the email that carries it.
    * Additive-optional (ADR-023); absent ≡ no curse.
    */

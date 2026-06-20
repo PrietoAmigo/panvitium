@@ -1128,6 +1128,36 @@ body {
   font-style: italic;
 }
 
+/* The Fausto-curse letter in the inbox list (Emails.tsx `email-row-cursed`): a green pulse so the
+   player can find — and delete — the words still holding the curse. The row's border/tint are set
+   inline; this adds only the animated glow (no inline box-shadow, so the keyframes own it). */
+.email-row-cursed {
+  position: relative;
+  animation: email-curse-glow 1.9s ease-in-out infinite;
+}
+@keyframes email-curse-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(47, 170, 90, 0.25),
+      0 0 6px rgba(47, 170, 90, 0.35);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgba(47, 170, 90, 0.55),
+      0 0 16px rgba(47, 170, 90, 0.7);
+  }
+}
+/* Vestibular-safe: hold a steady glow rather than pulsing. */
+@media (prefers-reduced-motion: reduce) {
+  .email-row-cursed {
+    animation: none;
+    box-shadow:
+      inset 0 0 0 1px rgba(47, 170, 90, 0.45),
+      0 0 12px rgba(47, 170, 90, 0.55);
+  }
+}
+
 /* ---------- The PC — Ubuntu-style file-manager window ---------- */
 .pc-window {
   /* The window box itself is 25% larger (1050→1312, 560→700) to give the menus more room; the
