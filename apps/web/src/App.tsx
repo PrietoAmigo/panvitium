@@ -89,7 +89,7 @@ export function App(): ReactElement {
   const reducedMotion = usePrefersReducedMotion();
   // The currently-bound invocations. Select a stable primitive key (the sorted set of active ids)
   // so the room only re-renders when the summoned set actually changes, not every 10 Hz tick;
-  // RoomView renders the designed display for any id that has one (BoundInvocations).
+  // RoomView composites the designed display for any id that has one through the degradation pass.
   const summonedKey = useGameStore((s) => {
     const inv = s.state?.lifetime.invocations;
     if (!inv) return '';

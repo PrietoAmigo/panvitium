@@ -1,7 +1,6 @@
 import { type ReactElement } from 'react';
 import type { RoomDef, HotspotAction, DegradeSettings } from './types.js';
 import { DegradedScene } from './DegradedScene.js';
-import { BoundInvocations } from './BoundInvocations.js';
 import { ROOM_PLATES, altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
 
 interface RoomViewProps {
@@ -23,10 +22,10 @@ function doorGlyph(id: string): string {
   return '\u2756';
 }
 
-// One room. The backdrop and its baked props are composited onto a single <canvas> through the
-// uniform degradation pass (DegradedScene), so the frame reads at one fidelity. Bound invocations
-// render as a crisp presentation overlay above it (BoundInvocations); the chrome — hotspots (and
-// the HUD/panels above) — layers over that and stays clickable.
+// One room. The backdrop, its baked props AND any bound invocation figures are composited onto a
+// single <canvas> through the uniform degradation pass (DegradedScene), so the whole frame — figures
+// included — reads at one fidelity. The chrome — hotspots (and the HUD/panels above) — layers over
+// that and stays clickable.
 export function RoomView({
   room,
   signature,
@@ -50,6 +49,7 @@ export function RoomView({
       <DegradedScene
         roomId={room.id}
         backdrop={backdrop}
+        figures={boundVisuals}
         signature={room.id === 'studio' && signature}
         settings={degradeSettings}
       />
@@ -74,7 +74,6 @@ export function RoomView({
           </button>
         );
       })}
-      <BoundInvocations visuals={boundVisuals} reducedMotion={reducedMotion} />
     </div>
   );
 }

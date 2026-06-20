@@ -9,7 +9,36 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DegradePass, DEFAULT_DEGRADE } from './degrade.js';
 import type { EngineScene, EngineSprite } from './degrade.js';
-import type { DegradedSceneProps } from './types.js';
+import type { BoundInvocationVisual, DegradedSceneProps } from './types.js';
+
+// The composited stage is 16:9 (matches the engine's VW×VH buffer). A bound figure's `height` is a
+// fraction of stage height, but the engine sizes sprites by `w` (fraction of stage width) and derives
+// the height from the image's natural aspect — so converting needs this ratio plus the natural dims.
+const STAGE_ASPECT = 720 / 1280;
+// Dark enveloping shadow blur for a levitating figure, as a fraction of stage height (≈120px / 720).
+const FLOAT_SHADOW = 0.16;
+
+function frac(pct: string): number {
+  return parseFloat(pct) / 100;
+}
+
+/** Convert a bound invocation visual into an engine sprite — once its art has decoded (the natural
+ *  aspect sets the width that yields the designed `height`). The figure then composites THROUGH the
+ *  degradation pass like any other sprite, so it crushes/pixelates with the room. */
+function figureToSprite(v: BoundInvocationVisual, img: HTMLImageElement): EngineSprite | null {
+  if (!img.complete || !img.naturalWidth) return null;
+  const heightFrac = frac(v.height);
+  return {
+    img,
+    x: frac(v.left),
+    // Baseline (feet) sits at the bottom of the figure box: its top edge plus its height.
+    y: frac(v.top) + heightFrac,
+    w: heightFrac * STAGE_ASPECT * (img.naturalWidth / img.naturalHeight),
+    phase: 0,
+    float: v.float === true,
+    shadow: v.float ? FLOAT_SHADOW : 0,
+  };
+}
 
 /** Small image cache — loads urls once, re-renders when each decodes. */
 function useImages(urls: string[]): Record<string, HTMLImageElement> {
@@ -41,6 +70,7 @@ export function DegradedScene({
   roomId,
   backdrop,
   sprites = [],
+  figures = [],
   signature = false,
   settings,
   className,
@@ -49,7 +79,10 @@ export function DegradedScene({
   const passRef = useRef<DegradePass | null>(null);
   const prevRoom = useRef<string | null>(null);
 
-  const urls = useMemo(() => [backdrop, ...sprites.map((s) => s.src)], [backdrop, sprites]);
+  const urls = useMemo(
+    () => [backdrop, ...sprites.map((s) => s.src), ...figures.map((f) => f.src)],
+    [backdrop, sprites, figures],
+  );
   const images = useImages(urls);
 
   // Build + start the engine once.
@@ -83,11 +116,25 @@ export function DegradedScene({
         return img ? { img, x: sp.x, y: sp.y, w: sp.w, phase: 0 } : null;
       })
       .filter((sp): sp is EngineSprite => sp !== null);
-    const scene: EngineScene = { bg, sprites: engineSprites, signature };
+    // Bound invocation figures composite into the SAME scene buffer as the backdrop, so they pass
+    // through the degradation recipe (pixelate / grade / scanlines / grain) at one uniform fidelity.
+    const figureSprites: EngineSprite[] = figures
+      .map((v): EngineSprite | null => {
+        const img = images[v.src];
+        return img ? figureToSprite(v, img) : null;
+      })
+      .filter((sp): sp is EngineSprite => sp !== null);
+    const focalVignette = Math.max(0, ...figures.map((v) => v.vignette ?? 0));
+    const scene: EngineScene = {
+      bg,
+      sprites: [...engineSprites, ...figureSprites],
+      signature,
+      focalVignette,
+    };
     const animate = prevRoom.current !== null && prevRoom.current !== roomId;
     prevRoom.current = roomId;
     pass.setScene(scene, animate);
-  }, [roomId, backdrop, sprites, signature, images]);
+  }, [roomId, backdrop, sprites, figures, signature, images]);
 
   return (
     <canvas

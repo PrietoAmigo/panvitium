@@ -102,6 +102,13 @@ export interface EngineSprite {
   w: number;
   /** Animation phase offset (radians) so multiple sprites don't bob in lockstep. */
   phase: number;
+  /** Levitating-trance treatment (bound invocations): slower, larger float + slight roll, and a
+      dark enveloping drop-shadow. Composited BEFORE the pass, so it degrades with the frame. The
+      float is dropped under `reducedMotion`; the shadow stays. */
+  float?: boolean;
+  /** Dark enveloping shadow blur, as a fraction of stage height (0 / omitted = none). Drawn into
+      the same buffer as the figure, so it crushes and pixelates uniformly with everything else. */
+  shadow?: number;
 }
 
 /** A composed scene: one backdrop plate + any sprites + the studio ritual glow. */
@@ -109,6 +116,9 @@ export interface EngineScene {
   bg: HTMLImageElement | null;
   sprites: EngineSprite[];
   signature: boolean;
+  /** Focal-vignette ink alpha (0..1): darkens the room edges so a bound figure reads as the light
+      source. Drawn between the backdrop and the sprites, BEFORE the pass — so it degrades too. */
+  focalVignette?: number;
 }
 
 type Phase = 'idle' | 'out' | 'in';
@@ -309,20 +319,63 @@ export class DegradePass {
       ctx.fillRect(0, 0, w, h);
       ctx.restore();
     }
+    // Focal vignette — dim the room around a bound figure so it reads as the light source. Drawn
+    // before the sprites (which sit ON the light) and before the pass, so it crushes with the frame.
+    if (scene.focalVignette && scene.focalVignette > 0) {
+      const a = scene.focalVignette;
+      const g = ctx.createRadialGradient(
+        0.49 * w,
+        0.44 * h,
+        0.18 * w,
+        0.49 * w,
+        0.44 * h,
+        0.72 * w,
+      );
+      g.addColorStop(0, 'rgba(2,1,1,0)');
+      g.addColorStop(0.36, 'rgba(2,1,1,0)');
+      g.addColorStop(1, `rgba(2,1,1,${a})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
     if (!withSprites) return;
     for (const sp of scene.sprites) {
       const img = sp.img;
       if (!img.complete || !img.naturalWidth) continue;
       const drawW = sp.w * w;
       const drawH = drawW * (img.naturalHeight / img.naturalWidth);
-      // gentle idle motion so a sprite animates THROUGH the pass
-      const bob = this.s.bob ? Math.sin(t * 1.6 + sp.phase) * 0.006 * h : 0;
-      const breathe = this.s.bob ? 1 + Math.sin(t * 1.1 + sp.phase) * 0.012 : 1;
+      // Idle motion so a sprite animates THROUGH the pass. A bound figure (`float`) levitates on a
+      // slower, larger cadence with a faint roll; ordinary creatures get the gentle bob/breathe.
+      const floatStill = sp.float === true && this.s.reducedMotion;
+      const motion = this.s.bob && !floatStill;
+      let bob = 0;
+      let breathe = 1;
+      let roll = 0;
+      if (motion && sp.float) {
+        bob = Math.sin(t * 0.97 + sp.phase) * 0.016 * h;
+        breathe = 1 + Math.sin(t * 0.8 + sp.phase) * 0.01;
+        roll = Math.sin(t * 0.5 + sp.phase) * 0.01;
+      } else if (motion) {
+        bob = Math.sin(t * 1.6 + sp.phase) * 0.006 * h;
+        breathe = 1 + Math.sin(t * 1.1 + sp.phase) * 0.012;
+      }
       const cx = sp.x * w;
       const baseY = sp.y * h + bob;
       const dw = drawW * breathe;
       const dh = drawH * breathe;
+      ctx.save();
+      if (sp.shadow && sp.shadow > 0) {
+        ctx.shadowColor = 'rgba(0,0,0,1)';
+        ctx.shadowBlur = sp.shadow * h;
+        ctx.shadowOffsetY = 0.02 * h;
+      }
+      if (roll) {
+        const my = baseY - dh / 2;
+        ctx.translate(cx, my);
+        ctx.rotate(roll);
+        ctx.translate(-cx, -my);
+      }
       ctx.drawImage(img, cx - dw / 2, baseY - dh, dw, dh);
+      ctx.restore();
     }
   }
 

@@ -30,14 +30,15 @@ export function altarPlateForAcolytes(acolytes: number): string {
 }
 
 /* ---- FLAVOUR: how each bound invocation is presented over its room. One entry per
-   invocation that has a designed display; the `BoundInvocations` overlay renders it while
-   the invocation is active. Adding a new one is a single entry here — most invocations do
-   not have a designed display yet and so simply have no entry (they render nothing). All
-   lengths are stage-relative so the figure tracks the backdrop at any width. ---- */
+   invocation that has a designed display; `DegradedScene` composites the figure into the room
+   through the degradation pass while the invocation is active. Adding a new one is a single entry
+   here — most invocations do not have a designed display yet and so simply have no entry (they
+   render nothing). All lengths are stage-relative so the figure tracks the backdrop at any width. ---- */
 export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
-  // Morpheus levitates over the altar stone in a sleeping trance: a large enveloping shadow
-  // wrapping the figure, a faint soul-coloured aura with rising motes, and the room dimmed so
-  // he reads as the focal light. See docs design handoff "Morpheus invocation float effect".
+  // Morpheus levitates over the altar stone in a sleeping trance: a large dark enveloping shadow
+  // wrapping the figure and the room dimmed so he reads as the focal light. He is composited into
+  // the room through the degradation pass (see DegradedScene), so the figure, its float and its
+  // shadow crush and pixelate at the same fidelity as the backdrop — no orange glow, no caption.
   morpheus: {
     id: 'morpheus',
     room: 'altar',
@@ -45,14 +46,8 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
     left: '49%',
     top: '6%',
     height: '41%',
-    glow: 'oklch(0.62 0.13 35)',
     float: true,
     vignette: 0.82,
-    caption: {
-      title: 'MORPHEUS',
-      subtitle: 'Bound to the altar · dreaming',
-      tint: 'oklch(0.74 0.1 35)',
-    },
   },
 };
 
