@@ -57,4 +57,21 @@ describe('persistence', () => {
     expect(() => parseSaveBlob('not json at all')).toThrow();
     expect(() => parseSaveBlob('{"foo":1}')).toThrow();
   });
+
+  it('reports mail delivered by the offline catch-up so its SFX can replay on resume', () => {
+    // Crossing 1e9 lifetime souls while away makes Fausto #5 ("Little pig") eligible; it delivers
+    // during resumeGame's catch-up tick, whose result is otherwise discarded. loadGame surfaces it
+    // so the store can replay the door-knock the live loop would have cued (05 / ADR-014).
+    const saved = { ...startNewGame(1000), totalSoulsObtained: bn('1e9') };
+    saveGame(saved, 1, getDeviceId());
+    const loaded = loadGame(101000); // 100s later -> offline catch-up runs and delivers
+    expect(loaded.deliveredOnResume).toContain('fausto-5');
+  });
+
+  it('reports no resume-delivered mail when nothing new arrives', () => {
+    expect(loadGame(2000).deliveredOnResume).toEqual([]); // fresh game (no save) -> empty
+    saveGame(startNewGame(1000), 1, getDeviceId());
+    expect(loadGame(1000).deliveredOnResume).toEqual([]); // same "now" -> no offline advance
+    expect(loadGame(60_000).deliveredOnResume).toEqual([]); // catch-up, but no email is eligible
+  });
 });
