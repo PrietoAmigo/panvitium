@@ -57,6 +57,14 @@ export interface DegradeSettings {
   uniform: boolean;
   /** Creature idle motion (gentle bob + breathe) composited before the pass. */
   bob: boolean;
+  /** Fausto-curse "Vertigo" target intensity 0..1. 0 = no curse; the pass eases the applied value
+      toward this every frame, so toggling the flag fades the effect in/out (~0.7s) rather than
+      snapping. Presentation-only — it reads off `flagFaustoCurse`, never the sim/RNG/save. */
+  curseVertigo: number;
+  /** Honour `prefers-reduced-motion: reduce`. When set, the Vertigo layer drops the vestibular
+      sub-effects (sway / zoom / double-vision / pulse) and keeps only a steady tunnel vignette, so
+      the curse still registers without inducing motion sickness. */
+  reducedMotion: boolean;
 }
 
 /**
@@ -79,6 +87,8 @@ export const DEFAULT_DEGRADE: DegradeSettings = {
   fps: 24,
   uniform: true,
   bob: true,
+  curseVertigo: 0,
+  reducedMotion: false,
 };
 
 /** A diegetic sprite the engine composites into the scene before degrading. */
@@ -163,6 +173,10 @@ export class DegradePass {
   private readonly cctx: CanvasRenderingContext2D;
   private readonly low: HTMLCanvasElement;
   private readonly lctx: CanvasRenderingContext2D;
+  // Reusable full-res scratch canvas for the Fausto-curse "Vertigo" layer (snapshot the finished
+  // frame, then redraw it swayed / doubled). Allocated once; only touched while the curse is active.
+  private readonly tmp: HTMLCanvasElement;
+  private readonly tctx: CanvasRenderingContext2D;
 
   private s: DegradeSettings = { ...DEFAULT_DEGRADE };
   private scene: EngineScene = { bg: null, sprites: [], signature: false };
@@ -179,6 +193,10 @@ export class DegradePass {
   private _acc = 0;
   private _raf: number | null = null;
 
+  // Eased curse intensity 0..1 — animation state, NOT a setting. Ramps toward `s.curseVertigo` each
+  // rendered frame so the effect fades in/out rather than snapping when the flag flips.
+  private _curse = 0;
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     canvas.width = VW;
@@ -194,6 +212,11 @@ export class DegradePass {
 
     this.low = document.createElement('canvas');
     this.lctx = this.low.getContext('2d')!;
+
+    this.tmp = document.createElement('canvas');
+    this.tmp.width = VW;
+    this.tmp.height = VH;
+    this.tctx = this.tmp.getContext('2d')!;
   }
 
   /** Merge a partial recipe and repaint a frame immediately. */
@@ -312,6 +335,13 @@ export class DegradePass {
     // --- advance the fade-to-black room transition ---
     const dt = Math.min(0.1, (tnow - (this._lastT || tnow)) / 1000);
     this._lastT = tnow;
+
+    // --- ease the Fausto-curse "Vertigo" intensity toward its target (~0.7s each way) ---
+    const curseTarget = Math.max(0, Math.min(1, s.curseVertigo));
+    const curseRate = dt / 0.7;
+    const curseDelta = curseTarget - this._curse;
+    this._curse += Math.sign(curseDelta) * Math.min(curseRate, Math.abs(curseDelta));
+
     const FADE_RATE = 1 / 0.4; // ~0.4s each way
     if (this._phase === 'out') {
       this._fade += dt * FADE_RATE;
@@ -338,6 +368,7 @@ export class DegradePass {
       ctx.clearRect(0, 0, VW, VH);
       ctx.drawImage(this.crisp, 0, 0);
       this._postChrome(ctx, t, false);
+      if (this._curse > 0.001) this._dizzy(ctx, t, this._curse);
       this._drawFade(ctx);
       return;
     }
@@ -374,7 +405,82 @@ export class DegradePass {
     }
 
     this._postChrome(ctx, t, true);
+    if (this._curse > 0.001) this._dizzy(ctx, t, this._curse);
     this._drawFade(ctx);
+  }
+
+  /**
+   * The Fausto-curse "Vertigo" layer (design handoff). An additive pass on top of the finished frame,
+   * driven by one eased scalar `c` (0 = clean, 1 = full curse): the room sways and breathes, vision
+   * doubles, a queasy chromatic split pulses, and the vignette closes to a tunnel — the malediction
+   * given a body. When the curse is inactive (`c ≈ 0`) this never runs, so the frame is byte-for-byte
+   * the normal look. Pure canvas math over the existing plates; touches no state, RNG, or save.
+   *
+   * Accessibility: under `prefers-reduced-motion: reduce` (`s.reducedMotion`) the vestibular
+   * sub-effects (sway / zoom / double-vision / pulse) are skipped and only a steady tunnel vignette
+   * remains, so the curse still registers without inducing motion sickness.
+   */
+  private _dizzy(ctx: CanvasRenderingContext2D, t: number, c: number): void {
+    if (this.s.reducedMotion) {
+      // Reduced motion: no positional motion — a steady tunnel vignette only (no breathing pulse).
+      const inner = VH * (0.5 - 0.12 * c);
+      const g = ctx.createRadialGradient(VW / 2, VH * 0.48, inner, VW / 2, VH / 2, VH * 0.92);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, `rgba(2,1,1,${0.55 * c})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, VW, VH);
+      return;
+    }
+
+    const tmp = this.tmp;
+    const tctx = this.tctx;
+    tctx.clearRect(0, 0, VW, VH);
+    tctx.drawImage(this.canvas, 0, 0); // snapshot the finished frame
+
+    // --- 1. lens sway + tiny roll + breathing zoom ---
+    const swayX = Math.sin(t * 0.8) * 34 * c;
+    const swayY = Math.cos(t * 0.62) * 20 * c;
+    const rot = Math.sin(t * 0.5) * 0.016 * c;
+    const zoom = 1 + (Math.sin(t * 1.3) * 0.5 + 0.5) * 0.03 * c;
+
+    ctx.clearRect(0, 0, VW, VH);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, VW, VH); // black behind the swayed frame
+    ctx.save();
+    ctx.translate(VW / 2 + swayX, VH / 2 + swayY);
+    ctx.rotate(rot);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-VW / 2, -VH / 2);
+    ctx.drawImage(tmp, 0, 0);
+    ctx.restore();
+
+    // --- 2. double-vision ghost, orbiting slowly (screen blend) ---
+    const ox = Math.cos(t * 0.9) * 16 * c;
+    const oy = Math.sin(t * 0.9) * 10 * c;
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.013 + 0.3 * c;
+    ctx.drawImage(tmp, ox, oy);
+    ctx.drawImage(tmp, -ox, -oy);
+    ctx.restore();
+
+    // --- 3. queasy chromatic split, pulsing ---
+    const ab = 2 + 7 * c * (0.6 + 0.4 * Math.sin(t * 2.1));
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 0.12 * c;
+    ctx.drawImage(tmp, -ab, 0);
+    ctx.drawImage(tmp, ab, 0);
+    ctx.restore();
+
+    // --- 4. tunnel-vision vignette, breathing inward ---
+    const pulse = 0.5 + 0.5 * Math.sin(t * 1.3);
+    const inner = VH * (0.5 - 0.18 * c * (0.55 + 0.45 * pulse));
+    const g = ctx.createRadialGradient(VW / 2, VH * 0.48, inner, VW / 2, VH / 2, VH * 0.92);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(2,1,1,${0.55 * c})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
   }
 
   private _processPixels(img: ImageData, t: number): void {

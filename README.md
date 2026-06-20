@@ -103,7 +103,18 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 819** (sim 528 · shared 57 · api 20 · web 214).
+**Current test count: 821** (sim 528 · shared 57 · api 20 · web 216).
+
+> **Latest change — Fausto's curse made visible (Claude Design handoff, "Vertigo").** The curse
+> (`flagFaustoCurse`, laid by Fausto Cescru's fourth letter, lifted when it's deleted) was previously
+> felt only in the numbers. It now has a **body**: an additive **"Vertigo"** layer folded into the
+> degradation pass (`degrade.ts`, gated on a new `curseVertigo` knob the room view-model drives off
+> the flag) — the room sways and breathes, vision doubles, a queasy chromatic split pulses, and the
+> vignette closes to a tunnel, all eased in/out (~0.7s) from one scalar. When the curse is inactive
+> the frame is byte-for-byte the normal look; `prefers-reduced-motion: reduce` drops the vestibular
+> sub-effects and keeps only a steady tunnel vignette. The **carrier email now glows green** in the
+> inbox list so the player can find — and break — the words holding the curse. The curse's economy
+> bite was **deepened from ×0.67 to ×0.33** (a 67% cut) on gold, influence and reprobate generation.
 
 > **Latest change — the smartphone dialer (Claude Design handoff, Direction A "Stock light").** The
 > player's budget Android phone — the one mundane object on the Studio desk, the black slab lying
@@ -156,7 +167,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > Tom #2's cruel reply sets a permanent `flagFatherMad` (rerouting the Church/adversary arc), agreeing
 > to meet Reuben mints +1 soul and sets `flagReubenDead` (idempotent — no double-mint), and Fausto #1's
 > threat closes his friendly branch. **Fausto #4 lays a curse** (`flagFaustoCurse`) folded into
-> `computeModifiers` as ×0.67 on gold, influence and reprobate generation, lifted the moment the email
+> `computeModifiers` as ×0.33 on gold, influence and reprobate generation, lifted the moment the email
 > is deleted; **Fausto #5 cues a door-knock** SFX (`audio.play('email-knock')`) surfaced via a new
 > `TickResult.emailsDelivered`. A monotonic, lifetime-spanning `totalSoulsObtained` (bumped in
 > `mintSouls` and the Panvitium harvest) drives the soul-threshold beats. All new fields are
@@ -736,7 +747,7 @@ Economy-parity tracks still to reconcile against the spreadsheet:
   final tick step (so offline catch-up fills the inbox too), and `markEmailRead` / `markAllEmailsRead`
   helpers. Triggers are immediate / timed (armed on `emailArmedAt`) / random (deterministic offset, no
   shared-RNG consumption); replies carry real effects (`flagFatherMad`, `flagReubenDead` + a minted soul,
-  Fausto's friendly-branch close and his ×0.67 curse, the door-knock SFX), driven by a monotonic
+  Fausto's friendly-branch close and his ×0.33 curse, the door-knock SFX), driven by a monotonic
   `totalSoulsObtained`. Content lives in `strings.emails.catalog` keyed by id. Placed in the PC. New mail
   is surfaced by an unread-count **badge on the Emails tile** (via `unreadCount` + a generic `badges`
   prop on the PC window); there's no separate delivery toast yet, and no lair-level indicator on the PC prop.

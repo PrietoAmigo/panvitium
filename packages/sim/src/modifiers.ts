@@ -307,10 +307,10 @@ export function computeModifiers(state: GameState): Modifiers {
   // sheet doesn't pin — genuine tuning values. (It's a single toggle, on or off — not a stack.)
   const panvitiumActive = state.lifetime.activeToggles.includes('panvitium');
   // Fausto Cescru's curse (05, the adversary): while his fourth letter sits unbroken in the inbox,
-  // reprobate generation, influence gain and gold gain each run a third slower (×0.67). Lifted the
+  // reprobate generation, influence gain and gold gain each run two-thirds slower (×0.33). Lifted the
   // moment the email is deleted (`flagFaustoCurse` clears) — the in-fiction "as long as these words
   // remain" tell. A single flat multiplier folded into the three affected rates below (ADR-022).
-  const faustoCurseMul = state.lifetime.flagFaustoCurse === true ? 0.67 : 1;
+  const faustoCurseMul = state.lifetime.flagFaustoCurse === true ? 0.33 : 1;
   const PANV_GEN_MUL = 10;
   const PANV_SUICIDE_MUL = 20;
   const PANV_MURDER_MUL = 20;
@@ -429,7 +429,7 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
       (hasSpecunitas ? 2 : 1) * // Specunitas (apex Vanagloria): ×2 influence gain/s
       sc('influenceRateMul') *
-      faustoCurseMul, // Fausto's curse (05): ×0.67 while his fourth letter remains
+      faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     maxInfluenceMul: maxInfluenceMulV,
     // Flat influence/s: the Decarabia #69 generator sigil (log curve) + the Mercatus Vanagloriae
@@ -481,7 +481,7 @@ export function computeModifiers(state: GameState): Modifiers {
       skillBonus(luxuriaIntensity) *
       compositumGenerationRateMul(state, vcEffectMul) * // Bacchanal +10% ×(Gusion/Naberius)
       sc('reprobateGenerationRateMul') *
-      faustoCurseMul, // Fausto's curse (05): ×0.67 while his fourth letter remains
+      faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill)
     // moved to acolyte efficiency, and the per-level doubling is retired; the despair channel is

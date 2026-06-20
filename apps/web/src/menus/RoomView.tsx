@@ -1,5 +1,5 @@
 import { type ReactElement } from 'react';
-import type { RoomDef, HotspotAction, SceneSprite } from './types.js';
+import type { RoomDef, HotspotAction, SceneSprite, DegradeSettings } from './types.js';
 import { DegradedScene } from './DegradedScene.js';
 import { ROOM_PLATES, altarPlateForAcolytes, spriteFor } from './degrade.data.js';
 
@@ -9,6 +9,10 @@ interface RoomViewProps {
   summoned: string[];
   /** Current acolyte count — selects the Altar backdrop (0–4). */
   acolytes: number;
+  /** Fausto's curse is in force (`flagFaustoCurse`) — drives the "Vertigo" degrade layer. */
+  curseActive: boolean;
+  /** The viewer prefers reduced motion — the curse layer drops its vestibular sub-effects. */
+  reducedMotion: boolean;
   onAction: (action: HotspotAction) => void;
 }
 
@@ -26,6 +30,8 @@ export function RoomView({
   signature,
   summoned,
   acolytes,
+  curseActive,
+  reducedMotion,
   onAction,
 }: RoomViewProps): ReactElement {
   const sprites: SceneSprite[] =
@@ -34,6 +40,11 @@ export function RoomView({
       : [];
   // The Altar's backdrop tracks the acolyte count (0–4); every other room uses its default plate.
   const backdrop = room.id === 'altar' ? altarPlateForAcolytes(acolytes) : ROOM_PLATES[room.id];
+  // Presentation only — read straight off the curse flag; the pass eases the 0/1 target in/out.
+  const degradeSettings: Partial<DegradeSettings> = {
+    curseVertigo: curseActive ? 1 : 0,
+    reducedMotion,
+  };
   return (
     <div className={'scene ' + room.sceneClass} role="group" aria-label={room.title}>
       <DegradedScene
@@ -41,6 +52,7 @@ export function RoomView({
         backdrop={backdrop}
         sprites={sprites}
         signature={room.id === 'studio' && signature}
+        settings={degradeSettings}
       />
       {room.hotspots.map((h) => {
         const isDoor = h.action.type === 'door';
