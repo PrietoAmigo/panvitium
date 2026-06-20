@@ -15,8 +15,10 @@ import type { BoundInvocationVisual, DegradedSceneProps } from './types.js';
 // fraction of stage height, but the engine sizes sprites by `w` (fraction of stage width) and derives
 // the height from the image's natural aspect — so converting needs this ratio plus the natural dims.
 const STAGE_ASPECT = 720 / 1280;
-// Dark enveloping shadow blur for a levitating figure, as a fraction of stage height (≈120px / 720).
-const FLOAT_SHADOW = 0.16;
+// Dark enveloping shadow blur for a levitating figure, as a fraction of stage height (≈230px / 720).
+// A large halo: the widest stacked cast wraps well past the silhouette so Morpheus reads as the dark
+// focal mass over the altar.
+const FLOAT_SHADOW = 0.32;
 
 function frac(pct: string): number {
   return parseFloat(pct) / 100;
@@ -37,6 +39,9 @@ function figureToSprite(v: BoundInvocationVisual, img: HTMLImageElement): Engine
     phase: 0,
     float: v.float === true,
     shadow: v.float ? FLOAT_SHADOW : 0,
+    // Bound invocations hold still unless a movement is specified (only `float` today, e.g.
+    // Morpheus levitating). Grounded figures sit perfectly still rather than idly bobbing.
+    still: v.float !== true,
   };
 }
 

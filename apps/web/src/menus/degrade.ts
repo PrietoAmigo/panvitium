@@ -106,6 +106,10 @@ export interface EngineSprite {
       dark enveloping drop-shadow. Composited BEFORE the pass, so it degrades with the frame. The
       float is dropped under `reducedMotion`; the shadow stays. */
   float?: boolean;
+  /** Hold completely still — suppress the idle bob/breathe (and any float). Bound invocations are
+      still by default unless a movement is specified (e.g. Morpheus `float`); set this to opt a
+      grounded figure out of the ambient idle motion entirely. */
+  still?: boolean;
   /** Dark enveloping shadow — the widest cast's blur as a fraction of stage height (0 / omitted =
       none). Several stacked black casts off the silhouette build the halo that wraps the figure;
       drawn into the same buffer as the figure, so it crushes and pixelates uniformly with the rest. */
@@ -347,7 +351,7 @@ export class DegradePass {
       // Idle motion so a sprite animates THROUGH the pass. A bound figure (`float`) levitates on a
       // slower, larger cadence with a faint roll; ordinary creatures get the gentle bob/breathe.
       const floatStill = sp.float === true && this.s.reducedMotion;
-      const motion = this.s.bob && !floatStill;
+      const motion = this.s.bob && !floatStill && sp.still !== true;
       let bob = 0;
       let breathe = 1;
       let roll = 0;

@@ -103,7 +103,19 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 824** (sim 529 · shared 57 · api 20 · web 218).
+**Current test count: 830** (sim 529 · shared 57 · api 20 · web 224).
+
+> **Latest change — three more bound-invocation displays + "still by default" figures (Claude Design
+> handoffs).** Three designed figures now composite into their rooms while bound, the same way
+> Morpheus appears over the altar: **Aurevora** seated cross-legged on the invocation circle
+> (pre-mirrored art, no float/vignette), **Astiwihad** at the altar threshold cropped to head and
+> upper torso, and **Specunitas** standing behind the studio desk (hip-cropped art, gentle focal
+> dim). Each is a single `BOUND_INVOCATION_VISUALS` entry (`degrade.data.ts`) keyed by the sim's
+> canonical id, picked up automatically by `boundVisualsFor`. Alongside it, **bound figures now hold
+> perfectly still unless a movement is specified** (only Morpheus's `float` today): a new `still`
+> flag on `EngineSprite` suppresses the idle bob/breathe, and `figureToSprite` sets it for every
+> non-floating figure — so the **Familiar** (and the three new figures) sit motionless rather than
+> idly bobbing. Three render-data tests pin the new visuals (room match + no float).
 
 > **Latest change — the inbox is permanent mail history (email persistence fix).** `commitKatabasis`
 > previously wiped `lifetime.inbox` (and the arm timers and Fausto flags) on every descent. Because

@@ -40,6 +40,36 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['familiar'])).toEqual([]);
   });
 
+  it('returns the Aurevora visual only in the invocation room, grounded (no float/vignette)', () => {
+    const room = boundVisualsFor('invocation', ['aurevora']);
+    expect(room.map((v) => v.id)).toEqual(['aurevora']);
+    // Sits cross-legged on the circle: no levitation, no room-dimming glow.
+    expect(room[0]?.float).toBeUndefined();
+    expect(room[0]?.vignette).toBeUndefined();
+    // Same id, wrong room → nothing (its designed display lives in the invocation room).
+    expect(boundVisualsFor('altar', ['aurevora'])).toEqual([]);
+  });
+
+  it('returns the Astiwihad visual only in the altar room, grounded (no float/vignette)', () => {
+    const altar = boundVisualsFor('altar', ['astiwihad']);
+    expect(altar.map((v) => v.id)).toEqual(['astiwihad']);
+    // Stands at the threshold, no effects.
+    expect(altar[0]?.float).toBeUndefined();
+    expect(altar[0]?.vignette).toBeUndefined();
+    // Same id, wrong room → nothing (its designed display lives on the altar).
+    expect(boundVisualsFor('studio', ['astiwihad'])).toEqual([]);
+  });
+
+  it('returns the Specunitas visual only in the studio room, grounded with a focal dim', () => {
+    const studio = boundVisualsFor('studio', ['specunitas']);
+    expect(studio.map((v) => v.id)).toEqual(['specunitas']);
+    // A standing figure, not a levitating trance: no float, but a gentle focal vignette.
+    expect(studio[0]?.float).toBeUndefined();
+    expect(studio[0]?.vignette).toBe(0.4);
+    // Same id, wrong room → nothing (its designed display lives in the studio).
+    expect(boundVisualsFor('altar', ['specunitas'])).toEqual([]);
+  });
+
   it('skips invocations that have no designed display', () => {
     expect(boundVisualsFor('altar', ['imp', 'upir'])).toEqual([]);
     expect(boundVisualsFor('altar', [])).toEqual([]);
