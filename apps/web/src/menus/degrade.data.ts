@@ -150,6 +150,33 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
       ink: 0.85,
     },
   },
+  // The Lemure stands in the invocation circle, resting on the floor — same staging as the Succubus,
+  // just a touch smaller (a lesser Acedia shade rather than an apex). No `float` (no levitation, no
+  // enveloping shadow) and no `vignette` (the room is not dimmed). Like the Succubus it casts a long,
+  // soft directional shadow (`shadowCast`) trailing left from its feet across the floor. Composited
+  // through the degradation pass like any bound figure, so it and its shadow crush/pixelate with the
+  // room. Baseline (top + height = 85%) lands at the centre of the red ritual circle — identical to
+  // the Succubus — so the shorter figure still stands ON the circle; `left` is the horizontal centre.
+  // The shadow is copied from the Succubus, almost identical: shrunk a touch to match the smaller
+  // figure (shorter `length`/`thickness`, offset eased proportionally toward the feet) and 15% more
+  // opaque (`ink` 0.85 → 0.98).
+  lemure: {
+    id: 'lemure',
+    room: 'invocation',
+    // Art is pre-mirrored (`lemure_flipped.png`) — BoundInvocationVisual has no flip flag, same as
+    // Aurevora — so the figure faces into the room from its left-of-circle stance.
+    src: `${ASSET_BASE}/invocations/lemure_flipped.png`,
+    left: '22%',
+    top: '43%',
+    height: '42%',
+    shadowCast: {
+      offset: { x: -0.097, y: 0.106 },
+      length: 0.35,
+      thickness: 0.11,
+      angle: 154,
+      ink: 0.98,
+    },
+  },
   // Midas stands across the studio table, very close to the player's PoV — only his head and upper
   // torso read; everything below the table edge is hidden (clipBottom), so he reads as standing on
   // the far side of the foreground desk. No `float` (no levitation, no enveloping shadow), no
