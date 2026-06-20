@@ -926,7 +926,9 @@ export const strings = {
     verse:
       'Iam pridem scis te perditum esse. Quiescere non potes, sed nihil agis: nihil enim venenum acerbissimum est, ornamentum gravissimum, quod cervicem premit nec umquam deponi patitur. At inter has tenebras amor eorum iustus ignem accendit, eaque sola flamma, quamvis tenuis, viam tibi monstrat.',
     scoreLabel: 'Time to ascend',
-    dismiss: 'Close the book',
+    // Total time (online + offline) the lifetime took to reach the reveal.
+    runtimeLabel: 'Time',
+    dismiss: 'Accept',
   },
   sync: {
     title: 'Cloud Archive',

@@ -3519,6 +3519,26 @@ body {
   font-style: italic;
   text-wrap: pretty;
 }
+.katabasis-flow .reveal-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 2.4rem;
+}
+.katabasis-flow .reveal-time-label {
+  font-family: var(--font-inscribe);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: var(--faint);
+}
+.katabasis-flow .reveal-time-value {
+  font-family: var(--font-display);
+  letter-spacing: 0.14em;
+  font-size: 1.4rem;
+  color: var(--ember);
+}
 .katabasis-flow .reveal-dismiss {
   margin-top: 2.6rem;
   font-family: var(--font-display);
