@@ -96,7 +96,7 @@ describe('Katabasis flow — orchestrator', () => {
     expect(container!.querySelector('.kat-seal-hint')?.textContent).toContain('there is no return');
   });
 
-  it('renders the "You Rise" recap off the committed state, with ranks held', () => {
+  it('renders the "You Rise" recap off the committed state, listing what survived', () => {
     // Give Gula enough Devotion for Rank 1 (180^1), then run the descent to the recap.
     patch({
       souls: bn(5000),
@@ -109,9 +109,13 @@ describe('Katabasis flow — orchestrator', () => {
     const rows = Array.from(container!.querySelectorAll('.recap-line')).map(
       (r) => r.textContent ?? '',
     );
-    const ranksRow = rows.find((t) => t.includes('Ranks held across the eight'));
-    expect(ranksRow).toContain('1 / 32');
-    expect(rows.some((t) => t.includes('Souls carried up'))).toBe(true);
+    // The recap now reports what carried into the next lifetime, not ranks/devotion.
+    expect(rows.some((t) => t.includes('Reprobates still here'))).toBe(true);
+    expect(rows.some((t) => t.includes('Unlooted maleficia'))).toBe(true);
+    expect(rows.some((t) => t.includes('Remaining gold'))).toBe(true);
+    // The old "carried up / ranks held" lines are gone.
+    expect(rows.some((t) => t.includes('Souls carried up'))).toBe(false);
+    expect(rows.some((t) => t.includes('Ranks held'))).toBe(false);
   });
 
   it('overlays the Eternal-Sin reveal on top of the still-mounted flow', () => {
