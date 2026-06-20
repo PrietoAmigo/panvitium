@@ -427,6 +427,9 @@ export class DegradePass {
         const hw = (cs.length * w) / 2; // half major axis (along stage width)
         const hh = (cs.thickness * h) / 2; // half minor axis (along stage height)
         ctx.save();
+        // Soft edge — the design's ~5px blur at its 980px-wide stage, scaled to this buffer's width so
+        // it reads the same at any resolution (and downsamples through the pass). Restored with save().
+        ctx.filter = `blur(${(5 * w) / 980}px)`;
         ctx.translate(scx, scy);
         ctx.rotate((cs.angle * Math.PI) / 180);
         ctx.scale(1, hh / hw); // squash the circular gradient into the long ground ellipse

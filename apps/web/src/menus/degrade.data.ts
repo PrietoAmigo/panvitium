@@ -141,10 +141,12 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
     top: '37%',
     height: '48%',
     shadowCast: {
-      offset: { x: -0.11, y: -0.02 },
+      // EXACT values tuned in the design mockup. Centre ≈ 16.48%, 97.13% of stage (offset from the
+      // baseline anchor: left 31%, top+height 85%); the gradient is densest at the feet end.
+      offset: { x: -0.145, y: 0.121 },
       length: 0.4,
       thickness: 0.13,
-      angle: -6,
+      angle: 154,
       ink: 0.85,
     },
   },

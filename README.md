@@ -113,7 +113,9 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > along its length), distinct from `groundShadow`'s centred pool. It is a single `BOUND_INVOCATION_VISUALS`
 > entry (`degrade.data.ts`) picked up by `boundVisualsFor`, with `shadowCast` plumbed through
 > `BoundInvocationVisual` → `EngineSprite` → the degrade pass — so she and her shadow crush/pixelate
-> with the room at one fidelity. One render-data test pins the visual (room match + the cast-shadow geometry).
+> with the room at one fidelity. The shadow reproduces the design's gradient verbatim, including its
+> ~5px soft-edge blur (scaled to the render buffer), at the final tuned offset/angle. One render-data
+> test pins the visual (room match + the cast-shadow geometry).
 
 > **Earlier change — Doppelgänger tweaks (dominance, post-scare disappearance, instant plate).** Three
 > follow-ups to the scare: (1) a bound **Doppelgänger now OVERRIDES every other figure in the Studio**
