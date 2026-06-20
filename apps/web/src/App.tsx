@@ -16,7 +16,8 @@ import { ConflictModal } from './ui/ConflictModal.js';
 import { WelcomeBackModal } from './ui/WelcomeBackModal.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
-import { Jumpscare } from './ui/Jumpscare.js';
+import { Jumpscare, JUMPSCARE_IMG } from './ui/Jumpscare.js';
+import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
@@ -116,7 +117,11 @@ export function App(): ReactElement {
   useEffect(() => {
     // Arm once the conditions hold (bound + first time + in the Studio). Stays armed until the next
     // interaction consumes it, so even leaving via the door triggers the scare rather than escaping it.
-    if (room === 'studio' && doppelgaengerBound && !doppelgaengerSeen) setJumpscareArmed(true);
+    if (room === 'studio' && doppelgaengerBound && !doppelgaengerSeen) {
+      setJumpscareArmed(true);
+      // Decode the plate now (while armed) so the overlay paints it on its first frame — no black flash.
+      preloadImage(JUMPSCARE_IMG);
+    }
   }, [room, doppelgaengerBound, doppelgaengerSeen]);
 
   // The descent takes the full screen; close any grimoire panel when it opens.
@@ -175,6 +180,7 @@ export function App(): ReactElement {
           room={ROOMS[room]}
           signature={signature}
           summoned={summoned}
+          doppelgaengerSeen={doppelgaengerSeen}
           acolytes={acolytes}
           curseActive={curseActive}
           reducedMotion={reducedMotion}

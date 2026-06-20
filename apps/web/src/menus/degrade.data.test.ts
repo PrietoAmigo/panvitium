@@ -82,6 +82,24 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['doppelgaenger'])).toEqual([]);
   });
 
+  it('a present Doppelgaenger overrides every other figure in the studio', () => {
+    // Specunitas + Familiar both have studio displays, but a bound Doppelgaenger is the sole figure.
+    const studio = boundVisualsFor('studio', ['specunitas', 'familiar', 'doppelgaenger']);
+    expect(studio.map((v) => v.id)).toEqual(['doppelgaenger']);
+    // Without the Doppelgaenger, the others render as usual (order follows the summoned list).
+    const both = boundVisualsFor('studio', ['specunitas', 'familiar']);
+    expect(both.map((v) => v.id).sort()).toEqual(['familiar', 'specunitas']);
+  });
+
+  it('suppresses the Doppelgaenger once the jumpscare has fired (and lets the others return)', () => {
+    // Seen → the Doppelgaenger figure never appears again, even while still bound.
+    expect(boundVisualsFor('studio', ['doppelgaenger'], true)).toEqual([]);
+    // …and with it suppressed, a co-bound studio figure shows again (the override no longer applies).
+    expect(
+      boundVisualsFor('studio', ['doppelgaenger', 'specunitas'], true).map((v) => v.id),
+    ).toEqual(['specunitas']);
+  });
+
   it('skips invocations that have no designed display', () => {
     expect(boundVisualsFor('altar', ['imp', 'upir'])).toEqual([]);
     expect(boundVisualsFor('altar', [])).toEqual([]);

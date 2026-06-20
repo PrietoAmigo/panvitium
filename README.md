@@ -103,9 +103,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 835** (sim 531 · shared 58 · api 20 · web 226).
+**Current test count: 837** (sim 531 · shared 58 · api 20 · web 228).
 
-> **Latest change — the Doppelgänger: bound display + a one-time jumpscare.** The **Doppelgänger**
+> **Latest change — Doppelgänger tweaks (dominance, post-scare disappearance, instant plate).** Three
+> follow-ups to the scare: (1) a bound **Doppelgänger now OVERRIDES every other figure in the Studio**
+> — `boundVisualsFor` returns it as the sole figure, so Familiar/Specunitas don't render alongside it;
+> (2) **once the jumpscare has fired the Doppelgänger figure is suppressed for good** (gated on
+> `flagDoppelgaengerSeen`, passed through `RoomView`) — it never appears again even while still bound,
+> and any co-bound Studio figure returns once it's gone; (3) the scare now **jumps straight to the
+> picture with no black flash** — the plate is decoded ahead of time (`preloadImage`, fired when the
+> scare arms) and `DegradedScene` seeds its image cache from that decode synchronously, so the canvas
+> paints the plate on its first frame (the overlay's fade-in is dropped). Two render-data tests pin the
+> override + post-scare suppression.
+
+> **Earlier change — the Doppelgänger: bound display + a one-time jumpscare.** The **Doppelgänger**
 > now composites into the Studio while bound — a grounded full-body figure standing on the parquet
 > (no float, no room-dim), the only treatment a new **`groundShadow`** carries: a flat contact shadow
 > pinned to the floor at its feet (a soft dark pool, drawn into the scene buffer so it crushes/pixelates
