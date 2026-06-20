@@ -27,18 +27,43 @@ const CUE_SRC: Partial<Record<AudioEvent, string>> = {
 
 const CUE_VOLUME = 0.7;
 
+/** Construct and play a one-shot element. Returns the play() promise (rejects if autoplay-blocked). */
+function playOnce(src: string): Promise<void> {
+  const el = new Audio(src);
+  el.volume = CUE_VOLUME;
+  return el.play();
+}
+
+// A cue can fire from a background tick (the 10 Hz loop, or the offline catch-up replayed on
+// resume) rather than from a click, so the browser may refuse it for lack of a user gesture. When
+// that happens we stash the latest cue and replay it on the next pointer/key event — the same
+// gesture-retry the title music uses. One listener pair at a time; the newest cue wins.
+let pendingSrc: string | null = null;
+let waitingForGesture = false;
+
+function retryOnGesture(src: string): void {
+  if (typeof window === 'undefined') return; // no DOM (e.g. test/SSR) — give up silently
+  pendingSrc = src;
+  if (waitingForGesture) return;
+  waitingForGesture = true;
+  const fire = (): void => {
+    window.removeEventListener('pointerdown', fire);
+    window.removeEventListener('keydown', fire);
+    waitingForGesture = false;
+    const s = pendingSrc;
+    pendingSrc = null;
+    if (s !== null) void playOnce(s).catch(() => undefined); // post-gesture; if it still fails, drop it
+  };
+  window.addEventListener('pointerdown', fire);
+  window.addEventListener('keydown', fire);
+}
+
 export const audio = {
   play(event: AudioEvent): void {
     const src = CUE_SRC[event];
     if (src === undefined) return; // no asset for this cue yet — intentionally silent
     try {
-      const el = new Audio(src);
-      el.volume = CUE_VOLUME;
-      // Autoplay may be blocked until the first user gesture; by the time a cue fires the player has
-      // already interacted with the game, so this normally sounds. Swallow the rejection regardless.
-      void el.play().catch(() => {
-        /* autoplay blocked or media unsupported (e.g. test env) — ignore */
-      });
+      void playOnce(src).catch(() => retryOnGesture(src));
     } catch {
       /* Audio unavailable (e.g. SSR/test env) — ignore */
     }

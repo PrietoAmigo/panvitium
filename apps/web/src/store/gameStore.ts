@@ -286,11 +286,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   init: () => {
     if (get().ready) return;
-    const loaded = loadGame(Date.now());
+    const { deliveredOnResume, ...loaded } = loadGame(Date.now());
     // A save written mid-descent (inKatabasis) reloads frozen; resume the allocation menu so the
     // player picks up where they left off rather than landing in a torn-down lifetime.
     const phasePatch = loaded.state.inKatabasis === true ? { katabasisPhase: 'menu' as const } : {};
     set({ ...loaded, ...phasePatch, ready: true });
+    // Mail that arrived during the offline catch-up still owes its SFX: the live loop cues these
+    // from the tick result, but the catch-up tick runs inside resumeGame (its result discarded).
+    // Replay Fausto #5's door-knock so crossing the soul threshold while away still knocks (05).
+    if (deliveredOnResume.includes('fausto-5')) audio.play('email-knock');
   },
 
   advance: (deltaSeconds) => {
@@ -520,7 +524,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   hardReset: () => {
     clearSave();
-    const loaded = loadGame(Date.now());
+    const { deliveredOnResume: _delivered, ...loaded } = loadGame(Date.now());
     set({
       ...loaded,
       ready: true,
@@ -573,7 +577,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Mirror the conflict chooser's "adopt this blob" path: write it through, then re-init from disk
     // so the next load reconstructs the state (with offline progression) and resets transient UI.
     writeSaveBlob(blob);
-    const loaded = loadGame(Date.now());
+    const { deliveredOnResume: _delivered, ...loaded } = loadGame(Date.now());
     set({
       ...loaded,
       ready: true,
@@ -646,7 +650,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       // loadGame) would pick up the new localStorage payload; for an immediate effect we write it
       // through and re-init from disk.
       writeSaveBlob(pending.server);
-      const loaded = loadGame(Date.now());
+      const { deliveredOnResume: _delivered, ...loaded } = loadGame(Date.now());
       set({
         ...loaded,
         pendingConflict: null,
