@@ -83,10 +83,10 @@ export interface InvocationDef {
   /**
    * Autonomous background runner (02 §3): this invocation runs `action` in its own channel at
    * `efficiency` × the player's efficiency, without occupying the player's action slot. The Familiar
-   * runs Indagatio (time-mode, free); the Imp runs Decimatio (cost-outcome) — its channel pays
-   * `ceil(cost × efficiency)` per cycle and stalls when the lifetime can't afford one. `forcedTier`
-   * pins the outcome tier so a passive runner can't roll a catastrophic result (the Imp is Good-only,
-   * 03 §2.4).
+   * runs Indagatio (time-mode); the Imp runs Decimatio (cost-outcome). The runner carries out its
+   * action for free — no per-cycle gold/influence cost — so it never stalls on the treasury (the
+   * invocation's per-second summon upkeep is charged separately in tick.ts). `forcedTier` pins the
+   * outcome tier so a passive runner can't roll a catastrophic result (the Imp is Good-only, 03 §2.4).
    */
   readonly autonomous?: {
     readonly action: string;
@@ -385,10 +385,10 @@ export function invocationRunnerEfficiency(state: GameState, def: InvocationDef)
  * Stackable runners (the Normal-type Imp/Upir/Lamia) run ONE INDEPENDENT CHANNEL PER SUMMONED COPY,
  * so N copies work at ~N× the rate — folding the count into efficiency wouldn't do this, because the
  * per-cycle outcome is quantised at `max(1, floor(eff))` and would round sub-unit gains away. The
- * channels resolve in sequence against the running `working` state, so a later copy naturally stalls
- * when the earlier ones have drained the gold/influence a cost-outcome cycle needs. A stalled channel
- * stores no timer (its key is omitted) and retries next tick. Timers whose copy no longer exists
- * (dispelled, or the runner is gone) are dropped. Events fold into the same outcome stream.
+ * channels resolve in sequence against the running `working` state. Runners carry out their actions
+ * for free (no per-cycle resource cost), so no channel stalls on the treasury; each persists its
+ * in-flight timer. Timers whose copy no longer exists (dispelled, or the runner is gone) are dropped.
+ * Events fold into the same outcome stream.
  */
 export function advanceInvocationRunners(
   state: GameState,
@@ -440,7 +440,8 @@ export function advanceInvocationRunners(
       );
       working = r.state;
       for (const e of r.events) events.push(e);
-      // Only persist a numeric timer; a stalled channel (null) leaves its key out of the record.
+      // Only persist a numeric timer; a channel resting exactly between cycles (null) leaves its
+      // key out of the record and simply restarts a fresh cycle next tick.
       if (r.remaining !== null) runners[key] = r.remaining;
     }
   }

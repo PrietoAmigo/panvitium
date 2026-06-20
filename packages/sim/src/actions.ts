@@ -258,51 +258,11 @@ export function setAutoRepeat(state: GameState, actionId: string, on: boolean): 
   };
 }
 
-export interface CycleCost {
-  readonly gold: number;
-  readonly influence: number;
-}
-
-/**
- * Per-cycle resource cost for a background runner of `actionId` at efficiency `eff`. Cost-outcome
- * actions (Suasio/Decimatio) scale their cost by eff (ceil, matching `startAction`). Time-mode
- * actions (Indagatio) have no per-cycle cost on the delegated path — Emptio's per-target gold is
- * not a delegated route, so it is excluded here.
- */
-export function actionCycleCost(actionId: string, eff: number): CycleCost {
-  const def = ACTIONS[actionId];
-  if (!def || def.efficiencyMode !== 'cost-outcome') return { gold: 0, influence: 0 };
-  return {
-    gold: Math.ceil((def.cost.gold ?? 0) * eff),
-    influence: Math.ceil((def.cost.influence ?? 0) * eff),
-  };
-}
-
-/** Whether the lifetime can afford a cycle cost (floored comparison — resources are naturals). */
-export function canAffordCycle(state: GameState, cost: CycleCost): boolean {
-  return (
-    gte(floor(state.lifetime.gold), cost.gold) &&
-    gte(floor(state.lifetime.influence), cost.influence)
-  );
-}
-
-/** Deduct a cycle cost from the lifetime resources. */
-export function payCycle(state: GameState, cost: CycleCost): GameState {
-  if (cost.gold === 0 && cost.influence === 0) return state;
-  return {
-    ...state,
-    lifetime: {
-      ...state.lifetime,
-      gold: sub(state.lifetime.gold, cost.gold),
-      influence: sub(state.lifetime.influence, cost.influence),
-    },
-  };
-}
-
 /**
  * Fresh-cycle duration for a runner of `actionId` at efficiency `eff`. Time-mode divides the base
- * by efficiency (floored at 1 s); cost-outcome leaves the base untouched (eff scales cost+outcome,
- * not duration). Mirrors the duration logic in `startAction`.
+ * by efficiency (floored at 1 s); cost-outcome leaves the base untouched (eff scales the outcome,
+ * not the duration). Delegated runners pay no per-cycle cost (acolytes/invocations carry out their
+ * actions for free); only the duration is derived here. Mirrors the duration logic in `startAction`.
  */
 export function runnerCycleDuration(actionId: string, eff: number): number {
   const def = ACTIONS[actionId];

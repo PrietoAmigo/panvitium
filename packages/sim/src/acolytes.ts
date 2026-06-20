@@ -9,19 +9,12 @@
  * Acolytes are not lost to outcomes (per the user's correction: no Bad-tier loss). They are
  * lost only at Katabasis, where the lifetime acolyte list is reset to empty (see `katabasis.ts`).
  *
- * Delegation covers Indagatio (time-mode, free) plus Suasio and Decimatio (cost-outcome): a
- * cost-outcome channel pays `ceil(cost × efficiency)` each cycle and stalls when it can't afford
- * one. The per-channel cycle logic lives in `runner.ts` (shared with invocation runners); the
- * `isDelegatable` predicate is the gate on which actions may be assigned.
+ * Delegation covers Indagatio (time-mode) plus Suasio and Decimatio (cost-outcome). Acolytes carry
+ * out their delegated actions WITHOUT spending resources — a delegated cycle pays no gold/influence
+ * cost and so never stalls on an empty treasury. The per-channel cycle logic lives in `runner.ts`
+ * (shared with invocation runners); the `isDelegatable` predicate gates which actions may be assigned.
  */
-import {
-  ACTIONS,
-  actionCycleCost,
-  canAffordCycle,
-  isAutoRepeatable,
-  payCycle,
-  runnerCycleDuration,
-} from './actions.js';
+import { ACTIONS, isAutoRepeatable, runnerCycleDuration } from './actions.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { advanceRunnerCycles } from './runner.js';
 import { mul, floor } from './bignum.js';
@@ -100,12 +93,10 @@ export type AssignmentResult =
   | { readonly ok: false; readonly reason: string };
 
 /**
- * Assign ONE idle acolyte (the lowest-id idle one) to `actionId`, starting its first cycle. For a
- * cost-outcome action this pays `ceil(cost × efficiency)` up front; if the lifetime can't afford it
- * the acolyte is assigned **stalled** (`remainingSeconds = null`) and the tick starts+pays it once
- * resources allow — mirroring the runner's mid-run stall semantics. Time-mode (Indagatio) is free,
- * so the first cycle always starts at `baseTimeSeconds / efficiency`. Fails if no acolyte is idle
- * or the action isn't delegatable.
+ * Assign ONE idle acolyte (the lowest-id idle one) to `actionId`, starting its first cycle. The
+ * acolyte carries out the action for free — no resource cost — so the first cycle always starts
+ * immediately at `baseTimeSeconds / efficiency` (time-mode) or the base duration (cost-outcome),
+ * never stalled on the treasury. Fails if no acolyte is idle or the action isn't delegatable.
  */
 export function assignAcolyteToAction(state: GameState, actionId: string): AssignmentResult {
   if (!isDelegatable(state, actionId)) {
@@ -119,24 +110,16 @@ export function assignAcolyteToAction(state: GameState, actionId: string): Assig
   if (idx === -1) return { ok: false, reason: 'no idle acolyte available' };
 
   const eff = computeModifiers(state).acolyteEfficiencyMul;
-  const cost = actionCycleCost(actionId, eff);
-
-  // Start the first cycle if affordable; otherwise assign stalled and let the tick pay it later.
-  let working = state;
-  let remaining: number | null = null;
-  if (canAffordCycle(working, cost)) {
-    working = payCycle(working, cost);
-    remaining = runnerCycleDuration(actionId, eff);
-  }
+  const remaining = runnerCycleDuration(actionId, eff);
 
   const updated: Acolyte = {
-    ...working.lifetime.acolytes[idx]!,
+    ...acolytes[idx]!,
     assignedAction: actionId,
     remainingSeconds: remaining,
   };
-  const next = [...working.lifetime.acolytes];
+  const next = [...acolytes];
   next[idx] = updated;
-  return { ok: true, state: { ...working, lifetime: { ...working.lifetime, acolytes: next } } };
+  return { ok: true, state: { ...state, lifetime: { ...state.lifetime, acolytes: next } } };
 }
 
 /**
@@ -166,12 +149,12 @@ export function assignedCount(state: GameState, actionId: string): number {
 
 /**
  * Advance every assigned acolyte by `deltaSeconds` through the shared runner engine. Each acolyte
- * runs its own channel at the acolyte efficiency: time-mode (Indagatio) just counts down; cost-
- * outcome (Suasio/Decimatio) pays `ceil(cost × efficiency)` per cycle and stalls when broke. A
- * stalled acolyte carries `remainingSeconds = null` and is retried here each tick.
+ * runs its own channel at the acolyte efficiency: time-mode (Indagatio) and cost-outcome
+ * (Suasio/Decimatio) alike just count down — acolytes carry out their actions for free, so a channel
+ * never stalls on resources.
  *
- * Delegation LOOPS: an assigned acolyte runs its action cycle after cycle — resolving one, paying for
- * and starting the next, catching up multiple cycles within one (possibly offline) delta — and stays
+ * Delegation LOOPS: an assigned acolyte runs its action cycle after cycle — resolving one and
+ * starting the next, catching up multiple cycles within one (possibly offline) delta — and stays
  * assigned until the player recalls it (or Katabasis clears the retinue). It is set-and-forget
  * automation, not a single errand. (Acolytes can instead be assigned to help run a Vitium Compositum
  * ceremony — a different path.) Events from acolyte resolutions are returned in the same shape as
@@ -207,8 +190,8 @@ export function advanceAcolytes(
     working = r.state;
     for (const e of r.events) events.push(e);
 
-    // The acolyte keeps its assignment and loops; `remaining` is the in-flight cycle (or null when
-    // stalled on resources, retried next tick).
+    // The acolyte keeps its assignment and loops; `remaining` is the in-flight cycle (or null
+    // between cycles when a delta lands exactly on a boundary, restarted next tick).
     const nextAcolytes = [...working.lifetime.acolytes];
     nextAcolytes[i] = { ...working.lifetime.acolytes[i]!, remainingSeconds: r.remaining };
     working = { ...working, lifetime: { ...working.lifetime, acolytes: nextAcolytes } };

@@ -157,6 +157,12 @@ skills); an acolyte runs at a flat fraction of the player's (spreadsheet `Global
 `Acolytes`); an invocation runs at a per-invocation rate (`Invocatio` sheet) — some are faster
 than acolytes.
 
+**Delegated channels carry out their actions for free.** Only the player's own cast pays an
+action's gold/influence cost; acolytes and invocation runners consume no resources to perform a
+delegated action, so a delegated channel never stalls on an empty treasury. (Invocations still pay
+their per-second *summon upkeep* — `Invocatio` sheet — which is the price of staying active, not of
+carrying out an action.)
+
 ### Efficiency modes
 
 Every action declares an **efficiency mode** describing how its effective efficiency feeds the
@@ -180,10 +186,11 @@ efficiency (Luxuria levels for *Suasio*, Ira levels for *Decimatio*, per-categor
 the **sum** of all runner contributions on that action: the player's own contribution plus each
 assigned acolyte's plus any invocation contribution.
 
-Example: the player runs *Suggestion* at base efficiency 1.0, with one acolyte assigned at 0.33
-and one Lamia invocation contributing 0.25. Total efficiency 1.58. In `cost-outcome` mode the
-cost is paid as `ceil(5 × 1.58) = 8` influence and a Good outcome produces `floor(1.58) = 1`
-reprobate. In `time` mode the same total would instead divide the duration: `10 / 1.58 ≈ 6.33 s`.
+Example: the player casts *Suggestion* at base efficiency 1.0. In `cost-outcome` mode the player
+pays `ceil(5 × 1.0) = 5` influence and a Good outcome produces `floor(1.0) = 1` reprobate; in
+`time` mode the efficiency would instead divide the duration. A delegated acolyte (0.33) and a
+Lamia invocation (0.25) each run *Suggestion* in their own channel at their own efficiency — and
+carry it out for free, so they add output without adding to the influence bill.
 
 ### Parallelism rules
 
@@ -195,12 +202,14 @@ reprobate. In `time` mode the same total would instead divide the duration: `10 
   to per-second resource costs.
 - **Transactions** (Mercatus invest/divest and the rest listed above) resolve instantly and
   never occupy any slot. There is no build queue; nothing in *Vitium Mercatura* takes time.
-- **Acolytes** each run at most one delegated action; the action shape and rules are the same as
-  the player's, but with the acolyte's efficiency. Acolytes can also be assigned to help run a
-  *Vitium Compositum* ceremony, adding their contribution to its effective efficiency.
+- **Acolytes** each run at most one delegated action at the acolyte's efficiency; the action shape
+  and rules are the same as the player's, except a delegated cycle costs no resources (and so never
+  stalls). Acolytes can also be assigned to help run a *Vitium Compositum* ceremony, adding their
+  contribution to its effective efficiency.
 - **Invocations** with an autonomous-runner effect (Familiar, Imp, Upir, …) run their action in
-  their own channel without occupying the player's slot. A cost-outcome cycle that cannot be
-  paid stalls until it can.
+  their own channel without occupying the player's slot, and carry it out for free — a cost-outcome
+  cycle pays no resource cost, so it never stalls. (The invocation's per-second summon upkeep is a
+  separate charge; see §7.)
 - **Hybrid invocations.** The Familiar both contributes a passive bonus to the player's own
   efficiency *and* runs *Indagatio* autonomously. Future invocations may declare both kinds of
   contribution. There is no general "ambient action" capability for the player; this is
@@ -407,11 +416,11 @@ Lesser practitioners who do the work's lower offices (`00-lore-bible.md` §9). M
   Influence resets on Katabasis, so each lifetime re-earns its retinue.
 - **Delegation.** Each acolyte runs at most one delegated action at the acolyte efficiency (base
   fraction in `Globals`, raised by Tristitia's Resignation skill and Bathin #18). Delegation
-  **loops**: the acolyte runs its action cycle after cycle — paying each one, stalling when it
-  can't afford the next and retrying when it can — and stays assigned until the player recalls it
-  (or Katabasis clears the retinue). It is set-and-forget automation, not a single errand.
-  Acolytes can instead be assigned to help run a *Vitium Compositum* ceremony, summing into its
-  efficiency.
+  **loops**: the acolyte runs its action cycle after cycle — for free, consuming no gold/influence —
+  and stays assigned until the player recalls it (or Katabasis clears the retinue). Because a
+  delegated cycle costs nothing, it never stalls on an empty treasury. It is set-and-forget
+  automation, not a single errand. Acolytes can instead be assigned to help run a *Vitium
+  Compositum* ceremony, summing into its efficiency.
 - **Limits.** Acolytes cannot run actions that require specific maleficia. At most four are
   visualized in the Altar room (per-count background plates); further acolytes work unseen.
 - **Desertion** is a Katabasis-time fiction beat (the unfaithful loot what is portable) — it is
