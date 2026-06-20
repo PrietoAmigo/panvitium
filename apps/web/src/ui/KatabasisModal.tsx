@@ -1,15 +1,6 @@
 import { type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
-import {
-  SINS,
-  sinLevel,
-  eternalSinRevealed,
-  gameRuntimeMs,
-  MAX_SIN_LEVEL,
-  add,
-  isZero,
-  type GameState,
-} from '@panvitium/sim';
+import { eternalSinRevealed, gameRuntimeMs, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
 import { Katabasis } from '../menus/Katabasis.js';
@@ -18,44 +9,24 @@ function RecapLine({
   label,
   value,
   ember = false,
+  white = false,
 }: {
   label: string;
   value: string;
   ember?: boolean;
+  white?: boolean;
 }): ReactElement {
   return (
     <div className="recap-line">
       <span className="k">{label}</span>
-      <span className={`v${ember ? ' ember' : ''}`}>{value}</span>
+      <span className={`v${ember ? ' ember' : ''}${white ? ' white' : ''}`}>{value}</span>
     </div>
   );
 }
 
-/** Sum the eight Cardinal Devotion totals + the Eternal offering — what is now locked forever. */
-function totalDevotion(state: GameState): string {
-  let total = state.eternalDevotion;
-  for (const s of SINS) total = add(total, state.devotion[s]);
-  return formatBigNum(total);
-}
-
-/** Count seals still holding souls after the descent (bindings persist across Katabasis). */
-function sealsBound(state: GameState): number {
-  let n = 0;
-  for (const v of Object.values(state.sigilBindings)) if (v !== undefined && !isZero(v)) n++;
-  return n;
-}
-
-/** Ranks held across the eight, out of 32 (8 × MAX_SIN_LEVEL). */
-function ranksHeld(state: GameState): number {
-  let n = 0;
-  for (const s of SINS) n += sinLevel(state.devotion[s]);
-  return n;
-}
-
 /**
- * The "You Rise" recap (01) — the count of what the descent carried up. Devotion / ranks / bindings
- * persist across Katabasis, so they read straight off the committed state; the souls carried come
- * from the commit's recap roll.
+ * The "You Rise" recap (01) — what survived the descent. The reprobates / maleficia / gold counts
+ * read straight off the commit's recap roll (what the new lifetime begins with after this Katabasis).
  */
 function KatabasisRecapView(): ReactElement {
   const recap = useGameStore((s) => s.recap);
@@ -67,20 +38,18 @@ function KatabasisRecapView(): ReactElement {
   return (
     <div className="katabasis-flow">
       <div className="scene recap" role="dialog" aria-label={strings.katabasis.recapTitle}>
-        <div className="recap-kicker">Some acolytes kept faith, and counted what they could</div>
         <h1 className="recap-title">You Rise</h1>
+        <p className="recap-lore">
+          The body is wasted; the remains are cold meat and a smear of ash, fit only for the pit.
+        </p>
         <div className="recap-list">
-          <RecapLine label="Souls carried up" value={formatBigNum(recap.soulsCarried)} ember />
-          <RecapLine label="Devotion locked forever" value={totalDevotion(state)} />
-          <RecapLine
-            label="Ranks held across the eight"
-            value={`${ranksHeld(state)} / ${SINS.length * MAX_SIN_LEVEL}`}
-          />
-          <RecapLine label="Seals still bound" value={String(sealsBound(state))} />
+          <RecapLine label="Reprobates still here" value={String(recap.reprobatesKept)} white />
+          <RecapLine label="Unlooted maleficia" value={String(recap.maleficiaKept.length)} />
+          <RecapLine label="Remaining gold" value={formatBigNum(recap.goldKept)} />
           {named && <RecapLine label="The Ninth" value="Named" ember />}
         </div>
         <button type="button" className="recap-btn" onClick={() => close()}>
-          Rise to the world
+          Acknowledge
         </button>
       </div>
     </div>

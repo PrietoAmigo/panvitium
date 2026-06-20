@@ -3412,23 +3412,26 @@ body {
   background: #000;
   padding: 8vh 6vw;
 }
-.katabasis-flow .recap-kicker {
-  font-family: var(--font-inscribe);
-  letter-spacing: 0.4em;
-  text-transform: uppercase;
-  color: var(--faint);
-  font-size: 0.78rem;
-  text-wrap: pretty;
-}
 .katabasis-flow .recap-title {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(2.4rem, 6vw, 3.6rem);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  margin: 1rem 0 1.8rem;
+  margin: 0 0 1rem;
   color: #ece1da;
   text-shadow: 0 0 30px rgba(180, 150, 100, 0.35);
+}
+.katabasis-flow .recap-lore {
+  max-width: 30rem;
+  margin: 0 0 1.8rem;
+  font-family: var(--font-inscribe);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  color: var(--faint);
+  font-style: italic;
+  text-wrap: pretty;
 }
 .katabasis-flow .recap-list {
   width: min(440px, 86vw);
@@ -3455,6 +3458,9 @@ body {
 }
 .katabasis-flow .recap-line .v.ember {
   color: var(--ember);
+}
+.katabasis-flow .recap-line .v.white {
+  color: #fff;
 }
 .katabasis-flow .recap-btn {
   margin-top: 2.4rem;
