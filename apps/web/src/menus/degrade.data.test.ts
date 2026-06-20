@@ -30,6 +30,16 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('invocation', ['morpheus'])).toEqual([]);
   });
 
+  it('returns the Familiar visual only in the studio room, grounded (no float/vignette)', () => {
+    const studio = boundVisualsFor('studio', ['familiar']);
+    expect(studio.map((v) => v.id)).toEqual(['familiar']);
+    // Sits on the floor: omits the levitating-trance treatment Morpheus carries.
+    expect(studio[0]?.float).toBeUndefined();
+    expect(studio[0]?.vignette).toBeUndefined();
+    // Same id, wrong room → nothing (its designed display lives in the studio).
+    expect(boundVisualsFor('altar', ['familiar'])).toEqual([]);
+  });
+
   it('skips invocations that have no designed display', () => {
     expect(boundVisualsFor('altar', ['imp', 'upir'])).toEqual([]);
     expect(boundVisualsFor('altar', [])).toEqual([]);
