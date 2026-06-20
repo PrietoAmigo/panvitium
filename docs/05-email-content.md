@@ -8,6 +8,16 @@ where applicable) and the trigger.
 always rendered as 2015. In each record the date is written as a token, `{received date · year →
 2015}`, to be resolved at runtime.
 
+**Spacing rule (per sender).** Body whitespace characterises the writer, so the inbox reads like real
+mail. The reading pane renders bodies with `white-space: pre-wrap`, so in the strings catalog a blank
+line between paragraphs is `\n\n` and a plain line break (e.g. before a sign-off) is `\n`. Senders who
+care about how a letter looks — the steward Gideon, the parish and the clergy, the newsletter
+publications, and above all the fastidious aristocrat Fausto — are written with a greeting, paragraph
+breaks at natural beats, and a blank line before the sign-off. Reuben Marsh, a barely-literate mason
+who cares for none of it, is left as a single unbroken run-on block per letter (which also keeps his
+sentence-initial acrostics — KATABASIS, OBSIDIAN, WAKE UP — contiguous and easy to read off). The
+blockquote bodies below are reference prose; the authored spacing lives in the strings catalog.
+
 **Voice and the two layers (per the lore bible §0, §4, §10).** The household and the world know
 nothing and never use occult vocabulary. The parish is oblique and never about the player directly.
 The bishop and the investigator know more than they say and sharpen toward the endgame. The
