@@ -91,10 +91,10 @@ describe('boundVisualsFor', () => {
     expect(room[0]?.vignette).toBeUndefined();
     expect(room[0]?.groundShadow).toBeUndefined();
     expect(room[0]?.shadowCast).toEqual({
-      offset: { x: -0.11, y: -0.02 },
+      offset: { x: -0.145, y: 0.121 },
       length: 0.4,
       thickness: 0.13,
-      angle: -6,
+      angle: 154,
       ink: 0.85,
     });
     // Same id, wrong room → nothing (her designed display lives in the invocation room).
