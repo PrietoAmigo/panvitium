@@ -160,6 +160,30 @@ describe('commitKatabasis', () => {
     expect(state.lifetime.maleficia).toEqual(recap.maleficiaKept);
     expect(state.rngState).not.toBe(s.rngState); // the rolls consumed the RNG
   });
+
+  it('persists the inbox, arm timers and Fausto flags across the descent (mail history is permanent)', () => {
+    const base = loaded();
+    const s: GameState = {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        inbox: [
+          { id: 'parish-1', receivedAt: 10, readAt: 20 },
+          { id: 'fausto-4', receivedAt: 30, readAt: null },
+        ],
+        emailArmedAt: { 'newsletter-local': 5 },
+        flagFCThreatSent: true,
+        flagFaustoCurse: true,
+      },
+    };
+    const { state } = commitKatabasis(s);
+    // The inbox and its arm timers survive untouched — nothing re-delivers next run.
+    expect(state.lifetime.inbox.map((e) => e.id)).toEqual(['parish-1', 'fausto-4']);
+    expect(state.lifetime.emailArmedAt['newsletter-local']).toBe(5);
+    // The threat branch stays closed, and the curse holds while its letter is still in the inbox.
+    expect(state.lifetime.flagFCThreatSent).toBe(true);
+    expect(state.lifetime.flagFaustoCurse).toBe(true);
+  });
 });
 
 describe('enterKatabasis — teardown on descent (02 §6)', () => {

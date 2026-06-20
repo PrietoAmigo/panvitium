@@ -16,7 +16,8 @@
  *     consumes NONE of the shared mulberry32 stream — existing saves keep their RNG sequence
  *     byte-identical (ADR-011), and the schedule is still reproducible across reload.
  *
- * Arm timestamps live on `lifetime.emailArmedAt` and reset each Katabasis with the inbox.
+ * Arm timestamps live on `lifetime.emailArmedAt` and persist across Katabasis with the inbox, so a
+ * once-delivered email is never re-armed and the per-id dedup below holds for the whole game.
  */
 import { gte, bn } from './bignum.js';
 import { sinLevel } from './progression.js';
@@ -33,8 +34,9 @@ export interface EmailDef {
   /** Fixed delay in seconds after arming before delivery. Omitted / 0 = immediate (no arming). */
   delaySeconds?: number;
   /**
-   * When set, a random once-per-run newsletter: delivered a deterministic offset (drawn from this
-   * [minSeconds, maxSeconds] window) after the eligibility arm, rather than a fixed delay.
+   * When set, a random once-delivered newsletter: delivered a deterministic offset (drawn from this
+   * [minSeconds, maxSeconds] window) after the eligibility arm, rather than a fixed delay. Since the
+   * inbox persists across Katabasis, each newsletter still arrives at most once per game.
    */
   randomWindow?: readonly [number, number];
   /**
@@ -249,8 +251,8 @@ export interface DeliverResult {
  * Arm and deliver the impact-feedback catalog against the fully-advanced state. Immediate emails
  * fire as soon as eligible; timed/random emails arm on first eligibility (recorded in
  * `emailArmedAt`) and fire once their delay/offset elapses and any `fireGate` still holds. Each
- * email is delivered at most once per lifetime (deduped by inbox id). Pure; returns the same state
- * reference and an empty `delivered` when nothing arms or fires.
+ * email is delivered at most once per game (deduped by inbox id, and the inbox persists across
+ * Katabasis). Pure; returns the same state reference and an empty `delivered` when nothing arms or fires.
  */
 export function deliverEmails(state: GameState, now: number): DeliverResult {
   const have = new Set(state.lifetime.inbox.map((e) => e.id));

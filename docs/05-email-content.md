@@ -39,8 +39,13 @@ additive-optional pattern.
 - **`totalSoulsObtained`**: a monotonic, never-decreasing running total of every soul ever minted
   across the whole game (spans lifetimes). Drives the parish soul thresholds. Add as an
   additive-optional field if not already present.
-- **"Per run"**: once per current lifetime (the world emails reset their one-shot eligibility on
-  each Katabasis).
+- **Inbox persistence**: the inbox is permanent mail history — it is **not** wiped on Katabasis, and
+  delivery is deduped per email id across the whole game. Every email below therefore arrives **at
+  most once per game**: once a beat (a soul-threshold bulletin, a newsletter, Fausto #5's door-knock,
+  the Fausto #4 curse) has been delivered, it never replays on a later return. The arm timers and the
+  Fausto flags persist with the inbox, so the threat branch stays closed and the curse holds until its
+  letter is deleted. (Earlier drafts reset the inbox each descent, which replayed these beats; the
+  "per run" framing on the world newsletters below is superseded by once-per-game delivery.)
 - **Plutus**: the `plutus` invocation (static modifier-bundle contribution on Vitium Mercatura
   output). "First Plutus of the run" is the first transition of `lifetime.invocations.plutus` from 0
   to greater than 0 this lifetime. "Still active" means it is greater than 0 at fire time.
