@@ -31,9 +31,11 @@ import {
   ACHIEVEMENTS,
   isUnlocked,
   unreadCount,
+  dialCode,
   type OutcomeEvent,
 } from '@panvitium/sim';
 import { type PanelId } from '../menus/types.js';
+import { SmartphoneDialer, type DialResult } from '../menus/SmartphoneDialer.js';
 import { compositumCostLine, compositumOutcomesLine } from '../game/compositumText.js';
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
 import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
@@ -1182,6 +1184,26 @@ export function PcDesk({ onClose }: { onClose: () => void }): ReactElement {
       renderProgram={(id) => <PcGroupBody group={id.toLowerCase() as PcGroupId} />}
     />
   );
+}
+
+/**
+ * The Studio desk smartphone (Claude Design, Direction A). A self-framed full-screen overlay (mounted
+ * by App like Ars Goetia / the PC / the Suasio scroll, NOT via PanelShell): the player keys a code on
+ * the dialer and submits it. The sim owns the valid-code set (`dialCode`); this wrapper turns the
+ * sim's outcome into the toast the dialer renders, with copy from `strings`. The boon EFFECTS are a
+ * documented empty hook awaiting the outgoing-call engine (docs/PANVITIUM-CALLS-OUT.md) — today a
+ * recognized code only surfaces its placeholder copy and changes no game state.
+ */
+export function PhoneDialer({ onClose }: { onClose: () => void }): ReactElement {
+  const onDial = (raw: string): DialResult => {
+    const outcome = dialCode(raw);
+    if (outcome.kind === 'error') {
+      return { kind: 'error', message: strings.phone.unrecognized };
+    }
+    // TODO(wire): apply the code's real effect through the store once the call engine lands.
+    return { kind: outcome.kind, message: strings.phone.codes[outcome.code] ?? '' };
+  };
+  return <SmartphoneDialer onClose={onClose} onDial={onDial} />;
 }
 
 interface PanelContent {

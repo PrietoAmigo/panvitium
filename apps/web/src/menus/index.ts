@@ -7,6 +7,11 @@ export { MaleficiaCabinet } from './MaleficiaCabinet.js';
 export { SuasioPanel } from './SuasioPanel.js';
 export { PcWindow } from './PcWindow.js';
 export { ArsGoetiaBook } from './ArsGoetiaBook.js';
+export {
+  SmartphoneDialer,
+  type DialResult,
+  type SmartphoneDialerProps,
+} from './SmartphoneDialer.js';
 export type { GoetiaEntry, ArsGoetiaBookProps } from './ars-goetia.types.js';
 export { DegradedScene } from './DegradedScene.js';
 export { DegradePass, DEFAULT_DEGRADE } from './degrade.js';
