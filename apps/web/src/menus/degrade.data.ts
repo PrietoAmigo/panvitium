@@ -150,6 +150,22 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
       ink: 0.85,
     },
   },
+  // Midas stands across the studio table, very close to the player's PoV — only his head and upper
+  // torso read; everything below the table edge is hidden (clipBottom), so he reads as standing on
+  // the far side of the foreground desk. No `float` (no levitation, no enveloping shadow), no
+  // `vignette` (the room is not dimmed) and no ground/cast shadow: NO visual effects, so the figure
+  // carries none. He specifies no movement, so he holds perfectly still. Composited through the same
+  // degradation pass as the room, so he crushes/pixelates uniformly with the backdrop. `left` is his
+  // horizontal centre (the art is centred in its 289×544 frame).
+  midas: {
+    id: 'midas',
+    room: 'studio',
+    src: `${ASSET_BASE}/invocations/midas.png`,
+    left: '56.3%',
+    top: '14.9%',
+    height: '100.2%',
+    clipBottom: 0.74,
+  },
 };
 
 /** Helper: the visuals for whichever bound invocations belong in `room`, from `summoned`

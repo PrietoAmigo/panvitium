@@ -110,6 +110,10 @@ export interface EngineSprite {
       still by default unless a movement is specified (e.g. Morpheus `float`); set this to opt a
       grounded figure out of the ambient idle motion entirely. */
   still?: boolean;
+  /** Hide the figure below this stage-fraction (0..1). The figure (and its enveloping shadow) is
+      clipped at the line in the same scene buffer, so the cut downsamples/pixelates uniformly with
+      the frame — used to crop a figure behind a foreground prop. Omit for no clip. */
+  clipBelow?: number;
   /** Dark enveloping shadow — the widest cast's blur as a fraction of stage height (0 / omitted =
       none). Several stacked black casts off the silhouette build the halo that wraps the figure;
       drawn into the same buffer as the figure, so it crushes and pixelates uniformly with the rest. */
@@ -452,6 +456,15 @@ export class DegradePass {
         ctx.translate(cx, my);
         ctx.rotate(roll);
         ctx.translate(-cx, -my);
+      }
+      // Crop the figure below a stage-fraction (Midas behind the Studio table). Clips the figure and
+      // its enveloping shadow at the line in this same scene buffer, so the cut crushes/pixelates
+      // uniformly with the frame. Clipped figures carry no `float`, so there is no `roll` to skew the
+      // cut — it reads as a clean horizontal table-edge line at clipBelow*h.
+      if (sp.clipBelow != null) {
+        ctx.beginPath();
+        ctx.rect(0, 0, w, sp.clipBelow * h);
+        ctx.clip();
       }
       // Enveloping shadow — a very large dark blob drawn BEHIND the figure (so it darkens the altar
       // around Morpheus), plus a few stacked black casts off the silhouette for a tight rim. Both
