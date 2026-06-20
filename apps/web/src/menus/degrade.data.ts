@@ -126,6 +126,28 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
     height: '49.4%',
     vignette: 0.4,
   },
+  // The Succubus stands in the invocation circle, resting on the floor — the only Apex Luxuria
+  // invocation (`maxActive: 1`). No `float` (no levitation, no enveloping shadow) and no `vignette`
+  // (the room is not dimmed). Instead she casts a long, soft directional shadow (`shadowCast`) that
+  // trails left from her feet across the floor — denser at the feet, tapering along its length.
+  // Composited through the degradation pass like any bound figure, so she and her shadow crush/
+  // pixelate with the room. Baseline (top + height = 85%) lands at the centre of the red ritual
+  // circle; `left` is the figure's horizontal centre (the art is centred in its 677×369 frame).
+  succubus: {
+    id: 'succubus',
+    room: 'invocation',
+    src: `${ASSET_BASE}/invocations/succubus.png`,
+    left: '31%',
+    top: '37%',
+    height: '48%',
+    shadowCast: {
+      offset: { x: -0.11, y: -0.02 },
+      length: 0.4,
+      thickness: 0.13,
+      angle: -6,
+      ink: 0.85,
+    },
+  },
 };
 
 /** Helper: the visuals for whichever bound invocations belong in `room`, from `summoned`

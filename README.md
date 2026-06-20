@@ -103,9 +103,19 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 837** (sim 531 · shared 58 · api 20 · web 228).
+**Current test count: 838** (sim 531 · shared 58 · api 20 · web 229).
 
-> **Latest change — Doppelgänger tweaks (dominance, post-scare disappearance, instant plate).** Three
+> **Latest change — the bound Succubus + a long directional cast shadow (Claude Design handoff).** The
+> **Succubus** (the apex Luxuria invocation, `maxActive: 1`) now composites into the **invocation room**
+> while bound — a grounded figure standing in the red ritual circle (no float, no room-dim), her feet
+> at the centre of the circle. She carries a new **`shadowCast`**: a long, soft directional shadow that
+> trails from her feet across the floor (an offset, tilted ellipse, densest at the feet and tapering
+> along its length), distinct from `groundShadow`'s centred pool. It is a single `BOUND_INVOCATION_VISUALS`
+> entry (`degrade.data.ts`) picked up by `boundVisualsFor`, with `shadowCast` plumbed through
+> `BoundInvocationVisual` → `EngineSprite` → the degrade pass — so she and her shadow crush/pixelate
+> with the room at one fidelity. One render-data test pins the visual (room match + the cast-shadow geometry).
+
+> **Earlier change — Doppelgänger tweaks (dominance, post-scare disappearance, instant plate).** Three
 > follow-ups to the scare: (1) a bound **Doppelgänger now OVERRIDES every other figure in the Studio**
 > — `boundVisualsFor` returns it as the sole figure, so Familiar/Specunitas don't render alongside it;
 > (2) **once the jumpscare has fired the Doppelgänger figure is suppressed for good** (gated on
