@@ -15,7 +15,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   activeInvocationCount,
-  actionCycleCost,
   advanceInvocationRunners,
   bn,
   commitKatabasis,
@@ -388,9 +387,6 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     ...s,
     lifetime: { ...s.lifetime, reprobates: n },
   });
-  /** The Imp's per-cycle gold cost at its effective efficiency (0.05 × player efficiency). */
-  const impGold = (s: GameState): number =>
-    actionCycleCost('caedis', 0.05 * computeModifiers(s).playerEfficiencyMul).gold;
 
   it('is gated on power 2 + Ira 1, stackable, and runs a Good-only Caedis channel', () => {
     const def = invocationById('imp')!;
@@ -424,8 +420,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
   });
 
   it('Lamia runs a background Suasio (logismoi) channel without touching the player slot', () => {
-    let s = withInvocation(fresh(), 'lamia', 1);
-    s = { ...s, lifetime: { ...s.lifetime, influence: bn(1000) } }; // afford the logismoi cost
+    const s = withInvocation(fresh(), 'lamia', 1); // runners are free — no influence needed
     const r = advanceInvocationRunners(s, 0.1, makeRng(1));
     expect(r.state.lifetime.invocationRunners.lamia).toBeGreaterThan(0); // a runner timer started
     expect(r.state.lifetime.actionQueue).toHaveLength(0); // player action slot untouched
@@ -453,13 +448,9 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(def.autonomous).toEqual({ action: 'imperium', efficiency: 0.99 }); // #8: Imperium runner
   });
 
-  it('Succubus runs an autonomous Imperium channel (pays influence, leaves the player slot free)', () => {
-    let s = withInvocation(fresh(), 'succubus', 1);
-    // A big influence cushion so the 100-influence Imperium cycles can pay; high max so it isn't capped.
-    s = {
-      ...s,
-      lifetime: { ...s.lifetime, influence: bn(1_000_000), maxInfluence: bn(10_000_000) },
-    };
+  it('Succubus runs an autonomous Imperium channel for free (leaves the player slot free)', () => {
+    // Runners carry out their action for free, so no influence cushion is needed to cycle.
+    const s = withInvocation(fresh(), 'succubus', 1);
     // 25 s over ~10 s cost-outcome cycles → a couple of Imperium resolutions plus a partial timer.
     const r = advanceInvocationRunners(s, 25, makeRng(3));
     expect(r.state.lifetime.invocationRunners.succubus).toBeGreaterThan(0); // a runner timer started
@@ -478,9 +469,8 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(def.upkeep).toEqual({ maxInfluenceFraction: 0.01 }); // 1% max influence/s upkeep
   });
 
-  it('runs Decimatio in its own channel — pays gold, mints souls, leaves the player slot free', () => {
+  it('runs Decimatio in its own channel — free, mints souls, leaves the player slot free', () => {
     const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 1000), 100);
-    const cost = impGold(s);
     const soulsBefore = s.souls.toNumber();
     // 25 s ≈ 2 full 10 s cycles + a partial third (cost-outcome cycle = base 10 s).
     const r = advanceInvocationRunners(s, 25, makeRng(3));
@@ -488,30 +478,29 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(r.events.every((e) => e.actionId === 'caedis')).toBe(true);
     expect(r.state.souls.toNumber()).toBe(soulsBefore + r.events.length); // 1 kill → 1 soul each
     expect(r.state.lifetime.reprobates).toBe(100 - r.events.length);
-    // Cost is paid at each cycle's START, so a paid-but-in-flight cycle means paid ≥ resolved.
-    const paid = 1000 - r.state.lifetime.gold.toNumber();
-    expect(paid % cost).toBe(0);
-    expect(paid).toBeGreaterThanOrEqual(r.events.length * cost);
+    // The runner carries out Caedis for free — gold is untouched by the cycles.
+    expect(r.state.lifetime.gold.toNumber()).toBe(1000);
     expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });
 
-  it('Good-only: over many cycles gold drops by cost alone (never a gold-loss tier)', () => {
+  it('Good-only: over many cycles gold is untouched (free, never a gold-loss tier)', () => {
     const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 1000), 1000);
-    const cost = impGold(s);
     const soulsBefore = s.souls.toNumber();
     const r = advanceInvocationRunners(s, 100, makeRng(9)); // 10 cycles of 10 s
     expect(r.events).toHaveLength(10);
-    expect(r.state.lifetime.gold.toNumber()).toBe(1000 - 10 * cost); // pure cost, no Bad/Terrible
+    expect(r.state.lifetime.gold.toNumber()).toBe(1000); // free — no cost, no Bad/Terrible
     expect(r.state.souls.toNumber()).toBe(soulsBefore + 10);
     expect(r.state.lifetime.reprobates).toBe(990);
   });
 
-  it('stalls when gold runs out — no key persisted, no further kills', () => {
-    const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 12), 1000);
-    const r = advanceInvocationRunners(s, 1000, makeRng(4)); // affords only 2 cycles (5 each)
-    expect(r.events).toHaveLength(2);
-    expect(r.state.lifetime.gold.toNumber()).toBe(2);
-    expect(r.state.lifetime.invocationRunners.imp).toBeUndefined(); // stalled ⇒ key omitted
+  it('never stalls on an empty treasury — culls for free even at 0 gold', () => {
+    const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 0), 1000);
+    // 1005 s → 100 full 10 s cycles plus an in-flight 101st (so a timer key persists), all free.
+    const r = advanceInvocationRunners(s, 1005, makeRng(4));
+    expect(r.events).toHaveLength(100);
+    expect(r.state.lifetime.gold.toNumber()).toBe(0); // nothing spent
+    expect(r.state.lifetime.reprobates).toBe(900); // 100 Good kills
+    expect(r.state.lifetime.invocationRunners.imp).toBeGreaterThan(0); // in-flight, never stalled
   });
 
   it('stacking a runner multiplies throughput — two imps cull ~2× one (independent channels)', () => {
