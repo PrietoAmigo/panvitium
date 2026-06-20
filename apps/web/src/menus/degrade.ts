@@ -376,11 +376,34 @@ export class DegradePass {
         ctx.rotate(roll);
         ctx.translate(-cx, -my);
       }
-      // Enveloping shadow — several stacked black casts off the silhouette (mirroring the original
-      // stacked drop-shadows): each pass deepens the dark halo wrapping the figure. It lives in the
-      // scene buffer, so it crushes/pixelates with the frame, and is distinct from the room's focal
-      // vignette (which dims the whole altar). A single soft cast washes out on the dark plate.
+      // Enveloping shadow — a very large dark blob drawn BEHIND the figure (so it darkens the altar
+      // around Morpheus), plus a few stacked black casts off the silhouette for a tight rim. Both
+      // live in the scene buffer, so they crush/pixelate with the frame, and stay distinct from the
+      // room's focal vignette (which dims the whole altar). The blob is sized off the figure, so it
+      // scales with it; a single soft cast alone washes out against the dark plate.
       if (sp.shadow && sp.shadow > 0) {
+        const ccx = cx;
+        const ccy = baseY - dh / 2;
+        const rx = dw * 2.0; // very large — envelops well beyond the figure
+        const ry = dh * 1.35;
+        ctx.save();
+        ctx.translate(ccx, ccy);
+        ctx.scale(rx / ry, 1); // squash the circular gradient into the figure's tall ellipse
+        // A continuous falloff — densest at the core, fading the whole way out to fully transparent
+        // at the rim, so the blob has no hard edge and reads as a soft halo (not a flat disc).
+        const blob = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+        blob.addColorStop(0, 'rgba(0,0,0,0.95)');
+        blob.addColorStop(0.2, 'rgba(0,0,0,0.78)');
+        blob.addColorStop(0.45, 'rgba(0,0,0,0.5)');
+        blob.addColorStop(0.7, 'rgba(0,0,0,0.22)');
+        blob.addColorStop(0.88, 'rgba(0,0,0,0.07)');
+        blob.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = blob;
+        ctx.beginPath();
+        ctx.arc(0, 0, ry, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
         ctx.shadowColor = 'rgba(0,0,0,1)';
         ctx.shadowOffsetY = 0.015 * h;
         for (const f of [1, 0.6, 0.35]) {
