@@ -1,15 +1,15 @@
 /* degrade.data.ts — FIXTURES + design FLAVOUR. Not a source of truth.
    ----------------------------------------------------------------------------
    Two things live here:
-     • CREATURE_LAYOUT / ROOM_PLATES — design FLAVOUR (positions, which plate a
-       room uses). Reusable in production: the integrator can feed these into
-       DegradedScene, or override them. Keyed by the sim's canonical ids.
+     • BOUND_INVOCATION_VISUALS / ROOM_PLATES — design FLAVOUR (how a bound invocation is
+       presented, which plate a room uses). Reusable in production: the integrator reads
+       these and feeds them to the presentational layer. Keyed by the sim's canonical ids.
      • *_PREVIEW — storybook fixtures to render the components in isolation.
        DELETE / replace with real sim data on integration (see §2, §4).
 
    ⚠️  Components must never import this file. Props in, callbacks out. */
 
-import type { RoomId, SceneSprite } from './types.js';
+import type { RoomId, BoundInvocationVisual } from './types.js';
 
 export const ASSET_BASE = '/assets/panvitium';
 
@@ -29,21 +29,37 @@ export function altarPlateForAcolytes(acolytes: number): string {
   return `${ASSET_BASE}/backgrounds/altar_by_acolytes/169_altar_clean_${n}acolytes.png`;
 }
 
-/* ---- FLAVOUR: default standing spot + scale for a summoned creature in the
-   Invocation circle, by invocation id. x = centre, y = baseline, w = width,
-   all stage fractions. Tuned to the invocation_complete plate's circle. ---- */
-export const CREATURE_LAYOUT: Record<string, { x: number; y: number; w: number }> = {
-  imp: { x: 0.3, y: 0.93, w: 0.2 },
-  upir: { x: 0.3, y: 0.93, w: 0.24 },
-  harpy: { x: 0.3, y: 0.93, w: 0.26 },
-  succubus: { x: 0.3, y: 0.93, w: 0.24 },
-  nightmare: { x: 0.3, y: 0.93, w: 0.3 },
-  behemoth: { x: 0.3, y: 0.93, w: 0.3 },
+/* ---- FLAVOUR: how each bound invocation is presented over its room. One entry per
+   invocation that has a designed display; the `BoundInvocations` overlay renders it while
+   the invocation is active. Adding a new one is a single entry here — most invocations do
+   not have a designed display yet and so simply have no entry (they render nothing). All
+   lengths are stage-relative so the figure tracks the backdrop at any width. ---- */
+export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
+  // Morpheus levitates over the altar stone in a sleeping trance: a large enveloping shadow
+  // wrapping the figure, a faint soul-coloured aura with rising motes, and the room dimmed so
+  // he reads as the focal light. See docs design handoff "Morpheus invocation float effect".
+  morpheus: {
+    id: 'morpheus',
+    room: 'altar',
+    src: `${ASSET_BASE}/invocations/morpheus.png`,
+    left: '49%',
+    top: '6%',
+    height: '41%',
+    glow: 'oklch(0.62 0.13 35)',
+    float: true,
+    vignette: 0.82,
+    caption: {
+      title: 'MORPHEUS',
+      subtitle: 'Bound to the altar · dreaming',
+      tint: 'oklch(0.74 0.1 35)',
+    },
+  },
 };
 
-/** Helper: build a SceneSprite for a summoned invocation from the layout map. */
-export function spriteFor(id: string): SceneSprite | null {
-  const l = CREATURE_LAYOUT[id];
-  if (!l) return null;
-  return { id, src: `${ASSET_BASE}/invocations/${id}.png`, x: l.x, y: l.y, w: l.w };
+/** Helper: the visuals for whichever bound invocations belong in `room`, from `summoned`
+ *  (the active invocation ids). Skips any id without a designed display. */
+export function boundVisualsFor(room: RoomId, summoned: string[]): BoundInvocationVisual[] {
+  return summoned
+    .map((id) => BOUND_INVOCATION_VISUALS[id])
+    .filter((v): v is BoundInvocationVisual => v !== undefined && v.room === room);
 }

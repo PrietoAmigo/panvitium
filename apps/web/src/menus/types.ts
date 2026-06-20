@@ -128,6 +128,30 @@ export interface SceneSprite {
   w: number;
 }
 
+/** How a bound invocation is presented over its room (presentation only — read off the
+ *  "is this invocation active" flag; touches no sim state). One entry per invocation that
+ *  has a designed display; the `BoundInvocations` overlay renders each. CSS lengths are
+ *  stage-relative (`%`) so the figure tracks the backdrop at any width. */
+export interface BoundInvocationVisual {
+  id: string;
+  /** Which room the figure appears in. */
+  room: RoomId;
+  /** Figure art. */
+  src: string;
+  /** Figure box, stage-relative. `left` is the horizontal anchor (the figure is centered on it). */
+  left: string;
+  top: string;
+  height: string;
+  /** Soul-glow accent (any CSS colour) — drives the rim-light, aura, motes and caption. */
+  glow: string;
+  /** Levitating-trance treatment: enveloping shadow + pulsing aura + rising motes. */
+  float?: boolean;
+  /** Focal-vignette ink alpha (0..1) that dims the room while bound; omit/0 for none. */
+  vignette?: number;
+  /** Optional diegetic caption beneath the figure. */
+  caption?: { title: string; subtitle: string; tint: string };
+}
+
 /** Props for the room scene layer (degraded backdrop + sprites). */
 export interface DegradedSceneProps {
   roomId: RoomId;
