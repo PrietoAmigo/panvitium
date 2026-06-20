@@ -42,6 +42,9 @@ function figureToSprite(v: BoundInvocationVisual, img: HTMLImageElement): Engine
     // Bound invocations hold still unless a movement is specified (only `float` today, e.g.
     // Morpheus levitating). Grounded figures sit perfectly still rather than idly bobbing.
     still: v.float !== true,
+    // Flat contact/ground shadow under the feet, when the figure requests one (grounded figures).
+    // Omitted (not set to undefined) per exactOptionalPropertyTypes when there is no ground shadow.
+    ...(v.groundShadow ? { groundShadow: v.groundShadow } : {}),
   };
 }
 

@@ -33,6 +33,7 @@ import {
   invocationVisible,
   invoke,
   makeRng,
+  markDoppelgaengerSeen,
   NEUTRAL_MODIFIERS,
   perSecondRates,
   tick,
@@ -589,5 +590,25 @@ describe('tick outcome source tagging (player-only PC log)', () => {
     expect(events.some((e) => e.source === undefined)).toBe(true); // player
     expect(sources).toContain('acolyte');
     expect(sources).toContain('invocation');
+  });
+});
+
+describe('markDoppelgaengerSeen — one-time jumpscare flag (pure + idempotent)', () => {
+  it('sets the permanent flag without mutating the input, and is idempotent once set', () => {
+    const base = fresh('doppel-seen', 0);
+    expect(base.flagDoppelgaengerSeen).toBeUndefined();
+
+    const seen = markDoppelgaengerSeen(base);
+    expect(seen.flagDoppelgaengerSeen).toBe(true);
+    expect(base.flagDoppelgaengerSeen).toBeUndefined(); // input untouched (purity)
+
+    // Idempotent: a second mark returns the same reference (no needless new state).
+    expect(markDoppelgaengerSeen(seen)).toBe(seen);
+  });
+
+  it('survives Katabasis (a once-seen scare never replays in a later lifetime)', () => {
+    const seen = markDoppelgaengerSeen(fresh('doppel-katabasis', 0));
+    const { state: descended } = commitKatabasis(seen);
+    expect(descended.flagDoppelgaengerSeen).toBe(true);
   });
 });

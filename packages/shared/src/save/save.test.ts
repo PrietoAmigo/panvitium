@@ -156,6 +156,19 @@ describe('inbox reply / delete — ADR-023 additive-optional round-trip', () => 
   });
 });
 
+describe('flagDoppelgaengerSeen — ADR-023 additive-optional round-trip', () => {
+  it('round-trips when set; omitted from the wire (and absent ≡ false) otherwise', () => {
+    const fresh = createInitialState('seed', 0);
+    expect('flagDoppelgaengerSeen' in serializeGameState(fresh)).toBe(false);
+    expect(deserializeGameState(serializeGameState(fresh)).flagDoppelgaengerSeen).toBeUndefined();
+
+    const seen: GameState = { ...fresh, flagDoppelgaengerSeen: true };
+    const wire = serializeGameState(seen);
+    expect(wire.flagDoppelgaengerSeen).toBe(true);
+    expect(deserializeGameState(wire).flagDoppelgaengerSeen).toBe(true);
+  });
+});
+
 describe('Mercatus depths — ADR-023 additive-optional (a/b/c round-trip)', () => {
   it('(a) a save without mercatusDepths loads with every depth defaulting to 0', () => {
     const fresh = createInitialState('seed', 0);

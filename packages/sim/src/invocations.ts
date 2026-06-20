@@ -333,6 +333,16 @@ export function dispel(state: GameState, id: string): InvokeResult {
   };
 }
 
+/**
+ * Mark the one-time Doppelgänger jumpscare as seen (presentation-only bookkeeping). Pure: returns a
+ * new state with `flagDoppelgaengerSeen` set, leaving the input untouched. Idempotent — once set the
+ * scare never re-arms. The scare itself is orchestrated by the web app; this only records that it ran.
+ */
+export function markDoppelgaengerSeen(state: GameState): GameState {
+  if (state.flagDoppelgaengerSeen === true) return state;
+  return { ...state, flagDoppelgaengerSeen: true };
+}
+
 /** Invocation ids that run an autonomous background action and are currently active (count ≥ 1). */
 function activeRunnerIds(state: GameState): string[] {
   const out: string[] = [];

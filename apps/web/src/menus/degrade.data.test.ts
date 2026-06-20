@@ -70,6 +70,18 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['specunitas'])).toEqual([]);
   });
 
+  it('returns the Doppelgaenger visual only in the studio room, grounded with a contact shadow', () => {
+    const studio = boundVisualsFor('studio', ['doppelgaenger']);
+    expect(studio.map((v) => v.id)).toEqual(['doppelgaenger']);
+    // Stands on the parquet facing the lens: no levitation, no room-dimming glow — just a flat
+    // contact/ground shadow at its feet (the only treatment the brief allows).
+    expect(studio[0]?.float).toBeUndefined();
+    expect(studio[0]?.vignette).toBeUndefined();
+    expect(studio[0]?.groundShadow).toBe(0.83);
+    // Same id, wrong room → nothing (its designed display lives in the studio).
+    expect(boundVisualsFor('altar', ['doppelgaenger'])).toEqual([]);
+  });
+
   it('skips invocations that have no designed display', () => {
     expect(boundVisualsFor('altar', ['imp', 'upir'])).toEqual([]);
     expect(boundVisualsFor('altar', [])).toEqual([]);

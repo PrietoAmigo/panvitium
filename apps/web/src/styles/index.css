@@ -109,6 +109,19 @@ body {
   inset: 0;
 }
 
+/* The one-time Doppelgänger jumpscare. Fixed over the WHOLE viewport (not the centred stage box) so
+   it covers everything — above every menu/system modal (Title 90, Settings 95, entry fade 96). It
+   captures all pointer input (pointer-events on, no dismiss handler), so the scare can't be skipped
+   and nothing underneath is interactable while it shows. The plate inside is a DegradedScene canvas
+   (.scene-canvas, inset 0) so it stretches to fill and passes through the degradation pass. */
+.jumpscare-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  animation: fade-in 0.08s ease both;
+}
+
 /* bespoke candlelit backdrops, one per room */
 .scene-invocation {
   background:

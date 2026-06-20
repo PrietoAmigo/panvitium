@@ -133,6 +133,9 @@ export const serializedGameStateSchema = z.object({
   // Additive-optional (ADR-023): absent ≡ false; omitted from the wire when false.
   flagFatherMad: z.boolean().optional(),
   flagReubenDead: z.boolean().optional(),
+  // One-time Doppelgänger jumpscare seen-flag (presentation bookkeeping). Permanent; carried across
+  // lifetimes so the scare never replays. Additive-optional (ADR-023): absent ≡ false.
+  flagDoppelgaengerSeen: z.boolean().optional(),
   // Permanent ×2-per-stack player-efficiency multiplier from past Erinyes commits (03 §2.4).
   // Additive-optional (ADR-023); old saves default to 0.
   erinyesEfficiencyStacks: z.number().int().nonnegative().optional(),
@@ -261,6 +264,7 @@ export function serializeGameState(state: GameState): SerializedGameState {
     // Permanent story flags (05): omit when false (additive-optional, ADR-023).
     ...(state.flagFatherMad === true ? { flagFatherMad: true } : {}),
     ...(state.flagReubenDead === true ? { flagReubenDead: true } : {}),
+    ...(state.flagDoppelgaengerSeen === true ? { flagDoppelgaengerSeen: true } : {}),
     ...(typeof state.erinyesEfficiencyStacks === 'number' && state.erinyesEfficiencyStacks > 0
       ? { erinyesEfficiencyStacks: state.erinyesEfficiencyStacks }
       : {}),
@@ -352,6 +356,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     // Permanent story flags (05): conditional spread keeps them optional under EOPT (absent ≡ false).
     ...(s.flagFatherMad === true ? { flagFatherMad: true } : {}),
     ...(s.flagReubenDead === true ? { flagReubenDead: true } : {}),
+    ...(s.flagDoppelgaengerSeen === true ? { flagDoppelgaengerSeen: true } : {}),
     ...(typeof s.erinyesEfficiencyStacks === 'number' && s.erinyesEfficiencyStacks > 0
       ? { erinyesEfficiencyStacks: s.erinyesEfficiencyStacks }
       : {}),
