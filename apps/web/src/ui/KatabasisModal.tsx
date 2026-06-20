@@ -4,13 +4,14 @@ import {
   SINS,
   sinLevel,
   eternalSinRevealed,
+  gameRuntimeMs,
   MAX_SIN_LEVEL,
   add,
   isZero,
   type GameState,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
-import { formatBigNum } from '../game/format.js';
+import { formatBigNum, formatDuration } from '../game/format.js';
 import { Katabasis } from '../menus/Katabasis.js';
 
 function RecapLine({
@@ -91,15 +92,17 @@ function KatabasisRecapView(): ReactElement {
  * Latin verse. Rendered as an overlay ON TOP of the live flow so the player's place in the descent
  * (the end-state Princes / the open Eternal takeover) is preserved when they close the book.
  */
-function EternalRevealOverlay(): ReactElement {
+function EternalRevealOverlay({ state }: { state: GameState }): ReactElement {
   const dismiss = useGameStore((s) => s.dismissEternalReveal);
   return (
     <div className="katabasis-flow katabasis-flow--overlay">
       <div className="reveal" role="dialog" aria-label={strings.eternal.name}>
-        <div className="reveal-kicker">{strings.eternal.revealKicker}</div>
         <h1 className="reveal-name">{strings.eternal.name}</h1>
-        <p className="reveal-gloss">{strings.eternal.gloss}</p>
         <p className="reveal-verse">{strings.eternal.verse}</p>
+        <div className="reveal-time">
+          <span className="reveal-time-label">{strings.eternal.runtimeLabel}</span>
+          <span className="reveal-time-value">{formatDuration(gameRuntimeMs(state))}</span>
+        </div>
         <button type="button" className="reveal-dismiss" onClick={() => dismiss()}>
           {strings.eternal.dismiss}
         </button>
@@ -116,12 +119,13 @@ function EternalRevealOverlay(): ReactElement {
 export function KatabasisModal(): ReactElement | null {
   const phase = useGameStore((s) => s.katabasisPhase);
   const eternalReveal = useGameStore((s) => s.eternalReveal);
+  const state = useGameStore((s) => s.state);
   if (phase === null && !eternalReveal) return null;
   return (
     <>
       {phase === 'menu' && <Katabasis />}
       {phase === 'recap' && <KatabasisRecapView />}
-      {eternalReveal && <EternalRevealOverlay />}
+      {eternalReveal && state && <EternalRevealOverlay state={state} />}
     </>
   );
 }

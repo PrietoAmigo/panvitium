@@ -21,18 +21,22 @@ export function HoldButton({
   variant = 'blood',
   children,
   ariaLabel,
+  onHoldChange,
 }: {
   onStep: (delta: number) => void;
   disabled?: boolean;
   variant?: 'blood' | 'ash';
   children: ReactNode;
   ariaLabel?: string;
+  onHoldChange?: (holding: boolean) => void;
 }): ReactElement {
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
   const lastRef = useRef(0);
   const onStepRef = useRef(onStep);
   onStepRef.current = onStep;
+  const onHoldChangeRef = useRef(onHoldChange);
+  onHoldChangeRef.current = onHoldChange;
   const [holding, setHolding] = useState(false);
 
   const stop = useCallback(() => {
@@ -43,6 +47,7 @@ export function HoldButton({
     window.removeEventListener('pointerup', stop);
     window.removeEventListener('pointercancel', stop);
     setHolding(false);
+    onHoldChangeRef.current?.(false);
   }, []);
 
   const frame = useCallback((now: number) => {
@@ -65,6 +70,7 @@ export function HoldButton({
     startRef.current = now;
     lastRef.current = now - HOLD_STEP_MS; // one step immediately on press
     setHolding(true);
+    onHoldChangeRef.current?.(true);
     rafRef.current = requestAnimationFrame(frame);
     window.addEventListener('pointerup', stop);
     window.addEventListener('pointercancel', stop);
