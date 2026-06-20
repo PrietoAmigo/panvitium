@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 838** (sim 531 · shared 58 · api 20 · web 229).
+**Current test count: 839** (sim 532 · shared 58 · api 20 · web 229).
 
 > **Latest change — delegated actions are free (acolytes & invocations).** Acolytes and autonomous
 > invocation runners (the Familiar's Indagatio, the Imp's Caedis, the Succubus's Imperium, …) now
@@ -111,9 +111,10 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > (`runner.ts`) no longer charges a per-cycle cost, acolyte assignment no longer pays up front, and a
 > delegated channel never stalls on an empty treasury. Only the player's own cast still pays. (The
 > per-second invocation _summon upkeep_ is unchanged — that is the price of staying active, not of
-> performing an action.) The now-dead `actionCycleCost` / `canAffordCycle` / `payCycle` helpers were
-> removed; the runner, acolyte, and invocation tests pin the free behaviour, and `docs/02` §3/§10 were
-> updated to match.
+> performing an action.) Delegated runners remain subject to the Morpheus / Katabasis freeze, which
+> short-circuits the tick before the runner steps. The now-dead `actionCycleCost` / `canAffordCycle` /
+> `payCycle` helpers were removed; the runner, acolyte, invocation, and Morpheus-freeze tests pin the
+> behaviour, and `docs/02` §3/§10 were updated to match.
 >
 > **Earlier change — the bound Succubus + a long directional cast shadow (Claude Design handoff).** The
 > **Succubus** (the apex Luxuria invocation, `maxActive: 1`) now composites into the **invocation room**

@@ -5,6 +5,7 @@
  *     clears pendingMorpheus, sets pendingErinyes and morpheusLockedOut
  *   - Morpheus invoke: deducts soul + gold cost; refused while morpheusLockedOut
  *   - tick is frozen while Morpheus is active (clock advances, nothing else accrues)
+ *   - the freeze also halts acolyte + autonomous-invocation runners (no delegated progress)
  *   - startAction and investMercatus are blocked under Morpheus
  *   - commitKatabasis: Erinyes overrides → gold 0, maleficia 0, stacks ×2 player efficiency
  *   - commitKatabasis: Morpheus overrides → gold 100%, maleficia 100%, Emptio list preserved
@@ -171,6 +172,32 @@ describe('Morpheus freeze: tick is held in stillness', () => {
     expect(BASE_GOLD_PER_SECOND).toBeGreaterThan(0); // sanity
     expect(r.state.lastTickAt).toBe(active.lastTickAt + 60_000);
     expect(r.events).toEqual([]);
+  });
+
+  it('autonomous invocation + acolyte runners make no progress under the freeze', () => {
+    // An Imp (autonomous Good-only Caedis) and an acolyte delegated to Caedis would, on a normal
+    // tick, cull the reprobate pool and mint souls. Under Morpheus the tick short-circuits BEFORE
+    // the acolyte / invocation-runner steps, so neither advances — proving the freeze also covers
+    // delegated actions. (Runners now carry out their actions for free, so a per-cycle cost can't
+    // be what stops them; the tick-level freeze is.)
+    const s = withGates({ apex: 'morpheus', reprobates: 1000 });
+    const frozen: GameState = {
+      ...s,
+      lifetime: {
+        ...s.lifetime,
+        invocations: { morpheus: 1, imp: 1 },
+        acolytes: [{ id: 1, assignedAction: 'caedis', remainingSeconds: 10 }],
+      },
+    };
+    const reprobatesBefore = totalReprobates(frozen);
+    const soulsBefore = soulsOf(frozen);
+    const r = tick(frozen, 3600); // an hour that would otherwise resolve many cull cycles
+    expect(r.events).toEqual([]);
+    expect(totalReprobates(r.state)).toBe(reprobatesBefore); // no culls
+    expect(soulsOf(r.state)).toBe(soulsBefore); // no souls minted
+    // In-flight timers are untouched — the freeze is a hard pause, not a reset or a re-cost.
+    expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(10);
+    expect(r.state.lifetime.invocationRunners).toEqual(frozen.lifetime.invocationRunners);
   });
 });
 
