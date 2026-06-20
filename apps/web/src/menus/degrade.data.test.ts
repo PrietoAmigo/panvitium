@@ -101,6 +101,20 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['succubus'])).toEqual([]);
   });
 
+  it('returns the Midas visual only in the studio room, clipped behind the table (no effects)', () => {
+    const studio = boundVisualsFor('studio', ['midas']);
+    expect(studio.map((v) => v.id)).toEqual(['midas']);
+    // Stands across the foreground table: no levitation, no room-dimming glow, no ground/cast shadow —
+    // only the table-edge crop (clipBottom) hides everything below his upper torso.
+    expect(studio[0]?.float).toBeUndefined();
+    expect(studio[0]?.vignette).toBeUndefined();
+    expect(studio[0]?.groundShadow).toBeUndefined();
+    expect(studio[0]?.shadowCast).toBeUndefined();
+    expect(studio[0]?.clipBottom).toBe(0.74);
+    // Same id, wrong room → nothing (his designed display lives in the studio).
+    expect(boundVisualsFor('altar', ['midas'])).toEqual([]);
+  });
+
   it('a present Doppelgaenger overrides every other figure in the studio', () => {
     // Specunitas + Familiar both have studio displays, but a bound Doppelgaenger is the sole figure.
     const studio = boundVisualsFor('studio', ['specunitas', 'familiar', 'doppelgaenger']);

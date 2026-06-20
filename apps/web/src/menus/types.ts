@@ -143,6 +143,10 @@ export interface BoundInvocationVisual {
   left: string;
   top: string;
   height: string;
+  /** Hide the figure below this stage-fraction (0..1 from the top) — used to crop a figure behind a
+   *  foreground prop (e.g. Midas behind the Studio table). Omit for no clip (figure clips only at the
+   *  frame edge, as before). */
+  clipBottom?: number;
   /** Levitating-trance treatment: slow float + a dark enveloping shadow (no orange glow). */
   float?: boolean;
   /** Focal-vignette ink alpha (0..1) that dims the room while bound; omit/0 for none. */

@@ -48,6 +48,9 @@ function figureToSprite(v: BoundInvocationVisual, img: HTMLImageElement): Engine
     // Long directional cast shadow trailing from the feet, when the figure requests one (the
     // Succubus). Omitted (not set to undefined) per exactOptionalPropertyTypes when absent.
     ...(v.shadowCast ? { castShadow: v.shadowCast } : {}),
+    // Crop the figure below a stage-fraction, when requested (Midas behind the Studio table). Omitted
+    // (not set to undefined) per exactOptionalPropertyTypes when there is no clip.
+    ...(v.clipBottom != null ? { clipBelow: v.clipBottom } : {}),
   };
 }
 
