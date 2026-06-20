@@ -103,7 +103,18 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 821** (sim 528 · shared 57 · api 20 · web 216).
+**Current test count: 824** (sim 529 · shared 57 · api 20 · web 218).
+
+> **Latest change — the inbox is permanent mail history (email persistence fix).** `commitKatabasis`
+> previously wiped `lifetime.inbox` (and the arm timers and Fausto flags) on every descent. Because
+> `deliverEmails` dedups by inbox id, that wipe re-delivered any email whose trigger still held the
+> first tick after a return — so a beat gated on a **monotonic** tally replayed each descent: Fausto
+> #5's **door-knock** sounded after every katabasis instead of once when received, and the parish
+> soul-threshold bulletins re-appeared; the sin-gated **curse letter** re-armed and re-laid its −67%
+> debuff each run. The inbox, `emailArmedAt`, `flagFCThreatSent` and `flagFaustoCurse` now **carry
+> across the descent**, so every email arrives at most once per game, the threat branch stays closed,
+> and the curse holds until its letter is deleted ("as long as these words remain"). One sim test
+> pins the carry-over; doc 05's "per run" framing is superseded by once-per-game delivery.
 
 > **Latest change — Fausto's curse made visible (Claude Design handoff, "Vertigo").** The curse
 > (`flagFaustoCurse`, laid by Fausto Cescru's fourth letter, lifted when it's deleted) was previously

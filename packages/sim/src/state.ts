@@ -172,29 +172,32 @@ export interface LifetimeState {
   /**
    * The impact-feedback inbox (Phase 5.2): emails delivered as the in-world consequences of the
    * player's actions accrue here, newest appended last. Each entry records which catalog email was
-   * delivered, when, and when it was read (null = unread). Always defined at runtime (default []);
-   * additive-optional on the wire per ADR-023 — pre-inbox saves load with an empty inbox.
+   * delivered, when, and when it was read (null = unread). Mail history is permanent — the inbox
+   * persists across Katabasis (it is never wiped), so `deliverEmails`' per-id dedup also holds across
+   * lifetimes and a once-earned beat never replays on a later return. Always defined at runtime
+   * (default []); additive-optional on the wire per ADR-023 — pre-inbox saves load with an empty inbox.
    */
   inbox: ReceivedEmail[];
   /**
    * Arm timestamps (wall-clock ms) for the timed/random impact-feedback emails (05 §triggers):
-   * the moment each delayed email's precondition FIRST held this lifetime. A timed email fires
-   * `delaySeconds` after its arm; a random newsletter fires after a deterministic per-lifetime
-   * offset past it. Keyed by email id; an absent key means "not yet eligible". Reset with the
-   * lifetime on Katabasis. Always defined at runtime ({}); additive-optional on the wire (ADR-023).
+   * the moment each delayed email's precondition FIRST held. A timed email fires `delaySeconds`
+   * after its arm; a random newsletter fires after a deterministic offset past it. Keyed by email id;
+   * an absent key means "not yet eligible". Persists across Katabasis with the inbox, so a mid-arming
+   * email keeps its schedule. Always defined at runtime ({}); additive-optional on the wire (ADR-023).
    */
   emailArmedAt: Record<string, number>;
   /**
    * True once the player has sent the threat reply to Fausto Cescru #1 (05, the adversary). Closes
-   * the "friendly" branch — Fausto #2/#3 never fire — and routes the arc straight to #4/#5. Scoped
-   * to the lifetime (the inbox it gates resets each descent). Additive-optional (ADR-023); absent ≡
-   * the friendly branch is still open.
+   * the "friendly" branch — Fausto #2/#3 never fire — and routes the arc straight to #4/#5. Persists
+   * across Katabasis with the inbox it gates (Fausto #1 stays delivered, so the branch stays closed).
+   * Additive-optional (ADR-023); absent ≡ the friendly branch is still open.
    */
   flagFCThreatSent?: boolean;
   /**
    * True while Fausto Cescru #4's curse is in force (05): set on its delivery, cleared by deleting
    * that email. While true, reprobate generation, influence gain and gold gain are each ×0.33
-   * (folded in by `computeModifiers`). Scoped to the lifetime, like the email that carries it.
+   * (folded in by `computeModifiers`). Travels with the letter that carries it — the inbox persists
+   * across Katabasis, so the curse holds until the email is deleted ("as long as these words remain").
    * Additive-optional (ADR-023); absent ≡ no curse.
    */
   flagFaustoCurse?: boolean;

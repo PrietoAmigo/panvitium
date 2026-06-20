@@ -240,12 +240,20 @@ export function commitKatabasis(
     generationPool: 0, // pools reset with the fresh lifetime
     suicidePool: 0,
     murderPool: 0,
-    inbox: [], // impact-feedback inbox resets with the fresh lifetime (5.2)
-    emailArmedAt: {}, // …and so do the email arm timers (05): the next run re-arms from scratch
-    // flagFCThreatSent / flagFaustoCurse are intentionally omitted — the Fausto arc is per-lifetime
-    // (absent ≡ false / no curse). flagFatherMad / flagReubenDead are top-level and carry across.
-    // pendingErinyes / pendingMorpheus / morpheusLockedOut are intentionally omitted — the new
-    // lifetime starts clean (they're additive-optional and absent ≡ false).
+    // The inbox is mail history: it persists across descents (it is never wiped). Carrying it over
+    // also keeps `deliverEmails`' once-per-id dedup intact between lifetimes, so a story beat gated on
+    // a monotonic tally (a soul-threshold bulletin, Fausto #5's door-knock) is delivered once and
+    // never replays on the next return. The arm timers ride along so a mid-arming timed/random email
+    // keeps its schedule across the descent instead of re-arming from scratch.
+    inbox: state.lifetime.inbox,
+    emailArmedAt: state.lifetime.emailArmedAt,
+    // The Fausto flags travel with the inbox they describe: the threat-reply branch stays closed once
+    // sent, and the curse stays in force for as long as its letter remains undeleted ("quamdiu haec
+    // verba manent") rather than silently lifting on the descent.
+    ...(state.lifetime.flagFCThreatSent === true ? { flagFCThreatSent: true } : {}),
+    ...(state.lifetime.flagFaustoCurse === true ? { flagFaustoCurse: true } : {}),
+    // flagFatherMad / flagReubenDead are top-level and carry across. pendingErinyes / pendingMorpheus
+    // / morpheusLockedOut are intentionally omitted — the new lifetime starts clean.
   };
 
   return {
