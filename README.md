@@ -103,9 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 839** (sim 532 · shared 58 · api 20 · web 229).
+**Current test count: 841** (sim 532 · shared 58 · api 20 · web 231).
 
-> **Latest change — delegated actions are free (acolytes & invocations).** Acolytes and autonomous
+> **Latest change — the bound Upir figure (Claude Design handoff).** The **Upir** (a stackable Apex
+> Gula shade) now composites into the **invocation room** whenever **at least one is bound** — a
+> grounded figure standing on the **right side** of the red ritual circle (no float, no room-dim).
+> It is staged like the Succubus but shifted right (`left` 31% → 41%), and carries her exact
+> `shadowCast` eased a touch bigger (`length` 0.40 → 0.46, `thickness` 0.13 → 0.15) and 25% more
+> opaque (`ink` 0.85 → 1.0, capped at the ceiling); the offset is relative to the feet, so the long
+> directional shadow trails left across the floor and **follows the figure**. It is a single
+> `BOUND_INVOCATION_VISUALS` entry (`degrade.data.ts`) picked up by `boundVisualsFor` — no engine,
+> type, or component change — so the figure and its shadow crush/pixelate with the room at one
+> fidelity. The figure art (`invocations/upir.png`) is already in the repo. One render-data test pins
+> the visual (room match + the cast-shadow geometry).
+>
+> **Earlier change — delegated actions are free (acolytes & invocations).** Acolytes and autonomous
 > invocation runners (the Familiar's Indagatio, the Imp's Caedis, the Succubus's Imperium, …) now
 > carry out their delegated actions **without spending gold/influence** — the shared runner engine
 > (`runner.ts`) no longer charges a per-cycle cost, acolyte assignment no longer pays up front, and a

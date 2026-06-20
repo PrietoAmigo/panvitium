@@ -101,6 +101,26 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['succubus'])).toEqual([]);
   });
 
+  it('returns the Upir visual only in the invocation room, grounded with a long cast shadow', () => {
+    const room = boundVisualsFor('invocation', ['upir']);
+    expect(room.map((v) => v.id)).toEqual(['upir']);
+    // Apex shade on the circle's right side: no levitation, no room-dimming glow — instead a long
+    // directional cast shadow trailing left from its feet, a touch bigger/darker than the Succubus's.
+    expect(room[0]?.float).toBeUndefined();
+    expect(room[0]?.vignette).toBeUndefined();
+    expect(room[0]?.groundShadow).toBeUndefined();
+    expect(room[0]?.left).toBe('41%');
+    expect(room[0]?.shadowCast).toEqual({
+      offset: { x: -0.145, y: 0.121 },
+      length: 0.46,
+      thickness: 0.15,
+      angle: 154,
+      ink: 1.0,
+    });
+    // Same id, wrong room → nothing (its designed display lives in the invocation room).
+    expect(boundVisualsFor('altar', ['upir'])).toEqual([]);
+  });
+
   it('returns the Midas visual only in the studio room, clipped behind the table (no effects)', () => {
     const studio = boundVisualsFor('studio', ['midas']);
     expect(studio.map((v) => v.id)).toEqual(['midas']);
@@ -134,7 +154,7 @@ describe('boundVisualsFor', () => {
   });
 
   it('skips invocations that have no designed display', () => {
-    expect(boundVisualsFor('altar', ['imp', 'upir'])).toEqual([]);
+    expect(boundVisualsFor('altar', ['imp', 'lamia'])).toEqual([]);
     expect(boundVisualsFor('altar', [])).toEqual([]);
   });
 });

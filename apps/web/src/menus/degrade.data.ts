@@ -177,6 +177,29 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
       ink: 0.98,
     },
   },
+  // Upir — an Apex shade staged in the invocation circle, like the Succubus but shifted onto the
+  // circle's right side; its cast shadow follows the figure (the offset is relative to the feet).
+  // The shadow IS the Succubus's, a touch bigger and 25% more opaque. No `float` (no levitation/
+  // enveloping halo) and no `vignette` (the room is not dimmed) — just the long directional
+  // `castShadow`, densest at the feet and tapering left across the floor. Composited through the
+  // degradation pass like any bound figure, so it crushes/pixelates with the room. Baseline
+  // (top + height = 84%) lands on the ritual circle; `left` is the figure's horizontal centre.
+  upir: {
+    id: 'upir',
+    room: 'invocation',
+    src: `${ASSET_BASE}/invocations/upir.png`,
+    left: '41%',
+    top: '39%',
+    height: '45%',
+    shadowCast: {
+      // Copied from the Succubus, eased a touch bigger (length/thickness) and 25% more opaque.
+      offset: { x: -0.145, y: 0.121 }, // same as the Succubus — keeps the shadow trailing left
+      length: 0.46, // Succubus 0.40 → a bit longer
+      thickness: 0.15, // Succubus 0.13 → a bit thicker
+      angle: 154, // same low side-light angle as the Succubus
+      ink: 1.0, // Succubus 0.85, +25% = 1.0625, capped at the 1.0 ceiling
+    },
+  },
   // Midas stands across the studio table, very close to the player's PoV — only his head and upper
   // torso read; everything below the table edge is hidden (clipBottom), so he reads as standing on
   // the far side of the foreground desk. No `float` (no levitation, no enveloping shadow), no
