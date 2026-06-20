@@ -114,6 +114,11 @@ export interface EngineSprite {
       none). Several stacked black casts off the silhouette build the halo that wraps the figure;
       drawn into the same buffer as the figure, so it crushes and pixelates uniformly with the rest. */
   shadow?: number;
+  /** Flat contact/ground shadow — ink alpha (0..1) of a soft dark pool drawn on the floor at the
+      figure's baseline (0 / omitted = none). A grounded figure's cast from an overhead light: a
+      squashed ellipse pinned to the ground (it does NOT bob with the figure), drawn into the scene
+      buffer so it crushes/pixelates with the frame. Distinct from `shadow` (the enveloping halo). */
+  groundShadow?: number;
 }
 
 /** A composed scene: one backdrop plate + any sprites + the studio ritual glow. */
@@ -369,6 +374,30 @@ export class DegradePass {
       const dh = drawH * breathe;
       const dx = cx - dw / 2;
       const dy = baseY - dh;
+      // Flat contact/ground shadow — a soft dark pool pinned to the floor at the figure's baseline
+      // (the cast of an overhead light). Drawn BEFORE the figure so the feet sit ON it, and off the
+      // UN-bobbed baseline (sp.y, not baseY) so it stays put on the ground while the figure moves.
+      // A circular gradient squashed flat into a ground ellipse; lives in the scene buffer, so it
+      // crushes/pixelates with the frame. Distinct from the enveloping `shadow` halo.
+      if (sp.groundShadow && sp.groundShadow > 0) {
+        const a = sp.groundShadow;
+        const rx = dw * 0.081; // a tight pool, a touch wider than the figure's stance
+        const ry = rx * 0.18; // squashed flat onto the floor
+        const gcy = sp.y * h - ry * 0.2 - dh * 0.03; // tuck just under the feet, raised slightly
+        ctx.save();
+        ctx.translate(cx, gcy);
+        ctx.scale(1, ry / rx);
+        const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+        pool.addColorStop(0, `rgba(0,0,0,${a})`);
+        pool.addColorStop(0.5, `rgba(0,0,0,${a * 0.5})`);
+        pool.addColorStop(0.82, `rgba(0,0,0,${a * 0.14})`);
+        pool.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = pool;
+        ctx.beginPath();
+        ctx.arc(0, 0, rx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
       ctx.save();
       if (roll) {
         const my = baseY - dh / 2;

@@ -147,6 +147,11 @@ export interface BoundInvocationVisual {
   float?: boolean;
   /** Focal-vignette ink alpha (0..1) that dims the room while bound; omit/0 for none. */
   vignette?: number;
+  /** Flat contact/ground shadow under the figure's feet (0..1 ink alpha; omit/0 = none). A soft dark
+   *  pool on the floor directly below the figure — the cast of an overhead light — squashed flat onto
+   *  the ground at the baseline (it does NOT bob with the figure). Distinct from `float`'s enveloping
+   *  halo: grounded figures use this to read as standing ON the floor rather than hovering. */
+  groundShadow?: number;
 }
 
 /** Props for the room scene layer (degraded backdrop + sprites + bound invocation figures). */

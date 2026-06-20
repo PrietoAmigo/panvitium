@@ -435,6 +435,15 @@ describe('gameStore — invocations', () => {
     expect(store().state?.lifetime.invocations.doppelgaenger).toBe(1);
     expect(store().notice).toMatch(/limit/i);
   });
+
+  it('markDoppelgaengerSeen sets the permanent flag (idempotent)', () => {
+    expect(store().state?.flagDoppelgaengerSeen ?? false).toBe(false);
+    store().markDoppelgaengerSeen();
+    expect(store().state?.flagDoppelgaengerSeen).toBe(true);
+    // Idempotent — a second call leaves it set without complaint.
+    store().markDoppelgaengerSeen();
+    expect(store().state?.flagDoppelgaengerSeen).toBe(true);
+  });
 });
 
 describe('gameStore — Panvitium', () => {

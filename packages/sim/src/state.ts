@@ -289,6 +289,14 @@ export interface GameState {
    */
   erinyesEfficiencyStacks?: number;
   /**
+   * Set true once the Doppelgänger jumpscare has fired (the one-time scare that replaces the player's
+   * next interaction the first time a Doppelgänger is bound and the player enters the Studio). Purely
+   * presentational bookkeeping owned by the web app: it gates the scare to a single occurrence ever.
+   * Permanent (carried across lifetimes — a once-seen scare never replays), additive-optional on the
+   * wire (ADR-023); absent ≡ false.
+   */
+  flagDoppelgaengerSeen?: boolean;
+  /**
    * True while the player is mid-descent — the Katabasis menu is open and allocation is underway
    * (02 §6). The lifetime is frozen: `tick` runs no simulation when this is set, so nothing accrues
    * online OR offline (a reload mid-descent resumes the menu rather than fast-forwarding a torn-down

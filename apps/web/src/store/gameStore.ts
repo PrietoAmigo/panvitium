@@ -18,6 +18,7 @@ import {
   deactivateToggle,
   invoke,
   dispel,
+  markDoppelgaengerSeen as markDoppelgaengerSeenSim,
   assignAcolyteToAction,
   unassignAcolyteFromAction,
   setAutoRepeat,
@@ -152,6 +153,11 @@ interface GameStore {
   summon: (invocationId: string) => void;
   /** Dispel one active invocation of the given id. */
   banish: (invocationId: string) => void;
+  /**
+   * Record that the one-time Doppelgänger jumpscare has fired (presentation bookkeeping). Sets the
+   * permanent `flagDoppelgaengerSeen` so the scare never re-arms, and persists so it survives a reload.
+   */
+  markDoppelgaengerSeen: () => void;
   /**
    * Open the full-screen Altar gate without committing — no teardown, only the menu pause. The
    * in-room Altar routes here; from the gate the player either commits (`beginKatabasis`) or turns
@@ -420,6 +426,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const result = dispel(current, invocationId);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
+  },
+
+  markDoppelgaengerSeen: () => {
+    const current = get().state;
+    if (!current || current.flagDoppelgaengerSeen === true) return;
+    set({ state: markDoppelgaengerSeenSim(current) });
+    // Persist immediately so the one-time scare can never replay after a reload (the flag is permanent).
+    get().persist();
   },
 
   beginKatabasis: () => {

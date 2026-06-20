@@ -89,6 +89,24 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
     top: '6%',
     height: '188%',
   },
+  // The Doppelgänger stands on the parquet in the middle of the Studio, facing the lens — a grounded
+  // full-body figure, head-to-toe on the floor. No `float` (no levitation, no enveloping shadow) and
+  // no `vignette` (the room is not dimmed): the brief calls for NO visual effects, so it carries none.
+  // It specifies no movement, so it holds perfectly still. Composited through the same degradation
+  // pass as the room, so it crushes/pixelates uniformly with the backdrop. Centred on the room's open
+  // floor (left ~49%); baseline (top + height = 73%) lands mid-floor, just before the desk, with the
+  // head clear of the chandelier. The art is centred in its frame, so `left` is the figure's centre.
+  // It stands directly under the chandelier, so it casts a flat contact shadow (`groundShadow`) — a
+  // soft pool on the floor at its feet, the only treatment it carries (still no halo, no room-dim).
+  doppelgaenger: {
+    id: 'doppelgaenger',
+    room: 'studio',
+    src: `${ASSET_BASE}/invocations/doppelganger.png`,
+    left: '49%',
+    top: '27%',
+    height: '46%',
+    groundShadow: 0.83,
+  },
   // Specunitas stands in the Studio, facing the lens with his cameras raised. The PoV looks across
   // the foreground desk, so his legs read as hidden: the art is the head-to-hip cut
   // (`specunitas_studio.png`) and the desk/lower frame occupy everything below his baseline

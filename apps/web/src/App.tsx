@@ -16,6 +16,7 @@ import { ConflictModal } from './ui/ConflictModal.js';
 import { WelcomeBackModal } from './ui/WelcomeBackModal.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
+import { Jumpscare } from './ui/Jumpscare.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
@@ -104,12 +105,35 @@ export function App(): ReactElement {
   // only re-renders the room when an acolyte is gained/lost, not every tick.
   const acolytes = useGameStore((s) => s.state?.lifetime.acolytes.length ?? 0);
 
+  // The one-time Doppelgänger jumpscare. It arms when a Doppelgänger is bound for the FIRST time ever
+  // (the permanent `flagDoppelgaengerSeen` is still unset) and the player is in the Studio; the next
+  // interaction (PC / phone / Suasio / the door) then triggers the scare instead of its action.
+  const doppelgaengerSeen = useGameStore((s) => s.state?.flagDoppelgaengerSeen ?? false);
+  const markDoppelgaengerSeen = useGameStore((s) => s.markDoppelgaengerSeen);
+  const [jumpscareArmed, setJumpscareArmed] = useState(false);
+  const [jumpscare, setJumpscare] = useState(false);
+  const doppelgaengerBound = summoned.includes('doppelgaenger');
+  useEffect(() => {
+    // Arm once the conditions hold (bound + first time + in the Studio). Stays armed until the next
+    // interaction consumes it, so even leaving via the door triggers the scare rather than escaping it.
+    if (room === 'studio' && doppelgaengerBound && !doppelgaengerSeen) setJumpscareArmed(true);
+  }, [room, doppelgaengerBound, doppelgaengerSeen]);
+
   // The descent takes the full screen; close any grimoire panel when it opens.
   useEffect(() => {
     if (katabasisPhase !== null) setPanel(null);
   }, [katabasisPhase]);
 
   const handleAction = (action: HotspotAction): void => {
+    // While armed, the player's very next interaction is replaced by the one-time Doppelgänger scare
+    // (no menu opens, no room change). Consume the arming, mark it seen (permanent + persisted), and
+    // raise the overlay. Guard on `jumpscare` so a stray event during the scare can't re-fire it.
+    if (jumpscareArmed && !jumpscare) {
+      setJumpscareArmed(false);
+      setJumpscare(true);
+      markDoppelgaengerSeen();
+      return;
+    }
     if (action.type === 'door') {
       setRoom(action.to);
       audio.play('room-change');
@@ -183,6 +207,9 @@ export function App(): ReactElement {
       {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars
           Goetia / Suasio surfaces, pinned to the viewport's top-left edge. */}
       {hudVisible && <InfluenceGoldHud />}
+      {/* The one-time Doppelgänger scare covers EVERYTHING (highest layer), blocks all input, and
+          clears itself after 2s — see Jumpscare. */}
+      {jumpscare && <Jumpscare onDone={() => setJumpscare(false)} />}
     </div>
   );
 }

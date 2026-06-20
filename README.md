@@ -103,9 +103,24 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 830** (sim 529 · shared 57 · api 20 · web 224).
+**Current test count: 835** (sim 531 · shared 58 · api 20 · web 226).
 
-> **Latest change — three more bound-invocation displays + "still by default" figures (Claude Design
+> **Latest change — the Doppelgänger: bound display + a one-time jumpscare.** The **Doppelgänger**
+> now composites into the Studio while bound — a grounded full-body figure standing on the parquet
+> (no float, no room-dim), the only treatment a new **`groundShadow`** carries: a flat contact shadow
+> pinned to the floor at its feet (a soft dark pool, drawn into the scene buffer so it crushes/pixelates
+> with the frame). It is a single `BOUND_INVOCATION_VISUALS` entry (`degrade.data.ts`) picked up by
+> `boundVisualsFor`, with `groundShadow` plumbed through `BoundInvocationVisual` → `EngineSprite` →
+> the degrade pass (Claude Design handoff). Alongside it, a **one-time scare**: the first time ever a
+> Doppelgänger is bound and the player enters the Studio, their next interaction (PC / phone / Suasio /
+> the door) is replaced by a full-screen jumpscare — the `doppelganger_jumpscare.png` plate composited
+> THROUGH the degradation pass, with `jumpscare.wav`, held for exactly 2s. It blocks all input and
+> cannot be skipped, and fires only once: a permanent, save-synced `flagDoppelgaengerSeen`
+> (additive-optional, ADR-023; set via the pure sim `markDoppelgaengerSeen`) gates it forever. Five
+> tests pin it (the visual's room match + ground shadow, the flag's purity/idempotence + Katabasis
+> survival, its save round-trip, and the store action).
+
+> **Earlier change — three more bound-invocation displays + "still by default" figures (Claude Design
 > handoffs).** Three designed figures now composite into their rooms while bound, the same way
 > Morpheus appears over the altar: **Aurevora** seated cross-legged on the invocation circle
 > (pre-mirrored art, no float/vignette), **Astiwihad** at the altar threshold cropped to head and
