@@ -49,6 +49,18 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
     float: true,
     vignette: 0.82,
   },
+  // The Familiar is a grounded companion — a sitting hellhound on the studio floor just right of the
+  // door, not a trance figure. It is composited into the room through the degradation pass like
+  // Morpheus, so it crushes and pixelates at the room's fidelity — but it sits on the parquet, so it
+  // omits `float` and `vignette` (no levitation, no enveloping shadow, no room dimming).
+  familiar: {
+    id: 'familiar',
+    room: 'studio',
+    src: `${ASSET_BASE}/invocations/dp.png`,
+    left: '48%',
+    top: '49%',
+    height: '18%',
+  },
 };
 
 /** Helper: the visuals for whichever bound invocations belong in `room`, from `summoned`
