@@ -2,7 +2,7 @@ export * from './types.js';
 export * from './menus.data.js';
 export { PanelShell } from './PanelShell.js';
 export { RoomView } from './RoomView.js';
-export { SummonedCreatures } from './SummonedCreatures.js';
+export { BoundInvocations } from './BoundInvocations.js';
 export { MaleficiaCabinet } from './MaleficiaCabinet.js';
 export { SuasioPanel } from './SuasioPanel.js';
 export { PcWindow } from './PcWindow.js';

@@ -1,7 +1,8 @@
 import { type ReactElement } from 'react';
-import type { RoomDef, HotspotAction, SceneSprite, DegradeSettings } from './types.js';
+import type { RoomDef, HotspotAction, DegradeSettings } from './types.js';
 import { DegradedScene } from './DegradedScene.js';
-import { ROOM_PLATES, altarPlateForAcolytes, spriteFor } from './degrade.data.js';
+import { BoundInvocations } from './BoundInvocations.js';
+import { ROOM_PLATES, altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
 
 interface RoomViewProps {
   room: RoomDef;
@@ -22,9 +23,10 @@ function doorGlyph(id: string): string {
   return '\u2756';
 }
 
-// One room. The backdrop, its baked props, and any summoned creatures are composited onto a single
-// <canvas> through the uniform degradation pass (DegradedScene), so the whole frame reads at one
-// fidelity. The chrome — hotspots (and the HUD/panels above) — layers over it and stays crisp.
+// One room. The backdrop and its baked props are composited onto a single <canvas> through the
+// uniform degradation pass (DegradedScene), so the frame reads at one fidelity. Bound invocations
+// render as a crisp presentation overlay above it (BoundInvocations); the chrome — hotspots (and
+// the HUD/panels above) — layers over that and stays clickable.
 export function RoomView({
   room,
   signature,
@@ -34,10 +36,8 @@ export function RoomView({
   reducedMotion,
   onAction,
 }: RoomViewProps): ReactElement {
-  const sprites: SceneSprite[] =
-    room.id === 'invocation'
-      ? summoned.map(spriteFor).filter((s): s is SceneSprite => s !== null)
-      : [];
+  // The bound invocations that have a designed display in this room (Morpheus over the altar, …).
+  const boundVisuals = boundVisualsFor(room.id, summoned);
   // The Altar's backdrop tracks the acolyte count (0–4); every other room uses its default plate.
   const backdrop = room.id === 'altar' ? altarPlateForAcolytes(acolytes) : ROOM_PLATES[room.id];
   // Presentation only — read straight off the curse flag; the pass eases the 0/1 target in/out.
@@ -50,7 +50,6 @@ export function RoomView({
       <DegradedScene
         roomId={room.id}
         backdrop={backdrop}
-        sprites={sprites}
         signature={room.id === 'studio' && signature}
         settings={degradeSettings}
       />
@@ -75,6 +74,7 @@ export function RoomView({
           </button>
         );
       })}
+      <BoundInvocations visuals={boundVisuals} reducedMotion={reducedMotion} />
     </div>
   );
 }
