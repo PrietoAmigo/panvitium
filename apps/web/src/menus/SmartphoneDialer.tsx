@@ -46,6 +46,10 @@ const KEYS: ReadonlyArray<{ d: string; l: string }> = [
 const MAX_LEN = 18;
 const TOAST_MS = 2800;
 
+// The status-bar clock shows the real device time, formatted exactly as the Emails client's stamp
+// (`Intl.DateTimeFormat`, `hour: 'numeric'`, `minute: '2-digit'`) so the two read identically.
+const fmtClock = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+
 /**
  * The smartphone dialer (Claude Design handoff, Direction A — "Stock light"). A full-screen overlay
  * that renders its OWN shell (it is not a `PanelShell` framed panel): the player keys a code into a
@@ -84,6 +88,8 @@ export function SmartphoneDialer({
 
   const hasCode = code.length > 0;
   const shadow = 'rgba(0,0,0,.28)';
+  // Computed per render (the dialer re-renders on every keypress/toast, so the clock stays current).
+  const clock = fmtClock.format(new Date());
 
   return (
     <div className="panel-overlay" onClick={onClose} role="presentation">
@@ -116,7 +122,9 @@ export function SmartphoneDialer({
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style={SVG_BLOCK}>
                 <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
               </svg>
-              <span style={{ fontWeight: 500 }}>14:22</span>
+              <span className="phone-clock" style={{ fontWeight: 500 }}>
+                {clock}
+              </span>
             </div>
           </div>
 

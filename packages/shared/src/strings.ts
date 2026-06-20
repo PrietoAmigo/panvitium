@@ -956,19 +956,16 @@ export const strings = {
     },
   },
   // The smartphone dialer (design handoff: "The Smartphone — Dialer & Code Input"). Device chrome is
-  // mundane/flavour; the code copy below is PLACEHOLDER — the final effects + wording arrive with the
-  // outgoing-call engine (docs/PANVITIUM-CALLS-OUT.md), deferred for now.
+  // mundane/flavour; the real boon/info effects + copy arrive with the outgoing-call engine
+  // (docs/PANVITIUM-CALLS-OUT.md), deferred for now.
   phone: {
     title: 'Phone',
     hotspot: 'The Smartphone',
     addToContacts: 'Add to contacts',
-    unrecognized: 'Unrecognized code',
-    // Result copy keyed by the recognized code id (see `PHONE_CODES` in the sim). Placeholder strings.
+    unrecognized: 'Number does not exist',
+    // Result copy keyed by the recognized code id (see `PHONE_CODES` in the sim).
     codes: {
-      '*#1450#': 'Code accepted — +15% Suasio · 5:00',
-      '*#2206#': 'Code accepted — Acolytes ×2 · 3:00',
-      '*#0666#': 'Code accepted — Souls ×1.1, next cull',
-      '*#06#': 'IMEI  35 902 411 700 884 / 1',
+      '666': "you're retarded",
     } as Record<string, string>,
   },
 } as const;
