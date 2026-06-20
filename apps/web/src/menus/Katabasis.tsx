@@ -27,10 +27,8 @@ import {
   eternalSinVisible,
   eternalSinRevealed,
   eternalProgress,
-  ETERNAL_SIN_THRESHOLD,
   floor,
   isZero,
-  bn,
   sub,
   div,
   gt,
@@ -286,10 +284,41 @@ function PrinceModal({
 }
 
 // ── The Eternal — the Ninth, the centre column (end-state only) ──────────────────────────────────
+// While the offer button is held its verb churns — a new word every 0.25 s — so the act of feeding
+// the Ninth never settles into a single intent.
+const ETERNAL_HOLD_VERBS = [
+  'GNAW',
+  'LICK',
+  'CLUTCH',
+  'SQUEEZE',
+  'SCRAPE',
+  'IGNORE',
+  'CARESS',
+  'SPIT',
+] as const;
+const ETERNAL_HOLD_VERB_MS = 250;
+
 function EternalModal({ state, onClose }: { state: GameState; onClose: () => void }): ReactElement {
   const offerEternal = useGameStore((s) => s.offerEternal);
   const revealed = eternalSinRevealed(state);
   const prog = eternalProgress(state);
+  const [holding, setHolding] = useState(false);
+  const [verb, setVerb] = useState<string>(ETERNAL_HOLD_VERBS[0]);
+
+  useEffect(() => {
+    if (!holding) return;
+    const id = window.setInterval(() => {
+      setVerb((cur) => {
+        let next = cur;
+        while (next === cur) {
+          next = ETERNAL_HOLD_VERBS[Math.floor(Math.random() * ETERNAL_HOLD_VERBS.length)] ?? cur;
+        }
+        return next;
+      });
+    }, ETERNAL_HOLD_VERB_MS);
+    return () => window.clearInterval(id);
+  }, [holding]);
+
   return (
     <div
       className="takeover takeover--eternal"
@@ -302,43 +331,27 @@ function EternalModal({ state, onClose }: { state: GameState; onClose: () => voi
           {'\u2715'}
         </button>
         <div className="tk-info-col">
-          <div className="tk-eyebrow">Above the eight, and below them</div>
           <h1
             className="tk-name tk-name--eternal"
             style={{ color: revealed ? 'var(--eternal)' : '#6a605c' }}
           >
-            {revealed ? strings.eternal.name : strings.eternal.unknown}
+            {revealed ? strings.eternal.name : strings.eternal.ninth}
           </h1>
-          <div className="tk-sin tk-sin--eternal">
-            {revealed ? `Peccatum \u00C6ternum \u00B7 The Eternal Sin` : strings.eternal.ninth}
-          </div>
+          {revealed && (
+            <div className="tk-sin tk-sin--eternal">
+              {`Peccatum \u00C6ternum \u00B7 The Eternal Sin`}
+            </div>
+          )}
 
           <div className="tk-rule" />
 
-          <div className="tk-stats">
-            <div className="tk-stat">
-              <span className="k">Offered to the column</span>
-              <span className="v ember">{formatBigNum(state.eternalDevotion)}</span>
-            </div>
-            <div className="tk-stat">
-              <span className="k">To speak its name</span>
-              <span className="v">{formatBigNum(bn(ETERNAL_SIN_THRESHOLD))}</span>
-            </div>
-          </div>
           <div className="tk-meter">
             <div className="tk-meter-track">
               <span className="tk-meter-fill tk-meter-fill--eternal" style={{ width: pct(prog) }} />
             </div>
             <div className="tk-meter-cap">
-              <span>The column drinks</span>
+              <span>Taking form</span>
               <span>{(prog * 100).toFixed(1)}%</span>
-            </div>
-          </div>
-
-          <div className="tk-lore">
-            <div className="b dim">
-              It has no name you can yet read &mdash; yet it takes what you give. Something stood
-              always above the eight, in the place you would not look.
             </div>
           </div>
 
@@ -350,10 +363,10 @@ function EternalModal({ state, onClose }: { state: GameState; onClose: () => voi
                 onStep={(d) => offerEternal(d)}
                 disabled={poolEmpty(state)}
                 ariaLabel="Offer souls to the Ninth"
+                onHoldChange={setHolding}
               >
-                Hold to feed the column
+                {verb}
               </HoldButton>
-              <div className="tk-note">There was never another prince. There was only you.</div>
             </div>
           )}
         </div>
