@@ -1198,7 +1198,11 @@ export function PhoneDialer({ onClose }: { onClose: () => void }): ReactElement 
   const onDial = (raw: string): DialResult => {
     const outcome = dialCode(raw);
     if (outcome.kind === 'error') {
-      return { kind: 'error', message: strings.phone.unrecognized };
+      // A recognized joke number (e.g. 666) carries its own copy; an unknown number is rejected.
+      const message = outcome.code
+        ? (strings.phone.codes[outcome.code] ?? strings.phone.unrecognized)
+        : strings.phone.unrecognized;
+      return { kind: 'error', message };
     }
     // TODO(wire): apply the code's real effect through the store once the call engine lands.
     return { kind: outcome.kind, message: strings.phone.codes[outcome.code] ?? '' };

@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 819** (sim 529 · shared 57 · api 20 · web 213).
+**Current test count: 819** (sim 528 · shared 57 · api 20 · web 214).
 
 > **Latest change — the smartphone dialer (Claude Design handoff, Direction A "Stock light").** The
 > player's budget Android phone — the one mundane object on the Studio desk, the black slab lying
@@ -113,17 +113,19 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > device bezel with speaker slit + camera dot, a light screen with a status bar, a code display with a
 > blinking caret + backspace, the decorative "Add to contacts" row, the 12-key pad (digits + `ABC/DEF…`
 > sub-letters, gated by `showKeyLetters`), the accent call button (`accentColor`, default AOSP green),
-> a Lollipop nav bar, and an Android pill **toast**. Typing appends (capped at 18), backspace trims, and
-> **Call** routes the trimmed code through `onDial`; a boon shows a green toast and clears the field,
-> an info readout a blue toast (kept), an unrecognized code a red "Unrecognized code" toast (kept for
-> editing). The valid-code **set** lives in the sim (`dialCode` / `PHONE_CODES` — themed real MMI codes
-> like `*#1450#` = "ISO"/isolate and the `*#06#` IMEI Easter egg), with the player-facing copy in
-> shared `strings.phone`; the integrator `PhoneDialer` maps the sim outcome to the toast. The code
-> **effects** are a documented empty hook (`TODO(wire)`) awaiting the outgoing-call engine
-> (`docs/PANVITIUM-CALLS-OUT.md`) — a recognized code surfaces its placeholder copy and changes no game
-> state for now. Fifteen tests cover it: six in the sim (code classification, trimming, catalog
-> integrity) and nine in the web (the labelled dialog + 12-key pad, append/backspace, the 18-char cap,
-> the empty-field no-op, and the boon/info/error toast-colour + field-clear behaviour).
+> a Lollipop nav bar, and an Android pill **toast**. The status-bar clock shows the **real device time**,
+> formatted with the same `Intl.DateTimeFormat` (`hour`/`minute`) as the Emails client so the two read
+> identically. Typing appends (capped at 18), backspace trims, and **Call** routes the trimmed code
+> through `onDial`; a boon shows a green toast and clears the field, an info readout a blue toast (kept),
+> and an unknown number a red **"Number does not exist"** toast (kept for editing). The valid-code
+> **set** lives in the sim (`dialCode` / `PHONE_CODES`): currently the single recognized number `666`,
+> which answers in the same error fashion with its own copy (**"you're retarded"**); the player-facing
+> copy lives in shared `strings.phone`, and the integrator `PhoneDialer` maps the sim outcome to the
+> toast. Real boon/info **effects** are a documented empty hook (`TODO(wire)`) awaiting the outgoing-call
+> engine (`docs/PANVITIUM-CALLS-OUT.md`). Fourteen tests cover it: five in the sim (code classification,
+> trimming, catalog integrity) and nine in the web (the labelled dialog + 12-key pad, the live clock,
+> append/backspace, the 18-char cap, the empty-field no-op, and the boon/info/error toast-colour +
+> field-clear behaviour).
 
 > **Earlier change — the persistent Influence & Gold HUD (design handoff).** A top-left resource
 > cluster now rides over the game: the carved **vessel** (Influence — its glass globe fills with

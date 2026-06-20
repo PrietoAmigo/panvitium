@@ -59,7 +59,7 @@ afterEach(() => {
   container = null;
 });
 
-const noResult = (): DialResult => ({ kind: 'error', message: 'Unrecognized code' });
+const noResult = (): DialResult => ({ kind: 'error', message: 'Number does not exist' });
 
 describe('smartphone dialer', () => {
   it('renders a Phone dialog with the full 12-key pad', () => {
@@ -68,6 +68,15 @@ describe('smartphone dialer', () => {
     expect(dialog?.getAttribute('aria-label')).toBe('Phone');
     expect(container!.querySelectorAll('.phone-key').length).toBe(12);
     for (const d of ['1', '2', '9', '*', '0', '#']) expect(key(d)).not.toBeNull();
+  });
+
+  it('shows the real device time in the status bar, formatted like the Emails clock', () => {
+    render({ onDial: noResult, onClose: () => {} });
+    const expected = new Intl.DateTimeFormat(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(new Date());
+    expect(container!.querySelector('.phone-clock')?.textContent).toBe(expected);
   });
 
   it('appends keypresses and removes the last char on backspace', () => {
@@ -124,7 +133,9 @@ describe('smartphone dialer', () => {
     render({ onDial: dialed.fn, onClose: () => {} });
     act(() => key('7').click());
     act(() => (container!.querySelector('[aria-label="Call"]') as HTMLButtonElement).click());
-    expect(container!.querySelector('.phone-toast')?.textContent).toContain('Unrecognized code');
+    expect(container!.querySelector('.phone-toast')?.textContent).toContain(
+      'Number does not exist',
+    );
     expect(dot()).toBe(rgb('#ff5a52'));
     expect(codeText()).toBe('7'); // error keeps the field
   });

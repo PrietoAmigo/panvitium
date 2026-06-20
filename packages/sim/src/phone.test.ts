@@ -1,39 +1,33 @@
 /**
  * Smartphone dialer code-resolver tests (design handoff: "The Smartphone — Dialer & Code Input").
- * Pins the sim-owned classification the UI renders: recognized boon / info codes resolve with their
- * code id, anything else is an `error`, whitespace is trimmed, and the catalog stays well-formed.
- * Effects are a deferred hook (the call engine), so this only covers the kind/identity contract.
+ * Pins the sim-owned classification the UI renders: the recognized `666` joke number answers in the
+ * error fashion but carries its id, an unknown number is an `error` with no id, whitespace is
+ * trimmed, and the catalog stays well-formed. Real boon/info effects are a deferred hook (the call
+ * engine), so this only covers the kind/identity contract.
  */
 import { describe, it, expect } from 'vitest';
 import { dialCode, PHONE_CODES, type DialKind } from './phone.js';
 
 describe('smartphone dialer codes', () => {
-  it('resolves a recognized boon code, carrying its id', () => {
-    expect(dialCode('*#1450#')).toEqual({ kind: 'boon', code: '*#1450#' });
+  it('resolves the 666 joke number as an error that carries its id', () => {
+    expect(dialCode('666')).toEqual({ kind: 'error', code: '666' });
   });
 
-  it('resolves the IMEI Easter egg as an info readout', () => {
-    expect(dialCode('*#06#')).toEqual({ kind: 'info', code: '*#06#' });
+  it('rejects an unknown number as an error with no id', () => {
+    expect(dialCode('1234')).toEqual({ kind: 'error' });
   });
 
-  it('rejects an unknown code as an error with no id', () => {
-    expect(dialCode('*#9999#')).toEqual({ kind: 'error' });
-  });
-
-  it('treats empty / whitespace input as an error', () => {
+  it('treats empty / whitespace input as an error with no id', () => {
     expect(dialCode('')).toEqual({ kind: 'error' });
     expect(dialCode('   ')).toEqual({ kind: 'error' });
   });
 
   it('trims surrounding whitespace before matching', () => {
-    expect(dialCode('  *#06#  ')).toEqual({ kind: 'info', code: '*#06#' });
+    expect(dialCode('  666  ')).toEqual({ kind: 'error', code: '666' });
   });
 
   it('exposes only valid kinds in the catalog', () => {
     const kinds: DialKind[] = ['boon', 'info', 'error'];
-    for (const k of Object.values(PHONE_CODES)) {
-      expect(kinds).toContain(k);
-      expect(k).not.toBe('error'); // `error` is the absence of a code, never a table entry
-    }
+    for (const k of Object.values(PHONE_CODES)) expect(kinds).toContain(k);
   });
 });
