@@ -4,7 +4,7 @@
 // INTEGRATION.md §"Wiring to real state".
 
 export type RoomId = 'invocation' | 'altar' | 'studio';
-export type PanelId = 'maleficia' | 'ars-goetia' | 'pc' | 'suasio';
+export type PanelId = 'maleficia' | 'ars-goetia' | 'pc' | 'suasio' | 'phone';
 export type Rarity = 'common' | 'rare' | 'profane' | 'anathema';
 
 export interface Rect {

@@ -5,7 +5,7 @@ import { RoomView } from './menus/RoomView.js';
 import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
-import { PANELS, PcDesk, SuasioScroll } from './ui/panels.js';
+import { PANELS, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
 import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
@@ -104,10 +104,12 @@ export function App(): ReactElement {
     audio.play('panel-close');
   };
 
-  // Ars Goetia, the PC and the Suasio scroll are their own full-surface overlays (designed
-  // grimoire / desk / parchment), not framed Panels.
+  // Ars Goetia, the PC, the Suasio scroll and the smartphone dialer are their own full-surface
+  // overlays (designed grimoire / desk / parchment / phone), not framed Panels.
   const activePanel =
-    panel && panel !== 'ars-goetia' && panel !== 'pc' && panel !== 'suasio' ? PANELS[panel] : null;
+    panel && panel !== 'ars-goetia' && panel !== 'pc' && panel !== 'suasio' && panel !== 'phone'
+      ? PANELS[panel]
+      : null;
   const shell = panel ? PANEL_SHELL[panel] : undefined;
 
   // The persistent Influence/Gold HUD rides over the Invocation and Studio rooms and over the
@@ -140,6 +142,7 @@ export function App(): ReactElement {
       {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
       {panel === 'suasio' && <SuasioScroll onClose={closePanel} />}
+      {panel === 'phone' && <PhoneDialer onClose={closePanel} />}
       {activePanel && shell && (
         <PanelShell
           title={activePanel.title}

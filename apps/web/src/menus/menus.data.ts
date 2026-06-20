@@ -84,6 +84,14 @@ export const ROOMS: Record<RoomId, RoomDef> = {
         action: { type: 'panel', panel: 'suasio' },
       },
       {
+        // The budget Android phone lying flat on the desk between the scroll and the PC. Declared
+        // after the scroll so it wins clicks in the small overlap with the scroll's generous rect.
+        id: 'phone',
+        label: 'The Smartphone',
+        rect: { x: 39, y: 77, w: 21, h: 16 },
+        action: { type: 'panel', panel: 'phone' },
+      },
+      {
         id: 'door',
         label: 'To the Altar',
         rect: { x: 36, y: 38, w: 9.5, h: 24 },
