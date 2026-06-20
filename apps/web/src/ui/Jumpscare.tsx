@@ -9,7 +9,10 @@ import { ASSET_BASE } from '../menus/degrade.data.js';
    all pointer input (it sits over the whole viewport with no dismiss affordance), so the player can
    neither interact with anything underneath nor skip the scare; it ends only when the timer fires. */
 
-const JUMPSCARE_IMG = `${ASSET_BASE}/doppelganger_jumpscare.png`;
+/** The full-screen scare plate. Exported so the orchestrator can `preloadImage` it the moment the
+ *  scare arms — that decode-ahead is what lets the overlay paint the picture on its first frame
+ *  instead of flashing black while it loads. */
+export const JUMPSCARE_IMG = `${ASSET_BASE}/doppelganger_jumpscare.png`;
 const JUMPSCARE_SFX = `${ASSET_BASE}/music/jumpscare.wav`;
 /** The scare (image + audio) holds for exactly two seconds, then clears. */
 const DURATION_MS = 2000;

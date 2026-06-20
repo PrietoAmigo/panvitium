@@ -118,8 +118,9 @@ body {
   position: fixed;
   inset: 0;
   z-index: 9999;
+  /* No fade-in: the scare must jump straight to the picture (the plate is preloaded so the canvas
+     paints it on the first frame). The black backdrop is only a fallback if decode somehow lags. */
   background: #000;
-  animation: fade-in 0.08s ease both;
 }
 
 /* bespoke candlelit backdrops, one per room */

@@ -7,6 +7,9 @@ interface RoomViewProps {
   room: RoomDef;
   signature: boolean; // Studio "panvitium" ritual glow (handled inside the pass)
   summoned: string[];
+  /** Whether the one-time Doppelgänger jumpscare has fired — once it has, the Doppelgänger figure is
+   *  suppressed for good (it never appears again). Drives `boundVisualsFor`'s Doppelgänger rules. */
+  doppelgaengerSeen: boolean;
   /** Current acolyte count — selects the Altar backdrop (0–4). */
   acolytes: number;
   /** Fausto's curse is in force (`flagFaustoCurse`) — drives the "Vertigo" degrade layer. */
@@ -30,13 +33,14 @@ export function RoomView({
   room,
   signature,
   summoned,
+  doppelgaengerSeen,
   acolytes,
   curseActive,
   reducedMotion,
   onAction,
 }: RoomViewProps): ReactElement {
   // The bound invocations that have a designed display in this room (Morpheus over the altar, …).
-  const boundVisuals = boundVisualsFor(room.id, summoned);
+  const boundVisuals = boundVisualsFor(room.id, summoned, doppelgaengerSeen);
   // The Altar's backdrop tracks the acolyte count (0–4); every other room uses its default plate.
   const backdrop = room.id === 'altar' ? altarPlateForAcolytes(acolytes) : ROOM_PLATES[room.id];
   // Presentation only — read straight off the curse flag; the pass eases the 0/1 target in/out.

@@ -48,12 +48,39 @@ function figureToSprite(v: BoundInvocationVisual, img: HTMLImageElement): Engine
   };
 }
 
+// Module-level cache of already-decoded images, keyed by url. `useImages` seeds its initial state
+// from this synchronously, so a backdrop that was preloaded (see `preloadImage`) is present on the
+// component's FIRST render — the scene composes WITH the plate on its very first frame instead of
+// painting one empty (dark) frame first. This is what makes the jumpscare plate appear instantly
+// rather than flashing black for a beat while it decodes (it is preloaded the moment the scare arms).
+const DECODED_IMAGES = new Map<string, HTMLImageElement>();
+
+/** Preload + decode an image into the module cache ahead of time, so a later `DegradedScene` that
+ *  uses it shows it on its first frame (no black flash). Idempotent; safe to call repeatedly. */
+export function preloadImage(url: string): void {
+  if (!url || DECODED_IMAGES.has(url) || typeof Image === 'undefined') return;
+  const im = new Image();
+  im.onload = (): void => {
+    DECODED_IMAGES.set(url, im);
+  };
+  im.src = url;
+}
+
 /** Small image cache — loads urls once, re-renders when each decodes. */
 function useImages(urls: string[]): Record<string, HTMLImageElement> {
   // Stored in state (not a ref): each decode yields a NEW object, so consumers that depend on the
   // returned map actually re-run when an image loads. (A mutated ref keeps the same identity, which
   // left the first visit to a room black — the scene never recomposed once the plate decoded.)
-  const [cache, setCache] = useState<Record<string, HTMLImageElement>>({});
+  // Seeded synchronously from the module-level decoded cache so a preloaded plate is on screen the
+  // first frame (no empty-canvas flash) — see DECODED_IMAGES / preloadImage.
+  const [cache, setCache] = useState<Record<string, HTMLImageElement>>(() => {
+    const seed: Record<string, HTMLImageElement> = {};
+    for (const u of urls) {
+      const decoded = DECODED_IMAGES.get(u);
+      if (decoded) seed[u] = decoded;
+    }
+    return seed;
+  });
   const key = urls.join('|');
   useEffect(() => {
     let alive = true;
@@ -61,6 +88,7 @@ function useImages(urls: string[]): Record<string, HTMLImageElement> {
       if (!u || cache[u]) continue;
       const im = new Image();
       im.onload = (): void => {
+        DECODED_IMAGES.set(u, im);
         if (!alive) return;
         setCache((prev) => (prev[u] ? prev : { ...prev, [u]: im }));
       };

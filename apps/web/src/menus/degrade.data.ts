@@ -129,9 +129,24 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
 };
 
 /** Helper: the visuals for whichever bound invocations belong in `room`, from `summoned`
- *  (the active invocation ids). Skips any id without a designed display. */
-export function boundVisualsFor(room: RoomId, summoned: string[]): BoundInvocationVisual[] {
-  return summoned
+ *  (the active invocation ids). Skips any id without a designed display.
+ *
+ *  Two Doppelgänger rules apply (the apex Superbia entity dominates the Studio it inhabits):
+ *   - Once the one-time jumpscare has fired (`doppelgaengerSeen`), the Doppelgänger figure never
+ *     shows again — it is dropped from the result even while still bound.
+ *   - While it IS shown, it OVERRIDES every other figure in its room: a present Doppelgänger is the
+ *     only figure returned, so no other Studio invocation (Familiar, Specunitas, …) renders with it. */
+export function boundVisualsFor(
+  room: RoomId,
+  summoned: string[],
+  doppelgaengerSeen = false,
+): BoundInvocationVisual[] {
+  const visuals = summoned
     .map((id) => BOUND_INVOCATION_VISUALS[id])
     .filter((v): v is BoundInvocationVisual => v !== undefined && v.room === room);
+  // Suppress the Doppelgänger figure entirely once the player has been jumpscared (tweak #2).
+  const shown = doppelgaengerSeen ? visuals.filter((v) => v.id !== 'doppelgaenger') : visuals;
+  // A present Doppelgänger overrides everything else in the room (tweak #1).
+  const doppelgaenger = shown.find((v) => v.id === 'doppelgaenger');
+  return doppelgaenger ? [doppelgaenger] : shown;
 }
