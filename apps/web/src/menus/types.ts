@@ -130,7 +130,8 @@ export interface SceneSprite {
 
 /** How a bound invocation is presented over its room (presentation only — read off the
  *  "is this invocation active" flag; touches no sim state). One entry per invocation that
- *  has a designed display; the `BoundInvocations` overlay renders each. CSS lengths are
+ *  has a designed display; `DegradedScene` composites each figure into the room through the
+ *  degradation pass (so it crushes/pixelates uniformly with the backdrop). Lengths are
  *  stage-relative (`%`) so the figure tracks the backdrop at any width. */
 export interface BoundInvocationVisual {
   id: string;
@@ -142,21 +143,19 @@ export interface BoundInvocationVisual {
   left: string;
   top: string;
   height: string;
-  /** Soul-glow accent (any CSS colour) — drives the rim-light, aura, motes and caption. */
-  glow: string;
-  /** Levitating-trance treatment: enveloping shadow + pulsing aura + rising motes. */
+  /** Levitating-trance treatment: slow float + a dark enveloping shadow (no orange glow). */
   float?: boolean;
   /** Focal-vignette ink alpha (0..1) that dims the room while bound; omit/0 for none. */
   vignette?: number;
-  /** Optional diegetic caption beneath the figure. */
-  caption?: { title: string; subtitle: string; tint: string };
 }
 
-/** Props for the room scene layer (degraded backdrop + sprites). */
+/** Props for the room scene layer (degraded backdrop + sprites + bound invocation figures). */
 export interface DegradedSceneProps {
   roomId: RoomId;
   backdrop: string;
   sprites?: SceneSprite[];
+  /** Bound invocation figures to composite into the scene THROUGH the degradation pass. */
+  figures?: BoundInvocationVisual[];
   signature?: boolean;
   settings?: Partial<DegradeSettings>;
   className?: string;
