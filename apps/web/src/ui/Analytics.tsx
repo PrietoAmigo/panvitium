@@ -241,9 +241,9 @@ function InvocationRow({
   id: string;
   def: InvocationDef;
 }): ReactElement {
-  const count = activeInvocationCount(state, id);
-  const name = strings.invocations.names[id] ?? id;
-  const countLabel = count > 1 ? `${name} \u00D7${count}` : name;
+  // Stackable invocations may hold multiple copies, but we never show the count \u2014 a stacked
+  // invocation reads as a single bound entry, not "name \u00D7N".
+  const countLabel = strings.invocations.names[id] ?? id;
   const auto = def.autonomous;
 
   // Passive invocation: no action/progress \u2014 show its modifier delta as before.
