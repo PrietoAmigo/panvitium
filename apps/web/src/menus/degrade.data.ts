@@ -49,6 +49,22 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
     float: true,
     vignette: 0.82,
   },
+  // Fama stands at the player's threshold on the LEFT of the altar room, close to the camera — a large
+  // foreground figure (height > the stage, the gown's hem falling just past the bottom edge so she
+  // reads as standing near the lens). The brief calls for NO visual effects, so she carries none: no
+  // `float` (no levitation, no enveloping shadow), no `vignette` (the room is not dimmed) and no
+  // ground/cast shadow. She specifies no movement, so she holds perfectly still. Composited through
+  // the same degradation pass as the room, so she crushes/pixelates uniformly with the backdrop.
+  // `left` is her horizontal centre (the art is centred in its 283×541 frame); the placement keeps her
+  // clear of the altar stone and the left-hand door, with the altar and acolytes visible to her right.
+  fama: {
+    id: 'fama',
+    room: 'altar',
+    src: `${ASSET_BASE}/invocations/fama.png`,
+    left: '16%',
+    top: '24%',
+    height: '104%',
+  },
   // The Familiar is a grounded companion — a sitting hellhound on the studio floor just right of the
   // door, not a trance figure. It is composited into the room through the degradation pass like
   // Morpheus, so it crushes and pixelates at the room's fidelity — but it sits on the parquet, so it
