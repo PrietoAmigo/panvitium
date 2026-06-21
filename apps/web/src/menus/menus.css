@@ -2899,6 +2899,7 @@ body {
   overflow: hidden;
 }
 .katabasis-flow .tk-meter-fill {
+  display: block;
   height: 100%;
   background: linear-gradient(90deg, var(--blood), var(--ember));
   box-shadow: 0 0 14px rgba(255, 80, 45, 0.7);
