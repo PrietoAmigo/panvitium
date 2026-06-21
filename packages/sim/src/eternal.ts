@@ -9,7 +9,7 @@
  * were already worshipping themselves. This module owns only the offering + gate logic; the reveal
  * screen and the Semet naming live in the UI.
  */
-import { add, clamp, floor, gte, isZero, sub, ZERO, type BigNum } from './bignum.js';
+import { add, clamp, floor, gte, isZero, lte, ONE, sub, ZERO, type BigNum } from './bignum.js';
 import { ETERNAL_SIN_THRESHOLD, MAX_SIN_LEVEL } from './constants.js';
 import { sinLevel } from './progression.js';
 import { SINS, type GameState } from './state.js';
@@ -35,10 +35,17 @@ export function eternalSinRevealed(state: GameState): boolean {
   return gte(floor(state.eternalDevotion), ETERNAL_SIN_THRESHOLD);
 }
 
-/** Progress toward the reveal in [0, 1] — for the offering bar. */
+/**
+ * Progress toward the reveal in [0, 1], log-scaled — for the offering bar. The threshold is ~8.4e9
+ * souls, so a linear bar reads as empty for almost the entire climb. log(devotion)/log(threshold)
+ * keeps early offerings visible (the geometric midpoint, √threshold, sits at 50%). Display-only; the
+ * reveal gate itself is the exact `eternalSinRevealed` comparison.
+ */
 export function eternalProgress(state: GameState): number {
-  const cur = floor(state.eternalDevotion).toNumber();
-  return Math.min(1, cur / ETERNAL_SIN_THRESHOLD);
+  const cur = floor(state.eternalDevotion);
+  if (gte(cur, ETERNAL_SIN_THRESHOLD)) return 1; // full at the reveal gate (avoids ln round-off)
+  if (lte(cur, ONE)) return 0;
+  return Math.min(1, cur.ln() / Math.log(ETERNAL_SIN_THRESHOLD));
 }
 
 /**

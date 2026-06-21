@@ -40,3 +40,20 @@ export function skillIntensity(devotion: BigNum): number {
   const ln = x.ln();
   return (ln * ln) / SKILL_INTENSITY_DIVISOR;
 }
+
+/**
+ * Visible progress through the *current* Sin rank, log-scaled to [0, 1] — for the offering bar.
+ * Each rank costs DEVOTION_LEVEL_BASE× the previous (thresholds are BASE^level, 02 §4), so a linear
+ * within-rank fraction sits at near-zero for almost the whole rank and reads as a frozen bar.
+ * Mapping log_BASE(devotion) − level instead spreads the bar evenly across the rank's multiplicative
+ * span, so even small offerings move it. Returns 1 at the cap. Display-only: rank-ups themselves are
+ * still decided by `sinLevel` crossing the exact thresholds.
+ */
+export function sinLevelProgress(devotion: BigNum): number {
+  const level = sinLevel(devotion);
+  if (level >= MAX_SIN_LEVEL) return 1;
+  const d = floor(devotion);
+  if (lte(d, ONE)) return 0;
+  const frac = d.ln() / Math.log(DEVOTION_LEVEL_BASE) - level;
+  return Math.max(0, Math.min(1, frac));
+}

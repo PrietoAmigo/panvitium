@@ -11,6 +11,7 @@ import { strings } from '@panvitium/shared';
 import {
   SINS,
   sinLevel,
+  sinLevelProgress,
   skillIntensity,
   devotionForLevel,
   MAX_SIN_LEVEL,
@@ -30,8 +31,6 @@ import {
   gameRuntimeMs,
   floor,
   isZero,
-  sub,
-  div,
   gt,
   type BigNum,
   type Sin,
@@ -203,11 +202,8 @@ function PrinceModal({
   const level = sinLevel(devotion);
   const maxed = level >= MAX_SIN_LEVEL;
   const intensity = skillIntensity(devotion);
-  const base = devotionForLevel(level);
   const next = devotionForLevel(Math.min(level + 1, MAX_SIN_LEVEL));
-  const span = sub(next, base);
-  const prog =
-    maxed || isZero(span) ? 1 : Math.max(0, Math.min(1, div(sub(devotion, base), span).toNumber()));
+  const prog = sinLevelProgress(devotion);
 
   return (
     <div className="takeover" role="dialog" aria-label={info.prince} onClick={onClose}>
