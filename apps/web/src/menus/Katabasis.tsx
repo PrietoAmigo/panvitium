@@ -293,7 +293,7 @@ const ETERNAL_HOLD_VERBS = [
   'CARESS',
   'SPIT',
 ] as const;
-const ETERNAL_HOLD_VERB_MS = 250;
+const ETERNAL_HOLD_VERB_MS = 100;
 
 function EternalModal({ state, onClose }: { state: GameState; onClose: () => void }): ReactElement {
   const offerEternal = useGameStore((s) => s.offerEternal);
