@@ -86,12 +86,13 @@ describe('Reveal threshold', () => {
     expect(eternalSinRevealed(s)).toBe(true);
   });
 
-  it('progress runs 0 → 1', () => {
-    let s = maxAllSins(withSouls(fresh(), ETERNAL_SIN_THRESHOLD));
+  it('progress runs 0 → 1 on a log scale', () => {
+    let s = maxAllSins(withSouls(fresh(), ETERNAL_SIN_THRESHOLD * 2));
     expect(eternalProgress(s)).toBe(0);
-    s = offerEternal(s, ETERNAL_SIN_THRESHOLD / 2);
-    expect(eternalProgress(s)).toBeCloseTo(0.5, 6);
-    s = offerEternal(s, ETERNAL_SIN_THRESHOLD); // overshoot clamps progress at 1
+    // Log-scaled: the halfway mark is the geometric midpoint (√threshold), not threshold/2.
+    s = offerEternal(s, Math.round(Math.sqrt(ETERNAL_SIN_THRESHOLD)));
+    expect(eternalProgress(s)).toBeCloseTo(0.5, 2);
+    s = offerEternal(s, ETERNAL_SIN_THRESHOLD * 2); // pour past the gate — the bar tops out at 1
     expect(eternalProgress(s)).toBe(1);
   });
 });

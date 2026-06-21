@@ -103,9 +103,18 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 841** (sim 532 · shared 58 · api 20 · web 231).
+**Current test count: 845** (sim 536 · shared 58 · api 20 · web 231).
 
-> **Latest change — the bound Upir figure (Claude Design handoff).** The **Upir** (a stackable Apex
+> **Latest change — log-scaled Devotion bars.** The Prince and Eternal (Semet/obelisk) offering
+> bars are now **log-scaled** so they visibly fill as souls are poured. Because each Sin rank costs
+> 180× the last (and the Eternal gate is ~8.4e9 souls), the old linear fill sat at near-zero for
+> almost the whole rank and read as frozen. The new `sinLevelProgress` maps `log₁₈₀(devotion) −
+level` within the current rank, and `eternalProgress` maps `log(devotion)/log(threshold)` toward
+> the gate, so even small offerings move the bar (the geometric midpoint sits at 50%). Both are
+> **display-only** — rank-ups and the reveal are still decided by the exact threshold crossings, so
+> saves and the RNG stream are untouched. Five sim tests pin the curve.
+>
+> **Earlier change — the bound Upir figure (Claude Design handoff).** The **Upir** (a stackable Apex
 > Gula shade) now composites into the **invocation room** whenever **at least one is bound** — a
 > grounded figure standing on the **right side** of the red ritual circle (no float, no room-dim).
 > It is staged like the Succubus but shifted right (`left` 31% → 41%), and carries her exact
