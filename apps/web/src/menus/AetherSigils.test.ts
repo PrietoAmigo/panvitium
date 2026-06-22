@@ -47,6 +47,26 @@ describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
     expect(effectDisplay(sigilById(6), bn(0))).toBe('+0.0%');
     expect(effectDisplay(undefined, bn(10))).toBe('\u2014');
   });
+
+  it('reads a reduction with a minus sign, matching the seal\u2019s \u2193 description', () => {
+    // Cost reductions (Paimon #9) and `decrease` modifiers/tiers (Amy #58 modifierMulti,
+    // Stolas #36 categoryTier, Bael #1 tierGroup) soften their target \u2014 the magnitude must carry
+    // the direction so it doesn't read as a buff next to a "\u2193" boon.
+    for (const id of [9, 58, 36, 1]) {
+      const out = effectDisplay(sigilById(id), bn(1_000_000));
+      expect(out.startsWith('\u2212')).toBe(true); // U+2212 MINUS SIGN
+      expect(out).toContain('%');
+    }
+    // An `increase` tier (Amdusias #67) still reads with a plus.
+    expect(effectDisplay(sigilById(67), bn(1_000_000)).startsWith('+')).toBe(true);
+  });
+
+  it('labels flat death rates as per-capita (Sabnock #43)', () => {
+    // The flat addition is per reprobate per second, not an absolute body count.
+    expect(effectDisplay(sigilById(43), bn(1_000_000)).endsWith('suicides/reprobate\u00b7s')).toBe(
+      true,
+    );
+  });
 });
 
 // ── render smoke ──

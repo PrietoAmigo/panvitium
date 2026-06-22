@@ -142,7 +142,7 @@ export const IRA_DECIMATIO_EFF_PER_LEVEL = 2;
  * Acedia per-level effect (03 §1, "Procrastination" / Belphegor): each level applies a
  * `1.0000002^(X · L²)` multiplier to the offline-time duration used by `resumeGame`, where X is the
  * offline SECONDS (sheet: "s is seconds offline in a row") and L is the Acedia level. Time-dependent — *not* a static modifier; applied at
- * session-resume time. The sheet pins no value for this base, so 1.00002 is a genuine tuning
+ * session-resume time. The sheet pins no value for this base, so 1.0000002 is a genuine tuning
  * constant (not awaiting a sheet number); the shape (an exponential in `X · L²`) is authoritative.
  */
 export const ACEDIA_OFFLINE_COMPOUND_BASE = 1.0000002; // per SECOND offline (sheet rev 2026-06-12)
