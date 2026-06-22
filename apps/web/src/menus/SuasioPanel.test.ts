@@ -33,7 +33,7 @@ function baseAction(over: Partial<SuasioActionView>): SuasioActionView {
     glyph: '\u263F',
     name: 'Suggestion',
     quote: 'A word left where a thought will find it.',
-    cost: '5 Influence \u00b7 5s',
+    cost: '1 Influence \u00b7 1s',
     cta: 'Speak',
     status: 'A word is being left\u2026',
     locked: false,

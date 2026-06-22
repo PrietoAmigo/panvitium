@@ -63,7 +63,7 @@ describe('startAction', () => {
   });
 
   it('queues suggestion and deducts influence', () => {
-    const s = { ...fresh(), lifetime: { ...fresh().lifetime, influence: bn(5) } };
+    const s = { ...fresh(), lifetime: { ...fresh().lifetime, influence: bn(1) } };
     const r = startAction(s, 'suggestion');
     expect(r.ok).toBe(true);
     if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(0);
@@ -275,7 +275,7 @@ describe('resolveAction', () => {
 describe('modifier integration', () => {
   it('startAction defaults its efficiency to playerEfficiency(state) — Gula skill scales cost', () => {
     // Gula Devotion 32 400 → Insatiability intensity ≈ 1.6502 (sheet rev: skill, not level) →
-    // playerEfficiencyMul ≈ 2.6502. Suggestion costs ceil(5 × 2.6502) = 14 influence.
+    // playerEfficiencyMul ≈ 2.6502. Suggestion costs ceil(1 × 2.6502) = 3 influence.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -284,16 +284,16 @@ describe('modifier integration', () => {
     };
     const r = startAction(state, 'suggestion');
     expect(r.ok).toBe(true);
-    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(36); // 50 - 14
+    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(47); // 50 - 3
   });
 
   it('startAction with Gula L2 and only enough influence for L0 cost is refused', () => {
-    // 5 influence covers a L0 (eff=1) Suggestion but not a L2 (eff=4, cost 20) one.
+    // 1 influence covers an unscaled (eff=1, cost 1) Suggestion but not the Gula-scaled cost 3.
     const base = fresh();
     const state: GameState = {
       ...base,
       devotion: { ...base.devotion, gula: bn(32400) },
-      lifetime: { ...base.lifetime, influence: bn(5) },
+      lifetime: { ...base.lifetime, influence: bn(1) },
     };
     const r = startAction(state, 'suggestion');
     expect(r.ok).toBe(false);
@@ -302,7 +302,7 @@ describe('modifier integration', () => {
 
 describe('modifier integration — per-category efficiency', () => {
   it('Luxuria levels scale Suggestion cost but not Caedis (sheet rev 2026-06-12)', () => {
-    // Luxuria L1 → suasioEffMul = 2. Suggestion influence cost = ceil(5 × 2) = 10.
+    // Luxuria L1 → suasioEffMul = 2. Suggestion influence cost = ceil(1 × 2) = 2.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -311,7 +311,7 @@ describe('modifier integration — per-category efficiency', () => {
     };
     const r1 = startAction(state, 'suggestion');
     expect(r1.ok).toBe(true);
-    if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(90); // 100 − 10
+    if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(98); // 100 − 2
 
     // Caedis on the same state pays base 100 gold (no Decimatio boost in play).
     const r2 = startAction(state, 'caedis');
@@ -333,7 +333,7 @@ describe('modifier integration — per-category efficiency', () => {
 
     const r2 = startAction(state, 'suggestion');
     expect(r2.ok).toBe(true);
-    if (r2.ok) expect(floor(r2.state.lifetime.influence).toNumber()).toBe(95); // 100 − 5
+    if (r2.ok) expect(floor(r2.state.lifetime.influence).toNumber()).toBe(99); // 100 − 1
   });
 });
 

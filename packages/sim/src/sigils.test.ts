@@ -415,15 +415,18 @@ describe('Cost-reduction sigils (S8)', () => {
   });
 
   it('Paimon #9 softens action influence costs (never increasing them)', () => {
+    // Logismoi (25 influence) shows the reduction clearly; Suggestion's 1-influence cast floors
+    // out under any softening. Luxuria L2 unlocks Logismoi; efficiency is pinned to 1.
     const seed = (s: GameState): GameState => ({
       ...s,
+      devotion: { ...s.devotion, luxuria: bn(32400) },
       lifetime: { ...s.lifetime, influence: bn(100) },
     });
-    const base = startAction(seed(fresh()), 'suggestion', { efficiency: 1 });
-    const paimon = startAction(seed(bound(9, 400_000_000)), 'suggestion', { efficiency: 1 });
+    const base = startAction(seed(fresh()), 'logismoi', { efficiency: 1 });
+    const paimon = startAction(seed(bound(9, 400_000_000)), 'logismoi', { efficiency: 1 });
     if (!base.ok || !paimon.ok) throw new Error('start failed');
-    expect(100 - base.state.lifetime.influence.toNumber()).toBe(5); // ceil(5 × 1)
-    expect(100 - paimon.state.lifetime.influence.toNumber()).toBe(3); // ceil(5 / 2)
+    expect(100 - base.state.lifetime.influence.toNumber()).toBe(25); // ceil(25 × 1)
+    expect(100 - paimon.state.lifetime.influence.toNumber()).toBe(13); // ceil(25 / 2)
   });
 
   it('Orobas #55 softens the one-time invocation soul cost (Morpheus 90% of pool)', () => {
