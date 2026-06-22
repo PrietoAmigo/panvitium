@@ -120,7 +120,11 @@ export const strings = {
     decimatioEmptyLedger: 'No rite has yet been worked.',
     // Purgatio before its Ira gate is met.
     decimatioSealedTitle: 'Purgatio \u00b7 sealed',
-    decimatioSealedLine: 'The deepest rite opens at the Third Hunger \u2014 Ira III.',
+    // Lock notes shown on a gated rite, explaining why it cannot be worked yet (with its Ira gate).
+    decimatioLocked: {
+      pogrom: 'You cannot infuse enough anger into your acolytes yet. Ira II.',
+      purgatio: 'Making anger contagious among your followers is not yet possible. Ira III.',
+    } as Record<string, string>,
     // Ledger outcome fragments (re-skinned from the real OutcomeEvent deltas).
     decimatioYield: '(+souls / \u2212reprobates)',
     decimatioNoYield: 'no yield \u00b7 tribute spent',

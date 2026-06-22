@@ -347,6 +347,7 @@ function DecimatioRite({
   cost,
   time,
   disabled,
+  locked,
 }: {
   id: string;
   numeral: string;
@@ -354,6 +355,7 @@ function DecimatioRite({
   cost: string;
   time: string;
   disabled: boolean;
+  locked: boolean;
 }): ReactElement {
   const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
@@ -376,6 +378,9 @@ function DecimatioRite({
         <span className="dec-name">{strings.opera[id as 'caedes' | 'pogrom' | 'purgatio']}</span>
       </div>
       <p className="dec-desc">{strings.opera.decimatioDesc[id]}</p>
+      {locked && strings.opera.decimatioLocked[id] && (
+        <p className="dec-lock-note">{strings.opera.decimatioLocked[id]}</p>
+      )}
       <div className="dec-controls">
         <span>
           {strings.opera.decimatioCostLabel} <b>{cost}</b>
@@ -481,12 +486,13 @@ export function DecimatioGroup(): ReactElement {
         <div className="dec-column">
           {DECIMATIO_RITES.map((r) => {
             const def = ACTIONS[r.id];
+            const locked = def ? !actionUnlocked(state, def) : true;
             // Purgatio sealed until its Ira gate is met.
             if (r.id === 'purgatio' && !purgatioOpen) {
               return (
                 <div className="dec-sealed" key={r.id}>
                   <div className="dec-sealed-title">{strings.opera.decimatioSealedTitle}</div>
-                  <p className="dec-sealed-line">{strings.opera.decimatioSealedLine}</p>
+                  <p className="dec-sealed-line">{strings.opera.decimatioLocked.purgatio}</p>
                 </div>
               );
             }
@@ -498,9 +504,8 @@ export function DecimatioGroup(): ReactElement {
                 cardClass={r.cardClass}
                 cost={costLabel(r.id)}
                 time={decimatioTime(def?.baseTimeSeconds ?? 0)}
-                disabled={
-                  underway || gold < goldCost(r.id) || (def ? !actionUnlocked(state, def) : true)
-                }
+                disabled={underway || gold < goldCost(r.id) || locked}
+                locked={locked}
               />
             );
           })}
