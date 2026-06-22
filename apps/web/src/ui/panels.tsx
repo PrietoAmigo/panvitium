@@ -347,7 +347,6 @@ function DecimatioRite({
   cost,
   time,
   disabled,
-  locked,
 }: {
   id: string;
   numeral: string;
@@ -355,7 +354,6 @@ function DecimatioRite({
   cost: string;
   time: string;
   disabled: boolean;
-  locked: boolean;
 }): ReactElement {
   const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
@@ -378,9 +376,6 @@ function DecimatioRite({
         <span className="dec-name">{strings.opera[id as 'caedes' | 'pogrom' | 'purgatio']}</span>
       </div>
       <p className="dec-desc">{strings.opera.decimatioDesc[id]}</p>
-      {locked && strings.opera.decimatioLocked[id] && (
-        <p className="dec-lock-note">{strings.opera.decimatioLocked[id]}</p>
-      )}
       <div className="dec-controls">
         <span>
           {strings.opera.decimatioCostLabel} <b>{cost}</b>
@@ -444,8 +439,9 @@ function DecimatioRite({
 
 /**
  * Decimatio program body — "The Breathing Dark" (Claude Design). Caedes is always open; Pogrom and
- * Purgatio gate on their Ira level. Purgatio, before its gate, shows a sealed card. The Index Opervm
- * ledger is the real player outcome log filtered to this program's rites, newest first.
+ * Purgatio gate on their Ira level, each showing a sealed card (no cost/time/commission) before its
+ * gate. The Index Opervm ledger is the real player outcome log filtered to this program's rites,
+ * newest first.
  */
 export function DecimatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);
@@ -459,8 +455,6 @@ export function DecimatioGroup(): ReactElement {
   const goldCost = (id: string): number => Math.ceil((ACTIONS[id]?.cost.gold ?? 0) * eff);
   const costLabel = (id: string): string =>
     `${goldCost(id).toLocaleString('en-US')} ${strings.opera.decimatioGoldUnit}`;
-  const purgatioDef = ACTIONS.purgatio;
-  const purgatioOpen = purgatioDef ? actionUnlocked(state, purgatioDef) : false;
 
   const ledger = log.filter((e) => DECIMATIO_RITES.some((r) => r.id === e.actionId));
 
@@ -487,12 +481,16 @@ export function DecimatioGroup(): ReactElement {
           {DECIMATIO_RITES.map((r) => {
             const def = ACTIONS[r.id];
             const locked = def ? !actionUnlocked(state, def) : true;
-            // Purgatio sealed until its Ira gate is met.
-            if (r.id === 'purgatio' && !purgatioOpen) {
+            // A gated rite (Pogrom, Purgatio) before its Ira gate shows a sealed card — no cost,
+            // time, or commission control, just its name and the lock note.
+            if (locked) {
+              const name = strings.opera[r.id as 'caedes' | 'pogrom' | 'purgatio'];
               return (
                 <div className="dec-sealed" key={r.id}>
-                  <div className="dec-sealed-title">{strings.opera.decimatioSealedTitle}</div>
-                  <p className="dec-sealed-line">{strings.opera.decimatioLocked.purgatio}</p>
+                  <div className="dec-sealed-title">
+                    {name} {strings.opera.decimatioSealedSuffix}
+                  </div>
+                  <p className="dec-sealed-line">{strings.opera.decimatioLocked[r.id]}</p>
                 </div>
               );
             }
@@ -504,8 +502,7 @@ export function DecimatioGroup(): ReactElement {
                 cardClass={r.cardClass}
                 cost={costLabel(r.id)}
                 time={decimatioTime(def?.baseTimeSeconds ?? 0)}
-                disabled={underway || gold < goldCost(r.id) || locked}
-                locked={locked}
+                disabled={underway || gold < goldCost(r.id)}
               />
             );
           })}
