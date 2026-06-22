@@ -10,7 +10,7 @@ const ACTION_NAMES: Record<string, string> = {
   suggestion: strings.opera.suggestion,
   logismoi: strings.opera.logismoi,
   imperium: strings.opera.imperium,
-  caedis: strings.opera.caedis,
+  caedes: strings.opera.caedes,
   pogrom: strings.opera.pogrom,
   purgatio: strings.opera.purgatio,
   indagatio: strings.opera.indagatio,

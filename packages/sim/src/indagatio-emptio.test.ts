@@ -262,14 +262,14 @@ describe('startAction — Indagatio / Emptio', () => {
     const funded: GameState = { ...base, lifetime: { ...base.lifetime, gold: bn(5000) } };
 
     // A player rite holds the slot, yet Indagatio still starts alongside it.
-    const player = startAction(funded, 'caedis');
+    const player = startAction(funded, 'caedes');
     expect(player.ok).toBe(true);
     if (player.ok) {
       const plusInd = startAction(player.state, 'indagatio');
       expect(plusInd.ok).toBe(true);
       if (plusInd.ok) {
         expect([...plusInd.state.lifetime.actionQueue].map((t) => t.actionId).sort()).toEqual([
-          'caedis',
+          'caedes',
           'indagatio',
         ]);
       }
@@ -279,7 +279,7 @@ describe('startAction — Indagatio / Emptio', () => {
     const ind = startAction(funded, 'indagatio');
     expect(ind.ok).toBe(true);
     if (ind.ok) {
-      expect(startAction(ind.state, 'caedis').ok).toBe(true);
+      expect(startAction(ind.state, 'caedes').ok).toBe(true);
       const secondInd = startAction(ind.state, 'indagatio');
       expect(secondInd.ok).toBe(false);
       if (!secondInd.ok) expect(secondInd.reason).toContain('scrying');

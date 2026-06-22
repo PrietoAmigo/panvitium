@@ -103,13 +103,23 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 848** (sim 536 · shared 58 · api 20 · web 234).
+**Current test count: 852** (sim 536 · shared 60 · api 20 · web 236).
 
-> **Latest change — Decimatio reborn as "The Breathing Dark" (Claude Design handoff).** The
+> **Latest change — the Decimatio rite `caedis` → `caedes` (Latin-consistency rename).** The
+> culling rite formerly identified as `caedis` (the genitive) is now `caedes` (the nominative),
+> matching the other rite names (Decimatio, Purgatio). The rename is repo-wide — the action id and
+> its derived identifiers (`CAEDES_WEIGHTS`, `resolveCaedes`, `caedesTierDelta`), the display string,
+> the Imp/Upir autonomous-runner reference, every test, and the docs. The action id is persisted (in
+> `autoRepeat`, the action queue, and acolyte delegations), so this is a save-shape concern: schema
+> bumps to **v4** with a `v3-to-v4` migration that rewrites every persisted `caedis` occurrence to
+> `caedes` (ADR-023 — old saves keep their queued rite, auto-repeat, and assigned acolytes). Two
+> shared migration tests pin the rewrite and its no-op path.
+>
+> **Earlier change — Decimatio reborn as "The Breathing Dark" (Claude Design handoff).** The
 > culling program's PC body is no longer a plain list of action rows; it is now a full-bleed, living
 > liturgy — a breathing blood-red heart-glow, two drifting smoke banks, a vignette, and a
 > heartbeat-pulsed **Decimatio** title over the creed _Pars pro toto cadat._ A single Reprobates KPI
-> sits above three rite cards (**Caedis I / Pogrom II / Purgatio III**) carrying their real catalog
+> sits above three rite cards (**Caedes I / Pogrom II / Purgatio III**) carrying their real catalog
 > costs (100 / 1,000 / 1,000,000 g, efficiency-scaled), durations, the acolyte stepper, and the
 > auto-repeat toggle — all wired to the live store (`act`, `assignAcolyte`/`unassignAcolyte`,
 > `toggleAutoRepeat`) with the same gating as before. Purgatio shows a sealed card until **Ira III**.
@@ -150,7 +160,7 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 > the visual (room match + the cast-shadow geometry).
 >
 > **Earlier change — delegated actions are free (acolytes & invocations).** Acolytes and autonomous
-> invocation runners (the Familiar's Indagatio, the Imp's Caedis, the Succubus's Imperium, …) now
+> invocation runners (the Familiar's Indagatio, the Imp's Caedes, the Succubus's Imperium, …) now
 > carry out their delegated actions **without spending gold/influence** — the shared runner engine
 > (`runner.ts`) no longer charges a per-cycle cost, acolyte assignment no longer pays up front, and a
 > delegated channel never stalls on an empty treasury. Only the player's own cast still pays. (The
@@ -478,9 +488,9 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 > (mass apostasy, −50%), Logismoi Stellar pays +3% of the population and its Excellent
 > `randint(20,58)` (owner answer #3), **Pogrom's culls shrink to 2.5/1/0.1%** but its Apocalyptic
 > burns 66% gold AND half the flock, **Purgatio's culls become 25/10/1%** with Terrible burning
-> ALL gold and Apocalyptic burning everything, Caedis' Apocalyptic softens to 33% gold + 25%
+> ALL gold and Apocalyptic burning everything, Caedes' Apocalyptic softens to 33% gold + 25%
 > flock, and Emptio gains real price tiers (Stellar free, Excellent 25% price, Good 50%,
-> Bad a wasted attempt). Forecast deltas (Suggestion/Caedis) mirror the new effects;
+> Bad a wasted attempt). Forecast deltas (Suggestion/Caedes) mirror the new effects;
 > `resolveImperium` now takes the rolled tier. Test count 486 sim (+5).
 
 > **Earlier change — economy retune, slice 1 of 6 (Globals & flat numbers; audit
@@ -496,7 +506,7 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 > Logismoi Excellent `randint(20,58)`, the vestigial conversion-rate Globals row deleted, the
 > intensity-divisor prose corrected to 65.37. Maleficia prices and the action toggle gates were
 > verified already sheet-accurate. Slices 2–6 (action tier tables, VC Slice 3, the Sins remap, the
-> 72-sigil re-pin, invocation retouches incl. Imp → Caedis-efficiency contributor) remain per the
+> 72-sigil re-pin, invocation retouches incl. Imp → Caedes-efficiency contributor) remain per the
 > audit.
 
 > **Earlier change — documentation reconciliation (no code change).** The design docs and the ADR
@@ -614,7 +624,7 @@ ceremony plus the apex now matches the sheet):
 | 1   | Globals base rates         | `BASE_GOLD_PER_SECOND` 10→2, `BASE_INFLUENCE_RATE` 0.025→0.01.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | 2   | Acolyte curve              | `maxAcolytes` ×2.2 threshold series anchored at 110; fresh game starts at 0 acolytes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | 3   | Emptio outcomes            | Neutral merged with Good (purchase at listed price); Apocalyptic bite 0.3→0.5.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 4   | Caedis Apocalyptic         | No-op → lose 66% gold + 50% reprobates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 4   | Caedes Apocalyptic         | No-op → lose 66% gold + 50% reprobates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | 5   | Suggestion effects         | Stellar mints reprobates; Excellent mints souls.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 6   | Indagatio ladder           | Good→rare+common, Neutral→common; Terrible loss 0.05→0.15, Apocalyptic 0.2→0.8.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | 7   | Vitium Mercatura           | Full 32-business catalog (8 sins × 4 tiers) generated from tier specs + sheet costs/rates.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -623,9 +633,9 @@ ceremony plus the apex now matches the sheet):
 | 10  | Compositum population      | Bacchanal → 10% of (Glutton+Degenerate)/s generation; Enraging Broadcast → % cull of population.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 11  | Compositum penalty/offline | Vegas / Crusade flatly raise the opposite faction's subtype penalties; Dolce ×1.01 offline gain.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 12  | Panvitium ritual           | Exponential `eᵗ` cost/conversion; conversion across all subtypes + soul harvest (∝ souls) + flat gen.                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 13  | Suasio Opera actions       | Sheet-specified Logismoi (Luxuria 2) + Imperium (Luxuria 3) added to the action catalog with their tier distributions and a new optional `unlock { sin, level }` gate + `actionUnlocked` helper + `startAction` guard (Suggestion/Caedis stay ungated). The Suasio scroll now holds all three temptations: Suggestion is always open; Logismoi/Imperium show their Luxuria gate until reached. Imperium's duration is a flagged placeholder (the sheet defers it). The Decimatio pair (Pogrom/Purgatio) is a separate slice.                                                      |
+| 13  | Suasio Opera actions       | Sheet-specified Logismoi (Luxuria 2) + Imperium (Luxuria 3) added to the action catalog with their tier distributions and a new optional `unlock { sin, level }` gate + `actionUnlocked` helper + `startAction` guard (Suggestion/Caedes stay ungated). The Suasio scroll now holds all three temptations: Suggestion is always open; Logismoi/Imperium show their Luxuria gate until reached. Imperium's duration is a flagged placeholder (the sheet defers it). The Decimatio pair (Pogrom/Purgatio) is a separate slice.                                                      |
 | 14  | Decimatio Opera actions    | Sheet-specified Pogrom (Ira 2) + Purgatio (Ira 3) added with their tier effects. Pogrom culls a chosen subtype (5/10/25% by tier, soul per death) via the existing action-`target` plumbing + a `startAction` subtype guard; Purgatio culls all subtypes (33/66/100%). New `cullSubtypeFraction` and `loseConvertedReprobatesFraction` population helpers; positive culls scale with efficiency (clamped ≤100%), the Church/gold losses are fixed. Sim core only — UI surfacing is deferred (see Remaining). Costs are flagged placeholders (sheet says "high"/"very high gold"). |
-| 15  | Action delegation gating   | New optional `delegateUnlock { sin, level }` on the six Opera actions (the sheet's "toggle" levels: Suggestion/Caedis at Luxuria/Ira 1, Logismoi/Pogrom at 3, Imperium/Purgatio at 4). `isDelegatable` is now state-aware; acolyte assignment and the `AcolyteControls` UI honour it, so a rite can be cast by hand before it can be automated. Autonomous invocation runners (Familiar/Imp/Upir) stay gated by invocation possession, not the toggle level; Indagatio is always delegatable, Emptio never.                                                                       |
+| 15  | Action delegation gating   | New optional `delegateUnlock { sin, level }` on the six Opera actions (the sheet's "toggle" levels: Suggestion/Caedes at Luxuria/Ira 1, Logismoi/Pogrom at 3, Imperium/Purgatio at 4). `isDelegatable` is now state-aware; acolyte assignment and the `AcolyteControls` UI honour it, so a rite can be cast by hand before it can be automated. Autonomous invocation runners (Familiar/Imp/Upir) stay gated by invocation possession, not the toggle level; Indagatio is always delegatable, Emptio never.                                                                       |
 
 **Maleficia** — in progress (roster + gating done; effects pending):
 
@@ -773,7 +783,7 @@ extensions, `import type`, Prettier):
     copies cull/persuade at ~N× the rate. Folding the count into efficiency wouldn't work — the
     per-cycle outcome is quantised at `max(1, floor(eff))`, so sub-unit gains would round away. The
     Familiar stays the lone capped runner (the "Special").
-  - _PC/Suasio polish._ Confirmed acolyte **delegation works inside the PC**: Decimatio (`caedis`)
+  - _PC/Suasio polish._ Confirmed acolyte **delegation works inside the PC**: Decimatio (`caedes`)
     and Indagatio (`indagatio`) render the `+`/− `AcolyteControls` (shown once you hold ≥1 acolyte)
     via `ActionRow`'s delegation slot. Removed the outcome **log from the Suasio scroll** (outcomes
     live in the PC's Logs program). Split the PC's **Depraedatio** program into three tabs — Vitium
@@ -833,7 +843,7 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
     reading hand-authored copy from `menus.data.ts` (`INVOCATION_BY_ID[id].effect`), which had gone
     stale and wrong: Harpy listed _Suasio_ (it's **Decimatio** efficiency), Behemoth listed _×2
     reprobate generation_ (it's a **+Stellar-chance** boost) and via a `\\u00D7` escape rendered the
-    literal `\u00D72`, Upir was framed as a passive (it's a **Caedis runner**), Fama showed a
+    literal `\u00D72`, Upir was framed as a passive (it's a **Caedes runner**), Fama showed a
     hardcoded `+50%`, and Lamia/Imp/Succubus/Doppelgänger/Midas/&c. had **no** effect line at all.
     The fix extracts the (correct) sim-derived describe logic that the PC's Analytics → Invocations
     tab already used into a shared `apps/web/src/game/invocationEffect.ts` (`invocationEffectText`),
@@ -852,7 +862,7 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 Economy-parity tracks still to reconcile against the spreadsheet:
 
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. The **oracular reveals** (Phase 5 slice) have also shipped: owning Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather surfaces a live Opera tier-distribution readout in that item's cabinet detail (a stacked odds bar per action, via a read-only `actionTierDistribution` sim helper that reuses the exact `resolveAction` composition). With this, Maleficia is complete — roster, gating, and every effect.
-- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is complete: _Caedis_, _Pogrom_, and _Purgatio_, each gated by its Ira level. (Post-ADR-024 note: Pogrom culls the single pool — the old present-subtype picker and its no-delegation caveat retired with the subtypes.) Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (1,000,000) gold costs are sheet-pinned.
+- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is complete: _Caedes_, _Pogrom_, and _Purgatio_, each gated by its Ira level. (Post-ADR-024 note: Pogrom culls the single pool — the old present-subtype picker and its no-delegation caveat retired with the subtypes.) Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (1,000,000) gold costs are sheet-pinned.
 - **Emails (PC program) — impact-feedback system** _(✓ shipped, content authored — 05)_. An inbox that
   surfaces the in-world consequences of the player's descent as incoming correspondence, so the player
   _feels_ the impact rather than reading it only as numbers. The full authored catalog (`docs/05-email-content.md`)
@@ -957,8 +967,8 @@ surface. All three have shipped (no new mechanic — the only sim addition was a
   Feather → _Indagatio_, Obsidian Mirror → all four. (The earlier README prose had Crossroads/Crow
   swapped — corrected here.) Pinned by `buildOracle` + `actionTierDistribution` unit tests.
 - **Complete the PC's Decimatio program** _(✓ shipped)_. The PC's _Decimatio_ program now carries
-  _Caedis_, _Pogrom_ (then with a present-subtype picker wiring `act('pogrom', subtype)`), and
-  _Purgatio_, each gated by its Ira level; delegation was offered on Caedis/Purgatio but not Pogrom.
+  _Caedes_, _Pogrom_ (then with a present-subtype picker wiring `act('pogrom', subtype)`), and
+  _Purgatio_, each gated by its Ira level; delegation was offered on Caedes/Purgatio but not Pogrom.
   _(Post-ADR-024: Pogrom culls the single pool; the picker and the delegation caveat retired with
   the subtypes.)_ Decimatio lives entirely in the PC, never on the Suasio scroll.
   Pinned by a `pogromTargets` adapter test; the Playwright e2e step is deferred to a machine with a
@@ -1074,7 +1084,7 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   moments in closed form from the live tier distribution (or a forced tier) × each tier's per-dimension
   delta moments (fixed amounts, `randint` ranges, %-of-population culls), combined via the law of total
   variance — no sampling, deterministic, and Monte-Carlo-validated against the real resolver in the sim
-  tests so it can't drift. So the Imp's forced-Good Caedis reads _+1 soul, −1 reprobate · every 10s_
+  tests so it can't drift. So the Imp's forced-Good Caedes reads _+1 soul, −1 reprobate · every 10s_
   (deterministic, sd 0), a Lamia's Suggestion reads e.g. _+0.61 ±0.52 reprobates, +0.15 souls · every
   5s_, and the Familiar's Indagatio reads its expected maleficia surfaced per cycle. The qualitative
   "culls reprobates" phrasing it replaced wasn't enough — outcomes are now always listed as an expected

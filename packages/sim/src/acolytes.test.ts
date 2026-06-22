@@ -128,11 +128,11 @@ describe('autoRecruitAcolytes', () => {
 describe('isDelegatable (toggle Sin-level gate)', () => {
   it('Indagatio is always delegatable; the Opera rites gate on their toggle Sin level', () => {
     expect(isDelegatable(fresh(), 'indagatio')).toBe(true);
-    // Suggestion / Caedis toggle at Luxuria / Ira 1.
+    // Suggestion / Caedes toggle at Luxuria / Ira 1.
     expect(isDelegatable(fresh(), 'suggestion')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'luxuria', 1), 'suggestion')).toBe(true);
-    expect(isDelegatable(fresh(), 'caedis')).toBe(false);
-    expect(isDelegatable(setSin(fresh(), 'ira', 1), 'caedis')).toBe(true);
+    expect(isDelegatable(fresh(), 'caedes')).toBe(false);
+    expect(isDelegatable(setSin(fresh(), 'ira', 1), 'caedes')).toBe(true);
     // The higher rites toggle at 3 / 4.
     expect(isDelegatable(setSin(fresh(), 'luxuria', 2), 'logismoi')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'luxuria', 3), 'logismoi')).toBe(true);
@@ -180,9 +180,9 @@ describe('assignAcolyteToAction', () => {
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign failed');
     s = r.state;
-    // Player still able to start their own rite (caedis here just because it costs gold).
+    // Player still able to start their own rite (caedes here just because it costs gold).
     s = { ...s, lifetime: { ...s.lifetime, gold: bn(500) } };
-    const playerStart = startAction(s, 'caedis');
+    const playerStart = startAction(s, 'caedes');
     expect(playerStart.ok).toBe(true);
     if (!playerStart.ok) return;
     expect(playerStart.state.lifetime.actionQueue).toHaveLength(1);
@@ -368,18 +368,18 @@ function withReprobates(s: GameState, n: number): GameState {
 
 describe('cost-outcome delegation (Suasio / Decimatio)', () => {
   it('refuses to delegate a rite below its toggle Sin level', () => {
-    // recruited() leaves Ira at 0, so Caedis (toggle Ira 1) cannot be delegated yet.
-    const r = assignAcolyteToAction(withGold(recruited(), 1000), 'caedis');
+    // recruited() leaves Ira at 0, so Caedes (toggle Ira 1) cannot be delegated yet.
+    const r = assignAcolyteToAction(withGold(recruited(), 1000), 'caedes');
     expect(r.ok).toBe(false);
   });
 
   it('assigning Decimatio starts the first cycle for free (no gold spent)', () => {
     const s = withGold(delegatable(), 1000);
-    const r = assignAcolyteToAction(s, 'caedis');
-    if (!r.ok) throw new Error('assign caedis failed');
+    const r = assignAcolyteToAction(s, 'caedes');
+    if (!r.ok) throw new Error('assign caedes failed');
     expect(r.state.lifetime.gold.toNumber()).toBe(1000); // free — nothing paid at assign
-    expect(r.state.lifetime.acolytes[0]!.assignedAction).toBe('caedis');
-    expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(ACTIONS.caedis!.baseTimeSeconds);
+    expect(r.state.lifetime.acolytes[0]!.assignedAction).toBe('caedes');
+    expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(ACTIONS.caedes!.baseTimeSeconds);
   });
 
   it('assigning Suasio starts the first cycle for free (no influence spent)', () => {
@@ -394,46 +394,46 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
 
   it('a delegated Decimatio resolves a cycle for free and stays assigned to loop', () => {
     let s = withReprobates(withGold(delegatable(), 1000), 100);
-    const cycle = ACTIONS.caedis!.baseTimeSeconds; // cost-outcome duration is the base time
-    const r = assignAcolyteToAction(s, 'caedis');
+    const cycle = ACTIONS.caedes!.baseTimeSeconds; // cost-outcome duration is the base time
+    const r = assignAcolyteToAction(s, 'caedes');
     if (!r.ok) throw new Error('assign');
     s = r.state;
     expect(s.lifetime.gold.toNumber()).toBe(1000); // nothing paid at assign
     // Exactly one cycle's worth of time: resolve once and loop straight into the next.
     const adv = advanceAcolytes(s, cycle, makeRng(11));
     expect(adv.events).toHaveLength(1);
-    expect(adv.events[0]!.actionId).toBe('caedis');
+    expect(adv.events[0]!.actionId).toBe('caedes');
     expect(adv.state.lifetime.gold.toNumber()).toBe(1000); // free — gold untouched
-    expect(adv.state.lifetime.reprobates).toBeLessThanOrEqual(100); // Caedis never adds
-    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('caedis'); // still delegated — loops
+    expect(adv.state.lifetime.reprobates).toBeLessThanOrEqual(100); // Caedes never adds
+    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('caedes'); // still delegated — loops
     expect(adv.state.lifetime.actionQueue).toHaveLength(0); // delegated channel, not the player slot
 
     // Another full cycle resolves again, still free — the loop continues.
     const adv2 = advanceAcolytes(adv.state, cycle, makeRng(13));
     expect(adv2.events).toHaveLength(1);
     expect(adv2.state.lifetime.gold.toNumber()).toBe(1000); // still free
-    expect(adv2.state.lifetime.acolytes[0]!.assignedAction).toBe('caedis');
+    expect(adv2.state.lifetime.acolytes[0]!.assignedAction).toBe('caedes');
   });
 
   it('an acolyte assigned while broke still works — delegated actions cost nothing', () => {
     let s = withReprobates(withGold(delegatable(), 0), 100);
-    const r = assignAcolyteToAction(s, 'caedis');
+    const r = assignAcolyteToAction(s, 'caedes');
     if (!r.ok) throw new Error('assign should succeed even while broke');
     s = r.state;
-    expect(s.lifetime.acolytes[0]!.assignedAction).toBe('caedis');
+    expect(s.lifetime.acolytes[0]!.assignedAction).toBe('caedes');
     // The first cycle started immediately — never stalled on the empty treasury.
-    expect(s.lifetime.acolytes[0]!.remainingSeconds).toBe(ACTIONS.caedis!.baseTimeSeconds);
+    expect(s.lifetime.acolytes[0]!.remainingSeconds).toBe(ACTIONS.caedes!.baseTimeSeconds);
     expect(s.lifetime.gold.toNumber()).toBe(0);
     // A broke acolyte resolves its cycle for free.
-    const adv = advanceAcolytes(s, ACTIONS.caedis!.baseTimeSeconds, makeRng(12));
+    const adv = advanceAcolytes(s, ACTIONS.caedes!.baseTimeSeconds, makeRng(12));
     expect(adv.events).toHaveLength(1);
     expect(adv.state.lifetime.gold.toNumber()).toBe(0); // nothing spent
-    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('caedis'); // still delegated — loops
+    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('caedes'); // still delegated — loops
   });
 
   it('a broke Decimatio acolyte does not occupy the player action slot', () => {
     const s = withGold(delegatable(), 0);
-    const r = assignAcolyteToAction(s, 'caedis');
+    const r = assignAcolyteToAction(s, 'caedes');
     if (!r.ok) throw new Error('assign');
     expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });

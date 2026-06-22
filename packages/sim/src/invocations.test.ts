@@ -388,23 +388,23 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     lifetime: { ...s.lifetime, reprobates: n },
   });
 
-  it('is gated on power 2 + Ira 1, stackable, and runs a Good-only Caedis channel', () => {
+  it('is gated on power 2 + Ira 1, stackable, and runs a Good-only Caedes channel', () => {
     const def = invocationById('imp')!;
     expect(def.sin).toBe('ira');
     expect(def.invokingPower).toBe(2);
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // Normal type → stacks (one channel per copy)
-    expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
+    expect(def.autonomous).toEqual({ action: 'caedes', efficiency: 0.05, forcedTier: 'good' });
     expect(def.upkeep).toEqual({ gold: 10 }); // 10 gold/s upkeep
   });
 
-  it('Upir is the Gula counterpart — power 3 + Gula 1, a stackable Good-only Caedis channel', () => {
+  it('Upir is the Gula counterpart — power 3 + Gula 1, a stackable Good-only Caedes channel', () => {
     const def = invocationById('upir')!;
     expect(def.sin).toBe('gula');
     expect(def.invokingPower).toBe(3);
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // Normal type → stacks
-    expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
+    expect(def.autonomous).toEqual({ action: 'caedes', efficiency: 0.05, forcedTier: 'good' });
     expect(def.upkeep).toEqual({ influence: 1 }); // 1 influence/s upkeep
   });
 
@@ -475,10 +475,10 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     // 25 s ≈ 2 full 10 s cycles + a partial third (cost-outcome cycle = base 10 s).
     const r = advanceInvocationRunners(s, 25, makeRng(3));
     expect(r.events.length).toBeGreaterThanOrEqual(2);
-    expect(r.events.every((e) => e.actionId === 'caedis')).toBe(true);
+    expect(r.events.every((e) => e.actionId === 'caedes')).toBe(true);
     expect(r.state.souls.toNumber()).toBe(soulsBefore + r.events.length); // 1 kill → 1 soul each
     expect(r.state.lifetime.reprobates).toBe(100 - r.events.length);
-    // The runner carries out Caedis for free — gold is untouched by the cycles.
+    // The runner carries out Caedes for free — gold is untouched by the cycles.
     expect(r.state.lifetime.gold.toNumber()).toBe(1000);
     expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });

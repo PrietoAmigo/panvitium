@@ -40,7 +40,7 @@ export const strings = {
     suggestion: 'Suggestion',
     logismoi: 'Logismoi',
     imperium: 'Imperium',
-    caedis: 'Caedis',
+    caedes: 'Caedes',
     pogrom: 'Pogrom',
     purgatio: 'Purgatio',
     tempt: 'Tempt',
@@ -127,7 +127,7 @@ export const strings = {
     decimatioBackfired: 'the rite backfired',
     // Each rite\u2019s flavour description, shown beneath its name.
     decimatioDesc: {
-      caedis:
+      caedes:
         'You put coin in a hired blade\u2019s hand and name a single soul. Quiet, almost certain, and cheap enough to commission again and again.',
       pogrom: 'You loose your acolytes upon a crowd.',
       purgatio:
@@ -135,7 +135,7 @@ export const strings = {
     } as Record<string, string>,
     // Per-rite verb on the commission button.
     decimatioCta: {
-      caedis: 'Hire the blade',
+      caedes: 'Hire the blade',
       pogrom: 'Loose the acolytes',
       purgatio: 'Call the faithful',
     } as Record<string, string>,

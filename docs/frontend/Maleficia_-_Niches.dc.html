@@ -133,7 +133,7 @@ class Component extends DCLogic {
   DIST = {
     Suggestion: [0.08, 0.17, 0.30, 0.22, 0.13, 0.07, 0.03],
     Logismoi:   [0.05, 0.14, 0.28, 0.25, 0.15, 0.09, 0.04],
-    Caedis:     [0.10, 0.20, 0.31, 0.20, 0.11, 0.06, 0.02],
+    Caedes:     [0.10, 0.20, 0.31, 0.20, 0.11, 0.06, 0.02],
     Indagatio:  [0.06, 0.12, 0.24, 0.28, 0.17, 0.09, 0.04],
     Emptio:     [0.04, 0.11, 0.26, 0.30, 0.16, 0.09, 0.04],
   };
@@ -166,7 +166,7 @@ class Component extends DCLogic {
   ];
 
   OPERA_LABEL = { suasio: 'Suasio', decimatio: 'Decimatio', indagatio: 'Indagatio', emptio: 'Emptio' };
-  OPERA_ACTIONS = { suasio: ['Suggestion','Logismoi'], decimatio: ['Caedis'], indagatio: ['Indagatio'], emptio: ['Emptio'] };
+  OPERA_ACTIONS = { suasio: ['Suggestion','Logismoi'], decimatio: ['Caedes'], indagatio: ['Indagatio'], emptio: ['Emptio'] };
 
   doUse = (id) => {
     if (id === 'defixio') this.setState({ defixioActive: true });

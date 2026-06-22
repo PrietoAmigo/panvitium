@@ -138,7 +138,7 @@ The Opera is the action surface of a lifetime: everything the player does betwee
 
 ### Action types
 
-- **One-shot** actions with a duration (e.g. *Suggestion*, *Caedis*, *Indagatio*).
+- **One-shot** actions with a duration (e.g. *Suggestion*, *Caedes*, *Indagatio*).
 - **Toggles** that consume resources per second while active (e.g. the *Vitium Compositum*
   ceremonies, *Panvitium*). A one-shot action also gains an **auto-repeat** toggle once its Sin
   reaches the spreadsheet's toggle level (the same gate that opens delegation): flip it on and the

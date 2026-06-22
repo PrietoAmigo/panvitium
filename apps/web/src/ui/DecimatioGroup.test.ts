@@ -1,6 +1,6 @@
 /**
  * Render smoke tests for the reworked Decimatio menu (Claude Design "The Breathing Dark"): the
- * masthead + creed, the live Reprobates KPI, the three rite cards (Caedis / Pogrom always shown,
+ * masthead + creed, the live Reprobates KPI, the three rite cards (Caedes / Pogrom always shown,
  * Purgatio sealed until Ira III), and the "Index Opervm" ledger. These pin the wiring the rework
  * introduced; the action math and store mutators are covered by their own suites — this is purely
  * that the surface mounts against live store state with the real catalog numbers.
@@ -46,13 +46,13 @@ describe('DecimatioGroup — "The Breathing Dark"', () => {
     expect(container!.querySelector('.dec-kpi-label')?.textContent).toBe(strings.reprobates);
   });
 
-  it('shows Caedis and Pogrom cards with their real costs, and seals Purgatio at a fresh start', () => {
+  it('shows Caedes and Pogrom cards with their real costs, and seals Purgatio at a fresh start', () => {
     render();
     const names = Array.from(container!.querySelectorAll('.dec-name')).map((n) =>
       (n.textContent ?? '').trim(),
     );
-    // Caedis and Pogrom render as full cards; Purgatio is sealed (Ira < III at a fresh start).
-    expect(names).toContain(strings.opera.caedis);
+    // Caedes and Pogrom render as full cards; Purgatio is sealed (Ira < III at a fresh start).
+    expect(names).toContain(strings.opera.caedes);
     expect(names).toContain(strings.opera.pogrom);
     expect(names).not.toContain(strings.opera.purgatio);
 
@@ -67,7 +67,7 @@ describe('DecimatioGroup — "The Breathing Dark"', () => {
     const ctas = Array.from(container!.querySelectorAll('.dec-commission')).map((b) =>
       (b.textContent ?? '').trim(),
     );
-    expect(ctas).toContain(strings.opera.decimatioCta.caedis);
+    expect(ctas).toContain(strings.opera.decimatioCta.caedes);
     expect(ctas).toContain(strings.opera.decimatioCta.pogrom);
   });
 

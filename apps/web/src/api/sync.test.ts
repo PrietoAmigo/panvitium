@@ -7,6 +7,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getCurrentUser, getServerSave, pushSave, requestMagicLink, signOut } from './sync.js';
+import { CURRENT_SCHEMA_VERSION } from '@panvitium/shared';
 import type { SaveBlob, User } from '@panvitium/shared';
 
 type FetchMock = ReturnType<typeof vi.fn>;
@@ -27,7 +28,7 @@ const USER: User = {
 
 function makeBlob(overrides: Partial<SaveBlob> = {}): SaveBlob {
   return {
-    schemaVersion: 3,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     saveVersion: 3,
     lastTickAt: 1_700_000_000_000,
     deviceId: 'dev-1',

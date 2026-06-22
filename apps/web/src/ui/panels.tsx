@@ -73,7 +73,7 @@ export function Panel({ title, onClose, children }: PanelProps): ReactElement {
   );
 }
 
-/** A single outcome rendered as a terminal log line: "Caedis · Good — +1 Souls, -1 Reprobates". */
+/** A single outcome rendered as a terminal log line: "Caedes · Good — +1 Souls, -1 Reprobates". */
 function describeOutcome(e: OutcomeEvent): string {
   const name = actionName(e.actionId);
   const parts: string[] = [];
@@ -300,7 +300,7 @@ const DECIMATIO_TIER_COLOR: Record<Tier, string> = {
 
 /** The decimatio rites, in liturgical order, with their card chrome (numeral + accent class). */
 const DECIMATIO_RITES = [
-  { id: 'caedis', numeral: 'I', cardClass: 'i' },
+  { id: 'caedes', numeral: 'I', cardClass: 'i' },
   { id: 'pogrom', numeral: 'II', cardClass: 'ii' },
   { id: 'purgatio', numeral: 'III', cardClass: 'iii' },
 ] as const;
@@ -373,7 +373,7 @@ function DecimatioRite({
     <div className={`dec-card dec-card--${cardClass}`}>
       <div className="dec-card-head">
         <span className="dec-numeral">{numeral}</span>
-        <span className="dec-name">{strings.opera[id as 'caedis' | 'pogrom' | 'purgatio']}</span>
+        <span className="dec-name">{strings.opera[id as 'caedes' | 'pogrom' | 'purgatio']}</span>
       </div>
       <p className="dec-desc">{strings.opera.decimatioDesc[id]}</p>
       <div className="dec-controls">
@@ -438,7 +438,7 @@ function DecimatioRite({
 }
 
 /**
- * Decimatio program body — "The Breathing Dark" (Claude Design). Caedis is always open; Pogrom and
+ * Decimatio program body — "The Breathing Dark" (Claude Design). Caedes is always open; Pogrom and
  * Purgatio gate on their Ira level. Purgatio, before its gate, shows a sealed card. The Index Opervm
  * ledger is the real player outcome log filtered to this program's rites, newest first.
  */
