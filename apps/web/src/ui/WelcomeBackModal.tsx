@@ -1,6 +1,6 @@
 import { type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
-import { gt, bn, type BigNum } from '@panvitium/sim';
+import { gt, lt, bn, sub } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
 import './welcome-back.css';
@@ -23,14 +23,34 @@ export function WelcomeBackModal(): ReactElement | null {
 
   const w = strings.welcomeBack;
 
-  // Tally inclusion rules: resources only if gained; reprobates if net != 0. Influence is omitted
-  // from the display by design — the payload still carries it.
+  // Tally inclusion rules: a column appears only when its value moved. Souls are gain-only (the tick
+  // never subtracts them), so they show a `+` when earned. Gold is a spendable balance, so offline
+  // automation can leave a net loss — it shows either a `+` gain or a blood-red `−` loss, like
+  // reprobates. Reprobates likewise. Influence is omitted from the display by design.
   const items: Tally[] = [];
-  const addGain = (label: string, v: BigNum): void => {
-    if (gt(v, bn(0))) items.push({ label, sign: '+', value: formatBigNum(v), signColor: ACCENT });
-  };
-  addGain(strings.resources.souls, recap.souls);
-  addGain(strings.resources.gold, recap.gold);
+  if (gt(recap.souls, bn(0))) {
+    items.push({
+      label: strings.resources.souls,
+      sign: '+',
+      value: formatBigNum(recap.souls),
+      signColor: ACCENT,
+    });
+  }
+  if (gt(recap.gold, bn(0))) {
+    items.push({
+      label: strings.resources.gold,
+      sign: '+',
+      value: formatBigNum(recap.gold),
+      signColor: ACCENT,
+    });
+  } else if (lt(recap.gold, bn(0))) {
+    items.push({
+      label: strings.resources.gold,
+      sign: '−',
+      value: formatBigNum(sub(bn(0), recap.gold)),
+      signColor: BLOOD,
+    });
+  }
   if (recap.reprobates !== 0) {
     const positive = recap.reprobates > 0;
     items.push({
