@@ -105,6 +105,40 @@ export const strings = {
     } as Record<string, { name: string; maxim: string }>,
     // Gate prefix for a sealed row, e.g. \u201cRequires Luxuria III\u201d.
     suasioRequires: 'Requires',
+
+    // Decimatio \u2014 \u201cThe Breathing Dark\u201d (Claude Design rework). The culling program\u2019s PC
+    // body: three rites, a live Reprobates KPI, and the \u201cIndex Opervm\u201d ledger of real outcomes.
+    // Latin terms (the creed, the ledger heading, the rite names) stay untranslated (ADR-020).
+    decimatioCreed: 'Pars pro toto cadat.',
+    decimatioCostLabel: 'Cost',
+    decimatioTimeLabel: 'Time',
+    decimatioAcolytesLabel: 'Acolytes',
+    decimatioGoldUnit: 'g',
+    // The auto-repeat toggle label on a rite card (the on-state is carried by colour, not text).
+    decimatioAuto: '\u21bb Auto',
+    decimatioLedgerHeading: '\u2e3b INDEX OPERVM \u2e3b',
+    decimatioEmptyLedger: 'No rite has yet been worked.',
+    // Purgatio before its Ira gate is met.
+    decimatioSealedTitle: 'Purgatio \u00b7 sealed',
+    decimatioSealedLine: 'The deepest rite opens at the Third Hunger \u2014 Ira III.',
+    // Ledger outcome fragments (re-skinned from the real OutcomeEvent deltas).
+    decimatioYield: '(+souls / \u2212reprobates)',
+    decimatioNoYield: 'no yield \u00b7 tribute spent',
+    decimatioBackfired: 'the rite backfired',
+    // Each rite\u2019s flavour description, shown beneath its name.
+    decimatioDesc: {
+      caedis:
+        'You put coin in a hired blade\u2019s hand and name a single soul. Quiet, almost certain, and cheap enough to commission again and again.',
+      pogrom: 'You loose your acolytes upon a crowd.',
+      purgatio:
+        'You call the whole of your following into the streets and give a city over to the dark.',
+    } as Record<string, string>,
+    // Per-rite verb on the commission button.
+    decimatioCta: {
+      caedis: 'Hire the blade',
+      pogrom: 'Loose the acolytes',
+      purgatio: 'Call the faithful',
+    } as Record<string, string>,
   },
   /**
    * The Mercatus system (Vitium Mercatura rework): eight trades, exactly one per Cardinal Sin.

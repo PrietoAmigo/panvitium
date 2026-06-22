@@ -103,9 +103,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 845** (sim 536 · shared 58 · api 20 · web 231).
+**Current test count: 848** (sim 536 · shared 58 · api 20 · web 234).
 
-> **Latest change — the offline recap reborn as "The Litany" (Claude Design handoff).** The
+> **Latest change — Decimatio reborn as "The Breathing Dark" (Claude Design handoff).** The
+> culling program's PC body is no longer a plain list of action rows; it is now a full-bleed, living
+> liturgy — a breathing blood-red heart-glow, two drifting smoke banks, a vignette, and a
+> heartbeat-pulsed **Decimatio** title over the creed _Pars pro toto cadat._ A single Reprobates KPI
+> sits above three rite cards (**Caedis I / Pogrom II / Purgatio III**) carrying their real catalog
+> costs (100 / 1,000 / 1,000,000 g, efficiency-scaled), durations, the acolyte stepper, and the
+> auto-repeat toggle — all wired to the live store (`act`, `assignAcolyte`/`unassignAcolyte`,
+> `toggleAutoRepeat`) with the same gating as before. Purgatio shows a sealed card until **Ira III**.
+> The **Index Opervm** ledger is the real player outcome log filtered to this program's rites,
+> re-skinned per tier (productive rolls read `{X} (+souls / −reprobates)`, the Church/Higher-Power
+> tails read as the rite backfiring). `prefers-reduced-motion` stills the breathing/drift/glow. The
+> sim, save shape, and RNG stream are untouched. Three web render tests pin the surface.
+>
+> **Earlier change — the offline recap reborn as "The Litany" (Claude Design handoff).** The
 > welcome-back screen is no longer a centred card; it is now a full-bleed typographic title-card
 > that renders the creed of Acedia — **PRAEMIUM _sine_ LABORE** ("reward without labor") —
 > monumentally over the oxblood field, with the away-duration as an eyebrow above and a hairline
