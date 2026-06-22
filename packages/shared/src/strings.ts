@@ -299,7 +299,7 @@ export const strings = {
   maleficia: {
     intro:
       'What has been found, paid for, and brought home. Each item has its own price in attention.',
-    empty: 'Empty hooks and clean dust-rings. Nothing has yet been found or purchased.',
+    empty: 'Mundane.',
     rarity: {
       common: 'common',
       rare: 'rare',
