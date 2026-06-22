@@ -105,7 +105,14 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 852** (sim 536 · shared 60 · api 20 · web 236).
 
-> **Latest change — the Decimatio rite `caedis` → `caedes` (Latin-consistency rename).** The
+> **Latest change — Caedes cast time cut to 1 second (tuning override).** The entry cull now casts
+> in **1 s** (was 10 s), so the opening Decimatio loop reads as briskly as Suggestion — a documented
+> player-request override of the Decimatio sheet's 10 s baseline (mirrors the same override on
+> Suggestion). Behaviour-only; the Decimatio UI's duration readout, the auto-repeat cadence, and the
+> Imp/Upir background cull all follow the one number in `actions.data.ts`. Tests that pinned the 10 s
+> cadence were retimed.
+>
+> **Earlier change — the Decimatio rite `caedis` → `caedes` (Latin-consistency rename).** The
 > culling rite formerly identified as `caedis` (the genitive) is now `caedes` (the nominative),
 > matching the other rite names (Decimatio, Purgatio). The rename is repo-wide — the action id and
 > its derived identifiers (`CAEDES_WEIGHTS`, `resolveCaedes`, `caedesTierDelta`), the display string,
@@ -120,7 +127,8 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > liturgy — a breathing blood-red heart-glow, two drifting smoke banks, a vignette, and a
 > heartbeat-pulsed **Decimatio** title over the creed _Pars pro toto cadat._ A single Reprobates KPI
 > sits above three rite cards (**Caedes I / Pogrom II / Purgatio III**) carrying their real catalog
-> costs (100 / 1,000 / 1,000,000 g, efficiency-scaled), durations, the acolyte stepper, and the
+> costs (100 / 1,000 / 1,000,000 g, efficiency-scaled), durations (1s / 60s / 6 min), the acolyte
+> stepper, and the
 > auto-repeat toggle — all wired to the live store (`act`, `assignAcolyte`/`unassignAcolyte`,
 > `toggleAutoRepeat`) with the same gating as before. Purgatio shows a sealed card until **Ira III**.
 > The **Index Opervm** ledger is the real player outcome log filtered to this program's rites,

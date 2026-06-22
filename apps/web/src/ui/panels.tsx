@@ -305,7 +305,7 @@ const DECIMATIO_RITES = [
   { id: 'purgatio', numeral: 'III', cardClass: 'iii' },
 ] as const;
 
-/** A rite's base duration as the design renders it ("10s", "60s", "6 min"). */
+/** A rite's base duration as the design renders it ("1s", "60s", "6 min"). */
 function decimatioTime(seconds: number): string {
   return seconds >= 120 ? `${seconds / 60} min` : `${seconds}s`;
 }

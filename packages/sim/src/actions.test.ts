@@ -53,7 +53,7 @@ describe('startAction', () => {
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(goldOf(r.state)).toBe(50); // 150 - 100
-      expect(r.state.lifetime.actionQueue).toEqual([{ actionId: 'caedes', remainingSeconds: 10 }]);
+      expect(r.state.lifetime.actionQueue).toEqual([{ actionId: 'caedes', remainingSeconds: 1 }]);
     }
   });
 
@@ -233,11 +233,11 @@ describe('tick — action resolution and events', () => {
   it('resolves a queued action only once its time elapses', () => {
     const started = startAction(withGold(fresh(), 200), 'caedes');
     if (!started.ok) throw new Error('should start');
-    const half = tick(started.state, 5);
+    const half = tick(started.state, 0.5);
     expect(half.state.lifetime.actionQueue).toHaveLength(1);
-    expect(half.state.lifetime.actionQueue[0]?.remainingSeconds ?? 0).toBeCloseTo(5, 5);
+    expect(half.state.lifetime.actionQueue[0]?.remainingSeconds ?? 0).toBeCloseTo(0.5, 5);
     expect(half.events).toHaveLength(0);
-    const done = tick(half.state, 5);
+    const done = tick(half.state, 0.5);
     expect(done.state.lifetime.actionQueue).toHaveLength(0);
     expect(done.events).toHaveLength(1);
     expect(done.events[0]?.actionId).toBe('caedes');
@@ -612,7 +612,7 @@ describe('auto-repeat (player-slot looping, 02 §3)', () => {
     expect(next.lifetime.autoRepeat).toEqual(['caedes']);
     // The loop kicked off in the player's slot and paid its first cycle up front (cost is scaled by
     // the Ira-driven Decimatio efficiency, so just assert it was charged, not the exact amount).
-    expect(next.lifetime.actionQueue).toEqual([{ actionId: 'caedes', remainingSeconds: 10 }]);
+    expect(next.lifetime.actionQueue).toEqual([{ actionId: 'caedes', remainingSeconds: 1 }]);
     expect(goldOf(next)).toBeLessThan(1000);
   });
 
@@ -646,10 +646,10 @@ describe('auto-repeat (player-slot looping, 02 §3)', () => {
     );
     expect(s.lifetime.actionQueue).toHaveLength(1);
     // Advance exactly one cycle: the running caedes resolves, then a fresh one is queued.
-    const after = tick(s, 10).state;
+    const after = tick(s, 1).state;
     const queued = after.lifetime.actionQueue.filter((t) => t.actionId === 'caedes');
     expect(queued).toHaveLength(1);
-    expect(queued[0]!.remainingSeconds).toBeCloseTo(10, 3); // a fresh full cycle
+    expect(queued[0]!.remainingSeconds).toBeCloseTo(1, 3); // a fresh full cycle
   });
 
   it('a stalled auto-repeat rite retries on a later tick once affordable', () => {

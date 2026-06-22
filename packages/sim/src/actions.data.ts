@@ -138,7 +138,9 @@ export const ACTIONS: Record<string, ActionDef> = {
   caedes: {
     id: 'caedes',
     category: 'decimatio',
-    baseTimeSeconds: 10,
+    // Tuning override (player request): the entry cull is a 1 s cast so the opening Decimatio loop
+    // reads as briskly as Suggestion. Overrides the Decimatio sheet's 10 s baseline.
+    baseTimeSeconds: 1,
     cost: { gold: 100 },
     weights: CAEDES_WEIGHTS,
     efficiencyMode: 'cost-outcome',
