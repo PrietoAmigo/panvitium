@@ -1,0 +1,149 @@
+/* ---------- Welcome-back recap — "The Litany" (offline recap) ----------
+   A full-bleed typographic title-card carrying the creed of Acedia
+   (PRAEMIUM SINE LABORE) over the oxblood field. Replaces the old
+   `.welcome-modal` card. See apps/web/src/ui/WelcomeBackModal.tsx. */
+
+.litany {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  overflow: hidden;
+  font-family: 'EB Garamond', Georgia, serif;
+  background: radial-gradient(
+    ellipse at 50% -4%,
+    #6a1014 0%,
+    #4a0c0e 36%,
+    #2a0708 72%,
+    #160405 100%
+  );
+}
+
+/* Vignette — a separate non-interactive layer with a slow breathing pulse. */
+.litany-vignette {
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 240px 50px rgba(0, 0, 0, 0.62);
+  pointer-events: none;
+  animation: litany-vignette 7s ease-in-out infinite;
+}
+@keyframes litany-vignette {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.litany-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6.6% 8% 6%;
+  text-align: center;
+}
+
+/* Eyebrow — the away duration. */
+.litany-eyebrow {
+  font-family: 'IM Fell English SC', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  padding-left: 0.4em; /* compensate the tracking on the last letter */
+  font-size: clamp(11px, 1.1vw, 15px);
+  color: #e0b66a;
+}
+
+/* Monumental motto. */
+.litany-motto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.9;
+}
+.litany-motto-lead,
+.litany-motto-trail {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(46px, 7.4vw, 104px);
+  letter-spacing: 0.05em;
+  color: #efe2cf;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
+}
+.litany-motto-conj {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: clamp(26px, 4.2vw, 58px);
+  margin: 1.1vh 0 0.4vh;
+  color: #e0b66a;
+}
+
+/* Empty state — one quiet italic line in place of the tally. */
+.litany-quiet {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: clamp(15px, 1.7vw, 22px);
+  color: #9a6f64;
+  max-width: 30em;
+  margin: 3vh 0 0;
+  line-height: 1.5;
+}
+
+/* Foot — tally + action. */
+.litany-foot {
+  width: 100%;
+  max-width: 880px;
+}
+.litany-tally {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.litany-stat {
+  flex: 1;
+  min-width: 0;
+  padding: 0 1.2vw;
+  border-left: 1px solid rgba(216, 168, 106, 0.32);
+}
+.litany-stat-value {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: clamp(20px, 2.4vw, 32px);
+  color: #f1e7d8;
+  white-space: nowrap;
+}
+.litany-stat-label {
+  font-family: 'IM Fell English SC', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: clamp(9px, 0.85vw, 11px);
+  color: #bd8a6e;
+  margin-top: 0.8vh;
+}
+
+.litany-reengage {
+  margin-top: 4vh;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(11px, 1vw, 13px);
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  color: #efe2cf;
+  background: transparent;
+  border: 1px solid rgba(224, 182, 106, 0.55);
+  border-radius: 2px;
+  padding: 0.7rem 2.4rem;
+  cursor: pointer;
+}
+.litany-reengage:hover {
+  background: rgba(224, 182, 106, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .litany-vignette {
+    animation: none;
+    opacity: 0.75;
+  }
+}

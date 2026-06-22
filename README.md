@@ -105,7 +105,17 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 845** (sim 536 · shared 58 · api 20 · web 231).
 
-> **Latest change — log-scaled Devotion bars.** The Prince and Eternal (Semet/obelisk) offering
+> **Latest change — the offline recap reborn as "The Litany" (Claude Design handoff).** The
+> welcome-back screen is no longer a centred card; it is now a full-bleed typographic title-card
+> that renders the creed of Acedia — **PRAEMIUM _sine_ LABORE** ("reward without labor") —
+> monumentally over the oxblood field, with the away-duration as an eyebrow above and a hairline
+> tally of net gains at the foot. The store wiring and data contract are unchanged (`offlineRecap`
+> read, `dismissOfflineRecap()` on the action); only the markup, copy, and styling changed.
+> **Influence is intentionally dropped from the display** (still present in the payload); the tally
+> shows Souls, Gold, and Reprobates only, with a blood-red minus for reprobate losses. Styles live
+> in a sibling `welcome-back.css`; the old `.welcome-*` rules in `index.css` were removed.
+>
+> **Earlier change — log-scaled Devotion bars.** The Prince and Eternal (Semet/obelisk) offering
 > bars are now **log-scaled** so they visibly fill as souls are poured. Because each Sin rank costs
 > 180× the last (and the Eternal gate is ~8.4e9 souls), the old linear fill sat at near-zero for
 > almost the whole rank and read as frozen. The new `sinLevelProgress` maps `log₁₈₀(devotion) −

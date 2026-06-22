@@ -628,9 +628,12 @@ export const strings = {
   },
   welcomeBack: {
     title: 'While you were away',
-    away: 'Away for',
+    away: 'While you stand by',
     nothing: 'The lair lay quiet; nothing stirred.',
-    dismiss: 'Resume',
+    dismiss: 'Reengage',
+    mottoLead: 'PRAEMIUM',
+    mottoConjunction: 'sine',
+    mottoTrail: 'LABORE',
   },
   settings: {
     title: 'Settings',
