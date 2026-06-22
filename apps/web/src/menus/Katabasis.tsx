@@ -898,12 +898,12 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
             <div className="ls-lab">Total Sin Level</div>
           </div>
           <div className="ls-stat">
-            <div className="ls-num">{formatBigNum(totalSoulsBound)}</div>
-            <div className="ls-lab">sigil-bound souls</div>
+            <div className="ls-num">{boundSigils.length}</div>
+            <div className="ls-lab">sigils bound</div>
           </div>
           <div className="ls-stat">
-            <div className="ls-num">{boundSigils.length}</div>
-            <div className="ls-lab">Number of Sigils Bound</div>
+            <div className="ls-num">{formatBigNum(totalSoulsBound)}</div>
+            <div className="ls-lab">sigil-bound souls</div>
           </div>
         </div>
 
