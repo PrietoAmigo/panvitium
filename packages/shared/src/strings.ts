@@ -118,8 +118,9 @@ export const strings = {
     decimatioAuto: '\u21bb Auto',
     decimatioLedgerHeading: '\u2e3b INDEX OPERVM \u2e3b',
     decimatioEmptyLedger: 'No rite has yet been worked.',
-    // Purgatio before its Ira gate is met.
-    decimatioSealedTitle: 'Purgatio \u00b7 sealed',
+    // A gated rite (Pogrom, Purgatio) before its Ira gate is met shows a sealed card: its name
+    // suffixed with this, plus the lock note below.
+    decimatioSealedSuffix: '\u00b7 sealed',
     // Lock notes shown on a gated rite, explaining why it cannot be worked yet (with its Ira gate).
     decimatioLocked: {
       pogrom: 'You cannot infuse enough anger into your acolytes yet. Ira II.',

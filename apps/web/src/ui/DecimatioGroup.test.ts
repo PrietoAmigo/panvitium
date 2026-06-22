@@ -1,7 +1,7 @@
 /**
  * Render smoke tests for the reworked Decimatio menu (Claude Design "The Breathing Dark"): the
- * masthead + creed, the live Reprobates KPI, the three rite cards (Caedes / Pogrom always shown,
- * Purgatio sealed until Ira III), and the "Index Opervm" ledger. These pin the wiring the rework
+ * masthead + creed, the live Reprobates KPI, the three rite cards (Caedes always open, Pogrom and
+ * Purgatio sealed until their Ira gate), and the "Index Opervm" ledger. These pin the wiring the rework
  * introduced; the action math and store mutators are covered by their own suites — this is purely
  * that the surface mounts against live store state with the real catalog numbers.
  */
@@ -46,29 +46,37 @@ describe('DecimatioGroup — "The Breathing Dark"', () => {
     expect(container!.querySelector('.dec-kpi-label')?.textContent).toBe(strings.reprobates);
   });
 
-  it('shows Caedes and Pogrom cards with their real costs, and seals Purgatio at a fresh start', () => {
+  it('shows the Caedes card with its real cost, and seals Pogrom and Purgatio at a fresh start', () => {
     render();
     const names = Array.from(container!.querySelectorAll('.dec-name')).map((n) =>
       (n.textContent ?? '').trim(),
     );
-    // Caedes and Pogrom render as full cards; Purgatio is sealed (Ira < III at a fresh start).
+    // Caedes is always open; Pogrom (Ira II) and Purgatio (Ira III) are sealed at a fresh start.
     expect(names).toContain(strings.opera.caedes);
-    expect(names).toContain(strings.opera.pogrom);
+    expect(names).not.toContain(strings.opera.pogrom);
     expect(names).not.toContain(strings.opera.purgatio);
 
-    expect(container!.querySelector('.dec-sealed-title')?.textContent).toBe(
-      strings.opera.decimatioSealedTitle,
+    // Both gated rites show a sealed card: "<name> · sealed" plus their lock note.
+    const sealedTitles = Array.from(container!.querySelectorAll('.dec-sealed-title')).map((n) =>
+      (n.textContent ?? '').trim(),
     );
-
-    // Real catalog costs surface ("100 g" / "1,000 g") and the commission CTAs are the rite verbs.
+    expect(sealedTitles).toContain(
+      `${strings.opera.pogrom} ${strings.opera.decimatioSealedSuffix}`,
+    );
+    expect(sealedTitles).toContain(
+      `${strings.opera.purgatio} ${strings.opera.decimatioSealedSuffix}`,
+    );
     const text = container!.textContent ?? '';
+    expect(text).toContain(strings.opera.decimatioLocked.pogrom);
+    expect(text).toContain(strings.opera.decimatioLocked.purgatio);
+
+    // Only Caedes surfaces a real catalog cost ("100 g") and a commission CTA.
     expect(text).toContain('100 g');
-    expect(text).toContain('1,000 g');
     const ctas = Array.from(container!.querySelectorAll('.dec-commission')).map((b) =>
       (b.textContent ?? '').trim(),
     );
     expect(ctas).toContain(strings.opera.decimatioCta.caedes);
-    expect(ctas).toContain(strings.opera.decimatioCta.pogrom);
+    expect(ctas).not.toContain(strings.opera.decimatioCta.pogrom);
   });
 
   it('shows the Index Opervm ledger heading and an empty-state line before any rite is worked', () => {
