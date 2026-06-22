@@ -104,8 +104,10 @@ export const ACTIONS: Record<string, ActionDef> = {
   suggestion: {
     id: 'suggestion',
     category: 'suasio',
-    baseTimeSeconds: 5,
-    cost: { influence: 5 },
+    // Tuning override (player request): the entry rite is now a 1 s, 1-influence cast so the
+    // opening loop reads instantly. Overrides the Suasio sheet's 5 s / 5-influence baseline.
+    baseTimeSeconds: 1,
+    cost: { influence: 1 },
     weights: SUGGESTION_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     delegateUnlock: { sin: 'luxuria', level: 1 },
