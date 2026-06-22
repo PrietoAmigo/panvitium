@@ -166,8 +166,16 @@ describe('Katabasis flow — orchestrator', () => {
       (s) => s.textContent ?? '',
     );
     expect(stats.some((t) => t.includes('0') && t.includes('Total Sin Level'))).toBe(true);
+    // No seal is bound, so the Bound section is empty…
     expect(container!.querySelector('.ledger-sigils-empty')).not.toBeNull();
-    expect(container!.querySelector('.ledger-sigil')).toBeNull();
+    expect(container!.querySelector('.ledger-sigil:not(.is-unbound)')).toBeNull();
+    // …but every visible seal surfaces in the Unbound section (all 72 but the gated Semet),
+    // each effect-only (no magnitude, no souls-bound readout).
+    const unbound = container!.querySelectorAll('.ledger-sigil.is-unbound');
+    expect(unbound.length).toBe(71);
+    expect(unbound[0]!.querySelector('.ls-bound')).toBeNull();
+    expect(unbound[0]!.querySelector('.ls-seal-img')).not.toBeNull();
+    expect(unbound[0]!.querySelector('.ls-roman')?.textContent).toBe('I');
   });
 
   it('lists a bound sigil in the Ledger by name, effect + magnitude, and souls bound', () => {
@@ -179,6 +187,9 @@ describe('Katabasis flow — orchestrator', () => {
     const sig = container!.querySelector('.ledger-sigil');
     expect(sig).not.toBeNull();
     expect(sig!.querySelector('.ls-name')?.textContent).toContain('Marbas'); // seal name shown
+    // The seal carries its art + Goetic number to the left of the name (Marbas #5 → "V").
+    expect(sig!.querySelector('.ls-seal-img')).not.toBeNull();
+    expect(sig!.querySelector('.ls-roman')?.textContent).toBe('V');
     // The effect text now carries the live magnitude in place of the direction arrow\u2026
     const effect = sig!.querySelector('.ls-effect')?.textContent ?? '';
     expect(effect).toContain('Indagatio positive outcomes');

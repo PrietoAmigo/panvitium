@@ -729,6 +729,10 @@ function splitBoon(desc: string): { text: string; dir: string } {
   return { text: trimmed, dir: '' };
 }
 
+// The seal's art in the public asset tree \u2014 seal number `id` (1..72) \u2192 `sigils/NN.png` (zero-padded),
+// the same scheme the Aether vault projects. Used by the Ledger to set a small glyph beside each name.
+const sealSrc = (id: number): string => `${ASSET}/sigils/${String(id).padStart(2, '0')}.png`;
+
 // Vanagloria's influence-rate lift per level mirrors the literal in the modifier engine
 // (`1.33 ** vanagloriaLvl`, modifiers.ts). Kept local so the ledger reads the same factor.
 const VANAGLORIA_INFLUENCE_PER_LEVEL = 1.33;
@@ -852,6 +856,24 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
     return rows;
   }, [state]);
 
+  // Unbound sigils — every visible seal with no souls allocated, shown by seal number. Only the effect
+  // *text* surfaces here: the live magnitude and the souls-bound count are both 0 by definition, so
+  // showing them would be noise. Sealed seals (Semet, until the gate opens) stay hidden as elsewhere.
+  const unboundSigils = useMemo(() => {
+    const rows: Array<{ id: number; name: string; text: string }> = [];
+    for (let id = 1; id <= 72; id++) {
+      const v = state.sigilBindings[id];
+      if (v !== undefined && !isZero(v)) continue;
+      const def = sigilById(id);
+      if (def && !sigilVisible(state, def)) continue;
+      const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
+      const { text } = splitBoon(desc);
+      const name = strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
+      rows.push({ id, name, text });
+    }
+    return rows;
+  }, [state]);
+
   return (
     <div className="scene ledger">
       <div className="ledger-wrap">
@@ -908,6 +930,10 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
           <div className="ledger-sigils">
             {boundSigils.map((g) => (
               <div className="ledger-sigil" key={g.id}>
+                <span className="ls-seal">
+                  <img className="ls-seal-img" src={sealSrc(g.id)} alt="" aria-hidden="true" />
+                  <span className="ls-roman">{toRoman(g.id)}</span>
+                </span>
                 <span className="ls-name">{g.name}</span>
                 <span className="ls-effect">
                   {g.text} <b className="ls-now">{g.effect}</b>
@@ -915,6 +941,30 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
                 <span className="ls-bound">
                   <b>{formatBigNum(g.bound)}</b> souls bound
                 </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="ledger-section-head">
+          <h2>Unbound Sigils</h2>
+          <div className="ls-rule" aria-hidden="true" />
+          <div className="ls-count">no souls allocated</div>
+        </div>
+        {unboundSigils.length === 0 ? (
+          <p className="ledger-sigils-empty">
+            Every seal within reach already burns. Nothing waits unbound.
+          </p>
+        ) : (
+          <div className="ledger-sigils">
+            {unboundSigils.map((g) => (
+              <div className="ledger-sigil is-unbound" key={g.id}>
+                <span className="ls-seal">
+                  <img className="ls-seal-img" src={sealSrc(g.id)} alt="" aria-hidden="true" />
+                  <span className="ls-roman">{toRoman(g.id)}</span>
+                </span>
+                <span className="ls-name">{g.name}</span>
+                <span className="ls-effect">{g.text}</span>
               </div>
             ))}
           </div>

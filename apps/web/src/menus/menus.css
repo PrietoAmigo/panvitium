@@ -2365,12 +2365,44 @@ body {
   padding: 13px 4px;
   border-bottom: 1px solid rgba(120, 40, 40, 0.18);
 }
+/* The seal glyph + its Goetic number, set immediately left of the name. */
+.katabasis-flow .ls-seal {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  align-self: center;
+}
+.katabasis-flow .ls-seal-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: brightness(1.08) sepia(0.5) saturate(2.4) hue-rotate(-10deg)
+    drop-shadow(0 0 5px rgba(230, 162, 60, 0.55));
+}
+.katabasis-flow .ls-roman {
+  font-family: var(--font-inscribe);
+  letter-spacing: 0.06em;
+  font-size: 0.78rem;
+  color: var(--gold);
+  min-width: 2.4em;
+  text-align: right;
+}
 .katabasis-flow .ls-name {
   font-family: var(--font-inscribe);
   letter-spacing: 0.05em;
   font-size: 0.92rem;
   color: var(--gold);
   white-space: nowrap;
+}
+/* Unbound rows: the seal sleeps — dim its glyph and number, no magnitude or souls. */
+.katabasis-flow .ledger-sigil.is-unbound .ls-seal-img {
+  filter: brightness(0.5) grayscale(0.5) contrast(0.92);
+}
+.katabasis-flow .ledger-sigil.is-unbound .ls-roman,
+.katabasis-flow .ledger-sigil.is-unbound .ls-name {
+  color: var(--faint);
 }
 .katabasis-flow .ls-effect {
   font-family: var(--font-body);
