@@ -3174,6 +3174,14 @@ body {
   margin: 6px 0 0;
 }
 
+/* Lock note on a gated rite card (e.g. Pogrom before its Ira gate). */
+.dec-lock-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: #7a4a3a;
+  margin: 8px 0 0;
+}
+
 /* Ledger — "Index Opervm". */
 .dec-ledger-head {
   margin-top: 20px;
