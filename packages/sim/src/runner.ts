@@ -39,7 +39,7 @@ const MAX_CYCLES_PER_CALL = 100_000;
  * Advance one runner channel by `deltaSeconds`. Starts a (free) cycle when `remaining` is null,
  * counts it down, and on completion resolves the outcome at `efficiency` then starts the next cycle
  * with any leftover budget. Pass `deltaSeconds = 0` to (lazily) start the first cycle at assignment
- * time without advancing it. `forcedTier` pins the outcome tier (the Imp's Caedis). `oneShot` stops
+ * time without advancing it. `forcedTier` pins the outcome tier (the Imp's Caedes). `oneShot` stops
  * after the first cycle resolves and reports `completed` so a caller can retire the channel;
  * persistent runners (acolyte delegation and invocations) leave it false and loop.
  */

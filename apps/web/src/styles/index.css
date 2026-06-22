@@ -2780,3 +2780,449 @@ body {
     animation: none;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Decimatio — "The Breathing Dark" (Claude Design). The culling program's PC
+   body, rendered full-bleed inside the PC window (see FULLBLEED in PcWindow).
+   A living, blood-lit surface: a breathing heart-glow, two drifting smoke
+   banks, and a vignette sit behind a z-indexed content column. The dimensions
+   that read against the viewport in the prototype (vw/vh) are expressed in %
+   here so they scale against the PC desk area, not the whole screen.
+   prefers-reduced-motion stills the breathing / drift / heartbeat glow.
+   ───────────────────────────────────────────────────────────────────────── */
+@keyframes dec-breathe {
+  0%,
+  100% {
+    transform: scale(0.86);
+    opacity: 0.42;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 0.9;
+  }
+}
+@keyframes dec-fog-drift {
+  0% {
+    transform: translateX(-12%) scale(1);
+  }
+  100% {
+    transform: translateX(12%) scale(1.1);
+  }
+}
+@keyframes dec-heart-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 2px 0 #0a0805,
+      0 0 16px rgba(200, 40, 30, 0.25);
+  }
+  50% {
+    text-shadow:
+      0 2px 0 #0a0805,
+      0 0 38px rgba(224, 70, 46, 0.75);
+  }
+}
+
+.dec-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background-color: #0f0a08;
+  background-image: repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.2) 0 2px, transparent 2px 5px);
+  font-family: 'Oswald', sans-serif;
+  color: #cdb6a0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 60, 40, 0.4) transparent;
+}
+.dec-root::-webkit-scrollbar {
+  width: 11px;
+}
+.dec-root::-webkit-scrollbar-thumb {
+  background: rgba(120, 60, 40, 0.4);
+  border-radius: 6px;
+}
+.dec-root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Motion layers — absolute, behind the content column, non-interactive. */
+.dec-layer {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+.dec-glow {
+  left: 50%;
+  top: 96px;
+  width: 680px;
+  height: 680px;
+  margin-left: -340px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(170, 30, 18, 0.6),
+    rgba(90, 16, 10, 0.18) 45%,
+    transparent 70%
+  );
+  filter: blur(8px);
+  animation: dec-breathe 6.5s ease-in-out infinite;
+}
+.dec-smoke-a {
+  left: -10%;
+  top: 28%;
+  width: 60%;
+  height: 50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(40, 20, 16, 0.7), transparent 65%);
+  filter: blur(30px);
+  animation: dec-fog-drift 34s ease-in-out infinite alternate;
+}
+.dec-smoke-b {
+  right: -12%;
+  bottom: 4%;
+  width: 55%;
+  height: 46%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(60, 18, 12, 0.55), transparent 65%);
+  filter: blur(34px);
+  animation: dec-fog-drift 44s ease-in-out infinite alternate-reverse;
+}
+.dec-vignette {
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 38%, transparent 30%, rgba(0, 0, 0, 0.74) 100%);
+}
+
+.dec-content {
+  position: relative;
+  z-index: 1;
+  padding-bottom: 70px;
+}
+
+/* Masthead — title, creed, and the single Reprobates KPI. */
+.dec-masthead {
+  text-align: center;
+  padding: 64px 24px 24px;
+}
+.dec-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 72px;
+  letter-spacing: 0.05em;
+  margin: 0;
+  color: #ecdcc4;
+  line-height: 0.95;
+  animation: dec-heart-glow 6.5s ease-in-out infinite;
+}
+.dec-creed {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 300;
+  font-size: 20px;
+  letter-spacing: 0.26em;
+  color: #cf4a34;
+  margin: 13px 0 0;
+  font-style: italic;
+}
+.dec-kpi {
+  display: inline-flex;
+  margin-top: 30px;
+  border: 1px solid #4a201a;
+  background: rgba(10, 6, 5, 0.55);
+}
+.dec-kpi-box {
+  padding: 14px 32px;
+  text-align: center;
+}
+.dec-kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ecdcc4;
+  line-height: 1;
+}
+.dec-kpi-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  color: #9a5a4a;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+/* The 680-wide column holds the rite cards, then the ledger. */
+.dec-column {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 14px 24px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+/* Rite cards — shared chrome, then per-rite (I / II / III) accents. */
+.dec-card {
+  padding: 18px 20px;
+  background: rgba(16, 9, 7, 0.78);
+  border: 1px solid #4a201a;
+}
+.dec-card--i {
+  border-top: 3px solid #7a261a;
+}
+.dec-card--ii {
+  border-top: 3px solid #9e3019;
+}
+.dec-card--iii {
+  background: rgba(22, 8, 6, 0.82);
+  border: 1px solid #7a261a;
+  border-top: 3px solid #c2301a;
+  box-shadow: 0 0 44px -10px rgba(180, 40, 24, 0.45);
+}
+
+.dec-card-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.dec-numeral {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+}
+.dec-card--i .dec-numeral {
+  color: #7a261a;
+}
+.dec-card--ii .dec-numeral {
+  color: #9e3019;
+}
+.dec-card--iii .dec-numeral {
+  color: #c2301a;
+}
+.dec-name {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ecdcc4;
+}
+.dec-card--iii .dec-name {
+  color: #f4b48a;
+}
+
+.dec-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #a8806e;
+  margin: 7px 0 12px;
+}
+.dec-card--iii .dec-desc {
+  color: #c0826a;
+}
+
+.dec-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #9a5a4a;
+}
+.dec-card--iii .dec-controls {
+  color: #c0826a;
+}
+.dec-controls b {
+  color: #cdb6a0;
+  font-weight: 700;
+}
+.dec-card--iii .dec-controls b {
+  color: #f4b48a;
+}
+
+/* Acolyte stepper. */
+.dec-stepper-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.dec-stepper {
+  display: inline-flex;
+  border: 1px solid #6a261c;
+}
+.dec-card--iii .dec-stepper {
+  border-color: #8a2a1a;
+}
+.dec-step-btn {
+  background: #1a0c08;
+  color: #d4806a;
+  border: none;
+  width: 25px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+.dec-step-btn--dec {
+  border-right: 1px solid #4a1810;
+}
+.dec-step-btn--inc {
+  border-left: 1px solid #4a1810;
+}
+.dec-card--iii .dec-step-btn {
+  background: #220c08;
+  color: #e8906a;
+}
+.dec-card--iii .dec-step-btn--dec {
+  border-right-color: #5a1c10;
+}
+.dec-card--iii .dec-step-btn--inc {
+  border-left-color: #5a1c10;
+}
+.dec-step-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.dec-step-count {
+  min-width: 28px;
+  text-align: center;
+  color: #ecdcc4;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dec-card--iii .dec-step-count {
+  color: #f4b48a;
+}
+
+/* Auto-repeat toggle. */
+.dec-auto {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  color: #9a5a4a;
+  border: 1px solid #5a241c;
+  padding: 9px 14px;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
+}
+.dec-auto--on {
+  background: #7a261a;
+  color: #ffd2a8;
+  border-color: #c2301a;
+}
+
+/* Commission button. */
+.dec-commission {
+  margin-left: auto;
+  white-space: nowrap;
+  background: #3a120c;
+  color: #e88a6a;
+  border: 1px solid #7a261a;
+  padding: 10px 24px;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dec-commission:hover:not(:disabled) {
+  background: #52180f;
+}
+.dec-commission--iii {
+  background: #7a261a;
+  color: #ffc79a;
+  border-color: #c2301a;
+}
+.dec-commission--iii:hover:not(:disabled) {
+  background: #9a3020;
+}
+.dec-commission:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Sealed Purgatio (before its Ira gate). */
+.dec-sealed {
+  background: rgba(14, 8, 6, 0.8);
+  border: 1px dashed #4a201a;
+  opacity: 0.6;
+  padding: 20px;
+}
+.dec-sealed-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7a4a3a;
+}
+.dec-sealed-line {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: #7a4a3a;
+  margin: 6px 0 0;
+}
+
+/* Ledger — "Index Opervm". */
+.dec-ledger-head {
+  margin-top: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: #7a261a;
+}
+.dec-ledger-row {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid #2a1410;
+}
+.dec-ledger-tier {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex: none;
+  width: 104px;
+}
+.dec-ledger-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: #a8806e;
+}
+.dec-ledger-empty {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #7a4a3a;
+  padding: 8px 0;
+}
+
+.dec-notice {
+  margin-top: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #cf4a34;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dec-glow,
+  .dec-smoke-a,
+  .dec-smoke-b,
+  .dec-title {
+    animation: none;
+  }
+}

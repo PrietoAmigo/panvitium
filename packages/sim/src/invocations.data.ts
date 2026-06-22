@@ -26,10 +26,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 1,
     upkeep: { gold: 10 }, // 10 gold/s (Invocatio sheet)
     // Stackable (Normal type). Background Decimatio (cost-outcome): each cycle pays
-    // ceil(caedisCost × 0.05×playerEff) and resolves a Good kill. Good-only so a passive entity can
+    // ceil(caedesCost × 0.05×playerEff) and resolves a Good kill. Good-only so a passive entity can
     // never roll Apocalyptic and gut the player's gold/reprobates unprompted (03 §2.4). Each summoned
     // copy runs its own channel (advanceInvocationRunners), so N imps cull at ~N× the rate.
-    autonomous: { action: 'caedis', efficiency: 0.05, forcedTier: 'good' },
+    autonomous: { action: 'caedes', efficiency: 0.05, forcedTier: 'good' },
   },
   upir: {
     id: 'upir',
@@ -37,11 +37,11 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 3,
     sinLevel: 1,
     upkeep: { influence: 1 }, // 1 influence/s (Invocatio sheet)
-    // Stackable (Normal type). Gula's background culler. The spreadsheet frames Upir as a Caedis
+    // Stackable (Normal type). Gula's background culler. The spreadsheet frames Upir as a Caedes
     // runner at 0.05 (the doc's "kills 1 / 30 s" was the older mechanic); per the
     // spreadsheet-wins-on-numbers rule we model it as the engine's cost-outcome runner, Good-only
     // like the Imp. Each summoned copy runs its own channel, so stacking multiplies throughput.
-    autonomous: { action: 'caedis', efficiency: 0.05, forcedTier: 'good' },
+    autonomous: { action: 'caedes', efficiency: 0.05, forcedTier: 'good' },
   },
   fama: {
     id: 'fama',

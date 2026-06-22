@@ -175,7 +175,7 @@ describe('Morpheus freeze: tick is held in stillness', () => {
   });
 
   it('autonomous invocation + acolyte runners make no progress under the freeze', () => {
-    // An Imp (autonomous Good-only Caedis) and an acolyte delegated to Caedis would, on a normal
+    // An Imp (autonomous Good-only Caedes) and an acolyte delegated to Caedes would, on a normal
     // tick, cull the reprobate pool and mint souls. Under Morpheus the tick short-circuits BEFORE
     // the acolyte / invocation-runner steps, so neither advances — proving the freeze also covers
     // delegated actions. (Runners now carry out their actions for free, so a per-cycle cost can't
@@ -186,7 +186,7 @@ describe('Morpheus freeze: tick is held in stillness', () => {
       lifetime: {
         ...s.lifetime,
         invocations: { morpheus: 1, imp: 1 },
-        acolytes: [{ id: 1, assignedAction: 'caedis', remainingSeconds: 10 }],
+        acolytes: [{ id: 1, assignedAction: 'caedes', remainingSeconds: 10 }],
       },
     };
     const reprobatesBefore = totalReprobates(frozen);

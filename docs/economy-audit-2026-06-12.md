@@ -5,7 +5,7 @@
 > - **Slice 1 (Globals/flat):** suicide 0.0001/s, murder 0.0002/s, Vanagloria ×1.33/lvl, Acedia
 >   `1.0000002^(s·L²)`, Solomon's Ring ×1.66, Galdrabók ×1.15, Purgatio 1,000,000 g, Indagatio
 >   300 s, acolyte ×1.5 ladder (first at 110), the four maleficia price bands.
-> - **Slice 2 (action tiers):** Logismoi/Imperium/Caedis/Pogrom/Purgatio distributions re-pinned;
+> - **Slice 2 (action tiers):** Logismoi/Imperium/Caedes/Pogrom/Purgatio distributions re-pinned;
 >   Imperium is a full distribution (0.035 Stellar/Apocalyptic); Purgatio Terrible/Apocalyptic shed
 >   100% gold (+ reprobates) — all in `actions.data.ts` / `actions.ts`.
 > - **Slice 3 (Vitium Compositum):** roster is the canonical nine; Vegas/Crusade percentage
@@ -18,7 +18,7 @@
 >   Harpy→Pogrom, Nightmare 5e-05, Thirty Pieces of Silver +0.001%/current-gold.
 >
 > The "Questions back to you" were resolved in code's favour (Imp stayed an autonomous forced-Good
-> Caedis runner; Logismoi Excellent/Good differentiated to `randint(20,58)`/`randint(10,29)`; the
+> Caedes runner; Logismoi Excellent/Good differentiated to `randint(20,58)`/`randint(10,29)`; the
 > 65.37 divisor stands). **The per-row ✗/⚠ tables below are the original 2026-06-12 snapshot — trust
 > the code and this banner over them.** This audit is effectively closed; kept for history.
 
@@ -66,15 +66,15 @@ code) use `65.37`. Confirm 65.37 stands and fix the prose.
 
 ## 3. Suasio / Decimatio (actions) — numbers changed, plus toggles ✓
 
-- **Action toggles** (Suggestion/Caedis at L1, Logismoi/Pogrom at L3, Imperium/Purgatio at L4):
+- **Action toggles** (Suggestion/Caedes at L1, Logismoi/Pogrom at L3, Imperium/Purgatio at L4):
   already in code and matching the sheet's gates. ✓
 - **Costs/durations:** Suggestion 5s/5infl ✓ · Logismoi 5s/25infl ✓ · Imperium 10s/100infl ✓ ·
-  Caedis 10s/100g ✓ · Pogrom ~60s/1000g ✓ · **Purgatio 1,000,000 gold (code: 10,000)** ✗ —
+  Caedes 10s/100g ✓ · Pogrom ~60s/1000g ✓ · **Purgatio 1,000,000 gold (code: 10,000)** ✗ —
   duration "~360s" needs verification against code.
 - **Tier distributions — broadly retuned** ✗: Logismoi sheet `0.01/0.15/0.3/0.3/0.17/0.069/0.001`
   vs code `0.025/0.2/…`; **Imperium now has a full distribution incl. 0.035 Stellar (+3% current
   souls!) and 0.035 Apocalyptic** vs code's fixed-outcome zeros — that is a ⚠ retouch (Imperium is
-  no longer "player in control"); Caedis/Pogrom/Purgatio weights all shifted; Purgatio Terrible =
+  no longer "player in control"); Caedes/Pogrom/Purgatio weights all shifted; Purgatio Terrible =
   **lose 100% gold**, Apocalyptic = **lose 100% gold and reprobates** (new severities). Every
   effect cell needs a row-by-row re-pin (e.g. Suggestion Terrible −9%, Logismoi Excellent and Good
   both `randint(10,29)` — ❓ confirm the duplicate is intentional).
@@ -109,7 +109,7 @@ code) use `65.37`. Confirm 65.37 stands and fix the prose.
 - **Succubus: "action efficiency applies to *Imperium*", eff 0.99, cost 99% current gold gain/s**
   — code models Succubus as a Suasio-efficiency + gold-drain modifier pair. ⚠
 - **Harpy: applies to *Pogrom*** (code: boosts all Decimatio efficiency). ⚠
-- **Imp: "efficiency applies to Caedis"** — code runs Caedis autonomously at forced-Good; confirm
+- **Imp: "efficiency applies to Caedes"** — code runs Caedes autonomously at forced-Good; confirm
   whether the runner model stays. ❓
 - Aurevora: "eats 10 gold/s rising exponentially; one tenth applied as player-eff increase" —
   reconcile the exact ramp vs code's `eᵗ` drain/boost pair. ❓
@@ -204,5 +204,5 @@ Authoring template only (weights zeroed, renormalisation formulas). Nothing to r
 3. Logismoi Excellent and Good both `randint(10,29)` — intentional?
 4. Globals row 21 "Base VC conversion rate" — vestigial post-ADR-024; delete?
 5. Skill-intensity divisor: prose says 0.6537, formulas say 65.37 — confirm 65.37.
-6. Imp: keep the autonomous forced-Good Caedis runner, or change to a Caedis-efficiency
+6. Imp: keep the autonomous forced-Good Caedes runner, or change to a Caedes-efficiency
    contributor as the sheet's wording suggests?

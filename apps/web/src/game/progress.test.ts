@@ -4,7 +4,7 @@ import { actionProgress } from './progress.js';
 
 describe('actionProgress', () => {
   it('always starts at 0% and ends at 100%, at any efficiency', () => {
-    for (const id of ['caedis', 'indagatio']) {
+    for (const id of ['caedes', 'indagatio']) {
       for (const eff of [0.5, 1, 4]) {
         const total = runnerCycleDuration(id, eff);
         expect(actionProgress(id, total, eff)).toBe(0); // remaining = total → just started
@@ -28,8 +28,8 @@ describe('actionProgress', () => {
   });
 
   it('cost-outcome duration is fixed — efficiency changes neither the total nor the start', () => {
-    expect(ACTIONS['caedis']!.efficiencyMode).toBe('cost-outcome');
-    expect(runnerCycleDuration('caedis', 1)).toBe(runnerCycleDuration('caedis', 8));
-    expect(actionProgress('caedis', runnerCycleDuration('caedis', 8), 8)).toBe(0);
+    expect(ACTIONS['caedes']!.efficiencyMode).toBe('cost-outcome');
+    expect(runnerCycleDuration('caedes', 1)).toBe(runnerCycleDuration('caedes', 8));
+    expect(actionProgress('caedes', runnerCycleDuration('caedes', 8), 8)).toBe(0);
   });
 });

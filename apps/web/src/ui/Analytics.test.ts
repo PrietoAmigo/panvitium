@@ -52,7 +52,7 @@ describe('AnalyticsGroup', () => {
 
   it('renders a row per acolyte with its current action on the Actions tab', () => {
     seed([
-      { id: 1, assignedAction: 'caedis', remainingSeconds: 30 },
+      { id: 1, assignedAction: 'caedes', remainingSeconds: 30 },
       { id: 2, assignedAction: null, remainingSeconds: null },
     ]);
     render();
@@ -126,7 +126,7 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     const text = container!.textContent ?? '';
     expect(text).toContain('Imp');
     expect(text).not.toContain('\u00D72'); // stacked copies are not advertised (the only \u00D7 is the eff chip)
-    expect(text).toContain('Caedis'); // the action it runs
+    expect(text).toContain('Caedes'); // the action it runs
     expect(/\d\u00d7|\u00d7\d/.test(text)).toBe(true); // the efficiency chip (e.g. "0.05\u00d7")
     // A runner row carries a progress bar (the same shape the player/acolyte rows use).
     expect(container!.querySelectorAll('.analytics-invocation .analytics-bar').length).toBe(1);

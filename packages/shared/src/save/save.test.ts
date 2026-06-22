@@ -128,8 +128,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v3 (the legacy-business → Mercatus replacement bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(3);
+  it('schemaVersion is v4 (the Decimatio caedis → caedes rite rename bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(4);
   });
 });
 

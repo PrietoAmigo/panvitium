@@ -3,7 +3,7 @@
  * distribution (TierWeights). `startAction` pays the cost and queues a timer; `tick` advances the
  * timer and calls `resolveAction` on completion, which draws a tier from the seeded RNG and applies
  * that tier's effect. This slice implements the two base actions that close the first loop —
- * Suggestion (corrupt → reprobates) and Caedis (cull → souls). The remaining Suasio/Decimatio
+ * Suggestion (corrupt → reprobates) and Caedes (cull → souls). The remaining Suasio/Decimatio
  * actions, costs/times for higher tiers, and efficiency from sins/invocations come later.
  *
  * Efficiency note (03 §2.1/§2.2): for Suasio and Decimatio, efficiency scales costs and outcomes by
@@ -73,7 +73,7 @@ export interface ActionDef {
   readonly efficiencyMode: EfficiencyMode;
   /**
    * Sin-level gate that makes the action appear in the Opera (Suasio/Decimatio sheets). Absent =
-   * available from the first lifetime (Suggestion / Caedis, which are gated only on *delegation*,
+   * available from the first lifetime (Suggestion / Caedes, which are gated only on *delegation*,
    * not availability). Logismoi/Imperium gate on Luxuria, Pogrom/Purgatio on Ira.
    */
   readonly unlock?: { readonly sin: Sin; readonly level: number };
@@ -81,7 +81,7 @@ export interface ActionDef {
    * Sin-level gate that enables *delegation* of this action — acolyte assignment / automation (the
    * Suasio/Decimatio sheets' "toggle" level). Distinct from `unlock` (mere availability): an action
    * can be playable by hand before it can be automated. Absent on Indagatio/Emptio (handled
-   * separately). Suggestion/Caedis toggle at Luxuria/Ira 1; the higher rites at 3/4.
+   * separately). Suggestion/Caedes toggle at Luxuria/Ira 1; the higher rites at 3/4.
    */
   readonly delegateUnlock?: { readonly sin: Sin; readonly level: number };
 }
@@ -121,7 +121,7 @@ export function startAction(
   const def = ACTIONS[actionId];
   if (!def) return { ok: false, reason: `unknown action: ${actionId}` };
 
-  // Sin-level availability gate (Suasio/Decimatio sheets). Suggestion/Caedis have no gate.
+  // Sin-level availability gate (Suasio/Decimatio sheets). Suggestion/Caedes have no gate.
   if (!actionUnlocked(state, def)) {
     return { ok: false, reason: 'This rite is not yet within your reach.' };
   }
@@ -314,7 +314,7 @@ export interface OutcomeMoment {
  * times each tier's per-dimension delta moments — no sampling, deterministic, and consistent with
  * what `resolveAction` actually rolls. `souls`/`reprobates`/`gold` are net deltas; `maleficia` is the
  * expected count surfaced (Indagatio). Modeled for the actions that have runner/forecast surfaces so
- * far (Caedis, Suggestion, Indagatio); other actions return a zero forecast until modeled.
+ * far (Caedes, Suggestion, Indagatio); other actions return a zero forecast until modeled.
  */
 export interface OutcomeForecast {
   readonly souls: OutcomeMoment;
@@ -357,9 +357,9 @@ const uniform = (lo: number, hi: number, k: number): Dim => {
   return { m: (k * (lo + hi)) / 2, v: k * k * ((n * n - 1) / 12) };
 };
 
-function caedisTierDelta(tier: Tier, units: number, pop: number, gold: number): TierDelta {
+function caedesTierDelta(tier: Tier, units: number, pop: number, gold: number): TierDelta {
   switch (tier) {
-    // Stellar/Excellent remove randint(...)×units (capped by population in `resolveCaedis`; the
+    // Stellar/Excellent remove randint(...)×units (capped by population in `resolveCaedes`; the
     // forecast uses the uncapped moments, an upper bound when the roster is nearly empty). Souls
     // minted equal reprobates removed.
     case 'stellar': {
@@ -450,8 +450,8 @@ export function actionOutcomeForecast(
     ? (Object.fromEntries(TIERS.map((t) => [t, t === forcedTier ? 1 : 0])) as TierWeights)
     : actionTierDistribution(state, actionId);
   const tierDelta = (tier: Tier): TierDelta =>
-    actionId === 'caedis'
-      ? caedisTierDelta(tier, units, pop, gold)
+    actionId === 'caedes'
+      ? caedesTierDelta(tier, units, pop, gold)
       : actionId === 'suggestion'
         ? suggestionTierDelta(tier, units, pop)
         : actionId === 'indagatio'
@@ -506,7 +506,7 @@ export function resolveAction(
         : def.category === 'decimatio'
           ? mods.decimatioEfficiencyMul
           : 1);
-  // A background runner may force a fixed outcome tier (the Imp's Caedis is always Good, 03 §2.4 —
+  // A background runner may force a fixed outcome tier (the Imp's Caedes is always Good, 03 §2.4 —
   // a passive entity must not randomly trigger an Apocalyptic that wipes the player unprompted).
   // Otherwise: global tier multipliers (Sin skills, sigils, maleficia) THEN the per-category success
   // shift (Resignation/Retribution/Lamia, 02 §2) — composed before renormalization in resolveTier.
@@ -555,9 +555,9 @@ export function resolveAction(
       next = resolveImperium(state, tier, rng, eff);
       if (applyTwice) next = resolveImperium(next, tier, rng, eff);
       break;
-    case 'caedis':
-      next = resolveCaedis(state, tier, rng, eff);
-      if (applyTwice) next = resolveCaedis(next, tier, rng, eff);
+    case 'caedes':
+      next = resolveCaedes(state, tier, rng, eff);
+      if (applyTwice) next = resolveCaedes(next, tier, rng, eff);
       break;
     case 'pogrom':
       next = resolvePogrom(state, tier, rng, eff);
@@ -687,8 +687,8 @@ export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficien
   }
 }
 
-/** Caedis outcome effects (exported for direct testing of each tier). */
-export function resolveCaedis(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
+/** Caedes outcome effects (exported for direct testing of each tier). */
+export function resolveCaedes(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const scale = Math.max(1, Math.floor(efficiency));
   switch (tier) {
     case 'stellar': {

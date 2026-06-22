@@ -19,7 +19,7 @@ describe('buildOracle view-model (5.1)', () => {
   it('The Dadu reveals Decimatio', () => {
     const r = buildOracle(fresh(), 'the_dadu')!;
     expect(r[0]!.category).toBe('decimatio');
-    expect(r[0]!.actions.map((a) => a.action)).toEqual(['caedis', 'pogrom', 'purgatio']);
+    expect(r[0]!.actions.map((a) => a.action)).toEqual(['caedes', 'pogrom', 'purgatio']);
   });
 
   it('Crossroads Dirt reveals Emptio and Crow Feather reveals Indagatio (per the catalog)', () => {

@@ -79,8 +79,8 @@ describe('v1 → v2 migration (reprobate-subtype / conversion removal)', () => {
   }
 
   it('sums the per-subtype counts, drops conversionPool, strips the defixio target', () => {
-    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → v3
-    expect(migrated.schemaVersion).toBe(3);
+    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → v3 → v4
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.state.lifetime.reprobates).toBe(200); // 100+40+10+5+5+20+0+15+5
     expect('conversionPool' in migrated.state.lifetime).toBe(false);
     expect(migrated.state.lifetime.defixio).toEqual({ elapsed: 42 });
@@ -130,7 +130,7 @@ describe('v2 → v3 migration (legacy business system → Mercatus)', () => {
 
   it('credits 25% of each owned build cost, fizzles the queue, drops both fields', () => {
     const migrated = migrateSave(v2Blob());
-    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     // floor(500 × 0.25) × 2 + floor(25000 × 0.25) × 1 = 250 + 6250 = 6500, on top of 100 held.
     expect(migrated.state.lifetime.gold).toBe('6600');
     expect('businesses' in migrated.state.lifetime).toBe(false);
@@ -147,5 +147,60 @@ describe('v2 → v3 migration (legacy business system → Mercatus)', () => {
     const migrated = migrateSave(blob);
     expect(migrated.state.lifetime.gold).toBe('100'); // unknown id / NaN / negative all credit 0
     expect('businesses' in migrated.state.lifetime).toBe(false);
+  });
+});
+
+describe('v3 → v4 migration (Decimatio rite caedis → caedes rename)', () => {
+  /** A v3-shaped raw blob carrying the old `caedis` id in every persisted action reference. */
+  function v3Blob(): Record<string, unknown> {
+    const base = currentBlob();
+    const lifetime = base.state.lifetime as Record<string, unknown>;
+    return {
+      ...base,
+      schemaVersion: 3,
+      state: {
+        ...base.state,
+        lifetime: {
+          ...lifetime,
+          autoRepeat: ['caedis', 'pogrom'],
+          actionQueue: [
+            { actionId: 'caedis', remainingSeconds: 4 },
+            { actionId: 'indagatio', remainingSeconds: 12 },
+          ],
+          acolytes: [
+            { id: 1, assignedAction: 'caedis' },
+            { id: 2, assignedAction: null },
+            { id: 3, assignedAction: 'pogrom' },
+          ],
+        },
+      },
+    };
+  }
+
+  it('rewrites caedis → caedes in autoRepeat, the action queue, and acolyte delegations', () => {
+    const migrated = migrateSave(v3Blob());
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.lifetime.autoRepeat).toEqual(['caedes', 'pogrom']);
+    expect(migrated.state.lifetime.actionQueue.map((t) => t.actionId)).toEqual([
+      'caedes',
+      'indagatio',
+    ]);
+    expect(migrated.state.lifetime.acolytes.map((a) => a.assignedAction)).toEqual([
+      'caedes',
+      null,
+      'pogrom',
+    ]);
+  });
+
+  it('is a no-op for a v3 save that never worked the rite', () => {
+    const blob = v3Blob();
+    const lifetime = (blob.state as Record<string, unknown>).lifetime as Record<string, unknown>;
+    lifetime.autoRepeat = [];
+    lifetime.actionQueue = [];
+    lifetime.acolytes = [];
+    const migrated = migrateSave(blob);
+    expect(migrated.state.lifetime.autoRepeat).toEqual([]);
+    expect(migrated.state.lifetime.actionQueue).toEqual([]);
+    expect(migrated.state.lifetime.acolytes).toEqual([]);
   });
 });

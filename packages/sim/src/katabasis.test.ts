@@ -97,7 +97,7 @@ describe('commitKatabasis', () => {
         reprobates: 150,
         invocations: { upir: 3 },
         activeToggles: ['bacchanal'],
-        actionQueue: [{ actionId: 'caedis', remainingSeconds: 4 }],
+        actionQueue: [{ actionId: 'caedes', remainingSeconds: 4 }],
         emptioList: ['black-robe'],
       },
     };
@@ -199,10 +199,10 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
         mercatusDepths: { gula: 4 },
         activeToggles: ['bacchanal'],
         toggleDurations: { bacchanal: 12 },
-        actionQueue: [{ actionId: 'caedis', remainingSeconds: 4 }],
+        actionQueue: [{ actionId: 'caedes', remainingSeconds: 4 }],
         invocations: { imp: 1 },
         invocationRunners: { imp: 7 },
-        acolytes: [{ id: 1, assignedAction: 'caedis', remainingSeconds: 3 }],
+        acolytes: [{ id: 1, assignedAction: 'caedes', remainingSeconds: 3 }],
       },
     };
   }

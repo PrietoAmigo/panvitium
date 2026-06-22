@@ -388,23 +388,23 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     lifetime: { ...s.lifetime, reprobates: n },
   });
 
-  it('is gated on power 2 + Ira 1, stackable, and runs a Good-only Caedis channel', () => {
+  it('is gated on power 2 + Ira 1, stackable, and runs a Good-only Caedes channel', () => {
     const def = invocationById('imp')!;
     expect(def.sin).toBe('ira');
     expect(def.invokingPower).toBe(2);
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // Normal type → stacks (one channel per copy)
-    expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
+    expect(def.autonomous).toEqual({ action: 'caedes', efficiency: 0.05, forcedTier: 'good' });
     expect(def.upkeep).toEqual({ gold: 10 }); // 10 gold/s upkeep
   });
 
-  it('Upir is the Gula counterpart — power 3 + Gula 1, a stackable Good-only Caedis channel', () => {
+  it('Upir is the Gula counterpart — power 3 + Gula 1, a stackable Good-only Caedes channel', () => {
     const def = invocationById('upir')!;
     expect(def.sin).toBe('gula');
     expect(def.invokingPower).toBe(3);
     expect(def.sinLevel).toBe(1);
     expect(def.maxActive).toBeUndefined(); // Normal type → stacks
-    expect(def.autonomous).toEqual({ action: 'caedis', efficiency: 0.05, forcedTier: 'good' });
+    expect(def.autonomous).toEqual({ action: 'caedes', efficiency: 0.05, forcedTier: 'good' });
     expect(def.upkeep).toEqual({ influence: 1 }); // 1 influence/s upkeep
   });
 
@@ -472,13 +472,13 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
   it('runs Decimatio in its own channel — free, mints souls, leaves the player slot free', () => {
     const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 1000), 100);
     const soulsBefore = s.souls.toNumber();
-    // 25 s ≈ 2 full 10 s cycles + a partial third (cost-outcome cycle = base 10 s).
-    const r = advanceInvocationRunners(s, 25, makeRng(3));
+    // 2.5 s ≈ 2 full 1 s cycles + a partial third (cost-outcome cycle = base 1 s).
+    const r = advanceInvocationRunners(s, 2.5, makeRng(3));
     expect(r.events.length).toBeGreaterThanOrEqual(2);
-    expect(r.events.every((e) => e.actionId === 'caedis')).toBe(true);
+    expect(r.events.every((e) => e.actionId === 'caedes')).toBe(true);
     expect(r.state.souls.toNumber()).toBe(soulsBefore + r.events.length); // 1 kill → 1 soul each
     expect(r.state.lifetime.reprobates).toBe(100 - r.events.length);
-    // The runner carries out Caedis for free — gold is untouched by the cycles.
+    // The runner carries out Caedes for free — gold is untouched by the cycles.
     expect(r.state.lifetime.gold.toNumber()).toBe(1000);
     expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });
@@ -486,7 +486,7 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
   it('Good-only: over many cycles gold is untouched (free, never a gold-loss tier)', () => {
     const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 1000), 1000);
     const soulsBefore = s.souls.toNumber();
-    const r = advanceInvocationRunners(s, 100, makeRng(9)); // 10 cycles of 10 s
+    const r = advanceInvocationRunners(s, 10, makeRng(9)); // 10 cycles of 1 s
     expect(r.events).toHaveLength(10);
     expect(r.state.lifetime.gold.toNumber()).toBe(1000); // free — no cost, no Bad/Terrible
     expect(r.state.souls.toNumber()).toBe(soulsBefore + 10);
@@ -495,8 +495,8 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
 
   it('never stalls on an empty treasury — culls for free even at 0 gold', () => {
     const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 0), 1000);
-    // 1005 s → 100 full 10 s cycles plus an in-flight 101st (so a timer key persists), all free.
-    const r = advanceInvocationRunners(s, 1005, makeRng(4));
+    // 100.5 s → 100 full 1 s cycles plus an in-flight 101st (so a timer key persists), all free.
+    const r = advanceInvocationRunners(s, 100.5, makeRng(4));
     expect(r.events).toHaveLength(100);
     expect(r.state.lifetime.gold.toNumber()).toBe(0); // nothing spent
     expect(r.state.lifetime.reprobates).toBe(900); // 100 Good kills
@@ -505,10 +505,10 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
 
   it('stacking a runner multiplies throughput — two imps cull ~2× one (independent channels)', () => {
     const base = withReprobates(withGold(fresh(), 100_000), 1000);
-    // 105 s → 10 full 10 s cycles per channel, plus an in-flight 11th (so a timer key persists).
-    const one = advanceInvocationRunners(withInvocation(base, 'imp', 1), 105, makeRng(9));
-    const two = advanceInvocationRunners(withInvocation(base, 'imp', 2), 105, makeRng(9));
-    // The cost-outcome cycle is a fixed 10 s, so each channel resolves 10 cycles regardless of eff —
+    // 10.5 s → 10 full 1 s cycles per channel, plus an in-flight 11th (so a timer key persists).
+    const one = advanceInvocationRunners(withInvocation(base, 'imp', 1), 10.5, makeRng(9));
+    const two = advanceInvocationRunners(withInvocation(base, 'imp', 2), 10.5, makeRng(9));
+    // The cost-outcome cycle is a fixed 1 s, so each channel resolves 10 cycles regardless of eff —
     // a second copy means a second channel, i.e. double the kills.
     expect(one.events).toHaveLength(10);
     expect(two.events).toHaveLength(20);

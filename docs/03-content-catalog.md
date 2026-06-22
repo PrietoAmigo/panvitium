@@ -56,11 +56,11 @@ Per-action probabilities, outcomes, costs, durations, and the *Luxuria* gates ar
 
 ### 2.2 *Decimatio* — Culling
 
-Three actions: *Caedis*, *Pogrom*, and *Purgatio*, gated and toggle-gated by *Ira* level.
+Three actions: *Caedes*, *Pogrom*, and *Purgatio*, gated and toggle-gated by *Ira* level.
 Efficiency mode is **`time`** (`02 §3`, per the sheet): efficiency reduces the action's
 duration and affects neither costs nor outcomes.
 
-- **Caedis** — the early soul source; single kills with occasional sprees.
+- **Caedes** — the early soul source; single kills with occasional sprees.
 - **Pogrom** — the mass cull; percentage-of-population kills, heavier mishaps.
 - **Purgatio** — soul farming at scale; enormous yields against ruinous Terrible/Apocalyptic
   outcomes (total gold loss, total loss).
@@ -193,9 +193,9 @@ on Katabasis. Numbers live in the `Invocatio` sheet; the catalog:
 | **Morpheus** | *Acedia* | Apex | Full freeze; the next Katabasis keeps 100% of gold and maleficia and the *Emptio* list. Floats over the Altar, overrides other silhouettes. |
 | **Plutus** | *Avaritia* | Normal | Its efficiency increases *Vitium Mercatura* output. Sometimes in the Studio. |
 | **Midas** | *Avaritia* | Apex | Multiplies gold gain; massively multiplies Apocalyptic chance. Sends profane advisory email (`00-lore-bible.md` §11). |
-| **Upir** | *Gula* | Normal | Its efficiency applies to *Caedis*. Sometimes in the Invocation Room. |
+| **Upir** | *Gula* | Normal | Its efficiency applies to *Caedes*. Sometimes in the Invocation Room. |
 | **Aurevora** | *Gula* | Apex | Devours gold on an exponential ramp; a share of the ramp returns as player efficiency; self-dispels at 0 gold. |
-| **Imp** | *Ira* | Normal | Its efficiency applies to *Caedis*. |
+| **Imp** | *Ira* | Normal | Its efficiency applies to *Caedes*. |
 | **Harpy** | *Ira* | Normal | Its efficiency applies to *Pogrom*. Sometimes at the Studio window. |
 | **Erinyes** | *Ira* | Apex | Kills every reprobate at invoke; the next Katabasis keeps 0% gold and maleficia; permanently doubles overall action efficiency. Altar room, overrides. |
 | **Lamia** | *Luxuria* | Normal | Its efficiency applies to *Logismoi*. At most one shown. |
