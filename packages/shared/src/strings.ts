@@ -700,7 +700,7 @@ export const strings = {
       english: 'Sorrow',
       epithet: 'The Coiled Deep',
       skill: 'Resignation',
-      skillEffect: 'Increases Suasio success and action efficiency.',
+      skillEffect: 'Increases Suasio success and acolyte efficiency.',
       levelEffect: 'Each level keeps more reprobates on descent.',
     },
     ira: {
@@ -709,7 +709,7 @@ export const strings = {
       english: 'Wrath',
       epithet: 'The Adversary',
       skill: 'Retribution',
-      skillEffect: 'Increases Decimatio success and action efficiency.',
+      skillEffect: 'Increases Decimatio success and invocation efficiency.',
       levelEffect: 'Each level doubles your Decimatio action efficiency.',
     },
     acedia: {

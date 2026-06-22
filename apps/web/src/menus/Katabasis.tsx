@@ -721,7 +721,12 @@ function AltarGate({
 
 /** Strip a boon string's trailing direction arrow (↑/↓); the ledger shows the live magnitude there. */
 function splitBoon(desc: string): { text: string; dir: string } {
-  const trimmed = desc.trimEnd();
+  // Drop a trailing "(flat)" qualifier first (e.g. "Murder rate ↑ (flat)") — the magnitude column
+  // carries the flat per-second unit, and this leaves the arrow trailing so it strips cleanly below.
+  const trimmed = desc
+    .trimEnd()
+    .replace(/\s*\(flat\)$/i, '')
+    .trimEnd();
   const last = trimmed.slice(-1);
   if (last === '\u2191' || last === '\u2193') {
     return { text: trimmed.slice(0, -1).trimEnd(), dir: last };

@@ -102,9 +102,32 @@ const FLAT_UNIT: Record<string, string> = {
   gold: 'gold/s',
   influence: 'influence/s',
   generation: 'reprobates/s',
-  suicideRate: 'suicides/s',
-  murderRate: 'murders/s',
+  // Sabnock #43 / Glasya-Labolas #25 add to the PER-CAPITA base rate (deaths per reprobate per
+  // second, ×population in `dynamics`), not an absolute body count — label it as such so the small
+  // magnitude isn't misread as "n bodies per second".
+  suicideRate: 'suicides/reprobate·s',
+  murderRate: 'murders/reprobate·s',
 };
+
+/**
+ * The sign a seal's magnitude reads with: a reduction (a `decrease` modifier/tier, or any cost
+ * reduction) shows as `−X.X%`, matching the seal's own ↓ description — the ledger strips that arrow
+ * and shows the magnitude in its place, so the sign must carry the direction. Everything else lifts
+ * its target and reads `+`.
+ */
+function effectSign(e: SigilDef['effect']): '+' | '−' {
+  if (e.kind === 'costReduction') return '−';
+  if (
+    (e.kind === 'modifier' ||
+      e.kind === 'modifierMulti' ||
+      e.kind === 'tierGroup' ||
+      e.kind === 'categoryTier') &&
+    e.direction === 'decrease'
+  ) {
+    return '−';
+  }
+  return '+';
+}
 
 /** A small flat magnitude, shown plainly (e.g. "62" or "0.04"). */
 function fmtFlat(s: number): string {
@@ -115,7 +138,7 @@ function fmtFlat(s: number): string {
 /**
  * The real per-seal effect at the current binding (pending point #2). `sigilStrength` is the bare
  * strength the sim applies: a fraction for the multiplier / chance / percentage-point sigils (shown
- * as +X.X%), a flat per-second amount for the generators (Haagenti, Decarabia, …), or rounded
+ * as ±X.X% per `effectSign`), a flat per-second amount for the generators (Haagenti, Decarabia, …), or rounded
  * invoking power. The boon *text* already says what the seal does; this is its magnitude.
  */
 export function effectDisplay(def: SigilDef | undefined, bound: BigNum): string {
@@ -124,7 +147,7 @@ export function effectDisplay(def: SigilDef | undefined, bound: BigNum): string 
   const e = def.effect;
   if (e.kind === 'flatGen') return `+${fmtFlat(s)} ${FLAT_UNIT[e.resource] ?? '/s'}`;
   if (e.kind === 'invokingPower') return `+${Math.round(s)} invoking power`;
-  return `+${(s * 100).toFixed(1)}%`;
+  return `${effectSign(e)}${(s * 100).toFixed(1)}%`;
 }
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
