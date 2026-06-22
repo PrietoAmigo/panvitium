@@ -164,9 +164,9 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
     id: 'codex_gigas',
     name: 'Codex Gigas',
     description:
-      'One scribe. One night. One signature in the margin no Pope has ever erased. x3 influence gain rate.',
-    rarity: 'anathema',
-    cost: 80000,
+      'One scribe. One night. One signature in the margin no Pope has ever erased. ×1.33 influence gain rate.',
+    rarity: 'profane',
+    cost: 18000,
     invokingPower: 0,
   },
   mark_of_cain: {

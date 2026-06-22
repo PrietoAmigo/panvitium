@@ -169,11 +169,11 @@ Every action declares an **efficiency mode** describing how its effective effici
 resolution. The spreadsheet states each category's mode at the top of its sheet; the sheet wins
 over any older prose.
 
-- **`cost-outcome`** (*Suasio*): efficiency scales both the *cost paid* and the *positive
-  outcome units delivered* by the same percentage. Duration is not affected.
-- **`time`** (*Decimatio*, *Indagatio*, *Emptio*): efficiency divides the *action's duration*.
-  Costs and the tier distribution are not affected. (*Emptio* additionally pays the targeted
-  maleficium's gold price, unaffected by efficiency.)
+- **`cost-outcome`** (*Suasio*, *Decimatio*): efficiency scales both the *cost paid* and the
+  *positive outcome units delivered* by the same percentage. Duration is not affected.
+- **`time`** (*Indagatio*, *Emptio*): efficiency divides the *action's duration*. Costs and the
+  tier distribution are not affected. (*Emptio* additionally pays the targeted maleficium's gold
+  price, unaffected by efficiency.)
 - **Toggle scaling** (*Vitium Compositum*): the ceremony ticks at a fixed cadence unaffected by
   efficiency; efficiency multiplicatively scales the per-tick costs, outputs, and effects.
 

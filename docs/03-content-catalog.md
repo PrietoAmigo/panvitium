@@ -57,8 +57,8 @@ Per-action probabilities, outcomes, costs, durations, and the *Luxuria* gates ar
 ### 2.2 *Decimatio* — Culling
 
 Three actions: *Caedes*, *Pogrom*, and *Purgatio*, gated and toggle-gated by *Ira* level.
-Efficiency mode is **`time`** (`02 §3`, per the sheet): efficiency reduces the action's
-duration and affects neither costs nor outcomes.
+Efficiency mode is **`cost-outcome`** (`02 §3`, per the sheet): it modifies *Decimatio* costs and
+positive outcomes by the same percentage and does not affect action time.
 
 - **Caedes** — the early soul source; single kills with occasional sprees.
 - **Pogrom** — the mass cull; percentage-of-population kills, heavier mishaps.
@@ -246,7 +246,7 @@ The catalog (invoking power, stack caps, prices, and exact magnitudes in the `Ma
 | **Obsidian Mirror** | Oracular, power source | Profane | Reveals ALL Opera distributions; grants power. |
 | **Defixio** | Targeted, stackable | Profane | Single-use curse: culls reprobates on an exponential ramp. |
 | **Galdrabók** | Enhancer | Profane | Multiplies the murder rate. |
-| **Codex Gigas** | Enhancer | Profane | Greatly multiplies influence gain. |
+| **Codex Gigas** | Enhancer | Profane | Multiplies influence gain rate by 1.33. |
 | **Ars Serpens** | Enhancer, power source | Rare | Multiplies *Suasio* efficiency; grants power. |
 | **Ritual Dagger** | Enhancer, power source | Rare | Multiplies *Decimatio* efficiency; grants power. |
 | **Blood Chalk** | Power source | Rare | Grants invoking power. |
