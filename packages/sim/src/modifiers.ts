@@ -16,7 +16,7 @@
  *                 Gula       (Insatiability)  → playerEfficiencyMul
  *                 Lucifer    (Morning Star)   → tierWeightMul.stellar (lifted)
  *   - MALEFICIA:  Spear of Longinus           → maxInfluenceMul × 3
- *                 Codex Gigas                 → influenceRateMul × 3
+ *                 Codex Gigas                 → influenceRateMul × 1.33
  *                 Thirty Pieces of Silver     → flat gold/s = 0.001% of current gold
  *                 Mark of Cain                → murderRateMul × 3
  *                 Witch Ladder                → reprobateSuicideRateMul × 1.05
@@ -425,7 +425,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // Doppelgänger's "50% influence gain" cost is now per-second upkeep (tick.ts 1a), not a cut here.
     influenceRateMul:
       1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
-      (hasCodex ? 3 : 1) *
+      (hasCodex ? 1.33 : 1) * // Codex Gigas: ×1.33 influence gain rate (profane, sheet rev)
       (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
       (hasSpecunitas ? 2 : 1) * // Specunitas (apex Vanagloria): ×2 influence gain/s
       sc('influenceRateMul') *

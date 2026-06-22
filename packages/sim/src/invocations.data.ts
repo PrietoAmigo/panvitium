@@ -172,7 +172,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     soulCost: { fraction: 0.9, minimum: 0 },
     goldCost: { fraction: 0.9 },
     maxActive: 1,
-    // Apex Acedia (66% souls + 66% gold). Effect on invoke (see `invoke`): refused while
+    // Apex Acedia (90% souls + 90% gold, Invocatio sheet). Effect on invoke (see `invoke`): refused while
     // `morpheusLockedOut` is set. Effect while active (see tick.ts): the lifetime is held in
     // stillness — no income, no dynamics, no Opera or builds; on commit, `pendingMorpheus` overrides
     // the Katabasis carry-over to gold 100% + maleficia 100% + Emptio-list preserved.

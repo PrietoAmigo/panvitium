@@ -130,9 +130,9 @@ describe('computeModifiers — maleficia effects (anathema)', () => {
     expect(m.maxInfluenceMul).toBeCloseTo(3, 6); // base 1 × 3
   });
 
-  it('Codex Gigas triples influenceRateMul', () => {
+  it('Codex Gigas lifts influenceRateMul by 33%', () => {
     const m = computeModifiers(equipped(['codex_gigas']));
-    expect(m.influenceRateMul).toBeCloseTo(3, 6);
+    expect(m.influenceRateMul).toBeCloseTo(1.33, 6);
   });
 
   it('Thirty Pieces of Silver adds 0.001% of current gold as flat gold/s (not a multiplier)', () => {
@@ -179,14 +179,14 @@ describe('computeModifiers — maleficia effects (anathema)', () => {
   });
 
   it('Maleficia effects stack multiplicatively with Sin effects', () => {
-    // Vanagloria L1 → influenceRateMul 1.33; + Codex Gigas ×3 → ≈ 3.99.
+    // Vanagloria L1 → influenceRateMul 1.33; + Codex Gigas ×1.33 → ≈ 1.77.
     const s = fresh();
     const state: GameState = {
       ...s,
       devotion: { ...s.devotion, vanagloria: bn(180) },
       lifetime: { ...s.lifetime, maleficia: ['codex_gigas'] },
     };
-    expect(computeModifiers(state).influenceRateMul).toBeCloseTo(1.33 * 3, 2);
+    expect(computeModifiers(state).influenceRateMul).toBeCloseTo(1.33 * 1.33, 2);
   });
 });
 

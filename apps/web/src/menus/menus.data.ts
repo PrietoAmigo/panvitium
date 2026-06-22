@@ -204,10 +204,10 @@ export const MALEFICIA: Maleficium[] = [
   {
     id: 'codex_gigas',
     name: 'Codex Gigas',
-    rarity: 'anathema',
+    rarity: 'profane',
     img: `${ASSET_BASE}/maleficia/codex_gigas.png`,
     desc: 'One scribe. One night. One signature in the margin no Pope has ever erased.',
-    effect: '\u00D73 influence gain rate.',
+    effect: '\u00D71.33 influence gain rate.',
   },
   {
     id: 'spear_of_longinus',
