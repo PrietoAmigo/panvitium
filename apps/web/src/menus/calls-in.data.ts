@@ -1,44 +1,50 @@
-// The incoming-call ("calls-in") catalogue — STRUCTURAL data only (Claude Design handoff,
-// "Smartphone Call-In System"). One row per call you can RECEIVE on the Studio smartphone. Mechanics
-// and copy live elsewhere by the repo's split (DEVELOPMENT.md "Tuning the economy"):
+// The incoming-call ("calls-in") catalogue — STRUCTURAL data only. The canonical content is
+// `docs/PANVITIUM-CALLS-IN.md`: every call you can RECEIVE, its caller, class, requirements, and
+// choices. This file mirrors that catalogue's structure; the user-facing English (caller tag, choice
+// labels/sub-labels) lives in `strings.phone.callIn.calls` (ADR-020), joined here by id in
+// `game/callIn.ts`. The real buff/effect logic is still the future calls-in engine the doc describes
+// (CALL_TRIGGERS / INTERACTIONS, spreadsheet-pinned magnitudes) — answering applies no game state
+// yet, the same documented-stub posture as the email replies and the dialer codes.
 //
-//   - the user-facing English (caller tag, typed line, choice labels/sub-labels) is in
-//     `strings.phone.callIn.calls` (ADR-020), joined here by id in `game/callIn.ts`;
-//   - the real buff/effect logic + weighted firing engine is the future calls-in engine described in
-//     `docs/PANVITIUM-CALLS-IN.md` (CALL_TRIGGERS / INTERACTIONS, spreadsheet-pinned weights). Until
-//     it lands, answering a call surfaces its message + options but applies no game state — the same
-//     documented-stub posture as the email replies and the dialer's code effects.
-//
-// What stays here is purely structural: whether a call is a recording or a typed line, its selection
-// class, an optional hard-coded audio duration (the safety-reveal fallback when the mp3 is absent),
-// and the per-choice `dim` marker (the decline / hang-up option). The choice arrays MUST stay the
-// same length and order as the matching `strings.phone.callIn.calls.<id>.choices` — `callIn.test.ts`
-// pins that.
+// Every call is a recording: its `<id>.mp3` lives in apps/web/public/assets/panvitium/music/. The
+// choice arrays here carry only the structural `dim` marker (the decline / hang-up option) and MUST
+// stay the same length and order as the matching `strings` choices — `callIn.test.ts` pins that.
 
 import { ASSET_BASE } from './degrade.data.js';
 
-/** Selection class (docs/PANVITIUM-CALLS-IN.md "Selection model"). Drives the weighted draw. */
+/** Selection class (docs "Selection model"). Drives the weighted draw. */
 export type CallInClass = 'buff-positive' | 'buff-tradeoff' | 'lore' | 'easter-egg';
+
+/** Eligibility predicate for a call (docs "Requirements"). Absent fields impose no constraint. */
+export interface CallRequirements {
+  /** Minimum lifetime descents (`state.katabasisCount`). */
+  katabasisCountMin?: number;
+  /**
+   * Whether the Fausto "friendly" branch must be open (`true`) or closed (`false`). Maps to the real
+   * `flagFCThreatSent` flag: friendly ≡ the threat reply was never sent. Gates the mutually-exclusive
+   * Succubus (friendly) / Astiwihad (hostile) lines, and the hostile-only Journalist / a-name-to-burn.
+   */
+  fcFriendly?: boolean;
+  /** Email ids that must already sit in the inbox (e.g. Father Emil Stahl before he calls). */
+  emails?: readonly string[];
+}
 
 /** Structural shape of one choice — only the decline/hang-up marker; the label/sub are strings. */
 export interface CallInChoiceData {
-  /** The "let it go" / "hang up" / "say nothing" option — rendered in readable warm gold, not grey. */
+  /** The "let it go" / "hang up" / "no, thanks" option — readable warm gold, never a faded grey. */
   dim?: boolean;
 }
 
 /** Structural shape of one incoming call. Text is joined from `strings` by `id`. */
 export interface CallInData {
   id: string;
-  /** A recording plays (`speaking`) vs. a typed line is written out (`type`). */
+  /** A recording plays (`speaking`) vs. a typed line is written out (`type`). Every real call is a
+   *  recording; the typed path stays supported for any future fileless call. */
   audio: boolean;
   /** Weighted-draw class. */
   class: CallInClass;
-  /**
-   * Hard-coded recording length in seconds, used only as the audio safety-reveal fallback when the
-   * mp3's real duration is unavailable (e.g. the file is missing in a test/preview). The live app
-   * reveals options off the real `ended` event; this just keeps a fileless run flowing.
-   */
-  dur?: number;
+  /** Eligibility predicate; omitted ≡ always eligible. */
+  requires?: CallRequirements;
   /** Ordered choices — index-aligned with the strings catalogue. */
   choices: readonly CallInChoiceData[];
 }
@@ -48,24 +54,20 @@ export const CALL_AUDIO_BASE = `${ASSET_BASE}/music/`;
 /** The looped ring/haptic cue played while a call is incoming. */
 export const VIBRATION_SRC = `${CALL_AUDIO_BASE}smartphone_vibration.mp3`;
 
-// Background plates (crossfaded by phase). Base = resting/"call over"; call-in = ringing; answering =
-// the answered "voice in the room". Sourced from apps/web/public/assets/panvitium/backgrounds/.
+// Background plates (crossfaded by phase, composited through the degradation pass). Base =
+// resting/"call over"; call-in = ringing (room-level); answering = the answered "voice in the room".
 export const CALL_PLATE_BASE = `${ASSET_BASE}/backgrounds/studio_complete.png`;
 export const CALL_PLATE_RING = `${ASSET_BASE}/backgrounds/studio_complete_call-in.png`;
 export const CALL_PLATE_ANSWERING = `${ASSET_BASE}/backgrounds/studio_complete_call-answering.png`;
 
 /**
- * The 13 designed calls, in catalogue order. Eleven are recordings; two (`dying-soul`,
- * `fausto-feeler`) are typed. The `dim` markers and `dur` overrides match the design prototype.
+ * The incoming calls, in catalogue order (docs/PANVITIUM-CALLS-IN.md). Every call has a recording in
+ * `music/`; the typed lines from the design prototype (`dying-soul`, `fausto-feeler`) are not part of
+ * the canonical catalogue and are dropped.
  */
 export const CALLS_IN: readonly CallInData[] = [
-  // — Positive buffs (clean upside) —
-  {
-    id: 'the-cycle-turns',
-    audio: true,
-    class: 'buff-positive',
-    choices: [{}, {}, { dim: true }],
-  },
+  // ── Positive buffs (clean upside) ──
+  { id: 'the-cycle-turns', audio: true, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
   { id: 'eager-hands', audio: true, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
   { id: 'a-good-find', audio: true, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
   {
@@ -74,24 +76,63 @@ export const CALLS_IN: readonly CallInData[] = [
     class: 'buff-positive',
     choices: [{}, {}, { dim: true }],
   },
-  // — Tradeoff buffs (a strong buff bought with a real cost) —
-  { id: 'the-looting', audio: true, class: 'buff-tradeoff', choices: [{}, { dim: true }] },
+  { id: 'doing-nothing', audio: true, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
+
+  // ── Tradeoff buffs (a strong buff bought with a real cost) ──
+  {
+    id: 'the-looting',
+    audio: true,
+    class: 'buff-tradeoff',
+    requires: { katabasisCountMin: 1 },
+    choices: [{}, { dim: true }],
+  },
   { id: 'blood-in-the-cage', audio: true, class: 'buff-tradeoff', choices: [{}, { dim: true }] },
   { id: 'the-shipment', audio: true, class: 'buff-tradeoff', choices: [{}, { dim: true }] },
-  { id: 'a-name-to-burn', audio: true, class: 'buff-tradeoff', choices: [{}, { dim: true }] },
-  { id: 'parish', audio: true, class: 'buff-tradeoff', choices: [{}, {}, { dim: true }] },
-  // — Lore (narrative, no mechanical effect) —
-  { id: 'the-ward', audio: true, class: 'lore', dur: 14, choices: [{}, { dim: true }] },
   {
-    id: 'fausto-feeler',
-    audio: false,
-    class: 'lore',
-    choices: [{}, {}, { dim: true }],
+    id: 'a-name-to-burn',
+    audio: true,
+    class: 'buff-tradeoff',
+    requires: { fcFriendly: false },
+    choices: [{}, { dim: true }],
   },
-  // — Easter egg (rare collectible) —
-  { id: 'tormented-soul', audio: true, class: 'easter-egg', dur: 4, choices: [{ dim: true }] },
-  // — The afflicted: a typed plea that resolves by culling a reprobate one-for-one (docs §"the cull"). —
-  { id: 'dying-soul', audio: false, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
+  { id: 'parish', audio: true, class: 'buff-tradeoff', choices: [{}, {}, { dim: true }] },
+  { id: 'ministry', audio: true, class: 'buff-tradeoff', choices: [{}, {}, { dim: true }] },
+  { id: 'social-platform', audio: true, class: 'buff-tradeoff', choices: [{}, {}, { dim: true }] },
+
+  // ── Lore (narrative, no mechanical effect; once-only) ──
+  {
+    id: 'the-ward',
+    audio: true,
+    class: 'lore',
+    requires: { emails: ['fr-stahl-1'] },
+    choices: [{}, { dim: true }],
+  },
+  {
+    id: 'the-journalist',
+    audio: true,
+    class: 'lore',
+    requires: { katabasisCountMin: 5, fcFriendly: false },
+    // Eight identical retorts — the joke is that every option is the same.
+    choices: [{}, {}, {}, {}, {}, {}, {}, {}],
+  },
+  {
+    id: 'succubus',
+    audio: true,
+    class: 'lore',
+    requires: { fcFriendly: true },
+    choices: [{ dim: true }, {}],
+  },
+  {
+    id: 'astiwihad',
+    audio: true,
+    class: 'lore',
+    requires: { fcFriendly: false },
+    choices: [{ dim: true }, {}],
+  },
+
+  // ── Easter eggs (rare collectibles; once-only) ──
+  { id: 'tormented-soul', audio: true, class: 'easter-egg', choices: [{ dim: true }] },
+  { id: 'ISP-change', audio: true, class: 'easter-egg', choices: [{ dim: true }] },
 ] as const;
 
 /** Catalogue order, by id — the stable bag the selector draws from. */

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import type { CallInView } from '../game/callIn.js';
 import { CALL_AUDIO_BASE, CALL_PLATE_ANSWERING, CALL_PLATE_BASE } from './calls-in.data.js';
+import { DegradedScene } from './DegradedScene.js';
 
 /**
  * "The voice in the room" — the answered incoming-call stage (Claude Design handoff, "Smartphone
@@ -44,9 +45,10 @@ const DONE_TO_RESOLVED_MS = 1650;
 const SENTENCE_PAUSE = 14; // after . ! ?
 const CLAUSE_PAUSE = 7; // after , ; : —
 
-/** Audio safety-reveal fallback (s) when the mp3's real duration is unknown: ~0.42s/word, 4–12s. */
+/** Audio safety-reveal fallback (s) when the mp3's real duration is unknown: ~0.42s/word, 4–12s.
+ *  Recordings carry no `line`, so this floors at 4s; the real `ended`/`loadedmetadata` events drive
+ *  the reveal when the audio is present. */
 function estimateDuration(call: CallInView): number {
-  if (call.dur !== undefined) return call.dur;
   const words = call.line.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(4, Math.min(12, words * 0.42));
 }
@@ -204,17 +206,18 @@ export function SmartphoneCallIn({
       aria-label="Incoming call"
       aria-live="polite"
     >
-      {/* phase-driven background plates (base resting + crossfading answered) */}
+      {/* Phase-driven background plates, composited THROUGH the degradation pass (ADR-021) so the
+          call reads at the same crushed/pixelated fidelity as the room — the message + options sit
+          ABOVE the degraded scene, not over a clean plate. The base resting plate shows through as
+          the answered plate crossfades out on done/fading. */}
+      <DegradedScene roomId="studio" backdrop={CALL_PLATE_BASE} />
       <div
-        className="callin-plate"
-        style={{ backgroundImage: `url('${CALL_PLATE_BASE}')` }}
+        className="callin-degraded-answering"
+        style={{ opacity: answeringBg }}
         aria-hidden="true"
-      />
-      <div
-        className="callin-plate callin-plate--answering"
-        style={{ backgroundImage: `url('${CALL_PLATE_ANSWERING}')`, opacity: answeringBg }}
-        aria-hidden="true"
-      />
+      >
+        <DegradedScene roomId="studio" backdrop={CALL_PLATE_ANSWERING} />
+      </div>
       <div className="callin-vignette" aria-hidden="true" />
       <div className="callin-kicker" aria-hidden="true">
         {strings.phone.callIn.kicker}

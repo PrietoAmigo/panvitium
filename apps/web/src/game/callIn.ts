@@ -31,11 +31,9 @@ export interface CallInView {
   tag: string;
   /** The big caller name shown for a recording (the last `·` segment of the display tag). */
   caller: string;
-  /** Spoken text, only non-empty for the typed calls; recordings render no line (audio carries it). */
+  /** Spoken text, only non-empty for a typed (fileless) call; recordings render no line. */
   line: string;
   choices: CallInChoiceView[];
-  /** Safety-reveal fallback duration (s), if the call hard-codes one. */
-  dur?: number;
 }
 
 const CATALOG = strings.phone.callIn.calls;
@@ -76,8 +74,37 @@ export function buildCallInView(id: string): CallInView | null {
     caller: callerName(copy.tag),
     line: copy.line ?? '',
     choices,
-    ...(data.dur !== undefined ? { dur: data.dur } : {}),
   };
+}
+
+/**
+ * The slice of game state a call's requirements read (docs "Requirements"). Kept as a small plain
+ * object — not the full `GameState` — so App can derive it from a few stable primitive selectors
+ * (without re-rendering every tick) and so the predicate stays trivially testable.
+ */
+export interface CallEligibilityContext {
+  /** Lifetime descents (`state.katabasisCount`). */
+  katabasisCount: number;
+  /** The Fausto "friendly" branch is open (≡ the threat reply was never sent, `!flagFCThreatSent`). */
+  fcFriendly: boolean;
+  /** Ids of the emails currently in the inbox. */
+  receivedEmailIds: ReadonlySet<string>;
+}
+
+/** Whether a call's requirements are met right now. A call with no `requires` is always eligible. */
+export function isCallEligible(ctx: CallEligibilityContext, data: CallInData): boolean {
+  const req = data.requires;
+  if (!req) return true;
+  if (req.katabasisCountMin !== undefined && ctx.katabasisCount < req.katabasisCountMin)
+    return false;
+  if (req.fcFriendly !== undefined && ctx.fcFriendly !== req.fcFriendly) return false;
+  if (req.emails && !req.emails.every((id) => ctx.receivedEmailIds.has(id))) return false;
+  return true;
+}
+
+/** The set of call ids whose requirements are met in the given context. */
+export function eligibleCallIds(ctx: CallEligibilityContext): Set<string> {
+  return new Set(CALLS_IN.filter((c) => isCallEligible(ctx, c)).map((c) => c.id));
 }
 
 /**
@@ -95,21 +122,25 @@ export const CLASS_WEIGHT: Record<CallInClass, number> = {
 
 /**
  * Draw the next incoming call from the weighted bag, honouring once-only eligibility (lore + easter
- * eggs can only ever be received once; `seen` carries the ids already received). Pure: all entropy
- * comes from `random` (a `() => number` in [0, 1)), so a test can pin the outcome. Picks a class
- * bucket by its renormalised weight (empty buckets drop out), then a uniform call within it. Returns
- * `null` when nothing is eligible.
+ * eggs can only ever be received once; `seen` carries the ids already received) and the requirement
+ * gate (`eligible`, the ids whose `requires` are currently met — pass `null`/omit for no gate). Pure:
+ * all entropy comes from `random` (a `() => number` in [0, 1)), so a test can pin the outcome. Picks
+ * a class bucket by its renormalised weight (empty buckets drop out), then a uniform call within it.
+ * Returns `null` when nothing is eligible.
  */
 export function pickIncomingCall(
   random: () => number,
   seen: ReadonlySet<string> = new Set(),
+  eligible: ReadonlySet<string> | null = null,
 ): string | null {
-  const eligible = CALLS_IN.filter((c) => !(isOnceOnly(c.class) && seen.has(c.id)));
-  if (eligible.length === 0) return null;
+  const pool = CALLS_IN.filter(
+    (c) => !(isOnceOnly(c.class) && seen.has(c.id)) && (eligible === null || eligible.has(c.id)),
+  );
+  if (pool.length === 0) return null;
 
   // Bucket the eligible calls by class, keeping only non-empty buckets and their summed weight.
   const buckets = new Map<CallInClass, CallInData[]>();
-  for (const c of eligible) {
+  for (const c of pool) {
     const list = buckets.get(c.class) ?? [];
     list.push(c);
     buckets.set(c.class, list);

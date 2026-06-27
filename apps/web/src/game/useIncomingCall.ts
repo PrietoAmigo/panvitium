@@ -33,10 +33,18 @@ export interface IncomingCallController {
  * @param enabled Whether a call may ring right now — eligible active play with the phone reachable
  *   (in the Studio, no panel/overlay open, not in the title or a descent). While false, no call
  *   arrives and any live ring is released.
+ * @param eligibleIds The ids whose per-call requirements are currently met (see `eligibleCallIds`).
+ *   The draw is restricted to these, so a call only rings when the game state allows it.
  */
-export function useIncomingCall(enabled: boolean): IncomingCallController {
+export function useIncomingCall(
+  enabled: boolean,
+  eligibleIds: ReadonlySet<string>,
+): IncomingCallController {
   const [ringing, setRinging] = useState<string | null>(null);
   const ringingRef = useRef<string | null>(null);
+  // Latest eligibility set, read by the (deferred) arrival callback so it draws against current state.
+  const eligibleRef = useRef(eligibleIds);
+  eligibleRef.current = eligibleIds;
   // Once-only calls (lore, easter eggs) are consumed on ANSWER so they cannot be received twice; a
   // missed one may still ring again later. Session-scoped (no save change — additive-optional under
   // ADR-023 would persist this once the engine lands).
@@ -111,7 +119,7 @@ export function useIncomingCall(enabled: boolean): IncomingCallController {
     arrivalTimer.current = setTimeout(() => {
       arrivalTimer.current = null;
       if (!enabledRef.current || ringingRef.current) return;
-      const id = pickIncomingCall(Math.random, seen.current);
+      const id = pickIncomingCall(Math.random, seen.current, eligibleRef.current);
       if (!id) return;
       setRing(id);
       startVibration();

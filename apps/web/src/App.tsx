@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useGameLoop } from './game/useGameLoop.js';
 import { useIncomingCall } from './game/useIncomingCall.js';
-import { buildCallInView } from './game/callIn.js';
+import { buildCallInView, eligibleCallIds } from './game/callIn.js';
 import { ROOMS } from './menus/menus.data.js';
 import { RoomView } from './menus/RoomView.js';
 import { SmartphoneCallIn } from './menus/SmartphoneCallIn.js';
+import { CALL_PLATE_ANSWERING } from './menus/calls-in.data.js';
 import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
@@ -87,6 +88,15 @@ export function App(): ReactElement {
   const titleOpen = useGameStore((s) => s.titleOpen);
   const ready = useGameStore((s) => s.ready);
 
+  // Inputs to incoming-call requirement-gating, each a stable primitive so App does not re-render
+  // every tick: lifetime descents, the Fausto "friendly" branch (open until the threat reply is
+  // sent), and a stable join of the inbox ids (unchanged across ticks unless mail actually arrives).
+  const katabasisCount = useGameStore((s) => s.state?.katabasisCount ?? 0);
+  const fcFriendly = useGameStore((s) => s.state?.lifetime.flagFCThreatSent !== true);
+  const inboxKey = useGameStore((s) =>
+    s.state ? s.state.lifetime.inbox.map((e) => e.id).join('|') : '',
+  );
+
   // The Studio's red "panvitium" glow while that ritual runs (03 §2.3).
   const signature = useGameStore(
     (s) => s.state?.lifetime.activeToggles.includes('panvitium') ?? false,
@@ -147,13 +157,30 @@ export function App(): ReactElement {
     panel === null &&
     answeredCall === null &&
     !jumpscare;
-  const { ringing, answer } = useIncomingCall(callInEnabled);
+  // Only calls whose requirements are met may be drawn (e.g. the mutually-exclusive Succubus/Astiwihad
+  // lines, gated on the Fausto branch). Memoised off the primitive inputs so it changes only when the
+  // gated state does, not every tick.
+  const eligibleIds = useMemo(
+    () =>
+      eligibleCallIds({
+        katabasisCount,
+        fcFriendly,
+        receivedEmailIds: new Set(inboxKey ? inboxKey.split('|') : []),
+      }),
+    [katabasisCount, fcFriendly, inboxKey],
+  );
+  const { ringing, answer } = useIncomingCall(callInEnabled, eligibleIds);
   const callInView = answeredCall ? buildCallInView(answeredCall) : null;
   // Defensive: an answered id that has no view (would never happen for catalogue ids) must not strand
   // the line — clear it so a new call can ring.
   useEffect(() => {
     if (answeredCall !== null && callInView === null) setAnsweredCall(null);
   }, [answeredCall, callInView]);
+  // Decode the answered plate while the call is still ringing, so the degraded answering scene paints
+  // on its first frame when the player picks up (no black flash).
+  useEffect(() => {
+    if (ringing !== null) preloadImage(CALL_PLATE_ANSWERING);
+  }, [ringing]);
 
   const handleAction = (action: HotspotAction): void => {
     // While armed, the player's very next interaction is replaced by the one-time Doppelgänger scare
