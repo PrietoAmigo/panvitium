@@ -146,15 +146,15 @@ export function App(): ReactElement {
     if (katabasisPhase !== null) setPanel(null);
   }, [katabasisPhase]);
 
-  // A call may ring only during eligible active play with the phone reachable: live session, not in
-  // the title or a descent, standing in the Studio with no panel/overlay open, and no call already
-  // answered or jumpscare running (06-smartphone-content.md §2: active play only, dark in Katabasis).
+  // A call may ring during eligible active play in the Studio: live session, not in the title or a
+  // descent, no call already answered, no jumpscare (06-smartphone-content.md §2: active play only,
+  // dark in Katabasis). A Studio menu (PC, Suasio, the dialer) does NOT silence the line — the phone
+  // still rings behind it (you hear it; close the menu and tap the phone to answer).
   const callInEnabled =
     ready &&
     katabasisPhase === null &&
     !titleOpen &&
     room === 'studio' &&
-    panel === null &&
     answeredCall === null &&
     !jumpscare;
   // Only calls whose requirements are met may be drawn (e.g. the mutually-exclusive Succubus/Astiwihad

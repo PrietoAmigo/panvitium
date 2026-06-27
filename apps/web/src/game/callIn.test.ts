@@ -123,6 +123,25 @@ describe('pickIncomingCall', () => {
     }
   });
 
+  it('applies the recency cooldown — a recently-received call is skipped', () => {
+    // The same roll normally lands the-cycle-turns (positive bucket, index 0); with it "recent" the
+    // draw must fall to the next call in that bucket instead.
+    expect(pickIncomingCall(seq([0.1, 0]))).toBe('the-cycle-turns');
+    const recent = new Set(['the-cycle-turns']);
+    expect(pickIncomingCall(seq([0.1, 0]), new Set(), null, recent)).toBe('eager-hands');
+    for (let i = 0; i < 100; i++) {
+      const drawn = pickIncomingCall(seq([Math.random(), Math.random()]), new Set(), null, recent);
+      expect(drawn).not.toBe('the-cycle-turns');
+    }
+  });
+
+  it('drops the recency cooldown rather than starving the line', () => {
+    // Only one call is eligible and it is also "recent" — the cooldown yields so it still rings.
+    const only = new Set(['eager-hands']);
+    const recent = new Set(['eager-hands']);
+    expect(pickIncomingCall(seq([0.5, 0]), new Set(), only, recent)).toBe('eager-hands');
+  });
+
   it('buffs are never excluded — selection keeps producing recurring calls', () => {
     expect(pickIncomingCall(seq([0, 0]))).not.toBeNull();
   });
