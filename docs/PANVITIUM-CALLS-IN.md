@@ -8,11 +8,11 @@ Canonical, single-source list of every call you can RECEIVE and the event it ope
 
 ## Selection model
 
-When an incoming call fires (active play only), the caller is drawn from a weighted bag:
+When an incoming call fires (active play only), the caller is drawn from a weighted bag, all calls inside a same class have the same weight, but some could have requirements stopping them from being eligible:
 
-- **49% a buff call**, split evenly:
-    - **45% a completely positive buff.** Clean upside. You choose which upside, and every option is good. The only way to lose is to let it go.
-    - **45% a big tradeoff buff.** A strong buff bought with a real, painful cost. You choose your cost (or which strong-buff-plus-cost), or you let it go.
+- **49% a buff call**:
+    - **25% a completely positive buff.** Clean upside. You choose which upside, and every option is good. The only way to lose is to let it go.
+    - **24% a big tradeoff buff.** A strong buff bought with a real, painful cost. You choose your cost (or which strong-buff-plus-cost), or you let it go.
 - **50% a lore call.** Narrative and atmosphere, no mechanical effect. Lore calls can only be received once.
 - **1% an easter egg.** A rare collectible, no mechanical reward. Easter egg calls can only be received once.
 
@@ -26,7 +26,7 @@ A call may also hand you reprobates or money directly. The only place a call gra
 
 **Composition.** Buffs are temporary modifiers and compose multiplicatively with one another and with everything else through the modifier system (ADR-022). All multipliers, durations, costs, ring windows, and thresholds are placeholders pending `Panvitium_Economy_Template.xlsx`; the sheet wins on every number.
 
-**Ring window** is always 10 seconds.
+**Ring window** is always 15 seconds.
 
 ## Entry format
 
