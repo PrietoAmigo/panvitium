@@ -36,8 +36,8 @@ These govern the smartphone:
 ## 3. The phone cast (who reaches you here, and how)
 
 - **The household.** Gideon by call, the acolytes by call. Servile, fretful, practical, pieces of the truth only.
-- **The hands of Fausto.** In specific, Fausto's imvocations (Astiwihad, Succubus) and minions (his newspaper journalists, his PI) call. They want to cause your downfall.
-- **The Church**
+- **The hands of Fausto.** In specific, Fausto's imvocations (Astiwihad, Succubus) and minions (his newspaper journalists) call. They want to cause your downfall.
+- **The Church.**
 - **Mundane** help. Trusted-minion register: useful, discreet, and they grasp nothing of the work.
 - **Unknown.**
 
