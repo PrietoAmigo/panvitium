@@ -2,6 +2,7 @@ import { type ReactElement } from 'react';
 import type { RoomDef, HotspotAction, DegradeSettings } from './types.js';
 import { DegradedScene } from './DegradedScene.js';
 import { ROOM_PLATES, altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
+import { CALL_PLATE_RING } from './calls-in.data.js';
 
 interface RoomViewProps {
   room: RoomDef;
@@ -16,6 +17,8 @@ interface RoomViewProps {
   curseActive: boolean;
   /** The viewer prefers reduced motion — the curse layer drops its vestibular sub-effects. */
   reducedMotion: boolean;
+  /** A call is ringing on the Studio desk — swap in the "incoming call" plate (the lit phone). */
+  ringing: boolean;
   onAction: (action: HotspotAction) => void;
 }
 
@@ -37,12 +40,19 @@ export function RoomView({
   acolytes,
   curseActive,
   reducedMotion,
+  ringing,
   onAction,
 }: RoomViewProps): ReactElement {
   // The bound invocations that have a designed display in this room (Morpheus over the altar, …).
   const boundVisuals = boundVisualsFor(room.id, summoned, doppelgaengerSeen);
-  // The Altar's backdrop tracks the acolyte count (0–4); every other room uses its default plate.
-  const backdrop = room.id === 'altar' ? altarPlateForAcolytes(acolytes) : ROOM_PLATES[room.id];
+  // The Altar's backdrop tracks the acolyte count (0–4); the Studio swaps to the "incoming call"
+  // plate while the phone is ringing; every other room uses its default plate.
+  const backdrop =
+    room.id === 'altar'
+      ? altarPlateForAcolytes(acolytes)
+      : room.id === 'studio' && ringing
+        ? CALL_PLATE_RING
+        : ROOM_PLATES[room.id];
   // Presentation only — read straight off the curse flag; the pass eases the 0/1 target in/out.
   const degradeSettings: Partial<DegradeSettings> = {
     curseVertigo: curseActive ? 1 : 0,

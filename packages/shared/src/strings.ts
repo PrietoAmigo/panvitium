@@ -1011,6 +1011,116 @@ export const strings = {
     codes: {
       '666': "you're retarded",
     } as Record<string, string>,
+    // The incoming-call ("calls-in") system (design handoff "Smartphone Call-In System"). The
+    // structural catalogue (which call is a recording vs. typed, the decline markers) lives in
+    // apps/web's `calls-in.data.ts`; this owns the English a player reads. `tag` is the caller line
+    // shown over the answered plate (the big name for a recording, the kicker for a typed call);
+    // `line` is the spoken text and is present only for the two typed calls (recordings play their
+    // mp3 instead). Latin choice labels are left untranslated (ADR-020).
+    callIn: {
+      // Top-left corner mark on the call stage, and the hint under a playing recording.
+      kicker: 'Panvitium · the line',
+      skip: 'tap to skip',
+      calls: {
+        'the-cycle-turns': {
+          tag: 'the line · Gideon Reyes',
+          choices: [
+            { label: 'Press the advantage', sub: 'take the margin while it runs' },
+            { label: 'Plough it back into appetite', sub: 'more product, more hunger' },
+            { label: 'Let it go' },
+          ],
+        },
+        'eager-hands': {
+          tag: 'the line · an acolyte',
+          choices: [
+            { label: 'Take the hungry ones', sub: 'more of them at the door' },
+            { label: 'Take the frightened ones', sub: 'fear is its own currency' },
+            { label: 'Let it go' },
+          ],
+        },
+        'a-good-find': {
+          tag: 'the line · an acolyte',
+          choices: [
+            { label: 'Keep digging', sub: 'there is more down there' },
+            { label: 'Sell the rumour', sub: 'put it about that we found something' },
+            { label: 'Let it go' },
+          ],
+        },
+        'the-discipline-swells': {
+          tag: 'the line · Gideon Reyes',
+          choices: [
+            { label: 'There could be something there…', sub: 'the ache means they are winning' },
+            { label: 'I will apply it to the acolytes', sub: 'discipline, sharpened' },
+            { label: 'Let it go' },
+          ],
+        },
+        'the-looting': {
+          tag: 'the line · Gideon Reyes',
+          choices: [
+            { label: 'Make an example', sub: 'it will cost you standing' },
+            { label: 'Let it go' },
+          ],
+        },
+        'blood-in-the-cage': {
+          tag: 'the line · an acolyte',
+          choices: [
+            { label: 'Lean all the way in', sub: 'spends the corrupted, future souls lost' },
+            { label: 'Let it go' },
+          ],
+        },
+        'the-shipment': {
+          tag: 'the line · a follower',
+          choices: [
+            { label: 'Flood a place', sub: 'lose money now, hook the place fast' },
+            { label: 'Let it go' },
+          ],
+        },
+        'a-name-to-burn': {
+          tag: 'unknown caller',
+          choices: [{ label: 'Always', sub: 'everything you have' }, { label: 'Let it go' }],
+        },
+        parish: {
+          tag: 'the line · one of your hands',
+          choices: [
+            { label: 'Work behind the light', sub: 'behind the grief and the charity' },
+            { label: 'Patronize', sub: 'pay your way in' },
+            { label: 'Let it go' },
+          ],
+        },
+        'the-ward': {
+          tag: 'the line · Fr. Emil Stahl',
+          choices: [
+            { label: 'Listen to the end', sub: 'stay until the stillness' },
+            { label: 'Hang up' },
+          ],
+        },
+        'fausto-feeler': {
+          tag: 'the line · Fausto Cescru',
+          line: "You let my letters sit. A lesser man would be insulted, but I am only curious now. I can hear it from here — the speed of you, a whole estate spent into the ground and pulled up out of it again in a single season. No blood on earth moves that fast. So I'll ask you plainly: what did you find?",
+          choices: [
+            { label: 'Tell him nothing true' },
+            { label: 'Lie to him' },
+            { label: 'Hang up' },
+          ],
+        },
+        'tormented-soul': {
+          tag: 'unknown caller',
+          choices: [{ label: 'Hang up' }],
+        },
+        'dying-soul': {
+          tag: 'no number · the afflicted',
+          line: "Please. I don't know how I got this number, I don't even know your name. But it started when your sort came to this county and now it won't stop — the noise won't stop, won't let me sleep or sit still inside my own head. I'll give you anything. Just make it quiet.",
+          choices: [
+            { label: 'Name a price', sub: 'everything has one' },
+            { label: 'Take it now', sub: 'make it quiet' },
+            { label: 'Say nothing' },
+          ],
+        },
+      } as Record<
+        string,
+        { tag: string; line?: string; choices: ReadonlyArray<{ label: string; sub?: string }> }
+      >,
+    },
   },
 } as const;
 

@@ -103,9 +103,27 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 852** (sim 536 · shared 60 · api 20 · web 236).
+**Current test count: 865** (sim 536 · shared 60 · api 20 · web 249).
 
-> **Latest change — Caedes cast time cut to 1 second (tuning override).** The entry cull now casts
+> **Latest change — the smartphone call-in system (Claude Design handoff, "incoming calls").** The
+> Studio phone now _receives_ calls, not just dials out. During eligible active play (in the Studio,
+> nothing else open, never in the title or a descent) a call arrives from a weighted bag: the room
+> swaps to the "incoming call" plate and the phone vibrates on a 15 s ring window — missing it costs
+> nothing (every incoming call is opportunity-only). Tapping the phone while it rings **answers**,
+> taking priority over the dial-out pad, and raises a self-framed full-screen call stage — "the voice
+> in the room" — that walks the design's FSM: a recording plays (`speaking`) or a typed line writes
+> itself out with speech-cadence pauses (`type`), then the response options stagger in (`ready`);
+> picking one lights it, dims the rest, and fades the call out (`done`/`fading`). A generation guard
+> keeps a skipped call's stale audio/timer from revealing options into the next. Catalogue of 13 calls
+> (11 recordings, 2 typed) joined from `strings.phone.callIn`; the per-class weighted draw (49 % buff
+> / 50 % lore / 1 % easter egg) honours once-only lore + easter eggs. Like the dialer and the email
+> replies, the **choice effect is a documented stub** awaiting the calls-in engine
+> (`docs/PANVITIUM-CALLS-IN.md`) — answering changes no game state yet. Sim, save shape, and the RNG
+> stream are untouched (the scheduler is UI-level, off `Math.random`). Thirteen web tests pin the
+> catalogue↔strings join, the weighted/once-only selection, and the stage's FSM, skip, and choose
+> cadence.
+>
+> **Earlier change — Caedes cast time cut to 1 second (tuning override).** The entry cull now casts
 > in **1 s** (was 10 s), so the opening Decimatio loop reads as briskly as Suggestion — a documented
 > player-request override of the Decimatio sheet's 10 s baseline (mirrors the same override on
 > Suggestion). Behaviour-only; the Decimatio UI's duration readout, the auto-repeat cadence, and the
