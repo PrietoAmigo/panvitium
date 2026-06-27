@@ -10,7 +10,7 @@ This document defines the Studio smartphone: the device, the rules that govern i
 
 A smartphone of the period (circa 2015) sitting on the desk of the Studio, beside the PC.
 
-The phone is, like the PC, primarily an incoming-content channel (00 sec. 10), with one addition the PC does not have: a keypad you can dial out from. Use the difference from email deliberately. The phone carries the household's frightened little pings, the adversary's sharp one-liners, the mundane noise that hides the live messages, and the handful of numbers you can call yourself.
+The phone is, like the PC, primarily an incoming-content channel (00 sec. 10), with one addition the PC does not have: a keypad you can dial out from. Use the difference from email deliberately.
 
 **Two layers, on the phone too.** The household and the world never use occult vocabulary and grasp the truth in pieces only. The adversary speaks plainly because he shares the truth. No hidden-layer vocabulary (vibration, frequency, wave, field, energy, resonance, and the rest) appears anywhere a player can read it.
 Hell is only seen through entities bound by your adversary or your own entities (as long as they're bound). Princes and sigils are silent.
@@ -37,9 +37,9 @@ These govern the smartphone:
 
 - **The household.** Gideon by call, the acolytes by call. Servile, fretful, practical, pieces of the truth only.
 - **The hands of Fausto.** In specific, Fausto's imvocations (Astiwihad, Succubus) and minions (his newspaper journalists, his PI) call. They want to cause your downfall.
-- **The investigator, Stahl.** A single call exorcising in Latin. His arc stays mostly on email (05).
-- **The fixer and the fence.** Mundane underworld help. Trusted-minion register: useful, discreet, and they grasp nothing of the work.
-- **Unknown.** The afflicted caller (`dying-soul`), the counting (`wrong-number`), the breathing room (`the-hollow`), all anonymous, all brushing the truth and confirming none of it.
+- **The Church**
+- **Mundane** help. Trusted-minion register: useful, discreet, and they grasp nothing of the work.
+- **Unknown.**
 
 Who never reaches the phone: the Princes and the Goetia (Hell is silent), your invocations (email or the Lair only, so the Doppelganger and Midas stay on the PC), the parish clergy (their channel is email; the bulletins and Father Tom belong to 05), and Maren Holt (she has no idea you exist and is a parish line and an obituary, not a contact, 00 sec. 11).
 
