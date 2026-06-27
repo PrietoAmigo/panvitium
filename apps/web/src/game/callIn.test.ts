@@ -1,17 +1,29 @@
 /**
- * Unit tests for the incoming-call view-model + weighted selection. These pin the catalogue↔strings
- * join (caller/tag derivation, typed vs. recorded line, choice count parity) and the class-bucketed
- * draw (weight, once-only eligibility, determinism off the injected RNG).
+ * Unit tests for the incoming-call view-model, requirement gate, and weighted selection. These pin
+ * the catalogue↔strings join (caller/tag derivation, choice-count parity), the per-call eligibility
+ * predicate (docs "Requirements" — katabasisCount, the Fausto branch, received emails), and the
+ * class-bucketed draw (weight, once-only + requirement gating, determinism off the injected RNG).
  */
 import { describe, it, expect } from 'vitest';
-import { buildCallInView, pickIncomingCall } from './callIn.js';
-import { CALLS_IN, isOnceOnly } from '../menus/calls-in.data.js';
+import {
+  buildCallInView,
+  pickIncomingCall,
+  isCallEligible,
+  eligibleCallIds,
+  type CallEligibilityContext,
+} from './callIn.js';
+import { CALLS_IN, CALL_IN_BY_ID, isOnceOnly } from '../menus/calls-in.data.js';
 import { strings } from '@panvitium/shared';
 
 /** A deterministic `random` that replays a fixed queue (then holds its last value). */
 function seq(values: number[]): () => number {
   let i = 0;
   return () => values[Math.min(i++, values.length - 1)] ?? 0;
+}
+
+/** A permissive context (fresh game): no descents, Fausto friendly, no mail. */
+function freshCtx(over: Partial<CallEligibilityContext> = {}): CallEligibilityContext {
+  return { katabasisCount: 0, fcFriendly: true, receivedEmailIds: new Set(), ...over };
 }
 
 describe('buildCallInView', () => {
@@ -27,13 +39,12 @@ describe('buildCallInView', () => {
     expect(v!.choices[0]!.sub).toBe('take the margin while it runs');
   });
 
-  it('joins a typed call: kicker tag, the afflicted as caller, full line present', () => {
-    const v = buildCallInView('dying-soul');
-    expect(v!.audio).toBe(false);
-    expect(v!.tag).toBe('no number · the afflicted');
-    expect(v!.caller).toBe('the afflicted');
-    expect(v!.line.length).toBeGreaterThan(0);
-    expect(v!.choices.map((c) => c.dim)).toEqual([false, false, true]);
+  it('joins an unknown-caller call and keeps a Latin label untranslated', () => {
+    const v = buildCallInView('succubus');
+    expect(v!.tag).toBe('unknown caller');
+    expect(v!.caller).toBe('unknown caller');
+    expect(v!.choices.map((c) => c.dim)).toEqual([true, false]);
+    expect(v!.choices[1]!.label).toBe('Expello te, succube.');
   });
 
   it('returns null for an unknown id', () => {
@@ -45,7 +56,6 @@ describe('buildCallInView', () => {
       const copy = strings.phone.callIn.calls[data.id];
       expect(copy, `strings for ${data.id}`).toBeDefined();
       expect(copy!.choices.length, `choice count for ${data.id}`).toBe(data.choices.length);
-      // The build must not throw and must yield one view per choice.
       const v = buildCallInView(data.id);
       expect(v, `view for ${data.id}`).not.toBeNull();
       expect(v!.choices).toHaveLength(data.choices.length);
@@ -53,21 +63,46 @@ describe('buildCallInView', () => {
   });
 });
 
+describe('isCallEligible', () => {
+  it('gates on katabasisCount (the-looting needs ≥1)', () => {
+    const looting = CALL_IN_BY_ID['the-looting']!;
+    expect(isCallEligible(freshCtx(), looting)).toBe(false);
+    expect(isCallEligible(freshCtx({ katabasisCount: 1 }), looting)).toBe(true);
+  });
+
+  it('makes Succubus and Astiwihad mutually exclusive on the Fausto branch', () => {
+    const succubus = CALL_IN_BY_ID['succubus']!;
+    const astiwihad = CALL_IN_BY_ID['astiwihad']!;
+    const friendly = freshCtx({ fcFriendly: true });
+    const hostile = freshCtx({ fcFriendly: false });
+    expect(isCallEligible(friendly, succubus)).toBe(true);
+    expect(isCallEligible(friendly, astiwihad)).toBe(false);
+    expect(isCallEligible(hostile, succubus)).toBe(false);
+    expect(isCallEligible(hostile, astiwihad)).toBe(true);
+  });
+
+  it('gates the-ward on a received email', () => {
+    const ward = CALL_IN_BY_ID['the-ward']!;
+    expect(isCallEligible(freshCtx(), ward)).toBe(false);
+    expect(isCallEligible(freshCtx({ receivedEmailIds: new Set(['fr-stahl-1']) }), ward)).toBe(
+      true,
+    );
+  });
+
+  it('treats a requirement-free call as always eligible', () => {
+    expect(isCallEligible(freshCtx(), CALL_IN_BY_ID['eager-hands']!)).toBe(true);
+  });
+});
+
 describe('pickIncomingCall', () => {
   it('draws from the rolled class bucket, uniform within it', () => {
     // roll → buff-positive bucket (0.10*100 = 10 < 25), then index 0 of that bucket.
     expect(pickIncomingCall(seq([0.1, 0]))).toBe('the-cycle-turns');
-    // roll → easter-egg bucket (0.995*100 = 99.5), its single call.
+    // roll → easter-egg bucket (0.995*100 = 99.5), its first call.
     expect(pickIncomingCall(seq([0.995, 0]))).toBe('tormented-soul');
   });
 
   it('never returns a once-only call that has already been received', () => {
-    const seen = new Set(['tormented-soul']);
-    // Even forcing the top of the roll (where the egg bucket would sit) skips it once seen.
-    const id = pickIncomingCall(seq([0.999, 0]), seen);
-    expect(id).not.toBe('tormented-soul');
-    expect(id).not.toBeNull();
-    // And a once-only lore call, once seen, is also excluded.
     const seenLore = new Set(CALLS_IN.filter((c) => isOnceOnly(c.class)).map((c) => c.id));
     for (let i = 0; i < 50; i++) {
       const drawn = pickIncomingCall(seq([Math.random(), Math.random()]), seenLore);
@@ -75,8 +110,20 @@ describe('pickIncomingCall', () => {
     }
   });
 
+  it('restricts the draw to the eligible set (gated calls never ring)', () => {
+    const eligible = eligibleCallIds(freshCtx()); // fresh: friendly, no descents, no mail
+    expect(eligible.has('succubus')).toBe(true);
+    expect(eligible.has('astiwihad')).toBe(false);
+    expect(eligible.has('the-looting')).toBe(false);
+    expect(eligible.has('the-journalist')).toBe(false);
+    for (let i = 0; i < 100; i++) {
+      const drawn = pickIncomingCall(seq([Math.random(), Math.random()]), new Set(), eligible);
+      expect(drawn).not.toBeNull();
+      expect(eligible.has(drawn!)).toBe(true);
+    }
+  });
+
   it('buffs are never excluded — selection keeps producing recurring calls', () => {
-    const id = pickIncomingCall(seq([0, 0]));
-    expect(id).not.toBeNull();
+    expect(pickIncomingCall(seq([0, 0]))).not.toBeNull();
   });
 });

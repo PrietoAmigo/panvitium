@@ -1,16 +1,19 @@
 /**
- * Render + behaviour tests for the answered call-in stage (Claude Design "Smartphone Call-In
- * System"). These pin the FSM the design specifies: a recording shows the big caller name + a
- * "tap to skip" hint and reveals options when it finishes (here: the safety timer, since jsdom has no
- * real audio); a typed call writes its line out and shows the kicker tag; tapping the stage skips
- * ahead; picking an option fires `onChoose`, lights the pick / dims the rest, and resolves to
- * `onDone` after the fade cadence. Timers are faked so the async reveals are deterministic.
+ * Render + behaviour tests for the answered call-in stage. These pin the FSM the design specifies: a
+ * recording shows the big caller name + a "tap to skip" hint and reveals options when it finishes
+ * (here: the safety timer, since jsdom has no real audio); a typed call writes its line out and shows
+ * the kicker tag; tapping the stage skips ahead; picking an option fires `onChoose`, lights the pick
+ * / dims the rest, and resolves to `onDone` after the fade cadence. Timers are faked so the async
+ * reveals are deterministic. `DegradedScene` (a canvas the degradation pass paints) is stubbed —
+ * jsdom has no 2D context, and these tests assert on the text layer, not the plate.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { SmartphoneCallIn } from './SmartphoneCallIn.js';
 import { buildCallInView, type CallInView } from '../game/callIn.js';
+
+vi.mock('./DegradedScene.js', () => ({ DegradedScene: () => null }));
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -44,6 +47,20 @@ const advance = (ms: number): void => {
   });
 };
 
+/** A synthetic typed (fileless) call — the catalogue is all-audio, but the FSM still supports typed. */
+const TYPED: CallInView = {
+  id: 'test-typed',
+  audio: false,
+  class: 'lore',
+  tag: 'no number · the afflicted',
+  caller: 'the afflicted',
+  line: 'Please. Make it quiet.',
+  choices: [
+    { label: 'Name a price', dim: false },
+    { label: 'Say nothing', dim: true },
+  ],
+};
+
 beforeEach(() => {
   vi.useFakeTimers();
 });
@@ -60,7 +77,6 @@ describe('SmartphoneCallIn — recorded call', () => {
   it('shows the caller name + "tap to skip", then reveals options when the recording ends', () => {
     const call = buildCallInView('the-cycle-turns')!;
     render({ call });
-    // Speaking: big caller name + skip hint, no options, no typed line.
     expect(q('.callin-caller')?.textContent).toBe('Gideon Reyes');
     expect(q('.callin-hint')?.textContent).toBe('tap to skip');
     expect(all('.callin-choice')).toHaveLength(0);
@@ -93,23 +109,20 @@ describe('SmartphoneCallIn — recorded call', () => {
 
 describe('SmartphoneCallIn — typed call', () => {
   it('writes the line out and shows the kicker tag (not a big caller name)', () => {
-    const call = buildCallInView('dying-soul')!;
-    render({ call, textSpeedMs: 1 });
+    render({ call: TYPED, textSpeedMs: 1 });
     expect(q('.callin-tag')?.textContent).toBe('no number · the afflicted');
     expect(q('.callin-caller')).toBeNull(); // typed calls have no big name
-    // A couple of characters in, the typed node holds a prefix of the line.
     advance(3);
     const partial = q('.callin-text')?.textContent ?? '';
     expect(partial.length).toBeGreaterThan(0);
-    expect(call.line.startsWith(partial)).toBe(true);
+    expect(TYPED.line.startsWith(partial)).toBe(true);
   });
 
   it('tapping the stage reveals the full line and the options at once', () => {
-    const call = buildCallInView('dying-soul')!;
-    render({ call, textSpeedMs: 32 });
+    render({ call: TYPED, textSpeedMs: 32 });
     act(() => q('.callin-stage')!.click());
-    expect(q('.callin-text')?.textContent).toBe(call.line);
-    expect(all('.callin-choice')).toHaveLength(3);
+    expect(q('.callin-text')?.textContent).toBe(TYPED.line);
+    expect(all('.callin-choice')).toHaveLength(2);
   });
 });
 

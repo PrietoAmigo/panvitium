@@ -1011,17 +1011,18 @@ export const strings = {
     codes: {
       '666': "you're retarded",
     } as Record<string, string>,
-    // The incoming-call ("calls-in") system (design handoff "Smartphone Call-In System"). The
-    // structural catalogue (which call is a recording vs. typed, the decline markers) lives in
-    // apps/web's `calls-in.data.ts`; this owns the English a player reads. `tag` is the caller line
-    // shown over the answered plate (the big name for a recording, the kicker for a typed call);
-    // `line` is the spoken text and is present only for the two typed calls (recordings play their
-    // mp3 instead). Latin choice labels are left untranslated (ADR-020).
+    // The incoming-call ("calls-in") system. The structural catalogue (which call is a recording,
+    // requirements, the decline markers) lives in apps/web's `calls-in.data.ts`; this owns the
+    // English a player reads. `tag` is the caller line shown over the answered plate (the big name is
+    // its last `·` segment); `line` is the spoken text and is present only for a future typed
+    // (fileless) call — every catalogued call today plays its mp3. Latin choice labels are left
+    // untranslated (ADR-020). Canonical content: docs/PANVITIUM-CALLS-IN.md.
     callIn: {
       // Top-left corner mark on the call stage, and the hint under a playing recording.
       kicker: 'Panvitium · the line',
       skip: 'tap to skip',
       calls: {
+        // ── Positive buffs ──
         'the-cycle-turns': {
           tag: 'the line · Gideon Reyes',
           choices: [
@@ -1054,6 +1055,11 @@ export const strings = {
             { label: 'Let it go' },
           ],
         },
+        'doing-nothing': {
+          tag: 'the line · Mai',
+          choices: [{ label: 'I will join them' }, { label: 'Kill them' }, { label: 'Let it go' }],
+        },
+        // ── Tradeoff buffs ──
         'the-looting': {
           tag: 'the line · Gideon Reyes',
           choices: [
@@ -1064,29 +1070,46 @@ export const strings = {
         'blood-in-the-cage': {
           tag: 'the line · an acolyte',
           choices: [
-            { label: 'Lean all the way in', sub: 'spends the corrupted, future souls lost' },
+            { label: 'Show me the money', sub: 'spends the corrupted, future souls lost' },
             { label: 'Let it go' },
           ],
         },
         'the-shipment': {
-          tag: 'the line · a follower',
+          tag: 'the line · an acolyte',
           choices: [
             { label: 'Flood a place', sub: 'lose money now, hook the place fast' },
             { label: 'Let it go' },
           ],
         },
         'a-name-to-burn': {
-          tag: 'unknown caller',
+          tag: 'the line · an acolyte',
           choices: [{ label: 'Always', sub: 'everything you have' }, { label: 'Let it go' }],
         },
         parish: {
-          tag: 'the line · one of your hands',
+          tag: 'the line · an acolyte',
           choices: [
             { label: 'Work behind the light', sub: 'behind the grief and the charity' },
             { label: 'Patronize', sub: 'pay your way in' },
             { label: 'Let it go' },
           ],
         },
+        ministry: {
+          tag: 'the line · Mai',
+          choices: [
+            { label: "Let's push it" },
+            { label: 'Let them kill everyone' },
+            { label: 'Let it go' },
+          ],
+        },
+        'social-platform': {
+          tag: 'the line · Mai',
+          choices: [
+            { label: 'Keep these retards hooked' },
+            { label: 'New features!' },
+            { label: 'Let it go' },
+          ],
+        },
+        // ── Lore ──
         'the-ward': {
           tag: 'the line · Fr. Emil Stahl',
           choices: [
@@ -1094,27 +1117,38 @@ export const strings = {
             { label: 'Hang up' },
           ],
         },
-        'fausto-feeler': {
-          tag: 'the line · Fausto Cescru',
-          line: "You let my letters sit. A lesser man would be insulted, but I am only curious now. I can hear it from here — the speed of you, a whole estate spent into the ground and pulled up out of it again in a single season. No blood on earth moves that fast. So I'll ask you plainly: what did you find?",
+        'the-journalist': {
+          tag: 'the line · Marina Zhao',
           choices: [
-            { label: 'Tell him nothing true' },
-            { label: 'Lie to him' },
-            { label: 'Hang up' },
+            { label: 'Literally FUCK YOUR OWN FACE' },
+            { label: 'Literally FUCK YOUR OWN FACE' },
+            { label: 'Literally FUCK YOUR OWN FACE' },
+            { label: 'Literally FUCK YOUR OWN FACE' },
+            { label: 'Literally FUCK YOUR OWN FACE' },
+            { label: 'Literally FUCK YOUR OWN FACE' },
+            { label: 'Literally FUCK YOUR OWN FACE' },
+            { label: 'Literally FUCK YOUR OWN FACE' },
           ],
         },
+        succubus: {
+          tag: 'unknown caller',
+          choices: [{ label: 'No, thanks.' }, { label: 'Expello te, succube.' }],
+        },
+        astiwihad: {
+          tag: 'unknown caller',
+          choices: [
+            { label: 'No, thanks.' },
+            { label: 'Nullam in me potestatem habes, Astiwihad.' },
+          ],
+        },
+        // ── Easter eggs ──
         'tormented-soul': {
           tag: 'unknown caller',
           choices: [{ label: 'Hang up' }],
         },
-        'dying-soul': {
-          tag: 'no number · the afflicted',
-          line: "Please. I don't know how I got this number, I don't even know your name. But it started when your sort came to this county and now it won't stop — the noise won't stop, won't let me sleep or sit still inside my own head. I'll give you anything. Just make it quiet.",
-          choices: [
-            { label: 'Name a price', sub: 'everything has one' },
-            { label: 'Take it now', sub: 'make it quiet' },
-            { label: 'Say nothing' },
-          ],
+        'ISP-change': {
+          tag: 'unknown caller',
+          choices: [{ label: 'Literally FUCK YOUR OWN FACE (Hang up)' }],
         },
       } as Record<
         string,

@@ -5042,21 +5042,19 @@ body {
   z-index: 88; /* above the HUD (85) and the room; below the title (90) / entry-fade (96) / jumpscare */
 }
 
-/* layered, crossfading background plates */
-.callin-plate {
+/* Background plates render through the degradation pass (each a .scene-canvas at z-index 0); the
+   answered plate crossfades over the base on its own wrapper opacity. */
+.callin-degraded-answering {
   position: absolute;
   inset: 0;
-  background-position: center bottom;
-  background-size: cover;
-  background-repeat: no-repeat;
-}
-.callin-plate--answering {
+  z-index: 0;
   transition: opacity 0.6s ease;
 }
 
 .callin-vignette {
   position: absolute;
   inset: 0;
+  z-index: 1;
   pointer-events: none;
   background: radial-gradient(130% 90% at 50% 38%, transparent 52%, rgba(5, 4, 3, 0.5) 100%);
 }
@@ -5065,6 +5063,7 @@ body {
   position: absolute;
   left: 26px;
   top: 22px;
+  z-index: 2;
   pointer-events: none;
   font-family: 'Fragment Mono', 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -5077,6 +5076,7 @@ body {
 .callin-answered {
   position: absolute;
   inset: 0;
+  z-index: 2;
   transition: opacity 0.6s ease;
 }
 .callin-scrim {
@@ -5275,7 +5275,7 @@ body {
   .callin-choice {
     animation: none;
   }
-  .callin-plate--answering,
+  .callin-degraded-answering,
   .callin-answered {
     transition: none;
   }
