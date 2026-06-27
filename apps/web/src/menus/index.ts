@@ -11,6 +11,7 @@ export {
   type DialResult,
   type SmartphoneDialerProps,
 } from './SmartphoneDialer.js';
+export { SmartphoneCallIn, type SmartphoneCallInProps } from './SmartphoneCallIn.js';
 export type { GoetiaEntry, ArsGoetiaBookProps } from './ars-goetia.types.js';
 export { DegradedScene } from './DegradedScene.js';
 export { DegradePass, DEFAULT_DEGRADE } from './degrade.js';

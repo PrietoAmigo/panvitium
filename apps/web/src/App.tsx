@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useGameLoop } from './game/useGameLoop.js';
+import { useIncomingCall } from './game/useIncomingCall.js';
+import { buildCallInView } from './game/callIn.js';
 import { ROOMS } from './menus/menus.data.js';
 import { RoomView } from './menus/RoomView.js';
+import { SmartphoneCallIn } from './menus/SmartphoneCallIn.js';
 import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
@@ -76,9 +79,13 @@ export function App(): ReactElement {
 
   const [room, setRoom] = useState<RoomId>('altar');
   const [panel, setPanel] = useState<PanelId | null>(null);
+  // The incoming call the player has answered (its id), shown as the full-screen call-in stage; null
+  // when no call is on the line.
+  const [answeredCall, setAnsweredCall] = useState<string | null>(null);
   const katabasisPhase = useGameStore((s) => s.katabasisPhase);
   const openKatabasis = useGameStore((s) => s.openKatabasis);
   const titleOpen = useGameStore((s) => s.titleOpen);
+  const ready = useGameStore((s) => s.ready);
 
   // The Studio's red "panvitium" glow while that ritual runs (03 §2.3).
   const signature = useGameStore(
@@ -129,6 +136,25 @@ export function App(): ReactElement {
     if (katabasisPhase !== null) setPanel(null);
   }, [katabasisPhase]);
 
+  // A call may ring only during eligible active play with the phone reachable: live session, not in
+  // the title or a descent, standing in the Studio with no panel/overlay open, and no call already
+  // answered or jumpscare running (06-smartphone-content.md §2: active play only, dark in Katabasis).
+  const callInEnabled =
+    ready &&
+    katabasisPhase === null &&
+    !titleOpen &&
+    room === 'studio' &&
+    panel === null &&
+    answeredCall === null &&
+    !jumpscare;
+  const { ringing, answer } = useIncomingCall(callInEnabled);
+  const callInView = answeredCall ? buildCallInView(answeredCall) : null;
+  // Defensive: an answered id that has no view (would never happen for catalogue ids) must not strand
+  // the line — clear it so a new call can ring.
+  useEffect(() => {
+    if (answeredCall !== null && callInView === null) setAnsweredCall(null);
+  }, [answeredCall, callInView]);
+
   const handleAction = (action: HotspotAction): void => {
     // While armed, the player's very next interaction is replaced by the one-time Doppelgänger scare
     // (no menu opens, no room change). Consume the arming, mark it seen (permanent + persisted), and
@@ -146,6 +172,13 @@ export function App(): ReactElement {
       // The Altar opens the full-screen gate straight away (no ledger step); the gate is where the
       // player commits to the descent or turns back. Nothing is torn down until they commit there.
       openKatabasis();
+      audio.play('panel-open');
+    } else if (action.panel === 'phone' && ringing !== null) {
+      // A call is ringing on the desk: answering the incoming call takes priority over opening the
+      // dial-out pad. Tapping the phone IS the answer gesture — raise the full-screen call-in stage.
+      const id = answer();
+      if (id) setAnsweredCall(id);
+      else setPanel('phone');
       audio.play('panel-open');
     } else {
       setPanel(action.panel);
@@ -171,7 +204,12 @@ export function App(): ReactElement {
   // the PC desk or the Altar gate, not during a descent (the Altar gate + an ongoing Katabasis both
   // hold `katabasisPhase !== null`), and not behind the launch title menu. It mounts at the app
   // level (below) so it layers over those menu overlays rather than under them.
-  const hudVisible = katabasisPhase === null && room !== 'altar' && panel !== 'pc' && !titleOpen;
+  const hudVisible =
+    katabasisPhase === null &&
+    room !== 'altar' &&
+    panel !== 'pc' &&
+    answeredCall === null &&
+    !titleOpen;
 
   return (
     <div className="app">
@@ -184,6 +222,7 @@ export function App(): ReactElement {
           acolytes={acolytes}
           curseActive={curseActive}
           reducedMotion={reducedMotion}
+          ringing={ringing !== null}
           onAction={handleAction}
         />
         <div className="room-name">{ROOMS[room].title}</div>
@@ -200,6 +239,21 @@ export function App(): ReactElement {
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
       {panel === 'suasio' && <SuasioScroll onClose={closePanel} />}
       {panel === 'phone' && <PhoneDialer onClose={closePanel} />}
+      {/* The answered incoming call — a full-screen stage that takes over until the call resolves.
+          Keyed by id so each call mounts fresh (its FSM starts at the answer). `onChoose` is the
+          effect hook the calls-in engine will fill (docs/PANVITIUM-CALLS-IN.md); today picking an
+          option only resolves the call, changing no game state. */}
+      {callInView && (
+        <SmartphoneCallIn
+          key={answeredCall ?? ''}
+          call={callInView}
+          onChoose={() => {
+            // TODO(wire): apply the chosen option's buff/effect through the store once the
+            // incoming-call engine lands. Intentionally a no-op for now.
+          }}
+          onDone={() => setAnsweredCall(null)}
+        />
+      )}
       {activePanel && shell && (
         <PanelShell
           title={activePanel.title}
