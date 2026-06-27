@@ -122,8 +122,11 @@ export const CLASS_WEIGHT: Record<CallInClass, number> = {
 
 /**
  * Draw the next incoming call from the weighted bag, honouring once-only eligibility (lore + easter
- * eggs can only ever be received once; `seen` carries the ids already received) and the requirement
- * gate (`eligible`, the ids whose `requires` are currently met — pass `null`/omit for no gate). Pure:
+ * eggs can only ever be received once; `seen` carries the ids already received), the requirement gate
+ * (`eligible`, the ids whose `requires` are currently met — pass `null`/omit for no gate), and a
+ * recency cooldown (`recent`, the ids received in the last few calls — the same call cannot recur
+ * while it sits in this set, so with a 4-deep window a call rings at most once every 5 calls). The
+ * cooldown is best-effort: if it would empty the pool it is dropped rather than starve the line. Pure:
  * all entropy comes from `random` (a `() => number` in [0, 1)), so a test can pin the outcome. Picks
  * a class bucket by its renormalised weight (empty buckets drop out), then a uniform call within it.
  * Returns `null` when nothing is eligible.
@@ -132,11 +135,15 @@ export function pickIncomingCall(
   random: () => number,
   seen: ReadonlySet<string> = new Set(),
   eligible: ReadonlySet<string> | null = null,
+  recent: ReadonlySet<string> | null = null,
 ): string | null {
-  const pool = CALLS_IN.filter(
+  const base = CALLS_IN.filter(
     (c) => !(isOnceOnly(c.class) && seen.has(c.id)) && (eligible === null || eligible.has(c.id)),
   );
-  if (pool.length === 0) return null;
+  if (base.length === 0) return null;
+  // Apply the recency cooldown, but never let it empty the pool (better to repeat than not ring).
+  const cooled = recent ? base.filter((c) => !recent.has(c.id)) : base;
+  const pool = cooled.length > 0 ? cooled : base;
 
   // Bucket the eligible calls by class, keeping only non-empty buckets and their summed weight.
   const buckets = new Map<CallInClass, CallInData[]>();

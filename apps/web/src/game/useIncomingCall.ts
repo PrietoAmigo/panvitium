@@ -16,9 +16,11 @@ import { VIBRATION_SRC } from '../menus/calls-in.data.js';
 
 /** Ring window before an unanswered call is missed (docs: "Ring window is always 15 seconds"). */
 const RING_WINDOW_MS = 15_000;
-/** Randomised quiet gap between the line clearing and the next call arriving (placeholder cadence). */
-const MIN_GAP_MS = 30_000;
-const MAX_GAP_MS = 75_000;
+/** Quiet gap between the line clearing and the next call arriving — one incoming call every 10 min. */
+const GAP_MS = 10 * 60 * 1000;
+/** How many of the most recent calls a just-rung call is suppressed from — so the same call rings at
+ *  most once every 5 calls (the previous 4 are excluded from the draw). */
+const RECENT_WINDOW = 4;
 
 export interface IncomingCallController {
   /** The id of the call currently ringing, or null when the line is quiet. */
@@ -49,6 +51,9 @@ export function useIncomingCall(
   // missed one may still ring again later. Session-scoped (no save change — additive-optional under
   // ADR-023 would persist this once the engine lands).
   const seen = useRef<Set<string>>(new Set());
+  // The ids of the most recent calls that have RUNG (answered or missed), newest first, capped at
+  // RECENT_WINDOW — the recency cooldown so the same call never repeats within 5 calls.
+  const recent = useRef<string[]>([]);
   const enabledRef = useRef(enabled);
 
   const arrivalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,16 +120,22 @@ export function useIncomingCall(
     }
     if (ringingRef.current || arrivalTimer.current) return; // already ringing / already scheduled
 
-    const gap = MIN_GAP_MS + Math.random() * (MAX_GAP_MS - MIN_GAP_MS);
     arrivalTimer.current = setTimeout(() => {
       arrivalTimer.current = null;
       if (!enabledRef.current || ringingRef.current) return;
-      const id = pickIncomingCall(Math.random, seen.current, eligibleRef.current);
+      const id = pickIncomingCall(
+        Math.random,
+        seen.current,
+        eligibleRef.current,
+        new Set(recent.current),
+      );
       if (!id) return;
+      // Record the arrival for the recency cooldown (newest first, keep the last RECENT_WINDOW).
+      recent.current = [id, ...recent.current].slice(0, RECENT_WINDOW);
       setRing(id);
       startVibration();
       missTimer.current = setTimeout(endRing, RING_WINDOW_MS);
-    }, gap);
+    }, GAP_MS);
 
     return clearArrival;
   }, [enabled, ringing, endRing, startVibration]);
