@@ -1,7 +1,7 @@
 /**
  * Render smoke tests for the cinematic Katabasis flow (Claude Design handoff + seal-gate rework).
  * These pin the wiring the visual rework introduced: the descent opens on the full-screen Altar
- * commit gate (now a ritual seal circle), the seal arms on the first press and commits on the
+ * commit gate (now a lone vibrating sigil), the seal arms on the first press and commits on the
  * second (the two-press safeguard, preserved), the "Status quo" action opens the read-only Ledger
  * (Cardinal-Sin standing + bound-sigil effects), the recap reads "You Rise" off the committed
  * state, and the Eternal-Sin reveal overlays the still-mounted flow. The store actions and sim math
@@ -81,7 +81,7 @@ describe('Katabasis flow — orchestrator', () => {
     // The central sigil is the descend button; the two inscribed gates sit beneath it.
     expect(container!.querySelector('.kat-seal-btn')).not.toBeNull();
     expect(container!.querySelectorAll('.altar-action').length).toBe(2);
-    expect(action('Turn away')).toBeTruthy();
+    expect(action('Unfocus')).toBeTruthy();
     expect(action('Status quo')).toBeTruthy();
     // Not yet armed.
     expect(container!.querySelector('.kat-seal-wrap.is-armed')).toBeNull();
@@ -93,7 +93,8 @@ describe('Katabasis flow — orchestrator', () => {
     const seal = container!.querySelector<HTMLButtonElement>('.kat-seal-btn')!;
     act(() => seal.click());
     expect(container!.querySelector('.kat-seal-wrap.is-armed')).not.toBeNull();
-    expect(container!.querySelector('.kat-seal-hint')?.textContent).toContain('there is no return');
+    // The hint line is gone; the armed prompt lives on the sigil button's accessible label.
+    expect(seal.getAttribute('aria-label')).toContain('there is no return');
   });
 
   it('renders the "You Rise" recap off the committed state, listing what survived', () => {
@@ -139,7 +140,7 @@ describe('Katabasis flow — orchestrator', () => {
   it('turning away at the gate returns to the room cleanly (no teardown)', () => {
     act(() => store().openKatabasis());
     render();
-    act(() => action('Turn away').click());
+    act(() => action('Unfocus').click());
     expect(store().katabasisPhase).toBeNull();
     expect((store().state as GameState).inKatabasis).not.toBe(true);
   });
