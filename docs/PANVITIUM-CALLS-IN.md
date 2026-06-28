@@ -2,7 +2,7 @@
 
 Canonical, single-source list of every call you can RECEIVE and the event it opens when answered. One entry per incoming call, fixed format. A call RINGS for a 15 s window during active play only (never offline; the phone is dark during Katabasis, see `06-smartphone-content.md`). Weights and magnitudes are sheet-pinned placeholders.
 
-**Implementation status.** The calls-in *front-end* is built: the catalogue lives in `apps/web/src/menus/calls-in.data.ts`, the copy in `strings.phone.callIn.<id>`, selection/eligibility in `apps/web/src/game/callIn.ts`, the arrival scheduler in `useIncomingCall`, and answering raises the "voice in the room" overlay (`SmartphoneCallIn`). The *effect engine* is still pending — the planned `CALL_TRIGGERS → INTERACTIONS` wiring and the `-> effects` on every choice below are **not yet applied: answering a call changes no game state today** (the same documented-stub posture as the email replies). The choice effects below are the spec for that engine. See "Implementation notes" at the foot of this file for the flag reconciliation, the cadence/recency settings, and the determinism caveat.
+**Implementation status.** The calls-in *front-end* is built: the catalogue lives in `apps/web/src/menus/calls-in.data.ts`, the copy in `strings.phone.callIn.<id>`, selection/eligibility in `apps/web/src/game/callIn.ts`, the arrival scheduler in `useIncomingCall`, and answering raises the "voice in the room" overlay (`SmartphoneCallIn`). The *effect engine* is still pending — the planned `CALL_TRIGGERS → INTERACTIONS` wiring and the `-> effects` on every choice below are **not yet applied: answering a call changes no game state today** (the same documented-stub posture as the email replies). The choice effects below are the spec for that engine. See "Implementation notes" at the foot of this file for the flags, the cadence/recency settings, and the determinism caveat.
 
 **Out of scope: sigils and Princes.** Sigils and the Princes are never interacted with from earth. They belong to the altar and the descent, not to a phone on a desk. So no call here frames a reward as binding a soul to a sigil, feeding a seal, or giving Devotion to a Prince. The phone speaks only of the mundane vice lines, the invocations, the household and its culling, the search, money, and standing.
 
@@ -55,8 +55,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: none
 - Choices:
-    - [Press the advantage] -> buff(goldGainMul, ×1.5, 1 hour)
-    - [Plough it back into appetite] -> buff(reprobateGenMul, ×1.5, 1 hour)
+    - [Press the advantage] -> buff(goldGainMul, ×1.5, <med>)
+    - [Plough it back into appetite] -> buff(reprobateGenMul, ×1.5, <med>) (more product, more hunger, more of them)
     - [Let it go] -> nothing()
 
 ### eager-hands
@@ -65,8 +65,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Take the hungry ones] -> buff(reprobateGenMul, ×1.5, 1 hour)
-    - [Take the frightened ones] -> buff(influenceGainMul, ×1.5, 1 hour)
+    - [Take the hungry ones] -> buff(reprobateGenMul, ×1.5, <med>)
+    - [Take the frightened ones] -> buff(influenceGainMul, ×1.5, <med>)
     - [Let it go] -> nothing()
 
 ### a-good-find
@@ -75,8 +75,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Keep digging] -> buff(indagatioEfficiencyMul, ×2, 1 hour)
-    - [Sell the rumour] -> buff(goldGainMul, ×1.5, 1 hour)
+    - [Keep digging] -> buff(indagatioEfficiencyMul, ×2, <med>)
+    - [Sell the rumour] -> buff(goldGainMul, ×1.5, <med>)
     - [Let it go] -> nothing()
 
 ### the-discipline-swells
@@ -85,8 +85,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: none
 - Choices:
-    - [There could be something there...] -> buff(playerEfficiencyMul, ×1.5, 1 hour)
-    - [I will apply to the acolytes] -> buff(acolyteEfficiencyMul, ×1.5, 1 hour)
+    - [There could be something there...] -> buff(playerEfficiencyMul, ×1.3, <med>)
+    - [I will apply to the acolytes] -> buff(acolyteEfficiencyMul, ×1.4, <med>)
     - [Let it go] -> nothing()
  
 ### doing-nothing
@@ -94,8 +94,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-positive
 - Caller: Mai
 - Requirements: none
-    - [I will join them] -> buff(offlineRate, ×2, 8 hours).
-    - [Kill them] -> Kills 5% current reprobates.
+    - [I will join them] -> buff(offlineRate, ×2.0, 8 hours).
+    - [Kill them] -> Kills 1% current reprobates.
     - [Let it go] -> nothing()
 
 * * *
@@ -108,7 +108,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: katabasisCount≥1
 - Choices:
-    - [Make an example] -> buff(acolyteEfficiencyMul, ×2.0, 1 hour); resource(influenceRegen, /2, 1 hour)
+    - [Make an example] -> buff(acolyteEfficiencyMul, ×2.0, <med>); resource(influenceRegen, /1.5, <med>)
     - [Let it go] -> nothing()
 
 ### blood-in-the-cage
@@ -117,7 +117,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Show me the money] -> buff(goldGainMul, ×2.0, 1 hour); resource(reprobates, -10%)
+    - [Show me the money] -> buff(goldGainMul, ×2.0, <med>); resource(reprobates, -<big%>)
     - [Let it go] -> nothing()
 
 ### the-shipment
@@ -126,7 +126,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Flood a place] -> buff(reprobateGenMul, ×2, 1 hour); resource(gold, -25%)
+    - [Flood a place] -> buff(reprobateGenMul, ×2, <med>); resource(gold, -<big>)
     - [Let it go] -> nothing()
 
 ### a-name-to-burn
@@ -135,7 +135,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: flagFCThreatSent=1
 - Choices:
-    - [Always, with everything] -> resource(gold, -100%); resource(influence, -100%); maxInfluence x 1.1 permanently.
+    - [Always] -> resource(gold, -100%); maxInfluence x 1.1 permanently.
     - [Let it go] -> nothing()
 
 ### parish
@@ -143,8 +143,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-tradeoff
 - Caller: Acolyte
 - Requirements: none
-    - [Work behind the light] -> buff(reprobateGenMul, ×2.0, 1 hour); debuff(influenceRegenRate, -50%, 1 hour).
-    - [Patronize] -> buff(reprobateGenMul, ×2.0, 1 hour); resource(gold, -<50%>, 1 hour).
+    - [Work behind the light] -> buff(reprobateGenMul, ×2.0, <med>); debuff(influenceRegenRate, -50%); both for 15 mins.
+    - [Patronize] -> buff(reprobateGenMul, ×2.0, <med>); resource(gold, -<50%>); both for 15 mins.
     - [Let it go] -> nothing()
  
 ### ministry
@@ -152,7 +152,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-tradeoff
 - Caller: Mai
 - Requirements: none
-    - [Let's push it] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour).
+    - [Let's push it] -> buff(influenceRegenRate, ×2.0, <med>); debuff(reprobateGenMul, -50%); both for 15 mins.
     - [Let them kill everyone] -> Kills 15% of current reprobates.
     - [Let it go] -> nothing()
  
@@ -173,7 +173,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 
 - Class: lore
 - Caller: Father Emil Stahl
-- Requirements: Father Emil Stahl has written to you first. (As built: gated on his opening email `fr-stahl-2` sitting in the inbox. The earlier draft listed inconsistent email ids — a doubled "Parish Newsletter #1" and a "Father Emil Stahl #5" that does not exist; only `fr-stahl-1`/`fr-stahl-2` are in the email catalogue.)
+- Requirements: having received all three set-up emails — Parish bulletin #1 (`parish-1`), Parish bulletin #2 (`parish-2`), and Father Emil Stahl's second letter (`fr-stahl-2`). The inbox is a permanent, per-email "received" record (deduped, survives deletion, persists across Katabasis), so each one's presence in the inbox is its "received" flag; the call requires all three.
 - Choices:
     - [Listen to the end] -> setFlag(heard-the-ward, 1)
     - [Hang up] -> nothing()
@@ -182,7 +182,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 
 - Class: lore
 - Caller: Marina Zhao
-- Requirements: katabasisCount≥5 and flagFCfriendly=0
+- Requirements: katabasisCount≥5 and flagFCThreatSent=1
 - Choices:
     - [Literally FUCK YOUR OWN FACE] -> nothing()
     - [Literally FUCK YOUR OWN FACE] -> nothing()
@@ -229,7 +229,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Unknown
 - Requirements: none
 - Choices:
-    - [Mmm... how much cheaper?] -> nothing()
+    - [Literally FUCK YOUR OWN FACE (Hang up)] -> nothing()
 
 * * *
 
@@ -251,8 +251,8 @@ How the built calls-in front-end reconciles with this catalogue. The numbers are
 **Flags (as implemented).**
 
 - `katabasisCount` — read from top-level game state (gates `the-looting` ≥1, `the-journalist` ≥5).
-- `flagFCfriendly` — the canonical branch flag (05), **not yet wired in the sim**. The gate currently proxies it with the implemented **`flagFCThreatSent`**: friendly ≡ the threat reply to Fausto #1 was never sent. So `flagFCfriendly=1` (friendly) → `flagFCThreatSent` is false; `flagFCfriendly=0` (hostile) → `flagFCThreatSent` is true. This keeps Succubus (friendly) and Astiwihad / `a-name-to-burn` / `the-journalist` (hostile) mutually exclusive. **Caveat:** the proxy treats the *un-decided default* as friendly, whereas `flagFCfriendly` defaults to 0 (hostile). When `flagFCfriendly` is actually wired (with its "left Fausto #1 unanswered → 1" trigger from 05), the gate should switch to it and the default-state behaviour will flip.
-- Emails — `the-ward` is gated on `fr-stahl-1` being in the inbox (see its entry).
+- `flagFCThreatSent` — the Fausto branch (`lifetime.flagFCThreatSent`, set when the threat reply to Fausto #1 is sent). `flagFCThreatSent=0` is the friendly branch, `=1` the hostile one, so Succubus (`=0`) and Astiwihad / `a-name-to-burn` / `the-journalist` (`=1`) are mutually exclusive.
+- Emails — `the-ward` is gated on `fr-stahl-2`, `parish-1`, and `parish-2` all sitting in the inbox (see its entry); inbox membership is the permanent per-email "received" record.
 - `heard-the-ward` and other `setFlag(...)` effects are part of the pending effect engine and are **not** written yet.
 
 **Once-only.** Lore and easter-egg calls are consumed on **answer** (not on a miss), so a missed once-only call can ring again; an answered one never does.

@@ -81,12 +81,20 @@ describe('isCallEligible', () => {
     expect(isCallEligible(hostile, astiwihad)).toBe(true);
   });
 
-  it('gates the-ward on a received email', () => {
+  it('gates the-ward on all three set-up emails being received', () => {
     const ward = CALL_IN_BY_ID['the-ward']!;
     expect(isCallEligible(freshCtx(), ward)).toBe(false);
-    expect(isCallEligible(freshCtx({ receivedEmailIds: new Set(['fr-stahl-1']) }), ward)).toBe(
-      true,
-    );
+    // Any subset is not enough.
+    expect(
+      isCallEligible(freshCtx({ receivedEmailIds: new Set(['fr-stahl-2', 'parish-1']) }), ward),
+    ).toBe(false);
+    // All three.
+    expect(
+      isCallEligible(
+        freshCtx({ receivedEmailIds: new Set(['fr-stahl-2', 'parish-1', 'parish-2']) }),
+        ward,
+      ),
+    ).toBe(true);
   });
 
   it('treats a requirement-free call as always eligible', () => {

@@ -104,7 +104,10 @@ export const CALLS_IN: readonly CallInData[] = [
     id: 'the-ward',
     audio: true,
     class: 'lore',
-    requires: { emails: ['fr-stahl-1'] },
+    // Gated on the three set-up emails having been received. The inbox is a permanent, per-email
+    // "received" record (deduped, survives deletion, persists across Katabasis), so each id's presence
+    // is its received-flag; the call requires all three.
+    requires: { emails: ['fr-stahl-2', 'parish-1', 'parish-2'] },
     choices: [{}, { dim: true }],
   },
   {
