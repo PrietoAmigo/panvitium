@@ -1,6 +1,8 @@
 # PANVITIUM: INCOMING CALLS CATALOG (calls-in)
 
-Canonical, single-source list of every call you can RECEIVE and the event it opens when answered. One entry per incoming call, fixed format. Engine: each is a `CALL_TRIGGERS` row pointing at an `INTERACTIONS` entry; copy lives in `strings` (`calls.<id>.caller|opening|choice.<choiceId>`). A call RINGS for its ring window during active play only (never offline; the phone is dark during Katabasis, see `06-smartphone-content.md`). Weights and magnitudes sheet-pinned.
+Canonical, single-source list of every call you can RECEIVE and the event it opens when answered. One entry per incoming call, fixed format. A call RINGS for a 15 s window during active play only (never offline; the phone is dark during Katabasis, see `06-smartphone-content.md`). Weights and magnitudes are sheet-pinned placeholders.
+
+**Implementation status.** The calls-in *front-end* is built: the catalogue lives in `apps/web/src/menus/calls-in.data.ts`, the copy in `strings.phone.callIn.<id>`, selection/eligibility in `apps/web/src/game/callIn.ts`, the arrival scheduler in `useIncomingCall`, and answering raises the "voice in the room" overlay (`SmartphoneCallIn`). The *effect engine* is still pending — the planned `CALL_TRIGGERS → INTERACTIONS` wiring and the `-> effects` on every choice below are **not yet applied: answering a call changes no game state today** (the same documented-stub posture as the email replies). The choice effects below are the spec for that engine. See "Implementation notes" at the foot of this file for the flag reconciliation, the cadence/recency settings, and the determinism caveat.
 
 **Out of scope: sigils and Princes.** Sigils and the Princes are never interacted with from earth. They belong to the altar and the descent, not to a phone on a desk. So no call here frames a reward as binding a soul to a sigil, feeding a seal, or giving Devotion to a Prince. The phone speaks only of the mundane vice lines, the invocations, the household and its culling, the search, money, and standing.
 
@@ -8,7 +10,9 @@ Canonical, single-source list of every call you can RECEIVE and the event it ope
 
 ## Selection model
 
-When an incoming call fires (active play only), the caller is drawn from a weighted bag, all calls inside a same class have the same weight, but some could have requirements stopping them from being eligible:
+**Cadence (as built).** A call arrives once every **10 minutes** of eligible active play — paced, not random bursts. It rings only while you are in the Studio (it keeps ringing, audibly, behind an open Studio menu); leaving the Studio or letting the 15 s window lapse misses it. A **recency cooldown** keeps the same call from recurring within 5 calls (the scheduler suppresses the last 4 callers from the draw; best-effort — it relaxes the cooldown rather than fall silent if too few calls are eligible).
+
+When an incoming call fires (active play only), the caller is drawn from a weighted bag, all calls inside a same class have the same weight, but some could have requirements stopping them from being eligible. **Only calls whose Requirements are met are eligible**, and once-only calls already received are excluded; the bag is drawn as class buckets whose weights renormalise when a bucket empties (so the splits below hold over whatever is actually eligible):
 
 - **49% a buff call**:
     - **25% a completely positive buff.** Clean upside. You choose which upside, and every option is good. The only way to lose is to let it go.
@@ -26,7 +30,7 @@ A call may also hand you reprobates or money directly. The only place a call gra
 
 **Composition.** Buffs are temporary modifiers and compose multiplicatively with one another and with everything else through the modifier system (ADR-022). All multipliers, durations, costs, ring windows, and thresholds are placeholders pending `Panvitium_Economy_Template.xlsx`; the sheet wins on every number.
 
-**Ring window** is always 15 seconds.
+**Ring window** is always 15 seconds, after which the call is missed (opportunity-only). Walking out of the Studio mid-ring also misses it.
 
 ## Entry format
 
@@ -169,7 +173,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 
 - Class: lore
 - Caller: Father Emil Stahl
-- Requirements: Having received the following emails: Parish Newsletter #1, Parish Newsletter #1, Father Emil Stahl #5.
+- Requirements: Father Emil Stahl has written to you first. (As built: gated on his opening email `fr-stahl-1` sitting in the inbox. The earlier draft listed inconsistent email ids — a doubled "Parish Newsletter #1" and a "Father Emil Stahl #5" that does not exist; only `fr-stahl-1`/`fr-stahl-2` are in the email catalogue.)
 - Choices:
     - [Listen to the end] -> setFlag(heard-the-ward, 1)
     - [Hang up] -> nothing()
@@ -226,3 +230,31 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Requirements: none
 - Choices:
     - [Literally FUCK YOUR OWN FACE (Hang up)] -> nothing()
+
+* * *
+
+## Implementation notes (flags, settings, peculiarities)
+
+How the built calls-in front-end reconciles with this catalogue. The numbers are placeholders pending `Panvitium_Economy_Template.xlsx`; the behaviour is what currently ships.
+
+**Catalogue parity.** All 18 entries above are wired, each a **recording** — `apps/web/public/assets/panvitium/music/<id>.mp3` (e.g. `the-cycle-turns.mp3`, `succubus.mp3`, `ISP-change.mp3`). There are **no typed calls** in the catalogue: the design prototype's typed lines (`dying-soul`, `fausto-feeler`) are not canonical and were dropped, though the overlay retains a typewriter mode for any future fileless call.
+
+**Settings.**
+
+- **Cadence:** one call per **10 minutes** of eligible active play (`GAP_MS` in `useIncomingCall`).
+- **Ring window:** **15 s**, then missed (`RING_WINDOW_MS`).
+- **Recency cooldown:** the same call rings at most **once every 5 calls** — the last 4 callers are excluded from the draw (`RECENT_WINDOW = 4`), best-effort (relaxed before it would starve the line).
+- **Weights:** class buckets 49 % buff (25 positive / 24 tradeoff) / 50 % lore / 1 % easter egg (`CLASS_WEIGHT`), renormalised over non-empty buckets.
+
+**Where it rings.** Studio only; it keeps ringing (audibly) behind an open Studio menu (PC, Suasio, dialer). Tapping the phone answers and takes priority over dialling out. Not in the title, not during Katabasis, not while another call is on the line.
+
+**Flags (as implemented).**
+
+- `katabasisCount` — read from top-level game state (gates `the-looting` ≥1, `the-journalist` ≥5).
+- `flagFCfriendly` — the canonical branch flag (05), **not yet wired in the sim**. The gate currently proxies it with the implemented **`flagFCThreatSent`**: friendly ≡ the threat reply to Fausto #1 was never sent. So `flagFCfriendly=1` (friendly) → `flagFCThreatSent` is false; `flagFCfriendly=0` (hostile) → `flagFCThreatSent` is true. This keeps Succubus (friendly) and Astiwihad / `a-name-to-burn` / `the-journalist` (hostile) mutually exclusive. **Caveat:** the proxy treats the *un-decided default* as friendly, whereas `flagFCfriendly` defaults to 0 (hostile). When `flagFCfriendly` is actually wired (with its "left Fausto #1 unanswered → 1" trigger from 05), the gate should switch to it and the default-state behaviour will flip.
+- Emails — `the-ward` is gated on `fr-stahl-1` being in the inbox (see its entry).
+- `heard-the-ward` and other `setFlag(...)` effects are part of the pending effect engine and are **not** written yet.
+
+**Once-only.** Lore and easter-egg calls are consumed on **answer** (not on a miss), so a missed once-only call can ring again; an answered one never does.
+
+**Determinism (ADR-011).** The scheduler draws from `Math.random`, **not** the sim's seeded PRNG, and applies no effects — so it does not advance the RNG stream or alter the save. A save's sequence is identical whether or not a call rang. When the effect engine lands, the trigger/draw should move into the tick (deterministic + offline-correct) and the per-session "seen" set and recency buffer should be persisted (ADR-023 additive-optional).
