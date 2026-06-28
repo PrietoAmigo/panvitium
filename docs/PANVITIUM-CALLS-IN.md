@@ -55,8 +55,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: none
 - Choices:
-    - [Press the advantage] -> buff(goldGainMul, ×1.5, <med>)
-    - [Plough it back into appetite] -> buff(reprobateGenMul, ×1.5, <med>) (more product, more hunger, more of them)
+    - [Press the advantage] -> buff(goldGainMul, ×1.33, 1 hour)
+    - [Spend it on marketing] -> buff(reprobateGenMul, ×1.33, 1 hour)
     - [Let it go] -> nothing()
 
 ### eager-hands
@@ -65,8 +65,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Take the hungry ones] -> buff(reprobateGenMul, ×1.5, <med>)
-    - [Take the frightened ones] -> buff(influenceGainMul, ×1.5, <med>)
+    - [Take the hungry ones] -> buff(reprobateGenMul, ×1.33, 1 hour)
+    - [Take the frightened ones] -> buff(influenceGainMul, ×1.33, 1 hour)
     - [Let it go] -> nothing()
 
 ### a-good-find
@@ -75,8 +75,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Keep digging] -> buff(indagatioEfficiencyMul, ×2, <med>)
-    - [Sell the rumour] -> buff(goldGainMul, ×1.5, <med>)
+    - [Keep digging] -> buff(indagatioEfficiencyMul, ×2, 1 hour)
+    - [Sell the rumour] -> buff(goldGainMul, ×1.25, 1 hour)
     - [Let it go] -> nothing()
 
 ### the-discipline-swells
@@ -85,8 +85,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: none
 - Choices:
-    - [There could be something there...] -> buff(playerEfficiencyMul, ×1.3, <med>)
-    - [I will apply to the acolytes] -> buff(acolyteEfficiencyMul, ×1.4, <med>)
+    - [There could be something there...] -> buff(playerEfficiencyMul, ×1.33, 1 hour)
+    - [I will apply to the acolytes] -> buff(acolyteEfficiencyMul, ×1.33, 1 hour)
     - [Let it go] -> nothing()
  
 ### doing-nothing
@@ -95,7 +95,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Mai
 - Requirements: none
     - [I will join them] -> buff(offlineRate, ×2.0, 8 hours).
-    - [Kill them] -> Kills 1% current reprobates.
+    - [Kill them] -> Kills 10% current reprobates.
     - [Let it go] -> nothing()
 
 * * *
@@ -108,7 +108,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: katabasisCount≥1
 - Choices:
-    - [Make an example] -> buff(acolyteEfficiencyMul, ×2.0, <med>); resource(influenceRegen, /1.5, <med>)
+    - [Make an example] -> buff(acolyteEfficiencyMul, ×2.0, 1 hour); resource(influenceRegen, /1.5, 1 hour)
     - [Let it go] -> nothing()
 
 ### blood-in-the-cage
@@ -117,7 +117,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Show me the money] -> buff(goldGainMul, ×2.0, <med>); resource(reprobates, -<big%>)
+    - [Show me the money] -> buff(goldGainMul, ×2.0, 1 hour); resource(reprobates, -10)
     - [Let it go] -> nothing()
 
 ### the-shipment
@@ -126,7 +126,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Flood a place] -> buff(reprobateGenMul, ×2, <med>); resource(gold, -<big>)
+    - [Flood a place] -> buff(reprobateGenMul, ×2, 1 hour); resource(gold, -33%)
     - [Let it go] -> nothing()
 
 ### a-name-to-burn
@@ -135,7 +135,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: flagFCThreatSent=1
 - Choices:
-    - [Always] -> resource(gold, -100%); maxInfluence x 1.1 permanently.
+    - [Always, with everything] -> resource(gold, -100%); maxInfluence x 1.1 permanently.
     - [Let it go] -> nothing()
 
 ### parish
@@ -143,8 +143,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-tradeoff
 - Caller: Acolyte
 - Requirements: none
-    - [Work behind the light] -> buff(reprobateGenMul, ×2.0, <med>); debuff(influenceRegenRate, -50%); both for 15 mins.
-    - [Patronize] -> buff(reprobateGenMul, ×2.0, <med>); resource(gold, -<50%>); both for 15 mins.
+    - [Work behind the light] -> buff(reprobateGenMul, ×2.0, 1 hour); debuff(influenceRegenRate, -50%, 1 hour).
+    - [Patronize] -> buff(reprobateGenMul, ×2.0, 1 hour); resource(gold, -<50%>).
     - [Let it go] -> nothing()
  
 ### ministry
@@ -152,7 +152,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-tradeoff
 - Caller: Mai
 - Requirements: none
-    - [Let's push it] -> buff(influenceRegenRate, ×2.0, <med>); debuff(reprobateGenMul, -50%); both for 15 mins.
+    - [Let's push it] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour).
     - [Let them kill everyone] -> Kills 15% of current reprobates.
     - [Let it go] -> nothing()
  
@@ -161,8 +161,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-tradeoff
 - Caller: Mai
 - Requirements: none
-    - [Keep these retards hooked] -> buff(influenceRegenRate, ×2.0, <med>); debuff(reprobateGenMul, -50%); both for 15 mins.
-    - [New features!] -> buff(influenceRegenRate, ×2.0, <med>); resource(gold, -<50%>); both for 15 mins.
+    - [Keep these retards hooked] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour).
+    - [New features!] -> buff(influenceRegenRate, ×2.0, 1 hour); resource(gold, -50%).
     - [Let it go] -> nothing()
 
 * * *
@@ -229,7 +229,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Unknown
 - Requirements: none
 - Choices:
-    - [Literally FUCK YOUR OWN FACE (Hang up)] -> nothing()
+    - [Mmm... how much cheaper?] -> nothing()
 
 * * *
 
