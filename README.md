@@ -103,9 +103,25 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 877** (sim 536 · shared 60 · api 20 · web 261).
+**Current test count: 880** (sim 536 · shared 60 · api 20 · web 264).
 
-> **Latest change — the smartphone call-in system (Claude Design handoff, "incoming calls").** The
+> **Latest change — time only truly freezes down in Hell; menus now run online or count as offline.**
+> The store used to suspend the tick on any non-null `katabasisPhase`, so opening the in-room Altar to
+> its full-screen gate (and the "Status Quo" Ledger behind it) froze the world the instant it appeared,
+> and the launch title menu + the "You Rise" recap silently ate whatever wall-clock the player spent on
+> them. The three overlays now part ways by what becomes of the held time. The **Altar gate / Ledger**
+> (pre-commit, `inKatabasis === false`, the soul not yet under) is **not suspended at all** — suicides,
+> Mercatus gold, and soul minting keep landing **online** while the player browses. The **committed
+> descent** — down among the Princes / Goetia seals (`inKatabasis === true`, set by `beginKatabasis`) —
+> stays a **true freeze**: time is lost, nothing accrues. The **launch title menu** and the **recap**
+> suspend only the _live_ tick; the wall-clock they hold is **not** lost but paid out as **offline**
+> catch-up on exit (`dismissTitle` / `closeRecap` run `resumeGame` — half-rate + Acedia compound),
+> so lingering on either counts as offline time. `confirmKatabasis` rises the new lifetime's clock to
+> _now_ so the recap is timed from the ascent, never re-counting the frozen descent. No sim, save, or
+> RNG change — purely store-side freeze conditions and two exit hooks. Three new web store tests pin
+> the gate ticking online, the descent staying frozen, and the title/recap paying out as offline time.
+>
+> **Earlier change — the smartphone call-in system (Claude Design handoff, "incoming calls").** The
 > Studio phone now _receives_ calls, not just dials out. During eligible active play in the Studio —
 > even with a menu open, so you hear it ring behind the PC or the dialer — a call arrives roughly
 > every **10 minutes** from a weighted bag: the room swaps to the "incoming call" plate and the phone

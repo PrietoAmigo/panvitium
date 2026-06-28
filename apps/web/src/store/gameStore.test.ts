@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   bn,
   floor,
@@ -177,7 +177,7 @@ describe('gameStore — Katabasis', () => {
     expect(floor(st.souls).toNumber()).toBe(0);
   });
 
-  it('freezes the lifetime while the menu is open — souls do not accrue during the descent', () => {
+  it('freezes the lifetime once the descent is committed — souls do not accrue down in Hell', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
@@ -185,10 +185,25 @@ describe('gameStore — Katabasis', () => {
         lifetime: { ...s0.lifetime, reprobates: 5000 },
       },
     });
-    store().beginKatabasis();
+    store().beginKatabasis(); // commit → inKatabasis, the soul is under
     const soulsAtEntry = floor((store().state as GameState).souls).toNumber();
     store().advance(3600); // an hour of would-be suicides
     expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtEntry);
+  });
+
+  it('keeps ticking at the Altar gate (pre-commit) — time only stops once the descent begins', () => {
+    const s0 = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s0,
+        lifetime: { ...s0.lifetime, reprobates: 5000 },
+      },
+    });
+    store().openKatabasis(); // the gate / Ledger menu — no teardown, inKatabasis stays false
+    expect((store().state as GameState).inKatabasis).not.toBe(true);
+    const soulsAtEntry = floor((store().state as GameState).souls).toNumber();
+    store().advance(3600); // an hour of suicides still lands — the soul is not yet under
+    expect(floor((store().state as GameState).souls).toNumber()).toBeGreaterThan(soulsAtEntry);
   });
 
   it('entering Katabasis liquidates the Mercatūs and stops toggles and invocations immediately', () => {
@@ -220,6 +235,53 @@ describe('gameStore — Katabasis', () => {
     store().init();
     expect(store().katabasisPhase).toBe('menu');
     expect((store().state as GameState).inKatabasis).toBe(true);
+  });
+});
+
+describe('gameStore — recap & title count as offline time (not a freeze)', () => {
+  it('dismissTitle pays out the title-open wall-clock as offline catch-up', () => {
+    const s0 = store().state as GameState;
+    useGameStore.setState({
+      titleOpen: true,
+      state: {
+        ...s0,
+        lastTickAt: Date.now() - 3600_000, // the title sat open for ~an hour
+        lifetime: { ...s0.lifetime, reprobates: 50_000 },
+      },
+    });
+    const soulsBefore = floor((store().state as GameState).souls).toNumber();
+    store().dismissTitle();
+    expect(store().titleOpen).toBe(false);
+    const after = store().state as GameState;
+    // The hour did not vanish — it paid out at the offline rate.
+    expect(floor(after.souls).toNumber()).toBeGreaterThan(soulsBefore);
+    // …and the clock is reconciled to ~now, so a later reload can't re-count the span.
+    expect(Math.abs(after.lastTickAt - Date.now())).toBeLessThan(5000);
+  });
+
+  it('the committed descent is a true freeze, but the recap that follows counts as offline time', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(1_700_000_000_000);
+      const t0 = Date.now();
+      const s0 = store().state as GameState;
+      useGameStore.setState({
+        state: { ...s0, lastTickAt: t0, lifetime: { ...s0.lifetime, reprobates: 100_000 } },
+      });
+      store().beginKatabasis(); // down among the Princes — inKatabasis, the soul is under
+      vi.setSystemTime(t0 + 1800_000); // 30 minutes spent allocating in Hell
+      const soulsAtRise = floor((store().state as GameState).souls).toNumber();
+      store().confirmKatabasis(); // rise: the descent's 30 min mint nothing (true freeze)
+      expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtRise);
+      expect(store().katabasisPhase).toBe('recap');
+      vi.setSystemTime(t0 + 1800_000 + 3600_000); // read the recap for an hour
+      store().closeRecap();
+      expect(store().katabasisPhase).toBeNull();
+      // The recap hour paid out as offline; the descent half-hour did not.
+      expect(floor((store().state as GameState).souls).toNumber()).toBeGreaterThan(soulsAtRise);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
