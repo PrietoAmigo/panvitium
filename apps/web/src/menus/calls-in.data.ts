@@ -57,7 +57,7 @@ export type CallInEffect =
   | { kind: 'timedMul'; field: BuffField; factor: number; durationSec: number }
   | { kind: 'permanentMul'; field: 'maxInfluence'; factor: number }
   | { kind: 'spendGoldPct'; pct: number }
-  | { kind: 'loseReprobates'; amount: number }
+  | { kind: 'loseReprobatesPct'; pct: number }
   | { kind: 'killReprobatesPct'; pct: number };
 
 /** Structural shape of one choice: the decline marker plus its mechanical effects (label is strings). */
@@ -196,7 +196,7 @@ export const CALLS_IN: readonly CallInData[] = [
       {
         effects: [
           { kind: 'timedMul', field: 'goldGainMul', factor: 2, durationSec: HOUR },
-          { kind: 'loseReprobates', amount: 10 },
+          { kind: 'loseReprobatesPct', pct: 10 },
         ],
       },
       { dim: true },

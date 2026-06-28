@@ -108,8 +108,8 @@ function costOrKillClause(e: CallInEffect): string {
       if (e.pct === 33) return 'costs a third of your gold';
       if (e.pct === 25) return 'costs a quarter of your gold';
       return `costs ${e.pct}% of your gold`;
-    case 'loseReprobates':
-      return `you lose ${e.amount} reprobates`;
+    case 'loseReprobatesPct':
+      return `you lose ${e.pct}% of your reprobates`;
     case 'killReprobatesPct':
       return `kills ${e.pct}% of your reprobates`;
     default:

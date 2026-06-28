@@ -91,8 +91,8 @@ describe('describeCallInEffects', () => {
       describeCallInEffects([timedMul('reprobateGenMul', 2), timedMul('influenceRegenRate', 0.5)]),
     ).toBe('Reprobate generation doubles for 1 hour, but influence regeneration halves');
     expect(
-      describeCallInEffects([timedMul('goldGainMul', 2), { kind: 'loseReprobates', amount: 10 }]),
-    ).toBe('Gold gain doubles for 1 hour, but you lose 10 reprobates');
+      describeCallInEffects([timedMul('goldGainMul', 2), { kind: 'loseReprobatesPct', pct: 10 }]),
+    ).toBe('Gold gain doubles for 1 hour, but you lose 10% of your reprobates');
     expect(
       describeCallInEffects([timedMul('reprobateGenMul', 2), { kind: 'spendGoldPct', pct: 33 }]),
     ).toBe('Reprobate generation doubles for 1 hour, but costs a third of your gold');

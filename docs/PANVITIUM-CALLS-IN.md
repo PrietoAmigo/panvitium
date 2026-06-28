@@ -119,7 +119,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Show me the money] -> buff(goldGainMul, ×2.0, 1 hour); resource(reprobates, -10) — "Gold gain doubles for 1 hour, but you lose 10 reprobates"
+    - [Show me the money] -> buff(goldGainMul, ×2.0, 1 hour); resource(reprobates, -10%) — "Gold gain doubles for 1 hour, but you lose 10% of your reprobates"
     - [Let it go] -> nothing()
 
 ### the-shipment
