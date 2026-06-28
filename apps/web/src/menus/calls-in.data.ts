@@ -1,14 +1,17 @@
 // The incoming-call ("calls-in") catalogue — STRUCTURAL data only. The canonical content is
 // `docs/PANVITIUM-CALLS-IN.md`: every call you can RECEIVE, its caller, class, requirements, and
-// choices. This file mirrors that catalogue's structure; the user-facing English (caller tag, choice
-// labels/sub-labels) lives in `strings.phone.callIn.calls` (ADR-020), joined here by id in
-// `game/callIn.ts`. The real buff/effect logic is still the future calls-in engine the doc describes
-// (CALL_TRIGGERS / INTERACTIONS, spreadsheet-pinned magnitudes) — answering applies no game state
-// yet, the same documented-stub posture as the email replies and the dialer codes.
+// choices. This file mirrors that catalogue's structure; the option *labels* (user-facing English)
+// live in `strings.phone.callIn.calls` (ADR-020), joined here by id in `game/callIn.ts`. The option
+// *sub-labels* are not authored prose — they are generated from each choice's structured `effects`
+// (see `describeCallInEffects`), so the line under an option always reads out its real effect.
+//
+// The effects are also the spec for the pending calls-in engine: applying them is still future work
+// (CALL_TRIGGERS / INTERACTIONS), so answering a call changes no game state yet — the same
+// documented-stub posture as the email replies and the dialer codes.
 //
 // Every call is a recording: its `<id>.mp3` lives in apps/web/public/assets/panvitium/music/. The
-// choice arrays here carry only the structural `dim` marker (the decline / hang-up option) and MUST
-// stay the same length and order as the matching `strings` choices — `callIn.test.ts` pins that.
+// choice arrays MUST stay the same length and order as the matching `strings` choices —
+// `callIn.test.ts` pins that.
 
 import { ASSET_BASE } from './degrade.data.js';
 
@@ -29,11 +32,44 @@ export interface CallRequirements {
   emails?: readonly string[];
 }
 
-/** Structural shape of one choice — only the decline/hang-up marker; the label/sub are strings. */
+/**
+ * The timed-multiplier modifier fields a call buff/debuff can touch (the upstream + side economies;
+ * never the one-for-one cull, docs "The cull is one for one"). Display names live in
+ * `strings.phone.callIn.fields`; the natural-language sub-label is generated from these in
+ * `game/callIn.ts`.
+ */
+export type BuffField =
+  | 'goldGainMul'
+  | 'reprobateGenMul'
+  | 'influenceGainMul'
+  | 'indagatioEfficiencyMul'
+  | 'playerEfficiencyMul'
+  | 'acolyteEfficiencyMul'
+  | 'influenceRegenRate'
+  | 'offlineRate';
+
+/**
+ * One mechanical effect of a take-option (docs "-> effects"). Structured so the catalogue is the
+ * single source for both the displayed explanation today and the pending effect engine. A `factor`
+ * above 1 reads as a buff (increases / doubles / triples), below 1 as a debuff (halves / drops).
+ */
+export type CallInEffect =
+  | { kind: 'timedMul'; field: BuffField; factor: number; durationSec: number }
+  | { kind: 'permanentMul'; field: 'maxInfluence'; factor: number }
+  | { kind: 'spendGoldPct'; pct: number }
+  | { kind: 'loseReprobates'; amount: number }
+  | { kind: 'killReprobatesPct'; pct: number };
+
+/** Structural shape of one choice: the decline marker plus its mechanical effects (label is strings). */
 export interface CallInChoiceData {
   /** The "let it go" / "hang up" / "no, thanks" option — readable warm gold, never a faded grey. */
   dim?: boolean;
+  /** The effects this option applies (the spec for the pending engine; drives the displayed sub-label).
+   *  Omitted/empty for a `nothing()` option (decline, lore, easter egg) — those show no sub-label. */
+  effects?: readonly CallInEffect[];
 }
+
+const HOUR = 3600;
 
 /** Structural shape of one incoming call. Text is joined from `strings` by `id`. */
 export interface CallInData {
@@ -67,16 +103,74 @@ export const CALL_PLATE_ANSWERING = `${ASSET_BASE}/backgrounds/studio_complete_c
  */
 export const CALLS_IN: readonly CallInData[] = [
   // ── Positive buffs (clean upside) ──
-  { id: 'the-cycle-turns', audio: true, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
-  { id: 'eager-hands', audio: true, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
-  { id: 'a-good-find', audio: true, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
+  {
+    id: 'the-cycle-turns',
+    audio: true,
+    class: 'buff-positive',
+    choices: [
+      { effects: [{ kind: 'timedMul', field: 'goldGainMul', factor: 1.33, durationSec: HOUR }] },
+      {
+        effects: [{ kind: 'timedMul', field: 'reprobateGenMul', factor: 1.33, durationSec: HOUR }],
+      },
+      { dim: true },
+    ],
+  },
+  {
+    id: 'eager-hands',
+    audio: true,
+    class: 'buff-positive',
+    choices: [
+      {
+        effects: [{ kind: 'timedMul', field: 'reprobateGenMul', factor: 1.33, durationSec: HOUR }],
+      },
+      {
+        effects: [{ kind: 'timedMul', field: 'influenceGainMul', factor: 1.33, durationSec: HOUR }],
+      },
+      { dim: true },
+    ],
+  },
+  {
+    id: 'a-good-find',
+    audio: true,
+    class: 'buff-positive',
+    choices: [
+      {
+        effects: [
+          { kind: 'timedMul', field: 'indagatioEfficiencyMul', factor: 2, durationSec: HOUR },
+        ],
+      },
+      { effects: [{ kind: 'timedMul', field: 'goldGainMul', factor: 1.25, durationSec: HOUR }] },
+      { dim: true },
+    ],
+  },
   {
     id: 'the-discipline-swells',
     audio: true,
     class: 'buff-positive',
-    choices: [{}, {}, { dim: true }],
+    choices: [
+      {
+        effects: [
+          { kind: 'timedMul', field: 'playerEfficiencyMul', factor: 1.33, durationSec: HOUR },
+        ],
+      },
+      {
+        effects: [
+          { kind: 'timedMul', field: 'acolyteEfficiencyMul', factor: 1.33, durationSec: HOUR },
+        ],
+      },
+      { dim: true },
+    ],
   },
-  { id: 'doing-nothing', audio: true, class: 'buff-positive', choices: [{}, {}, { dim: true }] },
+  {
+    id: 'doing-nothing',
+    audio: true,
+    class: 'buff-positive',
+    choices: [
+      { effects: [{ kind: 'timedMul', field: 'offlineRate', factor: 3, durationSec: 8 * HOUR }] },
+      { effects: [{ kind: 'killReprobatesPct', pct: 10 }] },
+      { dim: true },
+    ],
+  },
 
   // ── Tradeoff buffs (a strong buff bought with a real cost) ──
   {
@@ -84,20 +178,114 @@ export const CALLS_IN: readonly CallInData[] = [
     audio: true,
     class: 'buff-tradeoff',
     requires: { katabasisCountMin: 1 },
-    choices: [{}, { dim: true }],
+    choices: [
+      {
+        effects: [
+          { kind: 'timedMul', field: 'acolyteEfficiencyMul', factor: 2, durationSec: HOUR },
+          { kind: 'timedMul', field: 'influenceRegenRate', factor: 1 / 1.5, durationSec: HOUR },
+        ],
+      },
+      { dim: true },
+    ],
   },
-  { id: 'blood-in-the-cage', audio: true, class: 'buff-tradeoff', choices: [{}, { dim: true }] },
-  { id: 'the-shipment', audio: true, class: 'buff-tradeoff', choices: [{}, { dim: true }] },
+  {
+    id: 'blood-in-the-cage',
+    audio: true,
+    class: 'buff-tradeoff',
+    choices: [
+      {
+        effects: [
+          { kind: 'timedMul', field: 'goldGainMul', factor: 2, durationSec: HOUR },
+          { kind: 'loseReprobates', amount: 10 },
+        ],
+      },
+      { dim: true },
+    ],
+  },
+  {
+    id: 'the-shipment',
+    audio: true,
+    class: 'buff-tradeoff',
+    choices: [
+      {
+        effects: [
+          { kind: 'timedMul', field: 'reprobateGenMul', factor: 2, durationSec: HOUR },
+          { kind: 'spendGoldPct', pct: 33 },
+        ],
+      },
+      { dim: true },
+    ],
+  },
   {
     id: 'a-name-to-burn',
     audio: true,
     class: 'buff-tradeoff',
     requires: { fcFriendly: false },
-    choices: [{}, { dim: true }],
+    choices: [
+      {
+        effects: [
+          { kind: 'permanentMul', field: 'maxInfluence', factor: 1.1 },
+          { kind: 'spendGoldPct', pct: 100 },
+        ],
+      },
+      { dim: true },
+    ],
   },
-  { id: 'parish', audio: true, class: 'buff-tradeoff', choices: [{}, {}, { dim: true }] },
-  { id: 'ministry', audio: true, class: 'buff-tradeoff', choices: [{}, {}, { dim: true }] },
-  { id: 'social-platform', audio: true, class: 'buff-tradeoff', choices: [{}, {}, { dim: true }] },
+  {
+    id: 'parish',
+    audio: true,
+    class: 'buff-tradeoff',
+    choices: [
+      {
+        effects: [
+          { kind: 'timedMul', field: 'reprobateGenMul', factor: 2, durationSec: HOUR },
+          { kind: 'timedMul', field: 'influenceRegenRate', factor: 0.5, durationSec: HOUR },
+        ],
+      },
+      {
+        effects: [
+          { kind: 'timedMul', field: 'reprobateGenMul', factor: 2, durationSec: HOUR },
+          { kind: 'spendGoldPct', pct: 50 },
+        ],
+      },
+      { dim: true },
+    ],
+  },
+  {
+    id: 'ministry',
+    audio: true,
+    class: 'buff-tradeoff',
+    choices: [
+      {
+        effects: [
+          { kind: 'timedMul', field: 'influenceRegenRate', factor: 2, durationSec: HOUR },
+          { kind: 'timedMul', field: 'reprobateGenMul', factor: 0.5, durationSec: HOUR },
+        ],
+      },
+      { effects: [{ kind: 'killReprobatesPct', pct: 15 }] },
+      { dim: true },
+    ],
+  },
+  {
+    id: 'social-platform',
+    audio: true,
+    class: 'buff-tradeoff',
+    choices: [
+      {
+        effects: [
+          { kind: 'timedMul', field: 'influenceRegenRate', factor: 2, durationSec: HOUR },
+          { kind: 'timedMul', field: 'reprobateGenMul', factor: 0.5, durationSec: HOUR },
+        ],
+      },
+      {
+        effects: [
+          { kind: 'timedMul', field: 'influenceRegenRate', factor: 2, durationSec: HOUR },
+          { kind: 'spendGoldPct', pct: 50 },
+        ],
+      },
+      { dim: true },
+    ],
+  },
 
   // ── Lore (narrative, no mechanical effect; once-only) ──
   {

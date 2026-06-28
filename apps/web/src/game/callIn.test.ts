@@ -10,8 +10,10 @@ import {
   pickIncomingCall,
   isCallEligible,
   eligibleCallIds,
+  describeCallInEffects,
   type CallEligibilityContext,
 } from './callIn.js';
+import type { CallInEffect } from '../menus/calls-in.data.js';
 import { CALLS_IN, CALL_IN_BY_ID, isOnceOnly } from '../menus/calls-in.data.js';
 import { strings } from '@panvitium/shared';
 
@@ -36,7 +38,9 @@ describe('buildCallInView', () => {
     expect(v!.line).toBe(''); // recordings carry their words in the mp3
     expect(v!.choices).toHaveLength(3);
     expect(v!.choices[2]!.dim).toBe(true); // "Let it go"
-    expect(v!.choices[0]!.sub).toBe('take the margin while it runs');
+    // The sub-label is generated from the effect (buff(goldGainMul, ×1.33, 1 hour)).
+    expect(v!.choices[0]!.sub).toBe('Gold gain increases for 1 hour');
+    expect(v!.choices[2]!.sub).toBeUndefined(); // decline option has no effect, no sub
   });
 
   it('joins an unknown-caller call and keeps a Latin label untranslated', () => {
@@ -60,6 +64,54 @@ describe('buildCallInView', () => {
       expect(v, `view for ${data.id}`).not.toBeNull();
       expect(v!.choices).toHaveLength(data.choices.length);
     }
+  });
+});
+
+describe('describeCallInEffects', () => {
+  const timedMul = (field: string, factor: number, durationSec = 3600): CallInEffect =>
+    ({ kind: 'timedMul', field, factor, durationSec }) as CallInEffect;
+
+  it('describes a small buff as "increases … for <duration>"', () => {
+    expect(describeCallInEffects([timedMul('reprobateGenMul', 1.33)])).toBe(
+      'Reprobate generation increases for 1 hour',
+    );
+  });
+
+  it('names big multipliers (doubles / triples) instead of "increases"', () => {
+    expect(describeCallInEffects([timedMul('indagatioEfficiencyMul', 2)])).toBe(
+      'Search efficiency doubles for 1 hour',
+    );
+    expect(describeCallInEffects([timedMul('offlineRate', 3, 8 * 3600)])).toBe(
+      'Offline progress triples for 8 hours',
+    );
+  });
+
+  it('appends a cost as a "…, but …" clause (debuff / resource / cull)', () => {
+    expect(
+      describeCallInEffects([timedMul('reprobateGenMul', 2), timedMul('influenceRegenRate', 0.5)]),
+    ).toBe('Reprobate generation doubles for 1 hour, but influence regeneration halves');
+    expect(
+      describeCallInEffects([timedMul('goldGainMul', 2), { kind: 'loseReprobates', amount: 10 }]),
+    ).toBe('Gold gain doubles for 1 hour, but you lose 10 reprobates');
+    expect(
+      describeCallInEffects([timedMul('reprobateGenMul', 2), { kind: 'spendGoldPct', pct: 33 }]),
+    ).toBe('Reprobate generation doubles for 1 hour, but costs a third of your gold');
+  });
+
+  it('describes a standalone cull and a permanent boost', () => {
+    expect(describeCallInEffects([{ kind: 'killReprobatesPct', pct: 10 }])).toBe(
+      'Kills 10% of your reprobates',
+    );
+    expect(
+      describeCallInEffects([
+        { kind: 'permanentMul', field: 'maxInfluence', factor: 1.1 },
+        { kind: 'spendGoldPct', pct: 100 },
+      ]),
+    ).toBe('Permanently raises maximum influence by 10%, but spends all your gold');
+  });
+
+  it('returns an empty string when there are no effects', () => {
+    expect(describeCallInEffects([])).toBe('');
   });
 });
 
