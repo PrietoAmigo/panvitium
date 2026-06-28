@@ -54,8 +54,9 @@ additive-optional pattern.
 - **Panvitium (VC)**: the `panvitium` Vitium Compositum toggle (every Sin at Level 3). "Running for
   at least 3 seconds" means it has been continuously active for 3 seconds or more.
 - **`flagFatherMad`**: default 0. Set to 1 by Father Tom Brennan #2, Answer (2).
-- **`flagFCfriendly`**: default 0. Set to 1 if Fausto Cescru #1 is left unanswered (its threat reply
-  is never sent) by the time the #2 gate is first evaluated. Sending the threat reply locks it at 0.
+- **`flagFCThreatSent`**: default 0. Set to 1 when the threat reply to Fausto Cescru #1 (Answer 1) is
+  sent, which closes the friendly branch — #2 and #3 never fire, and the arc routes to #4/#5. Left
+  unsent it stays 0, and the friendly branch (#2/#3) opens.
 - **`flagReubenDead`**: default 0. Set to 1 (and +1 soul minted) by Reuben Marsh #2 Answer (2) or
   Reuben Marsh #3 Answer (2).
 - **`flagFaustoCurse`**: default false. New. Set true on receipt of Fausto Cescru #4. While true,
@@ -453,10 +454,10 @@ built. None carry mechanical effects unless stated.
   > Fausto Cescru
 - **Answers:**
   - (1) "I will use your blood as catalyst for my next katabasis, torment your soul and end your
-    lineage, you unworthy speck of shit :)". Effect: lock `flagFCfriendly = 0` permanently (the
+    lineage, you unworthy speck of shit :)". Effect: set `flagFCThreatSent = 1` permanently (the
     friendly branch closes; #2 and #3 never fire; the arc routes to #4 and #5).
 - **Trigger:** 7 minutes after `totalSinLevel >= 10`.
-- **Effect (no answer):** if the threat reply above is never sent, set `flagFCfriendly = 1`.
+- **Effect (no answer):** none — leaving the threat reply unsent keeps `flagFCThreatSent = 0`, so the friendly branch (#2/#3) opens.
 
 ### Fausto Cescru #2
 - **From:** Fausto Cescru, `fausto.cescru@cescru.es`
@@ -473,7 +474,7 @@ built. None carry mechanical effects unless stated.
   > you do not refuse it and go on prospering.
   > Fausto
 - **Answers:** none.
-- **Trigger:** 7 minutes after `totalSinLevel >= 20` and `flagFCfriendly = 1`.
+- **Trigger:** 7 minutes after `totalSinLevel >= 20` and `flagFCThreatSent = 0`.
 
 ### Fausto Cescru #3
 - **From:** Fausto Cescru, `fausto.cescru@cescru.es`
@@ -490,7 +491,7 @@ built. None carry mechanical effects unless stated.
   > patience for a thing that lasts.
   > Fausto
 - **Answers:** none.
-- **Trigger:** 7 minutes after `totalSinLevel >= 30` and `flagFCfriendly = 1`.
+- **Trigger:** 7 minutes after `totalSinLevel >= 30` and `flagFCThreatSent = 0`.
 
 ### Fausto Cescru #4
 - **From:** Fausto Cescru, `fausto.cescru@cescru.es`
