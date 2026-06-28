@@ -1021,37 +1021,51 @@ export const strings = {
       // Top-left corner mark on the call stage, and the hint under a playing recording.
       kicker: 'Panvitium · the line',
       skip: 'tap to skip',
+      // Display names for the buff/debuff fields an effect can touch — used to GENERATE each option's
+      // sub-label (see `describeCallInEffects`). Stored lower-case for mid-sentence use; the generator
+      // capitalises the sentence and supplies the verbs/connectives (presentation logic, ADR-020).
+      fields: {
+        goldGainMul: 'gold gain',
+        reprobateGenMul: 'reprobate generation',
+        influenceGainMul: 'influence gain',
+        indagatioEfficiencyMul: 'search efficiency',
+        playerEfficiencyMul: 'your efficiency',
+        acolyteEfficiencyMul: 'acolyte efficiency',
+        influenceRegenRate: 'influence regeneration',
+        offlineRate: 'offline progress',
+      } as Record<string, string>,
+      // Option labels only — the sub-label under each option is generated from the choice's effects.
       calls: {
         // ── Positive buffs ──
         'the-cycle-turns': {
           tag: 'the line · Gideon Reyes',
           choices: [
-            { label: 'Press the advantage', sub: 'take the margin while it runs' },
-            { label: 'Plough it back into appetite', sub: 'more product, more hunger' },
+            { label: 'Press the advantage' },
+            { label: 'Spend it on marketing' },
             { label: 'Let it go' },
           ],
         },
         'eager-hands': {
           tag: 'the line · an acolyte',
           choices: [
-            { label: 'Take the hungry ones', sub: 'more of them at the door' },
-            { label: 'Take the frightened ones', sub: 'fear is its own currency' },
+            { label: 'Take the hungry ones' },
+            { label: 'Take the frightened ones' },
             { label: 'Let it go' },
           ],
         },
         'a-good-find': {
           tag: 'the line · an acolyte',
           choices: [
-            { label: 'Keep digging', sub: 'there is more down there' },
-            { label: 'Sell the rumour', sub: 'put it about that we found something' },
+            { label: 'Keep digging' },
+            { label: 'Sell the rumour' },
             { label: 'Let it go' },
           ],
         },
         'the-discipline-swells': {
           tag: 'the line · Gideon Reyes',
           choices: [
-            { label: 'There could be something there…', sub: 'the ache means they are winning' },
-            { label: 'I will apply it to the acolytes', sub: 'discipline, sharpened' },
+            { label: 'There could be something there…' },
+            { label: 'I will apply it to the acolytes' },
             { label: 'Let it go' },
           ],
         },
@@ -1062,34 +1076,25 @@ export const strings = {
         // ── Tradeoff buffs ──
         'the-looting': {
           tag: 'the line · Gideon Reyes',
-          choices: [
-            { label: 'Make an example', sub: 'it will cost you standing' },
-            { label: 'Let it go' },
-          ],
+          choices: [{ label: 'Make an example' }, { label: 'Let it go' }],
         },
         'blood-in-the-cage': {
           tag: 'the line · an acolyte',
-          choices: [
-            { label: 'Show me the money', sub: 'spends the corrupted, future souls lost' },
-            { label: 'Let it go' },
-          ],
+          choices: [{ label: 'Show me the money' }, { label: 'Let it go' }],
         },
         'the-shipment': {
           tag: 'the line · an acolyte',
-          choices: [
-            { label: 'Flood a place', sub: 'lose money now, hook the place fast' },
-            { label: 'Let it go' },
-          ],
+          choices: [{ label: 'Flood a place' }, { label: 'Let it go' }],
         },
         'a-name-to-burn': {
           tag: 'the line · an acolyte',
-          choices: [{ label: 'Always', sub: 'everything you have' }, { label: 'Let it go' }],
+          choices: [{ label: 'Always, with everything' }, { label: 'Let it go' }],
         },
         parish: {
           tag: 'the line · an acolyte',
           choices: [
-            { label: 'Work behind the light', sub: 'behind the grief and the charity' },
-            { label: 'Patronize', sub: 'pay your way in' },
+            { label: 'Work behind the light' },
+            { label: 'Patronize' },
             { label: 'Let it go' },
           ],
         },
@@ -1112,10 +1117,7 @@ export const strings = {
         // ── Lore ──
         'the-ward': {
           tag: 'the line · Fr. Emil Stahl',
-          choices: [
-            { label: 'Listen to the end', sub: 'stay until the stillness' },
-            { label: 'Hang up' },
-          ],
+          choices: [{ label: 'Listen to the end' }, { label: 'Hang up' }],
         },
         'the-journalist': {
           tag: 'the line · Marina Zhao',
@@ -1148,11 +1150,11 @@ export const strings = {
         },
         'ISP-change': {
           tag: 'unknown caller',
-          choices: [{ label: 'Literally FUCK YOUR OWN FACE (Hang up)' }],
+          choices: [{ label: 'Mmm... how much cheaper?' }],
         },
       } as Record<
         string,
-        { tag: string; line?: string; choices: ReadonlyArray<{ label: string; sub?: string }> }
+        { tag: string; line?: string; choices: ReadonlyArray<{ label: string }> }
       >,
     },
   },

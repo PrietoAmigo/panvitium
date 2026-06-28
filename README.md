@@ -103,7 +103,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 872** (sim 536 · shared 60 · api 20 · web 256).
+**Current test count: 877** (sim 536 · shared 60 · api 20 · web 261).
 
 > **Latest change — the smartphone call-in system (Claude Design handoff, "incoming calls").** The
 > Studio phone now _receives_ calls, not just dials out. During eligible active play in the Studio —
@@ -123,10 +123,13 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > branch via `flagFCThreatSent` — which makes Succubus/Astiwihad mutually exclusive — and received
 > emails). Like the dialer and the email replies, the **choice
 > effect is a documented stub** awaiting the calls-in engine (`docs/PANVITIUM-CALLS-IN.md`) — answering
-> changes no game state yet. Sim, save shape, and the RNG stream are untouched (the scheduler is
-> UI-level, off `Math.random`). Twenty web tests pin the catalogue↔strings join, the requirement gate
->
-> - weighted/once-only/recency selection, and the stage's FSM, skip, and choose cadence.
+> changes no game state yet. Each take-option's sub-label is **generated from its structured effect**
+> (`describeCallInEffects`): a small multiplier reads as "… increases", a ×2/×3 as "doubles"/"triples",
+> and a cost is appended as "…, but …" — so the line under an option always reads out its real effect.
+> Sim, save shape, and the RNG stream are untouched (the scheduler is UI-level, off `Math.random`).
+> Twenty-five web tests pin the catalogue↔strings join, the requirement gate, the
+> weighted/once-only/recency selection, the generated effect descriptions, and the stage's FSM, skip,
+> and choose cadence.
 >
 > **Earlier change — Caedes cast time cut to 1 second (tuning override).** The entry cull now casts
 > in **1 s** (was 10 s), so the opening Decimatio loop reads as briskly as Suggestion — a documented

@@ -45,6 +45,8 @@ A call may also hand you reprobates or money directly. The only place a call gra
 
 Every entry is opportunity-only by the rule above, so no per-entry "on miss" line is needed: missing or declining is always `nothing()`.
 
+The quoted text after a take-option (— "…") is the **player-facing sub-label shown under that option in the UI**. It is not authored separately: it is generated from the option's structured effect by `describeCallInEffects` (`apps/web/src/game/callIn.ts`), with the field nouns from `strings.phone.callIn.fields`. A small multiplier reads as "increases"; a ×2 / ×3 reads as "doubles" / "triples"; a cost is appended as "…, but …". Keep the effect and the sentence in sync — the sentence is derived from the numbers.
+
 * * *
 
 ## Positive buffs (clean upside, 45)
@@ -55,8 +57,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: none
 - Choices:
-    - [Press the advantage] -> buff(goldGainMul, ×1.33, 1 hour)
-    - [Spend it on marketing] -> buff(reprobateGenMul, ×1.33, 1 hour)
+    - [Press the advantage] -> buff(goldGainMul, ×1.33, 1 hour) — "Gold gain increases for 1 hour"
+    - [Spend it on marketing] -> buff(reprobateGenMul, ×1.33, 1 hour) — "Reprobate generation increases for 1 hour"
     - [Let it go] -> nothing()
 
 ### eager-hands
@@ -65,8 +67,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Take the hungry ones] -> buff(reprobateGenMul, ×1.33, 1 hour)
-    - [Take the frightened ones] -> buff(influenceGainMul, ×1.33, 1 hour)
+    - [Take the hungry ones] -> buff(reprobateGenMul, ×1.33, 1 hour) — "Reprobate generation increases for 1 hour"
+    - [Take the frightened ones] -> buff(influenceGainMul, ×1.33, 1 hour) — "Influence gain increases for 1 hour"
     - [Let it go] -> nothing()
 
 ### a-good-find
@@ -75,8 +77,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Keep digging] -> buff(indagatioEfficiencyMul, ×2, 1 hour)
-    - [Sell the rumour] -> buff(goldGainMul, ×1.25, 1 hour)
+    - [Keep digging] -> buff(indagatioEfficiencyMul, ×2, 1 hour) — "Search efficiency doubles for 1 hour"
+    - [Sell the rumour] -> buff(goldGainMul, ×1.25, 1 hour) — "Gold gain increases for 1 hour"
     - [Let it go] -> nothing()
 
 ### the-discipline-swells
@@ -85,8 +87,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: none
 - Choices:
-    - [There could be something there...] -> buff(playerEfficiencyMul, ×1.33, 1 hour)
-    - [I will apply to the acolytes] -> buff(acolyteEfficiencyMul, ×1.33, 1 hour)
+    - [There could be something there...] -> buff(playerEfficiencyMul, ×1.33, 1 hour) — "Your efficiency increases for 1 hour"
+    - [I will apply to the acolytes] -> buff(acolyteEfficiencyMul, ×1.33, 1 hour) — "Acolyte efficiency increases for 1 hour"
     - [Let it go] -> nothing()
  
 ### doing-nothing
@@ -94,8 +96,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-positive
 - Caller: Mai
 - Requirements: none
-    - [I will join them] -> buff(offlineRate, ×3.0, 8 hours).
-    - [Kill them] -> Kills 10% current reprobates.
+    - [I will join them] -> buff(offlineRate, ×3.0, 8 hours). — "Offline progress triples for 8 hours"
+    - [Kill them] -> Kills 10% current reprobates. — "Kills 10% of your reprobates"
     - [Let it go] -> nothing()
 
 * * *
@@ -108,7 +110,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Gideon Reyes
 - Requirements: katabasisCount≥1
 - Choices:
-    - [Make an example] -> buff(acolyteEfficiencyMul, ×2.0, 1 hour); resource(influenceRegen, /1.5, 1 hour)
+    - [Make an example] -> buff(acolyteEfficiencyMul, ×2.0, 1 hour); resource(influenceRegen, /1.5, 1 hour) — "Acolyte efficiency doubles for 1 hour, but influence regeneration drops"
     - [Let it go] -> nothing()
 
 ### blood-in-the-cage
@@ -117,7 +119,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Show me the money] -> buff(goldGainMul, ×2.0, 1 hour); resource(reprobates, -10)
+    - [Show me the money] -> buff(goldGainMul, ×2.0, 1 hour); resource(reprobates, -10%) — "Gold gain doubles for 1 hour, but you lose 10% of your reprobates"
     - [Let it go] -> nothing()
 
 ### the-shipment
@@ -126,7 +128,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Flood a place] -> buff(reprobateGenMul, ×2, 1 hour); resource(gold, -33%)
+    - [Flood a place] -> buff(reprobateGenMul, ×2, 1 hour); resource(gold, -33%) — "Reprobate generation doubles for 1 hour, but costs a third of your gold"
     - [Let it go] -> nothing()
 
 ### a-name-to-burn
@@ -135,7 +137,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Caller: Acolyte
 - Requirements: flagFCThreatSent=1
 - Choices:
-    - [Always, with everything] -> resource(gold, -100%); maxInfluence x 1.1 permanently.
+    - [Always, with everything] -> resource(gold, -100%); maxInfluence x 1.1 permanently. — "Permanently raises maximum influence by 10%, but spends all your gold"
     - [Let it go] -> nothing()
 
 ### parish
@@ -143,8 +145,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-tradeoff
 - Caller: Acolyte
 - Requirements: none
-    - [Work behind the light] -> buff(reprobateGenMul, ×2.0, 1 hour); debuff(influenceRegenRate, -50%, 1 hour).
-    - [Patronize] -> buff(reprobateGenMul, ×2.0, 1 hour); resource(gold, -<50%>).
+    - [Work behind the light] -> buff(reprobateGenMul, ×2.0, 1 hour); debuff(influenceRegenRate, -50%, 1 hour). — "Reprobate generation doubles for 1 hour, but influence regeneration halves"
+    - [Patronize] -> buff(reprobateGenMul, ×2.0, 1 hour); resource(gold, -<50%>). — "Reprobate generation doubles for 1 hour, but costs half your gold"
     - [Let it go] -> nothing()
  
 ### ministry
@@ -152,8 +154,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-tradeoff
 - Caller: Mai
 - Requirements: none
-    - [Let's push it] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour).
-    - [Let them kill everyone] -> Kills 15% of current reprobates.
+    - [Let's push it] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour). — "Influence regeneration doubles for 1 hour, but reprobate generation halves"
+    - [Let them kill everyone] -> Kills 15% of current reprobates. — "Kills 15% of your reprobates"
     - [Let it go] -> nothing()
  
 ### social-platform
@@ -161,8 +163,8 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-tradeoff
 - Caller: Mai
 - Requirements: none
-    - [Keep these retards hooked] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour).
-    - [New features!] -> buff(influenceRegenRate, ×2.0, 1 hour); resource(gold, -50%).
+    - [Keep these retards hooked] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour). — "Influence regeneration doubles for 1 hour, but reprobate generation halves"
+    - [New features!] -> buff(influenceRegenRate, ×2.0, 1 hour); resource(gold, -50%). — "Influence regeneration doubles for 1 hour, but costs half your gold"
     - [Let it go] -> nothing()
 
 * * *

@@ -10,12 +10,14 @@ import {
   isOnceOnly,
   type CallInClass,
   type CallInData,
+  type CallInEffect,
 } from '../menus/calls-in.data.js';
 
-/** One presented choice: the joined label/sub plus the structural decline marker. */
+/** One presented choice: the label, the generated effect sub-label, and the decline marker. */
 export interface CallInChoiceView {
   label: string;
-  /** Optional Fragment-Mono sub-label under the option. */
+  /** Natural-language description of the option's effect, generated from its `effects` (absent for a
+   *  decline / lore / easter-egg option that does nothing). See `describeCallInEffects`. */
   sub?: string;
   /** The decline / hang-up option (readable warm gold, never a faded grey). */
   dim: boolean;
@@ -37,6 +39,101 @@ export interface CallInView {
 }
 
 const CATALOG = strings.phone.callIn.calls;
+const FIELDS = strings.phone.callIn.fields;
+
+// ── Natural-language effect descriptions (the generated option sub-labels) ───────────────────────
+// The line under an option reads out its real effect, e.g. buff(reprobateGenMul, ×1.33, 1 hour) →
+// "Reprobate generation increases for 1 hour". A big multiplier reads as how much (doubles / triples)
+// rather than a flat "increases"; a cost is appended as a "…, but …" clause. The field nouns come
+// from `strings.phone.callIn.fields`; the verbs/connectives are English presentation logic here.
+
+const near = (a: number, b: number): boolean => Math.abs(a - b) < 1e-9;
+
+/** Capitalise the first character of a sentence (the rest is left as-is). */
+function capitalize(s: string): string {
+  return s.length > 0 ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+/** Display noun for a buff field (lower-case, for mid-sentence use). */
+function fieldName(field: string): string {
+  return FIELDS[field] ?? field;
+}
+
+/** The verb for a multiplicative factor: the round big ones name themselves; the rest increase/drop. */
+function mulVerb(factor: number): string {
+  if (near(factor, 3)) return 'triples';
+  if (near(factor, 2)) return 'doubles';
+  if (factor > 1) return 'increases';
+  if (near(factor, 0.5)) return 'halves';
+  return 'drops'; // a softer reduction (e.g. ÷1.5)
+}
+
+/** "1 hour", "8 hours", "15 minutes". */
+function durationPhrase(sec: number): string {
+  if (sec % 3600 === 0) {
+    const h = sec / 3600;
+    return `${h} hour${h === 1 ? '' : 's'}`;
+  }
+  if (sec % 60 === 0) {
+    const m = sec / 60;
+    return `${m} minute${m === 1 ? '' : 's'}`;
+  }
+  return `${sec} second${sec === 1 ? '' : 's'}`;
+}
+
+/** A "gain" effect: a buff (factor > 1) or a permanent boost. */
+function isGain(e: CallInEffect): boolean {
+  return e.kind === 'permanentMul' || (e.kind === 'timedMul' && e.factor > 1);
+}
+
+/** Clause for a gain effect (the main sentence). */
+function gainClause(e: CallInEffect): string {
+  if (e.kind === 'timedMul') {
+    return `${fieldName(e.field)} ${mulVerb(e.factor)} for ${durationPhrase(e.durationSec)}`;
+  }
+  if (e.kind === 'permanentMul') {
+    return `permanently raises maximum influence by ${Math.round((e.factor - 1) * 100)}%`;
+  }
+  return '';
+}
+
+/** Clause for a non-gain effect (a cost or a cull — the "…, but …" tail, or a standalone sentence). */
+function costOrKillClause(e: CallInEffect): string {
+  switch (e.kind) {
+    case 'timedMul': // a debuff (factor < 1)
+      return `${fieldName(e.field)} ${mulVerb(e.factor)}`;
+    case 'spendGoldPct':
+      if (e.pct >= 100) return 'spends all your gold';
+      if (e.pct === 50) return 'costs half your gold';
+      if (e.pct === 33) return 'costs a third of your gold';
+      if (e.pct === 25) return 'costs a quarter of your gold';
+      return `costs ${e.pct}% of your gold`;
+    case 'loseReprobatesPct':
+      return `you lose ${e.pct}% of your reprobates`;
+    case 'killReprobatesPct':
+      return `kills ${e.pct}% of your reprobates`;
+    default:
+      return '';
+  }
+}
+
+/**
+ * Generate the natural-language sub-label for a choice from its effects. Returns '' for a choice with
+ * no effects (decline / lore / easter egg), so the UI shows no sub-label there.
+ */
+export function describeCallInEffects(effects: readonly CallInEffect[]): string {
+  if (effects.length === 0) return '';
+  const gains = effects.filter(isGain);
+  const rest = effects.filter((e) => !isGain(e));
+  let sentence: string;
+  if (gains.length > 0) {
+    sentence = gains.map(gainClause).join(' and ');
+    if (rest.length > 0) sentence += `, but ${rest.map(costOrKillClause).join(' and ')}`;
+  } else {
+    sentence = rest.map(costOrKillClause).join(' and '); // a standalone cull or pure cost
+  }
+  return capitalize(sentence);
+}
 
 /** Strip the diegetic channel prefix ("the line · ") the same way the design prototype does. */
 function displayTag(tag: string): string {
@@ -60,9 +157,10 @@ export function buildCallInView(id: string): CallInView | null {
   if (!data || !copy) return null;
   const choices: CallInChoiceView[] = data.choices.map((c, i) => {
     const text = copy.choices[i];
+    const sub = describeCallInEffects(c.effects ?? []);
     return {
       label: text?.label ?? '',
-      ...(text?.sub ? { sub: text.sub } : {}),
+      ...(sub ? { sub } : {}),
       dim: c.dim === true,
     };
   });
