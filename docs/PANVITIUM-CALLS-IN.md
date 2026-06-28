@@ -94,7 +94,7 @@ Every entry is opportunity-only by the rule above, so no per-entry "on miss" lin
 - Class: buff-positive
 - Caller: Mai
 - Requirements: none
-    - [I will join them] -> buff(offlineRate, ×2.0, 8 hours).
+    - [I will join them] -> buff(offlineRate, ×3.0, 8 hours).
     - [Kill them] -> Kills 10% current reprobates.
     - [Let it go] -> nothing()
 
