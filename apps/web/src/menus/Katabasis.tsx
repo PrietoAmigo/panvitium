@@ -1,12 +1,4 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactElement,
-} from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   SINS,
@@ -534,7 +526,7 @@ function AmbientEmbers(): ReactElement {
               width: e.size,
               height: e.size,
               '--drift': `${e.drift}px`,
-              animation: `amb-rise ${e.dur}s ease-in ${e.delay}s infinite`,
+              animation: `kat-amb-rise ${e.dur}s ease-in ${e.delay}s infinite`,
             } as CSSProperties
           }
         />
@@ -543,16 +535,17 @@ function AmbientEmbers(): ReactElement {
   );
 }
 
-// ── The Altar commit gate (screen 0): the ritual seal circle ─────────────────────────────────────
-// A redesign of the prior slab-with-candles drop target (Claude Design handoff). The central Goetic
-// sigil IS the descend button, ringed by counter-rotating Latin script. The two-press safeguard
-// from the prior gate is preserved on the seal: the first press arms it, the second commits the
-// (irreversible) descent; it auto-disarms after a few seconds. "Turn away" routes back to the real
-// Altar Room (the room layer) via the store's close action — the prototype's in-screen altar-room
-// overlay is intentionally not ported. "Status quo" opens the Ledger (below).
+// ── The Altar commit gate (screen 0): the lone vibrating sigil ───────────────────────────────────
+// A redesign of the prior ritual seal circle (Claude Design handoff). The elaborate seal apparatus —
+// counter-rotating rings, 48 radial ticks, and the ring of repeating Latin script — is stripped
+// away: the centre now holds ONLY the Goetic sigil, which constantly pulsates and vibrates. The
+// two-press safeguard from the prior gate is preserved: the first press arms it (the sigil scales up
+// dramatically and shakes much harder), the second commits the (irreversible) descent; it
+// auto-disarms after a few seconds. "Unfocus" routes back to the real Altar Room (the room layer)
+// via the store's close action — the prototype's in-screen altar-room overlay is intentionally not
+// ported. "Status quo" opens the Ledger (below). The screen is three vertically-anchored zones:
+// title (top) · sigil (centred in the viewport) · the two action gates (bottom).
 const SEAL_SRC = `${ASSET}/seal-panvitium.png`;
-const RING_PHRASE = 'PER VITIA, AD SOLIUM';
-const RING_RADIUS = 118; // matches the #kat-ring-path arc radius
 
 function AltarGate({
   onDescend,
@@ -563,11 +556,6 @@ function AltarGate({
   onTurnAway: () => void;
   onStatusQuo: () => void;
 }): ReactElement {
-  const svgRef = useRef<SVGSVGElement>(null);
-  // Whole phrases evenly spaced around the ring — computed from measured text so a phrase is never
-  // clipped at the seam. Defaults to 2 (opposite each other) when measurement is unavailable
-  // (jsdom, or before the webfont loads).
-  const [phraseCount, setPhraseCount] = useState(2);
   // Two-press commit safeguard: the first press arms the seal, the second descends. Auto-disarms.
   const [armed, setArmed] = useState(false);
 
@@ -576,67 +564,6 @@ function AltarGate({
     const t = setTimeout(() => setArmed(false), 4000);
     return () => clearTimeout(t);
   }, [armed]);
-
-  useLayoutEffect(() => {
-    let cancelled = false;
-    const build = (): void => {
-      const svg = svgRef.current;
-      if (!svg || cancelled) return;
-      const NS = 'http://www.w3.org/2000/svg';
-      const measure = (s: string): number => {
-        const t = document.createElementNS(NS, 'text');
-        t.setAttribute('class', 'kat-seal-text');
-        t.style.visibility = 'hidden';
-        t.textContent = s;
-        svg.appendChild(t);
-        let len = 0;
-        try {
-          // jsdom (tests) doesn't implement SVG text measurement — fall back to the default count.
-          len = typeof t.getComputedTextLength === 'function' ? t.getComputedTextLength() : 0;
-        } catch {
-          len = 0;
-        }
-        svg.removeChild(t);
-        return len;
-      };
-      const circumference = 2 * Math.PI * RING_RADIUS;
-      const phraseLen = measure(RING_PHRASE);
-      const gapUnit = measure('\u00B7 ');
-      if (!phraseLen || !gapUnit) return; // measurement unavailable — keep the default of 2
-      const n = Math.max(1, Math.floor(circumference / (phraseLen + 4 * gapUnit)));
-      if (!cancelled) setPhraseCount(n);
-    };
-    if (document.fonts?.ready) void document.fonts.ready.then(build);
-    build();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const ticks = Array.from({ length: 48 }, (_, i) => {
-    const a = (i / 48) * Math.PI * 2;
-    const r1 = 150;
-    const r2 = i % 4 === 0 ? 138 : 144;
-    return (
-      <line
-        key={i}
-        className="kat-seal-tick"
-        x1={190 + Math.cos(a) * r1}
-        y1={190 + Math.sin(a) * r1}
-        x2={190 + Math.cos(a) * r2}
-        y2={190 + Math.sin(a) * r2}
-        strokeWidth={i % 4 === 0 ? 1.4 : 0.7}
-      />
-    );
-  });
-
-  const phrases = Array.from({ length: phraseCount }, (_, i) => (
-    <text key={i} className="kat-seal-text" textAnchor="middle">
-      <textPath href="#kat-ring-path" startOffset={`${((i + 0.5) / phraseCount) * 100}%`}>
-        {RING_PHRASE}
-      </textPath>
-    </text>
-  ));
 
   const press = (): void => {
     if (armed) {
@@ -651,69 +578,36 @@ function AltarGate({
     <div className="scene altar-gate">
       <div className="altar-fog" aria-hidden="true" />
       <AmbientEmbers />
-      <div className="altar-inner">
+
+      <div className="altar-top">
         <h1 className="altar-title">Katabasis</h1>
+      </div>
 
-        <div className={`kat-seal-wrap${armed ? ' is-armed' : ''}`}>
-          <div className="kat-seal-core" aria-hidden="true" />
-          <svg className="kat-seal-svg" viewBox="0 0 380 380" ref={svgRef} aria-hidden="true">
-            <defs>
-              <path
-                id="kat-ring-path"
-                d="M 190,190 m -118,0 a 118,118 0 1,1 236,0 a 118,118 0 1,1 -236,0"
-              />
-            </defs>
-            <circle
-              className="kat-seal-stroke"
-              cx="190"
-              cy="190"
-              r="170"
-              strokeWidth="1"
-              opacity="0.5"
-            />
-            <g className="kat-seal-spin">
-              <circle className="kat-seal-stroke" cx="190" cy="190" r="150" strokeWidth="1.4" />
-              {ticks}
-            </g>
-            <circle
-              className="kat-seal-stroke"
-              cx="190"
-              cy="190"
-              r="132"
-              strokeWidth="0.8"
-              opacity="0.7"
-            />
-            <g className="kat-seal-spin-rev">{phrases}</g>
-            <circle className="kat-seal-stroke" cx="190" cy="190" r="92" strokeWidth="1.2" />
-          </svg>
-          <button
-            type="button"
-            className="kat-seal-btn"
-            onClick={press}
-            aria-label={
-              armed ? 'Confirm the descent \u2014 there is no return' : 'Press the seal to descend'
-            }
-          >
+      {/* The sigil is the only thing in the centre: it breathes and vibrates idly, and on the first
+          press (armed) it scales up dramatically and shakes much harder. The scale lives on the
+          wrapping span so it composes cleanly with the glyph's own translate/rotate jitter. */}
+      <div className={`kat-seal-wrap${armed ? ' is-armed' : ''}`}>
+        <button
+          type="button"
+          className="kat-seal-btn"
+          onClick={press}
+          aria-label={
+            armed ? 'Confirm the descent — there is no return' : 'Press the sigil to descend'
+          }
+        >
+          <span className="kat-seal-scale">
             <img className="kat-seal-glyph" src={SEAL_SRC} alt="" draggable={false} />
-          </button>
-        </div>
+          </span>
+        </button>
+      </div>
 
-        <div className={`kat-seal-hint${armed ? ' is-armed' : ''}`}>
-          {armed
-            ? 'Press the seal again \u2014 there is no return.'
-            : 'Press the seal to begin the descent.'}
-        </div>
-
-        <div className="altar-actions">
-          <button type="button" className="altar-action" onClick={onTurnAway}>
-            <span className="altar-action-label">Turn away</span>
-            <span className="altar-action-sub">climb back to the altar room</span>
-          </button>
-          <button type="button" className="altar-action" onClick={onStatusQuo}>
-            <span className="altar-action-label">Status quo</span>
-            <span className="altar-action-sub">the ledger of Devotion</span>
-          </button>
-        </div>
+      <div className="altar-actions">
+        <button type="button" className="altar-action" onClick={onTurnAway}>
+          <span className="altar-action-label">Unfocus</span>
+        </button>
+        <button type="button" className="altar-action" onClick={onStatusQuo}>
+          <span className="altar-action-label">Status quo</span>
+        </button>
       </div>
     </div>
   );
