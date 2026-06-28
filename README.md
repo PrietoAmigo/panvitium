@@ -103,9 +103,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 877** (sim 536 · shared 60 · api 20 · web 261).
+**Current test count: 878** (sim 536 · shared 60 · api 20 · web 262).
 
-> **Latest change — the smartphone call-in system (Claude Design handoff, "incoming calls").** The
+> **Latest change — the Altar gate no longer freezes time (only the committed descent does).**
+> Opening the in-room Altar to its full-screen gate (and the "Status Quo" Ledger behind it) used to
+> suspend the tick the instant it appeared, because the store froze on any non-null `katabasisPhase`.
+> It now keeps ticking there: the lifetime is still `inKatabasis === false` and the soul is not yet
+> under, so suicides, Mercatus gold, and soul minting all keep landing while the player browses the
+> gate. The trance begins only once the descent is **committed** (`beginKatabasis` sets
+> `inKatabasis`) and the player is down among the Princes / Goetia seals; the recap and the launch
+> title menu still freeze as before. `gameStore.advance` now keys its freeze off `inKatabasis` rather
+> than the menu merely being open — no sim, save, or RNG change. A new web store test pins that the
+> gate keeps ticking while the committed descent stays frozen.
+>
+> **Earlier change — the smartphone call-in system (Claude Design handoff, "incoming calls").** The
 > Studio phone now _receives_ calls, not just dials out. During eligible active play in the Studio —
 > even with a menu open, so you hear it ring behind the PC or the dialer — a call arrives roughly
 > every **10 minutes** from a weighted bag: the room swaps to the "incoming call" plate and the phone

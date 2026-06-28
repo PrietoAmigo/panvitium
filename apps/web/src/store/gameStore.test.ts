@@ -177,7 +177,7 @@ describe('gameStore — Katabasis', () => {
     expect(floor(st.souls).toNumber()).toBe(0);
   });
 
-  it('freezes the lifetime while the menu is open — souls do not accrue during the descent', () => {
+  it('freezes the lifetime once the descent is committed — souls do not accrue down in Hell', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
@@ -185,10 +185,25 @@ describe('gameStore — Katabasis', () => {
         lifetime: { ...s0.lifetime, reprobates: 5000 },
       },
     });
-    store().beginKatabasis();
+    store().beginKatabasis(); // commit → inKatabasis, the soul is under
     const soulsAtEntry = floor((store().state as GameState).souls).toNumber();
     store().advance(3600); // an hour of would-be suicides
     expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtEntry);
+  });
+
+  it('keeps ticking at the Altar gate (pre-commit) — time only stops once the descent begins', () => {
+    const s0 = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s0,
+        lifetime: { ...s0.lifetime, reprobates: 5000 },
+      },
+    });
+    store().openKatabasis(); // the gate / Ledger menu — no teardown, inKatabasis stays false
+    expect((store().state as GameState).inKatabasis).not.toBe(true);
+    const soulsAtEntry = floor((store().state as GameState).souls).toNumber();
+    store().advance(3600); // an hour of suicides still lands — the soul is not yet under
+    expect(floor((store().state as GameState).souls).toNumber()).toBeGreaterThan(soulsAtEntry);
   });
 
   it('entering Katabasis liquidates the Mercatūs and stops toggles and invocations immediately', () => {

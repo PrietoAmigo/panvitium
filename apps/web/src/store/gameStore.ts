@@ -159,9 +159,10 @@ interface GameStore {
    */
   markDoppelgaengerSeen: () => void;
   /**
-   * Open the full-screen Altar gate without committing — no teardown, only the menu pause. The
-   * in-room Altar routes here; from the gate the player either commits (`beginKatabasis`) or turns
-   * back (`closeKatabasis`). Safe to cancel: nothing in the lifetime has been torn down yet.
+   * Open the full-screen Altar gate without committing — no teardown and no freeze: the lifetime
+   * keeps ticking behind the gate (and its Ledger), since the soul is not yet under. The in-room
+   * Altar routes here; from the gate the player either commits (`beginKatabasis`) or turns back
+   * (`closeKatabasis`). Safe to cancel: nothing in the lifetime has been torn down yet.
    */
   openKatabasis: () => void;
   /**
@@ -306,11 +307,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   advance: (deltaSeconds) => {
     const current = get().state;
     if (!current) return;
-    // During the descent (menu open), the recap, and the launch title menu the lifetime is frozen
-    // — the soul is in trance. Skip the sim entirely so nothing accrues (no suicides, no Mercatus
-    // gold, no soul minting). The RAF accumulator drains harmlessly through these no-op calls, so
-    // there is no catch-up burst when the screen closes.
-    if (get().katabasisPhase !== null || get().titleOpen) return;
+    // Time keeps running while the player lingers at the Altar gate or its Ledger — the pre-commit
+    // "altar menu" is still inKatabasis === false, the soul is not yet under, so the lifetime ticks
+    // on behind it. It only goes into trance once the descent is COMMITTED (`beginKatabasis` sets
+    // inKatabasis) and the player is down among the Princes / Goetia seals; the recap and the launch
+    // title menu freeze it too. While frozen we skip the sim entirely so nothing accrues (no
+    // suicides, no Mercatus gold, no soul minting). The RAF accumulator drains harmlessly through
+    // these no-op calls, so there is no catch-up burst when the screen closes.
+    const phase = get().katabasisPhase;
+    const frozen =
+      phase === 'recap' || (phase === 'menu' && current.inKatabasis === true) || get().titleOpen;
+    if (frozen) return;
     const { state, events, notices, achievementsUnlocked, emailsDelivered } = tick(
       current,
       deltaSeconds,
