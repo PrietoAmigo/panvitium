@@ -26,8 +26,8 @@ import type { OutcomeEvent } from './events.js';
 /**
  * Maximum acolytes given the current state, using the EFFECTIVE max influence (post-modifier).
  * Per the Acolytes sheet, the Nth acolyte unlocks once effective max influence reaches the Nth
- * threshold, where thresholds form a ×1.5 geometric series anchored at `ACOLYTE_THRESHOLD_BASE`
- * and each step is rounded to the nearest integer, compounding off the rounded previous value
+ * threshold, where thresholds form a ×1.5 geometric series anchored at `ACOLYTE_THRESHOLD_BASE`,
+ * compounding UNROUNDED and rounded to the nearest integer only for the comparison
  * (110 → 165 → 248 → 371 → …). A fresh lifetime (base 100 influence) has 0 acolytes; the
  * first unlocks at 110. Influence is floored before the integer comparison (resources are natural
  * numbers; `break_infinity` is a float bignum — ADR-005). The loop self-terminates: each threshold
