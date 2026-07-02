@@ -44,6 +44,9 @@ const actionTimerSchema = z.object({
   actionId: z.string(),
   remainingSeconds: z.number(),
   target: z.string().optional(),
+  // Gold actually paid at startAction (Emptio refund basis). Additive-optional (ADR-023): absent
+  // on older saves' in-flight timers, which fall back to recomputing the price at resolution.
+  paidGold: z.number().nonnegative().optional(),
 });
 
 const inboxEntrySchema = z.object({
@@ -207,11 +210,12 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(Object.keys(state.lifetime.toggleDurations).length > 0
         ? { toggleDurations: { ...state.lifetime.toggleDurations } }
         : {}),
-      actionQueue: state.lifetime.actionQueue.map((t) =>
-        t.target === undefined
-          ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
-          : { actionId: t.actionId, remainingSeconds: t.remainingSeconds, target: t.target },
-      ),
+      actionQueue: state.lifetime.actionQueue.map((t) => ({
+        actionId: t.actionId,
+        remainingSeconds: t.remainingSeconds,
+        ...(t.target === undefined ? {} : { target: t.target }),
+        ...(t.paidGold === undefined ? {} : { paidGold: t.paidGold }),
+      })),
       // Auto-repeat set: omit when empty (additive-optional per ADR-023).
       ...(state.lifetime.autoRepeat.length > 0
         ? { autoRepeat: [...state.lifetime.autoRepeat] }
@@ -311,11 +315,12 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       maleficiaPrices: { ...(s.lifetime.maleficiaPrices ?? {}) },
       activeToggles: [...s.lifetime.activeToggles],
       toggleDurations: { ...(s.lifetime.toggleDurations ?? {}) },
-      actionQueue: s.lifetime.actionQueue.map((t) =>
-        t.target === undefined
-          ? { actionId: t.actionId, remainingSeconds: t.remainingSeconds }
-          : { actionId: t.actionId, remainingSeconds: t.remainingSeconds, target: t.target },
-      ),
+      actionQueue: s.lifetime.actionQueue.map((t) => ({
+        actionId: t.actionId,
+        remainingSeconds: t.remainingSeconds,
+        ...(t.target === undefined ? {} : { target: t.target }),
+        ...(t.paidGold === undefined ? {} : { paidGold: t.paidGold }),
+      })),
       // Auto-repeat set is additive-optional (ADR-023): missing in old saves means [] at runtime.
       autoRepeat: [...(s.lifetime.autoRepeat ?? [])],
       // Pool fields are additive-optional (ADR-023): missing in old saves means 0 at runtime.

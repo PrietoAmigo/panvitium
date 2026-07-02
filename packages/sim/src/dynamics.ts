@@ -102,41 +102,55 @@ export function applyReprobateDynamics(
     },
   };
 
-  // 1. Births. Each whole unit produces one reprobate. No RNG needed.
-  while (working.lifetime.generationPool >= 1) {
-    const withBirth = addReprobates(working, 1);
-    working = {
-      ...withBirth,
-      lifetime: { ...withBirth.lifetime, generationPool: working.lifetime.generationPool - 1 },
-    };
+  // Every whole unit in a pool is identical (single undifferentiated pool, no RNG per event), so
+  // each pool drains in ONE bulk application rather than a unit-at-a-time loop. This matters for
+  // the uncapped offline catch-up tick (ADR-004 amended): a long absence can land millions of
+  // accrued units in a pool at once, and a per-unit loop respreading the state each iteration
+  // would hang the load for minutes.
+
+  // 1. Births. Each whole unit produces one reprobate; unbounded by population.
+  {
+    const births = Math.floor(working.lifetime.generationPool);
+    if (births >= 1) {
+      const withBirths = addReprobates(working, births);
+      working = {
+        ...withBirths,
+        lifetime: {
+          ...withBirths.lifetime,
+          generationPool: working.lifetime.generationPool - births,
+        },
+      };
+    }
   }
 
-  // 2. Suicides. Each whole unit kills one reprobate; the death yields 1 soul (03 §3).
-  while (working.lifetime.suicidePool >= 1 && totalReprobates(working) > 0) {
-    const r = removeReprobates(working, 1);
-    if (r.removed === 0) break;
-    const withSoul = mintSouls(r.state, 1);
-    working = {
-      ...withSoul,
-      lifetime: { ...withSoul.lifetime, suicidePool: working.lifetime.suicidePool - 1 },
-    };
+  // 2. Suicides. Each whole unit kills one reprobate; every death yields 1 soul (03 §3). Bounded
+  //    by the living population; the unspent remainder stays pooled so progress isn't lost.
+  {
+    const deaths = Math.min(Math.floor(working.lifetime.suicidePool), totalReprobates(working));
+    if (deaths >= 1) {
+      const r = removeReprobates(working, deaths);
+      const withSouls = mintSouls(r.state, r.removed);
+      working = {
+        ...withSouls,
+        lifetime: { ...withSouls.lifetime, suicidePool: working.lifetime.suicidePool - r.removed },
+      };
+    }
   }
 
   // 3. Murders. Each whole unit kills one reprobate; each kill yields 1 soul. If no reprobates
-  //    exist, the pool is left intact so progress isn't lost. (Leraie #14's murder→suicide
+  //    remain, the pool is left intact so progress isn't lost. (Leraie #14's murder→suicide
   //    coupling is rate-level, in `reprobateRates`; the old murder-gold effect is retired per the
   //    Sigils sheet rev 2026-06-12.)
-  while (working.lifetime.murderPool >= 1 && totalReprobates(working) > 0) {
-    const r = removeReprobates(working, 1);
-    if (r.removed === 0) break;
-    const withSoul = mintSouls(r.state, 1);
-    working = {
-      ...withSoul,
-      lifetime: {
-        ...withSoul.lifetime,
-        murderPool: working.lifetime.murderPool - 1,
-      },
-    };
+  {
+    const deaths = Math.min(Math.floor(working.lifetime.murderPool), totalReprobates(working));
+    if (deaths >= 1) {
+      const r = removeReprobates(working, deaths);
+      const withSouls = mintSouls(r.state, r.removed);
+      working = {
+        ...withSouls,
+        lifetime: { ...withSouls.lifetime, murderPool: working.lifetime.murderPool - r.removed },
+      };
+    }
   }
 
   return working;

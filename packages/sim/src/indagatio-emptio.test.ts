@@ -194,6 +194,26 @@ describe('resolveEmptio (03 §2.6)', () => {
     expect(r.acquired).toEqual([]);
     expect(r.state).toEqual(fresh());
   });
+
+  it('startAction stamps the gold PAID on the timer, and refunds track it over a recompute', () => {
+    // The timer carries `paidGold` (ADR-023 additive-optional) so the refund basis is the amount
+    // actually deducted, immune to the Amy #58 reduction changing while the purchase is in flight.
+    const state = listedWith('ritual_dagger', 50_000);
+    const started = startAction(state, 'emptio', { target: 'ritual_dagger' });
+    expect(started.ok).toBe(true);
+    if (!started.ok) return;
+    const timer = started.state.lifetime.actionQueue[0]!;
+    expect(timer.paidGold).toBe(MALEFICIA.ritual_dagger!.cost); // no rolled price → catalog cost
+    // Resolution honours the stamped amount even when the live recompute would say otherwise.
+    const cheaper = 900;
+    const r = resolveEmptio(started.state, 'stellar', 'ritual_dagger', cheaper);
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(
+      50_000 - MALEFICIA.ritual_dagger!.cost + cheaper,
+    );
+    // An in-flight timer from an older save (no paidGold) falls back to the recompute.
+    const legacy = resolveEmptio(started.state, 'stellar', 'ritual_dagger');
+    expect(floor(legacy.state.lifetime.gold).toNumber()).toBe(50_000);
+  });
 });
 
 describe('startAction — Indagatio / Emptio', () => {

@@ -342,23 +342,22 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
     for (const timer of working.lifetime.actionQueue) {
       const left = timer.remainingSeconds - actionDelta;
       if (left > 0) {
-        remaining.push(
-          timer.target === undefined
-            ? { actionId: timer.actionId, remainingSeconds: left }
-            : { actionId: timer.actionId, remainingSeconds: left, target: timer.target },
-        );
+        remaining.push({
+          actionId: timer.actionId,
+          remainingSeconds: left,
+          ...(timer.target === undefined ? {} : { target: timer.target }),
+          ...(timer.paidGold === undefined ? {} : { paidGold: timer.paidGold }),
+        });
       } else {
         completed.push(timer);
       }
     }
     working = { ...working, lifetime: { ...working.lifetime, actionQueue: remaining } };
     for (const timer of completed) {
-      const resolved = resolveAction(
-        working,
-        timer.actionId,
-        rng,
-        timer.target === undefined ? {} : { target: timer.target },
-      );
+      const resolved = resolveAction(working, timer.actionId, rng, {
+        ...(timer.target === undefined ? {} : { target: timer.target }),
+        ...(timer.paidGold === undefined ? {} : { paidGold: timer.paidGold }),
+      });
       working = resolved.state;
       if (resolved.event) events.push(resolved.event);
     }
@@ -409,11 +408,19 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   }
 
   // 4d. Defixio curse (Maleficia): a single-use hex on the reprobate pool. It culls the pool at
-  //     eᵗ per second (t = seconds the curse has run, read at the start of the interval), minting a
-  //     soul per death, until the pool is empty — then the curse lifts. No RNG draw (single pool).
+  //     eᵗ per second (t = seconds the curse has run), integrated exactly over the tick span:
+  //     cumulative kills by time t are ⌊∫₀ᵗ eˢ ds⌋ = ⌊eᵗ − 1⌋ and this tick culls the difference —
+  //     so the 10 Hz loop and one big offline catch-up tick agree (ADR-004) and no sub-1 fraction
+  //     is lost between ticks. Mints a soul per death until the pool is empty — then the curse
+  //     lifts. No RNG draw (single pool).
   if (working.lifetime.defixio) {
     const curse = working.lifetime.defixio;
-    const culled = removeReprobates(working, Math.exp(curse.elapsed) * deltaSeconds);
+    const before = Math.floor(Math.expm1(curse.elapsed));
+    const after = Math.expm1(curse.elapsed + deltaSeconds);
+    // A long-lived ramp overflows to Infinity; treat it as "cull everything" (removeReprobates
+    // clamps to the living population, and an empty pool lifts the curse below).
+    const due = Number.isFinite(after) ? Math.floor(after) - before : Number.POSITIVE_INFINITY;
+    const culled = removeReprobates(working, due);
     working = mintSouls(culled.state, culled.removed);
     working =
       working.lifetime.reprobates <= 0

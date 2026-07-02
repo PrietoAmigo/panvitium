@@ -126,10 +126,10 @@ export type ActivateResult =
   | { readonly ok: false; readonly reason: string };
 
 /**
- * Activate a single-use maleficium from the owned inventory. Currently only Hand of Glory is
- * activatable: it consumes one copy and adds an hour to the generation buff (repeat activations
- * extend the timer; the multiplier stays +100% while any time remains). Other items can't be used
- * this way. Defixio's single-use cull is deferred — its sheet "exp ramp" magnitude is unspecified.
+ * Activate a single-use maleficium from the owned inventory. Hand of Glory consumes one copy and
+ * adds an hour to the generation buff (repeat activations extend the timer; the multiplier stays
+ * +100% while any time remains). Defixio consumes one copy and begins the eᵗ/s reprobate cull
+ * (one curse at a time; see tick.ts 4d). Other items can't be used this way.
  */
 export function activateMaleficium(state: GameState, id: string): ActivateResult {
   const removeOne = (idx: number): string[] => [

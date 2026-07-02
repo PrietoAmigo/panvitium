@@ -188,7 +188,9 @@ export function startAction(
   const timer: ActionTimer =
     target === undefined
       ? { actionId: def.id, remainingSeconds: duration }
-      : { actionId: def.id, remainingSeconds: duration, target };
+      : // Emptio: carry the gold actually paid so the tiered refunds at resolution are computed
+        // against it (not a recompute that could drift if the Amy reduction changes mid-flight).
+        { actionId: def.id, remainingSeconds: duration, target, paidGold: goldCost };
   const lifetime = {
     ...state.lifetime,
     gold: sub(state.lifetime.gold, goldCost),
@@ -491,7 +493,7 @@ export function resolveAction(
   state: GameState,
   actionId: string,
   rng: Rng,
-  options: { target?: string; efficiency?: number; forcedTier?: Tier } = {},
+  options: { target?: string; paidGold?: number; efficiency?: number; forcedTier?: Tier } = {},
 ): { state: GameState; event: OutcomeEvent | null } {
   const def = ACTIONS[actionId];
   if (!def) return { state, event: null };
@@ -577,7 +579,7 @@ export function resolveAction(
       break;
     }
     case 'emptio': {
-      const r = resolveEmptio(state, tier, options.target);
+      const r = resolveEmptio(state, tier, options.target, options.paidGold);
       next = r.state;
       acquired = r.acquired;
       lostFromList = r.lostFromList;
@@ -897,6 +899,7 @@ export function resolveEmptio(
   state: GameState,
   tier: Tier,
   target: string | undefined,
+  paidGold?: number,
 ): { state: GameState; acquired: string[]; lostFromList: string[] } {
   if (!target || !MALEFICIA[target]) return { state, acquired: [], lostFromList: [] };
   if (!state.lifetime.emptioList.includes(target)) {
@@ -906,15 +909,16 @@ export function resolveEmptio(
   const def = MALEFICIA[target];
   // Refunds are relative to the gold actually PAID at startAction — the in-band rolled price
   // (Maleficia sheet Randint per rarity), softened by the Amy Emptio-gold reduction — NOT the flat
-  // catalog `def.cost`. Recompute it the same way startAction did (actions.ts ~166) so a Stellar
-  // "full refund" truly zeroes the purchase and the partial tiers refund the right fraction of the
-  // listed price. Falls back to `def.cost` for items surfaced before rolled pricing landed.
+  // catalog `def.cost`. The timer carries that amount (`paidGold`) so a Stellar "full refund"
+  // truly zeroes the purchase and the partial tiers refund the right fraction of it even if the
+  // reduction changed mid-flight. An in-flight timer from an older save lacks the field; recompute
+  // it the same way startAction did (falling back to `def.cost` for pre-rolled-pricing items).
   const rolled = state.lifetime.maleficiaPrices[target] ?? def.cost;
   const costRed = sigilCostReductionByChannel(
     state,
     sigilEffectMultiplier(state.lifetime.maleficia),
   );
-  const paid = costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled;
+  const paid = paidGold ?? (costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled);
   // Remove ONE matching entry from the list (stackable items can have multiple copies listed).
   const dropIndex = state.lifetime.emptioList.indexOf(target);
   const trimmedList = [

@@ -59,7 +59,7 @@ export interface InvocationDef {
   readonly soulCost?: { readonly fraction: number; readonly minimum: number };
   /**
    * Gold cost (in addition to soulCost): a fraction of the current gold pool, floored, with an
-   * optional minimum (Morpheus pays 66% of gold). Omitted for invocations that don't cost gold.
+   * optional minimum (Morpheus pays 90% of gold). Omitted for invocations that don't cost gold.
    */
   readonly goldCost?: { readonly fraction: number; readonly minimum?: number };
   /** Maximum simultaneously active (the apex entities cap at 1). Default unlimited (stackable). */
@@ -146,7 +146,7 @@ export function invocationSoulCost(state: GameState, def: InvocationDef): BigNum
 
 /**
  * The gold cost to summon `def` right now (floored). Zero for invocations that don't list a gold
- * cost. Morpheus is the only entry with a gold cost so far (66% of the gold pool, no minimum).
+ * cost. Morpheus is the only entry with a gold cost so far (90% of the gold pool, no minimum).
  */
 export function invocationGoldCost(state: GameState, def: InvocationDef): BigNum {
   if (!def.goldCost) return ZERO;
