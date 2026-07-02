@@ -249,4 +249,17 @@ describe('Defixio (sustained reprobate-pool curse)', () => {
     const cast = (activateMaleficium(empty, 'defixio') as { ok: true; state: GameState }).state;
     expect(tick(cast, 1).state.lifetime.defixio).toBeUndefined();
   });
+
+  it('culls identically online (10 Hz ticks) and offline (one big tick) — exact eᵗ integral', () => {
+    // Cumulative kills by time t are ⌊eᵗ − 1⌋, so a sum of small ticks and one catch-up tick must
+    // agree exactly (ADR-004) — no sub-1 fraction is lost between 100 ms ticks.
+    const cast = (activateMaleficium(cursed(), 'defixio') as { ok: true; state: GameState }).state;
+    let online = cast;
+    for (let i = 0; i < 40; i++) online = tick(online, 0.1).state;
+    const offline = tick(cast, 4).state;
+    expect(online.lifetime.reprobates).toBe(offline.lifetime.reprobates);
+    expect(online.lifetime.reprobates).toBe(100 - Math.floor(Math.expm1(4))); // 100 − 53
+    // The first whole kill lands once eᵗ − 1 crosses 1 (t = ln 2 ≈ 0.69 s), not seconds later.
+    expect(tick(cast, 0.7).state.lifetime.reprobates).toBe(99);
+  });
 });
