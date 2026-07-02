@@ -80,6 +80,37 @@ describe('reprobate dynamics — suicide pool', () => {
     const after = applyReprobateDynamics(before, 0);
     expect(after).toBe(before);
   });
+
+  it('drains a multi-million-unit pool in one call (uncapped offline catch-up)', () => {
+    // ADR-004 amended: offline progression is uncapped, so one catch-up tick can land millions of
+    // accrued units in a pool at once. The drain must be bulk (O(1)), not unit-at-a-time — the old
+    // per-unit loop respread the whole state each iteration and hung the load for ~1 s per 1e6
+    // units. This would time out under that implementation.
+    const s = pop(30_000_000);
+    const primed: GameState = {
+      ...s,
+      lifetime: { ...s.lifetime, generationPool: 20_000_000.25, murderPool: 20_000_000.5 },
+    };
+    const after = applyReprobateDynamics(primed, 0.1);
+    // This tick also accrues its own deaths on the 3e7 entry population: 0.0001 × 3e7 × 0.1 = 300
+    // suicides and 0.0002 × 3e7 × 0.1 = 600 murders. So: 2e7 births land, then 300 suicides and
+    // 2e7 + 600 murders cull (each minting a soul); the seeded fractions stay pooled.
+    expect(totalReprobates(after)).toBe(30_000_000 - 900);
+    expect(after.souls.toNumber()).toBe(20_000_000 + 900);
+    expect(after.lifetime.generationPool).toBeCloseTo(0.25, 6);
+    expect(after.lifetime.murderPool).toBeCloseTo(0.5, 6);
+  });
+
+  it('a pool larger than the population culls everyone and keeps the remainder pooled', () => {
+    const primed: GameState = {
+      ...pop(5),
+      lifetime: { ...pop(5).lifetime, suicidePool: 12 },
+    };
+    const after = applyReprobateDynamics(primed, 0.001);
+    expect(totalReprobates(after)).toBe(0);
+    expect(after.souls.toNumber()).toBe(5);
+    expect(after.lifetime.suicidePool).toBeCloseTo(7, 3); // 12 − 5 kept for a future population
+  });
 });
 
 describe('reprobate dynamics — soul minting', () => {
