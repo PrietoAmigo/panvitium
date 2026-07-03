@@ -6,20 +6,18 @@ import {
   actionUnlocked,
   categoryEfficiency,
   MALEFICIA,
-  SINS,
-  mercatusDepth,
-  mercatusDepthCap,
-  mercatusUnlocked,
-  mercatusRevenuePerSecond,
-  foedusRevenueMul,
-  highestFoedusTierForSin,
-  investCost,
-  cumulativeInvestCost,
-  divestFraction,
+  anatocismusDepositPerSecond,
+  computeModifiers,
+  faenerationUnlocked,
+  foedusTier,
+  mutuumGoldPerSecond,
   sinLevel,
-  MERCATUS_GEN_PER_DEPTH,
-  mercatusGenerationClauseMul,
-  type Sin,
+  SYNGRAPHA_BRANCHES,
+  syngraphaBranch,
+  syngraphaSignable,
+  syngraphaSigned,
+  thesaurusInterestPerSecond,
+  thesaurusRecoveryFraction,
   COMPOSITUM_IDS,
   compositumById,
   compositumUnlocked,
@@ -638,28 +636,15 @@ function formatDuration(totalSec: number): string {
 }
 
 /**
- * Depraedatio: the Mercatus system (Vitium Mercatura rework spec §1). Eight trades, exactly one
- * per Cardinal Sin, each a single integer depth. Deepening is an instant gold purchase (no build
- * times, no queue); revenue is demand-driven — spendPerCapita × reprobates × penetration(depth) —
- * so a trade's take grows with the living population and with its reach into it.
+ * Depraedatio: the Faeneratio loop (Depraedatio gold rework). The eight per-Sin Mercatūs
+ * retired; in their place a single Avaritia-centric gold economy in two surfaces — the Thesaurus
+ * tab (Mutuum, the loan book earning by the head of the damned, plus the hoard paying Fenus
+ * interest) and the Syngraphae tab (the burned-gold contract tree). The framing is arm’s-length
+ * usury: the damned never pay tribute and never learn the creditor’s name.
  */
 
-/** Roman numerals for the Foedus tier badge (tiers 1..4). */
+/** Roman numerals for the Foedus tier badge and the Avaritia gates (1..4). */
 const ROMAN_TIERS = ['', 'I', 'II', 'III', 'IV'] as const;
-
-/** Per-Sin accent hue — the "Sigil Grid" colour language for the Mercatura cards. */
-const MERCATUS_HUE: Record<Sin, number> = {
-  gula: 32,
-  luxuria: 344,
-  avaritia: 46,
-  tristitia: 222,
-  ira: 6,
-  acedia: 188,
-  vanagloria: 286,
-  superbia: 266,
-};
-
-const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** Compact rate readout: 2 decimals under 100, whole numbers above. */
 function formatRate(n: number): string {
@@ -667,289 +652,340 @@ function formatRate(n: number): string {
   return (Math.round(n * 100) / 100).toString();
 }
 
-type DepraedatioTab = 'mercatura' | 'compositum';
+const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
+
+type DepraedatioTab = 'thesaurus' | 'syngraphae' | 'compositum';
+
+const depCard: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+  padding: 16,
+  borderRadius: 10,
+  border: '1px solid rgba(255,255,255,.08)',
+  background: 'rgba(12,10,9,.6)',
+};
+const depLabel: CSSProperties = {
+  fontFamily: "'Ubuntu Mono', monospace",
+  fontSize: '.66rem',
+  letterSpacing: '.1em',
+  color: '#8a7e66',
+  textTransform: 'uppercase',
+};
+const depTitle: CSSProperties = {
+  fontFamily: "'Cinzel', serif",
+  fontSize: '1.06rem',
+  letterSpacing: '.02em',
+  color: '#ecd9a8',
+  lineHeight: 1.1,
+};
+const depMono: CSSProperties = {
+  fontFamily: "'Ubuntu Mono', monospace",
+  fontVariantNumeric: 'tabular-nums',
+};
+const depFlavor: CSSProperties = {
+  fontFamily: "'Ubuntu Mono', monospace",
+  fontSize: '.72rem',
+  letterSpacing: '.03em',
+  color: '#c79f63',
+  lineHeight: 1.35,
+};
+
+/** A big gold-rate readout: "12.5 gold/s". */
+function RateReadout({ value, unit }: { value: string; unit: string }): ReactElement {
+  return (
+    <div style={{ lineHeight: 1 }}>
+      <span style={{ ...depMono, fontSize: '1.5rem', color: '#e6a23c' }}>{value}</span>
+      <span style={{ ...depMono, fontSize: '.7rem', color: '#8a7e66', marginLeft: 3 }}>{unit}</span>
+    </div>
+  );
+}
 
 /**
- * Depraedatio (Mercatus system, Vitium Mercatura rework spec §1), reworked from the Claude Design
- * "merged proposal": Vitium Mercatura as a Sigil Grid of per-Sin trade cards, Vitium Compositum as a
- * Living Grimoire of rites, under one tab bar. All wiring is the real model — the eight Mercatūs via
- * `invest`/`divest` (instant gold purchases, demand-driven revenue), the ceremonies via
- * `activateCeremony`/`deactivateCeremony`, and the Panvitium endgame ritual with its two-step
- * safeguard. Rendered full-bleed inside the PC window (its own grimoire surface; the titlebar names
- * it).
+ * The Thesaurus tab: the Mutuum loan-book row (debtor count + take/s, locked flavour below
+ * Avaritia I), the hoard with its Fenus interest and the global Foedus badge, the deposit control,
+ * and the two-step withdraw (the recovery fraction and the forfeit are stated before confirming).
  */
-
-/** Vitium Mercatura — the Sigil Grid: one card per Sin (deepen / cut back / sell off). */
-function MercaturaGrid(): ReactElement {
+function ThesaurusTab(): ReactElement {
   const state = useGameStore((s) => s.state);
-  const invest = useGameStore((s) => s.invest);
-  const divest = useGameStore((s) => s.divest);
+  const deposit = useGameStore((s) => s.depositThesaurus);
+  const withdraw = useGameStore((s) => s.withdrawThesaurus);
+  const [depositText, setDepositText] = useState('');
+  const [withdrawText, setWithdrawText] = useState('');
+  const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
   if (!state) return <></>;
+  const F = strings.faeneratio;
+  const mods = computeModifiers(state);
+  const open = faenerationUnlocked(state);
   const gold = floor(state.lifetime.gold).toNumber();
-  const fraction = divestFraction(state);
-  const baseCard: CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 13,
-    padding: 16,
-    borderRadius: 10,
-    border: '1px solid rgba(255,255,255,.08)',
-    background: 'rgba(12,10,9,.6)',
-  };
+  const hoard = state.lifetime.hoard;
+  // Effective realised rates: the raw terms × faenerationOutputMul × goldRateMul, matching the
+  // tick's gold line (spec §6). The Anatocismus deposit rate is already fully composed.
+  const outMul = mods.faenerationOutputMul * mods.goldRateMul;
+  const mutuumRate = mutuumGoldPerSecond(state, mods) * outMul;
+  const interestRate = thesaurusInterestPerSecond(state, mods) * outMul;
+  const anatocismusRate = anatocismusDepositPerSecond(state, mods);
+  const tier = foedusTier(state);
+  const recovery = thesaurusRecoveryFraction(mods);
+
+  const depositAmount = Math.max(0, Math.floor(Number(depositText) || 0));
+  const withdrawAmount = Math.max(0, Math.floor(Number(withdrawText) || 0));
+  const hoardFloor = floor(hoard).toNumber();
+  const returned = Math.floor(withdrawAmount * recovery);
+  const forfeited = withdrawAmount - returned;
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 13 }}>
-      {SINS.map((sin) => {
-        const name = strings.mercatus.names[sin] ?? sin;
-        const unlocked = mercatusUnlocked(state, sin);
-        const locked = !unlocked;
-        const d = mercatusDepth(state, sin);
-        const cap = mercatusDepthCap(state, sin);
-        const atCap = unlocked && d >= cap;
-        const nextCost = investCost(sin, d);
-        const revenue = mercatusRevenuePerSecond(state, sin) * foedusRevenueMul(state, sin);
-        const gen = MERCATUS_GEN_PER_DEPTH * d * mercatusGenerationClauseMul(sin);
-        const tier = highestFoedusTierForSin(state, sin);
-        const level = sinLevel(state.devotion[sin]);
-        const pct = cap > 0 ? Math.round((d / cap) * 100) : 0;
-        const cutBackRefund = Math.floor(
-          fraction * (cumulativeInvestCost(sin, d) - cumulativeInvestCost(sin, d - 1)) + 1e-9,
-        );
-        const sellOffRefund = Math.floor(fraction * cumulativeInvestCost(sin, d) + 1e-9);
-        const hue = MERCATUS_HUE[sin];
-        const accent = `hsl(${hue} 60% 65%)`;
-        const accentLine = `hsl(${hue} 52% 56% / 0.55)`;
-        const nextLock = locked
-          ? `Locked \u00B7 opens at ${capitalize(sin)} ${romanLevel(1)}`
-          : `Depths beyond ${cap} require ${capitalize(sin)} ${romanLevel(level + 1)}`;
-        return (
-          <div
-            key={sin}
-            style={locked ? { ...baseCard, opacity: 0.55, borderStyle: 'dashed' } : baseCard}
-          >
-            {/* header */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                borderLeft: `3px solid ${accentLine}`,
-                paddingLeft: 11,
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "'Cinzel', serif",
-                  fontSize: '1.06rem',
-                  letterSpacing: '.02em',
-                  color: '#ecd9a8',
-                  lineHeight: 1.1,
-                }}
-                title={strings.mercatus.clauses[sin]}
-              >
-                {name}
-              </span>
-              {tier >= 1 && (
-                <span
-                  style={{
-                    fontFamily: "'Ubuntu Mono', monospace",
-                    fontSize: '.62rem',
-                    letterSpacing: '.1em',
-                    color: '#c49e4a',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {strings.mercatus.foedus} {ROMAN_TIERS[tier]}
-                </span>
-              )}
-            </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+      {/* Mutuum — the loan book */}
+      <div style={open ? depCard : { ...depCard, opacity: 0.55, borderStyle: 'dashed' }}>
+        <span style={depTitle} title={F.mutuumBlurb}>
+          {F.mutuum}
+        </span>
+        {open ? (
+          <>
+            <RateReadout value={formatRate(mutuumRate)} unit="gold/s" />
+            <span style={{ ...depMono, fontSize: '.8rem', color: '#b59ad6' }}>
+              {totalReprobates(state).toLocaleString('en-US')} {F.debtors}
+            </span>
+            <span style={depFlavor}>{F.mutuumBlurb}</span>
+          </>
+        ) : (
+          <span style={depFlavor}>{F.mutuumLocked}</span>
+        )}
+      </div>
 
-            {/* body */}
-            <div style={{ display: 'flex', gap: 15, alignItems: 'stretch' }}>
-              {!locked && (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 5,
-                    flex: '0 0 auto',
-                    paddingTop: 3,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: 'relative',
-                      width: 9,
-                      height: 64,
-                      borderRadius: 5,
-                      background: 'rgba(255,255,255,.07)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        bottom: 0,
-                        width: '100%',
-                        height: `${pct}%`,
-                        background: accent,
-                        boxShadow: `0 0 8px ${accentLine}`,
-                        transition: 'height .35s cubic-bezier(.2,.8,.3,1)',
-                      }}
-                    />
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: "'Ubuntu Mono', monospace",
-                      fontSize: '.62rem',
-                      color: '#8a7e66',
-                      letterSpacing: '.04em',
-                    }}
-                  >
-                    {d}/{cap}
-                  </span>
-                </div>
-              )}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  gap: 7,
-                  minWidth: 0,
-                  flex: 1,
-                }}
-              >
-                <div style={{ lineHeight: 1 }}>
-                  <span
-                    style={{
-                      fontFamily: "'Ubuntu Mono', monospace",
-                      fontSize: '1.5rem',
-                      color: '#e6a23c',
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
-                    {locked ? '\u2014' : formatRate(revenue)}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "'Ubuntu Mono', monospace",
-                      fontSize: '.7rem',
-                      color: '#8a7e66',
-                      marginLeft: 3,
-                    }}
-                  >
-                    gold/s
-                  </span>
-                </div>
-                <div style={{ lineHeight: 1 }}>
-                  <span
-                    style={{
-                      fontFamily: "'Ubuntu Mono', monospace",
-                      fontSize: '.92rem',
-                      color: '#b59ad6',
-                      fontVariantNumeric: 'tabular-nums',
-                    }}
-                  >
-                    {locked ? '\u2014' : String(Math.round(gen * 100) / 100)}
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "'Ubuntu Mono', monospace",
-                      fontSize: '.7rem',
-                      color: '#8a7e66',
-                      marginLeft: 3,
-                    }}
-                  >
-                    reprobates/s
-                  </span>
-                </div>
-                <span
-                  style={{
-                    fontFamily: "'Ubuntu Mono', monospace",
-                    fontSize: '.72rem',
-                    letterSpacing: '.03em',
-                    color: '#c79f63',
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {strings.mercatus.clauses[sin]}
-                </span>
+      {/* Thesaurus — the hoard */}
+      <div style={open ? depCard : { ...depCard, opacity: 0.55, borderStyle: 'dashed' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+          <span style={depTitle} title={F.thesaurusBlurb}>
+            {F.thesaurus}
+          </span>
+          {tier >= 1 && (
+            <span
+              style={{ ...depLabel, color: '#c49e4a' }}
+              title={F.foedusTitle}
+              aria-label={`${F.foedus} ${ROMAN_TIERS[tier]}`}
+            >
+              {F.foedus} {ROMAN_TIERS[tier]}
+            </span>
+          )}
+        </div>
+        {open ? (
+          <>
+            <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap' }}>
+              <div aria-label={F.hoard}>
+                <span style={depLabel}>{F.hoard}</span>
+                <RateReadout value={formatBigNum(floor(hoard))} unit="gold" />
               </div>
+              <div aria-label={F.interest}>
+                <span style={depLabel}>{F.interest}</span>
+                <RateReadout value={formatRate(interestRate)} unit="gold/s" />
+              </div>
+              {anatocismusRate > 0 && (
+                <div title={F.anatocismusRate}>
+                  <span style={depLabel}>{F.anatocismus}</span>
+                  <RateReadout value={formatRate(anatocismusRate)} unit="gold/s \u2192 hoard" />
+                </div>
+              )}
             </div>
+            <span style={depFlavor}>{F.thesaurusBlurb}</span>
 
-            {/* next-depth gate */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7,
-                paddingTop: 10,
-                borderTop: '1px solid rgba(196,158,74,.12)',
-              }}
-            >
-              <span style={{ color: '#7e7256', fontSize: '.8rem', flex: '0 0 auto' }}>
-                {'\u2913'}
-              </span>
-              <span
-                style={{
-                  fontFamily: "'Ubuntu Mono', monospace",
-                  fontSize: '.66rem',
-                  letterSpacing: '.04em',
-                  color: '#8a7e66',
-                  lineHeight: 1.3,
-                  textTransform: 'uppercase',
-                }}
-              >
-                {nextLock}
-              </span>
-            </div>
-
-            {/* actions */}
-            <div style={{ display: 'flex', gap: 7, marginTop: 'auto' }}>
+            {/* Deposit */}
+            <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="number"
+                min={0}
+                className="dep-amount"
+                style={{ ...depMono, width: 110 }}
+                value={depositText}
+                onChange={(e) => setDepositText(e.target.value)}
+                aria-label={`${F.deposit} amount`}
+              />
               <button
                 type="button"
                 className="dep-deepen"
-                disabled={locked || atCap || gold < nextCost}
-                onClick={() => invest(sin)}
-                aria-label={`${strings.mercatus.deepen} ${name}`}
-                title={atCap ? strings.mercatus.capped : undefined}
+                disabled={depositAmount < 1 || depositAmount > gold}
+                onClick={() => {
+                  deposit(depositAmount);
+                  setDepositText('');
+                }}
+                aria-label={F.deposit}
               >
-                {atCap ? 'Capped' : strings.mercatus.deepen}
-                {!locked && !atCap && (
-                  <span style={{ opacity: 0.72 }}>
-                    {' '}
-                    {'\u00B7'} {nextCost} {strings.resources.gold.toLowerCase()}
-                  </span>
-                )}
+                {F.deposit}
               </button>
-              {!locked && d > 0 && (
+              <button
+                type="button"
+                className="dep-mini dep-mini--wide"
+                disabled={gold < 1}
+                onClick={() => deposit(gold)}
+                aria-label={`${F.deposit} ${F.depositAll}`}
+              >
+                {F.depositAll}
+              </button>
+            </div>
+
+            {/* Withdraw — two-step: the loss is stated before the confirm. */}
+            <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                type="number"
+                min={0}
+                className="dep-amount"
+                style={{ ...depMono, width: 110 }}
+                value={withdrawText}
+                onChange={(e) => {
+                  setWithdrawText(e.target.value);
+                  setConfirmingWithdraw(false);
+                }}
+                aria-label={`${F.withdraw} amount`}
+              />
+              {confirmingWithdraw ? (
                 <>
+                  <span style={{ ...depFlavor, color: '#c98a6a' }}>
+                    {F.withdrawWarning} {F.withdrawRecovers} {returned}, {forfeited}{' '}
+                    {F.withdrawForfeits}.
+                  </span>
                   <button
                     type="button"
-                    className="dep-mini"
-                    onClick={() => divest(sin, 1)}
-                    title={`${strings.mercatus.cutBack} \u00B7 +${cutBackRefund} ${strings.resources.gold.toLowerCase()}`}
-                    aria-label={`${strings.mercatus.cutBack} ${name}`}
+                    className="dep-deepen"
+                    onClick={() => {
+                      withdraw(withdrawAmount);
+                      setWithdrawText('');
+                      setConfirmingWithdraw(false);
+                    }}
+                    aria-label={`${F.confirm} ${F.withdraw}`}
                   >
-                    {'\u2212'}
+                    {F.confirm}
                   </button>
                   <button
                     type="button"
                     className="dep-mini dep-mini--wide"
-                    onClick={() => divest(sin, d)}
-                    title={`${strings.mercatus.sellOff} \u00B7 +${sellOffRefund} ${strings.resources.gold.toLowerCase()}`}
-                    aria-label={`${strings.mercatus.sellOff} ${name}`}
+                    onClick={() => setConfirmingWithdraw(false)}
+                    aria-label={F.cancel}
                   >
-                    {strings.mercatus.sellOff}
+                    {F.cancel}
                   </button>
                 </>
+              ) : (
+                <button
+                  type="button"
+                  className="dep-mini dep-mini--wide"
+                  disabled={withdrawAmount < 1 || withdrawAmount > hoardFloor}
+                  onClick={() => setConfirmingWithdraw(true)}
+                  title={`${F.withdrawRecovers} ${Math.round(recovery * 100)}%`}
+                  aria-label={F.withdraw}
+                >
+                  {F.withdraw}
+                </button>
               )}
             </div>
+          </>
+        ) : (
+          <span style={depFlavor}>{F.mutuumLocked}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The Syngraphae tab: three branch columns (Usura / Faeneratio / Custodia), each a vertical chain
+ * of four contracts showing name, effect, fee and gate. States: signed, available, gated (with the
+ * Avaritia level required), unaffordable. Signing is a two-step confirm — the fee is burned.
+ */
+function SyngraphaeTab(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const sign = useGameStore((s) => s.signSyngrapha);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  if (!state) return <></>;
+  const F = strings.faeneratio;
+  const gold = floor(state.lifetime.gold).toNumber();
+  const avaritiaLevel = sinLevel(state.devotion.avaritia);
+  return (
+    <div>
+      <p className="dep-blurb">{F.syngraphaeIntro}</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 13 }}>
+        {SYNGRAPHA_BRANCHES.map((branch) => (
+          <div key={branch} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <span style={{ ...depLabel, textAlign: 'center', color: '#c49e4a' }}>
+              {F.branches[branch]}
+            </span>
+            {syngraphaBranch(branch).map((node, idx) => {
+              const signed = syngraphaSigned(state, node.id);
+              const gate = syngraphaSignable(state, node);
+              const signable = gate.signable;
+              const affordable = gold >= node.cost;
+              const name = F.nodeNames[node.id] ?? `${F.branches[branch]} ${ROMAN_TIERS[idx + 1]}`;
+              const gatedByLevel = !signed && avaritiaLevel < node.gate;
+              const cardStyle: CSSProperties = signed
+                ? {
+                    ...depCard,
+                    border: '1px solid rgba(196,158,74,.5)',
+                    background: 'rgba(44,32,10,.5)',
+                  }
+                : signable
+                  ? depCard
+                  : { ...depCard, opacity: 0.55, borderStyle: 'dashed' };
+              return (
+                <div key={node.id} style={cardStyle}>
+                  <span style={{ ...depTitle, fontSize: '.95rem' }}>{name}</span>
+                  <span style={depFlavor}>{F.nodeEffects[node.id]}</span>
+                  {signed ? (
+                    <span style={{ ...depLabel, color: '#c49e4a' }}>{F.signed}</span>
+                  ) : (
+                    <>
+                      <span style={depLabel}>
+                        {node.cost.toLocaleString('en-US')} {strings.resources.gold.toLowerCase()}
+                        {' \u00b7 '}
+                        {F.requiresAvaritia} {ROMAN_TIERS[node.gate]}
+                      </span>
+                      {gatedByLevel ? (
+                        <span style={{ ...depLabel, color: '#c98a6a' }}>
+                          {F.requiresAvaritia} {ROMAN_TIERS[node.gate]}
+                        </span>
+                      ) : !signable ? (
+                        <span style={{ ...depLabel, color: '#c98a6a' }}>{F.requiresPrior}</span>
+                      ) : confirmingId === node.id ? (
+                        <div style={{ display: 'flex', gap: 7 }}>
+                          <button
+                            type="button"
+                            className="dep-deepen"
+                            disabled={!affordable}
+                            onClick={() => {
+                              sign(node.id);
+                              setConfirmingId(null);
+                            }}
+                            aria-label={`${F.confirm} ${F.sign} ${name}`}
+                          >
+                            {F.confirm}
+                          </button>
+                          <button
+                            type="button"
+                            className="dep-mini dep-mini--wide"
+                            onClick={() => setConfirmingId(null)}
+                            aria-label={F.cancel}
+                          >
+                            {F.cancel}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="dep-deepen"
+                          disabled={!affordable}
+                          onClick={() => setConfirmingId(node.id)}
+                          aria-label={`${F.sign} ${name}`}
+                        >
+                          {F.sign}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
@@ -1195,9 +1231,14 @@ function PanvitiumPanel(): ReactElement {
 export function DepraedatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);
   const notice = useGameStore((s) => s.notice);
-  const [tab, setTab] = useState<DepraedatioTab>('mercatura');
+  const [tab, setTab] = useState<DepraedatioTab>('thesaurus');
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const blurb = tab === 'mercatura' ? strings.opera.mercaturaBlurb : strings.opera.compositumBlurb;
+  const blurb =
+    tab === 'thesaurus'
+      ? strings.opera.thesaurusBlurb
+      : tab === 'syngraphae'
+        ? strings.opera.syngraphaeBlurb
+        : strings.opera.compositumBlurb;
   return (
     <div className="dep-wallpaper">
       <div className="dep-grimoire">
@@ -1228,11 +1269,20 @@ export function DepraedatioGroup(): ReactElement {
           <button
             type="button"
             role="tab"
-            aria-selected={tab === 'mercatura'}
-            className={'dep-tab' + (tab === 'mercatura' ? ' dep-tab--active' : '')}
-            onClick={() => setTab('mercatura')}
+            aria-selected={tab === 'thesaurus'}
+            className={'dep-tab' + (tab === 'thesaurus' ? ' dep-tab--active' : '')}
+            onClick={() => setTab('thesaurus')}
           >
-            Vitium Mercatura
+            {strings.faeneratio.thesaurusTab}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'syngraphae'}
+            className={'dep-tab' + (tab === 'syngraphae' ? ' dep-tab--active' : '')}
+            onClick={() => setTab('syngraphae')}
+          >
+            {strings.faeneratio.syngraphaeTab}
           </button>
           <button
             type="button"
@@ -1247,8 +1297,10 @@ export function DepraedatioGroup(): ReactElement {
 
         <p className="dep-blurb">{blurb}</p>
 
-        {tab === 'mercatura' ? (
-          <MercaturaGrid />
+        {tab === 'thesaurus' ? (
+          <ThesaurusTab />
+        ) : tab === 'syngraphae' ? (
+          <SyngraphaeTab />
         ) : (
           <>
             <CompositumGrimoire />

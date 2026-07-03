@@ -42,13 +42,7 @@ import { SINS, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
-import {
-  MERCATUS_ACEDIA_OFFLINE_PER_DEPTH,
-  MERCATUS_IRA_MURDER_PER_DEPTH,
-  MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH,
-  MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS,
-  mercatusDepth,
-} from './mercatus.js';
+import { SYNGRAPHAE, hoardMilestoneBonus, syngraphaSigned } from './syngraphae.js';
 import {
   compositumGenerationRateMul,
   compositumMurderRateMul,
@@ -65,6 +59,7 @@ import {
   sigilInvocationSinContributions,
   sigilInvocationEffectContributions,
   sigilFlatGeneration,
+  sigilShutdownRefundMul,
   type ScalarModifierField,
 } from './sigils.js';
 import {
@@ -134,9 +129,9 @@ export interface Modifiers {
   readonly reprobateGenerationRateMul: number;
   /**
    * Multiplier on the population-wide reprobate suicide rate (02 §9). Raised by Panvitium, the Doom
-   * Gathering ceremony, the Witch Ladder maleficium, the Mercatus Tristitiae clause, and the suicide
-   * sigils (Ronove #27, Sabnock #43). The old Tristitia per-level 2× was retired in the Sins remap —
-   * Tristitia's skill now feeds acolyte efficiency, not suicide.
+   * Gathering ceremony, the Witch Ladder maleficium, and the suicide sigils (Ronove #27,
+   * Sabnock #43). The old Tristitia per-level 2× was retired in the Sins remap — Tristitia's skill
+   * now feeds acolyte efficiency, not suicide.
    */
   readonly reprobateSuicideRateMul: number;
   /**
@@ -146,19 +141,38 @@ export interface Modifiers {
    */
   readonly murderRateMul: number;
   /**
-   * Multiplier on Vitium Mercatura output (Mercatus revenue AND reprobate generation). Sources:
-   * Plutus invocation (flat factor on output), Vapula #60 sigil (overall VM gold output).
-   * Consumed at the tick gold-income and dynamics generation call sites.
+   * Multiplier on the Faeneratio output — the SUM of Mutuum income and Thesaurus interest, scaled
+   * at the tick's gold line. Sources: Plutus invocation (flat factor on the lending enterprises),
+   * Vapula #60 sigil. The renamed `vitiumMercaturaOutputMul` (Depraedatio gold rework), unchanged
+   * in magnitude.
    */
-  readonly vitiumMercaturaOutputMul: number;
+  readonly faenerationOutputMul: number;
   /**
-   * Multiplier on the MERCATUS generation term only (Sitri #12 — "+VM reprobate generation").
-   * Sheet rev 2026-06-12 splits the trades' revenue and breeding channels. Default 1×.
+   * Multiplier on the Fenus rate (the hoard's interest). Sources: the Usura Syngraphae
+   * (usura-1/2/3); future sigils. Default 1×.
    */
-  readonly vitiumMercaturaGenerationMul: number;
+  readonly fenusRateMul: number;
+  /**
+   * Multiplier on the Mutuum per-capita take (the loan book). Sources: the Faeneratio Syngraphae
+   * (faeneratio-1/3); future sigils. Default 1×.
+   */
+  readonly mutuumPerCapitaMul: number;
+  /**
+   * Multiplier on the Thesaurus withdrawal recovery fraction (base 0.25, capped at 0.9 effective).
+   * Sources: the Custodia Syngraphae (custodia-1/3); Vine #45 / Furcas #50 re-pin here — the same
+   * "recovery" niche they held for the Mercatus divest. Default 1×.
+   */
+  readonly thesaurusRecoveryMul: number;
+  /**
+   * Escheat (faeneratio-2): flat gold minted per applied murder / suicide at the dynamics step —
+   * the estates of the dead escheat to creditors unseen. Additive fields so any future murder-gold
+   * source (a revived Leraie line) composes on the same mint. Default 0.
+   */
+  readonly escheatGoldPerMurder: number;
+  readonly escheatGoldPerSuicide: number;
   /**
    * Multiplier on Vitium Compositum gold output (Zagan #61). Applied to `compositumGoldPerSecond`
-   * at the tick's gold-income site, parallel to `vitiumMercaturaOutputMul` for the Mercatūs. Default 1×.
+   * at the tick's gold-income site, parallel to `faenerationOutputMul` for the loan book. Default 1×.
    */
   readonly vitiumCompositumOutputMul: number;
   /**
@@ -220,8 +234,12 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   reprobateGenerationRateMul: 1,
   reprobateSuicideRateMul: 1,
   murderRateMul: 1,
-  vitiumMercaturaOutputMul: 1,
-  vitiumMercaturaGenerationMul: 1,
+  faenerationOutputMul: 1,
+  fenusRateMul: 1,
+  mutuumPerCapitaMul: 1,
+  thesaurusRecoveryMul: 1,
+  escheatGoldPerMurder: 0,
+  escheatGoldPerSuicide: 0,
   vitiumCompositumOutputMul: 1,
   vitiumCompositumInfluenceOutputMul: 1,
   vitiumCompositumEffectMul: 1,
@@ -287,7 +305,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× playerEff × invEff)
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× playerEff × invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
-  const plutusCount = inv.plutus ?? 0; // each: Vitium Mercatura output up (× playerEff × invEff)
+  const plutusCount = inv.plutus ?? 0; // each: Faeneratio output up (× playerEff × invEff)
   const lemureCount = inv.lemure ?? 0; // each: additive offline gain rate (× playerEff × invEff)
   const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×2 influence gain/s (sheet)
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
@@ -319,7 +337,7 @@ export function computeModifiers(state: GameState): Modifiers {
   // efficiency (`playerEff`) × the invocation-effect multiplier (`invEff`), so the demonic court
   // scales with the build (Model 1).
   const FAMA_INFLUENCE_FACTOR = 0.05; // additive increase to influence rate
-  const PLUTUS_VM_FACTOR = 0.05; // increase to Vitium Mercatura output
+  const PLUTUS_FAENERATIO_FACTOR = 0.05; // increase to Faeneratio output (Mutuum + interest)
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const NIGHTMARE_SUICIDE_FACTOR = 5e-5; // additive increase to base reprobate suicide rate (sheet)
   const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
@@ -413,15 +431,39 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + BEHEMOTH_STELLAR_FACTOR * playerEff * invEffFor('superbia') * behemothCount);
   }
 
-  // Max-influence multiplier, hoisted so the Mercatus Vanagloriae clause (a fraction of the
-  // EFFECTIVE max influence as flat influence/s) reads the same composed value the cap uses.
   const maxInfluenceMulV =
     skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul');
 
+  // Signed Syngraphae (the Avaritia contract tree, spec §4.3/§5): the modifier-fold nodes compose
+  // multiplicatively per ADR-022 (the mechanism nodes — Anatocismus, the liquidation bonus,
+  // Peculium — are wired at their own sites); Escheat's two coefficients are flat additive fields.
+  let fenusRateMulV = 1;
+  let mutuumPerCapitaMulV = 1;
+  let thesaurusRecoveryMulV = 1;
+  let escheatGoldPerMurderV = 0;
+  let escheatGoldPerSuicideV = 0;
+  for (const node of SYNGRAPHAE) {
+    if (!syngraphaSigned(state, node.id)) continue;
+    const eff = node.effect;
+    if (eff.kind === 'fenusRateMul') fenusRateMulV *= eff.mul;
+    else if (eff.kind === 'mutuumPerCapitaMul') mutuumPerCapitaMulV *= eff.mul;
+    else if (eff.kind === 'thesaurusRecoveryMul') thesaurusRecoveryMulV *= eff.mul;
+    else if (eff.kind === 'escheat') {
+      escheatGoldPerMurderV += eff.goldPerMurder;
+      escheatGoldPerSuicideV += eff.goldPerSuicide;
+    }
+  }
+
   return {
     // Succubus' "99% gold gain" cost is now per-second upkeep (tick.ts 1a), not a rate cut here.
+    // The custodia-2 hoard-milestone bonus (+2%/decade of hoard ≥ 1,000, capped +20%) folds here
+    // directly — a derived multiplier like any other; the bundle stays derived, never persisted.
     goldRateMul:
-      skillBonus(avaritiaIntensity) * (hasMidas ? 3 : 1) * sc('goldRateMul') * faustoCurseMul,
+      skillBonus(avaritiaIntensity) *
+      (hasMidas ? 3 : 1) *
+      (1 + hoardMilestoneBonus(state)) *
+      sc('goldRateMul') *
+      faustoCurseMul,
     // Doppelgänger's "50% influence gain" cost is now per-second upkeep (tick.ts 1a), not a cut here.
     influenceRateMul:
       1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
@@ -432,15 +474,9 @@ export function computeModifiers(state: GameState): Modifiers {
       faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     maxInfluenceMul: maxInfluenceMulV,
-    // Flat influence/s: the Decarabia #69 generator sigil (log curve) + the Mercatus Vanagloriae
-    // signature clause — 0.25% of the EFFECTIVE max influence per second per full 10 depths
-    // (stepped, like the Foedus ladder; "per 10 depths" in the amended §1.5 table).
-    flatInfluencePerSecond:
-      flatGen.influence +
-      MERCATUS_VANAGLORIA_INFLUENCE_FRACTION_PER_10_DEPTHS *
-        Math.floor(mercatusDepth(state, 'vanagloria') / 10) *
-        state.lifetime.maxInfluence.toNumber() *
-        maxInfluenceMulV,
+    // Flat influence/s: the Decarabia #69 generator sigil (log curve). The Mercatus Vanagloriae
+    // clause retired with the trades (Depraedatio gold rework §9).
+    flatInfluencePerSecond: flatGen.influence,
     // Flat gold/s: the Haagenti #48 generator sigil (log curve) + Thirty Pieces of Silver, which
     // adds 0.001% of the current gold pool per second (Maleficia sheet rev 2026-06-12).
     flatGoldPerSecond: flatGen.gold + (hasSilver ? 1e-5 * state.lifetime.gold.toNumber() : 0),
@@ -484,32 +520,39 @@ export function computeModifiers(state: GameState): Modifiers {
       faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill)
-    // moved to acolyte efficiency, and the per-level doubling is retired; the despair channel is
-    // the Mercatus Tristitiae clause below. Panvitium multiplies while active; Doom Gathering and
-    // the suicide sigils compose.
+    // moved to acolyte efficiency, and the per-level doubling is retired. The Mercatus Tristitiae
+    // despair clause retired with the trades (Depraedatio gold rework §9); the pressure sources
+    // are ceremonies, maleficia and sigils. Panvitium multiplies while active.
     reprobateSuicideRateMul:
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
       (hasWitchLadder ? 1.05 : 1) * // Witch Ladder ×1.05 suicide rate
-      (1 + MERCATUS_TRISTITIA_SUICIDE_PER_DEPTH * mercatusDepth(state, 'tristitia')) *
       compositumSuicideRateMul(state, vcEffectMul) * // Doom Gathering +10% ×(Gusion/Naberius)
       sc('reprobateSuicideRateMul'),
-    // Murder: Panvitium multiplies while active; Mercatus Irae adds +0.825% per depth (§1.5
-    // amended); Aim #23 sigil composes. Murder is a per-capita cull of the whole population.
+    // Murder: Panvitium multiplies while active; Aim #23 sigil composes. The Mercatus Irae clause
+    // retired with the trades. Murder is a per-capita cull of the whole population.
     murderRateMul:
       (panvitiumActive ? PANV_MURDER_MUL : 1) *
       (hasMarkOfCain ? 3 : 1) * // Mark of Cain ×3 murder rate (sheet rev 2026-06-12)
       (hasPoppet ? 1.05 : 1) * // Poppet ×1.05 murder rate
       (hasGaldrabok ? 1.15 : 1) * // Galdrabók ×1.15 murder rate
-      (1 + MERCATUS_IRA_MURDER_PER_DEPTH * mercatusDepth(state, 'ira')) *
       compositumMurderRateMul(state, vcEffectMul) * // Enraging Broadcast +10% ×(Gusion/Naberius)
       sc('murderRateMul'),
-    // Vitium Mercatura REVENUE: each Plutus lifts it (flat factor), Vapula #60 sigil composes;
-    // applied at the tick's gold-income line. (Generation has its own multiplier below.)
-    vitiumMercaturaOutputMul:
-      (1 + PLUTUS_VM_FACTOR * playerEff * invEffFor('avaritia') * plutusCount) *
-      sc('vitiumMercaturaOutputMul'),
-    // Vitium Mercatura GENERATION (Sitri #12): scales the trades' breeding term in `dynamics`.
-    vitiumMercaturaGenerationMul: sc('vitiumMercaturaGenerationMul'),
+    // Faeneratio output (Mutuum + Thesaurus interest): each Plutus lifts it (flat factor),
+    // Vapula #60 sigil composes; applied to the summed term at the tick's gold-income line.
+    faenerationOutputMul:
+      (1 + PLUTUS_FAENERATIO_FACTOR * playerEff * invEffFor('avaritia') * plutusCount) *
+      sc('faenerationOutputMul'),
+    // The Fenus rate (hoard interest): the Usura Syngraphae.
+    fenusRateMul: fenusRateMulV,
+    // The Mutuum per-capita take (the loan book): the Faeneratio Syngraphae.
+    mutuumPerCapitaMul: mutuumPerCapitaMulV,
+    // Thesaurus withdrawal recovery: the Custodia Syngraphae × the recovery sigils (Vine #45,
+    // Furcas #50 — re-pinned from the Mercatus divest fraction to the same niche here). The raw
+    // enhancer stack only, matching the divest-era scope (no Gaap/Semet inflation).
+    thesaurusRecoveryMul: thesaurusRecoveryMulV * sigilShutdownRefundMul(state),
+    // Escheat (faeneratio-2): flat gold per applied murder / suicide, minted in `dynamics`.
+    escheatGoldPerMurder: escheatGoldPerMurderV,
+    escheatGoldPerSuicide: escheatGoldPerSuicideV,
     // VC influence output (Orias #59): the ceremonies' influence line at the tick.
     vitiumCompositumInfluenceOutputMul: sc('vitiumCompositumInfluenceOutputMul'),
     // VC ceremony EFFECT magnitudes (Gusion #11 / Naberius #24), already folded into the three
@@ -525,15 +568,14 @@ export function computeModifiers(state: GameState): Modifiers {
     invocationEfficiencyMul: invEff,
     invocationSinEffectivenessMul: invSinEff,
     // Offline time scaling: Acedia's Procrastination skill lifts (03 §1, continuous); Dolce Far
-    // Niente lifts it ×(1 + boost) while active; Mercatus Acediae adds +0.825% per depth (§1.5
-    // amended); Acedia's per-level effect compounds on top dynamically in `session.resumeGame`
-    // (it depends on the offline duration itself). The PLAYER_OFFLINE_EFFICIENCY 0.5 base is
-    // applied separately in `resumeGame`, NOT here, so this multiplier stays 1-neutral online.
+    // Niente lifts it ×(1 + boost) while active; Acedia's per-level effect compounds on top
+    // dynamically in `session.resumeGame` (it depends on the offline duration itself). The
+    // Mercatus Acediae per-depth lift retired with the trades. The PLAYER_OFFLINE_EFFICIENCY 0.5
+    // base is applied separately in `resumeGame`, NOT here, so this multiplier stays 1-neutral online.
     offlineTimeMul:
       skillBonus(acediaIntensity) *
       (1 + compositumOfflineGainBoost(state)) *
       (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEffFor('acedia') * lemureCount) *
-      (1 + MERCATUS_ACEDIA_OFFLINE_PER_DEPTH * mercatusDepth(state, 'acedia')) *
       sc('offlineTimeMul'),
   };
 }

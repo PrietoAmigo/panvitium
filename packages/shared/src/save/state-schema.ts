@@ -88,11 +88,17 @@ const lifetimeSchema = z.object({
   generationPool: z.number().nonnegative().optional(),
   suicidePool: z.number().nonnegative().optional(),
   murderPool: z.number().nonnegative().optional(),
-  // Vitium Mercatura — Mercatus depths (rework spec §4): one integer depth per Cardinal Sin,
-  // sparse (absent Sin ≡ depth 0). Optional; omitted when empty so a fresh game's wire form stays
-  // minimal. (The legacy `businesses` / `buildQueue` fields were REMOVED in schema v3; v2 saves
-  // are migrated by `v2-to-v3.ts` — gold credit + drop.)
-  mercatusDepths: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  // The Thesaurus hoard (Depraedatio gold rework): gold placed with the counting house. Optional;
+  // absent ≡ zero, omitted when zero so a fresh game's wire form stays minimal. (The Mercatus
+  // `mercatusDepths` field was REMOVED in schema v5; v4 saves are migrated by `v4-to-v5.ts` —
+  // divest-value gold credit + drop.)
+  hoard: bigNumString.optional(),
+  // Signed Syngraphae (the Avaritia contract tree): purchased node ids in signing order.
+  // Additive-optional (ADR-023): absent ≡ none; omitted when empty.
+  syngraphae: z.array(z.string()).optional(),
+  // The hoard's value at descent (the custodia-4 Peculium base), stamped by enterKatabasis and
+  // cleared at commit. Additive-optional (ADR-023) so it survives a mid-descent reload.
+  hoardAtDescent: bigNumString.optional(),
   handOfGloryRemaining: z.number().nonnegative().optional(),
   // Impact-feedback inbox (Phase 5.2). Additive-optional (ADR-023): absent → empty inbox at load.
   inbox: z.array(inboxEntrySchema).optional(),
@@ -148,17 +154,6 @@ export const serializedGameStateSchema = z.object({
 
 /** The JSON-safe form of GameState. */
 export type SerializedGameState = z.infer<typeof serializedGameStateSchema>;
-
-/** Narrow a wire mercatusDepths record to the eight Sin keys (drops anything else). */
-function pickSinDepths(depths: Record<string, number> | undefined): Partial<Record<Sin, number>> {
-  if (!depths) return {};
-  const out: Partial<Record<Sin, number>> = {};
-  for (const sin of SINS) {
-    const d = depths[sin];
-    if (typeof d === 'number' && d > 0) out[sin] = d;
-  }
-  return out;
-}
 
 /** Convert a runtime GameState into its JSON-safe form (BigNum -> string). */
 export function serializeGameState(state: GameState): SerializedGameState {
@@ -254,9 +249,14 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
       ...(state.lifetime.pendingMorpheus === true ? { pendingMorpheus: true } : {}),
       ...(state.lifetime.morpheusLockedOut === true ? { morpheusLockedOut: true } : {}),
-      // Mercatus depths: omit when empty so fresh games keep a minimal wire form (ADR-023).
-      ...(Object.keys(state.lifetime.mercatusDepths).length > 0
-        ? { mercatusDepths: { ...state.lifetime.mercatusDepths } }
+      // The hoard / Syngraphae / Peculium base: omit when zero/empty/absent so fresh games keep a
+      // minimal wire form (ADR-023).
+      ...(state.lifetime.hoard.gt(0) ? { hoard: serializeBigNum(state.lifetime.hoard) } : {}),
+      ...(state.lifetime.syngraphae.length > 0
+        ? { syngraphae: [...state.lifetime.syngraphae] }
+        : {}),
+      ...(state.lifetime.hoardAtDescent !== undefined && state.lifetime.hoardAtDescent.gt(0)
+        ? { hoardAtDescent: serializeBigNum(state.lifetime.hoardAtDescent) }
         : {}),
     },
     rngState: state.rngState,
@@ -346,10 +346,13 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       ...(s.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
       ...(s.lifetime.pendingMorpheus === true ? { pendingMorpheus: true } : {}),
       ...(s.lifetime.morpheusLockedOut === true ? { morpheusLockedOut: true } : {}),
-      // Mercatus depths: absent → {} (depth 0 everywhere). Keys are restricted to the eight
-      // Cardinal Sins on the way in, so a hand-edited or future-version blob can't smuggle
-      // arbitrary keys into the runtime record.
-      mercatusDepths: pickSinDepths(s.lifetime.mercatusDepths),
+      // The hoard / Syngraphae: absent → zero / none (additive-optional, ADR-023). The Peculium
+      // base rides along only when present so a mid-descent save reloads it.
+      hoard: s.lifetime.hoard ? deserializeBigNum(s.lifetime.hoard) : deserializeBigNum('0'),
+      syngraphae: [...(s.lifetime.syngraphae ?? [])],
+      ...(s.lifetime.hoardAtDescent
+        ? { hoardAtDescent: deserializeBigNum(s.lifetime.hoardAtDescent) }
+        : {}),
     },
     rngState: s.rngState,
     lastTickAt: s.lastTickAt,

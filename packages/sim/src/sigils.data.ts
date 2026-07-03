@@ -95,13 +95,11 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +VC ceremony EFFECTS (not the gold/influence outputs).
     effect: { kind: 'modifier', field: 'vitiumCompositumEffectMul', direction: 'increase' },
   },
-  12: {
-    id: 12,
-    name: 'Sitri',
-    coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +Vitium Mercatura reprobate generation.
-    effect: { kind: 'modifier', field: 'vitiumMercaturaGenerationMul', direction: 'increase' },
-  },
+  // 12 Sitri — ORPHANED (Depraedatio gold rework): its target (`vitiumMercaturaGenerationMul`,
+  // the Mercatus breeding channel) retired with the trades. Per ADR-029 an empty catalog state is
+  // expressed by deleting the def (no `inert` kind); the seal keeps its number and name in the
+  // strings catalog and binding it is harmless. Re-pinning needs a per-sigil sheet decision — see
+  // the orphaned-sigils note in the rework ADR.
   13: {
     id: 13,
     name: 'Beleth',
@@ -372,7 +370,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 45,
     name: 'Vine',
     coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +recovered gold on Mercatus divestment.
+    // Re-pinned (Depraedatio gold rework): +Thesaurus withdrawal recovery — the same "recovery"
+    // niche it held for the Mercatus divest, unchanged in magnitude.
     effect: { kind: 'shutdownRefund' },
   },
   46: {
@@ -408,7 +407,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 50,
     name: 'Furcas',
     coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +Mercatus divestment gold recovery (composes with Vine).
+    // Re-pinned (Depraedatio gold rework): +Thesaurus withdrawal recovery (composes with Vine).
     effect: { kind: 'shutdownRefund' },
   },
   51: {
@@ -493,8 +492,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 60,
     name: 'Vapula',
     coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +Vitium Mercatura gold output.
-    effect: { kind: 'modifier', field: 'vitiumMercaturaOutputMul', direction: 'increase' },
+    // Re-pinned (Depraedatio gold rework): +Faeneratio gold output (Mutuum + Thesaurus interest),
+    // unchanged in magnitude — the renamed `vitiumMercaturaOutputMul` field.
+    effect: { kind: 'modifier', field: 'faenerationOutputMul', direction: 'increase' },
   },
   61: {
     id: 61,

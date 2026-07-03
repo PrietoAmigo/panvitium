@@ -55,7 +55,7 @@ function passiveEffectText(state: GameState, id: string): string {
         ? times(w.influenceRateMul, b.influenceRateMul, L.influence)
         : '';
     case 'plutus':
-      return up(w.vitiumMercaturaOutputMul, b.vitiumMercaturaOutputMul, L.vmOutput);
+      return up(w.faenerationOutputMul, b.faenerationOutputMul, L.faeneratioOutput);
     case 'behemoth': {
       const ws = w.tierWeightMul.stellar ?? 1;
       const bs = b.tierWeightMul.stellar ?? 1;

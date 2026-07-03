@@ -64,9 +64,9 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
   const acediaCompound =
     acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (acediaSeconds * acediaLvl * acediaLvl) : 1;
   // Player base offline efficiency (Globals: 0.5×) — the world runs at half rate while away.
-  // Wired with the Mercatus signature clauses; Mercatus Acediae's revenue alone is exempt (the
-  // tick dep below divides its term back out). offlineTimeMul (Procrastination, Dolce, Lemure,
-  // Mercatus Acediae's per-depth lift) and the Acedia level compound stack on top as before.
+  // Every income term takes it, the Thesaurus interest included (ADR-026; the Mercatus Acediae
+  // exemption retired with the trades). offlineTimeMul (Procrastination, Dolce, Lemure) and the
+  // Acedia level compound stack on top as before.
   const scaled = elapsedSeconds * PLAYER_OFFLINE_EFFICIENCY * offlineMul * acediaCompound;
   // Offline-only sigils (sheet rev 2026-06-12): Sallos #19 gold, Eligos #15 influence, Zepar #16
   // reprobate generation, Marax #21 action-timer advancement. Online ticks pass nothing, so all
@@ -77,7 +77,6 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
     offlineInfluenceMul: offlineRes.influence,
     offlineGenerationMul: offlineRes.generation,
     offlineActionTimeMul: sigilOfflineActionEfficiencyMul(saved),
-    offlineEfficiency: PLAYER_OFFLINE_EFFICIENCY,
   }).state;
   // Reconcile the logical clock to wall-clock: the tick advanced `lastTickAt` by the SCALED delta,
   // which diverges from `now` whenever the offline scaling ≠ 1. Leaving it behind would re-count

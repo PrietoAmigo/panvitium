@@ -8,9 +8,10 @@ disagree. The fiction underneath everything is `00-lore-bible.md`; build decisio
 `04-architecture-decisions.md` (ADRs).
 
 This revision incorporates **ADR-024** (reprobates are a single pool; subtypes and the conversion
-mechanic are removed) and the **Vitium Mercatura / Vitium Compositum redesign**
-(`vm-vc-redesign-spec.md`): the business grid and build queue are retired in favour of the
-Mercatus system and the Foedera coupling.
+mechanic are removed), the **Vitium Mercatura / Vitium Compositum redesign** (the business grid
+and build queue retired), and the **Depraedatio gold rework** (the Mercatus system retired in
+favour of the Faeneratio loop — Mutuum, Thesaurus, Syngraphae — with the Foedus re-anchored to
+the hoard).
 
 ---
 
@@ -48,16 +49,19 @@ would lose meaningful progress.
 
 ### Gold
 
-- **Source:** generated passively over time, plus the dominant in-lifetime source: **Vitium
-  Mercatura revenue**, which is extracted from the living reprobate population (§3, `03 §2.3`).
-  Base passive gain per second is in the spreadsheet (`Globals`).
-- **Role:** the operating budget. Most everyday Opera actions consume gold; deepening a Mercatus
-  consumes gold in lumps.
-- **Spending:** *Decimatio* actions, Mercatus investment, *Vitium Compositum* upkeep, *Indagatio*
-  searches, *Emptio* purchases, some invocations.
-- **Reset on Katabasis:** yes. The Mercatūs are liquidated into gold first (§6), then a
+- **Source:** generated passively over time, plus the dominant in-lifetime source: the
+  **Faeneratio loop** — the *Mutuum* loan book, earning per head of the living reprobate
+  population, and the *Thesaurus* hoard, paying Fenus interest on the locked principal (§3,
+  `03 §2.3`). Base passive gain per second is in the spreadsheet (`Globals`).
+- **Role:** the operating budget. Most everyday Opera actions consume gold; the Thesaurus locks
+  it in lumps and the Syngraphae burn it in lumps.
+- **Spending:** *Decimatio* actions, Thesaurus deposits (locked, punitive to reclaim), Syngrapha
+  signing fees (burned), *Vitium Compositum* upkeep, *Indagatio* searches, *Emptio* purchases,
+  some invocations.
+- **Reset on Katabasis:** yes. The hoard is liquidated into gold in full first (§6), then a
   percentage of the resulting gold remains when coming back; the base remaining percentage is in
-  the spreadsheet and is modified by Avaritia level and sigils (Purson #20).
+  the spreadsheet and is modified by Avaritia level, sigils (Purson #20), and the Peculium
+  contract's floor (`03 §2.3`).
 
 ### Influence
 
@@ -148,8 +152,8 @@ The Opera is the action surface of a lifetime: everything the player does betwee
   like any player-slot rite it does not catch up across a long absence — that is what acolyte and
   invocation delegation are for.
 - **Transactions** — instant, deterministic exchanges that are not actions at all and never
-  occupy the action slot: Mercatus invest/divest, sigil binding, equipping maleficia, summoning
-  an invocation.
+  occupy the action slot: Thesaurus deposit/withdraw, Syngrapha signing, sigil binding, equipping
+  maleficia, summoning an invocation.
 
 Unlocked actions can be **delegated**: acolytes or invocations run them in parallel with their
 own efficiency. By default the player's own efficiency is 100% (modified by Sin levels and
@@ -200,8 +204,9 @@ carry it out for free, so they add output without adding to the influence bill.
   slot, looped, not a second channel.
 - **Toggles** may be active concurrently with player-driven actions and with each other, subject
   to per-second resource costs.
-- **Transactions** (Mercatus invest/divest and the rest listed above) resolve instantly and
-  never occupy any slot. There is no build queue; nothing in *Vitium Mercatura* takes time.
+- **Transactions** (Thesaurus deposit/withdraw, Syngrapha signing and the rest listed above)
+  resolve instantly and never occupy any slot. There is no build queue; nothing in *Depraedatio*
+  takes time.
 - **Acolytes** each run at most one delegated action at the acolyte's efficiency; the action shape
   and rules are the same as the player's, except a delegated cycle costs no resources (and so never
   stalls). Acolytes can also be assigned to help run a *Vitium Compositum* ceremony, adding their
@@ -255,7 +260,8 @@ only the bundle.
 - **The bundle is derived, never persisted.** The save stores sources; the bundle is rebuilt on
   load and each tick.
 - Some couplings are inherently local and compute at their call site instead of the global
-  bundle — e.g. **Foedera** (§3, `03 §2.3`), which depends on per-ceremony active state.
+  bundle — e.g. the **Foedus** upkeep discount (§3, `03 §2.3`), which depends on per-ceremony
+  active state and the per-ceremony opt-out.
 
 ---
 
@@ -299,9 +305,11 @@ Each Cardinal Sin grants:
 
 Lying on the altar (a two-step confirmation in the Altar room) ends the lifetime:
 
-1. **Liquidation.** Every *Vitium Mercatura* trade auto-divests into gold at the divest fraction
-   (`03 §2.3`) — the pre-descent cash-out. This happens **before** any carry-over roll, so
-   Avaritia and the gold-carry-over sigils act on the liquidated total.
+1. **Liquidation.** The Thesaurus hoard liquidates into gold **in full** — no recovery penalty;
+   the descent voids the contracts (×1.25 with *faeneratio-4*; `03 §2.3`). This happens
+   **before** any carry-over roll, so Avaritia and the gold-carry-over sigils act on the
+   liquidated total; the Peculium contract floors the kept-gold result at 10% of the hoard's
+   value at descent (Erinyes still zeroes gold and wins).
 2. **Carry-over rolls.** A percentage of gold remains; each owned maleficium has a chance to
    remain; a percentage of reprobates remain identified. Base fractions are in `Globals`
    (5% each); they are raised by Avaritia / Superbia / Tristitia levels respectively
@@ -312,8 +320,9 @@ Lying on the altar (a two-step confirmation in the Altar room) ends the lifetime
 4. **The recap.** A black page, white text, naming and numbering what survived: the gold kept
    safe, the maleficia not looted, the reprobates still identified.
 5. **The new lifetime** begins with starting gold (the carried fraction), base influence, zero
-   acolytes, zero Mercatus depths, no active invocations or toggles, current Devotion levels in
-   effect, current sigil bindings active, and the unspent soul pool.
+   acolytes, an empty hoard and no signed Syngraphae (the terms lapse at the descent), no active
+   invocations or toggles, current Devotion levels in effect, current sigil bindings active, and
+   the unspent soul pool.
 
 All invocations are dispelled by the descent. Everything in `lifetime` state resets; `devotion`,
 `sigilBindings`, unspent `souls`, achievements, and the Katabasis count persist.
@@ -365,9 +374,10 @@ spreadsheet.
 
 Per **ADR-024**, reprobates are a **single undifferentiated pool** — one integer population.
 There are no subtypes and no conversion mechanic. The population is the centre of the economy:
-*Suasio* and Mercatus corruption grow it, *Vitium Mercatura* revenue is proportional to it, and
-*Decimatio* plus the ambient death rates spend it for souls. Every death — culled, suicide, or
-murder — mints exactly one soul.
+*Suasio* and the generation-raising ceremonies and sigils grow it, the *Mutuum* loan book earns
+per living head, and *Decimatio* plus the ambient death rates spend it for souls. Every death —
+culled, suicide, or murder — mints exactly one soul (and pays its Escheat death duty when that
+contract is signed).
 
 ### Per-tick accrual pools
 
@@ -375,8 +385,9 @@ The mechanics that change the population each tick produce *fractional* contribu
 become integer events deterministically. The lifetime state carries three fractional pools
 alongside the integer population:
 
-- `generationPool` — fractional births (Mercatus corruption, *Suasio*-adjacent toggles, sigils
-  Ose #57 / Aamon #7 / Zepar #16, Adder Stone, Hand of Glory).
+- `generationPool` — fractional births (*Suasio*-adjacent toggles, sigils Ose #57 / Aamon #7 /
+  Zepar #16, Adder Stone, Hand of Glory; the Mercatus `genPerDepth` channel retired with the
+  trades and nothing replaces it by default — a sheet decision).
 - `suicidePool` — fractional removals from despair.
 - `murderPool` — fractional removals from violence.
 
@@ -384,7 +395,8 @@ Each tick: compute the per-second rate from current state; add `rate × deltaSec
 pool; while a pool ≥ 1, subtract 1 and apply one integer event. Pools persist across ticks and
 saves, so sub-1 contributions are never lost. Offline catch-up is the same tick with a large
 delta (ADR-004, uncapped), scaled by the player base offline efficiency (`Globals`, 0.5×) and the
-offline-gain modifiers; only *Mercatus Acediae*'s take is exempt from the 0.5 base (ADR-026).
+offline-gain modifiers; every income term takes the 0.5 base — the *Mercatus Acediae* exemption
+retired with the trades (ADR-026).
 
 ### Suicide
 
@@ -442,7 +454,8 @@ Current per-save state to track:
 - the unspent soul pool and the Eternal-Sin devotion;
 - Devotion per Sin; sigil bindings (sigil → souls bound);
 - the lifetime state: gold, influence, `maxInfluence`, the reprobate population (one integer),
-  **Mercatus depths per Sin**, the acolyte list with assignment state, active invocations and
+  **the Thesaurus hoard and the signed Syngraphae** (plus the hoard-at-descent stamp mid-descent),
+  the acolyte list with assignment state, active invocations and
   their runner timers, owned maleficia (duplicates for stackables), the *Emptio* list, active
   toggles and toggle durations, the action queue (timers, optional `target` for Emptio), the
   set of auto-repeating rites, and the accrual pools (`generationPool`, `suicidePool`,
@@ -450,9 +463,10 @@ Current per-save state to track:
 - achievements, the Katabasis count, the run's start timestamp;
 - the seeded RNG state and the timestamp of the last applied tick.
 
-Schema history: v1 → v2 (ADR-024: subtype record collapsed to one integer). The Vitium
-Mercatura redesign removes `businesses`/`buildQueue` and is the v2 → v3 migration
-(`vm-vc-redesign-spec.md` §4).
+Schema history: v1 → v2 (ADR-024: subtype record collapsed to one integer); v2 → v3 (the Vitium
+Mercatura redesign removes `businesses`/`buildQueue`); v3 → v4 (the `caedis` → `caedes` rite
+rename); v4 → v5 (the Depraedatio gold rework removes `mercatusDepths`, crediting each trade's
+divest value).
 
 ---
 
@@ -489,9 +503,10 @@ acolytes are visualized, switching the background plate per count.
 
 The 2015-era seat of the worldly operation: a desk, a PC, a smartphone, a window onto the city.
 
-- **The PC.** Opens the worldly programs: the **Vitium Mercatura** panel (eight trades — depth,
-  revenue, invest/divest, Foedus badge), the *Decimatio* and *Indagatio* actions, the *Emptio*
-  market, achievements, the event log, and the **email** client (the content channel —
+- **The PC.** Opens the worldly programs: the **Depraedatio** panel (the Thesaurus tab — the
+  Mutuum loan book, the hoard, deposit/withdraw, the global Foedus badge — and the Syngraphae
+  contract tree, alongside Vitium Compositum), the *Decimatio* and *Indagatio* actions, the
+  *Emptio* market, achievements, the event log, and the **email** client (the content channel —
   `00-lore-bible.md` §10).
 - **The smartphone** carries the incoming and outgoing calls.
 - **The Suasio scroll.** The *Suasio* actions and their delegation.

@@ -138,11 +138,26 @@ export interface LifetimeState {
    */
   autoRepeat: string[];
   /**
-   * Mercatus depths (Vitium Mercatura rework): one trade per Cardinal Sin, each a single integer
-   * depth ≥ 0 (spec §1). Sparse — an absent Sin means depth 0, and the serializer omits the whole
-   * record when empty. Reset to {} on Katabasis after the liquidation refund.
+   * The Thesaurus hoard (Depraedatio gold rework): gold placed with Mammon's counting house.
+   * Pays interest into liquid gold at the Fenus rate; withdrawal is punitive; Katabasis liquidates
+   * it in full (the descent voids the contracts). BigNum; additive-optional on the wire (ADR-023,
+   * absent means zero). Reset to ZERO with the lifetime.
    */
-  mercatusDepths: Partial<Record<Sin, number>>;
+  hoard: BigNum;
+  /**
+   * Signed Syngraphae (the Avaritia contract tree) — purchased node ids in signing order.
+   * Additive-optional on the wire (ADR-023, absent means none). The terms lapse at the descent:
+   * reset with the lifetime at commit (kept through the frozen menu so the commit-side effects —
+   * the Peculium floor — can still read them).
+   */
+  syngraphae: string[];
+  /**
+   * The hoard's value at the moment of descent (set by `enterKatabasis` alongside the pending
+   * flags, before the liquidation zeroes `hoard`) — the base for the custodia-4 Peculium floor at
+   * commit. Additive-optional on the wire (ADR-023) so it survives a mid-descent reload; cleared
+   * at commit with the lifetime reset.
+   */
+  hoardAtDescent?: BigNum;
   /**
    * Reprobate-dynamics accrual pools (02 §9). Each tick the per-second rate × deltaSeconds is
    * added to the matching pool; while the pool ≥ 1 it is decremented and an integer event applied
@@ -349,7 +364,8 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       toggleDurations: {},
       actionQueue: [],
       autoRepeat: [],
-      mercatusDepths: {},
+      hoard: ZERO,
+      syngraphae: [],
       generationPool: 0,
       suicidePool: 0,
       murderPool: 0,

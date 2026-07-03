@@ -16,7 +16,7 @@ import { ensureAutoRepeatStarted, resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceInvocationRunners, invocationUpkeep } from './invocations.js';
 import { applyInvocationTickEffects } from './apex.js';
-import { mercatusGoldPerSecond, mercatusRevenueWithFoedus } from './foedera.js';
+import { anatocismusDepositPerSecond, faeneratioGoldPerSecond } from './faeneratio.js';
 import {
   advanceToggles,
   compositumGoldPerSecond,
@@ -45,13 +45,6 @@ export interface TickDeps {
    */
   readonly offlineGoldMul?: number;
   readonly offlineInfluenceMul?: number;
-  /**
-   * The base offline efficiency the CALLER already applied to `deltaSeconds` (resumeGame passes
-   * PLAYER_OFFLINE_EFFICIENCY = 0.5; online ticks pass nothing → 1). Used only to restore the
-   * Mercatus Acediae trade's revenue to full rate — its signature clause exempts that take from
-   * the ×0.5 factor, so its term is divided back by this value.
-   */
-  readonly offlineEfficiency?: number;
   /**
    * Offline-only multiplier on the reprobate-generation pool accrual (Zepar #16). Default 1;
    * `resumeGame` passes the sigil-derived value for the catch-up tick.
@@ -117,7 +110,7 @@ export interface PerSecondRates {
 function baseGainRates(state: GameState, mods: Modifiers): GainRates {
   const goldGainPerSecond =
     (BASE_GOLD_PER_SECOND +
-      mercatusGoldPerSecond(state) * mods.vitiumMercaturaOutputMul +
+      faeneratioGoldPerSecond(state, mods) +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
     mods.goldRateMul;
@@ -136,8 +129,11 @@ export function perSecondRates(state: GameState): PerSecondRates {
   }
   const mods = computeModifiers(state);
   const rates = baseGainRates(state, mods);
+  // Anatocismus (usura-4): the auto-deposited half of the interest never reaches liquid gold, so
+  // the HUD's gold/s shows the liquid half only (spec §6); the Thesaurus tab shows the deposit rate.
   const grossGold =
-    rates.goldGainPerSecond +
+    rates.goldGainPerSecond -
+    anatocismusDepositPerSecond(state, mods) +
     compositumPercentGoldPerSecond(state, rates) *
       mods.vitiumCompositumOutputMul *
       mods.goldRateMul;
@@ -222,39 +218,38 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   const mods = computeModifiers(state);
 
   // 1. Passive generation (02 §1) with modifier bundle applied.
-  //    Gold/s = (base + Σ Mercatus revenue [Foedus-scaled] + Σ active-VC goldPerSecond) × goldRateMul.
-  //    Influence gain = (proportional base + Σ active-VC influencePerSecond) × influenceRateMul,
-  //    capped at effectiveMax = base × maxInfluenceMul. Mercatus / VC income obeys the same
-  //    multipliers as base so Avaritia / Silver / Acclaim scale them too.
+  //    Gold/s = (base + (Mutuum + Thesaurus interest) × faenerationOutputMul + Σ active-VC
+  //    goldPerSecond) × goldRateMul. Influence gain = (proportional base + Σ active-VC
+  //    influencePerSecond) × influenceRateMul, capped at effectiveMax = base × maxInfluenceMul.
+  //    Faeneratio / VC income obeys the same multipliers as base so Avaritia / Silver / Acclaim
+  //    scale them too. The interest term rides the offline efficiency factor like everything else
+  //    (ADR-026 — no Acediae-style exemption survives the Mercatus removal).
   //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
   //    only at display/spend/comparison boundary.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   // Offline-only income multipliers (Sallos #19 gold, Forneus #30 influence). 1× online.
   const offlineGoldMul = deps.offlineGoldMul ?? 1;
   const offlineInfluenceMul = deps.offlineInfluenceMul ?? 1;
-  // Mercatus Acediae signature clause (§1.5 amended): its revenue is exempt from the ×0.5 offline
-  // efficiency factor. `deltaSeconds` was already scaled by that factor in `resumeGame`, so the
-  // Acediae trade's term is divided back by it here — accruing at full wall-clock rate while every
-  // other source runs at the slowed clock. 1× online (no-op).
-  const offlineEfficiency = deps.offlineEfficiency ?? 1;
-  const acediaOfflineRestore =
-    offlineEfficiency < 1
-      ? mercatusRevenueWithFoedus(state, 'acedia') * (1 / offlineEfficiency - 1)
-      : 0;
   // The percentage-VC outputs (Vegas → influence, Crusade → gold) measure the base gain rates
   // (no percentage terms inside, by construction) and ride the VC output multiplier like any
-  // ceremony income (ADR-027).
+  // ceremony income (ADR-027). `baseGainRates` includes the Mutuum and interest terms exactly as
+  // it included Mercatus revenue, so the percentage ceremonies measure the new income.
   const gainRates = baseGainRates(state, mods);
+  // Anatocismus (usura-4): half of each interest payment auto-deposits into the hoard instead of
+  // paying out — split AFTER all multipliers (spec §6), so the liquid line is simply the full
+  // composition minus the deposit rate, and the hoard gains the deposit under the same offline factor.
+  const anatocismusPerSecond = anatocismusDepositPerSecond(state, mods) * offlineGoldMul;
   const goldPerSecond =
     ((BASE_GOLD_PER_SECOND +
-      (mercatusGoldPerSecond(state) + acediaOfflineRestore) * mods.vitiumMercaturaOutputMul +
+      faeneratioGoldPerSecond(state, mods) +
       compositumGoldPerSecond(state) * mods.vitiumCompositumOutputMul +
       mods.flatGoldPerSecond) *
       mods.goldRateMul +
       compositumPercentGoldPerSecond(state, gainRates) *
         mods.vitiumCompositumOutputMul *
         mods.goldRateMul) *
-    offlineGoldMul;
+      offlineGoldMul -
+    anatocismusPerSecond;
   const proportionalInfluence = mul(
     effectiveMax,
     BASE_INFLUENCE_RATE * mods.influenceRateMul * offlineInfluenceMul * deltaSeconds,
@@ -277,6 +272,12 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   const lifetime = {
     ...state.lifetime,
     gold: add(state.lifetime.gold, mul(goldPerSecond, deltaSeconds)),
+    // The Anatocismus auto-deposit accrues on the hoard (compound interest by contract). Accrues
+    // fractionally on the BigNum like gold; floored only at display/spend (ADR-005).
+    hoard:
+      anatocismusPerSecond > 0
+        ? add(state.lifetime.hoard, mul(anatocismusPerSecond, deltaSeconds))
+        : state.lifetime.hoard,
     influence: min(
       add(add(add(state.lifetime.influence, proportionalInfluence), vcInfluence), flatInfluence),
       effectiveMax,

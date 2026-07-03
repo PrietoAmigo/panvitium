@@ -103,9 +103,34 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 880** (sim 536 · shared 60 · api 20 · web 264).
+**Current test count: 900** (sim 550 · shared 63 · api 20 · web 267).
 
-> **Latest change — time only truly freezes down in Hell; menus now run online or count as offline.**
+> **Latest change — the Depraedatio gold rework: Mercatus out, the Faeneratio loop in (ADR-030,
+> save v5).** The eight per-Sin Mercatūs (depths, demand-driven revenue, signature clauses, the
+> per-Sin Foedus revenue coupling) are removed entirely — `mercatus.ts` / `foedera.ts` deleted —
+> and Depraedatio gains a single Avaritia-centric gold loop: **Mutuum** (the loan book — passive
+> income per living reprobate; the population coupling survives), **Thesaurus** (the hoard —
+> instant floored deposits, Fenus interest paid into liquid gold, punitive withdrawal at the 0.25
+> recovery constant ×`thesaurusRecoveryMul` capped 0.9, full liquidation at Katabasis before the
+> remaining-gold roll), and **Syngraphae** (twelve burned-gold contracts in three linear
+> Avaritia-gated branches, reset each lifetime — Anatocismus' 50/50 interest split, Escheat's
+> death duties at the dynamics mint, the ×1.25 liquidation bonus, Peculium's 10%-of-hoard floor
+> under the commit roll with Erinyes precedence pinned). `vitiumMercaturaOutputMul` renames to
+> `faenerationOutputMul` (Plutus / Vapula #60 unchanged in magnitude); `fenusRateMul`,
+> `mutuumPerCapitaMul`, `thesaurusRecoveryMul` and the two Escheat coefficients join the bundle;
+> the four signature-clause couplings and `vitiumMercaturaGenerationMul` retire (Sitri #12
+> orphaned per ADR-029's no-inert pattern; Vine #45 / Furcas #50 re-pin to the withdrawal
+> recovery). The Foedus re-anchors to the hoard as one **global** tier (decades above T0 = 10,000,
+> cap 4) on the upkeep discount only. Save `schemaVersion` 4 → 5 (`v4-to-v5.ts` credits each
+> trade's frozen-curve divest value and drops `mercatusDepths`; `hoard`/`syngraphae` seed by
+> omission). The Depraedatio panel's Mercatura tab is replaced by the Thesaurus tab (loan book,
+> hoard, deposit / two-step withdraw, global Foedus badge, Anatocismus rate) and the Syngraphae
+> tab (three branch columns, two-step signing), with Playwright coverage of deposit / withdraw /
+> sign. Depth-gated newsletters re-key to Sin levels; the markets beat keys to the hoard's first
+> Foedus decade. Constants ship at the approved spec's placeholders pending the sheet's
+> Faeneratio block (the sheet wins once settled). Net **+20 tests** (sim +14 · shared +3 · web +3).
+
+> **Earlier change — time only truly freezes down in Hell; menus now run online or count as offline.**
 > The store used to suspend the tick on any non-null `katabasisPhase`, so opening the in-room Altar to
 > its full-screen gate (and the "Status Quo" Ledger behind it) froze the world the instant it appeared,
 > and the launch title menu + the "You Rise" recap silently ate whatever wall-clock the player spent on

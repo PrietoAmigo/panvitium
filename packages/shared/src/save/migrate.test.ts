@@ -79,7 +79,7 @@ describe('v1 → v2 migration (reprobate-subtype / conversion removal)', () => {
   }
 
   it('sums the per-subtype counts, drops conversionPool, strips the defixio target', () => {
-    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → v3 → v4
+    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → v3 → v4 → v5
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.state.lifetime.reprobates).toBe(200); // 100+40+10+5+5+20+0+15+5
     expect('conversionPool' in migrated.state.lifetime).toBe(false);
@@ -202,5 +202,58 @@ describe('v3 → v4 migration (Decimatio rite caedis → caedes rename)', () => 
     expect(migrated.state.lifetime.autoRepeat).toEqual([]);
     expect(migrated.state.lifetime.actionQueue).toEqual([]);
     expect(migrated.state.lifetime.acolytes).toEqual([]);
+  });
+});
+
+describe('v4 → v5 migration (Mercatus → the Faeneratio loop)', () => {
+  /** A v4-shaped raw blob: per-Sin Mercatus depths, gold as a wire string. */
+  function v4Blob(): Record<string, unknown> {
+    const base = currentBlob();
+    const lifetime = base.state.lifetime as Record<string, unknown>;
+    return {
+      ...base,
+      schemaVersion: 4,
+      state: {
+        ...base.state,
+        lifetime: {
+          ...lifetime,
+          gold: '100',
+          mercatusDepths: { gula: 4, avaritia: 3, superbia: 2 },
+        },
+      },
+    };
+  }
+
+  it('credits each trade’s divest value on the frozen curve and drops the field', () => {
+    const migrated = migrateSave(v4Blob());
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    // Per the frozen table (C0 50, r 1.6; Avaritiae ratio 1.6 × 0.995; Superbiae ×1.25):
+    //   gula d4:     floor(0.25 × 50·(1.6⁴−1)/0.6)               = floor(115.70)  = 115
+    //   avaritia d3: floor(0.25 × 50·(1.592³−1)/0.592)           = floor(64.08)   = 64
+    //   superbia d2: floor(0.25 × 50·(1.6²−1)/0.6 × 1.25)        = floor(40.625)  = 40
+    // 115 + 64 + 40 = 219, on top of the 100 held.
+    expect(migrated.state.lifetime.gold).toBe('319');
+    expect('mercatusDepths' in migrated.state.lifetime).toBe(false);
+    // The new system seeds by omission: no hoard, no contracts on the migrated wire.
+    expect('hoard' in migrated.state.lifetime).toBe(false);
+    expect('syngraphae' in migrated.state.lifetime).toBe(false);
+  });
+
+  it('is a no-op gold-wise with no depths, and tolerates junk entries (credit 0)', () => {
+    const blob = v4Blob();
+    const lifetime = (blob.state as Record<string, unknown>).lifetime as Record<string, unknown>;
+    lifetime.mercatusDepths = { acme: 9, gula: 'lots', ira: -4, luxuria: 0 };
+    const migrated = migrateSave(blob);
+    expect(migrated.state.lifetime.gold).toBe('100'); // unknown sin / NaN / non-positive credit 0
+    expect('mercatusDepths' in migrated.state.lifetime).toBe(false);
+  });
+
+  it('leaves a v4 save without the field untouched apart from the version stamp', () => {
+    const blob = v4Blob();
+    const lifetime = (blob.state as Record<string, unknown>).lifetime as Record<string, unknown>;
+    delete lifetime.mercatusDepths;
+    const migrated = migrateSave(blob);
+    expect(migrated.state.lifetime.gold).toBe('100');
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
   });
 });

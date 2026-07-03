@@ -12,8 +12,10 @@ import { create } from 'zustand';
 import {
   tick,
   startAction,
-  investMercatus,
-  divestMercatus,
+  depositThesaurus as depositThesaurusSim,
+  withdrawThesaurus as withdrawThesaurusSim,
+  signSyngrapha as signSyngraphaSim,
+  computeModifiers,
   activateToggle,
   deactivateToggle,
   invoke,
@@ -123,15 +125,20 @@ interface GameStore {
    */
   activateMaleficium: (id: string) => void;
   /**
-   * Deepen a Sin's Mercatus by one depth (rework spec §1.1) — an instant gold purchase. Sets a
-   * notice on failure (Sin below level 1, depth cap reached, not enough gold, Morpheus freeze).
+   * Place liquid gold with the counting house (Depraedatio gold rework §4.2) — instant, floored
+   * at the spend boundary. Sets a notice on failure (below Avaritia I, not enough gold, Morpheus).
    */
-  invest: (sin: Sin) => void;
+  depositThesaurus: (amount: BigNum | number) => void;
   /**
-   * Wind a Sin's Mercatus down by `depths` (clamped; pass the full depth to sell off entirely).
-   * Instant; refunds the divest fraction of the divested depths' cumulative cost into gold.
+   * Reclaim from the hoard: the full amount leaves the vault, only the recovery fraction returns
+   * to liquid gold. The UI states the forfeit before confirming; this just executes it.
    */
-  divest: (sin: Sin, depths?: number) => void;
+  withdrawThesaurus: (amount: BigNum | number) => void;
+  /**
+   * Sign a Syngrapha (the Avaritia contract tree): burns the fee, records the node. Sets a notice
+   * on failure (gate unmet, prior term unsigned, not enough gold, Morpheus freeze).
+   */
+  signSyngrapha: (id: string) => void;
   /**
    * Assign one idle acolyte to a delegatable action (02 §10). Notice on failure (e.g. all
    * acolytes busy, or the action is not delegatable yet — Indagatio only in this slice).
@@ -316,7 +323,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     //    clock they hold is NOT lost — `dismissTitle` / `closeRecap` pay it out as OFFLINE catch-up
     //    on exit (half-rate, Acedia compound), so lingering on either counts as offline time.
     // For all three suspended cases we skip the sim so nothing accrues online (no suicides, no
-    // Mercatus gold, no soul minting). The RAF accumulator drains harmlessly through these no-op
+    // Mutuum gold, no soul minting). The RAF accumulator drains harmlessly through these no-op
     // calls, so there is no catch-up burst when the screen closes.
     const phase = get().katabasisPhase;
     const suspended =
@@ -375,18 +382,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
     else set({ notice: result.reason });
   },
 
-  invest: (sin) => {
+  depositThesaurus: (amount) => {
     const current = get().state;
     if (!current) return;
-    const result = investMercatus(current, sin);
+    const result = depositThesaurusSim(current, amount);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },
 
-  divest: (sin, depths = 1) => {
+  withdrawThesaurus: (amount) => {
     const current = get().state;
     if (!current) return;
-    const result = divestMercatus(current, sin, depths);
+    const result = withdrawThesaurusSim(current, amount, computeModifiers(current));
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  signSyngrapha: (id) => {
+    const current = get().state;
+    if (!current) return;
+    const result = signSyngraphaSim(current, id);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },

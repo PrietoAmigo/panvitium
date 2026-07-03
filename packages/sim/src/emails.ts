@@ -22,7 +22,6 @@
 import { gte, bn } from './bignum.js';
 import { sinLevel } from './progression.js';
 import { mintSouls } from './population.js';
-import { mercatusDepth } from './mercatus.js';
 import { SINS, type GameState, type ReceivedEmail } from './state.js';
 
 /** A catalog email and the (id-keyed) conditions that schedule it. */
@@ -112,8 +111,10 @@ const REUBEN_SIN_GATE = { one: 5, two: 13, three: 21, four: 28 } as const;
 /**
  * The authored email catalog (05). Ordered roughly by the arc — household, world newsletters, the
  * Church, the adversary, the madman — so a full inbox reads sensibly. World-newsletter eligibility
- * maps the doc's legacy "own a tier-N business" gates onto the Mercatus rework's per-Sin DEPTH
- * (tier N ≈ depth N), consistent with how the provisional catalog was re-keyed.
+ * re-keyed with the Depraedatio gold rework: the per-Sin Mercatus depth gates (tier N ≈ depth N)
+ * retired with the trades, so the sin-flavoured beats now key to the SIN LEVEL that gated the old
+ * depth (a depth-2/3 trade implied its Sin at level ≥ 1), and the finance beat (markets) to the
+ * hoard's first Foedus decade — the new surface the spec suggests.
  */
 export const EMAIL_DEFS: readonly EmailDef[] = [
   // ── Household — Gideon Reyes, the steward ──
@@ -131,44 +132,46 @@ export const EMAIL_DEFS: readonly EmailDef[] = [
     delaySeconds: 5 * MIN,
   },
 
-  // ── The world / commerce — random, once per run; depth gates land them as consequences ──
+  // ── The world / commerce — random, once per run; the gates land them as consequences ──
   {
+    // The finance press notices the capital at work: the hoard's first Foedus decade (T0).
     id: 'newsletter-markets',
-    eligible: (s) => mercatusDepth(s, 'avaritia') >= 3,
+    eligible: (s) => gte(s.lifetime.hoard, 10_000),
     randomWindow: NEWSLETTER_WINDOW,
   },
   {
     id: 'newsletter-class-action',
-    eligible: (s) => mercatusDepth(s, 'gula') >= 3,
+    eligible: (s) => sinLevel(s.devotion.gula) >= 1,
     randomWindow: NEWSLETTER_WINDOW,
   },
   {
     id: 'newsletter-health',
-    eligible: (s) => mercatusDepth(s, 'acedia') >= 2,
+    eligible: (s) => sinLevel(s.devotion.acedia) >= 1,
     randomWindow: NEWSLETTER_WINDOW,
   },
   { id: 'newsletter-local', eligible: () => true, randomWindow: NEWSLETTER_WINDOW },
   { id: 'newsletter-broker', eligible: () => true, randomWindow: NEWSLETTER_WINDOW },
   {
     id: 'newsletter-outrage',
-    eligible: (s) => mercatusDepth(s, 'vanagloria') >= 2,
+    eligible: (s) => sinLevel(s.devotion.vanagloria) >= 1,
     randomWindow: NEWSLETTER_WINDOW,
   },
   { id: 'newsletter-charity', eligible: () => true, randomWindow: NEWSLETTER_WINDOW },
   { id: 'newsletter-wealth', eligible: () => true, randomWindow: NEWSLETTER_WINDOW },
   {
     id: 'newsletter-crime',
-    eligible: (s) => mercatusDepth(s, 'ira') >= 2,
+    eligible: (s) => sinLevel(s.devotion.ira) >= 1,
     randomWindow: NEWSLETTER_WINDOW,
   },
   {
+    // Staged strictly after newsletter-health on the same Sin (the old depth-2 → depth-3 ladder).
     id: 'newsletter-attention',
-    eligible: (s) => mercatusDepth(s, 'acedia') >= 3,
+    eligible: (s) => sinLevel(s.devotion.acedia) >= 2,
     randomWindow: NEWSLETTER_WINDOW,
   },
   {
     id: 'newsletter-discipline',
-    eligible: (s) => mercatusDepth(s, 'superbia') >= 2,
+    eligible: (s) => sinLevel(s.devotion.superbia) >= 1,
     randomWindow: NEWSLETTER_WINDOW,
   },
   { id: 'newsletter-seismic', eligible: () => true, randomWindow: NEWSLETTER_WINDOW },

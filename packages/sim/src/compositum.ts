@@ -17,7 +17,7 @@
  * off — no per-VC payload. Panvitium's duration is tracked in `toggleDurations`.
  */
 import { floor, gte, sub } from './bignum.js';
-import { foedusTier, foedusUpkeepMul } from './mercatus.js';
+import { foedusTier, foedusUpkeepMul } from './faeneratio.js';
 import { sinLevel } from './progression.js';
 import { type GameState, type Sin } from './state.js';
 // The ceremony catalog lives in `compositum.data.ts` (the editable economy knobs); imported for the
@@ -103,9 +103,9 @@ export interface CompositumDef {
    */
   readonly panvitiumRateBase?: number;
   /**
-   * Foedus opt-out (spec §2): when true, this ceremony forms NO Foedus with its member Sins'
-   * Mercatūs — no upkeep discount, no revenue bonus. A per-VC tuning flag mirrored from the
-   * spreadsheet; default absent (all-on).
+   * Foedus opt-out: when true, this ceremony forms NO Foedus with the hoard — no upkeep discount
+   * (the revenue side retired with the Mercatūs; Depraedatio gold rework §4.4). A per-VC tuning
+   * flag mirrored from the spreadsheet; default absent (all-on).
    */
   readonly foedusOptOut?: boolean;
 }
@@ -320,15 +320,17 @@ export function advanceToggles(
 }
 
 /**
- * Foedus upkeep discount (spec §2): the ceremony's Foedus with its member Sins' Mercatūs
- * multiplies its per-second cost by `1 − 0.125 × tier` (tier 4 → ×0.5). Applied to the COMPUTED
- * per-second cost in `advanceToggles`, so ramped upkeeps (Panvitium's eᵗ) take the same
- * multiplier — the intended late-game payoff is that a deep all-eight Foedus discounts the
- * exponential ramp itself. An opted-out ceremony (`foedusOptOut`) always pays full price.
+ * Foedus upkeep discount (Depraedatio gold rework §4.4): the pact between the hoard and the
+ * rituals multiplies a ceremony's per-second cost by `1 − 0.125 × tier` (tier 4 → ×0.5) — one
+ * GLOBAL tier for all ceremonies, stepped per decade of hoard above T0 (the per-Sin member
+ * dependency retired with the Mercatūs). Applied to the COMPUTED per-second cost in
+ * `advanceToggles`, so ramped upkeeps (Panvitium's eᵗ) take the same multiplier — the intended
+ * late-game payoff is that a fat vault discounts the exponential ramp itself. An opted-out
+ * ceremony (`foedusOptOut`) always pays full price.
  */
 export function compositumFoedusUpkeepMul(state: GameState, def: CompositumDef): number {
   if (def.foedusOptOut === true) return 1;
-  return foedusUpkeepMul(foedusTier(state, def.sins));
+  return foedusUpkeepMul(foedusTier(state));
 }
 
 // ── Aggregate effect helpers (consumed by tick / dynamics) ─────────────────────

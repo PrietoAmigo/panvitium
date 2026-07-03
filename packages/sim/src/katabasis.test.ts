@@ -196,7 +196,7 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
         ...base.lifetime,
         gold: bn(1000),
         reprobates: 50,
-        mercatusDepths: { gula: 4 },
+        hoard: bn(400),
         activeToggles: ['bacchanal'],
         toggleDurations: { bacchanal: 12 },
         actionQueue: [{ actionId: 'caedes', remainingSeconds: 4 }],
@@ -207,12 +207,27 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
     };
   }
 
-  it('liquidates every Mercatus, folding the refund into gold, and zeroes the depths', () => {
+  it('liquidates the hoard IN FULL into gold (no recovery penalty) and zeroes it', () => {
     const before = loaded();
     const after = enterKatabasis(before);
-    // floor(0.25 × cumulative(4)) = floor(0.25 × 50·(1.6⁴−1)/0.6) = floor(0.25 × 462.93…) = 115.
-    expect(after.lifetime.gold.toNumber()).toBe(1115);
-    expect(Object.keys(after.lifetime.mercatusDepths)).toHaveLength(0);
+    // The descent voids the contracts: the full 400 pays out, not 0.25 × 400.
+    expect(after.lifetime.gold.toNumber()).toBe(1400);
+    expect(after.lifetime.hoard.toNumber()).toBe(0);
+    // The Peculium base is stamped before the liquidation zeroed the hoard.
+    expect(after.lifetime.hoardAtDescent?.toNumber()).toBe(400);
+  });
+
+  it('pays the faeneratio-4 liquidation bonus (×1.25) when that contract is signed', () => {
+    const before = loaded();
+    const signed: GameState = {
+      ...before,
+      lifetime: {
+        ...before.lifetime,
+        syngraphae: ['faeneratio-1', 'faeneratio-2', 'faeneratio-3', 'faeneratio-4'],
+      },
+    };
+    const after = enterKatabasis(signed);
+    expect(after.lifetime.gold.toNumber()).toBe(1000 + 400 * 1.25);
   });
 
   it('stops toggles, fizzles the action queue, and dispels invocations + their channels', () => {
@@ -234,12 +249,70 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
     expect(after.souls.toNumber()).toBe(5000);
   });
 
-  it('does not double-refund: committing after entering rolls the already-folded gold once', () => {
+  it('does not double-pay: committing after entering rolls the already-folded gold once', () => {
     const entered = enterKatabasis(loaded());
     const { recap } = commitKatabasis(entered);
-    // Businesses already gone at entry → commit finds none to refund again. Gold kept is a fraction
-    // of the 1500 (post-refund) held, never of 1500 + another 500.
-    expect(recap.goldKept.toNumber()).toBeLessThanOrEqual(1500);
+    // The hoard is already gone at entry → commit finds nothing to liquidate again. Gold kept is
+    // a fraction of the 1400 (post-liquidation) held, never of 1400 + another 400.
+    expect(recap.goldKept.toNumber()).toBeLessThanOrEqual(1400);
+  });
+
+  it('commit resets the hoard, the Syngraphae, and the Peculium base with the lifetime', () => {
+    const before = loaded();
+    const signed: GameState = {
+      ...before,
+      lifetime: { ...before.lifetime, syngraphae: ['usura-1', 'faeneratio-1'] },
+    };
+    const { state } = commitKatabasis(enterKatabasis(signed));
+    expect(state.lifetime.hoard.toNumber()).toBe(0);
+    expect(state.lifetime.syngraphae).toHaveLength(0);
+    expect(state.lifetime.hoardAtDescent).toBeUndefined();
+  });
+});
+
+describe('Peculium (custodia-4) — the kept-gold floor at commit', () => {
+  /** A descent-ready state: `hoard` in the vault, `gold` liquid, custodia-4 optionally signed. */
+  function estate(opts: { hoard: number; gold?: number; signed?: boolean }): GameState {
+    const base = createInitialState('peculium', 0);
+    return {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        gold: bn(opts.gold ?? 0),
+        hoard: bn(opts.hoard),
+        ...(opts.signed === false
+          ? {}
+          : { syngraphae: ['custodia-1', 'custodia-2', 'custodia-3', 'custodia-4'] }),
+      },
+    };
+  }
+
+  it('floors the kept gold at 10% of the hoard value at descent', () => {
+    // Estate: 10,000 hoard + 0 liquid → 10,000 at descent; base roll keeps 5% = 500.
+    const { recap } = commitKatabasis(enterKatabasis(estate({ hoard: 10_000 })));
+    // Peculium guarantees floor(0.10 × 10,000) = 1,000 — above the 500 the roll kept.
+    expect(recap.goldKept.toNumber()).toBe(1000);
+  });
+
+  it('does not lower a roll that already beats the floor', () => {
+    // A large liquid estate: the 5% roll on (100,000 + 10,000) = 5,500 beats the 1,000 floor.
+    const { recap } = commitKatabasis(enterKatabasis(estate({ hoard: 10_000, gold: 100_000 })));
+    expect(recap.goldKept.toNumber()).toBe(5500);
+  });
+
+  it('does nothing while unsigned', () => {
+    const { recap } = commitKatabasis(enterKatabasis(estate({ hoard: 10_000, signed: false })));
+    expect(recap.goldKept.toNumber()).toBe(500); // the bare 5% roll
+  });
+
+  it('survives a mid-descent save/reload: the floor reads the persisted hoard-at-descent', () => {
+    const entered = enterKatabasis(estate({ hoard: 10_000 }));
+    // The stamp is on the lifetime (the wire round-trip is pinned in @panvitium/shared's save
+    // tests); commit reads it rather than the already-zeroed hoard.
+    expect(entered.lifetime.hoardAtDescent?.toNumber()).toBe(10_000);
+    expect(entered.lifetime.hoard.toNumber()).toBe(0);
+    const { recap } = commitKatabasis(entered);
+    expect(recap.goldKept.toNumber()).toBe(1000);
   });
 });
 

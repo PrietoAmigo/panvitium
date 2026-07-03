@@ -49,8 +49,7 @@ export type ScalarModifierField =
   | 'reprobateGenerationRateMul'
   | 'reprobateSuicideRateMul'
   | 'murderRateMul'
-  | 'vitiumMercaturaOutputMul'
-  | 'vitiumMercaturaGenerationMul'
+  | 'faenerationOutputMul'
   | 'vitiumCompositumOutputMul'
   | 'vitiumCompositumInfluenceOutputMul'
   | 'vitiumCompositumEffectMul'
@@ -365,9 +364,10 @@ export function sigilInvocationEffectContributions(
 }
 
 /**
- * Multiplier on the business-shutdown gold refund fraction from bound `shutdownRefund` sigils
- * (Vine #45). Composed `(1 + strength)`; 1× when none are bound (refund unchanged). The caller
- * clamps the effective fraction to ≤ 1 so a shutdown can never refund more than the build cost.
+ * Multiplier on the Thesaurus withdrawal-recovery fraction from bound `shutdownRefund` sigils
+ * (Vine #45, Furcas #50 — the same "recovery" niche they held for the Mercatus divest). Composed
+ * `(1 + strength)`; 1× when none are bound. Folded into `thesaurusRecoveryMul` by
+ * `computeModifiers`; the effective fraction is capped (0.9) at the withdraw site.
  */
 export function sigilShutdownRefundMul(state: GameState, effectMul = 1): number {
   let mul = 1;

@@ -29,7 +29,7 @@ import {
   reprobateRates,
   resolveAction,
   resolveIndagatio,
-  divestFraction,
+  thesaurusRecoveryFraction,
   sigilById,
   sigilCategoryTierContributions,
   sigilCostReductionByChannel,
@@ -205,7 +205,7 @@ describe('In-lifetime modifier contributions', () => {
   it('no bindings → the affected fields match the neutral baseline', () => {
     const m = computeModifiers(fresh());
     expect(m.goldRateMul).toBe(NEUTRAL_MODIFIERS.goldRateMul);
-    expect(m.vitiumMercaturaOutputMul).toBe(NEUTRAL_MODIFIERS.vitiumMercaturaOutputMul);
+    expect(m.faenerationOutputMul).toBe(NEUTRAL_MODIFIERS.faenerationOutputMul);
     expect(m.acolyteEfficiencyMul).toBeCloseTo(NEUTRAL_MODIFIERS.acolyteEfficiencyMul, 6);
   });
 });
@@ -612,18 +612,33 @@ describe('Vitium Compositum output sigil (S14)', () => {
     expect(zagan).toBeCloseTo(base, 4); // the gold-output sigil leaves influence alone
   });
 
-  it('Sitri #12 scales Mercatus GENERATION; Vapula #60 scales revenue only', () => {
-    const withTrade = (s: GameState): GameState => ({
+  it('Sitri #12 is orphaned (Depraedatio rework): no def, binding it is harmless', () => {
+    // Its target — the Mercatus breeding channel — retired with the trades; per ADR-029 an empty
+    // catalog state is expressed by deleting the def. Re-pinning awaits a per-sigil sheet decision.
+    expect(sigilById(12)).toBeUndefined();
+    const s = bound(12, 100_000_000);
+    expect(computeModifiers(s)).toEqual(computeModifiers(fresh()));
+  });
+
+  it('Vapula #60 scales the Faeneratio gold output, never generation', () => {
+    const withBook = (s: GameState): GameState => ({
       ...s,
-      lifetime: { ...s.lifetime, mercatusDepths: { gula: 5 } },
+      // Avaritia level 1 opens the loan book; a populated world gives it a take.
+      devotion: { ...s.devotion, avaritia: bn(180) },
+      lifetime: { ...s.lifetime, reprobates: 1000 },
     });
+    const goldGain = (s: GameState): number =>
+      tick(s, 1).state.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
+    const base = goldGain(withBook(fresh()));
+    const vapula = goldGain(withBook(bound(60, 100_000_000))); // strength 1 → ×2 on the term
+    // Mutuum take 0.05 × 1000 = 50/s; Vapula doubles that term and leaves the 2/s base alone.
+    // Everything rides goldRateMul (the Avaritia-180 Golden Hand intensity is in play here).
+    const rateMul = computeModifiers(withBook(fresh())).goldRateMul;
+    expect(base).toBeCloseTo((2 + 50) * rateMul, 4);
+    expect(vapula).toBeCloseTo((2 + 100) * rateMul, 4);
     const genOf = (s: GameState): number =>
       reprobateRates(s, computeModifiers(s)).generationPerSecond;
-    const base = genOf(withTrade(fresh()));
-    const sitri = genOf(withTrade(bound(12, 100_000_000))); // strength 1 → ×2
-    const vapula = genOf(withTrade(bound(60, 100_000_000)));
-    expect(sitri).toBeCloseTo(base * 2, 6);
-    expect(vapula).toBeCloseTo(base, 6); // revenue sigil no longer leaks into breeding
+    expect(genOf(withBook(bound(60, 100_000_000)))).toBeCloseTo(genOf(withBook(fresh())), 9);
   });
 });
 
@@ -635,7 +650,7 @@ describe('Per-invocation effectiveness sigils (S15)', () => {
 
   it('Buer #10 (familiar) scales a named invocation by id; Sitri left the channel', () => {
     expect(sigilById(10)!.effect).toEqual({ kind: 'invocationEffect', invocation: 'familiar' });
-    expect(sigilById(12)!.effect.kind).toBe('modifier'); // Sitri → VM generation (sheet rev)
+    expect(sigilById(12)).toBeUndefined(); // Sitri orphaned by the Depraedatio rework
     const c = sigilInvocationEffectContributions(bound(10, 100_000_000));
     expect(c.familiar).toBeCloseTo(2, 6); // 0.0001 × sqrt(1e8) = 1 → ×2
     expect(Object.keys(c)).toEqual(['familiar']);
@@ -682,19 +697,22 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
     );
   });
 
-  it('Vine #45 raises the Mercatus divest fraction, clamped to ≤ 1; Furcas composes', () => {
+  it('Vine #45 raises the Thesaurus recovery, capped at 0.9 effective; Furcas composes', () => {
+    // Re-pinned from the Mercatus divest fraction to `thesaurusRecoveryMul` — the same "recovery"
+    // niche, unchanged in magnitude (Depraedatio rework §9).
     expect(sigilById(45)!.effect).toEqual({ kind: 'shutdownRefund' });
     // 0.0001 × sqrt(1e8) = 1 → ×2.
     expect(sigilShutdownRefundMul(bound(45, 100_000_000))).toBeCloseTo(2, 6);
-    expect(divestFraction(fresh())).toBeCloseTo(0.25, 6); // base fraction
-    expect(divestFraction(bound(45, 100_000_000))).toBeCloseTo(0.5, 6); // 0.25 × 2
-    expect(divestFraction(bound(45, 1e18))).toBe(1); // clamp: never refund more than was invested
+    expect(thesaurusRecoveryFraction(computeModifiers(fresh()))).toBeCloseTo(0.25, 6);
+    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 100_000_000)))).toBeCloseTo(0.5, 6); // 0.25 × 2
+    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 1e18)))).toBe(0.9); // the cap
     // Vine + Furcas on the same channel compose multiplicatively.
     let both = fresh();
     both = { ...both, souls: bn(200_000_000) };
     both = bindSigil(both, 45, 100_000_000);
     both = bindSigil(both, 50, 100_000_000);
     expect(sigilShutdownRefundMul(both)).toBeCloseTo(4, 6);
+    expect(computeModifiers(both).thesaurusRecoveryMul).toBeCloseTo(4, 6);
   });
 
   it('Semet #32 scales the other sigils; Gaap #33 inflates the maleficia enhancer stack', () => {

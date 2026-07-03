@@ -17,12 +17,12 @@
  * birth adds one reprobate, every suicide/murder removes one, and each death mints exactly 1 soul
  * (1 person, 1 soul — never changes).
  */
+import { add, mul } from './bignum.js';
 import {
   BASE_REPROBATE_GENERATION_PER_SECOND,
   BASE_SUICIDE_RATE_PER_SECOND,
   BASE_MURDER_RATE_PER_SECOND,
 } from './constants.js';
-import { mercatusGenerationPerSecond } from './mercatus.js';
 import { compositumGenerationPerSecond, panvitiumRate } from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobates } from './population.js';
@@ -33,7 +33,7 @@ import { type GameState, totalReprobates } from './state.js';
  * tick computes these once and feeds them into the pool drain.
  */
 export interface ReprobateRates {
-  /** Births per second (passive base + Mercatus depth contributions × generation mul). */
+  /** Births per second (passive base + ceremony/sigil contributions × generation mul). */
   readonly generationPerSecond: number;
   /** Suicides per second across the whole population. */
   readonly suicidePerSecond: number;
@@ -44,12 +44,11 @@ export interface ReprobateRates {
 /** Compute the rates from the state, given a precomputed Modifiers bundle (tick already has it). */
 export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRates {
   const population = totalReprobates(state);
-  // Sigils sheet rev 2026-06-12: the MERCATUS generation term takes the dedicated generation
-  // multiplier (Sitri #12); `vitiumMercaturaOutputMul` (Plutus, Vapula #60) now scales REVENUE
-  // only, at the tick's income line.
+  // The Mercatus `genPerDepth × d` channel retired with the trades (Depraedatio gold rework §6);
+  // nothing replaces it by default — population-proportional growth stays Bacchanal's exclusive
+  // niche, and any compensation is a base-constant decision on the sheet.
   const baseGen =
     BASE_REPROBATE_GENERATION_PER_SECOND +
-    mercatusGenerationPerSecond(state) * mods.vitiumMercaturaGenerationMul +
     compositumGenerationPerSecond(state) +
     panvitiumRate(state) + // Panvitium: R(t) = 0.01·eᵗ is also a flat generation increase
     mods.flatGenerationPerSecond; // Ose #57 — flat births/s from the sigil channel
@@ -125,6 +124,9 @@ export function applyReprobateDynamics(
 
   // 2. Suicides. Each whole unit kills one reprobate; every death yields 1 soul (03 §3). Bounded
   //    by the living population; the unspent remainder stays pooled so progress isn't lost.
+  //    Escheat (faeneratio-2): each applied death also mints its death-duty gold — the estates of
+  //    the dead escheat to creditors unseen. The bundle fields are additive, so any future
+  //    death-gold source composes on this same line.
   {
     const deaths = Math.min(Math.floor(working.lifetime.suicidePool), totalReprobates(working));
     if (deaths >= 1) {
@@ -132,15 +134,22 @@ export function applyReprobateDynamics(
       const withSouls = mintSouls(r.state, r.removed);
       working = {
         ...withSouls,
-        lifetime: { ...withSouls.lifetime, suicidePool: working.lifetime.suicidePool - r.removed },
+        lifetime: {
+          ...withSouls.lifetime,
+          suicidePool: working.lifetime.suicidePool - r.removed,
+          gold:
+            mods.escheatGoldPerSuicide > 0
+              ? add(withSouls.lifetime.gold, mul(mods.escheatGoldPerSuicide, r.removed))
+              : withSouls.lifetime.gold,
+        },
       };
     }
   }
 
   // 3. Murders. Each whole unit kills one reprobate; each kill yields 1 soul. If no reprobates
   //    remain, the pool is left intact so progress isn't lost. (Leraie #14's murder→suicide
-  //    coupling is rate-level, in `reprobateRates`; the old murder-gold effect is retired per the
-  //    Sigils sheet rev 2026-06-12.)
+  //    coupling is rate-level, in `reprobateRates`.) Escheat mints its per-murder death duty here,
+  //    per applied death, exactly like the suicide line above.
   {
     const deaths = Math.min(Math.floor(working.lifetime.murderPool), totalReprobates(working));
     if (deaths >= 1) {
@@ -148,7 +157,14 @@ export function applyReprobateDynamics(
       const withSouls = mintSouls(r.state, r.removed);
       working = {
         ...withSouls,
-        lifetime: { ...withSouls.lifetime, murderPool: working.lifetime.murderPool - r.removed },
+        lifetime: {
+          ...withSouls.lifetime,
+          murderPool: working.lifetime.murderPool - r.removed,
+          gold:
+            mods.escheatGoldPerMurder > 0
+              ? add(withSouls.lifetime.gold, mul(mods.escheatGoldPerMurder, r.removed))
+              : withSouls.lifetime.gold,
+        },
       };
     }
   }

@@ -7,7 +7,8 @@ document wherever the two disagree; formulas that define a system's shape are st
 their constants live in the sheet.
 
 This revision incorporates **ADR-024** (single reprobate pool; subtypes and conversion removed)
-and the **Vitium Mercatura / Vitium Compositum redesign** (`vm-vc-redesign-spec.md`). Section
+the **Vitium Mercatura / Vitium Compositum redesign** (`vm-vc-redesign-spec.md`), and the
+**Depraedatio gold rework** (Mercatus → the Faeneratio loop). Section
 numbering is preserved from the previous revision so cross-references in other documents and in
 code comments stay valid.
 
@@ -66,50 +67,64 @@ positive outcomes by the same percentage and does not affect action time.
   outcomes (total gold loss, total loss).
 
 Every kill mints one soul (`02 §9`). Per-action tables are in the `Decimatio` sheet. Note the
-tension the redesigned economy creates: every reprobate culled is a customer *Vitium Mercatura*
-no longer earns from (§2.3).
+tension the economy creates: every reprobate culled is a debtor the *Mutuum* loan book no longer
+earns from (§2.3) — unless Escheat has been signed, in which case the estate pays once.
 
 ### 2.3 *Depraedatio* — Exploiting
 
 The vice economy. Deterministic — no tier rolls anywhere in this category.
 
-#### *Vitium Mercatura* — the eight trades
+#### The Faeneratio loop — *Mutuum*, *Thesaurus*, *Syngraphae*
 
-One trade per Cardinal Sin — *Mercatus Gulae, Luxuriae, Avaritiae, Tristitiae, Irae, Acediae,
-Vanagloriae, Superbiae* — each with a single integer **depth** `d ≥ 0`. There are no buildings,
-no copies, and no build queue: deepening and divesting are instant gold transactions (`02 §3`).
+The gold-obtaining half of *Depraedatio* (the Depraedatio gold rework; supersedes the eight
+per-Sin Mercatūs of ADR-025). The framing is **usury at arm's length**: the damned never pay the
+player tribute and never know the player exists — small sums are seeded among the masses through
+brokers and front men, and the interest climbs through a hundred hands to a name none of them has
+heard. All three surfaces open at **Avaritia level 1**.
 
-- **Unlock:** a Mercatus opens at its Sin's level 1. **Depth cap:** `capPerLevel × sinLevel`.
-- **Invest:** cost from depth `d` to `d+1` is `floor(C0 × r^d)`; the cumulative cost is the
-  closed form `C0 (r^d − 1)/(r − 1)` — always derived, never stored.
-- **Revenue is demand-driven:** `revenue/s = spendPerCapita × reprobates × penetration(d)` with
-  `penetration(d) = 1 − e^(−a·d)`. No population, no income: the trades earn from the living
-  damned, so the gold curve rides the population curve.
-- **Corruption:** each trade also breeds — `generation/s = genPerDepth × d`, folded into the
-  generation pool (`02 §9`). Customers beget customers.
-- **Divest:** winding down refunds `divestFraction ×` the cumulative cost of the divested
-  depths (the `Globals` recovery constant, lifted by Vine #45).
-- **Katabasis liquidation:** on descent, all Mercatūs auto-divest into gold **before** the
-  remaining-gold roll (`02 §6`) and depths reset with the lifetime.
-- Mercatus revenue and corruption are both scaled by the *Vitium Mercatura* output multiplier
-  (the Plutus invocation, the Vapula #60 sigil).
+- ***Mutuum* (the loan book).** Passive gold income proportional to the reprobate population:
+  `take/s = MUTUUM_PER_CAPITA × mutuumPerCapitaMul × reprobates`. No principal, no depth, no
+  decision — this is the income floor and the population coupling (no population, no income: the
+  economy still rides the population curve, the ADR-025 design point).
+- ***Thesaurus* (the hoard).** A vault (`lifetime.hoard`) the player deposits liquid gold into;
+  the hoard pays **Fenus** interest into *liquid* gold: `interest/s = FENUS_RATE × fenusRateMul ×
+  hoard`. Deposits are instant and floored (ADR-005). **Withdrawal is punitive**: the full amount
+  leaves the hoard and only `THESAURUS_RECOVERY × thesaurusRecoveryMul` (base 0.25 — the Globals
+  shutdown-recovery constant, lifted by the Custodia contracts and Vine #45 / Furcas #50, capped
+  at 0.9 effective) returns. The miser's trap is the design: hoard everything and grow fastest
+  while affording nothing.
+- **Katabasis liquidation:** on descent the hoard liquidates **in full** (no recovery penalty —
+  the descent voids the contracts; ×1.25 with *faeneratio-4*) into gold **before** the
+  remaining-gold roll (`02 §6`), and resets with the lifetime.
+- Both income terms are scaled by the **Faeneratio output multiplier** (the Plutus invocation,
+  the Vapula #60 sigil — the renamed *Vitium Mercatura* output channel) and `goldRateMul`, and
+  both are part of the percentage-ceremony base (ADR-027).
 
-All constants (`C0`, `r`, `a`, `spendPerCapita`, `genPerDepth`, the depth cap, the divest
-fraction) live in the `Vitium Mercatura` sheet.
+Constants (`MUTUUM_PER_CAPITA`, `FENUS_RATE`, the recovery constant and cap, the Foedus `T0`,
+the node costs and magnitudes below) belong to the `Vitium Mercatura` sheet's Faeneratio block;
+the code carries the approved spec's placeholders until the sheet settles them.
 
-**Per-Sin signature clauses** *(shipped — the spec's §1.5 table as amended in session; ADR-025;
-numbers on the sheet)*. Each trade carries one signature twist:
+##### *Syngraphae* — the Avaritia contract tree
 
-| Mercatus | Clause |
-|---|---|
-| *Gulae* | Its patrons spend a quarter more — take ×1.25. |
-| *Luxuriae* | Its corruption breeds a quarter richer — generation ×1.25. |
-| *Avaritiae* | Each depth bargains the next 0.5% cheaper — the discount **compounds** (effective cost ratio `r × 0.995`); refunds on the same basis. |
-| *Tristitiae* | +0.825% on the reprobate suicide-rate multiplier per depth. |
-| *Irae* | +0.825% on the murder-rate multiplier per depth. |
-| *Acediae* | Its take is exempt from the ×0.5 offline efficiency factor (ADR-026); +0.825% on the offline gain rate per depth. |
-| *Vanagloriae* | +0.25% of **effective** max influence as flat influence/s per full 10 depths (stepped). It grants gain, never the cap. |
-| *Superbiae* | Depths ×1.25 dearer; its take and its breeding ×1.33 richer. |
+Twelve promissory notes signed with the Hoarder Below, in three **linear branches** of four,
+bought with **burned** gold (the signing fee — paid, never hoarded, never refunded) and reset
+each lifetime (the terms lapse at the descent). Signing requires the node's Avaritia level gate
+and the previous node in its branch. Gates run I–IV; fees run 500 / 5,000 / 50,000 / 500,000
+*(placeholders)*.
+
+| Branch | Node | Effect |
+|---|---|---|
+| **Usura** (the yield) | I / II | Fenus rate ×1.5 each. |
+| | III | Fenus rate ×2. |
+| | IV — **Anatocismus** | Half of each interest payment auto-deposits into the hoard instead of paying out (compound interest by contract; the HUD gold/s shows the liquid half). |
+| **Faeneratio** (the loan book) | I | Mutuum take ×1.5. |
+| | II — **Escheat** | Death duties: +1 gold per murder and +0.5 per suicide (the estates of the dead escheat to unseen creditors), minted at the dynamics step. |
+| | III | Mutuum take ×2. |
+| | IV | The Katabasis hoard liquidation pays ×1.25. |
+| **Custodia** (retention) | I | Withdrawal recovery ×1.6 (0.25 → 0.4). |
+| | II | Hoard milestones: +2% `goldRateMul` per decade of hoard ≥ 1,000, capped at +20%. |
+| | III | Withdrawal recovery ×1.5 (stacks to 0.6). |
+| | IV — **Peculium** | At commit, the kept-gold result is floored at 10% of the hoard's value at descent (a remnant beneath the Avaritia roll; Erinyes still zeroes gold and wins). |
 
 #### *Vitium Compositum* — multi-Sin ceremonies
 
@@ -145,22 +160,19 @@ effects are multiplicative ×1.1 rate boosts (Bacchanal → generation, Doom Gat
 Enraging Broadcast → murder) while active. The Foedera below apply to every ceremony by its
 member-Sin set.
 
-#### *Foedera* — the Mercatus ↔ Compositum coupling
+#### *Foedus* — the hoard ↔ Compositum coupling
 
-A *Foedus* forms between a ceremony and the Mercatūs of its member Sins, replacing the retired
-conversion coupling as the bridge between the two *Vitium* systems:
+The *Foedus* survives the Mercatus removal on its **upkeep side only**, re-anchored from the
+trades to the hoard: a pact between the vault and the rituals — a fat vault greases the
+ceremonies.
 
-- `foedusTier = min(floor(min member depth / step), maxTier)` — it deepens as the member trades
-  deepen.
-- The ceremony's per-second upkeep takes a per-tier discount; while the ceremony is active, each
-  member Sin's Mercatus revenue takes a per-tier bonus. Bonuses from several active ceremonies
-  sharing a Sin stack multiplicatively on that Mercatus.
-- Every ceremony participates by its member-Sin set — including the percentage-upkeep ceremonies
-  and *Panvitium* itself, whose Foedus discounts the exponential ramp (the intended late-game
-  payoff of deep, broad trades).
-
-Step, tier cap, per-tier coefficients, and the per-ceremony opt-out flags are in the
-`Vitium Mercatura` sheet.
+- The tier is **global** (one tier for all ceremonies, no member-Sin dependency):
+  `tier = 0` while `hoard < T0`, else `min(floor(log10(hoard / T0)) + 1, 4)` — tiers step at
+  each decade of hoard above `T0` *(placeholder 10,000: 1e4 / 1e5 / 1e6 / 1e7)*.
+- An active ceremony's per-second **computed** cost takes `× (1 − 0.125 × tier)` — including
+  *Panvitium*'s eᵗ ramp (the late-game payoff survives). The per-ceremony `foedusOptOut` flag is
+  retained and keeps suppressing the discount.
+- The **revenue side is retired** — there is no per-Sin trade left to multiply.
 
 ##### *Panvitium*
 
@@ -191,7 +203,7 @@ on Katabasis. Numbers live in the `Invocatio` sheet; the catalog:
 | **Familiar** | — | Special | Flat bonus to player efficiency; additionally runs *Indagatio* autonomously. Always in the Studio, beside the door. |
 | **Lemure** | *Acedia* | Normal | Its efficiency applies as an additive offline gain rate. Altar room. |
 | **Morpheus** | *Acedia* | Apex | Full freeze; the next Katabasis keeps 100% of gold and maleficia and the *Emptio* list. Floats over the Altar, overrides other silhouettes. |
-| **Plutus** | *Avaritia* | Normal | Its efficiency increases *Vitium Mercatura* output. Sometimes in the Studio. |
+| **Plutus** | *Avaritia* | Normal | Its efficiency sets the lending enterprises to work — increases the Faeneratio output (Mutuum + Thesaurus interest). Sometimes in the Studio. |
 | **Midas** | *Avaritia* | Apex | Multiplies gold gain; massively multiplies Apocalyptic chance. Sends profane advisory email (`00-lore-bible.md` §11). |
 | **Upir** | *Gula* | Normal | Its efficiency applies to *Caedes*. Sometimes in the Invocation Room. |
 | **Aurevora** | *Gula* | Apex | Devours gold on an exponential ramp; a share of the ramp returns as player efficiency; self-dispels at 0 gold. |
@@ -217,8 +229,8 @@ conversion mechanic, and every per-subtype effect from earlier revisions are rem
 
 What remains is the population's role as the economy's centre of mass (`02 §9`):
 
-- **Born** of *Suasio*, of Mercatus corruption, of ceremonies and sigils that raise generation.
-- **Spending** while alive — *Vitium Mercatura* revenue is proportional to the living count.
+- **Born** of *Suasio* and of ceremonies and sigils that raise generation.
+- **Repaying** while alive — the *Mutuum* loan book earns per living head.
 - **Dying** by cull (*Decimatio*), suicide, and murder — every death mints exactly one soul.
 - **Scattering** at Katabasis: a small identified fraction carries over (`02 §6`).
 
@@ -298,7 +310,7 @@ coefficients are in the `Sigils` sheet.
 | 9 | **Paimon** | Loyalty; returning servants | Reduces influence costs. |
 | 10 | **Buer** | Good familiars | Increases Familiar effectiveness. |
 | 11 | **Gusion** | Reconciles enemies | Increases *Vitium Compositum* effects (not its gold/influence outputs). |
-| 12 | **Sitri** | Love | Increases *Vitium Mercatura* reprobate generation. |
+| 12 | **Sitri** | Love | **Orphaned** (Depraedatio gold rework): its target — the Mercatus breeding channel — retired with the trades. Catalog def deleted per ADR-029; binding is harmless. Awaits a per-sigil sheet decision. |
 | 13 | **Beleth** | Attended by trumpets | Increases *Decimatio* positive outcome chance. |
 | 14 | **Leraie** | Putrefies wounds | Chance a murder triggers a suicide. |
 | 15 | **Eligos** | Favour of important people | Increases offline influence gain. |
@@ -331,12 +343,12 @@ coefficients are in the `Sigils` sheet.
 | 42 | **Vepar** | Putrefying wounds | Increases *Ira* invocation effectiveness. |
 | 43 | **Sabnock** | Wounds and sores | Increases the suicide rate (flat). [log] |
 | 44 | **Shax** | Deafness; takes money | Increases *Avaritia* invocation effectiveness. |
-| 45 | **Vine** | Reveals witches; walls | Increases the Mercatus divest/liquidation recovery fraction. |
+| 45 | **Vine** | Reveals witches; walls | Increases the Thesaurus withdrawal recovery fraction (re-pinned from the Mercatus divest, same niche and magnitude). |
 | 46 | **Bifrons** | Sciences, herbs | Increases *Indagatio* action efficiency. |
 | 47 | **Vual** | Love of women; all times | Increases *Suasio* Stellar chance. |
 | 48 | **Haagenti** | Metal to gold | Generates gold per second (flat). [log] |
 | 49 | **Crocell** | Geometry; warms waters | Chance *Indagatio* finds two. |
-| 50 | **Furcas** | Pyromancy | Increases the Mercatus divest recovery fraction. |
+| 50 | **Furcas** | Pyromancy | Increases the Thesaurus withdrawal recovery fraction (composes with Vine). |
 | 51 | **Balam** | All times; invisibility | Reduces negative outcome chance across the Opera. |
 | 52 | **Alloces** | Astronomy; familiars | Increases *Acedia* invocation effectiveness. |
 | 53 | **Camio** | Disputation | Increases the Katabasis remaining-reprobate % (flat). [log] |
@@ -346,7 +358,7 @@ coefficients are in the `Sigils` sheet.
 | 57 | **Ose** | Changes shape | Generates reprobates (flat). [log] |
 | 58 | **Amy** | Treasures | Increases *Indagatio* and *Emptio* action efficiency. |
 | 59 | **Orias** | Transformations | Increases *Vitium Compositum* influence output. |
-| 60 | **Vapula** | Mechanical arts | Increases *Vitium Mercatura* gold output. |
+| 60 | **Vapula** | Mechanical arts | Increases the Faeneratio gold output (Mutuum + Thesaurus interest). |
 | 61 | **Zagan** | Fools wise | Increases *Vitium Compositum* gold output. |
 | 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
 | 63 | **Andras** | Sows discord | Increases *Emptio* Stellar chance. |
@@ -436,9 +448,11 @@ None of these block the current build; all should be tracked.
   percentage-of-income semantics, give *Outrage Cycle* an effect (or retire it). See the §2.3
   ceremony-table note and ADR-025. *(The Mercatus signature clauses, formerly listed here as a
   pending second slice, shipped with the amended table in §2.3.)*
-- **Orphaned-sigils pass** — re-target the 16 sigils ADR-024 neutralized to `inert` onto the new
-  Mercatus / Foedera surfaces; needs a per-sigil sheet decision (the
-  sixteen are listed under the ADR open items in `04-architecture-decisions.md`).
+- **Orphaned sigil: Sitri #12** — its target (the Mercatus breeding channel) retired with the
+  Depraedatio gold rework; the catalog def is deleted (ADR-029's pattern) and a re-pin needs a
+  per-sigil sheet decision. The rework opened natural retarget surfaces for future orphan passes:
+  hoard size, the Fenus rate, the Mutuum take, Syngraphae costs, the Foedus thresholds. (The
+  ADR-024 sixteen were already resolved by ADR-029.)
 - **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
 - **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)
   has its channels in the Studio (`02 §12`) but its message catalog is unwritten; the Katabasis

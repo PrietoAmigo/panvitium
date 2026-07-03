@@ -28,7 +28,7 @@ import {
   isDelegatable,
   makeRng,
   maxAcolytes,
-  investMercatus,
+  depositThesaurus,
   startAction,
   tick,
   unassignAcolyteFromAction,
@@ -332,22 +332,22 @@ describe('Modifiers — acolyteEfficiencyMul defaults to 0.33', () => {
   });
 });
 
-// Smoke: Mercatus deepening and acolytes don't trip over each other (separate channels).
-describe('mercatus + acolytes — investing never touches the player slot', () => {
-  it('an invest and an acolyte assignment coexist with no shared queue', () => {
+// Smoke: a Thesaurus deposit and acolytes don't trip over each other (separate channels).
+describe('thesaurus + acolytes — depositing never touches the player slot', () => {
+  it('a deposit and an acolyte assignment coexist with no shared queue', () => {
     let s = recruited();
     s = {
       ...s,
-      devotion: { ...s.devotion, gula: bn(180) },
+      devotion: { ...s.devotion, avaritia: bn(180) },
       lifetime: { ...s.lifetime, gold: bn(2000) },
     };
-    const invested = investMercatus(s, 'gula');
-    if (!invested.ok) throw new Error('invest failed');
-    s = invested.state;
+    const deposited = depositThesaurus(s, 500);
+    if (!deposited.ok) throw new Error('deposit failed');
+    s = deposited.state;
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
-    expect(s.lifetime.mercatusDepths.gula).toBe(1);
+    expect(s.lifetime.hoard.toNumber()).toBe(500);
     expect(s.lifetime.acolytes[0]!.assignedAction).toBe('indagatio');
     expect(s.lifetime.actionQueue).toHaveLength(0); // player slot free
   });
