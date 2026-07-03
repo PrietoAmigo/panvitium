@@ -39,9 +39,7 @@ function KatabasisRecapView(): ReactElement {
     <div className="katabasis-flow">
       <div className="scene recap" role="dialog" aria-label={strings.katabasis.recapTitle}>
         <h1 className="recap-title">You Rise</h1>
-        <p className="recap-lore">
-          The body is wasted; the remains are cold meat and a smear of ash, fit only for the pit.
-        </p>
+        <p className="recap-lore">The body is wasted; The world has moved; The intent remains.</p>
         <div className="recap-list">
           <RecapLine label="Reprobates still here" value={String(recap.reprobatesKept)} white />
           <RecapLine label="Unlooted maleficia" value={String(recap.maleficiaKept.length)} />
