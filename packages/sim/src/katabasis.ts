@@ -10,8 +10,9 @@
  *
  * This module is the pure core; the menu UI and store orchestrate it. All randomness comes from the injected save RNG (ADR-011).
  */
-import { add, clamp, floor, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
-import { liquidateMercatus } from './mercatus.js';
+import { add, clamp, floor, gt, isZero, max, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
+import { liquidateThesaurus } from './faeneratio.js';
+import { peculiumFloorFraction } from './syngraphae.js';
 import { sigilKatabasisBonus } from './sigils.js';
 import { sigilEffectMultiplier } from './maleficia.js';
 import {
@@ -112,19 +113,24 @@ export function bindSigil(
 
 /**
  * Begin the descent (02 §6): the moment the player commits to Katabasis, the lifetime's *productive*
- * systems are torn down — NOT later when they rise. Every Mercatus auto-divests at the divest
- * fraction into gold (so the refund rides the later carry-over roll — spec §1.4), toggles stop,
- * the action queue clears, invocations are dispelled and their autonomous channels stop, and
- * acolytes drop their assignments. What the commit will roll for carry-over (gold, reprobates,
- * maleficia) is left intact and frozen; the store suspends ticking while the menu is open, so
- * nothing accrues during allocation. `commitKatabasis` finishes the descent (the carry-over rolls
- * + lifetime reset) when the player confirms.
+ * systems are torn down — NOT later when they rise. The Thesaurus hoard liquidates in full into
+ * gold (the descent voids the contracts; the faeneratio-4 bonus applies — so the estate rides the
+ * later carry-over roll), toggles stop, the action queue clears, invocations are dispelled and
+ * their autonomous channels stop, and acolytes drop their assignments. What the commit will roll
+ * for carry-over (gold, reprobates, maleficia) is left intact and frozen; the store suspends
+ * ticking while the menu is open, so nothing accrues during allocation. `commitKatabasis` finishes
+ * the descent (the carry-over rolls + lifetime reset) when the player confirms.
  */
 export function enterKatabasis(state: GameState): GameState {
-  // Mercatus liquidation (spec §1.4): all trades sell off into gold and depths reset, BEFORE the
-  // remaining-gold roll at commit — the same ordering the old auto-shutdown had, preserving the
-  // Avaritia carry-over interplay (the refund is real risk capital subject to the same loss).
-  const liquidated = liquidateMercatus(state);
+  // Stamp the hoard's value at descent BEFORE liquidation — the base for the custodia-4 Peculium
+  // floor at commit. Additive-optional on the lifetime (ADR-023), so it survives a mid-descent
+  // reload; cleared with the lifetime reset at commit.
+  const hoardAtDescent = state.lifetime.hoard;
+  // Thesaurus liquidation (spec §7): the hoard pays out in full (× faeneratio-4), BEFORE the
+  // remaining-gold roll at commit — so Avaritia levels judge the whole estate, preserving the
+  // carry-over interplay the Mercatus auto-divest had (the hoard is real capital subject to the
+  // same loss as cash on hand at descent).
+  const liquidated = liquidateThesaurus(state);
   const acolytes = liquidated.lifetime.acolytes.map((a) => ({
     ...a,
     assignedAction: null,
@@ -143,6 +149,9 @@ export function enterKatabasis(state: GameState): GameState {
       invocationRunners: {}, // …and their autonomous channels stop
       invocationDurations: {}, // …and any apex duration counters (Aurevora) clear
       acolytes, // followers drop their tasks (the list itself clears at commit)
+      // The signed Syngraphae stay readable through the frozen menu (commit needs custodia-4 for
+      // the Peculium floor); the terms lapse with the lifetime reset at commit.
+      ...(gt(hoardAtDescent, ZERO) ? { hoardAtDescent } : {}),
     },
   };
 }
@@ -161,8 +170,9 @@ export interface KatabasisRecap {
 /**
  * Commit the Katabasis: reset the lifetime, keeping a fraction of gold and reprobates
  * and rolling each maleficium against its remaining chance. Souls (the leftover pool), Devotion,
- * and current sigil bindings carry through untouched. Invocations are dispelled, Mercatus depths /
- * Emptio cleared, influence reset to 0. Returns the resumed state and the recap of what was kept.
+ * and current sigil bindings carry through untouched. Invocations are dispelled, the hoard /
+ * Syngraphae / Emptio cleared, influence reset to 0. Returns the resumed state and the recap of
+ * what was kept.
  *
  * Call AFTER the player has finished allocating (offer/bind). `now` defaults to the current clock.
  */
@@ -178,15 +188,15 @@ export function commitKatabasis(
   const pendingErinyes = state.lifetime.pendingErinyes === true;
   const pendingMorpheus = !pendingErinyes && state.lifetime.pendingMorpheus === true;
 
-  // Mercatus liquidation (spec §1.4): every trade auto-divests into gold BEFORE the carry-over
-  // roll, so the refund participates in the remaining-gold % and not at face value — the trades
-  // are real risk capital subject to the same loss as cash on hand at descent. `enterKatabasis`
-  // already liquidated; this defensive repeat is a no-op when depths are 0.
-  state = liquidateMercatus(state);
+  // Thesaurus liquidation (spec §7): the hoard pays out in full BEFORE the carry-over roll, so
+  // the estate participates in the remaining-gold % and not at face value — the hoard is real
+  // capital subject to the same loss as cash on hand at descent. `enterKatabasis` already
+  // liquidated (and stamped `hoardAtDescent`); this defensive repeat is a no-op when the hoard is 0.
+  state = liquidateThesaurus(state);
   const goldAtDescent = state.lifetime.gold;
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
-  // Mercatus liquidation refunds folded in above. Sigils (Purson #20, Semet #32) lift the fraction;
+  // hoard liquidation folded in above. Sigils (Purson #20, Semet #32) lift the fraction;
   // Erinyes/Morpheus override it outright. Sigil-enhancer maleficia (Solomon's Ring, Iron Nails)
   // scale every sigil's carry-over strength.
   const sigilEffectMul = sigilEffectMultiplier(state.lifetime.maleficia);
@@ -195,7 +205,14 @@ export function commitKatabasis(
     : pendingMorpheus
       ? 1
       : remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold', sigilEffectMul));
-  const goldKept = floor(mul(floor(goldAtDescent), goldFraction));
+  const rolledGold = floor(mul(floor(goldAtDescent), goldFraction));
+  // Peculium (custodia-4): the kept-gold result is floored at 10% of the hoard's value at descent
+  // — a guaranteed remnant beneath the Avaritia roll. Erinyes zeroes gold outright and WINS over
+  // Peculium (the commit-side mutex is unchanged; pinned in katabasis.test).
+  const peculium = pendingErinyes ? 0 : peculiumFloorFraction(state);
+  const peculiumFloor =
+    peculium > 0 ? floor(mul(state.lifetime.hoardAtDescent ?? ZERO, peculium)) : ZERO;
+  const goldKept = pendingErinyes ? rolledGold : max(rolledGold, peculiumFloor);
 
   // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8). Sigils
   // (Halphas #38, Semet #32) lift the chance; Erinyes zeros it, Morpheus maxes it.
@@ -236,7 +253,9 @@ export function commitKatabasis(
     toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle
     autoRepeat: [], // and nothing carries an auto-repeat into the new lifetime
-    mercatusDepths: {}, // all trades liquidated at descent (refund folded into goldAtDescent)
+    hoard: ZERO, // liquidated at descent (the payout folded into goldAtDescent)
+    syngraphae: [], // the terms lapse at the descent; the tree is re-signed each lifetime
+    // hoardAtDescent is intentionally omitted — the Peculium base clears with the commit.
     generationPool: 0, // pools reset with the fresh lifetime
     suicidePool: 0,
     murderPool: 0,

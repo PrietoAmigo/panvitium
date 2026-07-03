@@ -67,28 +67,23 @@ describe('session', () => {
     // The lifted state accumulates MORE gold because the catchup tick ran on a stretched delta.
     expect(goldLifted).toBeGreaterThan(goldBase);
     // Baseline sanity: gold ≈ BASE_GOLD_PER_SECOND × 3600 × the 0.5 player offline efficiency
-    // (Globals row 8, wired with the Mercatus signature clauses). Allow drift from skills.
+    // (Globals row 8). Allow drift from skills.
     expect(goldBase).toBeGreaterThan(BASE_GOLD_PER_SECOND * PLAYER_OFFLINE_EFFICIENCY * 3000);
     expect(goldBase).toBeLessThan(BASE_GOLD_PER_SECOND * 3600); // …and clearly below full rate
   });
 
-  it('Mercatus Acediae: its take is exempt from the 0.5 offline efficiency on resume', () => {
-    // Two saves, identical but for which trade holds the depth. Offline, the Acediae trade earns
-    // double the Tristitiae one (its revenue is restored to full wall-clock rate while everything
-    // else — including the base trickle — accrues at the halved clock).
+  it('the Thesaurus interest takes the 0.5 offline efficiency like every other income (ADR-026)', () => {
+    // The Mercatus Acediae exemption retired with the trades: an hour away accrues interest at
+    // the halved clock, exactly like the base trickle.
     const base = startNewGame(0);
-    const populated = (depths: Record<string, number>): GameState => ({
+    const vaulted: GameState = {
       ...base,
-      lifetime: { ...base.lifetime, reprobates: 1000, mercatusDepths: depths },
-    });
+      lifetime: { ...base.lifetime, hoard: bn(100_000) },
+    };
     const hour = 3600 * 1000;
-    const viaAcedia = resumeGame(populated({ acedia: 10 }), hour).lifetime.gold.toNumber();
-    const viaTristitia = resumeGame(populated({ tristitia: 10 }), hour).lifetime.gold.toNumber();
-    // Strip the shared base-gold trickle (2/s × 1800 effective seconds) before comparing trades.
-    // The Acediae save also carries its per-depth offline lift (+0.825%/depth on the gain rate),
-    // so its margin over the doubled Tristitiae take is strictly positive.
-    const baseTrickle = BASE_GOLD_PER_SECOND * 3600 * PLAYER_OFFLINE_EFFICIENCY;
-    expect(viaAcedia - baseTrickle).toBeGreaterThan((viaTristitia - baseTrickle) * 2);
+    const gained = resumeGame(vaulted, hour).lifetime.gold.toNumber();
+    // (2 base + 0.0005 × 100,000 interest) gold/s × 3600 s × 0.5 offline efficiency.
+    expect(gained).toBeCloseTo((BASE_GOLD_PER_SECOND + 50) * 3600 * PLAYER_OFFLINE_EFFICIENCY, 0);
   });
 
   it('zero offline time = no catchup, regardless of Acedia level (no NaN, no division)', () => {

@@ -592,9 +592,11 @@ per ADR-023 this is a breaking change: bump `schemaVersion` 1 → 2 with a migra
 
 ## ADR-025: Vitium Mercatura → the Mercatus system + the Foedera coupling
 
-**Status.** Accepted [2026-06-12]. Implements `vm-vc-redesign-spec.md`; the §1.5 clause table was
-amended in session before implementation (the amended values below are authoritative and mirrored
-on the `Vitium Mercatura` sheet).
+**Status.** Accepted [2026-06-12]; **superseded by ADR-030** [2026-07-03] — the Mercatus system
+and the Foedera revenue coupling are removed in favour of the Faeneratio loop (the Vitium
+Compositum decisions referenced here stand). Implements `vm-vc-redesign-spec.md`; the §1.5 clause
+table was amended in session before implementation (the amended values below were authoritative
+and mirrored on the `Vitium Mercatura` sheet).
 
 **Context.** The legacy *Vitium Mercatura* was a 32-business catalog (eight Sins × four tiers) with
 a build queue and flat per-business gold/generation emitters. After ADR-024 removed subtypes and the
@@ -820,6 +822,96 @@ Gaap-inflated maleficia stack, so neither feeds itself.
 **Alternatives considered.** Keeping `inert` as a kind for future retirements — rejected; an empty
 catalog state should be expressed by deleting the def, not by a dead enum member. A self-inclusive
 Semet (fixed-point) — rejected as numerically fragile for no design gain.
+
+---
+
+## ADR-030: Mercatus removed — the Faeneratio loop under Depraedatio; the Foedus re-anchored to the hoard
+
+**Status.** Accepted [2026-07-03]. Implements the approved *Depraedatio gold rework* spec;
+supersedes ADR-025 as the gold-obtaining half of *Depraedatio* (the overarching system and panel
+name remain **Depraedatio**; only the internals change).
+
+**Context.** The eight per-Sin Mercatūs (ADR-025) delivered the population coupling but at the
+price of eight parallel depth curves, eight signature clauses reaching into four unrelated
+systems (suicide, murder, offline gain, influence), a per-Sin Foedus tier, and a wide sheet
+surface — a lot of bookkeeping for what was in play a single decision ("deepen the best trade").
+The clauses also made the trades load-bearing for pressure channels (despair, violence, sloth)
+that ceremonies, maleficia, and sigils already serve.
+
+**Decision.** Remove the Mercatus system entirely (`mercatus.ts`, `foedera.ts`, the depth state,
+the clauses, the per-Sin Foedus revenue coupling) and replace it with a single Avaritia-centric
+gold loop in three parts, all unlocking at Avaritia level 1:
+
+- **Mutuum** (the loan book): passive income `MUTUUM_PER_CAPITA × mutuumPerCapitaMul ×
+  reprobates` — no principal, no decision; the income floor and the population coupling (the
+  ADR-025 design point survives).
+- **Thesaurus** (the hoard): `lifetime.hoard` (BigNum, additive-optional). Instant floored
+  deposits; interest `FENUS_RATE × fenusRateMul × hoard` paid into *liquid* gold; withdrawal
+  returns only `THESAURUS_RECOVERY (0.25) × thesaurusRecoveryMul`, capped at 0.9 effective. At
+  `enterKatabasis` the hoard liquidates **in full** (×1.25 with *faeneratio-4*) before the
+  remaining-gold roll, and the hoard's value at descent is stamped (`hoardAtDescent`,
+  additive-optional, survives a mid-descent reload) for the Peculium floor at commit. The
+  miser's trap is intentional: interest rides the locked principal, so spending liquid gold is
+  never punished, and Katabasis is the horizon that keeps full-recycle exponential growth bounded.
+- **Syngraphae** (the contracts): `lifetime.syngraphae` (string[], additive-optional), twelve
+  nodes in three linear branches (Usura / Faeneratio / Custodia), bought with **burned** gold,
+  gated on Avaritia levels and branch order, reset at commit (kept readable through the frozen
+  menu so commit can apply *custodia-4*). Catalog in `syngraphae.data.ts`; folds in
+  `computeModifiers` (ADR-022). The four mechanism nodes: **Anatocismus** (half of each interest
+  payment auto-deposits, split AFTER all multipliers; the HUD shows the liquid half), **Escheat**
+  (+1 gold/murder, +0.5/suicide, minted per applied death at the dynamics drain via two additive
+  bundle fields), the *faeneratio-4* liquidation ×1.25, and **Peculium** (kept gold floored at
+  10% of `hoardAtDescent`; Erinyes zeroes gold and wins — pinned in tests).
+
+Modifier bundle (ADR-022): `vitiumMercaturaOutputMul` **renames** to `faenerationOutputMul`,
+scaling the SUM of Mutuum income and Thesaurus interest at the tick's gold line (Plutus and
+Vapula #60 fold there unchanged in magnitude); `fenusRateMul`, `mutuumPerCapitaMul`,
+`thesaurusRecoveryMul`, `escheatGoldPerMurder`, `escheatGoldPerSuicide` are added
+(default-neutral); `vitiumMercaturaGenerationMul` and the four signature-clause couplings are
+removed; the *custodia-2* hoard-milestone bonus folds into `goldRateMul` directly (derived, never
+persisted). `baseGainRates` includes the two new terms exactly as it included Mercatus revenue,
+so Vegas / Crusade measure them (ADR-027 semantics unchanged).
+
+The **Foedus** survives on its upkeep side only, re-anchored to the hoard: one **global** tier —
+`0` below `T0` (placeholder 10,000), else `min(floor(log10(hoard/T0)) + 1, 4)` — discounting
+every non-opted-out ceremony's **computed** per-second cost by `1 − 0.125 × tier` (Panvitium's eᵗ
+ramp included; the late-game payoff survives). The revenue side is gone.
+
+Per ADR-023 the `mercatusDepths` removal is a breaking change: `schemaVersion` **4 → 5** with
+`migrations/v4-to-v5.ts` — each trade is credited its divest value (25% of the closed-form
+cumulative cost, with the Avaritiae compounding ratio `1.6 × 0.995` and the Superbiae ×1.25
+frozen inside the migration file), the field drops, and `hoard` / `syngraphae` seed by omission.
+
+**Consequences.**
+
+- The Mercatus `genPerDepth × d` reprobate-generation channel disappears and **nothing replaces
+  it by default** — population-proportional growth stays Bacchanal's exclusive niche; if the
+  sheet wants compensation it raises the base generation constants. Flagged for the sheet owner.
+- The signature-clause niches that fed other systems (Tristitiae suicide, Irae murder, Acediae
+  offline exemption + per-depth lift, Vanagloriae flat influence) retire with the clauses; their
+  pressure sources remain available via ceremonies, maleficia, and sigils. The tick's
+  `offlineEfficiency` dep (the Acediae exemption plumbing) is removed — every income term now
+  takes the ADR-026 0.5× base uniformly.
+- **Sitri #12** (`vitiumMercaturaGenerationMul`) is orphaned: per ADR-029's pattern its catalog
+  def is deleted (no `inert` kind; the seal keeps its number/name in strings and binding is
+  harmless). Not silently re-pinned — a per-sigil sheet decision. **Vine #45** and **Furcas #50**
+  re-pin from the Mercatus divest fraction to `thesaurusRecoveryMul` (the same "recovery" niche,
+  unchanged magnitude, raw-enhancer scope preserved). **Plutus** / **Vapula #60** follow the
+  `faenerationOutputMul` rename with descriptions in the lending voice.
+- The rework opens natural retarget surfaces for future orphaned-sigil passes: hoard size, the
+  Fenus rate, the Mutuum take, Syngraphae costs, the Foedus thresholds.
+- Email triggers re-key: the per-Sin depth-gated newsletters move to the Sin levels that gated
+  those depths; the finance beat (*markets*) keys to the hoard's first Foedus decade.
+- The `Vitium Mercatura` sheet needs a Faeneratio block (`MUTUUM_PER_CAPITA` 0.05/s,
+  `FENUS_RATE` 0.0005/s, recovery 0.25 / cap 0.9, `T0` 10,000, the twelve node costs and
+  magnitudes, the Escheat coefficients, the Anatocismus split 0.5, the Peculium floor 0.10, the
+  liquidation bonus 1.25, the custodia-2 step/cap): the code carries the approved spec's
+  placeholders until the sheet settles them, and the sheet wins once it does.
+
+**Alternatives considered.** *Interest on liquid gold* — rejected: pure passivity, and it
+punishes spending (the design wants the lock-vs-liquid tension, not a tax on acting). *A pure
+upgrade tree with flat income* — rejected: loses the population coupling that makes growing and
+preserving reprobates matter to the economy.
 
 ---
 

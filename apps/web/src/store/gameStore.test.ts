@@ -22,7 +22,7 @@ function patchSouls(v: number): void {
   useGameStore.setState({ state: { ...s, souls: bn(v) } });
 }
 
-function patchDevotion(sin: 'gula', value: number): void {
+function patchDevotion(sin: 'gula' | 'avaritia', value: number): void {
   const s = store().state as GameState;
   useGameStore.setState({ state: { ...s, devotion: { ...s.devotion, [sin]: bn(value) } } });
 }
@@ -139,18 +139,18 @@ describe('gameStore — Katabasis', () => {
     useGameStore.setState({
       state: {
         ...s0,
-        lifetime: { ...s0.lifetime, mercatusDepths: { ...s0.lifetime.mercatusDepths, gula: 2 } },
+        lifetime: { ...s0.lifetime, hoard: bn(200) },
       },
     });
     store().openKatabasis();
     const st = store().state as GameState;
     expect(store().katabasisPhase).toBe('menu'); // gate is showing…
     expect(st.inKatabasis).not.toBe(true); // …but the lifetime is intact (nothing torn down)
-    expect(st.lifetime.mercatusDepths.gula).toBe(2);
+    expect(st.lifetime.hoard.toNumber()).toBe(200);
     // Turning back is a clean exit.
     store().closeKatabasis();
     expect(store().katabasisPhase).toBeNull();
-    expect((store().state as GameState).lifetime.mercatusDepths.gula).toBe(2);
+    expect((store().state as GameState).lifetime.hoard.toNumber()).toBe(200);
   });
 
   it('offers any amount (down to 1); levels are reached naturally at the threshold', () => {
@@ -206,22 +206,24 @@ describe('gameStore — Katabasis', () => {
     expect(floor((store().state as GameState).souls).toNumber()).toBeGreaterThan(soulsAtEntry);
   });
 
-  it('entering Katabasis liquidates the Mercatūs and stops toggles and invocations immediately', () => {
+  it('entering Katabasis liquidates the hoard and stops toggles and invocations immediately', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
         ...s0,
         lifetime: {
           ...s0.lifetime,
-          mercatusDepths: { gula: 1 },
+          hoard: bn(400),
           activeToggles: ['bacchanal'],
           invocations: { imp: 1 },
         },
       },
     });
+    const goldBefore = floor((store().state as GameState).lifetime.gold).toNumber();
     store().beginKatabasis();
     const st = store().state as GameState;
-    expect(Object.keys(st.lifetime.mercatusDepths)).toHaveLength(0);
+    expect(st.lifetime.hoard.toNumber()).toBe(0);
+    expect(floor(st.lifetime.gold).toNumber()).toBe(goldBefore + 400); // full payout, no penalty
     expect(st.lifetime.activeToggles).toHaveLength(0);
     expect(Object.keys(st.lifetime.invocations)).toHaveLength(0);
   });
@@ -285,50 +287,60 @@ describe('gameStore — recap & title count as offline time (not a freeze)', () 
   });
 });
 
-describe('gameStore — Vitium Mercatura (invest/divest)', () => {
-  it('refuses to invest while the Sin is below level 1', () => {
+describe('gameStore — Depraedatio (deposit / withdraw / sign)', () => {
+  it('refuses a deposit while Avaritia is below level 1', () => {
     patchGold(1000);
-    // Devotion is 0; a Mercatus only becomes available at its Sin's level 1.
-    store().invest('gula');
-    expect(store().state?.lifetime.mercatusDepths.gula).toBeUndefined();
+    store().depositThesaurus(100);
+    expect(store().state?.lifetime.hoard.toNumber()).toBe(0);
     expect(store().notice).toMatch(/level 1/);
   });
 
-  it('refuses to invest when gold is insufficient', () => {
-    patchDevotion('gula', 180); // exactly L1
+  it('refuses a deposit when gold is insufficient', () => {
+    patchDevotion('avaritia', 180); // exactly L1
     patchGold(40);
-    store().invest('gula');
-    expect(store().state?.lifetime.mercatusDepths.gula).toBeUndefined();
+    store().depositThesaurus(100);
+    expect(store().state?.lifetime.hoard.toNumber()).toBe(0);
     expect(store().notice).toMatch(/gold/i);
   });
 
-  it('deepens instantly when gated and paid, leaving the player slot free', () => {
-    patchDevotion('gula', 180);
+  it('deposits instantly when gated and paid, leaving the player slot free', () => {
+    patchDevotion('avaritia', 180);
     patchGold(2000);
-    store().invest('gula');
+    store().depositThesaurus(500);
     const s = store().state as GameState;
-    expect(s.lifetime.mercatusDepths.gula).toBe(1); // instant — no queue, no timer
+    expect(s.lifetime.hoard.toNumber()).toBe(500); // instant — no queue, no timer
     expect(s.lifetime.actionQueue).toHaveLength(0); // doesn't occupy the player slot
-    expect(floor(s.lifetime.gold).toNumber()).toBe(1950); // 2000 − floor(50 × 1.6⁰)
+    expect(floor(s.lifetime.gold).toNumber()).toBe(1500);
     expect(store().notice).toBeNull();
   });
 
-  it('cuts back one depth for the divest-fraction refund of that depth\u2019s cost', () => {
-    patchDevotion('gula', 180);
+  it('withdraws the full amount from the hoard for the recovery fraction of it in gold', () => {
+    patchDevotion('avaritia', 180);
     patchGold(2000);
-    store().invest('gula'); // pays 50, depth 1
-    store().invest('gula'); // pays 80, depth 2
+    store().depositThesaurus(1000);
     const goldBefore = floor((store().state as GameState).lifetime.gold).toNumber();
-    store().divest('gula', 1);
+    store().withdrawThesaurus(100);
     const after = store().state as GameState;
-    expect(after.lifetime.mercatusDepths.gula).toBe(1);
-    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 20); // floor(0.25 × 80)
+    expect(after.lifetime.hoard.toNumber()).toBe(900); // the full 100 left the vault
+    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 25); // floor(100 × 0.25)
   });
 
-  it('refuses divest when the trade has no roots', () => {
-    patchDevotion('gula', 180);
-    store().divest('gula');
+  it('refuses a withdrawal beyond the hoard', () => {
+    patchDevotion('avaritia', 180);
+    store().withdrawThesaurus(100);
     expect(store().notice).toBeTruthy();
+  });
+
+  it('signs a Syngrapha, burning the fee; refuses out-of-order or gated signings', () => {
+    patchDevotion('avaritia', 180);
+    patchGold(2000);
+    store().signSyngrapha('usura-2'); // branch order: usura-1 first
+    expect(store().notice).toBeTruthy();
+    store().signSyngrapha('usura-1');
+    const s = store().state as GameState;
+    expect(s.lifetime.syngraphae).toEqual(['usura-1']);
+    expect(floor(s.lifetime.gold).toNumber()).toBe(1500); // the 500 fee is burned
+    expect(store().notice).toBeNull();
   });
 });
 

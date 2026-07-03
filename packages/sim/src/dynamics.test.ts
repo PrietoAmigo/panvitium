@@ -192,39 +192,58 @@ describe('reprobate dynamics — murder pool (per-capita cull)', () => {
   });
 });
 
-describe('reprobate dynamics — Vitium Mercatura output multiplier (Plutus / Vapula)', () => {
-  /** A state with one trade at depth 5 (5 × 0.02 = 0.1 reprobate/s generation). */
-  function withBusiness(): GameState {
-    const s = createInitialState('vm-test', 0);
-    return {
-      ...s,
-      lifetime: { ...s.lifetime, mercatusDepths: { gula: 5 } },
-    };
-  }
-
-  it('mercatus generation takes its OWN multiplier — Plutus (revenue) no longer leaks in', () => {
-    // Sigils sheet rev 2026-06-12: Sitri #12 owns the breeding channel; Plutus / Vapula scale
-    // revenue only, at the tick's income line.
-    const base = withBusiness();
-    const baseRate = reprobateRates(base, computeModifiers(base)).generationPerSecond;
-    expect(baseRate).toBeGreaterThan(0);
-
-    const withPlutus: GameState = {
-      ...base,
-      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, plutus: 1 } },
-    };
-    expect(computeModifiers(withPlutus).vitiumMercaturaOutputMul).toBeGreaterThan(1);
-    expect(computeModifiers(withPlutus).vitiumMercaturaGenerationMul).toBe(1);
-    const plutusRate = reprobateRates(withPlutus, computeModifiers(withPlutus)).generationPerSecond;
-    expect(plutusRate).toBeCloseTo(baseRate, 6);
-  });
-
-  it('the multiplier does not touch the base generation rate (no business → unchanged)', () => {
+describe('reprobate dynamics — the Mercatus generation channel is retired (Depraedatio rework)', () => {
+  it('Plutus (a Faeneratio output source) contributes nothing to generation', () => {
+    // The trades' `genPerDepth × d` breeding channel died with the Mercatūs; nothing in the
+    // Faeneratio loop replaces it by default (population-proportional growth is Bacchanal's
+    // exclusive niche). Plutus scales gold output only, at the tick's income line.
     const noBiz = createInitialState('vm-empty', 0);
     const withPlutus: GameState = {
       ...noBiz,
       lifetime: { ...noBiz.lifetime, invocations: { plutus: 3 } },
     };
+    expect(computeModifiers(withPlutus).faenerationOutputMul).toBeGreaterThan(1);
     expect(reprobateRates(withPlutus, computeModifiers(withPlutus)).generationPerSecond).toBe(0);
+  });
+});
+
+describe('reprobate dynamics — Escheat (faeneratio-2) death duties', () => {
+  /** A populated state with the Escheat contract signed and deaths queued in the pools. */
+  function withEscheat(pools: { suicide?: number; murder?: number }): GameState {
+    const s = createInitialState('escheat', 0);
+    return {
+      ...s,
+      lifetime: {
+        ...s.lifetime,
+        reprobates: 1000,
+        syngraphae: ['faeneratio-1', 'faeneratio-2'],
+        suicidePool: pools.suicide ?? 0,
+        murderPool: pools.murder ?? 0,
+      },
+    };
+  }
+
+  it('mints +1 gold per applied murder and +0.5 per applied suicide', () => {
+    const s = withEscheat({ suicide: 4, murder: 3 });
+    const mods = computeModifiers(s);
+    expect(mods.escheatGoldPerMurder).toBe(1);
+    expect(mods.escheatGoldPerSuicide).toBe(0.5);
+    const next = applyReprobateDynamics(s, 1e-9); // δ→0: only the queued pools drain
+    // 3 murders × 1 + 4 suicides × 0.5 = 5 gold escheats to the unseen creditor.
+    expect(next.lifetime.gold.toNumber()).toBeCloseTo(s.lifetime.gold.toNumber() + 5, 6);
+  });
+
+  it('mints nothing while the contract is unsigned', () => {
+    const s = withEscheat({ suicide: 4, murder: 3 });
+    const unsigned: GameState = { ...s, lifetime: { ...s.lifetime, syngraphae: [] } };
+    const next = applyReprobateDynamics(unsigned, 1e-9);
+    expect(next.lifetime.gold.toNumber()).toBeCloseTo(s.lifetime.gold.toNumber(), 6);
+  });
+
+  it('death duties are bounded by the living population (no gold for unapplied pool)', () => {
+    const s = withEscheat({ murder: 10 });
+    const few: GameState = { ...s, lifetime: { ...s.lifetime, reprobates: 2 } };
+    const next = applyReprobateDynamics(few, 1e-9);
+    expect(next.lifetime.gold.toNumber()).toBeCloseTo(s.lifetime.gold.toNumber() + 2, 6);
   });
 });

@@ -282,16 +282,10 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     };
   };
 
-  it('each Plutus lifts the Vitium Mercatura output multiplier (efficiency-scaled, 0.05/copy baseline)', () => {
-    expect(computeModifiers(fresh()).vitiumMercaturaOutputMul).toBe(1);
-    expect(computeModifiers(withInvocation('plutus', 1)).vitiumMercaturaOutputMul).toBeCloseTo(
-      1.05,
-      6,
-    );
-    expect(computeModifiers(withInvocation('plutus', 3)).vitiumMercaturaOutputMul).toBeCloseTo(
-      1.15,
-      6,
-    );
+  it('each Plutus lifts the Faeneratio output multiplier (efficiency-scaled, 0.05/copy baseline)', () => {
+    expect(computeModifiers(fresh()).faenerationOutputMul).toBe(1);
+    expect(computeModifiers(withInvocation('plutus', 1)).faenerationOutputMul).toBeCloseTo(1.05, 6);
+    expect(computeModifiers(withInvocation('plutus', 3)).faenerationOutputMul).toBeCloseTo(1.15, 6);
   });
 
   it('Succubus no longer touches the rate modifiers — its effect is an Imperium runner, cost is upkeep', () => {
@@ -314,12 +308,12 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
   });
 
   it('invocation effects scale with player efficiency (Model 1)', () => {
-    const plain = computeModifiers(withInvocation('plutus', 1)).vitiumMercaturaOutputMul; // playerEff 1 → 1.05
+    const plain = computeModifiers(withInvocation('plutus', 1)).faenerationOutputMul; // playerEff 1 → 1.05
     const s = fresh();
     const withDoppel = computeModifiers({
       ...s,
       lifetime: { ...s.lifetime, invocations: { plutus: 1, doppelgaenger: 1 } },
-    }).vitiumMercaturaOutputMul;
+    }).faenerationOutputMul;
     // Doppelgänger lifts playerEff to 1.5, so the Plutus bonus grows to 0.05 × 1.5.
     expect(withDoppel).toBeGreaterThan(plain);
     expect(withDoppel).toBeCloseTo(1 + 0.05 * 1.5, 6);
@@ -337,7 +331,7 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
       },
     });
     expect(two.invocationEfficiencyMul).toBeCloseTo(1.1, 6); // 1 + 0.05 × 2
-    expect(two.vitiumMercaturaOutputMul).toBeCloseTo(1 + 0.05 * 1.1, 6); // Plutus bonus × invEff
+    expect(two.faenerationOutputMul).toBeCloseTo(1 + 0.05 * 1.1, 6); // Plutus bonus × invEff
   });
 
   it('Lemure lifts the offline gain rate (efficiency-scaled), not flat influence', () => {

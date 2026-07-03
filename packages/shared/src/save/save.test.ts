@@ -128,8 +128,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v4 (the Decimatio caedis → caedes rite rename bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(4);
+  it('schemaVersion is v5 (the Mercatus → Faeneratio rework bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(5);
   });
 });
 
@@ -169,14 +169,15 @@ describe('flagDoppelgaengerSeen — ADR-023 additive-optional round-trip', () =>
   });
 });
 
-describe('Mercatus depths — ADR-023 additive-optional (a/b/c round-trip)', () => {
-  it('(a) a save without mercatusDepths loads with every depth defaulting to 0', () => {
+describe('the hoard + Syngraphae — ADR-023 additive-optional (a/b/c round-trip)', () => {
+  it('(a) a save without hoard/syngraphae loads with a zero hoard and no contracts', () => {
     const fresh = createInitialState('seed', 0);
     const serialized = serializeGameState(fresh);
     // Strip the optional fields entirely — simulates an older minimal save.
-    const { mercatusDepths, generationPool, suicidePool, murderPool, ...rest } =
+    const { hoard, syngraphae, generationPool, suicidePool, murderPool, ...rest } =
       serialized.lifetime;
-    void mercatusDepths;
+    void hoard;
+    void syngraphae;
     void generationPool;
     void suicidePool;
     void murderPool;
@@ -185,13 +186,17 @@ describe('Mercatus depths — ADR-023 additive-optional (a/b/c round-trip)', () 
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
     const back = deserializeGameState(parsed.data);
-    expect(back.lifetime.mercatusDepths).toEqual({});
+    expect(back.lifetime.hoard.toNumber()).toBe(0);
+    expect(back.lifetime.syngraphae).toEqual([]);
+    expect(back.lifetime.hoardAtDescent).toBeUndefined();
     expect(back.lifetime.reprobates).toBe(0);
   });
 
-  it('(b) a fresh save omits empty mercatusDepths from the wire', () => {
+  it('(b) a fresh save omits the zero hoard and empty syngraphae from the wire', () => {
     const serialized = serializeGameState(createInitialState('seed', 0));
-    expect('mercatusDepths' in serialized.lifetime).toBe(false);
+    expect('hoard' in serialized.lifetime).toBe(false);
+    expect('syngraphae' in serialized.lifetime).toBe(false);
+    expect('hoardAtDescent' in serialized.lifetime).toBe(false);
     expect('maleficiaPrices' in serialized.lifetime).toBe(false);
     expect('handOfGloryRemaining' in serialized.lifetime).toBe(false);
     expect('defixio' in serialized.lifetime).toBe(false);
@@ -211,31 +216,26 @@ describe('Mercatus depths — ADR-023 additive-optional (a/b/c round-trip)', () 
     expect(deserializeGameState(wire).lifetime.maleficiaPrices).toEqual({});
   });
 
-  it('(c) populated mercatusDepths round-trip exactly; junk keys are dropped on load', () => {
+  it('(c) a populated hoard, contracts, and a mid-descent Peculium base round-trip exactly', () => {
     const fresh = createInitialState('seed', 0);
-    const withVitium: GameState = {
+    const withVault: GameState = {
       ...fresh,
       lifetime: {
         ...fresh.lifetime,
-        mercatusDepths: { gula: 12, superbia: 3 },
+        hoard: bn('1.5e42'),
+        syngraphae: ['usura-1', 'faeneratio-1', 'faeneratio-2'],
+        hoardAtDescent: bn('7.25e12'),
         handOfGloryRemaining: 1234,
         defixio: { elapsed: 42 },
       },
     };
-    const wire = serializeGameState(withVitium);
+    const wire = serializeGameState(withVault);
     const back = deserializeGameState(wire);
-    expect(back.lifetime.mercatusDepths).toEqual({ gula: 12, superbia: 3 });
+    expect(eq(back.lifetime.hoard, bn('1.5e42'))).toBe(true);
+    expect(back.lifetime.syngraphae).toEqual(['usura-1', 'faeneratio-1', 'faeneratio-2']);
+    expect(eq(back.lifetime.hoardAtDescent!, bn('7.25e12'))).toBe(true);
     expect(back.lifetime.handOfGloryRemaining).toBe(1234);
     expect(back.lifetime.defixio).toEqual({ elapsed: 42 });
-    // A hand-edited blob can't smuggle non-Sin keys into the runtime record.
-    const tampered = {
-      ...wire,
-      lifetime: { ...wire.lifetime, mercatusDepths: { gula: 2, acme: 9 } },
-    };
-    const parsed = serializedGameStateSchema.safeParse(tampered);
-    expect(parsed.success).toBe(true);
-    if (!parsed.success) return;
-    expect(deserializeGameState(parsed.data).lifetime.mercatusDepths).toEqual({ gula: 2 });
   });
 });
 

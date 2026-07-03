@@ -321,7 +321,7 @@ describe('Vitium Compositum — income + generation sourcing', () => {
 
   it('Bacchanal boosts the generation rate by 10% while active (sheet rev 2026-06-12)', () => {
     let s = unlock(withInfluence(withGold(fresh(), 1_000_000), 1_000_000)); // gula + luxuria L1
-    s = { ...s, lifetime: { ...s.lifetime, mercatusDepths: { gula: 3 } } }; // a real birth rate
+    s = { ...s, sigilBindings: { 57: bn(1_000_000) } }; // Ose #57: a real flat birth rate
     const off = reprobateRates(s, computeModifiers(s)).generationPerSecond;
     const a = activateToggle(s, 'bacchanal');
     if (!a.ok) throw new Error('activate');

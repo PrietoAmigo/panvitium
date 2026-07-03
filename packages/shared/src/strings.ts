@@ -63,9 +63,11 @@ export const strings = {
     emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be bought.',
     indagatioCta: 'Begin the search',
     depraedatioIntro:
-      'Eight trades, one to each Sin. A trade is deepened for gold; as its roots spread, its reach among the reprobates grows \u2014 and so does its take.',
-    mercaturaBlurb:
-      'Deepen an investment\u2019s depth with gold; as its reach among the reprobates grows, so does the gold it takes each second \u2014 plus a standing effect.',
+      'Coin seeded among the damned returns swollen. A hundred hands stand between you and the debtor, and not one of them knows your name.',
+    thesaurusBlurb:
+      'The loan book pays by the head; the hoard pays by its weight. What Mammon holds, Mammon works \u2014 and Mammon keeps.',
+    syngraphaeBlurb:
+      'Contracts in the Hoarder\u2019s ink. The fee is burned; the terms endure until the descent.',
     compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
@@ -146,51 +148,79 @@ export const strings = {
     } as Record<string, string>,
   },
   /**
-   * The Mercatus system (Vitium Mercatura rework): eight trades, exactly one per Cardinal Sin.
-   * Display names are the Latin *Mercatus <genitive>* forms, untranslated (ADR-020). Copy stays
-   * in the established register \u2014 a trade has roots and reach, it is deepened, cut back,
-   * sold off.
+   * The Faeneratio loop (Depraedatio gold rework): Mutuum the loan book, Thesaurus the hoard,
+   * Syngraphae the contracts. Latin terms untranslated (ADR-020). LOAD-BEARING register: the
+   * damned never pay the player tribute and never know the player exists \u2014 the vocabulary is
+   * loans, interest, capital, enterprises, ledgers, counting houses, escheat; never "tribute",
+   * never "the masses pay you".
    */
-  mercatus: {
-    names: {
-      gula: 'Mercatus Gulae',
-      luxuria: 'Mercatus Luxuriae',
-      avaritia: 'Mercatus Avaritiae',
-      tristitia: 'Mercatus Tristitiae',
-      ira: 'Mercatus Irae',
-      acedia: 'Mercatus Acediae',
-      vanagloria: 'Mercatus Vanagloriae',
-      superbia: 'Mercatus Superbiae',
-    } as Record<string, string>,
-    /** The depth meter label: "roots 12 / 20". */
-    roots: 'roots',
-    /** The revenue/s readout suffix: "4.2 gold/s". */
-    perSecond: '/s',
-    deepen: 'Deepen',
-    cutBack: 'Cut back',
-    sellOff: 'Sell off',
-    /** Locked rows: the trade opens at its Sin's first level. */
-    lockedHint: 'opens at Level I',
-    /** Depth-capped rows: deepening resumes at the next Sin level. */
-    capped: 'its roots can reach no deeper at this rank',
-    /**
-     * Per-trade signature clauses (§1.5, amended) — shown as the row name's tooltip. In-register:
-     * roots, reach, take; never analytics vocabulary.
-     */
-    clauses: {
-      gula: 'Its patrons spend a quarter more.',
-      luxuria: 'Its corruption breeds a quarter richer.',
-      avaritia: 'Each depth bargains the next a sliver cheaper.',
-      tristitia: 'Every depth thickens the despair it feeds.',
-      ira: 'Every depth sharpens the knives it sells.',
-      acedia: 'Its take never sleeps, and its torpor stretches the hours away.',
-      vanagloria: 'Deep roots pay tribute \u2014 a share of your utmost influence, each second.',
-      superbia: 'Costlier to deepen; its take and its breeding run a third richer.',
-    } as Record<string, string>,
-    /** The Foedus tier badge prefix; tier rendered as a Roman numeral (Foedus II). */
+  faeneratio: {
+    /** The Depraedatio tab titles the two new surfaces render under. */
+    thesaurusTab: 'Thesaurus',
+    syngraphaeTab: 'Syngraphae',
+    /** Mutuum \u2014 the loan book row. */
+    mutuum: 'Mutuum',
+    mutuumBlurb:
+      'Small sums, lent through brokers against tomorrow\u2019s vice. The interest climbs the ledger to its unnamed head.',
+    mutuumLocked: 'No broker will carry paper for a creditor without standing. (Avaritia I)',
+    /** The loan book's living collateral: "1,234 debtors". */
+    debtors: 'debtors',
+    /** Thesaurus \u2014 the hoard. */
+    thesaurus: 'Thesaurus',
+    thesaurusBlurb:
+      'What Mammon holds, Mammon works: the hoard is placed with the counting house and set upon the enterprises of vice.',
+    hoard: 'The hoard',
+    interest: 'Interest',
+    deposit: 'Deposit',
+    withdraw: 'Withdraw',
+    depositAll: 'All of it',
+    /** The withdraw confirm: the recovery fraction and the forfeit, stated before committing. */
+    withdrawWarning: 'The counting house releases little of what it has tasted.',
+    withdrawRecovers: 'returns',
+    withdrawForfeits: 'forfeited',
+    confirm: 'Confirm',
+    cancel: 'Not yet',
+    /** The Anatocismus auto-deposit readout, shown once usura-4 is signed. */
+    anatocismus: 'Anatocismus',
+    anatocismusRate: 'Interest upon interest, by contract',
+    /** The global Foedus tier badge (tier as a Roman numeral: "Foedus II"). */
     foedus: 'Foedus',
-    foedusTitle:
-      'Bound in Foedus with an active ceremony \u2014 its take grows, the rite costs less.',
+    foedusTitle: 'A fat vault greases the ceremonies \u2014 their upkeep runs cheaper.',
+    /** Syngraphae \u2014 the contract tree. */
+    syngraphaeIntro:
+      'Contracts in the Hoarder\u2019s ink. The fee is burned; the terms endure until the descent.',
+    sign: 'Sign',
+    signed: 'Signed',
+    /** Gated rows: the Avaritia level required, rendered as "Avaritia II". */
+    requiresAvaritia: 'Avaritia',
+    requiresPrior: 'The prior term must be signed first.',
+    /** The three branch column headings. */
+    branches: {
+      usura: 'Usura',
+      faeneratio: 'Faeneratio',
+      custodia: 'Custodia',
+    } as Record<string, string>,
+    /** Unnamed nodes go by their branch numeral (Usura II); named contracts carry their title. */
+    nodeNames: {
+      'usura-4': 'Anatocismus',
+      'faeneratio-2': 'Escheat',
+      'custodia-4': 'Peculium',
+    } as Record<string, string>,
+    /** One line per node, shown on its card. */
+    nodeEffects: {
+      'usura-1': 'The Fenus runs half again as rich.',
+      'usura-2': 'The Fenus runs half again as rich.',
+      'usura-3': 'The Fenus doubles.',
+      'usura-4': 'Interest upon interest, by contract: half of each payment joins the hoard.',
+      'faeneratio-1': 'The loan book takes half again per debtor.',
+      'faeneratio-2': 'The estates of the dead escheat to creditors unseen.',
+      'faeneratio-3': 'The loan book\u2019s take doubles.',
+      'faeneratio-4': 'At the descent, the hoard\u2019s liquidation pays a quarter over.',
+      'custodia-1': 'The counting house releases more of what it holds.',
+      'custodia-2': 'A swelling hoard quickens all gold \u2014 by its decades, to a fifth over.',
+      'custodia-3': 'The counting house releases more still.',
+      'custodia-4': 'A remnant beneath the ruin, held back by contract.',
+    } as Record<string, string>,
   },
   acolytes: {
     acolyte: 'Acolyte',
@@ -301,7 +331,7 @@ export const strings = {
     effectLabels: {
       influence: 'influence gain',
       decimatioEff: 'Decimatio efficiency',
-      vmOutput: 'Vitium Mercatura output',
+      faeneratioOutput: 'Faeneratio output',
       stellar: 'Stellar chance',
       offline: 'offline gain',
       baseSuicide: 'base suicide rate',
@@ -325,7 +355,7 @@ export const strings = {
       lemure: 'Raises the offline gain rate.',
       behemoth: 'Raises the Stellar success chance.',
       midas: '×3 gold gain — but ×100 the Apocalyptic chance.',
-      plutus: 'Raises Vitium Mercatura output.',
+      plutus: 'Sets the lending enterprises to work \u2014 raises the Faeneratio output.',
       succubus: 'Raises Suasio efficiency, at a cut to gold.',
       doppelgaenger: '+50% player efficiency, at half influence gain.',
       astiwihad: 'Each second, a chance to wipe all reprobates into souls.',
@@ -851,7 +881,7 @@ export const strings = {
       9: 'Influence costs \u2193',
       10: 'Familiar effect \u2191',
       11: 'Vitium Compositum effects \u2191',
-      12: 'Vitium Mercatura reprobate generation \u2191',
+      12: 'Its office stands vacant \u2014 the trade it fed is gone.',
       13: 'Decimatio positive outcomes \u2191',
       14: 'Murder \u2192 suicide chance \u2191',
       15: 'Offline influence gain \u2191',
@@ -884,12 +914,12 @@ export const strings = {
       42: 'Ira invocation effect \u2191',
       43: 'Suicide rate \u2191 (flat)',
       44: 'Avaritia invocation effect \u2191',
-      45: 'Shutdown gold recovery \u2191',
+      45: 'Thesaurus withdrawal recovery \u2191',
       46: 'Indagatio efficiency \u2191',
       47: 'Suasio Stellar chance \u2191',
       48: 'Flat gold generation \u2191',
       49: 'Indagatio double-find chance \u2191',
-      50: 'Shutdown gold recovery \u2191',
+      50: 'Thesaurus withdrawal recovery \u2191',
       51: 'All Opera negative outcomes \u2193',
       52: 'Acedia invocation effect \u2191',
       53: 'Reprobates kept on descent \u2191',
@@ -899,7 +929,7 @@ export const strings = {
       57: 'Flat reprobate generation \u2191',
       58: 'Indagatio & Emptio efficiency \u2193',
       59: 'Vitium Compositum influence output \u2191',
-      60: 'Vitium Mercatura gold output \u2191',
+      60: 'Faeneratio gold output \u2191',
       61: 'Vitium Compositum gold output \u2191',
       62: 'Indagatio negative outcomes \u2193',
       63: 'Emptio Stellar chance \u2191',
