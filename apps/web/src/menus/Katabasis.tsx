@@ -411,12 +411,8 @@ function StatuesPlace({
 
       {showCaption && (
         <div className="hell-caption">
-          <div className="t">{ended ? 'The Court Made Whole' : 'The Court of Spires'}</div>
-          <div className="s">
-            {ended
-              ? 'The eight are sated. The Ninth stands revealed in the centre.'
-              : 'Eight Princes wait in the lightning. Give, and be raised.'}
-          </div>
+          <div className="t">{ended ? 'The Eternal Sin' : 'The Court of Spires'}</div>
+          <div className="s">{ended ? 'The Princes bow.' : 'Bow before the Princes.'}</div>
         </div>
       )}
 
@@ -494,8 +490,8 @@ function Transition({
       <div className="transit-word">{down ? 'Katabasis' : 'Ascensus'}</div>
       <div className="transit-sub">
         {down
-          ? 'You lie still upon the altar; the soul slips its body and goes down to settle its accounts.'
-          : 'The accounts are settled. You fall upwards, toward the light you betrayed.'}
+          ? 'You lie still upon the altar; the soul slips and goes through the worn path.'
+          : 'You fall upwards, toward the light you betrayed.'}
       </div>
       <button type="button" className="transit-skip" onClick={onDone}>
         Click anywhere to continue
