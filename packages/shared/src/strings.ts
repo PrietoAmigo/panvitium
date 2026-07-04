@@ -50,7 +50,7 @@ export const strings = {
     logs: 'Logs',
     back: 'Back',
     selectLedger: 'select a ledger',
-    underway: 'A rite is already underway.',
+    underway: 'Another action is ongoing.',
     emptyLog: 'The terminal log is empty. Nothing has been done.',
     suasioIntro: 'The temptations, written to be spoken. Whisper one and wait.',
     notYet: 'not yet inscribed',
@@ -58,16 +58,16 @@ export const strings = {
     search: 'Search',
     buy: 'Buy',
     indagatioIntro:
-      'A long, patient search of the world\u2019s corners. Most of what is found cannot be picked up — only listed for purchase.',
-    emptioIntro: 'What the search surfaced, ready to be bought. The deal itself can still sour.',
-    emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be bought.',
+      'A search of the world\u2019s corners for useful artifacts.',
+    emptioIntro: 'What the search surfaced, ready to be obtained.',
+    emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be obtained.',
     indagatioCta: 'Begin the search',
     depraedatioIntro:
-      'Coin seeded among the damned returns swollen. A hundred hands stand between you and the debtor, and not one of them knows your name.',
+      'Coin seeded among the damned returns swollen.',
     thesaurusBlurb:
-      'The loan book pays by the head; the hoard pays by its weight. What Mammon holds, Mammon works \u2014 and Mammon keeps.',
+      'The loan book pays by the head; the hoard pays by its weight.',
     syngraphaeBlurb:
-      'Contracts in the Hoarder\u2019s ink. The fee is burned; the terms endure until the descent.',
+      'Short term contracts.',
     compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
@@ -79,9 +79,9 @@ export const strings = {
     // Each temptation\u2019s flavour line, spoken on the parchment.
     suasioQuote: {
       suggestion: 'A word left where a thought will find it.',
-      logismoi: 'Eight intruding voices, each the sinner\u2019s own.',
+      logismoi: 'Intruding voices, the sinner\u2019s own.',
       imperium: 'No longer asked.',
-      panvitium: 'The Sins take the streets, and the streets burn.',
+      panvitium: 'Sicut in inferno, et in terra',
     } as Record<string, string>,
     // Per-temptation verb on the action button.
     suasioCta: {
@@ -97,21 +97,21 @@ export const strings = {
       suggestion: 'A word is being left\u2026',
       logismoi: 'The voices press in, and will not relent\u2026',
       imperium: 'The command takes hold\u2026',
-      panvitium: 'Burning\u2026 it ends only when the treasury does.',
+      panvitium: 'Burning\u2026 you cannot stop.',
     } as Record<string, string>,
     // A locked temptation is sealed: its name and maxim show as unreadable, redacted Latin.
     suasioSealed: {
       logismoi: {
         name: 'Vhorruz Lagneth',
-        maxim: 'Murn qellath sorvo, dum tacet quod clamat.',
+        maxim: '...dum tacet quod clamat.',
       },
       imperium: {
         name: 'Xherum Volctan',
-        maxim: 'Qoth velim sarnu, ut nescias quod petat.',
+        maxim: '...ut nescias quod petat.',
       },
       panvitium: {
         name: 'Zvorreth Ommurn',
-        maxim: 'Ulthaq nerrum vasce, donec omnia ardeant.',
+        maxim: '...donec omnia ardeant.',
       },
     } as Record<string, { name: string; maxim: string }>,
     // Gate prefix for a sealed row, e.g. \u201cRequires Luxuria III\u201d.
@@ -133,7 +133,7 @@ export const strings = {
     // The auto-repeat toggle label on a rite card (the on-state is carried by colour, not text).
     decimatioAuto: '\u21bb Auto',
     decimatioLedgerHeading: '\u2e3b INDEX OPERVM \u2e3b',
-    decimatioEmptyLedger: 'No rite has yet been worked.',
+    decimatioEmptyLedger: 'No action has been taken yet.',
     // A gated rite (Pogrom, Purgatio) before its Ira gate is met shows a sealed card: its name
     // suffixed with this, plus the lock note below.
     decimatioSealedSuffix: '\u00b7 sealed',
@@ -149,7 +149,7 @@ export const strings = {
     // Each rite\u2019s flavour description, shown beneath its name.
     decimatioDesc: {
       caedes:
-        'You put coin in a hired blade\u2019s hand and name a single soul. Quiet, almost certain, and cheap enough to commission again and again.',
+        'You put coin in a hired blade\u2019s hand and some names.',
       pogrom: 'You loose your acolytes upon a crowd.',
       purgatio:
         'You call the whole of your following into the streets and give a city over to the dark.',
@@ -175,13 +175,13 @@ export const strings = {
     /** Mutuum \u2014 the loan book row. */
     mutuum: 'Mutuum',
     mutuumBlurb:
-      'Small sums, lent through brokers against tomorrow\u2019s vice. The interest climbs the ledger to its unnamed head.',
+      'Small sums, lent through brokers against tomorrow\u2019s vice.',
     /** The loan book's living collateral: "1,234 debtors". */
     debtors: 'debtors',
     /** Thesaurus \u2014 the hoard. */
     thesaurus: 'Thesaurus',
     thesaurusBlurb:
-      'What Mammon holds, Mammon works: the hoard is placed with the counting house and set upon the enterprises of vice.',
+      'The hoard is placed with the counting house and set upon the enterprises of vice.',
     hoard: 'The hoard',
     interest: 'Interest',
     deposit: 'Deposit',
@@ -225,17 +225,17 @@ export const strings = {
       'usura-2': 'Interest rate \u00d71.5 (stacks to \u00d72.25).',
       'usura-3': 'Interest rate \u00d72 (stacks to \u00d74.5).',
       'usura-4':
-        'Half of each interest payment auto-deposits into the hoard \u2014 interest upon interest, by contract.',
+        'Half of each interest payment auto-deposits into the hoard.',
       'faeneratio-1': 'Loan-book take \u00d71.5 per debtor.',
       'faeneratio-2':
         '+1 gold per murder, +0.5 gold per suicide \u2014 the estates of the dead escheat.',
       'faeneratio-3': 'Loan-book take \u00d72 (stacks to \u00d73).',
       'faeneratio-4': 'The Katabasis hoard liquidation pays \u00d71.25.',
-      'custodia-1': 'Withdrawal recovery \u00d71.6 \u2014 25% becomes 40%.',
+      'custodia-1': 'Withdrawal recovery \u00d71.6.',
       'custodia-2': '+2% gold gain per decade of hoard above 1,000, capped at +20%.',
-      'custodia-3': 'Withdrawal recovery \u00d71.5 \u2014 stacks to 60%.',
+      'custodia-3': 'Withdrawal recovery \u00d71.5. Stacks to 60%.',
       'custodia-4':
-        'At the descent, kept gold is floored at 10% of the hoard \u2014 a remnant held back by contract.',
+        'At the descent, kept gold is floored at 10% of the hoard.',
     } as Record<string, string>,
   },
   acolytes: {
@@ -254,9 +254,9 @@ export const strings = {
     label: 'Repeat this rite automatically',
   },
   invocations: {
-    intro: 'Names called up from below. Each asks a price in souls and stays until dispelled.',
+    intro: 'Names called up from below.',
     empty:
-      'The seals lie unlit. Gather invoking power \u2014 from maleficia \u2014 to glimpse what waits beneath the ink.',
+      'Gather invoking power \u2014 from maleficia \u2014 to glimpse what waits beneath the ink.',
     power: 'Invoking power',
     summon: 'Summon',
     dispel: 'Dispel',
@@ -315,17 +315,17 @@ export const strings = {
      *  time instead; the other passives show the computed quantified effect. */
     effects: {
       familiar: '+33% player efficiency, plus a background Indagatio.',
-      imp: 'A background Good-only Decimatio — culls reprobates.',
-      upir: 'A background Good-only Decimatio — culls reprobates.',
+      imp: 'A background Good-only Decimatio.',
+      upir: 'A background Good-only Decimatio.',
       lamia: 'A background Suasio, and shifts Suasio toward success.',
       fama: 'Raises influence gain.',
       nightmare: 'Raises the base reprobate suicide rate.',
       harpy: 'Raises Decimatio efficiency.',
       lemure: 'Raises the offline gain rate.',
       behemoth: 'Raises the Stellar success chance.',
-      midas: '×3 gold gain — but ×100 the Apocalyptic chance.',
-      plutus: 'Sets the lending enterprises to work \u2014 raises the Faeneratio output.',
-      succubus: 'Raises Suasio efficiency, at a cut to gold.',
+      midas: '×3 gold gain but ×100 the Apocalyptic chance.',
+      plutus: 'Raises the Faeneratio output.',
+      succubus: 'Raises Suasio efficiency, minimizes gold generation.',
       doppelgaenger: '+50% player efficiency, at half influence gain.',
       astiwihad: 'Each second, a chance to wipe all reprobates into souls.',
       aurevora: 'Player efficiency ramps exponentially — burns gold, self-dispels at zero.',
