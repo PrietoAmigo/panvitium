@@ -562,54 +562,15 @@ describe('Offline resource-rate sigils (S13)', () => {
   });
 });
 
-describe('Vitium Compositum output sigil (S14)', () => {
-  it('Zagan #61 lifts Compositum gold output', () => {
-    expect(sigilById(61)!.effect).toEqual({
-      kind: 'modifier',
-      field: 'vitiumCompositumOutputMul',
-      direction: 'increase',
-    });
-    expect(sigilById(61)!.name).toBe('Zagan');
-    // 0.0001 × sqrt(1e8) = 1 → ×2 on the field.
-    expect(computeModifiers(bound(61, 100_000_000)).vitiumCompositumOutputMul).toBeCloseTo(2, 6);
-    expect(computeModifiers(fresh()).vitiumCompositumOutputMul).toBe(1);
-  });
-
-  it('scales gold income from an active Compositum toggle', () => {
-    // charity produces 200 gold/s but needs 100 gold + 25 influence/s upkeep; stock both so it
-    // stays active, and force it on without going through activateToggle for the test.
-    const withToggle = (s: GameState): GameState => ({
-      ...s,
-      lifetime: {
-        ...s.lifetime,
-        activeToggles: ['charity'],
-        gold: bn(10_000),
-        influence: bn(100),
-      },
-    });
-    const gain = (s: GameState): number => {
-      const after = tick(s, 1).state;
-      return after.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
-    };
-    const base = gain(withToggle(fresh()));
-    const zagan = gain(withToggle(bound(61, 100_000_000)));
-    // Compositum's 200 gold/s doubles; base income and the upkeep leg are unaffected.
-    expect(zagan).toBeCloseTo(base + 200, 6);
-  });
-
-  it('Orias #59 lifts the VC INFLUENCE line; Zagan leaves it alone (sheet rev 2026-06-12)', () => {
-    // gala: 250 gold/s upkeep → 20 influence/s. Orias at strength 1 doubles the 20.
-    const withGala = (s: GameState): GameState => ({
-      ...s,
-      lifetime: { ...s.lifetime, activeToggles: ['gala'], gold: bn(100_000) },
-    });
-    const inflGain = (s: GameState): number =>
-      tick(s, 1).state.lifetime.influence.toNumber() - s.lifetime.influence.toNumber();
-    const base = inflGain(withGala(fresh()));
-    const orias = inflGain(withGala(bound(59, 100_000_000)));
-    const zagan = inflGain(withGala(bound(61, 100_000_000)));
-    expect(orias).toBeCloseTo(base + 20, 4); // the 20/s VC line doubles
-    expect(zagan).toBeCloseTo(base, 4); // the gold-output sigil leaves influence alone
+describe('Orphaned ceremony sigils (S14 — ADR-031)', () => {
+  it('Gusion #11, Naberius #24, Orias #59 and Zagan #61 have no defs; binding them is harmless', () => {
+    // Their targets — the ceremony effect/output channels — retired with the lesser ceremonies.
+    // Per ADR-029 an empty catalog state is expressed by deleting the def; re-pinning each awaits
+    // a per-sigil sheet decision.
+    for (const id of [11, 24, 59, 61]) {
+      expect(sigilById(id)).toBeUndefined();
+      expect(computeModifiers(bound(id, 100_000_000))).toEqual(computeModifiers(fresh()));
+    }
   });
 
   it('Sitri #12 is orphaned (Depraedatio rework): no def, binding it is harmless', () => {

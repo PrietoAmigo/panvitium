@@ -7,8 +7,9 @@ document wherever the two disagree; formulas that define a system's shape are st
 their constants live in the sheet.
 
 This revision incorporates **ADR-024** (single reprobate pool; subtypes and conversion removed)
-the **Vitium Mercatura / Vitium Compositum redesign** (`vm-vc-redesign-spec.md`), and the
-**Depraedatio gold rework** (Mercatus → the Faeneratio loop). Section
+the **Vitium Mercatura / Vitium Compositum redesign** (`vm-vc-redesign-spec.md`), the
+**Depraedatio gold rework** (Mercatus → the Faeneratio loop), and **ADR-031** (the gating
+rebalance; the lesser ceremonies retired — Panvitium alone survives, on the Suasio scroll). Section
 numbering is preserved from the previous revision so cross-references in other documents and in
 code comments stay valid.
 
@@ -80,7 +81,8 @@ The gold-obtaining half of *Depraedatio* (the Depraedatio gold rework; supersede
 per-Sin Mercatūs of ADR-025). The framing is **usury at arm's length**: the damned never pay the
 player tribute and never know the player exists — small sums are seeded among the masses through
 brokers and front men, and the interest climbs through a hundred hands to a name none of them has
-heard. All three surfaces open at **Avaritia level 1**.
+heard. All three surfaces are **open from the start** — the gating rebalance (ADR-031) moved
+every Faeneratio gate one level down, so the old Avaritia-I unlock became no gate at all.
 
 - ***Mutuum* (the loan book).** Passive gold income proportional to the reprobate population:
   `take/s = MUTUUM_PER_CAPITA × mutuumPerCapitaMul × reprobates`. No principal, no depth, no
@@ -109,8 +111,9 @@ the code carries the approved spec's placeholders until the sheet settles them.
 Twelve promissory notes signed with the Hoarder Below, in three **linear branches** of four,
 bought with **burned** gold (the signing fee — paid, never hoarded, never refunded) and reset
 each lifetime (the terms lapse at the descent). Signing requires the node's Avaritia level gate
-and the previous node in its branch. Gates run I–IV; fees run 500 / 5,000 / 50,000 / 500,000
-*(placeholders)*.
+and the previous node in its branch. Gates run 0–III (the gating rebalance, ADR-031: each
+branch's first node is ungated, then Avaritia I / II / III up the chain); fees run
+500 / 5,000 / 50,000 / 500,000 *(placeholders)*.
 
 | Branch | Node | Effect |
 |---|---|---|
@@ -126,53 +129,25 @@ and the previous node in its branch. Gates run I–IV; fees run 500 / 5,000 / 50
 | | III | Withdrawal recovery ×1.5 (stacks to 0.6). |
 | | IV — **Peculium** | At commit, the kept-gold result is floored at 10% of the hoard's value at descent (a remnant beneath the Avaritia roll; Erinyes still zeroes gold and wins). |
 
-#### *Vitium Compositum* — multi-Sin ceremonies
+#### *Vitium Compositum* — Panvitium alone (ADR-031)
 
-Each *Vitium Compositum* is a multi-Sin toggle organised by you and your acolytes; acolytes can
-be assigned to help run one. A ceremony ticks at a fixed cadence unaffected by efficiency;
-efficiency multiplicatively scales the per-tick costs, outputs, and effects (`02 §3`). The total
-effective efficiency is the player's contribution plus each assigned acolyte's plus any
-invocation contribution. A toggle that cannot pay its full per-second cost auto-deactivates on
-the next tick.
+The eight lesser ceremonies (*Bacchanal*, *Charity*, *Gala*, *Doom Gathering*, *Enraging
+Broadcast*, *Dolce Far Niente*, *Vegas*, *Crusade*) are **retired** — their income, rate-boost,
+and percentage-of-income machinery (ADR-027) went with them, and old saves carrying a retired id
+self-heal on the first tick. What survives is the toggle engine and its one occupant,
+**Panvitium**, which now lives on the **Suasio scroll** as its sealed fourth rite (`02 §12`).
 
-The catalog (gates, per-second costs/outputs, and effects in the `Vitium Compositum` sheet):
+#### *Foedus* — the hoard ↔ Panvitium coupling
 
-| Ceremony | Sin combination | Character |
-|---|---|---|
-| **Charity** | *Avaritia* + *Vanagloria* | Costs influence; strong gold income. |
-| **Gala** | *Superbia* + *Vanagloria* | Costs gold; strong influence income. |
-| **Bacchanal** | *Gula* + *Luxuria* | Costs gold and influence; raises the online reprobate generation rate. |
-| **Dolce Far Niente** | *Gula* + *Acedia* | No upkeep; raises offline gold and offline generation rates. |
-| **Enraging Broadcast** | *Ira* + *Tristitia* | Costs influence; raises the murder rate. |
-| **Doom Gathering** | *Tristitia* + *Acedia* | Costs gold and influence; raises the suicide rate. |
-| **Vegas** | *Luxuria* + *Avaritia* + *Gula* + *Acedia* | Percentage-of-income gold cost; percentage influence income. |
-| **Crusade** | *Superbia* + *Ira* + *Vanagloria* + *Tristitia* | Percentage-of-income influence cost; outsized influence return. |
-| **Panvitium** | All eight Sins (level gate in the sheet) | See below. |
+The *Foedus* survives on its **upkeep side only**, re-anchored from the trades to the hoard: a
+pact between the vault and the rituals — a fat vault greases the ceremony.
 
-The previous revision's subtype-keyed ceremonies (*Outrage Cycle*, *Loan Shark Op*,
-*Ethnocentric Revolt*, *No-babies Movement*) are **retired** (ADR-024 removed their reason to
-exist; ADR-027 removed them from the code — old saves self-heal on the first tick). The roster is
-the canonical nine above. Vegas and Crusade are **percentage ceremonies** (ADR-027): Vegas pays
-50% of the current gold gain rate and yields 1% of it as influence; Crusade pays 50% of the
-current influence gain rate and yields 1000% (×10) of it as gold — each measured against the
-income WITHOUT percentage-VC outputs, so they can never feed each other. The pair ceremonies'
-effects are multiplicative ×1.1 rate boosts (Bacchanal → generation, Doom Gathering → suicide,
-Enraging Broadcast → murder) while active. The Foedera below apply to every ceremony by its
-member-Sin set.
-
-#### *Foedus* — the hoard ↔ Compositum coupling
-
-The *Foedus* survives the Mercatus removal on its **upkeep side only**, re-anchored from the
-trades to the hoard: a pact between the vault and the rituals — a fat vault greases the
-ceremonies.
-
-- The tier is **global** (one tier for all ceremonies, no member-Sin dependency):
-  `tier = 0` while `hoard < T0`, else `min(floor(log10(hoard / T0)) + 1, 4)` — tiers step at
-  each decade of hoard above `T0` *(placeholder 10,000: 1e4 / 1e5 / 1e6 / 1e7)*.
+- The tier is **global**: `tier = 0` while `hoard < T0`, else
+  `min(floor(log10(hoard / T0)) + 1, 4)` — tiers step at each decade of hoard above `T0`
+  *(placeholder 10,000: 1e4 / 1e5 / 1e6 / 1e7)*.
 - An active ceremony's per-second **computed** cost takes `× (1 − 0.125 × tier)` — including
   *Panvitium*'s eᵗ ramp (the late-game payoff survives). The per-ceremony `foedusOptOut` flag is
   retained and keeps suppressing the discount.
-- The **revenue side is retired** — there is no per-Sin trade left to multiply.
 
 ##### *Panvitium*
 
@@ -309,7 +284,7 @@ coefficients are in the `Sigils` sheet.
 | 8 | **Barbatos** | Songs of animals | Increases *Gula* invocation effectiveness. |
 | 9 | **Paimon** | Loyalty; returning servants | Reduces influence costs. |
 | 10 | **Buer** | Good familiars | Increases Familiar effectiveness. |
-| 11 | **Gusion** | Reconciles enemies | Increases *Vitium Compositum* effects (not its gold/influence outputs). |
+| 11 | **Gusion** | Reconciles enemies | **Orphaned** (ADR-031): its target — the ceremony effect channel — retired with the lesser ceremonies. Def deleted; binding is harmless; awaits a per-sigil sheet decision. |
 | 12 | **Sitri** | Love | **Orphaned** (Depraedatio gold rework): its target — the Mercatus breeding channel — retired with the trades. Catalog def deleted per ADR-029; binding is harmless. Awaits a per-sigil sheet decision. |
 | 13 | **Beleth** | Attended by trumpets | Increases *Decimatio* positive outcome chance. |
 | 14 | **Leraie** | Putrefies wounds | Chance a murder triggers a suicide. |
@@ -322,7 +297,7 @@ coefficients are in the `Sigils` sheet.
 | 21 | **Marax** | Stops, delays | Increases offline action efficiency. |
 | 22 | **Ipos** | Valiant, tactical | Reduces *Decimatio* negative outcome chance. |
 | 23 | **Aim** | Sets fire | Increases the murder rate. |
-| 24 | **Naberius** | Arts and rhetoric | Increases *Vitium Compositum* effects. |
+| 24 | **Naberius** | Arts and rhetoric | **Orphaned** (ADR-031): shared Gusion\u2019s retired ceremony-effect channel. Def deleted; awaits a sheet decision. |
 | 25 | **Glasya-Labolas** | Manslaughter | Increases the murder rate (flat). [log] |
 | 26 | **Bune** | Wisdom | Increases *Vanagloria* invocation effectiveness. |
 | 27 | **Ronove** | Harvests souls near death | Increases the suicide rate. |
@@ -357,9 +332,9 @@ coefficients are in the `Sigils` sheet.
 | 56 | **Gremory** | Treasures; love | Increases *Suasio* positive outcome chance. |
 | 57 | **Ose** | Changes shape | Generates reprobates (flat). [log] |
 | 58 | **Amy** | Treasures | Increases *Indagatio* and *Emptio* action efficiency. |
-| 59 | **Orias** | Transformations | Increases *Vitium Compositum* influence output. |
+| 59 | **Orias** | Transformations | **Orphaned** (ADR-031): the ceremony influence output retired with the lesser ceremonies. Def deleted; awaits a sheet decision. |
 | 60 | **Vapula** | Mechanical arts | Increases the Faeneratio gold output (Mutuum + Thesaurus interest). |
-| 61 | **Zagan** | Fools wise | Increases *Vitium Compositum* gold output. |
+| 61 | **Zagan** | Fools wise | **Orphaned** (ADR-031): the ceremony gold output retired with the lesser ceremonies. Def deleted; awaits a sheet decision. |
 | 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
 | 63 | **Andras** | Sows discord | Increases *Emptio* Stellar chance. |
 | 64 | **Haures** | Destroys enemies | Increases *Decimatio* Stellar chance. |
@@ -443,16 +418,12 @@ ceiling it can never cross.
 
 None of these block the current build; all should be tracked.
 
-- **Vitium Compositum "Slice 3"** — the ceremony roster / effects rework: reconcile the code's
-  thirteen ceremonies to the sheet's canonical nine, implement the Vegas / Crusade
-  percentage-of-income semantics, give *Outrage Cycle* an effect (or retire it). See the §2.3
-  ceremony-table note and ADR-025. *(The Mercatus signature clauses, formerly listed here as a
-  pending second slice, shipped with the amended table in §2.3.)*
-- **Orphaned sigil: Sitri #12** — its target (the Mercatus breeding channel) retired with the
-  Depraedatio gold rework; the catalog def is deleted (ADR-029's pattern) and a re-pin needs a
-  per-sigil sheet decision. The rework opened natural retarget surfaces for future orphan passes:
-  hoard size, the Fenus rate, the Mutuum take, Syngraphae costs, the Foedus thresholds. (The
-  ADR-024 sixteen were already resolved by ADR-029.)
+- **Orphaned sigils: Sitri #12, Gusion #11, Naberius #24, Orias #59, Zagan #61** — Sitri's
+  target (the Mercatus breeding channel) retired with the Depraedatio gold rework; the other
+  four lost their ceremony channels when ADR-031 retired the lesser Vitium Compositum ceremonies.
+  All five defs are deleted (ADR-029's pattern) and each re-pin needs a per-sigil sheet decision.
+  Natural retarget surfaces: hoard size, the Fenus rate, the Mutuum take, Syngraphae costs, the
+  Foedus thresholds. (The ADR-024 sixteen were already resolved by ADR-029.)
 - **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
 - **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)
   has its channels in the Studio (`02 §12`) but its message catalog is unwritten; the Katabasis

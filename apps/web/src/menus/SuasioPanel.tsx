@@ -119,8 +119,9 @@ export function SuasioPanel({
 
             <div className="suasio-rows">
               {actions.map((a, i) => {
-                const apex = i === 2; // Imperium — the crowned rite gets the spinning inner ring.
-                const twoRings = i >= 1; // Logismoi + Imperium carry a second concentric ring.
+                // Imperium and Panvitium — the crowned rites get the spinning inner ring.
+                const apex = a.id === 'imperium' || a.id === 'panvitium';
+                const twoRings = i >= 1; // the later rites carry a second concentric ring.
                 const rowClass =
                   'suasio-row' +
                   (a.active ? ' suasio-row--active' : '') +

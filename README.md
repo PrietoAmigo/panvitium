@@ -103,9 +103,29 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 900** (sim 550 · shared 63 · api 20 · web 267).
+**Current test count: 873** (sim 529 · shared 63 · api 20 · web 261).
 
-> **Latest change — the Depraedatio gold rework: Mercatus out, the Faeneratio loop in (ADR-030,
+> **Latest change — the gating rebalance, numeric contract copy, and the Vitium Compositum
+> retirement (ADR-031).** Three coupled follow-ups to the gold rework. (1) Every Faeneratio gate
+> moves one level down: Mutuum and the Thesaurus are open from the first tick (the Avaritia-I
+> unlock and `faenerationUnlocked` are gone) and the Syngraphae gates shift from I–IV to 0–III —
+> each branch's first contract is signable from the start. (2) Every Syngrapha effect line now
+> leads with its number ("Withdrawal recovery ×1.6 — 25% becomes 40%") so the gain is never a
+> riddle. (3) The eight lesser Vitium Compositum ceremonies are removed wholesale — the catalog is
+> **Panvitium alone**. The ceremony incomes, the three rate-boost channels, Dolce's offline boost,
+> the ADR-027 percentage machinery (`GainRates`, percent cost/output, the tick's base-gain-rate
+> plumbing) and the three ceremony modifier fields all retire; the toggle engine survives in the
+> shape Panvitium needs, retired ids in old saves drop unbilled on the first tick (no schema bump),
+> and the Foedus upkeep discount still reaches the eᵗ ramp. **Panvitium moves to the Suasio
+> scroll** as its sealed fourth rite — redacted Latin + "Requires Every Sin III", exactly the
+> scroll's own gating idiom, with a two-press Unleash — and the Depraedatio panel drops its
+> Compositum tab (Thesaurus / Syngraphae remain). Four more sigils orphan per ADR-029's pattern
+> (Gusion #11, Naberius #24, Orias #59, Zagan #61 — the ceremony channels died with the roster),
+> joining Sitri #12 on the per-sigil sheet-decision list. Net **−27 tests** (sim 550 → 529, web
+> 267 → 261; the ceremony suites retired with their subjects), plus a new Playwright spec pinning
+> the scroll's sealed fourth rite.
+
+> **Earlier change — the Depraedatio gold rework: Mercatus out, the Faeneratio loop in (ADR-030,
 > save v5).** The eight per-Sin Mercatūs (depths, demand-driven revenue, signature clauses, the
 > per-Sin Foedus revenue coupling) are removed entirely — `mercatus.ts` / `foedera.ts` deleted —
 > and Depraedatio gains a single Avaritia-centric gold loop: **Mutuum** (the loan book — passive

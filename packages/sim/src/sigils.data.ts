@@ -88,13 +88,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +familiar effectiveness.
     effect: { kind: 'invocationEffect', invocation: 'familiar' },
   },
-  11: {
-    id: 11,
-    name: 'Gusion',
-    coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +VC ceremony EFFECTS (not the gold/influence outputs).
-    effect: { kind: 'modifier', field: 'vitiumCompositumEffectMul', direction: 'increase' },
-  },
+  // 11 Gusion — ORPHANED (ADR-031): its target (`vitiumCompositumEffectMul`, the ceremony
+  // rate-boost channel) retired with the lesser ceremonies. Def deleted per ADR-029's pattern;
+  // binding is harmless. Re-pinning needs a per-sigil sheet decision.
   // 12 Sitri — ORPHANED (Depraedatio gold rework): its target (`vitiumMercaturaGenerationMul`,
   // the Mercatus breeding channel) retired with the trades. Per ADR-029 an empty catalog state is
   // expressed by deleting the def (no `inert` kind); the seal keeps its number and name in the
@@ -193,13 +189,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +murder rate.
     effect: { kind: 'modifier', field: 'murderRateMul', direction: 'increase' },
   },
-  24: {
-    id: 24,
-    name: 'Naberius',
-    coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +VC ceremony effects (shares the Gusion channel).
-    effect: { kind: 'modifier', field: 'vitiumCompositumEffectMul', direction: 'increase' },
-  },
+  // 24 Naberius — ORPHANED (ADR-031): shared Gusion's ceremony-effect channel, retired with the
+  // lesser ceremonies. Def deleted; binding is harmless; awaits a per-sigil sheet decision.
   25: {
     id: 25,
     name: 'Glasya-Labolas',
@@ -477,17 +468,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       direction: 'decrease',
     },
   },
-  59: {
-    id: 59,
-    name: 'Orias',
-    coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +VC influence output.
-    effect: {
-      kind: 'modifier',
-      field: 'vitiumCompositumInfluenceOutputMul',
-      direction: 'increase',
-    },
-  },
+  // 59 Orias — ORPHANED (ADR-031): its target (the ceremony influence output) retired with the
+  // lesser ceremonies (Panvitium yields souls, not influence). Def deleted; binding is harmless;
+  // awaits a per-sigil sheet decision.
   60: {
     id: 60,
     name: 'Vapula',
@@ -496,13 +479,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // unchanged in magnitude — the renamed `vitiumMercaturaOutputMul` field.
     effect: { kind: 'modifier', field: 'faenerationOutputMul', direction: 'increase' },
   },
-  61: {
-    id: 61,
-    name: 'Zagan',
-    coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +VC gold output.
-    effect: { kind: 'modifier', field: 'vitiumCompositumOutputMul', direction: 'increase' },
-  },
+  // 61 Zagan — ORPHANED (ADR-031): its target (the ceremony gold output) retired with the lesser
+  // ceremonies. Def deleted; binding is harmless; awaits a per-sigil sheet decision.
   62: {
     id: 62,
     name: 'Volac',

@@ -685,7 +685,7 @@ definition, catches the player up to the present, whatever the gains were scaled
 
 ---
 
-## ADR-027: Vitium Compositum — the canonical nine, with percentage ceremonies
+## ADR-027: Vitium Compositum — the canonical nine, with percentage ceremonies *(superseded by ADR-031: the lesser ceremonies and the percentage machinery are retired; Panvitium alone survives)*
 
 **Status.** Accepted [2026-06-12]. Implements the "Slice 3" rework registered as an open item by
 ADR-025, per the revised economy template.
@@ -912,6 +912,70 @@ frozen inside the migration file), the field drops, and `hoard` / `syngraphae` s
 punishes spending (the design wants the lock-vs-liquid tension, not a tax on acting). *A pure
 upgrade tree with flat income* — rejected: loses the population coupling that makes growing and
 preserving reprobates matter to the economy.
+
+---
+
+## ADR-031: The gating rebalance, numeric contract copy, and the Vitium Compositum retirement
+
+**Status.** Accepted [2026-07-04]. Amends ADR-030 (the Faeneratio gates) and supersedes the
+ceremony half of ADR-025/ADR-027 (the lesser Vitium Compositum ceremonies).
+
+**Context.** Playtesting feedback on the Depraedatio gold rework: the Avaritia-I gate put the
+whole gold loop behind the first Devotion offering, the Syngraphae effect copy read as riddles
+("the counting house releases more of what it holds" — more *how much*?), and the Vitium
+Compositum roster had shrunk in practice to a Panvitium delivery vehicle — eight ceremonies of
+bookkeeping (incomes, rate boosts, ADR-027 percentage semantics, an effect-multiplier sigil
+channel) around one ritual that actually matters.
+
+**Decision.** Three coupled changes:
+
+1. **The gating rebalance.** Every Faeneratio gate moves one level down: the old Avaritia-I
+   unlock on Mutuum / Thesaurus becomes no gate at all (`faenerationUnlocked` deleted — the loan
+   book and the vault are open from the first tick), and the Syngraphae node gates shift from
+   I–IV to **0–III** (each branch's first node is ungated; the chain then gates at Avaritia
+   I / II / III). Costs are unchanged.
+2. **Numeric contract copy.** Every Syngrapha effect line leads with its number
+   ("Withdrawal recovery ×1.6 — 25% becomes 40%", "+2% gold gain per decade of hoard above
+   1,000, capped at +20%"); the grim register survives in the clauses, not in place of the
+   magnitudes.
+3. **The Vitium Compositum retirement.** The eight lesser ceremonies (Bacchanal, Charity, Gala,
+   Doom Gathering, Enraging Broadcast, Dolce Far Niente, Vegas, Crusade) are removed wholesale —
+   the catalog is **Panvitium alone**. With them go: the ceremony gold/influence incomes and the
+   flat generation channel; the three rate-boost channels (generation / suicide / murder); Dolce's
+   offline-gain boost; the ADR-027 percentage-of-income machinery (`GainRates`, the percent
+   cost/output legs, the tick's base-gain-rate plumbing); and the three ceremony modifier-bundle
+   fields (`vitiumCompositumOutputMul`, `vitiumCompositumInfluenceOutputMul`,
+   `vitiumCompositumEffectMul`). The toggle engine survives in the shape Panvitium needs
+   (Sin-gated activation, per-second cost with the eᵗ ramp, the Foedus upkeep discount,
+   auto-deactivation, unknown-id self-healing for old saves — no schema bump per ADR-023, since
+   `activeToggles` is a plain string list and retired ids drop unbilled on the first tick).
+   **Panvitium moves to the Suasio scroll** as its sealed fourth rite: gated visually exactly like
+   the other temptations (redacted Latin name/maxim + the "Requires Every Sin III" label), with a
+   two-press Unleash confirm; the Depraedatio panel drops its Compositum tab and carries only
+   Thesaurus / Syngraphae.
+
+**Consequences.**
+
+- Four more sigils are orphaned per ADR-029's no-`inert` pattern (defs deleted, ids/names kept in
+  strings, binding harmless): **Gusion #11** and **Naberius #24** (the ceremony-effect channel),
+  **Orias #59** (ceremony influence output), **Zagan #61** (ceremony gold output). Each re-pin
+  needs a per-sigil sheet decision; they join Sitri #12 on the orphan list.
+- The despair/violence/breeding pressure the pair ceremonies carried (Doom Gathering, Enraging
+  Broadcast, Bacchanal) now rests entirely on maleficia, invocations, and sigils; Dolce's
+  offline-gain niche rests on Procrastination, Lemure, and the offline sigils. If the sheet wants
+  ceremony-shaped pressure back, that is a new-content decision, not a revert.
+- The `Vitium Compositum` sheet reduces to Panvitium's row (costs, growth base, rate base) plus
+  the Foedus opt-out flag; the Vegas/Crusade percentage rows retire with ADR-027's machinery.
+- Gold and influence lose their ceremony income legs; the gold line is now
+  `(base + Faeneratio + flat) × goldRateMul` and influence is purely proportional + flat sources.
+- Acolyte help on ceremonies (a doc-level promise never implemented in code) is dropped from the
+  docs rather than carried as dead text.
+
+**Alternatives considered.** *Keeping the ceremonies but pruning their effects* — rejected: the
+bookkeeping (upkeep pairs, percentage semantics, the effect sigil channel) was the cost, and a
+roster of effectless toggles pays it for nothing. *Moving Panvitium to its own panel* — rejected:
+the scroll already renders the sealed-rite idiom the gate needs, and Panvitium is diegetically a
+temptation spoken over the whole city.
 
 ---
 

@@ -1,6 +1,8 @@
 /**
  * Syngraphae tests (Depraedatio gold rework spec §4.3 / §13). Pins:
- *   - the catalog: twelve nodes, three linear branches of four, gates 1..4, costs 500 → 500,000
+ *   - the catalog: twelve nodes, three linear branches of four, gates 0..3 (the gating rebalance
+ *     moved every gate one level down — the first node of each branch is open from the start),
+ *     costs 500 → 500,000
  *   - signing: the Avaritia level gate, the branch-order prerequisite, affordability, the burn
  *     (paid, never hoarded, never refunded), the Morpheus freeze refusal
  *   - reset at Katabasis (the commit-side lapse; also pinned in katabasis.test.ts)
@@ -47,7 +49,7 @@ describe('the catalog', () => {
     for (const branch of SYNGRAPHA_BRANCHES) {
       const chain = syngraphaBranch(branch);
       expect(chain).toHaveLength(4);
-      expect(chain.map((n) => n.gate)).toEqual([1, 2, 3, 4]);
+      expect(chain.map((n) => n.gate)).toEqual([0, 1, 2, 3]);
       expect(chain.map((n) => n.cost)).toEqual([500, 5_000, 50_000, 500_000]);
     }
   });
@@ -60,7 +62,7 @@ describe('the catalog', () => {
 
 describe('signSyngrapha — gates, order, burn', () => {
   it('signs an available node and BURNS the fee (gold down by exactly the cost)', () => {
-    const s = ready(1);
+    const s = ready(0); // the first node of a branch carries no Avaritia gate at all
     const r = signSyngrapha(s, 'usura-1');
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -69,17 +71,22 @@ describe('signSyngrapha — gates, order, burn', () => {
     expect(syngraphaSigned(r.state, 'usura-1')).toBe(true);
   });
 
-  it('enforces the Avaritia level gate', () => {
-    expect(signSyngrapha(ready(0), 'usura-1').ok).toBe(false);
-    const s = ready(1);
+  it('enforces the Avaritia level gate (usura-1 is ungated; usura-2 gates on level 1)', () => {
+    expect(signSyngrapha(ready(0), 'usura-1').ok).toBe(true);
+    const s = ready(0);
     const first = signSyngrapha(s, 'usura-1');
     if (!first.ok) throw new Error('sign failed');
-    // usura-2 gates on Avaritia 2, even with usura-1 signed and gold in hand.
+    // usura-2 gates on Avaritia 1, even with usura-1 signed and gold in hand.
     expect(signSyngrapha(first.state, 'usura-2').ok).toBe(false);
+    const levelled = signSyngrapha(
+      { ...first.state, devotion: { ...first.state.devotion, avaritia: bn(180) } },
+      'usura-2',
+    );
+    expect(levelled.ok).toBe(true);
   });
 
   it('enforces the branch-order prerequisite (linear chains)', () => {
-    const s = ready(4);
+    const s = ready(3); // the deepest gate is now level 3
     expect(signSyngrapha(s, 'usura-2').ok).toBe(false); // usura-1 unsigned
     const gate = syngraphaSignable(s, SYNGRAPHAE.find((n) => n.id === 'usura-2')!);
     expect(gate.signable).toBe(false);
@@ -88,8 +95,8 @@ describe('signSyngrapha — gates, order, burn', () => {
   });
 
   it('refuses when unaffordable, already signed, or unknown', () => {
-    expect(signSyngrapha(ready(1, 100), 'usura-1').ok).toBe(false);
-    const s = ready(1);
+    expect(signSyngrapha(ready(0, 100), 'usura-1').ok).toBe(false);
+    const s = ready(0);
     const first = signSyngrapha(s, 'usura-1');
     if (!first.ok) throw new Error('sign failed');
     expect(signSyngrapha(first.state, 'usura-1').ok).toBe(false);
@@ -97,7 +104,7 @@ describe('signSyngrapha — gates, order, burn', () => {
   });
 
   it('there is no refund path: the catalog exposes no unsign, and Katabasis burns the terms', () => {
-    const s = ready(1);
+    const s = ready(0);
     const signed = signSyngrapha(s, 'faeneratio-1');
     if (!signed.ok) throw new Error('sign failed');
     const { state } = commitKatabasis(enterKatabasis(signed.state));

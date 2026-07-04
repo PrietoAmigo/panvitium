@@ -1,20 +1,14 @@
 /**
- * Vitium Compositum (03 §2.3) — multi-Sin themed TOGGLES. Each is gated behind two (or three)
- * Cardinal Sins at a minimum level, and while active it pays a per-second cost and contributes a
- * per-second effect bundle: gold income, influence income, and reprobate-rate shifts. A toggle that
- * cannot pay its full per-second cost AUTO-DEACTIVATES on the next tick (02 §3); there's no refund
- * and no partial application.
+ * Vitium Compositum (03 §2.3) — the toggle engine, now serving PANVITIUM ALONE. The eight lesser
+ * ceremonies were retired (ADR-031): their income, rate-boost, and percentage-of-income machinery
+ * (ADR-027) went with them, and old saves carrying a retired id self-heal on the first tick
+ * (`advanceToggles`' unknown-id path drops it, unbilled). What remains is the shape Panvitium
+ * needs: a Sin-gated toggle with a per-second cost, an exponential cost ramp tracked in
+ * `toggleDurations`, the Foedus upkeep discount, and auto-deactivation the moment the full cost
+ * cannot be paid (02 §3) — there is no refund and no partial application.
  *
- * NOTE: the conversion + subtype-bias mechanic was removed. Ceremonies whose ONLY effect was biased
- * conversion (Loan Shark Op, Charity, Gala) now keep their gold/influence income; ceremonies whose
- * effect was a subtype-penalty increase (Vegas, Crusade) keep their income too; Outrage Cycle —
- * which had no income, only conversion — is left as an income-less stub. All three of these are
- * flagged for redesign in the Vitium Compositum rework (Slice 3). The flat-rate ceremonies
- * (No-babies Movement, Doom Gathering, Ethnocentric Revolt, Enraging Broadcast, Dolce Far Niente)
- * and Bacchanal's population-proportional generation are unaffected in shape.
- *
- * Active toggles are tracked by membership in `LifetimeState.activeToggles`. A VC is either on or
- * off — no per-VC payload. Panvitium's duration is tracked in `toggleDurations`.
+ * Active toggles are tracked by membership in `LifetimeState.activeToggles`. A toggle is either
+ * on or off — no per-toggle payload. Panvitium's duration is tracked in `toggleDurations`.
  */
 import { floor, gte, sub } from './bignum.js';
 import { foedusTier, foedusUpkeepMul } from './faeneratio.js';
@@ -29,61 +23,10 @@ export interface CompositumDef {
   readonly id: string;
   /** Cardinal Sins required, each at >= `minLevel`. */
   readonly sins: readonly Sin[];
-  /** Minimum level required in EACH listed Sin (sheet "Min sin lvl": 1 for two-Sin toggles, 2 for the four-Sin ones, 3 for Panvitium). */
+  /** Minimum level required in EACH listed Sin (sheet "Min sin lvl": 3 for Panvitium). */
   readonly minLevel: number;
   /** Per-second upkeep. A toggle auto-deactivates if it can't pay this in full (02 §3). */
   readonly costPerSecond: { readonly gold?: number; readonly influence?: number };
-  /** Per-second gold income while active (added to base, scaled by goldRateMul at the tick). */
-  readonly goldPerSecond?: number;
-  /** Per-second influence income while active (subject to influenceRateMul, capped at maxInfluence). */
-  readonly influencePerSecond?: number;
-  /** Per-second reprobate generation contribution (fed into the generation pool). */
-  readonly generationPerSecond?: number;
-  /**
-   * Multiplicative boost to the reprobate generation rate while active: the rate takes
-   * ×(1 + boost) (Bacchanal — "+10% online reprobate generation"). Folded into the modifier
-   * bundle's generation multiplier. Default 0.
-   */
-  readonly generationRateBoost?: number;
-  /**
-   * Multiplicative boost to the suicide-rate multiplier while active: ×(1 + boost)
-   * (Doom Gathering — "+10% suicide rate"). Folded into `reprobateSuicideRateMul`. Default 0.
-   */
-  readonly suicideRateBoost?: number;
-  /**
-   * Multiplicative boost to the murder-rate multiplier while active: ×(1 + boost)
-   * (Enraging Broadcast — "+10% murder rate"). Folded into `murderRateMul`. Default 0.
-   */
-  readonly murderRateBoost?: number;
-  /**
-   * Percentage-of-income upkeep (sheet rev 2026-06-12): each second the ceremony costs
-   * `fraction × the current base gain rate` of the SAME resource the base measures — Vegas pays
-   * 50% of the gold income in gold, Crusade 50% of the influence income in influence. The base
-   * rates are computed by the tick WITHOUT any percentage-VC outputs (so the two can never feed
-   * each other) and passed into `advanceToggles`. Composes with the Foedus upkeep discount and
-   * (hypothetically) the eᵗ ramp like any flat cost. Default: none.
-   */
-  readonly percentCost?: {
-    readonly base: 'goldGain' | 'influenceGain';
-    readonly fraction: number;
-  };
-  /**
-   * Percentage-of-income output (sheet rev 2026-06-12): while active, the ceremony yields
-   * `fraction × the current base gain rate` per second AS the named resource — Vegas turns 1% of
-   * the gold income into influence; Crusade turns 1000% (×10) of the influence income into gold.
-   * Added to the income lines alongside the flat VC outputs (same `vitiumCompositumOutputMul`
-   * and rate multipliers). Default: none.
-   */
-  readonly percentOutput?: {
-    readonly base: 'goldGain' | 'influenceGain';
-    readonly resource: 'gold' | 'influence';
-    readonly fraction: number;
-  };
-  /**
-   * While active, multiplies the offline-gain rate by `(1 + offlineGainBoost)` (Dolce Far Niente).
-   * Folded into `offlineTimeMul`. Default 0.
-   */
-  readonly offlineGainBoost?: number;
   /**
    * If true, the toggle cannot be turned off by hand — it ends only by auto-deactivation when it
    * can no longer pay upkeep (Panvitium, 03 §2.3). Default false (manually dispellable).
@@ -194,64 +137,9 @@ export function deactivateToggle(state: GameState, vcId: string): ToggleResult {
  * Costs are deducted BEFORE income is applied in the tick, so a toggle never earns on a tick it
  * couldn't afford. Unknown ids in `activeToggles` (e.g. from a future-version save) are dropped.
  */
-/**
- * The base gain rates the percentage-VC semantics measure against (sheet rev 2026-06-12): the
- * tick computes these WITHOUT any percentage-VC outputs — Vegas and Crusade can never feed each
- * other — and passes them here for upkeep and into the income lines for output.
- */
-export interface GainRates {
-  readonly goldGainPerSecond: number;
-  readonly influenceGainPerSecond: number;
-}
-
-const ZERO_GAIN_RATES: GainRates = { goldGainPerSecond: 0, influenceGainPerSecond: 0 };
-
-function percentCostPerSecond(
-  def: CompositumDef,
-  rates: GainRates,
-): { gold: number; influence: number } {
-  if (!def.percentCost) return { gold: 0, influence: 0 };
-  const base =
-    def.percentCost.base === 'goldGain' ? rates.goldGainPerSecond : rates.influenceGainPerSecond;
-  const amount = Math.max(0, base) * def.percentCost.fraction;
-  // The cost is paid in the same currency the base measures (Vegas: gold; Crusade: influence).
-  return def.percentCost.base === 'goldGain'
-    ? { gold: amount, influence: 0 }
-    : { gold: 0, influence: amount };
-}
-
-function percentOutputPerSecond(
-  state: GameState,
-  rates: GainRates,
-  resource: 'gold' | 'influence',
-): number {
-  let sum = 0;
-  for (const id of state.lifetime.activeToggles) {
-    const def = COMPOSITA[id];
-    if (!def?.percentOutput || def.percentOutput.resource !== resource) continue;
-    const base =
-      def.percentOutput.base === 'goldGain'
-        ? rates.goldGainPerSecond
-        : rates.influenceGainPerSecond;
-    sum += Math.max(0, base) * def.percentOutput.fraction;
-  }
-  return sum;
-}
-
-/** Σ percentage-VC gold output/s over active toggles (Crusade), given the base gain rates. */
-export function compositumPercentGoldPerSecond(state: GameState, rates: GainRates): number {
-  return percentOutputPerSecond(state, rates, 'gold');
-}
-
-/** Σ percentage-VC influence output/s over active toggles (Vegas), given the base gain rates. */
-export function compositumPercentInfluencePerSecond(state: GameState, rates: GainRates): number {
-  return percentOutputPerSecond(state, rates, 'influence');
-}
-
 export function advanceToggles(
   state: GameState,
   deltaSeconds: number,
-  rates: GainRates = ZERO_GAIN_RATES,
 ): { state: GameState; deactivated: string[] } {
   if (deltaSeconds <= 0 || state.lifetime.activeToggles.length === 0) {
     return { state, deactivated: [] };
@@ -274,10 +162,8 @@ export function advanceToggles(
     const dur = durations[vcId] ?? 0;
     const growth = def.costGrowthPerSecond ? Math.pow(def.costGrowthPerSecond, dur) : 1;
     const foedusMul = compositumFoedusUpkeepMul(state, def);
-    const pct = percentCostPerSecond(def, rates);
-    const goldCost = ((def.costPerSecond.gold ?? 0) + pct.gold) * growth * foedusMul * deltaSeconds;
-    const inflCost =
-      ((def.costPerSecond.influence ?? 0) + pct.influence) * growth * foedusMul * deltaSeconds;
+    const goldCost = (def.costPerSecond.gold ?? 0) * growth * foedusMul * deltaSeconds;
+    const inflCost = (def.costPerSecond.influence ?? 0) * growth * foedusMul * deltaSeconds;
     const canPay =
       Number.isFinite(goldCost) &&
       Number.isFinite(inflCost) &&
@@ -331,70 +217,6 @@ export function advanceToggles(
 export function compositumFoedusUpkeepMul(state: GameState, def: CompositumDef): number {
   if (def.foedusOptOut === true) return 1;
   return foedusUpkeepMul(foedusTier(state));
-}
-
-// ── Aggregate effect helpers (consumed by tick / dynamics) ─────────────────────
-
-/** Sum of `goldPerSecond` across active toggles. */
-export function compositumGoldPerSecond(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles) s += compositumById(id)?.goldPerSecond ?? 0;
-  return s;
-}
-
-/** Sum of `influencePerSecond` across active toggles. */
-export function compositumInfluencePerSecond(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles) s += compositumById(id)?.influencePerSecond ?? 0;
-  return s;
-}
-
-/** Sum of `generationPerSecond` across active toggles. */
-export function compositumGenerationPerSecond(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles) s += compositumById(id)?.generationPerSecond ?? 0;
-  return s;
-}
-
-/**
- * Π(1 + generationRateBoost × effectMul) over active toggles (Bacchanal) — folds into the
- * generation mul. `effectMul` is the Gusion #11 / Naberius #24 ceremony-EFFECT channel (sheet rev
- * 2026-06-12); it scales the boost magnitudes, never the gold/influence outputs.
- */
-export function compositumGenerationRateMul(state: GameState, effectMul = 1): number {
-  let mul = 1;
-  for (const id of state.lifetime.activeToggles) {
-    const def = COMPOSITA[id];
-    if (def?.generationRateBoost) mul *= 1 + def.generationRateBoost * effectMul;
-  }
-  return mul;
-}
-
-/** Π(1 + suicideRateBoost × effectMul) over active toggles (Doom Gathering). */
-export function compositumSuicideRateMul(state: GameState, effectMul = 1): number {
-  let mul = 1;
-  for (const id of state.lifetime.activeToggles) {
-    const def = COMPOSITA[id];
-    if (def?.suicideRateBoost) mul *= 1 + def.suicideRateBoost * effectMul;
-  }
-  return mul;
-}
-
-/** Π(1 + murderRateBoost × effectMul) over active toggles (Enraging Broadcast). */
-export function compositumMurderRateMul(state: GameState, effectMul = 1): number {
-  let mul = 1;
-  for (const id of state.lifetime.activeToggles) {
-    const def = COMPOSITA[id];
-    if (def?.murderRateBoost) mul *= 1 + def.murderRateBoost * effectMul;
-  }
-  return mul;
-}
-
-/** Sum of offline-gain boosts across active toggles (Dolce Far Niente). */
-export function compositumOfflineGainBoost(state: GameState): number {
-  let s = 0;
-  for (const id of state.lifetime.activeToggles) s += compositumById(id)?.offlineGainBoost ?? 0;
-  return s;
 }
 
 /**
