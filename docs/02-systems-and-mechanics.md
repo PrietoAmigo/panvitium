@@ -9,9 +9,10 @@ disagree. The fiction underneath everything is `00-lore-bible.md`; build decisio
 
 This revision incorporates **ADR-024** (reprobates are a single pool; subtypes and the conversion
 mechanic are removed), the **Vitium Mercatura / Vitium Compositum redesign** (the business grid
-and build queue retired), and the **Depraedatio gold rework** (the Mercatus system retired in
-favour of the Faeneratio loop — Mutuum, Thesaurus, Syngraphae — with the Foedus re-anchored to
-the hoard).
+and build queue retired), the **Depraedatio gold rework** (the Mercatus system retired in favour
+of the Faeneratio loop — Mutuum, Thesaurus, Syngraphae — with the Foedus re-anchored to the
+hoard), and the **Vitium Compositum retirement** (ADR-031: the eight lesser ceremonies removed;
+Panvitium alone survives and lives on the Suasio scroll).
 
 ---
 
@@ -56,8 +57,8 @@ would lose meaningful progress.
 - **Role:** the operating budget. Most everyday Opera actions consume gold; the Thesaurus locks
   it in lumps and the Syngraphae burn it in lumps.
 - **Spending:** *Decimatio* actions, Thesaurus deposits (locked, punitive to reclaim), Syngrapha
-  signing fees (burned), *Vitium Compositum* upkeep, *Indagatio* searches, *Emptio* purchases,
-  some invocations.
+  signing fees (burned), *Panvitium* upkeep, *Indagatio* searches, *Emptio* purchases, some
+  invocations.
 - **Reset on Katabasis:** yes. The hoard is liquidated into gold in full first (§6), then a
   percentage of the resulting gold remains when coming back; the base remaining percentage is in
   the spreadsheet and is modified by Avaritia level, sigils (Purson #20), and the Peculium
@@ -68,7 +69,7 @@ would lose meaningful progress.
 - **Source:** generated passively as a *proportion of maximum influence*, capped at maximum
   influence. Base rate and base maximum are in the spreadsheet (`Globals`).
 - **Role:** the social budget. Drives maximum acolyte count (§10) and is consumed by *Suasio*,
-  *Vitium Compositum* toggles, and several invocations.
+  the *Panvitium* toggle, and several invocations.
 - **Maximum influence** is itself a modifiable value (Vanagloria's Acclaim skill, Spear of
   Longinus, Marchosias #35).
 - **Reset on Katabasis:** yes — back to the base maximum and zero acolytes.
@@ -143,8 +144,8 @@ The Opera is the action surface of a lifetime: everything the player does betwee
 ### Action types
 
 - **One-shot** actions with a duration (e.g. *Suggestion*, *Caedes*, *Indagatio*).
-- **Toggles** that consume resources per second while active (e.g. the *Vitium Compositum*
-  ceremonies, *Panvitium*). A one-shot action also gains an **auto-repeat** toggle once its Sin
+- **Toggles** that consume resources per second while active (*Panvitium* — since ADR-031 the
+  only ceremony toggle). A one-shot action also gains an **auto-repeat** toggle once its Sin
   reaches the spreadsheet's toggle level (the same gate that opens delegation): flip it on and the
   rite re-casts itself in the player's slot — paying each cycle, retrying after a stall — until the
   player flips it off or can no longer afford it. Because only one player-driven rite holds the slot
@@ -178,7 +179,7 @@ over any older prose.
 - **`time`** (*Indagatio*, *Emptio*): efficiency divides the *action's duration*. Costs and the
   tier distribution are not affected. (*Emptio* additionally pays the targeted maleficium's gold
   price, unaffected by efficiency.)
-- **Toggle scaling** (*Vitium Compositum*): the ceremony ticks at a fixed cadence unaffected by
+- **Toggle scaling** (*Panvitium*): the ceremony ticks at a fixed cadence unaffected by
   efficiency; efficiency multiplicatively scales the per-tick costs, outputs, and effects.
 
 A new action category arriving later declares its own mode at the same site. Modes can be added;
@@ -209,8 +210,7 @@ carry it out for free, so they add output without adding to the influence bill.
   takes time.
 - **Acolytes** each run at most one delegated action at the acolyte's efficiency; the action shape
   and rules are the same as the player's, except a delegated cycle costs no resources (and so never
-  stalls). Acolytes can also be assigned to help run a *Vitium Compositum* ceremony, adding their
-  contribution to its effective efficiency.
+  stalls).
 - **Invocations** with an autonomous-runner effect (Familiar, Imp, Upir, …) run their action in
   their own channel without occupying the player's slot, and carry it out for free — a cost-outcome
   cycle pays no resource cost, so it never stalls. (The invocation's per-second summon upkeep is a
@@ -234,7 +234,7 @@ cost outruns the treasury, *Panvitium* ends.
 |---|---|---|
 | **Suasio** | "Persuasion / temptation" | Corrupt ordinary humans into reprobates. |
 | **Decimatio** | "Culling" | Kill reprobates to harvest souls. |
-| **Depraedatio** | "Plundering / despoliation" | The vice economy: the eight *Vitium Mercatura* trades and the *Vitium Compositum* ceremonies (including *Panvitium*). |
+| **Depraedatio** | "Plundering / despoliation" | The vice economy: the Faeneratio loop — the *Mutuum* loan book, the *Thesaurus* hoard, and the *Syngraphae* contract tree. |
 | **Indagatio** | "Searching out" | Hunt for maleficia. |
 | **Emptio** | "Purchase" | Buy maleficia from the discovered market. |
 | **Invocatio** | "Summoning" | Summon and maintain invocations. |
@@ -431,8 +431,7 @@ Lesser practitioners who do the work's lower offices (`00-lore-bible.md` §9). M
   **loops**: the acolyte runs its action cycle after cycle — for free, consuming no gold/influence —
   and stays assigned until the player recalls it (or Katabasis clears the retinue). Because a
   delegated cycle costs nothing, it never stalls on an empty treasury. It is set-and-forget
-  automation, not a single errand. Acolytes can instead be assigned to help run a *Vitium
-  Compositum* ceremony, summing into its efficiency.
+  automation, not a single errand.
 - **Limits.** Acolytes cannot run actions that require specific maleficia. At most four are
   visualized in the Altar room (per-count background plates); further acolytes work unseen.
 - **Desertion** is a Katabasis-time fiction beat (the unfaithful loot what is portable) — it is
@@ -505,9 +504,10 @@ The 2015-era seat of the worldly operation: a desk, a PC, a smartphone, a window
 
 - **The PC.** Opens the worldly programs: the **Depraedatio** panel (the Thesaurus tab — the
   Mutuum loan book, the hoard, deposit/withdraw, the global Foedus badge — and the Syngraphae
-  contract tree, alongside Vitium Compositum), the *Decimatio* and *Indagatio* actions, the
-  *Emptio* market, achievements, the event log, and the **email** client (the content channel —
-  `00-lore-bible.md` §10).
+  contract tree), the *Decimatio* and *Indagatio* actions, the *Emptio* market, achievements, the
+  event log, and the **email** client (the content channel — `00-lore-bible.md` §10).
 - **The smartphone** carries the incoming and outgoing calls.
-- **The Suasio scroll.** The *Suasio* actions and their delegation.
+- **The Suasio scroll.** The *Suasio* actions and their delegation, plus **Panvitium** as the
+  scroll's sealed fourth rite (ADR-031) — redacted Latin until every Sin reaches level III, then
+  the Unleash control with its confirming second press.
 - **The window** is the *Panvitium* signature. The screenshot moment.

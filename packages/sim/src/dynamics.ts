@@ -23,7 +23,7 @@ import {
   BASE_SUICIDE_RATE_PER_SECOND,
   BASE_MURDER_RATE_PER_SECOND,
 } from './constants.js';
-import { compositumGenerationPerSecond, panvitiumRate } from './compositum.js';
+import { panvitiumRate } from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobates } from './population.js';
 import { type GameState, totalReprobates } from './state.js';
@@ -44,16 +44,13 @@ export interface ReprobateRates {
 /** Compute the rates from the state, given a precomputed Modifiers bundle (tick already has it). */
 export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRates {
   const population = totalReprobates(state);
-  // The Mercatus `genPerDepth × d` channel retired with the trades (Depraedatio gold rework §6);
-  // nothing replaces it by default — population-proportional growth stays Bacchanal's exclusive
-  // niche, and any compensation is a base-constant decision on the sheet.
+  // The Mercatus `genPerDepth × d` channel retired with the trades (Depraedatio gold rework §6)
+  // and the ceremony generation channel with the lesser ceremonies (ADR-031); any compensation is
+  // a base-constant decision on the sheet.
   const baseGen =
     BASE_REPROBATE_GENERATION_PER_SECOND +
-    compositumGenerationPerSecond(state) +
     panvitiumRate(state) + // Panvitium: R(t) = 0.01·eᵗ is also a flat generation increase
     mods.flatGenerationPerSecond; // Ose #57 — flat births/s from the sigil channel
-  // The ceremony rate BOOSTS (Bacchanal generation, Doom suicide, Enraging murder — sheet rev
-  // 2026-06-12) live in the modifier bundle, so they arrive through the three multipliers below.
   // The flat per-capita additions: Nightmares + Sabnock #43 (suicide), Glasya-Labolas #25 (murder).
   const suicideBase = BASE_SUICIDE_RATE_PER_SECOND + mods.flatBaseSuicideRatePerSecond;
   const murderBase = BASE_MURDER_RATE_PER_SECOND + mods.flatBaseMurderRatePerSecond;

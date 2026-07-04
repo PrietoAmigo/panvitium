@@ -43,12 +43,6 @@ import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
 import { SYNGRAPHAE, hoardMilestoneBonus, syngraphaSigned } from './syngraphae.js';
-import {
-  compositumGenerationRateMul,
-  compositumMurderRateMul,
-  compositumSuicideRateMul,
-} from './compositum.js';
-import { compositumOfflineGainBoost } from './compositum.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import {
   sigilMaleficiaEffectMul,
@@ -171,22 +165,6 @@ export interface Modifiers {
   readonly escheatGoldPerMurder: number;
   readonly escheatGoldPerSuicide: number;
   /**
-   * Multiplier on Vitium Compositum gold output (Zagan #61). Applied to `compositumGoldPerSecond`
-   * at the tick's gold-income site, parallel to `faenerationOutputMul` for the loan book. Default 1×.
-   */
-  readonly vitiumCompositumOutputMul: number;
-  /**
-   * Multiplier on the VC INFLUENCE output (Orias #59) — the flat ceremony influence plus Vegas'
-   * percentage conversion — applied at the tick's influence line; the gold side keeps
-   * `vitiumCompositumOutputMul` (Zagan #61). Default 1×.
-   */
-  readonly vitiumCompositumInfluenceOutputMul: number;
-  /**
-   * Multiplier on the VC ceremonies' EFFECT magnitudes (Gusion #11 / Naberius #24): each rate
-   * boost composes as ×(1 + boost × this) — incomes are explicitly excluded. Default 1×.
-   */
-  readonly vitiumCompositumEffectMul: number;
-  /**
    * Per-acolyte action efficiency (02 §10). Default 0.33: an acolyte runs an action at one-third
    * of the player's own efficiency. Future sources fold in multiplicatively: Bathin #18, Satan
    * level (each +33%), other acolyte-tagged sigils. Read by the acolyte tick when starting a new
@@ -240,9 +218,6 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   thesaurusRecoveryMul: 1,
   escheatGoldPerMurder: 0,
   escheatGoldPerSuicide: 0,
-  vitiumCompositumOutputMul: 1,
-  vitiumCompositumInfluenceOutputMul: 1,
-  vitiumCompositumEffectMul: 1,
   acolyteEfficiencyMul: 0.33,
   invocationEfficiencyMul: 1,
   invocationSinEffectivenessMul: {
@@ -360,8 +335,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const sigMul = maleficiaSigilMul * sigilSelfEffectMul(state, maleficiaSigilMul);
   const sig = sigilModifierContributions(state, sigMul);
   const sc = (f: ScalarModifierField): number => sig.scalar[f] ?? 1;
-  // Gusion #11 / Naberius #24: the VC ceremony-EFFECT channel, hoisted for the three rate lines.
-  const vcEffectMul = sc('vitiumCompositumEffectMul');
   // Flat per-second generators (Haagenti #48 gold, Decarabia #69 influence), scaled by enhancers.
   const flatGen = sigilFlatGeneration(state, sigMul);
 
@@ -515,18 +488,15 @@ export function computeModifiers(state: GameState): Modifiers {
       (hasAdderStone ? 1.05 : 1) * // Adder Stone ×1.05 reprobate generation
       (state.lifetime.handOfGloryRemaining > 0 ? HAND_OF_GLORY_GENERATION_MUL : 1) *
       skillBonus(luxuriaIntensity) *
-      compositumGenerationRateMul(state, vcEffectMul) * // Bacchanal +10% ×(Gusion/Naberius)
       sc('reprobateGenerationRateMul') *
       faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill)
-    // moved to acolyte efficiency, and the per-level doubling is retired. The Mercatus Tristitiae
-    // despair clause retired with the trades (Depraedatio gold rework §9); the pressure sources
-    // are ceremonies, maleficia and sigils. Panvitium multiplies while active.
+    // moved to acolyte efficiency, and the per-level doubling is retired. The pressure sources
+    // are maleficia, invocations and sigils. Panvitium multiplies while active.
     reprobateSuicideRateMul:
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
       (hasWitchLadder ? 1.05 : 1) * // Witch Ladder ×1.05 suicide rate
-      compositumSuicideRateMul(state, vcEffectMul) * // Doom Gathering +10% ×(Gusion/Naberius)
       sc('reprobateSuicideRateMul'),
     // Murder: Panvitium multiplies while active; Aim #23 sigil composes. The Mercatus Irae clause
     // retired with the trades. Murder is a per-capita cull of the whole population.
@@ -535,7 +505,6 @@ export function computeModifiers(state: GameState): Modifiers {
       (hasMarkOfCain ? 3 : 1) * // Mark of Cain ×3 murder rate (sheet rev 2026-06-12)
       (hasPoppet ? 1.05 : 1) * // Poppet ×1.05 murder rate
       (hasGaldrabok ? 1.15 : 1) * // Galdrabók ×1.15 murder rate
-      compositumMurderRateMul(state, vcEffectMul) * // Enraging Broadcast +10% ×(Gusion/Naberius)
       sc('murderRateMul'),
     // Faeneratio output (Mutuum + Thesaurus interest): each Plutus lifts it (flat factor),
     // Vapula #60 sigil composes; applied to the summed term at the tick's gold-income line.
@@ -553,13 +522,6 @@ export function computeModifiers(state: GameState): Modifiers {
     // Escheat (faeneratio-2): flat gold per applied murder / suicide, minted in `dynamics`.
     escheatGoldPerMurder: escheatGoldPerMurderV,
     escheatGoldPerSuicide: escheatGoldPerSuicideV,
-    // VC influence output (Orias #59): the ceremonies' influence line at the tick.
-    vitiumCompositumInfluenceOutputMul: sc('vitiumCompositumInfluenceOutputMul'),
-    // VC ceremony EFFECT magnitudes (Gusion #11 / Naberius #24), already folded into the three
-    // rate multipliers above; exported so analytics and tests can read the channel.
-    vitiumCompositumEffectMul: vcEffectMul,
-    // Vitium Compositum gold output: Zagan #61 sigil composes; applied to compositumGoldPerSecond.
-    vitiumCompositumOutputMul: sc('vitiumCompositumOutputMul'),
     // Acolyte efficiency: 0.33 baseline (02 §10); Tristitia's Resignation SKILL lifts it
     // continuously (sheet rev 2026-06-12); Bathin #18 sigil composes on top.
     acolyteEfficiencyMul: 0.33 * skillBonus(tristitiaIntensity) * sc('acolyteEfficiencyMul'),
@@ -567,14 +529,12 @@ export function computeModifiers(state: GameState): Modifiers {
     // rev 2026-06-12). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
     invocationEfficiencyMul: invEff,
     invocationSinEffectivenessMul: invSinEff,
-    // Offline time scaling: Acedia's Procrastination skill lifts (03 §1, continuous); Dolce Far
-    // Niente lifts it ×(1 + boost) while active; Acedia's per-level effect compounds on top
-    // dynamically in `session.resumeGame` (it depends on the offline duration itself). The
-    // Mercatus Acediae per-depth lift retired with the trades. The PLAYER_OFFLINE_EFFICIENCY 0.5
-    // base is applied separately in `resumeGame`, NOT here, so this multiplier stays 1-neutral online.
+    // Offline time scaling: Acedia's Procrastination skill lifts (03 §1, continuous); Acedia's
+    // per-level effect compounds on top dynamically in `session.resumeGame` (it depends on the
+    // offline duration itself). The PLAYER_OFFLINE_EFFICIENCY 0.5 base is applied separately in
+    // `resumeGame`, NOT here, so this multiplier stays 1-neutral online.
     offlineTimeMul:
       skillBonus(acediaIntensity) *
-      (1 + compositumOfflineGainBoost(state)) *
       (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEffFor('acedia') * lemureCount) *
       sc('offlineTimeMul'),
   };

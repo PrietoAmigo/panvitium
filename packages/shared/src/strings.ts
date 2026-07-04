@@ -81,18 +81,23 @@ export const strings = {
       suggestion: 'A word left where a thought will find it.',
       logismoi: 'Eight intruding voices, each the sinner\u2019s own.',
       imperium: 'No longer asked.',
+      panvitium: 'The Sins take the streets, and the streets burn.',
     } as Record<string, string>,
     // Per-temptation verb on the action button.
     suasioCta: {
       suggestion: 'Speak',
       logismoi: 'Infiltrate',
       imperium: 'Command',
+      panvitium: 'Unleash',
     } as Record<string, string>,
+    // Panvitium is irreversible while it burns \u2014 the Unleash verb takes a second, confirming press.
+    suasioConfirm: 'Let it burn?',
     // The flicker line shown while a temptation is underway.
     suasioStatus: {
       suggestion: 'A word is being left\u2026',
       logismoi: 'The voices press in, and will not relent\u2026',
       imperium: 'The command takes hold\u2026',
+      panvitium: 'Burning\u2026 it ends only when the treasury does.',
     } as Record<string, string>,
     // A locked temptation is sealed: its name and maxim show as unreadable, redacted Latin.
     suasioSealed: {
@@ -104,9 +109,18 @@ export const strings = {
         name: 'Xherum Volctan',
         maxim: 'Qoth velim sarnu, ut nescias quod petat.',
       },
+      panvitium: {
+        name: 'Zvorreth Ommurn',
+        maxim: 'Ulthaq nerrum vasce, donec omnia ardeant.',
+      },
     } as Record<string, { name: string; maxim: string }>,
     // Gate prefix for a sealed row, e.g. \u201cRequires Luxuria III\u201d.
     suasioRequires: 'Requires',
+    // Panvitium's gate on the scroll (all eight Sins at level III).
+    suasioPanvitiumGate: 'Every Sin III',
+    // Panvitium on the scroll: its open name and the ramping-cost suffix on the cost line.
+    panvitium: 'Panvitium',
+    panvitiumRising: 'and rising',
 
     // Decimatio \u2014 \u201cThe Breathing Dark\u201d (Claude Design rework). The culling program\u2019s PC
     // body: three rites, a live Reprobates KPI, and the \u201cIndex Opervm\u201d ledger of real outcomes.
@@ -162,7 +176,6 @@ export const strings = {
     mutuum: 'Mutuum',
     mutuumBlurb:
       'Small sums, lent through brokers against tomorrow\u2019s vice. The interest climbs the ledger to its unnamed head.',
-    mutuumLocked: 'No broker will carry paper for a creditor without standing. (Avaritia I)',
     /** The loan book's living collateral: "1,234 debtors". */
     debtors: 'debtors',
     /** Thesaurus \u2014 the hoard. */
@@ -206,20 +219,23 @@ export const strings = {
       'faeneratio-2': 'Escheat',
       'custodia-4': 'Peculium',
     } as Record<string, string>,
-    /** One line per node, shown on its card. */
+    /** One line per node, shown on its card — numbers first, so the gain is never a riddle. */
     nodeEffects: {
-      'usura-1': 'The Fenus runs half again as rich.',
-      'usura-2': 'The Fenus runs half again as rich.',
-      'usura-3': 'The Fenus doubles.',
-      'usura-4': 'Interest upon interest, by contract: half of each payment joins the hoard.',
-      'faeneratio-1': 'The loan book takes half again per debtor.',
-      'faeneratio-2': 'The estates of the dead escheat to creditors unseen.',
-      'faeneratio-3': 'The loan book\u2019s take doubles.',
-      'faeneratio-4': 'At the descent, the hoard\u2019s liquidation pays a quarter over.',
-      'custodia-1': 'The counting house releases more of what it holds.',
-      'custodia-2': 'A swelling hoard quickens all gold \u2014 by its decades, to a fifth over.',
-      'custodia-3': 'The counting house releases more still.',
-      'custodia-4': 'A remnant beneath the ruin, held back by contract.',
+      'usura-1': 'Interest rate \u00d71.5.',
+      'usura-2': 'Interest rate \u00d71.5 (stacks to \u00d72.25).',
+      'usura-3': 'Interest rate \u00d72 (stacks to \u00d74.5).',
+      'usura-4':
+        'Half of each interest payment auto-deposits into the hoard \u2014 interest upon interest, by contract.',
+      'faeneratio-1': 'Loan-book take \u00d71.5 per debtor.',
+      'faeneratio-2':
+        '+1 gold per murder, +0.5 gold per suicide \u2014 the estates of the dead escheat.',
+      'faeneratio-3': 'Loan-book take \u00d72 (stacks to \u00d73).',
+      'faeneratio-4': 'The Katabasis hoard liquidation pays \u00d71.25.',
+      'custodia-1': 'Withdrawal recovery \u00d71.6 \u2014 25% becomes 40%.',
+      'custodia-2': '+2% gold gain per decade of hoard above 1,000, capped at +20%.',
+      'custodia-3': 'Withdrawal recovery \u00d71.5 \u2014 stacks to 60%.',
+      'custodia-4':
+        'At the descent, kept gold is floored at 10% of the hoard \u2014 a remnant held back by contract.',
     } as Record<string, string>,
   },
   acolytes: {
@@ -236,53 +252,6 @@ export const strings = {
     stop: 'Auto · on',
     /** Accessible / tooltip text. */
     label: 'Repeat this rite automatically',
-  },
-  compositum: {
-    heading: 'Vitium Compositum',
-    start: 'Begin',
-    stop: 'End',
-    noCost: 'no upkeep',
-    /** Percentage-VC copy (Vegas / Crusade, ADR-027). */
-    ofGoldGain: 'of your gold income',
-    ofInfluenceGain: 'of your influence income',
-    toBreeding: 'to the breeding',
-    toDespair: 'to the despair',
-    toKnives: 'to the knives',
-    cost: 'Cost',
-    outcomes: 'Expected outcomes',
-    noOutcome: '\u2014',
-    rising: 'and rising',
-    converts: 'converts',
-    only: 'only',
-    breeds: 'breeds reprobates at',
-    of: 'of',
-    slowsBirths: 'slows reprobate births by',
-    raisesSuicide: 'raises base suicide rate by',
-    raisesMurder: 'raises base murder rate by',
-    culls: 'culls',
-    ofAll: 'of all reprobates/s',
-    deepens: 'deepens',
-    penaltiesBy: 'penalties by',
-    offlineGain: 'offline gain rate',
-    panvitiumEffect: 'harvests souls and breeds reprobates, ramping each second',
-    names: {
-      bacchanal: 'Bacchanal',
-      charity: 'Charity Drive',
-      gala: 'Gala',
-      'doom-gathering': 'Doom Gathering',
-      'enraging-broadcast': 'Enraging Broadcast',
-      'dolce-far-niente': 'Dolce Far Niente',
-      vegas: 'Vegas',
-      crusade: 'Crusade',
-      panvitium: 'Panvitium',
-    } as Record<string, string>,
-    panvitiumGate: 'Requires every Sin at Level III.',
-    panvitiumReady: 'The streets are ready to burn. 1000 gold/s, 100 influence/s — and rising.',
-    panvitiumActive: 'The Sins have taken the streets.',
-    panvitiumBurning: 'Burning\u2026',
-    panvitiumBegin: 'Unleash',
-    panvitiumConfirm: 'Yes \u2014 let it all burn',
-    panvitiumCancel: 'Not yet',
   },
   invocations: {
     intro: 'Names called up from below. Each asks a price in souls and stays until dispelled.',

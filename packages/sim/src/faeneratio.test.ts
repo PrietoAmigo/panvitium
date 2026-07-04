@@ -1,7 +1,8 @@
 /**
  * Faeneratio loop tests (Depraedatio gold rework spec §13). Pins:
- *   - Mutuum: zero below Avaritia L1; scales with reprobates; obeys `faenerationOutputMul`,
- *     `mutuumPerCapitaMul` and `goldRateMul`; one big tick equals the sum of small ticks
+ *   - Mutuum: open from the start (the gating rebalance removed the Avaritia-I gate); scales with
+ *     reprobates; obeys `faenerationOutputMul`, `mutuumPerCapitaMul` and `goldRateMul`; one big
+ *     tick equals the sum of small ticks
  *   - Thesaurus: deposit/withdraw floor semantics (ADR-005); withdraw recovery math + the 0.9 cap;
  *     fractional interest accrual (big tick ≡ Σ small ticks); interest frozen mid-descent and
  *     under Morpheus
@@ -9,7 +10,6 @@
  *     other half, the HUD rate shows the liquid half only
  *   - Foedus: global tier boundaries at T0 decades, cap 4, tier 0 below T0; the upkeep discount on
  *     a ramped (Panvitium) cost; `foedusOptOut` suppression
- *   - the percentage ceremonies (ADR-027) measure the new income terms via `baseGainRates`
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -17,7 +17,6 @@ import {
   computeModifiers,
   createInitialState,
   depositThesaurus,
-  faenerationUnlocked,
   FENUS_RATE,
   foedusTier,
   foedusUpkeepMul,
@@ -38,11 +37,6 @@ function fresh(seed = 'faeneratio', t = 0): GameState {
   return createInitialState(seed, t);
 }
 
-/** Avaritia at level 1 (devotion 180) — the Faeneratio unlock. */
-function unlocked(s: GameState = fresh()): GameState {
-  return { ...s, devotion: { ...s.devotion, avaritia: bn(180) } };
-}
-
 function withReprobates(s: GameState, n: number): GameState {
   return { ...s, lifetime: { ...s.lifetime, reprobates: n } };
 }
@@ -58,18 +52,16 @@ function withGold(s: GameState, n: number): GameState {
 const goldOf = (s: GameState): number => s.lifetime.gold.toNumber();
 
 describe('Mutuum — the loan book', () => {
-  it('is locked (zero) below Avaritia level 1, whatever the population', () => {
-    const s = withReprobates(fresh(), 100_000);
-    expect(faenerationUnlocked(s)).toBe(false);
-    expect(mutuumGoldPerSecond(s, computeModifiers(s))).toBe(0);
+  it('is open from the start (the gating rebalance removed the Avaritia-I gate)', () => {
+    const s = withReprobates(fresh(), 1000); // Avaritia devotion 0
+    expect(mutuumGoldPerSecond(s, computeModifiers(s))).toBeCloseTo(MUTUUM_PER_CAPITA * 1000, 9);
   });
 
-  it('opens at Avaritia level 1 and scales linearly with the living reprobates', () => {
-    const s = withReprobates(unlocked(), 1000);
-    expect(faenerationUnlocked(s)).toBe(true);
+  it('scales linearly with the living reprobates', () => {
+    const s = withReprobates(fresh(), 1000);
     const mods = computeModifiers(s);
     expect(mutuumGoldPerSecond(s, mods)).toBeCloseTo(MUTUUM_PER_CAPITA * 1000, 9);
-    const twice = withReprobates(unlocked(), 2000);
+    const twice = withReprobates(fresh(), 2000);
     expect(mutuumGoldPerSecond(twice, computeModifiers(twice))).toBeCloseTo(
       MUTUUM_PER_CAPITA * 2000,
       9,
@@ -77,7 +69,7 @@ describe('Mutuum — the loan book', () => {
   });
 
   it('obeys mutuumPerCapitaMul; the tick composes faenerationOutputMul and goldRateMul on top', () => {
-    const s = withReprobates(unlocked(), 1000);
+    const s = withReprobates(fresh(), 1000);
     const boosted = mutuumGoldPerSecond(s, { ...NEUTRAL_MODIFIERS, mutuumPerCapitaMul: 2 });
     expect(boosted).toBeCloseTo(MUTUUM_PER_CAPITA * 1000 * 2, 9);
     // Through the tick: a Plutus (faenerationOutputMul) and Midas (goldRateMul ×3) both scale the
@@ -95,7 +87,7 @@ describe('Mutuum — the loan book', () => {
   it('one big tick equals the sum of small ticks (population steady over the span)', () => {
     // 100 reprobates over 10 s accrue <1 in both death pools, so the population — and with it the
     // Mutuum take — holds steady; the two paths must then agree exactly (ADR-004).
-    const s = withReprobates(unlocked(), 100);
+    const s = withReprobates(fresh(), 100);
     const big = tick(s, 10).state;
     let small = s;
     for (let i = 0; i < 100; i++) small = tick(small, 0.1).state;
@@ -105,7 +97,7 @@ describe('Mutuum — the loan book', () => {
 
 describe('Thesaurus — deposit / withdraw', () => {
   it('deposit floors at the spend boundary and moves gold into the hoard', () => {
-    const s = withGold(unlocked(), 500);
+    const s = withGold(fresh(), 500);
     const r = depositThesaurus(s, 100.7);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -113,14 +105,14 @@ describe('Thesaurus — deposit / withdraw', () => {
     expect(r.state.lifetime.hoard.toNumber()).toBe(100);
   });
 
-  it('refuses a deposit beyond liquid gold, below the unlock, or of nothing', () => {
-    expect(depositThesaurus(withGold(unlocked(), 50), 100).ok).toBe(false);
-    expect(depositThesaurus(withGold(fresh(), 500), 100).ok).toBe(false); // Avaritia 0
-    expect(depositThesaurus(withGold(unlocked(), 500), 0).ok).toBe(false);
+  it('refuses a deposit beyond liquid gold or of nothing; Avaritia 0 is no bar', () => {
+    expect(depositThesaurus(withGold(fresh(), 50), 100).ok).toBe(false);
+    expect(depositThesaurus(withGold(fresh(), 500), 100).ok).toBe(true); // no gate any more
+    expect(depositThesaurus(withGold(fresh(), 500), 0).ok).toBe(false);
   });
 
   it('withdraw removes the FULL amount from the hoard and returns the recovery fraction, floored', () => {
-    const s = withHoard(unlocked(), 1000);
+    const s = withHoard(fresh(), 1000);
     const r = withdrawThesaurus(s, 101, computeModifiers(s));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -139,7 +131,7 @@ describe('Thesaurus — deposit / withdraw', () => {
   });
 
   it('refuses a withdrawal beyond the hoard', () => {
-    const s = withHoard(unlocked(), 50);
+    const s = withHoard(fresh(), 50);
     expect(withdrawThesaurus(s, 100, computeModifiers(s)).ok).toBe(false);
   });
 });
@@ -269,27 +261,8 @@ describe('Foedus — the global hoard tier', () => {
 
   it('foedusOptOut suppresses the discount for that ceremony', () => {
     const rich = withHoard(fresh(), 10_000_000); // tier 4
-    const def = COMPOSITA.bacchanal!;
+    const def = COMPOSITA.panvitium!;
     expect(compositumFoedusUpkeepMul(rich, def)).toBeCloseTo(0.5, 9);
     expect(compositumFoedusUpkeepMul(rich, { ...def, foedusOptOut: true })).toBe(1);
-  });
-});
-
-describe('the percentage ceremonies measure the Faeneratio terms (ADR-027 / spec §6)', () => {
-  it('Vegas converts 1% of a gold income that includes the Mutuum take', () => {
-    // Two Vegas states differing only in population: the influence yield must track the Mutuum
-    // term inside the percentage base.
-    const vegasState = (reprobates: number): GameState => {
-      const s = withReprobates(withGold(unlocked(), 1_000_000), reprobates);
-      return { ...s, lifetime: { ...s.lifetime, activeToggles: ['vegas'] } };
-    };
-    const inflGain = (s: GameState): number =>
-      tick(s, 1).state.lifetime.influence.toNumber() - s.lifetime.influence.toNumber();
-    const idle = inflGain(vegasState(0));
-    const busy = inflGain(vegasState(1000)); // +50 gold/s of Mutuum in the base
-    expect(busy).toBeGreaterThan(idle);
-    // The base rate carries goldRateMul (Avaritia's Golden Hand intensity at devotion 180).
-    const rateMul = computeModifiers(vegasState(0)).goldRateMul;
-    expect(busy - idle).toBeCloseTo(0.01 * MUTUUM_PER_CAPITA * 1000 * rateMul, 3);
   });
 });

@@ -22,11 +22,6 @@ function patchSouls(v: number): void {
   useGameStore.setState({ state: { ...s, souls: bn(v) } });
 }
 
-function patchDevotion(sin: 'gula' | 'avaritia', value: number): void {
-  const s = store().state as GameState;
-  useGameStore.setState({ state: { ...s, devotion: { ...s.devotion, [sin]: bn(value) } } });
-}
-
 /** Raise max influence so acolytes can be recruited (first acolyte unlocks at 242). */
 function patchMaxInfluence(v: number): void {
   const s = store().state as GameState;
@@ -214,7 +209,7 @@ describe('gameStore — Katabasis', () => {
         lifetime: {
           ...s0.lifetime,
           hoard: bn(400),
-          activeToggles: ['bacchanal'],
+          activeToggles: ['panvitium'],
           invocations: { imp: 1 },
         },
       },
@@ -288,23 +283,21 @@ describe('gameStore — recap & title count as offline time (not a freeze)', () 
 });
 
 describe('gameStore — Depraedatio (deposit / withdraw / sign)', () => {
-  it('refuses a deposit while Avaritia is below level 1', () => {
+  it('deposits with Avaritia at 0 — the gating rebalance removed the unlock', () => {
     patchGold(1000);
     store().depositThesaurus(100);
-    expect(store().state?.lifetime.hoard.toNumber()).toBe(0);
-    expect(store().notice).toMatch(/level 1/);
+    expect(store().state?.lifetime.hoard.toNumber()).toBe(100);
+    expect(store().notice).toBeNull();
   });
 
   it('refuses a deposit when gold is insufficient', () => {
-    patchDevotion('avaritia', 180); // exactly L1
     patchGold(40);
     store().depositThesaurus(100);
     expect(store().state?.lifetime.hoard.toNumber()).toBe(0);
     expect(store().notice).toMatch(/gold/i);
   });
 
-  it('deposits instantly when gated and paid, leaving the player slot free', () => {
-    patchDevotion('avaritia', 180);
+  it('deposits instantly when paid, leaving the player slot free', () => {
     patchGold(2000);
     store().depositThesaurus(500);
     const s = store().state as GameState;
@@ -315,7 +308,6 @@ describe('gameStore — Depraedatio (deposit / withdraw / sign)', () => {
   });
 
   it('withdraws the full amount from the hoard for the recovery fraction of it in gold', () => {
-    patchDevotion('avaritia', 180);
     patchGold(2000);
     store().depositThesaurus(1000);
     const goldBefore = floor((store().state as GameState).lifetime.gold).toNumber();
@@ -326,17 +318,15 @@ describe('gameStore — Depraedatio (deposit / withdraw / sign)', () => {
   });
 
   it('refuses a withdrawal beyond the hoard', () => {
-    patchDevotion('avaritia', 180);
     store().withdrawThesaurus(100);
     expect(store().notice).toBeTruthy();
   });
 
   it('signs a Syngrapha, burning the fee; refuses out-of-order or gated signings', () => {
-    patchDevotion('avaritia', 180);
     patchGold(2000);
-    store().signSyngrapha('usura-2'); // branch order: usura-1 first
+    store().signSyngrapha('usura-2'); // branch order: usura-1 first (and Avaritia I besides)
     expect(store().notice).toBeTruthy();
-    store().signSyngrapha('usura-1');
+    store().signSyngrapha('usura-1'); // ungated since the rebalance
     const s = store().state as GameState;
     expect(s.lifetime.syngraphae).toEqual(['usura-1']);
     expect(floor(s.lifetime.gold).toNumber()).toBe(1500); // the 500 fee is burned
@@ -416,48 +406,26 @@ describe('gameStore — auto-repeat wiring', () => {
   });
 });
 
-describe('gameStore — Vitium Compositum ceremonies', () => {
-  function patchTwoSins(a: 'gula' | 'avaritia', b: 'luxuria' | 'ira', level: number): void {
-    const s = store().state as GameState;
-    useGameStore.setState({
-      state: {
-        ...s,
-        devotion: { ...s.devotion, [a]: bn(180 ** level), [b]: bn(180 ** level) },
-      },
-    });
-  }
-
-  it('refuses activation when the Sin gates are not met', () => {
+describe('gameStore — Vitium Compositum ceremonies (Panvitium alone, ADR-031)', () => {
+  it('refuses activation of a retired ceremony id', () => {
     store().activateCeremony('bacchanal');
-    expect(store().notice).toMatch(/gula 1 \+ luxuria 1/);
-  });
-
-  it('activates a ceremony when gated, adding it to activeToggles', () => {
-    patchTwoSins('gula', 'luxuria', 2);
-    store().activateCeremony('bacchanal');
-    const s = store().state as GameState;
-    expect(s.lifetime.activeToggles).toContain('bacchanal');
-    expect(store().notice).toBeNull();
-  });
-
-  it('deactivates a running ceremony', () => {
-    patchTwoSins('gula', 'luxuria', 2);
-    store().activateCeremony('bacchanal');
-    store().deactivateCeremony('bacchanal');
-    const s = store().state as GameState;
-    expect(s.lifetime.activeToggles).not.toContain('bacchanal');
+    expect(store().notice).toMatch(/unknown ceremony/);
+    expect((store().state as GameState).lifetime.activeToggles).toEqual([]);
   });
 
   it('auto-deactivates and surfaces a notice when upkeep cannot be paid', () => {
-    patchTwoSins('gula', 'luxuria', 2);
-    // bacchanal costs 50 gold/s; zero it out so the next tick can't pay.
     const s0 = store().state as GameState;
-    useGameStore.setState({ state: { ...s0, lifetime: { ...s0.lifetime, gold: bn(0) } } });
-    store().activateCeremony('bacchanal');
+    const devotion = { ...s0.devotion };
+    for (const k of Object.keys(devotion) as (keyof typeof devotion)[]) devotion[k] = bn(180 ** 3);
+    // Panvitium costs 1000 gold/s at the ramp's foot; an empty purse can't pay the first second.
+    useGameStore.setState({
+      state: { ...s0, devotion, lifetime: { ...s0.lifetime, gold: bn(0) } },
+    });
+    store().activateCeremony('panvitium');
     store().advance(1);
     const s = store().state as GameState;
-    expect(s.lifetime.activeToggles).not.toContain('bacchanal');
-    expect(store().notice).toMatch(/bacchanal/i);
+    expect(s.lifetime.activeToggles).not.toContain('panvitium');
+    expect(store().notice).toMatch(/panvitium/i);
   });
 });
 

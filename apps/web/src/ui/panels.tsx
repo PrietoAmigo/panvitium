@@ -8,7 +8,6 @@ import {
   MALEFICIA,
   anatocismusDepositPerSecond,
   computeModifiers,
-  faenerationUnlocked,
   foedusTier,
   mutuumGoldPerSecond,
   sinLevel,
@@ -18,7 +17,6 @@ import {
   syngraphaSigned,
   thesaurusInterestPerSecond,
   thesaurusRecoveryFraction,
-  COMPOSITUM_IDS,
   compositumById,
   compositumUnlocked,
   isToggleActive,
@@ -36,9 +34,8 @@ import {
 } from '@panvitium/sim';
 import { type PanelId } from '../menus/types.js';
 import { SmartphoneDialer, type DialResult } from '../menus/SmartphoneDialer.js';
-import { compositumCostLine, compositumOutcomesLine } from '../game/compositumText.js';
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
-import { SuasioPanel as DesignedSuasio } from '../menus/SuasioPanel.js';
+import { SuasioPanel as DesignedSuasio, type SuasioActionView } from '../menus/SuasioPanel.js';
 import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
@@ -198,6 +195,8 @@ const romanLevel = (n: number): string => SIN_LEVEL_ROMAN[n] ?? String(n);
 export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
+  const activateCeremony = useGameStore((s) => s.activateCeremony);
+  const [confirmingPanvitium, setConfirmingPanvitium] = useState(false);
   const head = useGameStore(
     (s) => s.state?.lifetime.actionQueue.find((t) => t.actionId !== 'indagatio') ?? null,
   );
@@ -221,7 +220,7 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
   };
   const cap = (w: string): string => w.charAt(0).toUpperCase() + w.slice(1);
 
-  const actions = SUASIO_ORDER.map((id, i) => {
+  const actions: SuasioActionView[] = SUASIO_ORDER.map((id, i) => {
     const def = ACTIONS[id]!;
     const influenceCost = Math.ceil((def.cost.influence ?? 0) * eff);
     const locked = !actionUnlocked(state, def);
@@ -263,6 +262,45 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
       ...(hasControls ? { delegation: <RiteControls actionId={id} /> } : {}),
     };
   });
+
+  // Panvitium — the endgame ritual, the scroll's fourth and final temptation (ADR-031: the other
+  // ceremonies retired, and the survivor moved here from the Depraedatio panel). A toggle, not a
+  // timed rite: sealed exactly like the other rows until every Sin reaches level III, and armed
+  // behind a second confirming press (it cannot be stopped by hand once it burns).
+  const panvDef = compositumById('panvitium');
+  if (panvDef) {
+    const locked = !compositumUnlocked(state, panvDef);
+    const burning = isToggleActive(state, 'panvitium');
+    const sealed = locked ? strings.opera.suasioSealed.panvitium : undefined;
+    actions.push({
+      id: 'panvitium',
+      numeral: 'IV',
+      glyph: '\u2641',
+      name: locked ? (sealed?.name ?? '') : (strings.opera.panvitium ?? 'Panvitium'),
+      quote: locked ? (sealed?.maxim ?? '') : (strings.opera.suasioQuote.panvitium ?? ''),
+      cost: `${(panvDef.costPerSecond.gold ?? 0).toLocaleString('en-US')} ${strings.resources.gold.toLowerCase()} + ${(panvDef.costPerSecond.influence ?? 0).toLocaleString('en-US')} ${strings.resources.influence.toLowerCase()} /s \u00b7 ${strings.opera.panvitiumRising}`,
+      cta: burning
+        ? (strings.opera.suasioStatus.panvitium ?? '')
+        : confirmingPanvitium
+          ? (strings.opera.suasioConfirm ?? '')
+          : (strings.opera.suasioCta.panvitium ?? ''),
+      status: strings.opera.suasioStatus.panvitium ?? '',
+      locked,
+      active: burning,
+      progress: burning ? 100 : 0,
+      disabled: locked || burning,
+      onTempt: () => {
+        if (burning) return;
+        if (!confirmingPanvitium) {
+          setConfirmingPanvitium(true);
+          return;
+        }
+        activateCeremony('panvitium');
+        setConfirmingPanvitium(false);
+      },
+      lockLabel: `${strings.opera.suasioRequires} ${strings.opera.suasioPanvitiumGate}`,
+    });
+  }
 
   return <DesignedSuasio {...headerProps} actions={actions} />;
 }
@@ -652,9 +690,7 @@ function formatRate(n: number): string {
   return (Math.round(n * 100) / 100).toString();
 }
 
-const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
-
-type DepraedatioTab = 'thesaurus' | 'syngraphae' | 'compositum';
+type DepraedatioTab = 'thesaurus' | 'syngraphae';
 
 const depCard: CSSProperties = {
   display: 'flex',
@@ -716,7 +752,6 @@ function ThesaurusTab(): ReactElement {
   if (!state) return <></>;
   const F = strings.faeneratio;
   const mods = computeModifiers(state);
-  const open = faenerationUnlocked(state);
   const gold = floor(state.lifetime.gold).toNumber();
   const hoard = state.lifetime.hoard;
   // Effective realised rates: the raw terms × faenerationOutputMul × goldRateMul, matching the
@@ -736,26 +771,21 @@ function ThesaurusTab(): ReactElement {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-      {/* Mutuum — the loan book */}
-      <div style={open ? depCard : { ...depCard, opacity: 0.55, borderStyle: 'dashed' }}>
+      {/* Mutuum — the loan book (open from the start; the gating rebalance removed the Avaritia
+          gate the old Mercatūs carried) */}
+      <div style={depCard}>
         <span style={depTitle} title={F.mutuumBlurb}>
           {F.mutuum}
         </span>
-        {open ? (
-          <>
-            <RateReadout value={formatRate(mutuumRate)} unit="gold/s" />
-            <span style={{ ...depMono, fontSize: '.8rem', color: '#b59ad6' }}>
-              {totalReprobates(state).toLocaleString('en-US')} {F.debtors}
-            </span>
-            <span style={depFlavor}>{F.mutuumBlurb}</span>
-          </>
-        ) : (
-          <span style={depFlavor}>{F.mutuumLocked}</span>
-        )}
+        <RateReadout value={formatRate(mutuumRate)} unit="gold/s" />
+        <span style={{ ...depMono, fontSize: '.8rem', color: '#b59ad6' }}>
+          {totalReprobates(state).toLocaleString('en-US')} {F.debtors}
+        </span>
+        <span style={depFlavor}>{F.mutuumBlurb}</span>
       </div>
 
       {/* Thesaurus — the hoard */}
-      <div style={open ? depCard : { ...depCard, opacity: 0.55, borderStyle: 'dashed' }}>
+      <div style={depCard}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <span style={depTitle} title={F.thesaurusBlurb}>
             {F.thesaurus}
@@ -770,118 +800,112 @@ function ThesaurusTab(): ReactElement {
             </span>
           )}
         </div>
-        {open ? (
-          <>
-            <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap' }}>
-              <div aria-label={F.hoard}>
-                <span style={depLabel}>{F.hoard}</span>
-                <RateReadout value={formatBigNum(floor(hoard))} unit="gold" />
-              </div>
-              <div aria-label={F.interest}>
-                <span style={depLabel}>{F.interest}</span>
-                <RateReadout value={formatRate(interestRate)} unit="gold/s" />
-              </div>
-              {anatocismusRate > 0 && (
-                <div title={F.anatocismusRate}>
-                  <span style={depLabel}>{F.anatocismus}</span>
-                  <RateReadout value={formatRate(anatocismusRate)} unit="gold/s \u2192 hoard" />
-                </div>
-              )}
+        <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap' }}>
+          <div aria-label={F.hoard}>
+            <span style={depLabel}>{F.hoard}</span>
+            <RateReadout value={formatBigNum(floor(hoard))} unit="gold" />
+          </div>
+          <div aria-label={F.interest}>
+            <span style={depLabel}>{F.interest}</span>
+            <RateReadout value={formatRate(interestRate)} unit="gold/s" />
+          </div>
+          {anatocismusRate > 0 && (
+            <div title={F.anatocismusRate}>
+              <span style={depLabel}>{F.anatocismus}</span>
+              <RateReadout value={formatRate(anatocismusRate)} unit="gold/s \u2192 hoard" />
             </div>
-            <span style={depFlavor}>{F.thesaurusBlurb}</span>
+          )}
+        </div>
+        <span style={depFlavor}>{F.thesaurusBlurb}</span>
 
-            {/* Deposit */}
-            <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                type="number"
-                min={0}
-                className="dep-amount"
-                style={{ ...depMono, width: 110 }}
-                value={depositText}
-                onChange={(e) => setDepositText(e.target.value)}
-                aria-label={`${F.deposit} amount`}
-              />
+        {/* Deposit */}
+        <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            type="number"
+            min={0}
+            className="dep-amount"
+            style={{ ...depMono, width: 110 }}
+            value={depositText}
+            onChange={(e) => setDepositText(e.target.value)}
+            aria-label={`${F.deposit} amount`}
+          />
+          <button
+            type="button"
+            className="dep-deepen"
+            disabled={depositAmount < 1 || depositAmount > gold}
+            onClick={() => {
+              deposit(depositAmount);
+              setDepositText('');
+            }}
+            aria-label={F.deposit}
+          >
+            {F.deposit}
+          </button>
+          <button
+            type="button"
+            className="dep-mini dep-mini--wide"
+            disabled={gold < 1}
+            onClick={() => deposit(gold)}
+            aria-label={`${F.deposit} ${F.depositAll}`}
+          >
+            {F.depositAll}
+          </button>
+        </div>
+
+        {/* Withdraw — two-step: the loss is stated before the confirm. */}
+        <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            type="number"
+            min={0}
+            className="dep-amount"
+            style={{ ...depMono, width: 110 }}
+            value={withdrawText}
+            onChange={(e) => {
+              setWithdrawText(e.target.value);
+              setConfirmingWithdraw(false);
+            }}
+            aria-label={`${F.withdraw} amount`}
+          />
+          {confirmingWithdraw ? (
+            <>
+              <span style={{ ...depFlavor, color: '#c98a6a' }}>
+                {F.withdrawWarning} {F.withdrawRecovers} {returned}, {forfeited}{' '}
+                {F.withdrawForfeits}.
+              </span>
               <button
                 type="button"
                 className="dep-deepen"
-                disabled={depositAmount < 1 || depositAmount > gold}
                 onClick={() => {
-                  deposit(depositAmount);
-                  setDepositText('');
+                  withdraw(withdrawAmount);
+                  setWithdrawText('');
+                  setConfirmingWithdraw(false);
                 }}
-                aria-label={F.deposit}
+                aria-label={`${F.confirm} ${F.withdraw}`}
               >
-                {F.deposit}
+                {F.confirm}
               </button>
               <button
                 type="button"
                 className="dep-mini dep-mini--wide"
-                disabled={gold < 1}
-                onClick={() => deposit(gold)}
-                aria-label={`${F.deposit} ${F.depositAll}`}
+                onClick={() => setConfirmingWithdraw(false)}
+                aria-label={F.cancel}
               >
-                {F.depositAll}
+                {F.cancel}
               </button>
-            </div>
-
-            {/* Withdraw — two-step: the loss is stated before the confirm. */}
-            <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                type="number"
-                min={0}
-                className="dep-amount"
-                style={{ ...depMono, width: 110 }}
-                value={withdrawText}
-                onChange={(e) => {
-                  setWithdrawText(e.target.value);
-                  setConfirmingWithdraw(false);
-                }}
-                aria-label={`${F.withdraw} amount`}
-              />
-              {confirmingWithdraw ? (
-                <>
-                  <span style={{ ...depFlavor, color: '#c98a6a' }}>
-                    {F.withdrawWarning} {F.withdrawRecovers} {returned}, {forfeited}{' '}
-                    {F.withdrawForfeits}.
-                  </span>
-                  <button
-                    type="button"
-                    className="dep-deepen"
-                    onClick={() => {
-                      withdraw(withdrawAmount);
-                      setWithdrawText('');
-                      setConfirmingWithdraw(false);
-                    }}
-                    aria-label={`${F.confirm} ${F.withdraw}`}
-                  >
-                    {F.confirm}
-                  </button>
-                  <button
-                    type="button"
-                    className="dep-mini dep-mini--wide"
-                    onClick={() => setConfirmingWithdraw(false)}
-                    aria-label={F.cancel}
-                  >
-                    {F.cancel}
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  className="dep-mini dep-mini--wide"
-                  disabled={withdrawAmount < 1 || withdrawAmount > hoardFloor}
-                  onClick={() => setConfirmingWithdraw(true)}
-                  title={`${F.withdrawRecovers} ${Math.round(recovery * 100)}%`}
-                  aria-label={F.withdraw}
-                >
-                  {F.withdraw}
-                </button>
-              )}
-            </div>
-          </>
-        ) : (
-          <span style={depFlavor}>{F.mutuumLocked}</span>
-        )}
+            </>
+          ) : (
+            <button
+              type="button"
+              className="dep-mini dep-mini--wide"
+              disabled={withdrawAmount < 1 || withdrawAmount > hoardFloor}
+              onClick={() => setConfirmingWithdraw(true)}
+              title={`${F.withdrawRecovers} ${Math.round(recovery * 100)}%`}
+              aria-label={F.withdraw}
+            >
+              {F.withdraw}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -990,255 +1014,12 @@ function SyngraphaeTab(): ReactElement {
   );
 }
 
-/** Vitium Compositum — the Living Grimoire: a list of rite rows. */
-function CompositumGrimoire(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const activate = useGameStore((s) => s.activateCeremony);
-  const deactivate = useGameStore((s) => s.deactivateCeremony);
-  if (!state) return <></>;
-  const baseRite: CSSProperties = {
-    position: 'relative',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 14,
-    padding: '15px 18px',
-    borderRadius: 6,
-    border: '1px solid rgba(196,158,74,.2)',
-    background: 'rgba(12,10,9,.4)',
-  };
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {COMPOSITUM_IDS.filter((id) => id !== 'panvitium').map((id) => {
-        const def = compositumById(id);
-        if (!def) return null;
-        const unlocked = compositumUnlocked(state, def);
-        const locked = !unlocked;
-        const active = isToggleActive(state, id);
-        const name = strings.compositum.names[id] ?? id;
-        const gate = def.sins
-          .map((s) => `${capitalize(s)} ${romanLevel(def.minLevel)}`)
-          .join(' \u00B7 ');
-        const dotColor = active ? '#e0934a' : locked ? '#7c1417' : 'rgba(200,180,138,.4)';
-        const riteStyle: CSSProperties = locked
-          ? { ...baseRite, opacity: 0.5, borderStyle: 'dashed' }
-          : active
-            ? {
-                ...baseRite,
-                border: '1px solid rgba(230,140,50,.55)',
-                background: 'rgba(44,16,10,.55)',
-                boxShadow: 'inset 0 0 16px rgba(230,120,40,.22)',
-              }
-            : baseRite;
-        return (
-          <div key={id} style={riteStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-              <span
-                style={{
-                  width: 11,
-                  height: 11,
-                  borderRadius: '50%',
-                  background: dotColor,
-                  boxShadow: `0 0 10px ${dotColor}`,
-                  flex: '0 0 auto',
-                }}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-                <span
-                  style={{
-                    fontFamily: "'Cinzel', serif",
-                    fontSize: '1.1rem',
-                    letterSpacing: '.04em',
-                    color: '#ecd9a8',
-                  }}
-                >
-                  {name}
-                </span>
-                {unlocked ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '4px 12px',
-                      fontFamily: "'Ubuntu Mono', monospace",
-                      fontSize: '.7rem',
-                      letterSpacing: '.04em',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    <span style={{ color: '#9c8e74' }}>
-                      Cost {'\u00B7'} {compositumCostLine(def)}
-                    </span>
-                    <span style={{ color: '#7fae7f' }}>
-                      Effect {'\u00B7'} {compositumOutcomesLine(def)}
-                    </span>
-                  </div>
-                ) : (
-                  <span
-                    style={{
-                      fontFamily: "'Ubuntu Mono', monospace",
-                      fontSize: '.7rem',
-                      letterSpacing: '.04em',
-                      color: '#c98a6a',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Requires {'\u00B7'} {gate}
-                  </span>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              className={
-                'dep-rite' + (active ? ' dep-rite--end' : locked ? ' dep-rite--locked' : '')
-              }
-              disabled={locked}
-              onClick={() => (active ? deactivate(id) : activate(id))}
-              aria-label={`${active ? strings.compositum.stop : strings.compositum.start} ${name}`}
-            >
-              {active
-                ? strings.compositum.stop
-                : locked
-                  ? strings.opera.sinLocked
-                  : strings.compositum.start}
-            </button>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * Panvitium — the endgame ritual (Vitium Compositum gated on all eight Sins at Level 3). Shown as a
- * sealed teaser until the gate opens, then a pulsing altar with a two-step "Unleash" confirmation
- * (it cannot be turned off by hand and its cost ramps each second).
- */
-function PanvitiumPanel(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const activate = useGameStore((s) => s.activateCeremony);
-  const [confirming, setConfirming] = useState(false);
-  const def = compositumById('panvitium');
-  if (!state || !def) return <></>;
-  const unlocked = compositumUnlocked(state, def);
-  const active = isToggleActive(state, 'panvitium');
-
-  if (!unlocked) {
-    return (
-      <div
-        style={{
-          position: 'relative',
-          marginTop: 16,
-          padding: '34px 24px',
-          border: '1px dashed rgba(120,108,86,.4)',
-          borderRadius: 10,
-          background:
-            'repeating-linear-gradient(45deg,rgba(10,8,7,.85),rgba(10,8,7,.85) 11px,rgba(20,16,12,.85) 11px,rgba(20,16,12,.85) 22px)',
-          textAlign: 'center',
-        }}
-      >
-        <p
-          style={{
-            fontFamily: "'Cinzel', serif",
-            fontWeight: 600,
-            fontSize: '1rem',
-            letterSpacing: '.16em',
-            color: '#9c8e74',
-            textTransform: 'uppercase',
-            margin: 0,
-          }}
-        >
-          {strings.compositum.panvitiumGate}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={active ? 'dep-pan dep-pan--active' : 'dep-pan'}
-      style={{
-        marginTop: 16,
-        padding: 24,
-        border: '1px solid rgba(212,72,72,.55)',
-        borderRadius: 10,
-        background: 'radial-gradient(circle at 50% 0%,rgba(80,16,12,.7),rgba(28,8,8,.7))',
-        textAlign: 'center',
-      }}
-    >
-      <div
-        style={{
-          fontFamily: "'Cinzel', serif",
-          fontWeight: 700,
-          fontSize: '1.7rem',
-          letterSpacing: '.1em',
-          color: '#ff8a4a',
-          textShadow: '0 0 18px rgba(255,110,50,.6)',
-          marginBottom: 8,
-        }}
-      >
-        {strings.compositum.names.panvitium ?? 'Panvitium'}
-      </div>
-      <p
-        style={{
-          fontFamily: "'EB Garamond', serif",
-          fontStyle: 'italic',
-          color: '#e0a684',
-          fontSize: '1.1rem',
-          letterSpacing: '.04em',
-          margin: '0 auto 16px',
-          maxWidth: 460,
-        }}
-      >
-        {active
-          ? strings.compositum.panvitiumActive
-          : confirming
-            ? strings.compositum.panvitiumReady
-            : strings.menu.tagline}
-      </p>
-      {active ? (
-        <div className="dep-pan-burning">{strings.compositum.panvitiumBurning}</div>
-      ) : confirming ? (
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-          <button
-            type="button"
-            className="dep-unleash"
-            onClick={() => {
-              activate('panvitium');
-              setConfirming(false);
-            }}
-          >
-            {strings.compositum.panvitiumConfirm}
-          </button>
-          <button
-            type="button"
-            className="dep-unleash dep-unleash--cancel"
-            onClick={() => setConfirming(false)}
-          >
-            {strings.compositum.panvitiumCancel}
-          </button>
-        </div>
-      ) : (
-        <button type="button" className="dep-unleash" onClick={() => setConfirming(true)}>
-          {strings.compositum.panvitiumBegin}
-        </button>
-      )}
-    </div>
-  );
-}
-
 export function DepraedatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);
   const notice = useGameStore((s) => s.notice);
   const [tab, setTab] = useState<DepraedatioTab>('thesaurus');
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const blurb =
-    tab === 'thesaurus'
-      ? strings.opera.thesaurusBlurb
-      : tab === 'syngraphae'
-        ? strings.opera.syngraphaeBlurb
-        : strings.opera.compositumBlurb;
+  const blurb = tab === 'thesaurus' ? strings.opera.thesaurusBlurb : strings.opera.syngraphaeBlurb;
   return (
     <div className="dep-wallpaper">
       <div className="dep-grimoire">
@@ -1284,29 +1065,11 @@ export function DepraedatioGroup(): ReactElement {
           >
             {strings.faeneratio.syngraphaeTab}
           </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'compositum'}
-            className={'dep-tab' + (tab === 'compositum' ? ' dep-tab--active' : '')}
-            onClick={() => setTab('compositum')}
-          >
-            {strings.compositum.heading}
-          </button>
         </div>
 
         <p className="dep-blurb">{blurb}</p>
 
-        {tab === 'thesaurus' ? (
-          <ThesaurusTab />
-        ) : tab === 'syngraphae' ? (
-          <SyngraphaeTab />
-        ) : (
-          <>
-            <CompositumGrimoire />
-            <PanvitiumPanel />
-          </>
-        )}
+        {tab === 'thesaurus' ? <ThesaurusTab /> : <SyngraphaeTab />}
 
         {notice !== null && <p className="opera-notice dep-notice">{notice}</p>}
       </div>

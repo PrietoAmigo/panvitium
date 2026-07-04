@@ -23,7 +23,6 @@
  * Fully deterministic: no RNG, no timers.
  */
 import { add, bn, floor, gte, isZero, lte, mul, sub, ZERO, type BigNum } from './bignum.js';
-import { sinLevel } from './progression.js';
 import { type GameState } from './state.js';
 import { type Modifiers } from './modifiers.js';
 import { ANATOCISMUS_SPLIT, katabasisLiquidationMul, syngraphaSigned } from './syngraphae.js';
@@ -56,18 +55,13 @@ export const FOEDUS_UPKEEP_DISCOUNT_PER_TIER = 0.125;
 
 // ── Mutuum (the loan book) ───────────────────────────────────────────────────
 
-/** The Faeneratio surfaces open at Avaritia level 1 (the panel opens as one piece — spec §4.1/4.2). */
-export function faenerationUnlocked(state: GameState): boolean {
-  return sinLevel(state.devotion.avaritia) >= 1;
-}
-
 /**
- * The loan book's raw take: `MUTUUM_PER_CAPITA × mods.mutuumPerCapitaMul × reprobates`; 0 below
- * Avaritia level 1 (no broker will carry paper for a nameless creditor). RAW — the tick composes
+ * The loan book's raw take: `MUTUUM_PER_CAPITA × mods.mutuumPerCapitaMul × reprobates`. Open from
+ * the start — the gating rebalance moved every Faeneratio gate one level down, so the old
+ * Avaritia-I unlock became no gate at all. RAW — the tick composes
  * `× faenerationOutputMul × goldRateMul` on top, like all income.
  */
 export function mutuumGoldPerSecond(state: GameState, mods: Modifiers): number {
-  if (!faenerationUnlocked(state)) return 0;
   return MUTUUM_PER_CAPITA * mods.mutuumPerCapitaMul * state.lifetime.reprobates;
 }
 
@@ -133,9 +127,6 @@ export type ThesaurusResult =
 export function depositThesaurus(state: GameState, amount: BigNum | number): ThesaurusResult {
   if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
     return { ok: false, reason: 'The world is held in Morpheus’s stillness.' };
-  }
-  if (!faenerationUnlocked(state)) {
-    return { ok: false, reason: 'requires avaritia level 1' };
   }
   const give = floor(bn(amount));
   if (lte(give, ZERO)) return { ok: false, reason: 'nothing to place' };

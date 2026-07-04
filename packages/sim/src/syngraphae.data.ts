@@ -12,21 +12,21 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
   {
     id: 'usura-1',
     branch: 'usura',
-    gate: 1,
+    gate: 0,
     cost: 500,
     effect: { kind: 'fenusRateMul', mul: 1.5 },
   },
   {
     id: 'usura-2',
     branch: 'usura',
-    gate: 2,
+    gate: 1,
     cost: 5_000,
     effect: { kind: 'fenusRateMul', mul: 1.5 },
   },
   {
     id: 'usura-3',
     branch: 'usura',
-    gate: 3,
+    gate: 2,
     cost: 50_000,
     effect: { kind: 'fenusRateMul', mul: 2 },
   },
@@ -34,7 +34,7 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
     id: 'usura-4',
     name: 'Anatocismus',
     branch: 'usura',
-    gate: 4,
+    gate: 3,
     cost: 500_000,
     // Interest upon interest, by contract: half of each interest payment auto-deposits into the
     // hoard instead of paying out. Mechanism in tick.ts (the split is applied AFTER all multipliers).
@@ -45,7 +45,7 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
   {
     id: 'faeneratio-1',
     branch: 'faeneratio',
-    gate: 1,
+    gate: 0,
     cost: 500,
     effect: { kind: 'mutuumPerCapitaMul', mul: 1.5 },
   },
@@ -53,7 +53,7 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
     id: 'faeneratio-2',
     name: 'Escheat',
     branch: 'faeneratio',
-    gate: 2,
+    gate: 1,
     cost: 5_000,
     // Death duties: the estates of the dead escheat to creditors unseen. Minted at the dynamics
     // step from the applied murders/suicides (the additive bundle fields compose with any future
@@ -63,14 +63,14 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
   {
     id: 'faeneratio-3',
     branch: 'faeneratio',
-    gate: 3,
+    gate: 2,
     cost: 50_000,
     effect: { kind: 'mutuumPerCapitaMul', mul: 2 },
   },
   {
     id: 'faeneratio-4',
     branch: 'faeneratio',
-    gate: 4,
+    gate: 3,
     cost: 500_000,
     // The Katabasis hoard liquidation pays ×1.25 (katabasis.ts, at the enter-teardown).
     effect: { kind: 'liquidationMul', mul: 1.25 },
@@ -80,7 +80,7 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
   {
     id: 'custodia-1',
     branch: 'custodia',
-    gate: 1,
+    gate: 0,
     cost: 500,
     // Base recovery 0.25 becomes 0.4.
     effect: { kind: 'thesaurusRecoveryMul', mul: 1.6 },
@@ -88,7 +88,7 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
   {
     id: 'custodia-2',
     branch: 'custodia',
-    gate: 2,
+    gate: 1,
     cost: 5_000,
     // Hoard milestones: +2% goldRateMul per decade of hoard at or above 1,000
     // (floor(log10(hoard/1000)) + 1 steps), capped at +20%. Folded into goldRateMul directly by
@@ -98,7 +98,7 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
   {
     id: 'custodia-3',
     branch: 'custodia',
-    gate: 3,
+    gate: 2,
     cost: 50_000,
     // Stacks with custodia-1 to 0.6.
     effect: { kind: 'thesaurusRecoveryMul', mul: 1.5 },
@@ -107,7 +107,7 @@ export const SYNGRAPHAE: readonly SyngraphaDef[] = [
     id: 'custodia-4',
     name: 'Peculium',
     branch: 'custodia',
-    gate: 4,
+    gate: 3,
     cost: 500_000,
     // At commitKatabasis the kept-gold result is floored at 10% of the hoard's value at descent —
     // a guaranteed remnant beneath the Avaritia roll (Erinyes still wins; katabasis.ts).

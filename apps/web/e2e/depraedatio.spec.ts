@@ -2,19 +2,19 @@ import { test, expect, type Page } from '@playwright/test';
 
 /**
  * E2E coverage for the reworked Depraedatio panel (Depraedatio gold rework): the Thesaurus tab's
- * deposit and two-step withdraw, and signing a Syngrapha on the contract tree. A seeded save
- * (Avaritia at level 1, a purse of gold) is written to localStorage before load, since the fresh
- * game gates all three flows behind Avaritia I.
+ * deposit and two-step withdraw, signing a Syngrapha on the contract tree, and Panvitium as the
+ * Suasio scroll's sealed fourth rite (ADR-031). A seeded save (a purse of gold) is written to
+ * localStorage before load; since the gating rebalance none of the three flows needs Avaritia.
  */
 
-/** A minimal valid v5 save with Avaritia at level 1 and 10,000 gold, stamped to "now". */
+/** A minimal valid v5 save with 10,000 gold, stamped to "now". */
 function seededSave(): string {
   const now = Date.now();
   const zero = '0';
   const devotion = {
     gula: zero,
     luxuria: zero,
-    avaritia: '180', // level 1 — opens the Faeneratio surfaces
+    avaritia: zero, // the Faeneratio surfaces carry no Avaritia gate since the rebalance
     tristitia: zero,
     ira: zero,
     acedia: zero,
@@ -49,7 +49,7 @@ function seededSave(): string {
   });
 }
 
-async function openDepraedatio(page: Page): Promise<void> {
+async function enterStudio(page: Page): Promise<void> {
   await page.addInitScript((save: string) => {
     localStorage.setItem('panvitium:save', save);
   }, seededSave());
@@ -58,6 +58,10 @@ async function openDepraedatio(page: Page): Promise<void> {
   await expect(page.locator('.title-menu')).toHaveCount(0, { timeout: 15_000 });
   await expect(page.locator('.entry-fade')).toHaveCount(0, { timeout: 15_000 });
   await page.getByRole('button', { name: 'To the Studio' }).click();
+}
+
+async function openDepraedatio(page: Page): Promise<void> {
+  await enterStudio(page);
   await page.getByRole('button', { name: 'PC', exact: true }).click();
   await page.getByRole('button', { name: 'Depraedatio' }).click();
 }
@@ -65,7 +69,7 @@ async function openDepraedatio(page: Page): Promise<void> {
 test('deposits into the hoard and withdraws with the two-step confirm', async ({ page }) => {
   await openDepraedatio(page);
 
-  // The Thesaurus tab is the default: the loan book is open (Avaritia I) with its debtors.
+  // The Thesaurus tab is the default: the loan book is open from the start with its debtors.
   await expect(page.getByRole('tab', { name: 'Thesaurus' })).toHaveAttribute(
     'aria-selected',
     'true',
@@ -99,8 +103,20 @@ test('signs a Syngrapha with the two-step confirm (the fee is burned)', async ({
   await expect(grimoire).toContainText('Anatocismus');
   await expect(grimoire).toContainText('Peculium');
 
-  // Sign Usura I (gate Avaritia I, fee 500): two-step confirm, then the card flips to Signed.
+  // Sign Usura I (ungated since the rebalance, fee 500): two-step confirm, then Signed.
   await page.getByRole('button', { name: 'Sign Usura I' }).click();
   await page.getByRole('button', { name: 'Confirm Sign Usura I' }).click();
   await expect(grimoire).toContainText('Signed');
+});
+
+test('the Suasio scroll carries Panvitium as its sealed fourth rite', async ({ page }) => {
+  await enterStudio(page);
+  await page.getByRole('button', { name: 'The Suasio Scroll' }).click();
+  const scroll = page.getByRole('dialog', { name: 'Opus Suasio' });
+  await expect(scroll).toBeVisible();
+  // Four rows now: the three temptations plus Panvitium, sealed exactly like the other locked
+  // rites (redacted Latin + the gate label) until every Sin reaches level III.
+  await expect(scroll.locator('.suasio-row')).toHaveCount(4);
+  await expect(scroll).toContainText('Requires Every Sin III');
+  await expect(scroll).toContainText('Zvorreth Ommurn'); // the redacted seal-name
 });

@@ -1,10 +1,10 @@
 /**
- * Render smoke tests for the reworked Depraedatio menu (Depraedatio gold rework): the Thesaurus
- * tab (Mutuum + the hoard, locked at a fresh start), the Syngraphae tab (the twelve-contract
- * tree in three branch columns), and Vitium Compositum as the Living Grimoire of rites with the
- * Panvitium teaser. These pin the wiring — the tab bar and the per-tab surfaces mounting against
- * live store state. The Faeneratio/Syngraphae math and the store mutators are covered by their
- * own suites.
+ * Render smoke tests for the reworked Depraedatio menu: the Thesaurus tab (Mutuum + the hoard,
+ * open from a fresh start since the gating rebalance) and the Syngraphae tab (the twelve-contract
+ * tree in three branch columns). Vitium Compositum retired from this panel with ADR-031 —
+ * Panvitium lives on the Suasio scroll now. These pin the wiring — the tab bar and the per-tab
+ * surfaces mounting against live store state. The Faeneratio/Syngraphae math and the store
+ * mutators are covered by their own suites.
  */
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { act, createElement } from 'react';
@@ -47,25 +47,22 @@ afterEach(() => {
   root = null;
 });
 
-describe('DepraedatioGroup — Thesaurus / Syngraphae / Compositum', () => {
-  it('renders the three tabs and the locked loan book at a fresh start', () => {
+describe('DepraedatioGroup — Thesaurus / Syngraphae', () => {
+  it('renders the two tabs; the loan book is open from a fresh start (no Avaritia gate)', () => {
     render();
     const tabs = Array.from(container!.querySelectorAll('.dep-tab')).map((t) =>
       (t.textContent ?? '').trim(),
     );
-    expect(tabs).toContain('Thesaurus');
-    expect(tabs).toContain('Syngraphae');
-    expect(tabs).toContain('Vitium Compositum');
-    // Fresh start: Avaritia is level 0, so the surface shows the locked-broker flavour.
-    expect(container!.textContent ?? '').toContain(strings.faeneratio.mutuumLocked);
+    expect(tabs).toEqual(['Thesaurus', 'Syngraphae']);
+    expect(container!.textContent ?? '').toContain(strings.faeneratio.mutuum);
+    expect(container!.textContent ?? '').toContain('debtors');
   });
 
-  it('shows the hoard, take readouts and deposit/withdraw controls once Avaritia I opens it', () => {
+  it('shows the hoard, take readouts and deposit/withdraw controls', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
         ...s0,
-        devotion: { ...s0.devotion, avaritia: bn(180) },
         lifetime: { ...s0.lifetime, gold: bn(1000), hoard: bn(250), reprobates: 10 },
       },
     });
@@ -94,18 +91,11 @@ describe('DepraedatioGroup — Thesaurus / Syngraphae / Compositum', () => {
     expect(text).toContain('Anatocismus');
     expect(text).toContain('Escheat');
     expect(text).toContain('Peculium');
-    // Fresh start: every node is gated on Avaritia — nothing is signable.
+    // The gating rebalance opened each branch's first node from the start — three Sign buttons
+    // (disabled while unaffordable), the rest still gated on Avaritia levels.
     const signButtons = Array.from(container!.querySelectorAll<HTMLButtonElement>('button')).filter(
       (b) => (b.getAttribute('aria-label') ?? '').startsWith(strings.faeneratio.sign),
     );
-    expect(signButtons).toHaveLength(0);
-  });
-
-  it('switches to Compositum and shows rites plus the sealed Panvitium gate', () => {
-    render();
-    clickTab('Vitium Compositum');
-    expect(container!.querySelectorAll('.dep-rite').length).toBeGreaterThan(0);
-    // Panvitium is sealed until every Sin reaches Level III.
-    expect(container!.textContent ?? '').toContain('Requires every Sin at Level III');
+    expect(signButtons).toHaveLength(3);
   });
 });

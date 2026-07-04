@@ -50,9 +50,6 @@ export type ScalarModifierField =
   | 'reprobateSuicideRateMul'
   | 'murderRateMul'
   | 'faenerationOutputMul'
-  | 'vitiumCompositumOutputMul'
-  | 'vitiumCompositumInfluenceOutputMul'
-  | 'vitiumCompositumEffectMul'
   | 'acolyteEfficiencyMul'
   | 'invocationEfficiencyMul'
   | 'offlineTimeMul';
