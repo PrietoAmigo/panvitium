@@ -137,3 +137,10 @@ keep in sync. `pnpm build` only builds the apps.
 - **Zustand selector trap:** never build a fresh array/object inside a selector (e.g.
   `useStore(s => buildCabinet(s))`) — `useSyncExternalStore` sees an ever-changing snapshot and loops
   ("Maximum update depth exceeded"). Select the stable `state` and build in the render body.
+- **Player-facing copy (`packages/shared/src/strings.ts`) has two hard rules.** (1) Effect
+  descriptions ALWAYS include their numerical values — bake fixed magnitudes into the string from
+  the sim's data/constants; effects whose magnitude scales live (sigil boons, Sin skills) must keep
+  the quantity channel the UI composes (the sigil ↑/↓ terminal `splitBoon` replaces with the live
+  number; the "by 1 + intensity" coupling next to the displayed intensity). Never ship a bare
+  qualitative effect line. (2) NO em dashes or en dashes (U+2014 / U+2013), ever, in strings or
+  comments of that file — rewrite with a comma, colon, semicolon, period, or parentheses.
