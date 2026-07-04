@@ -57,17 +57,13 @@ export const strings = {
     idle: 'No rite underway.',
     search: 'Search',
     buy: 'Buy',
-    indagatioIntro:
-      'A search of the world\u2019s corners for useful artifacts.',
+    indagatioIntro: 'A search of the world\u2019s corners for useful artifacts.',
     emptioIntro: 'What the search surfaced, ready to be obtained.',
     emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be obtained.',
     indagatioCta: 'Begin the search',
-    depraedatioIntro:
-      'Coin seeded among the damned returns swollen.',
-    thesaurusBlurb:
-      'The loan book pays by the head; the hoard pays by its weight.',
-    syngraphaeBlurb:
-      'Short term contracts.',
+    depraedatioIntro: 'Coin seeded among the damned returns swollen.',
+    thesaurusBlurb: 'The loan book pays by the head; the hoard pays by its weight.',
+    syngraphaeBlurb: 'Short term contracts.',
     compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
@@ -148,8 +144,7 @@ export const strings = {
     decimatioBackfired: 'the rite backfired',
     // Each rite\u2019s flavour description, shown beneath its name.
     decimatioDesc: {
-      caedes:
-        'You put coin in a hired blade\u2019s hand and some names.',
+      caedes: 'You put coin in a hired blade\u2019s hand and some names.',
       pogrom: 'You loose your acolytes upon a crowd.',
       purgatio:
         'You call the whole of your following into the streets and give a city over to the dark.',
@@ -174,8 +169,7 @@ export const strings = {
     syngraphaeTab: 'Syngraphae',
     /** Mutuum \u2014 the loan book row. */
     mutuum: 'Mutuum',
-    mutuumBlurb:
-      'Small sums, lent through brokers against tomorrow\u2019s vice.',
+    mutuumBlurb: 'Small sums, lent through brokers against tomorrow\u2019s vice.',
     /** The loan book's living collateral: "1,234 debtors". */
     debtors: 'debtors',
     /** Thesaurus \u2014 the hoard. */
@@ -224,8 +218,7 @@ export const strings = {
       'usura-1': 'Interest rate \u00d71.5.',
       'usura-2': 'Interest rate \u00d71.5 (stacks to \u00d72.25).',
       'usura-3': 'Interest rate \u00d72 (stacks to \u00d74.5).',
-      'usura-4':
-        'Half of each interest payment auto-deposits into the hoard.',
+      'usura-4': 'Half of each interest payment auto-deposits into the hoard.',
       'faeneratio-1': 'Loan-book take \u00d71.5 per debtor.',
       'faeneratio-2':
         '+1 gold per murder, +0.5 gold per suicide \u2014 the estates of the dead escheat.',
@@ -234,8 +227,7 @@ export const strings = {
       'custodia-1': 'Withdrawal recovery \u00d71.6.',
       'custodia-2': '+2% gold gain per decade of hoard above 1,000, capped at +20%.',
       'custodia-3': 'Withdrawal recovery \u00d71.5. Stacks to 60%.',
-      'custodia-4':
-        'At the descent, kept gold is floored at 10% of the hoard.',
+      'custodia-4': 'At the descent, kept gold is floored at 10% of the hoard.',
     } as Record<string, string>,
   },
   acolytes: {
