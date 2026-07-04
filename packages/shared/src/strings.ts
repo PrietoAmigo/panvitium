@@ -1,8 +1,26 @@
 /**
  * Player-facing strings, keyed not concatenated (ADR-020). English-only at launch; adding a
  * locale later means populating a sibling module, not refactoring call sites. Latin terms
- * (Opera, Suasio, Katabasis, …) stay untranslated regardless of locale — they are the voice.
+ * (Opera, Suasio, Katabasis, …) stay untranslated regardless of locale: they are the voice.
  * This grows as the UI lands (step 4); it starts with the few labels the skeleton needs.
+ *
+ * TWO HARD COPY RULES (apply to every string in this module, no exceptions):
+ *
+ * 1. EFFECT DESCRIPTIONS ALWAYS CARRY THEIR NUMBERS. Any string that describes what a mechanic
+ *    does (invocation effects, Syngraphae node effects, Sin skill/level effects, sigil boons,
+ *    reply effects, …) must surface the numerical value of the effect. Fixed magnitudes are
+ *    baked into the string itself ("+33%", "×2", "0.01% chance", "+12.5% per level"), taken
+ *    from the sim's data/constants (the economy spreadsheet is the source of truth). Magnitudes
+ *    that scale live (sigil boons scale with souls bound; Sin skills with Devotion) keep the
+ *    quantity channel the UI composes: sigil descriptions end in their ↑/↓ terminal that
+ *    `splitBoon` replaces with the live number, and Sin skill lines state the exact coupling
+ *    ("by 1 + intensity") next to the intensity the UI displays. Never ship a bare qualitative
+ *    effect line ("raises gold gain") with no number in the string and no live value beside it.
+ *
+ * 2. NO EM DASHES, NO EN DASHES, EVER. Neither U+2014 nor U+2013 (literal or escaped) may appear
+ *    anywhere in this file, strings or comments. Rewrite with a comma, colon, semicolon, period,
+ *    or parentheses. Hyphens (-), the minus sign (−) in numeric deltas, and the middle dot
+ *    (·) as a separator are all fine.
  */
 export const strings = {
   appName: 'Panvitium',
@@ -18,7 +36,7 @@ export const strings = {
     about: 'About',
     back: 'Back',
     aboutBody:
-      'Panvitium is an idle descent into damnation. Corrupt the living into reprobates, cull them for their souls, and spend those souls climbing the hierarchy of Hell — lifetime after lifetime, world without end.\n\nThe Latin is left untranslated, as it should be. Everything else, you will learn by doing.',
+      'Panvitium is an idle descent into damnation. Corrupt the living into reprobates, cull them for their souls, and spend those souls climbing the hierarchy of Hell, lifetime after lifetime, world without end.\n\nThe Latin is left untranslated, as it should be. Everything else, you will learn by doing.',
   },
   resources: {
     souls: 'Souls',
@@ -57,21 +75,17 @@ export const strings = {
     idle: 'No rite underway.',
     search: 'Search',
     buy: 'Buy',
-    indagatioIntro:
-      'A search of the world\u2019s corners for useful artifacts.',
+    indagatioIntro: 'A search of the world\u2019s corners for useful artifacts.',
     emptioIntro: 'What the search surfaced, ready to be obtained.',
     emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be obtained.',
     indagatioCta: 'Begin the search',
-    depraedatioIntro:
-      'Coin seeded among the damned returns swollen.',
-    thesaurusBlurb:
-      'The loan book pays by the head; the hoard pays by its weight.',
-    syngraphaeBlurb:
-      'Short term contracts.',
+    depraedatioIntro: 'Coin seeded among the damned returns swollen.',
+    thesaurusBlurb: 'The loan book pays by the head; the hoard pays by its weight.',
+    syngraphaeBlurb: 'Short term contracts.',
     compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
-    // The Suasio scroll \u2014 \u201cOpus Suasio, the Honeyed Tongue\u201d (Claude Design rework).
+    // The Suasio scroll: \u201cOpus Suasio, the Honeyed Tongue\u201d (Claude Design rework).
     suasioEyebrow: 'The Honeyed Tongue',
     suasioTitle: 'Opus Suasio',
     suasioMaxim: 'Veritatis simplex oratio est',
@@ -90,7 +104,7 @@ export const strings = {
       imperium: 'Command',
       panvitium: 'Unleash',
     } as Record<string, string>,
-    // Panvitium is irreversible while it burns \u2014 the Unleash verb takes a second, confirming press.
+    // Panvitium is irreversible while it burns, so the Unleash verb takes a second, confirming press.
     suasioConfirm: 'Let it burn?',
     // The flicker line shown while a temptation is underway.
     suasioStatus: {
@@ -122,7 +136,7 @@ export const strings = {
     panvitium: 'Panvitium',
     panvitiumRising: 'and rising',
 
-    // Decimatio \u2014 \u201cThe Breathing Dark\u201d (Claude Design rework). The culling program\u2019s PC
+    // Decimatio: \u201cThe Breathing Dark\u201d (Claude Design rework). The culling program\u2019s PC
     // body: three rites, a live Reprobates KPI, and the \u201cIndex Opervm\u201d ledger of real outcomes.
     // Latin terms (the creed, the ledger heading, the rite names) stay untranslated (ADR-020).
     decimatioCreed: 'Pars pro toto cadat.',
@@ -132,7 +146,8 @@ export const strings = {
     decimatioGoldUnit: 'g',
     // The auto-repeat toggle label on a rite card (the on-state is carried by colour, not text).
     decimatioAuto: '\u21bb Auto',
-    decimatioLedgerHeading: '\u2e3b INDEX OPERVM \u2e3b',
+    // Decorative rules are box-drawing lines (U+2500), never dashes (hard copy rule 2).
+    decimatioLedgerHeading: '\u2500 INDEX OPERVM \u2500',
     decimatioEmptyLedger: 'No action has been taken yet.',
     // A gated rite (Pogrom, Purgatio) before its Ira gate is met shows a sealed card: its name
     // suffixed with this, plus the lock note below.
@@ -148,8 +163,7 @@ export const strings = {
     decimatioBackfired: 'the rite backfired',
     // Each rite\u2019s flavour description, shown beneath its name.
     decimatioDesc: {
-      caedes:
-        'You put coin in a hired blade\u2019s hand and some names.',
+      caedes: 'You put coin in a hired blade\u2019s hand and some names.',
       pogrom: 'You loose your acolytes upon a crowd.',
       purgatio:
         'You call the whole of your following into the streets and give a city over to the dark.',
@@ -164,7 +178,7 @@ export const strings = {
   /**
    * The Faeneratio loop (Depraedatio gold rework): Mutuum the loan book, Thesaurus the hoard,
    * Syngraphae the contracts. Latin terms untranslated (ADR-020). LOAD-BEARING register: the
-   * damned never pay the player tribute and never know the player exists \u2014 the vocabulary is
+   * damned never pay the player tribute and never know the player exists; the vocabulary is
    * loans, interest, capital, enterprises, ledgers, counting houses, escheat; never "tribute",
    * never "the masses pay you".
    */
@@ -172,13 +186,12 @@ export const strings = {
     /** The Depraedatio tab titles the two new surfaces render under. */
     thesaurusTab: 'Thesaurus',
     syngraphaeTab: 'Syngraphae',
-    /** Mutuum \u2014 the loan book row. */
+    /** Mutuum, the loan book row. */
     mutuum: 'Mutuum',
-    mutuumBlurb:
-      'Small sums, lent through brokers against tomorrow\u2019s vice.',
+    mutuumBlurb: 'Small sums, lent through brokers against tomorrow\u2019s vice.',
     /** The loan book's living collateral: "1,234 debtors". */
     debtors: 'debtors',
-    /** Thesaurus \u2014 the hoard. */
+    /** Thesaurus, the hoard. */
     thesaurus: 'Thesaurus',
     thesaurusBlurb:
       'The hoard is placed with the counting house and set upon the enterprises of vice.',
@@ -198,8 +211,9 @@ export const strings = {
     anatocismusRate: 'Interest upon interest, by contract',
     /** The global Foedus tier badge (tier as a Roman numeral: "Foedus II"). */
     foedus: 'Foedus',
-    foedusTitle: 'A fat vault greases the ceremonies \u2014 their upkeep runs cheaper.',
-    /** Syngraphae \u2014 the contract tree. */
+    foedusTitle:
+      'A fat vault greases the ceremonies: each Foedus tier cuts their upkeep by 12.5% (one tier per decade of hoard above 10,000, up to IV).',
+    /** Syngraphae, the contract tree. */
     syngraphaeIntro:
       'Contracts in the Hoarder\u2019s ink. The fee is burned; the terms endure until the descent.',
     sign: 'Sign',
@@ -219,23 +233,20 @@ export const strings = {
       'faeneratio-2': 'Escheat',
       'custodia-4': 'Peculium',
     } as Record<string, string>,
-    /** One line per node, shown on its card — numbers first, so the gain is never a riddle. */
+    /** One line per node, shown on its card. Numbers first, so the gain is never a riddle. */
     nodeEffects: {
       'usura-1': 'Interest rate \u00d71.5.',
       'usura-2': 'Interest rate \u00d71.5 (stacks to \u00d72.25).',
       'usura-3': 'Interest rate \u00d72 (stacks to \u00d74.5).',
-      'usura-4':
-        'Half of each interest payment auto-deposits into the hoard.',
+      'usura-4': '50% of each interest payment auto-deposits into the hoard.',
       'faeneratio-1': 'Loan-book take \u00d71.5 per debtor.',
-      'faeneratio-2':
-        '+1 gold per murder, +0.5 gold per suicide \u2014 the estates of the dead escheat.',
+      'faeneratio-2': '+1 gold per murder, +0.5 gold per suicide: the estates of the dead escheat.',
       'faeneratio-3': 'Loan-book take \u00d72 (stacks to \u00d73).',
       'faeneratio-4': 'The Katabasis hoard liquidation pays \u00d71.25.',
-      'custodia-1': 'Withdrawal recovery \u00d71.6.',
+      'custodia-1': 'Withdrawal recovery \u00d71.6 (25% becomes 40%).',
       'custodia-2': '+2% gold gain per decade of hoard above 1,000, capped at +20%.',
       'custodia-3': 'Withdrawal recovery \u00d71.5. Stacks to 60%.',
-      'custodia-4':
-        'At the descent, kept gold is floored at 10% of the hoard.',
+      'custodia-4': 'At the descent, kept gold is floored at 10% of the hoard.',
     } as Record<string, string>,
   },
   acolytes: {
@@ -255,8 +266,7 @@ export const strings = {
   },
   invocations: {
     intro: 'Names called up from below.',
-    empty:
-      'Gather invoking power \u2014 from maleficia \u2014 to glimpse what waits beneath the ink.',
+    empty: 'Gather invoking power from maleficia to glimpse what waits beneath the ink.',
     power: 'Invoking power',
     summon: 'Summon',
     dispel: 'Dispel',
@@ -310,28 +320,33 @@ export const strings = {
       suasioEff: 'Suasio efficiency',
       playerEff: 'player efficiency',
     },
-    /** Qualitative fallback line for invocations whose effect isn't a live modifier-bundle magnitude
-     *  (Katabasis / per-tick apex / conversion-bias entities). Runners show action + outcome + cycle
-     *  time instead; the other passives show the computed quantified effect. */
+    /** Fallback line for invocations whose effect isn't a live modifier-bundle magnitude
+     *  (Katabasis / per-tick apex entities). Runners show action + outcome + cycle time instead;
+     *  the other passives show the computed quantified effect. Per hard copy rule 1, every line
+     *  still bakes in its base numbers from the sim (invocations.data.ts, modifiers.ts, apex.ts,
+     *  constants.ts); the scaled invocations state their per-copy base factor. */
     effects: {
-      familiar: '+33% player efficiency, plus a background Indagatio.',
-      imp: 'A background Good-only Decimatio.',
-      upir: 'A background Good-only Decimatio.',
-      lamia: 'A background Suasio, and shifts Suasio toward success.',
-      fama: 'Raises influence gain.',
-      nightmare: 'Raises the base reprobate suicide rate.',
-      harpy: 'Raises Decimatio efficiency.',
-      lemure: 'Raises the offline gain rate.',
-      behemoth: 'Raises the Stellar success chance.',
+      familiar: '+33% player efficiency, plus a background Indagatio at 1% of your efficiency.',
+      imp: 'A background Good-only Caedes at 5% of your efficiency.',
+      upir: 'A background Good-only Caedes at 5% of your efficiency.',
+      lamia: 'A background Logismoi at 5% of your efficiency.',
+      fama: '+5% influence gain per copy, scaled by your efficiency.',
+      nightmare: '+0.00005/s base reprobate suicide rate per copy, scaled by your efficiency.',
+      harpy: 'A background Good-only Pogrom at 5% of your efficiency.',
+      lemure: '+2.5% offline gain rate per copy, scaled by your efficiency.',
+      behemoth: '+0.05% Stellar chance per copy, scaled by your efficiency.',
       midas: '×3 gold gain but ×100 the Apocalyptic chance.',
-      plutus: 'Raises the Faeneratio output.',
-      succubus: 'Raises Suasio efficiency, minimizes gold generation.',
-      doppelgaenger: '+50% player efficiency, at half influence gain.',
-      astiwihad: 'Each second, a chance to wipe all reprobates into souls.',
-      aurevora: 'Player efficiency ramps exponentially — burns gold, self-dispels at zero.',
-      erinyes: 'At the next Katabasis: kills every reprobate and permanently doubles efficiency.',
-      morpheus: 'Holds the world still; at Katabasis, maxes the carry-over rolls.',
-      specunitas: 'Apex Vanagloria invocation.',
+      plutus: '+5% Faeneratio output per copy, scaled by your efficiency.',
+      succubus: 'A background Imperium at 99% of your efficiency; upkeep takes 99% of gold gain.',
+      doppelgaenger: '+50% player efficiency, at −50% influence gain.',
+      astiwihad:
+        'Each second, a 0.01% chance every reprobate suicides at once; each death mints 1 soul.',
+      aurevora:
+        'Player efficiency ×1.05 per second active; drains gold at 100/s, growing ×1.05 per second, and self-dispels at 0 gold.',
+      erinyes:
+        'Kills every reprobate (each mints 1 soul); at the next Katabasis, a permanent ×2 player efficiency, but 0% gold and maleficia carried.',
+      morpheus: 'Holds the world still; at Katabasis, carries 100% of gold and 100% of maleficia.',
+      specunitas: '×2 influence gain.',
     } as Record<string, string>,
   },
   maleficia: {
@@ -348,7 +363,7 @@ export const strings = {
     use: 'Use',
     handOfGloryLeft: 'of fevered generation remain',
     defixioOn: 'A curse gnaws at the reprobates',
-    oracleCaption: 'What the omens already weigh — the odds of each outcome, should you act now:',
+    oracleCaption: 'The odds of each outcome, as the omens already weigh them, should you act now:',
   },
   analytics: {
     title: 'Analytics',
@@ -388,21 +403,21 @@ export const strings = {
     forward: 'Forward',
     archive: 'Archive',
     deleteLabel: 'Delete',
-    replyHint: 'This message awaits your reply \u2014 use Reply to answer.',
+    replyHint: 'This message awaits your reply. Use Reply to answer.',
     chooseReply: 'Choose your reply',
     cancel: 'Cancel',
     repliedLabel: 'You replied',
     noMessage: 'No message selected.',
     noCorrespondence: 'No correspondence.',
-    // Provisional content (Phase 5.2) — sender / subject / body keyed by the sim email id.
+    // Provisional content (Phase 5.2): sender / subject / body keyed by the sim email id.
     // Body spacing is authored PER SENDER so the inbox reads like real mail (the reading pane renders
     // bodies with `white-space: pre-wrap`, so `\n\n` is a blank line between paragraphs and `\n` a
-    // plain line break): writers who care — the steward, the parish and clergy, the newsletters, and
-    // above all the fastidious Fausto — get a greeting, paragraph breaks at natural beats, and a blank
+    // plain line break): writers who care (the steward, the parish and clergy, the newsletters, and
+    // above all the fastidious Fausto) get a greeting, paragraph breaks at natural beats, and a blank
     // line before the sign-off; Reuben, a barely-literate mason who cares for none of it, is left as
     // one unbroken run-on block (this also keeps his sentence-initial acrostics easy to read off).
     catalog: {
-      // ── Household — Gideon Reyes, the steward ──
+      // ── Household: Gideon Reyes, the steward ──
       'gideon-1': {
         from: 'Gideon Reyes',
         addr: 'g.reyes@reyes-stewardship.com',
@@ -428,7 +443,7 @@ export const strings = {
         body: 'I do not know what you did, and I have decided not to ask. Everything, and I mean everything, is up. The shops, the property, the side of the book that usually limps, all of it printing money this month as though the stars lined up over your head and agreed you had earned it. I have stopped trying to explain it to the accountant and started simply enjoying it. Keep doing whatever it is.\n\nYour humble and slightly bewildered steward,\nGideon',
       },
 
-      // ── The world / commerce — newsletters and reactive mail ──
+      // ── The world / commerce: newsletters and reactive mail ──
       'newsletter-markets': {
         from: 'Cinder & Vale Research',
         addr: 'brief@cindervale-research.com',
@@ -614,8 +629,8 @@ export const strings = {
       },
 
       // The madman - Reuben Marsh. Deliberately UNSPACED: one run-on block per letter, no paragraph
-      // breaks — he does not bother with any of that. (His sentence-initial acrostics — KATABASIS,
-      // OBSIDIAN, WAKE UP — also rely on the sentences staying contiguous, so leave the bodies whole.)
+      // breaks; he does not bother with any of that. (His sentence-initial acrostics, KATABASIS,
+      // OBSIDIAN, WAKE UP, also rely on the sentences staying contiguous, so leave the bodies whole.)
       'reuben-1': {
         from: 'Reuben Marsh',
         addr: 'reubenmarsh.mason@gmail.com',
@@ -711,8 +726,9 @@ export const strings = {
       english: 'Gluttony',
       epithet: 'Lord of the Flies',
       skill: 'Insatiability',
-      skillEffect: 'Raises your online action efficiency.',
-      levelEffect: 'Each level strips away Bad, Terrible and Apocalyptic outcomes.',
+      skillEffect: 'Multiplies your online action efficiency by 1 + intensity.',
+      levelEffect:
+        'Each level removes 25% of the Bad, Terrible and Apocalyptic outcome weight; at level 4 they are gone.',
     },
     luxuria: {
       prince: 'Asmodeus',
@@ -720,8 +736,8 @@ export const strings = {
       english: 'Lust',
       epithet: 'King of the Nine Hells',
       skill: 'Seduction',
-      skillEffect: 'Increases overall reprobate generation rate.',
-      levelEffect: 'Each level doubles your Suasio action efficiency.',
+      skillEffect: 'Multiplies the reprobate generation rate by 1 + intensity.',
+      levelEffect: 'Each level doubles (×2) your Suasio action efficiency.',
     },
     avaritia: {
       prince: 'Mammon',
@@ -729,8 +745,8 @@ export const strings = {
       english: 'Greed',
       epithet: 'The Hoarder Below',
       skill: 'Golden Hand',
-      skillEffect: 'Increases overall gold gain rate.',
-      levelEffect: 'Each level keeps more gold on descent.',
+      skillEffect: 'Multiplies the gold gain rate by 1 + intensity.',
+      levelEffect: 'Each level adds +12.5% to the gold kept on descent (base 5%).',
     },
     tristitia: {
       prince: 'Leviathan',
@@ -738,8 +754,8 @@ export const strings = {
       english: 'Sorrow',
       epithet: 'The Coiled Deep',
       skill: 'Resignation',
-      skillEffect: 'Increases Suasio success and acolyte efficiency.',
-      levelEffect: 'Each level keeps more reprobates on descent.',
+      skillEffect: 'Multiplies Suasio success and acolyte efficiency by 1 + intensity.',
+      levelEffect: 'Each level adds +12.5% to the reprobates kept on descent (base 5%).',
     },
     ira: {
       prince: 'Satan',
@@ -747,8 +763,8 @@ export const strings = {
       english: 'Wrath',
       epithet: 'The Adversary',
       skill: 'Retribution',
-      skillEffect: 'Increases Decimatio success and invocation efficiency.',
-      levelEffect: 'Each level doubles your Decimatio action efficiency.',
+      skillEffect: 'Multiplies Decimatio success and invocation efficiency by 1 + intensity.',
+      levelEffect: 'Each level doubles (×2) your Decimatio action efficiency.',
     },
     acedia: {
       prince: 'Belphegor',
@@ -756,8 +772,9 @@ export const strings = {
       english: 'Sloth',
       epithet: 'The Idle Throne',
       skill: 'Procrastination',
-      skillEffect: 'Increases offline generation, gold and efficiency.',
-      levelEffect: 'Each level compounds your offline time.',
+      skillEffect: 'Multiplies offline generation, gold and efficiency by 1 + intensity.',
+      levelEffect:
+        'Each level compounds your offline time by ×1.0000002 per offline second, per level squared.',
     },
     vanagloria: {
       prince: 'Rosier',
@@ -765,8 +782,8 @@ export const strings = {
       english: 'Vainglory',
       epithet: 'The Fair Tongue',
       skill: 'Acclaim',
-      skillEffect: 'Increases maximum influence.',
-      levelEffect: 'Each level raises your influence gain rate.',
+      skillEffect: 'Multiplies maximum influence by 1 + intensity.',
+      levelEffect: 'Each level multiplies your influence gain rate by ×1.33.',
     },
     superbia: {
       prince: 'Lucifer',
@@ -774,26 +791,27 @@ export const strings = {
       english: 'Pride',
       epithet: 'The Light-Bringer',
       skill: 'Morning Star',
-      skillEffect: 'Increases overall Stellar outcomes.',
-      levelEffect: 'Each level keeps more maleficia on descent.',
+      skillEffect: 'Multiplies the Stellar outcome chance by 1 + intensity.',
+      levelEffect:
+        'Each level adds +12.5% to the chance each maleficium survives descent (base 5%).',
     },
   },
   altar: {
     intro:
       'The Devotion owed each Prince, and the rank it buys you. Bound sigils show here once they bite.',
-    descend: 'Lay upon the altar — descend',
-    descendArm: 'Once you descend there is no climbing back — tap again to commit',
-    descendConfirm: 'Descend — no return',
+    descend: 'Lay upon the altar and descend',
+    descendArm: 'Once you descend there is no climbing back. Tap again to commit',
+    descendConfirm: 'Descend. No return',
     sigilsNone: 'No sigils bound.',
   },
   katabasis: {
     title: 'Katabasis',
     intro:
-      'You lie still; the soul descends to settle its accounts. Hold to pour souls into a Prince or a seal — the longer you hold, the faster they flow. When you are ready, ascend.',
+      'You lie still; the soul descends to settle its accounts. Hold to pour souls into a Prince or a seal: the longer you hold, the faster they flow. When you are ready, ascend.',
     pool: 'Souls in the pool',
     skill: 'Skill',
     mastered: 'Mastered',
-    confirm: 'Ascend — rise to the world',
+    confirm: 'Ascend. Rise to the world',
     pageSins: 'Cardinal Sins',
     pageSigils: 'The Goetia',
     prev: 'Back',
@@ -812,7 +830,7 @@ export const strings = {
   sigils: {
     heading: 'The Goetia',
     intro:
-      'Bind souls to a seal for a passive boon. Bindings persist through every descent \u2014 unbind a seal to reclaim its souls.',
+      'Bind souls to a seal for a passive boon. Bindings persist through every descent; unbind a seal to reclaim its souls.',
     unbind: 'Unbind',
     unbindAll: 'Unbind all',
     lock: 'Bind',
@@ -838,6 +856,11 @@ export const strings = {
     // Concise effect per seal, authoritative against the economy spreadsheet's "In-game effect"
     // column (Sigils sheet). '\u2191' = raise, '\u2193' = soften. The sim (sigils.ts) implements
     // these exact effects; this is the single source for the Katabasis ledger display.
+    // Hard copy rule 1 note: a sigil's magnitude scales with the souls bound to it, so no static
+    // number can live in these strings. The number channel is the UI: `splitBoon` strips the
+    // trailing \u2191/\u2193 terminal and the ledger renders the LIVE computed magnitude in its
+    // place. Keep every entry ending in its \u2191/\u2193 terminal (orphaned #12 excepted) so that
+    // splice keeps working; never replace the terminal with prose.
     descriptions: {
       1: 'Opera negative outcomes \u2193',
       2: 'Indagatio double-output chance \u2191',
@@ -850,7 +873,7 @@ export const strings = {
       9: 'Influence costs \u2193',
       10: 'Familiar effect \u2191',
       11: 'Vitium Compositum effects \u2191',
-      12: 'Its office stands vacant \u2014 the trade it fed is gone.',
+      12: 'Its office stands vacant; the trade it fed is gone.',
       13: 'Decimatio positive outcomes \u2191',
       14: 'Murder \u2192 suicide chance \u2191',
       15: 'Offline influence gain \u2191',
@@ -954,7 +977,7 @@ export const strings = {
   eternal: {
     // The blacked-out ninth Sin, shown in the Katabasis menu once all eight are mastered.
     herald:
-      'Something stands above the eight. It has no name you can read \u2014 yet it takes what you give.',
+      'Something stands above the eight. It has no name you can read, yet it takes what you give.',
     unknown: '\u2588\u2588\u2588\u2588\u2588',
     ninth: 'The Ninth',
     complete: 'It knows your name. It was always yours.',
@@ -963,7 +986,7 @@ export const strings = {
     epithet: 'The King of All Sins',
     // The reveal / credits screen.
     revealKicker: 'The name beneath the ink resolves.',
-    gloss: 'Semet \u2014 "oneself." There was never another prince. There was only you.',
+    gloss: 'Semet, "oneself." There was never another prince. There was only you.',
     verse:
       'Iam pridem scis te perditum esse. Quiescere non potes, sed nihil agis: nihil enim venenum acerbissimum est, ornamentum gravissimum, quod cervicem premit nec umquam deponi patitur. At inter has tenebras amor eorum iustus ignem accendit, eaque sola flamma, quamvis tenuis, viam tibi monstrat.',
     scoreLabel: 'Time to ascend',
@@ -988,7 +1011,7 @@ export const strings = {
     conflict: {
       title: 'Two histories diverge',
       intro:
-        'The cloud holds a different lifetime than this device. Choose which to keep \u2014 the other will be overwritten.',
+        'The cloud holds a different lifetime than this device. Choose which to keep; the other will be overwritten.',
       thisDevice: 'This device',
       cloud: 'Cloud',
       souls: 'Souls',
@@ -998,7 +1021,7 @@ export const strings = {
       keepServer: 'Use the cloud',
     },
   },
-  // The smartphone dialer (design handoff: "The Smartphone — Dialer & Code Input"). Device chrome is
+  // The smartphone dialer (design handoff: "The Smartphone, Dialer & Code Input"). Device chrome is
   // mundane/flavour; the real boon/info effects + copy arrive with the outgoing-call engine
   // (docs/PANVITIUM-CALLS-OUT.md), deferred for now.
   phone: {
@@ -1014,13 +1037,13 @@ export const strings = {
     // requirements, the decline markers) lives in apps/web's `calls-in.data.ts`; this owns the
     // English a player reads. `tag` is the caller line shown over the answered plate (the big name is
     // its last `·` segment); `line` is the spoken text and is present only for a future typed
-    // (fileless) call — every catalogued call today plays its mp3. Latin choice labels are left
+    // (fileless) call; every catalogued call today plays its mp3. Latin choice labels are left
     // untranslated (ADR-020). Canonical content: docs/PANVITIUM-CALLS-IN.md.
     callIn: {
       // Top-left corner mark on the call stage, and the hint under a playing recording.
       kicker: 'Panvitium · the line',
       skip: 'tap to skip',
-      // Display names for the buff/debuff fields an effect can touch — used to GENERATE each option's
+      // Display names for the buff/debuff fields an effect can touch, used to GENERATE each option's
       // sub-label (see `describeCallInEffects`). Stored lower-case for mid-sentence use; the generator
       // capitalises the sentence and supplies the verbs/connectives (presentation logic, ADR-020).
       fields: {
@@ -1033,7 +1056,7 @@ export const strings = {
         influenceRegenRate: 'influence regeneration',
         offlineRate: 'offline progress',
       } as Record<string, string>,
-      // Option labels only — the sub-label under each option is generated from the choice's effects.
+      // Option labels only; the sub-label under each option is generated from the choice's effects.
       calls: {
         // ── Positive buffs ──
         'the-cycle-turns': {

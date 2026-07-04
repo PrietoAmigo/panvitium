@@ -412,11 +412,7 @@ function StatuesPlace({
       {showCaption && (
         <div className="hell-caption">
           <div className="t">{ended ? 'The Eternal Sin' : 'The Court of Spires'}</div>
-          <div className="s">
-            {ended
-              ? 'The Princes bow.'
-              : 'Bow before the Princes.'}
-          </div>
+          <div className="s">{ended ? 'The Princes bow.' : 'Bow before the Princes.'}</div>
         </div>
       )}
 
