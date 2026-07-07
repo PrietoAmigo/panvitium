@@ -2233,6 +2233,16 @@ body {
   font-size: 0.68rem;
   color: var(--faint);
 }
+/* The carry-over row sits just beneath the standing-summary row; the ember figures mark it as the
+   "what a descent would keep right now" preview. */
+.katabasis-flow .ledger-summary--carryover {
+  margin: -34px auto 52px;
+  border-top: none;
+}
+.katabasis-flow .ledger-summary--carryover .ls-num.ember {
+  color: #e0934a;
+  text-shadow: 0 0 18px rgba(224, 147, 74, 0.3);
+}
 .katabasis-flow .ledger-section-head {
   display: flex;
   align-items: center;

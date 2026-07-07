@@ -52,12 +52,19 @@ export const BASE_SUICIDE_RATE_PER_SECOND = 0.0001;
 export const BASE_REPROBATE_GENERATION_PER_SECOND = 0;
 
 /**
- * Panvitium's instantaneous rate base R₀ (Globals: 1 × Base VC conversion rate 0.01). With the
- * conversion mechanic removed, R(t) = R₀·eᵗ no longer drives conversion; it still drives the two
- * surviving coupled effects (soul harvest ∝ current souls, and a flat reprobate-generation
- * increase). t = seconds Panvitium has been active; the eᵗ growth base is shared with the cost ramp.
+ * Panvitium's instantaneous rate base R₀. R(t) = R₀·growthᵗ drives the two surviving coupled
+ * effects (soul harvest ∝ current souls, and a flat reprobate-generation increase); t = seconds
+ * Panvitium has been active, and the growth base is shared with the cost ramp (compositum.data.ts).
+ *
+ * Retuned down from 0.01 (with the cost ramp softened from eᵗ, see `costGrowthPerSecond`): the old
+ * base-e ramp made the harvest a per-second explosion (R ≈ 220/s after ten seconds), and the paired
+ * influence upkeep self-extinguished the ritual in ~3 s so the harvest was never realised. The
+ * ∝-souls harvest with a rising rate is inherently tail-heavy — the multiplier climbs steeply with
+ * how long the gold hoard sustains the burn (roughly a few-fold at five minutes, far more for a
+ * longer, richer burn) — so this base is kept conservative. Spreadsheet-overridable (the sheet's
+ * Invocations/Globals block wins on the number; the coupled shape is authoritative).
  */
-export const PANVITIUM_RATE_BASE = 0.01;
+export const PANVITIUM_RATE_BASE = 0.001;
 
 /**
  * Base reprobate murder rate (kills / reprobate / second), applied to the whole population, before
@@ -128,13 +135,14 @@ export const AUREVORA_EFFICIENCY_GROWTH_PER_SECOND = 1.05;
  */
 /**
  * Sins & Devotion sheet (rev 2026-06-12), per-level effects:
- * - Gula: each level removes a quarter of the negative tiers' weight (Bad/Terrible/Apocalyptic
- *   ×(1 − 0.25·L), level 4 → no negative outcomes; freed mass renormalizes across the rest).
+ * - Gula: each level removes a fifth of the negative tiers' weight (Bad/Terrible/Apocalyptic
+ *   ×(1 − 0.2·L), level 4 → 20% of the negative weight remains; freed mass renormalizes across
+ *   the rest).
  * - Luxuria: ×2 overall Suasio efficiency per level. - Ira: ×2 overall Decimatio efficiency
  *   per level. The old ×1.33 Ira acolyte/invocation ladder is retired — those channels are now
  *   the Tristitia (acolytes) and Ira (invocations) SKILL intensities.
  */
-export const GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL = 0.25;
+export const GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL = 0.2;
 export const LUXURIA_SUASIO_EFF_PER_LEVEL = 2;
 export const IRA_DECIMATIO_EFF_PER_LEVEL = 2;
 

@@ -57,23 +57,63 @@ describe('resolveIndagatio (03 §2.5)', () => {
     ).toBe(200);
   });
 
-  it('caps the Emptio list at 20, dropping the oldest find (FIFO) on the 21st', () => {
-    // Pre-fill the list with 20 sentinels — a stackable common so a fresh Neutral find can still
-    // surface (the catalog item is never exhausted). 'marker-0' is the oldest.
+  it('caps the Emptio list at 20, evicting a lower/same-rarity item and never a rarer one', () => {
+    // Fill the list with 19 stackable commons + one profane item. A Neutral find (common) must evict
+    // one of the commons (same rarity) and leave the profane untouched — a common find can never cost
+    // you a rarer relic (the old FIFO could drop the profane just for being oldest).
     const base = fresh();
-    const filled = Array.from({ length: 20 }, (_, i) =>
-      i === 0 ? 'marker-0' : 'black_salt_pouch',
-    );
+    const filled = [
+      'obsidian_mirror', // profane — must survive
+      ...Array.from({ length: 19 }, () => 'black_salt_pouch'), // stackable commons
+    ];
     const seeded: GameState = {
       ...base,
       lifetime: { ...base.lifetime, emptioList: filled },
     };
     const { state, surfaced } = resolveIndagatio(seeded, 'neutral', rng());
     expect(surfaced.length).toBe(1);
-    // Still exactly 20: the 21st find pushed the oldest ('marker-0') out the front.
+    expect(MALEFICIA[surfaced[0]!]!.rarity).toBe('common');
+    // Still exactly 20, the profane preserved, and the new common present.
     expect(state.lifetime.emptioList.length).toBe(20);
-    expect(state.lifetime.emptioList).not.toContain('marker-0');
-    expect(state.lifetime.emptioList[19]).toBe(surfaced[0]!);
+    expect(state.lifetime.emptioList).toContain('obsidian_mirror');
+    expect(state.lifetime.emptioList).toContain(surfaced[0]!);
+  });
+
+  it('drops the incoming find when the full list holds only rarer items', () => {
+    // A full list of profane items and a Neutral (common) find: nothing lower or equal to evict, so
+    // the common is dropped rather than displacing a rarer relic. The list is left untouched.
+    const base = fresh();
+    const filled = Array.from({ length: 20 }, () => 'obsidian_mirror'); // profane, stackable? no —
+    // obsidian_mirror is non-stackable, but the eviction rule fires before the stack check matters
+    // here: the list is full and every entry outranks a common find.
+    const seeded: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, emptioList: filled },
+    };
+    const { state, surfaced } = resolveIndagatio(seeded, 'neutral', rng());
+    expect(surfaced).toEqual([]);
+    expect(state.lifetime.emptioList).toEqual(filled);
+  });
+
+  it('never evicts an item currently being purchased (an in-flight Emptio target)', () => {
+    // The list is full of commons; one common is the target of an in-flight Emptio timer. A new
+    // common find must evict a DIFFERENT common, never the one mid-purchase.
+    const base = fresh();
+    const filled = [
+      'black_robe', // the in-flight purchase target (common, non-stackable)
+      ...Array.from({ length: 19 }, () => 'black_salt_pouch'),
+    ];
+    const seeded: GameState = {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        emptioList: filled,
+        actionQueue: [{ actionId: 'emptio', remainingSeconds: 30, target: 'black_robe' }],
+      },
+    };
+    const { state, surfaced } = resolveIndagatio(seeded, 'neutral', rng());
+    expect(surfaced.length).toBe(1);
+    expect(state.lifetime.emptioList).toContain('black_robe'); // the purchase target survived
   });
 
   it('falls back to a lower rarity when the picked one is exhausted', () => {
@@ -189,10 +229,19 @@ describe('resolveEmptio (03 §2.6)', () => {
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(500); // 1000 → lose 50%
   });
 
-  it('refuses to act on an item not on the list', () => {
-    const r = resolveEmptio(fresh(), 'good', 'black_robe');
+  it('refunds the paid gold when the item is no longer on the list', () => {
+    // The gold was deducted at startAction; if the target vanished from the list before the buy
+    // resolved (evicted by a later find, a parallel hand), the purchase can't complete, so the paid
+    // gold is refunded rather than pocketed silently.
+    const paid = 400;
+    const seeded: GameState = {
+      ...fresh(),
+      lifetime: { ...fresh().lifetime, gold: bn(1000) }, // startAction already took the 400
+    };
+    const r = resolveEmptio(seeded, 'good', 'black_robe', paid);
     expect(r.acquired).toEqual([]);
-    expect(r.state).toEqual(fresh());
+    expect(r.lostFromList).toEqual([]);
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(1400); // 1000 + refunded 400
   });
 
   it('startAction stamps the gold PAID on the timer, and refunds track it over a recompute', () => {

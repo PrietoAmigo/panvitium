@@ -102,9 +102,9 @@ describe('action unlock gating (Suasio sheet)', () => {
     expect(startAction(withInf(fresh()), 'logismoi').ok).toBe(false);
     const ok = startAction(withInf(withLuxuria(fresh(), 2)), 'logismoi');
     expect(ok.ok).toBe(true);
-    // Luxuria L2 also lifts Suasio efficiency ×4 (sheet rev), and cost-outcome mode scales the
-    // cost with it: 25 × 4 = 100 influence.
-    if (ok.ok) expect(floor(ok.state.lifetime.influence).toNumber()).toBe(0); // 100 - 100
+    // Luxuria L2 also lifts Suasio efficiency ×4 (sheet rev). Suasio influence cost scales by the
+    // LOG of efficiency (playability retune): 25 × (1 + ln 4) = 25 × 2.386 → ceil 60 influence.
+    if (ok.ok) expect(floor(ok.state.lifetime.influence).toNumber()).toBe(40); // 100 - 60
   });
 });
 
@@ -275,7 +275,8 @@ describe('resolveAction', () => {
 describe('modifier integration', () => {
   it('startAction defaults its efficiency to playerEfficiency(state) — Gula skill scales cost', () => {
     // Gula Devotion 32 400 → Insatiability intensity ≈ 1.6502 (sheet rev: skill, not level) →
-    // playerEfficiencyMul ≈ 2.6502. Suggestion costs ceil(1 × 2.6502) = 3 influence.
+    // playerEfficiencyMul ≈ 2.6502. Suasio cost scales by the LOG of efficiency (playability retune):
+    // Suggestion costs ceil(1 × (1 + ln 2.6502)) = ceil(1.975) = 2 influence.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -284,11 +285,11 @@ describe('modifier integration', () => {
     };
     const r = startAction(state, 'suggestion');
     expect(r.ok).toBe(true);
-    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(47); // 50 - 3
+    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(48); // 50 - 2
   });
 
   it('startAction with Gula L2 and only enough influence for L0 cost is refused', () => {
-    // 1 influence covers an unscaled (eff=1, cost 1) Suggestion but not the Gula-scaled cost 3.
+    // 1 influence covers an unscaled (eff=1, cost 1) Suggestion but not the Gula-scaled cost 2.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -458,6 +459,47 @@ describe('resolvePurgatio', () => {
     expect(goldOf(apoc)).toBe(0);
     expect(totalReprobates(apoc)).toBe(0);
     expect(soulsOf(apoc)).toBe(0); // none of it harvested
+  });
+});
+
+describe('delegated (low-efficiency) resolutions scale their LOSSES by efficiency', () => {
+  // Gold loss goes through a BigNum fraction multiply then a floor, so the kept amount can land a
+  // coin under the arithmetic value; assertions on gold allow ±1 while the reprobate counts (integer
+  // fractions of an integer pool) stay exact.
+  const near = (n: number, target: number): void => {
+    expect(n).toBeGreaterThanOrEqual(target - 1);
+    expect(n).toBeLessThanOrEqual(target);
+  };
+
+  it('Purgatio Terrible at acolyte efficiency 0.33 keeps ~67% of gold (not zero)', () => {
+    const s = withGold(addReprobates(fresh(), 200), 1_000_000);
+    // Player (eff 1) burns all gold; a delegated cull at 0.33 burns only 33% of it.
+    expect(goldOf(resolvePurgatio(s, 'terrible', rng(), 1))).toBe(0);
+    near(goldOf(resolvePurgatio(s, 'terrible', rng(), 0.33)), 670_000); // 1e6 × (1 − 0.33)
+  });
+
+  it('Caedes Apocalyptic at efficiency 0.5 halves both the gold and the reprobate loss', () => {
+    const s = withGold(addReprobates(fresh(), 200), 1000);
+    // Full: −33% gold, −25% flock. At 0.5: −16.5% gold, −12.5% flock.
+    const full = resolveCaedes(s, 'apocalyptic', rng(), 1);
+    near(goldOf(full), 670); // 1000 × (1 − 0.33)
+    expect(totalReprobates(full)).toBe(150); // 200 − floor(200 × 0.25)
+    const half = resolveCaedes(s, 'apocalyptic', rng(), 0.5);
+    near(goldOf(half), 835); // 1000 × (1 − 0.165)
+    expect(totalReprobates(half)).toBe(175); // 200 − floor(200 × 0.125)
+  });
+
+  it('Suggestion Apocalyptic at invocation-runner efficiency 0.05 barely dents the flock', () => {
+    const s = addReprobates(fresh(), 1000);
+    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 1))).toBe(500); // −50%
+    // 0.5 × 0.05 = 2.5% loss → floor(1000 × 0.025) = 25 removed.
+    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 0.05))).toBe(975);
+  });
+
+  it('a hand cast (efficiency ≥ 1) is unchanged — the clamp keeps losses at full strength', () => {
+    const s = withGold(addReprobates(fresh(), 200), 1000);
+    // eff 3 (a heavily-built player) still loses the full 15% — never more (the clamp caps at 1).
+    near(goldOf(resolveCaedes(s, 'terrible', rng(), 3)), 850); // 1000 × (1 − 0.15)
   });
 });
 

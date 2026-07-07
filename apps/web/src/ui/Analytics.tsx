@@ -105,7 +105,13 @@ function MainTab(): ReactElement {
         <StatRow
           label={strings.resources.gold}
           value={formatBigNum(state.lifetime.gold)}
-          {...(rates.gold > 0 ? { rate: perSec(formatBigNum(bn(rates.gold))) } : {})}
+          {...(rates.gold !== 0
+            ? {
+                // Signed: Aurevora's drain (and any net-negative upkeep) reads as a loss rather than
+                // hiding behind a "+", so the readout never shows income while the vault empties.
+                rate: `${rates.gold >= 0 ? '+' : '−'}${formatBigNum(bn(Math.abs(rates.gold)))}/s`,
+              }
+            : {})}
         />
       </div>
       <div className="analytics-rates">

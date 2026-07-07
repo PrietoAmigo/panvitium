@@ -92,16 +92,16 @@ describe('computeModifiers — per-category efficiency', () => {
 });
 
 describe('computeModifiers — tier weight shifts', () => {
-  it('Gula LEVELS strip negative tier weight: ×(1 − 0.25·L), level 4 → zero (sheet rev)', () => {
+  it('Gula LEVELS strip negative tier weight: ×(1 − 0.2·L), level 4 → 20% remains', () => {
     const l1 = computeModifiers(withDevotion({ gula: bn(180) })).tierWeightMul;
-    expect(l1.bad).toBeCloseTo(0.75, 9);
-    expect(l1.terrible).toBeCloseTo(0.75, 9);
-    expect(l1.apocalyptic).toBeCloseTo(0.75, 9);
+    expect(l1.bad).toBeCloseTo(0.8, 9);
+    expect(l1.terrible).toBeCloseTo(0.8, 9);
+    expect(l1.apocalyptic).toBeCloseTo(0.8, 9);
     expect(l1.stellar).toBeUndefined();
     const l4 = computeModifiers(withDevotion({ gula: bn(1049760000) })).tierWeightMul;
-    expect(l4.bad).toBe(0);
-    expect(l4.terrible).toBe(0);
-    expect(l4.apocalyptic).toBe(0);
+    expect(l4.bad).toBeCloseTo(0.2, 9);
+    expect(l4.terrible).toBeCloseTo(0.2, 9);
+    expect(l4.apocalyptic).toBeCloseTo(0.2, 9);
   });
 
   it('Lucifer (Morning Star) lifts the Stellar tier weight by 1 + intensity', () => {

@@ -5,7 +5,7 @@
  *
  * Sources wired so far:
  *   - Sin LEVELS (sheet rev 2026-06-12):
- *                 Gula → strips negative tier weight (−25% / level; L4 → none)
+ *                 Gula → strips negative tier weight (−20% / level; L4 → 20% remains)
  *                 Luxuria → suasioEfficiencyMul (×2 / level)
  *                 Ira → decimatioEfficiencyMul (×2 / level)
  *                 Vanagloria → influenceRateMul (×1.33 / level)
@@ -344,9 +344,9 @@ export function computeModifiers(state: GameState): Modifiers {
   const bumpTier = (t: Tier, mul: number): void => {
     tierAcc[t] = (tierAcc[t] ?? 1) * mul;
   };
-  // Gula per-level (sheet rev 2026-06-12): each level strips a quarter of the negative tiers'
-  // weight — Bad/Terrible/Apocalyptic ×(1 − 0.25·L), level 4 → no negative outcomes at all; the
-  // freed mass renormalizes across the remaining tiers. (Insatiability, the SKILL, moved to
+  // Gula per-level (sheet rev 2026-06-12): each level strips a fifth of the negative tiers'
+  // weight — Bad/Terrible/Apocalyptic ×(1 − 0.2·L), level 4 → 20% of the negative weight remains;
+  // the freed mass renormalizes across the remaining tiers. (Insatiability, the SKILL, moved to
   // player efficiency — see `playerEff`.)
   const gulaNegFactor = Math.max(0, 1 - GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL * gulaLvl);
   if (gulaLvl > 0) {

@@ -15,7 +15,7 @@ import { add, bn, lt, max, min, mul, sub, ZERO, type BigNum } from './bignum.js'
 import { ensureAutoRepeatStarted, resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { advanceInvocationRunners, invocationUpkeep } from './invocations.js';
-import { applyInvocationTickEffects } from './apex.js';
+import { applyInvocationTickEffects, aurevoraDrainPerSecond } from './apex.js';
 import { anatocismusDepositPerSecond, faeneratioGoldPerSecond } from './faeneratio.js';
 import { advanceToggles, panvitiumRate } from './compositum.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
@@ -48,6 +48,40 @@ export interface TickDeps {
    * tick. Default 1.
    */
   readonly offlineActionTimeMul?: number;
+  /**
+   * Set by `resumeGame` for the single offline catch-up tick. Panvitium and Aurevora ramp their
+   * cost / drain exponentially with active duration and are *point-sampled* per tick — correct at
+   * the live 10 Hz loop (δ ≈ 0.1 s) but not over one large offline δ, where the start-sampled cost
+   * undercharges (so the ritual survives a burn that would have self-extinguished online) while the
+   * harvest / efficiency is read at the end-of-span rate. That mismatch let "toggle Panvitium, then
+   * reload" mint orders of magnitude more souls than playing it live (ADR-004: online and offline
+   * must agree). Rather than integrate a compounding harvest exactly (impossible to match the 10 Hz
+   * discrete product), the catch-up tick refuses to run these ramped systems at all: both are torn
+   * down here before any simulation, so a burn left running when the tab closed simply lapses. They
+   * still run normally online, where the live loop advances in fixed 100 ms steps (useGameLoop) even
+   * after the tab is backgrounded, so no large online δ ever reaches them.
+   */
+  readonly offline?: boolean;
+}
+
+/** Tear down the duration-ramped systems (Panvitium, Aurevora) that must not run on an offline
+ *  catch-up tick — see `TickDeps.offline`. Pure; a no-op when neither is active. */
+function stripRampedForOffline(state: GameState): GameState {
+  let lifetime = state.lifetime;
+  if (lifetime.activeToggles.includes('panvitium')) {
+    const { panvitium: _drop, ...toggleDurations } = lifetime.toggleDurations;
+    lifetime = {
+      ...lifetime,
+      activeToggles: lifetime.activeToggles.filter((t) => t !== 'panvitium'),
+      toggleDurations,
+    };
+  }
+  if ((lifetime.invocations.aurevora ?? 0) > 0) {
+    const { aurevora: _dropInv, ...invocations } = lifetime.invocations;
+    const { aurevora: _dropDur, ...invocationDurations } = lifetime.invocationDurations;
+    lifetime = { ...lifetime, invocations, invocationDurations };
+  }
+  return lifetime === state.lifetime ? state : { ...state, lifetime };
 }
 
 /** The result of advancing the game: the new state, outcome events, and transient notices. */
@@ -114,7 +148,15 @@ export function perSecondRates(state: GameState): PerSecondRates {
   // an absolute amount — mirroring the tick's step 1a, so the readout matches realised net income.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const up = invocationUpkeep(state, effectiveMax.toNumber());
-  const gold = Math.max(0, grossGold * (1 - up.goldGainFraction) - up.flatGoldPerSecond);
+  // Aurevora (apex Gula) drains gold at an exponentially-rising rate while active (apex.ts); the
+  // HUD's gold/s must net it out or it reads positive while the vault visibly empties. Evaluated at
+  // the current active-duration, matching the tick's per-second drain.
+  const aurevoraDrain =
+    (state.lifetime.invocations.aurevora ?? 0) > 0
+      ? aurevoraDrainPerSecond(state.lifetime.invocationDurations.aurevora ?? 0)
+      : 0;
+  const finiteAurevoraDrain = Number.isFinite(aurevoraDrain) ? aurevoraDrain : 0;
+  const gold = grossGold * (1 - up.goldGainFraction) - up.flatGoldPerSecond - finiteAurevoraDrain;
   const influence = max(
     ZERO,
     sub(mul(grossInfluence, 1 - up.influenceGainFraction), bn(up.flatInfluencePerSecond)),
@@ -162,6 +204,11 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
       emailsDelivered: [],
     };
   }
+
+  // Offline catch-up (ADR-004): the duration-ramped systems (Panvitium, Aurevora) cannot be
+  // point-sampled over one large δ without the reload exploit, so they lapse before the catch-up
+  // runs — see `TickDeps.offline`. Online ticks pass nothing, so behaviour there is unchanged.
+  if (deps.offline === true) state = stripRampedForOffline(state);
 
   const rng = makeRng(state.rngState);
 
