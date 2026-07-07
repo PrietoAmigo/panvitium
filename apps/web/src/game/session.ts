@@ -73,6 +73,7 @@ export function resumeGame(saved: GameState, now: number = Date.now()): GameStat
   // four apply only to this catch-up.
   const offlineRes = sigilOfflineResourceMul(saved);
   const resumed = tick(saved, scaled, {
+    offline: true, // lapse the duration-ramped systems (Panvitium, Aurevora) — see TickDeps.offline
     offlineGoldMul: offlineRes.gold,
     offlineInfluenceMul: offlineRes.influence,
     offlineGenerationMul: offlineRes.generation,

@@ -5,6 +5,9 @@ import {
   ACTIONS,
   actionUnlocked,
   categoryEfficiency,
+  plannedActionCost,
+  isStackable,
+  countCopies,
   MALEFICIA,
   anatocismusDepositPerSecond,
   computeModifiers,
@@ -80,42 +83,71 @@ function describeOutcome(e: OutcomeEvent): string {
   return `${name} · ${strings.tiers[e.tier]}${effect}`;
 }
 
+/** Sin level → Roman numeral for inline "<Sin> <level>" gate labels (e.g. "Luxuria III"). */
+const SIN_LEVEL_ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'] as const;
+const romanLevel = (n: number): string => SIN_LEVEL_ROMAN[n] ?? String(n);
+
+/** The rite's delegation Sin gate as a short label, e.g. "Ira I" — for the locked-control hint. */
+function delegateGateLabel(actionId: string): string {
+  const g = ACTIONS[actionId]?.delegateUnlock;
+  if (!g) return '';
+  return `${g.sin.charAt(0).toUpperCase()}${g.sin.slice(1)} ${romanLevel(g.level)}`;
+}
+
 /**
- * Acolyte assignment controls (02 §10). A pair of `-` / `+` buttons with the current assigned
- * count between them. The `+` button disables when no idle acolyte is available; `-` disables
- * when nothing is currently assigned to this action. The "ø / N" counter shows currently-assigned
- * over available, so the player can see capacity at a glance.
+ * Acolyte assignment controls (02 §10). A pair of `-` / `+` buttons with the current assigned count
+ * between them. The control is ALWAYS shown for a castable rite (design handoff), so the player can
+ * see the delegation system exists before it is available: while the rite is not yet delegatable it
+ * renders disabled with its Sin gate; once delegatable but no acolytes exist yet, it renders disabled
+ * with a "no acolytes yet" hint. Only when delegatable AND acolytes exist do the buttons act.
  */
 function AcolyteControls({ actionId }: { actionId: string }): ReactElement | null {
   const state = useGameStore((s) => s.state);
   const assignAcolyte = useGameStore((s) => s.assignAcolyte);
   const unassignAcolyte = useGameStore((s) => s.unassignAcolyte);
-  if (!state || !isDelegatable(state, actionId)) return null;
+  if (!state) return null;
+  const delegatable = isDelegatable(state, actionId);
   const total = state.lifetime.acolytes.length;
-  if (total === 0) return null; // no acolytes yet — no controls
   const assigned = assignedCount(state, actionId);
   const idle = total - assigned;
+  const noAcolytes = delegatable && total === 0;
+  const locked = !delegatable;
+  const hint = locked
+    ? `${strings.acolytes.delegateLocked} ${delegateGateLabel(actionId)}`
+    : noAcolytes
+      ? strings.acolytes.noAcolytes
+      : strings.acolytes.delegationLabel;
   return (
-    <div className="acolyte-controls" aria-label={strings.acolytes.delegationLabel}>
+    <div
+      className={'acolyte-controls' + (locked || noAcolytes ? ' acolyte-controls--locked' : '')}
+      aria-label={hint}
+      title={hint}
+    >
       <button
         type="button"
         className="acolyte-btn"
-        disabled={assigned === 0}
+        disabled={locked || noAcolytes || assigned === 0}
         onClick={() => unassignAcolyte(actionId)}
         aria-label={strings.acolytes.unassign}
         title={strings.acolytes.unassign}
       >
         −
       </button>
-      <span className="acolyte-count" title={strings.acolytes.delegationLabel}>
-        {assigned}
-        <span className="acolyte-count-sep">/</span>
-        {total}
-      </span>
+      {locked || noAcolytes ? (
+        <span className="acolyte-lock" title={hint}>
+          {'🔒'} {locked ? delegateGateLabel(actionId) : strings.acolytes.noAcolytes}
+        </span>
+      ) : (
+        <span className="acolyte-count" title={strings.acolytes.delegationLabel}>
+          {assigned}
+          <span className="acolyte-count-sep">/</span>
+          {total}
+        </span>
+      )}
       <button
         type="button"
         className="acolyte-btn"
-        disabled={idle === 0}
+        disabled={locked || noAcolytes || idle === 0}
         onClick={() => assignAcolyte(actionId)}
         aria-label={strings.acolytes.assign}
         title={strings.acolytes.assign}
@@ -127,15 +159,31 @@ function AcolyteControls({ actionId }: { actionId: string }): ReactElement | nul
 }
 
 /**
- * Auto-repeat toggle for a player rite (02 §3). Appears once the rite passes its "toggle" Sin level
- * (`isAutoRepeatable`); flipping it on loops the rite in the player's own slot until flipped off.
- * Distinct from acolyte delegation — this is the player's hands, not a follower's.
+ * Auto-repeat toggle for a player rite (02 §3). ALWAYS shown for a castable rite (design handoff):
+ * before the rite passes its "toggle" Sin level it renders disabled with its gate; once past the gate,
+ * flipping it on loops the rite in the player's own slot until flipped off. Distinct from acolyte
+ * delegation — this is the player's hands, not a follower's.
  */
 function AutoRepeatToggle({ actionId }: { actionId: string }): ReactElement | null {
   const state = useGameStore((s) => s.state);
   const toggleAutoRepeat = useGameStore((s) => s.toggleAutoRepeat);
-  if (!state || !isAutoRepeatable(state, actionId)) return null;
-  const on = isAutoRepeating(state, actionId);
+  if (!state) return null;
+  const available = isAutoRepeatable(state, actionId);
+  const on = available && isAutoRepeating(state, actionId);
+  if (!available) {
+    const label = `${strings.autoRepeat.locked} ${delegateGateLabel(actionId)}`;
+    return (
+      <button
+        type="button"
+        className="auto-repeat-btn auto-repeat-btn--locked"
+        disabled
+        title={label}
+        aria-label={label}
+      >
+        {'🔒'} {strings.autoRepeat.start}
+      </button>
+    );
+  }
   return (
     <button
       type="button"
@@ -152,8 +200,8 @@ function AutoRepeatToggle({ actionId }: { actionId: string }): ReactElement | nu
 
 /**
  * The per-rite control cluster shown beneath an unlocked Opera action: the player's own auto-repeat
- * toggle plus the acolyte delegation `+/−`. Each piece self-hides when it doesn't apply, so this
- * renders nothing for a plain rite with neither unlocked.
+ * toggle plus the acolyte delegation `+/−`. Both are always rendered (each shows its own locked state
+ * when not yet available), so the automation systems are visible from the first castable rite.
  */
 function RiteControls({ actionId }: { actionId: string }): ReactElement {
   return (
@@ -181,9 +229,6 @@ const SUASIO_GLYPHS: Record<string, string> = {
   imperium: '\u2609',
 };
 const SUASIO_NUMERALS = ['I', 'II', 'III'] as const;
-/** Sin level → Roman numeral for inline "<Sin> <level>" gate labels (e.g. "Luxuria III"). */
-const SIN_LEVEL_ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'] as const;
-const romanLevel = (n: number): string => SIN_LEVEL_ROMAN[n] ?? String(n);
 
 /**
  * The Suasio scroll (Studio) — "Opus Suasio, the Honeyed Tongue" (Claude Design rework). A
@@ -222,7 +267,9 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
 
   const actions: SuasioActionView[] = SUASIO_ORDER.map((id, i) => {
     const def = ACTIONS[id]!;
-    const influenceCost = Math.ceil((def.cost.influence ?? 0) * eff);
+    // The exact influence the cast would take — the same pipeline startAction deducts (the log-scaled
+    // Suasio cost and the Paimon #9 reduction), so the printed cost and the affordability gate match.
+    const influenceCost = plannedActionCost(state, id, { efficiency: eff }).influence;
     const locked = !actionUnlocked(state, def);
     const active = head?.actionId === id;
     // Suasio is cost-outcome, so a rite's queued duration is exactly its baseTimeSeconds — which
@@ -232,12 +279,10 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
     const progress =
       active && base > 0 ? Math.min(100, Math.max(0, ((base - remaining) / base) * 100)) : 0;
     const sealed = locked ? strings.opera.suasioSealed[id] : undefined;
-    // The control cluster (auto-repeat toggle + acolyte delegation) shows on any unlocked rite that
-    // has at least one of them available — the toggle needs no acolytes, delegation needs them.
-    const hasControls =
-      !locked &&
-      (isAutoRepeatable(state, id) ||
-        (state.lifetime.acolytes.length > 0 && isDelegatable(state, id)));
+    // The control cluster (auto-repeat toggle + acolyte delegation) shows on EVERY unlocked rite —
+    // each sub-control renders its own locked/disabled state until it is available (design handoff),
+    // so the automation systems are visible from the first castable rite onward.
+    const hasControls = !locked;
     return {
       id,
       numeral: SUASIO_NUMERALS[i] ?? '',
@@ -278,7 +323,7 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
       glyph: '\u2641',
       name: locked ? (sealed?.name ?? '') : (strings.opera.panvitium ?? 'Panvitium'),
       quote: locked ? (sealed?.maxim ?? '') : (strings.opera.suasioQuote.panvitium ?? ''),
-      cost: `${(panvDef.costPerSecond.gold ?? 0).toLocaleString('en-US')} ${strings.resources.gold.toLowerCase()} + ${(panvDef.costPerSecond.influence ?? 0).toLocaleString('en-US')} ${strings.resources.influence.toLowerCase()} /s \u00b7 ${strings.opera.panvitiumRising}`,
+      cost: `${(panvDef.costPerSecond.gold ?? 0).toLocaleString('en-US')} ${strings.resources.gold.toLowerCase()}/s \u00b7 ${strings.opera.panvitiumRising}`,
       cta: burning
         ? (strings.opera.suasioStatus.panvitium ?? '')
         : confirmingPanvitium
@@ -399,11 +444,17 @@ function DecimatioRite({
   if (!state) return <></>;
 
   const total = state.lifetime.acolytes.length;
-  const showStepper = isDelegatable(state, id) && total > 0;
+  const delegatable = isDelegatable(state, id);
   const assigned = assignedCount(state, id);
   const idle = total - assigned;
-  const showAuto = isAutoRepeatable(state, id);
-  const auto = isAutoRepeating(state, id);
+  const stepperLocked = !delegatable || total === 0; // shown but inert until delegatable + acolytes
+  const stepperHint = !delegatable
+    ? `${strings.acolytes.delegateLocked} ${delegateGateLabel(id)}`
+    : total === 0
+      ? strings.acolytes.noAcolytes
+      : strings.acolytes.delegationLabel;
+  const autoAvailable = isAutoRepeatable(state, id);
+  const auto = autoAvailable && isAutoRepeating(state, id);
 
   return (
     <div className={`dec-card dec-card--${cardClass}`}>
@@ -419,47 +470,56 @@ function DecimatioRite({
         <span>
           {strings.opera.decimatioTimeLabel} <b>{time}</b>
         </span>
-        {showStepper && (
-          <span className="dec-stepper-wrap">
-            {strings.opera.decimatioAcolytesLabel}
-            <span className="dec-stepper">
-              <button
-                type="button"
-                className="dec-step-btn dec-step-btn--dec"
-                disabled={assigned === 0}
-                onClick={() => unassignAcolyte(id)}
-                aria-label={strings.acolytes.unassign}
-                title={strings.acolytes.unassign}
-              >
-                −
-              </button>
-              <span className="dec-step-count" title={strings.acolytes.delegationLabel}>
-                {assigned}
-              </span>
-              <button
-                type="button"
-                className="dec-step-btn dec-step-btn--inc"
-                disabled={idle === 0}
-                onClick={() => assignAcolyte(id)}
-                aria-label={strings.acolytes.assign}
-                title={strings.acolytes.assign}
-              >
-                +
-              </button>
+        {/* Delegation stepper — always shown; disabled with a lock hint until the rite is
+            delegatable AND at least one acolyte exists (design handoff). */}
+        <span
+          className={'dec-stepper-wrap' + (stepperLocked ? ' dec-stepper-wrap--locked' : '')}
+          title={stepperHint}
+        >
+          {strings.opera.decimatioAcolytesLabel}
+          <span className="dec-stepper">
+            <button
+              type="button"
+              className="dec-step-btn dec-step-btn--dec"
+              disabled={stepperLocked || assigned === 0}
+              onClick={() => unassignAcolyte(id)}
+              aria-label={strings.acolytes.unassign}
+              title={strings.acolytes.unassign}
+            >
+              −
+            </button>
+            <span className="dec-step-count" title={stepperHint}>
+              {stepperLocked ? '🔒' : assigned}
             </span>
+            <button
+              type="button"
+              className="dec-step-btn dec-step-btn--inc"
+              disabled={stepperLocked || idle === 0}
+              onClick={() => assignAcolyte(id)}
+              aria-label={strings.acolytes.assign}
+              title={strings.acolytes.assign}
+            >
+              +
+            </button>
           </span>
-        )}
-        {showAuto && (
-          <button
-            type="button"
-            className={'dec-auto' + (auto ? ' dec-auto--on' : '')}
-            aria-pressed={auto}
-            onClick={() => toggleAutoRepeat(id, !auto)}
-            title={strings.autoRepeat.label}
-          >
-            {strings.opera.decimatioAuto}
-          </button>
-        )}
+        </span>
+        {/* Auto-repeat toggle — always shown; disabled with its Sin gate until auto-repeatable. */}
+        <button
+          type="button"
+          className={
+            'dec-auto' + (auto ? ' dec-auto--on' : '') + (autoAvailable ? '' : ' dec-auto--locked')
+          }
+          disabled={!autoAvailable}
+          aria-pressed={auto}
+          onClick={() => autoAvailable && toggleAutoRepeat(id, !auto)}
+          title={
+            autoAvailable
+              ? strings.autoRepeat.label
+              : `${strings.autoRepeat.locked} ${delegateGateLabel(id)}`
+          }
+        >
+          {autoAvailable ? strings.opera.decimatioAuto : `🔒 ${strings.opera.decimatioAuto}`}
+        </button>
         <button
           type="button"
           className={'dec-commission' + (cardClass === 'iii' ? ' dec-commission--iii' : '')}
@@ -488,7 +548,8 @@ export function DecimatioGroup(): ReactElement {
 
   const gold = floor(state.lifetime.gold).toNumber();
   const eff = categoryEfficiency(state, 'decimatio');
-  const goldCost = (id: string): number => Math.ceil((ACTIONS[id]?.cost.gold ?? 0) * eff);
+  // Same pipeline startAction deducts, so the printed cost matches the actual charge.
+  const goldCost = (id: string): number => plannedActionCost(state, id, { efficiency: eff }).gold;
   const costLabel = (id: string): string =>
     `${goldCost(id).toLocaleString('en-US')} ${strings.opera.decimatioGoldUnit}`;
 
@@ -591,13 +652,20 @@ export function IndagatioEmptioProgram(): ReactElement {
 
   const goldNum = floor(state.lifetime.gold).toNumber();
   const owned = state.lifetime.maleficia;
-  const prices = state.lifetime.maleficiaPrices;
 
   const finds: OrbisFind[] = state.lifetime.emptioList.flatMap((id) => {
     const def = MALEFICIA[id];
     if (!def) return [];
-    const price = prices?.[id] ?? def.cost;
-    const acquired = owned.includes(id);
+    // The actual gold the buy would take — the rolled price softened by the Amy #58 reduction, the
+    // same amount startAction deducts (so the shown price and affordability match the sim).
+    const price = plannedActionCost(state, 'emptio', { target: id, efficiency: emptioEff }).gold;
+    // A STACKABLE relic can be bought again while owned + listed < its stackMax (the sim already
+    // surfaces extra copies); only a non-stackable one is "acquired" and unbuyable once owned.
+    const stackable = isStackable(def);
+    const acquired =
+      !stackable && owned.includes(id)
+        ? true
+        : stackable && countCopies(owned, id) >= (def.stackMax ?? Infinity);
     return [
       {
         id,

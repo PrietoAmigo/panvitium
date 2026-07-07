@@ -255,6 +255,10 @@ export const strings = {
     unassign: 'Recall one',
     delegationLabel: 'Delegated acolytes',
     idle: 'idle',
+    /** Shown on the (disabled) delegation control before the rite's toggle Sin level is reached. */
+    delegateLocked: 'Delegation unlocks at',
+    /** Shown on the (disabled) delegation control once delegatable but no acolytes exist yet. */
+    noAcolytes: 'No acolytes yet',
   },
   autoRepeat: {
     /** The control's label when the rite is NOT looping (click to start). */
@@ -263,6 +267,8 @@ export const strings = {
     stop: 'Auto · on',
     /** Accessible / tooltip text. */
     label: 'Repeat this rite automatically',
+    /** Shown on the (disabled) auto toggle before the rite's toggle Sin level is reached. */
+    locked: 'Auto unlocks at',
   },
   invocations: {
     intro: 'Names called up from below.',
@@ -728,7 +734,7 @@ export const strings = {
       skill: 'Insatiability',
       skillEffect: 'Multiplies your online action efficiency by 1 + intensity.',
       levelEffect:
-        'Each level removes 25% of the Bad, Terrible and Apocalyptic outcome weight; at level 4 they are gone.',
+        'Each level removes 20% of the Bad, Terrible and Apocalyptic outcome weight; at level 4, a fifth of it remains.',
     },
     luxuria: {
       prince: 'Asmodeus',

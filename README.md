@@ -103,9 +103,29 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 873** (sim 529 · shared 63 · api 20 · web 261).
+**Current test count: 880** (sim 536 · shared 63 · api 20 · web 261).
 
-> **Latest change — the gating rebalance, numeric contract copy, and the Vitium Compositum
+> **Latest change — a playability pass (game-feel bugs, not technical ones).** A batch of fixes to
+> soft-locks, exploits, automation traps, and misleading feedback. (1) **Panvitium** no longer
+> self-extinguishes in ~3 s or explodes offline: its `× eᵗ` ramp softens to `× 1.01ᵗ`, its upkeep
+> becomes gold-only (a growing influence drain can't coexist with a capped influence pool), so a
+> gate-level player can sustain a burn for **at least five minutes** before the gold ramp ends it;
+> and an offline catch-up tick now **lapses** Panvitium/Aurevora before simulating, closing the
+> "toggle, then reload" soul-mint exploit (ADR-004). (2) **Delegated culls** scale their negative
+> outcomes by the runner's efficiency, so an acolyte or invocation on Purgatio/Pogrom can no longer
+> roll a catastrophe that zeroes your treasury; a hand cast (efficiency ≥ 1) is unchanged. (3)
+> **Suasio influence cost** grows with the _log_ of efficiency rather than linearly, so rites stay
+> castable past their unlock and heavy Erinyes stacks no longer brick the category. (4) The
+> **Emptio list** evicts a random _lower_-rarity item when full (never a rarer one, never one being
+> purchased), an in-flight purchase whose target vanishes is **refunded**, and **stackable relics**
+> can be bought again up to their cap. (5) Displayed **costs now match** what the sim charges (the
+> Paimon/Amy sigil discounts are reflected). (6) The Katabasis **Ledger** previews the three
+> carry-over percentages, and the Analytics gold/s reads **negative** while Aurevora drains. (7) The
+> **auto-repeat and acolyte-delegation controls** are always visible on a castable rite, showing a
+> locked state until they unlock. (8) **Gula** now strips 20%/level of the negative tiers (not 25%).
+> Net **+7 tests** (sim 529 → 536).
+
+> **Earlier change — the gating rebalance, numeric contract copy, and the Vitium Compositum
 > retirement (ADR-031).** Three coupled follow-ups to the gold rework. (1) Every Faeneratio gate
 > moves one level down: Mutuum and the Thesaurus are open from the first tick (the Avaritia-I
 > unlock and `faenerationUnlocked` are gone) and the Syngraphae gates shift from I–IV to 0–III —

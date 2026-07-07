@@ -230,31 +230,31 @@ describe('Foedus — the global hoard tier', () => {
     expect(foedusUpkeepMul(4)).toBeCloseTo(0.5, 9);
   });
 
-  it('discounts a ramped (Panvitium) computed cost — the eᵗ ramp takes the multiplier', () => {
-    // Panvitium's influence upkeep (no interest cross-talk on the influence side): two states
-    // differing only in hoard tier must differ in influence drain by exactly the Foedus factor.
+  it('discounts a ramped (Panvitium) computed cost — the 1.01ᵗ ramp takes the multiplier', () => {
+    // Panvitium's gold upkeep (now gold-only): two states differing only in hoard tier must differ
+    // in the gold drain by exactly the Foedus factor. Zero reprobates keeps the gold leg clean —
+    // no Mutuum, no deaths, so the only gold difference vs the control is the upkeep itself.
     const base = (hoard: number): GameState => {
       const s = withHoard(withGold(fresh('panv'), 1e12), hoard);
       return {
         ...s,
         lifetime: {
           ...s.lifetime,
-          influence: bn(90),
-          maxInfluence: bn(1e9),
+          reprobates: 0,
           activeToggles: ['panvitium'],
           toggleDurations: { panvitium: 2 }, // two seconds into the ramp
         },
       };
     };
-    const influenceCost = (s: GameState): number => {
+    const goldCost = (s: GameState): number => {
       const after = tick(s, 0.1).state;
-      // Isolate the upkeep leg: (influence income over the tick) − (net influence change).
+      // Isolate the upkeep leg: (gold with the ritual off) − (gold with it on) over the same tick.
       const control: GameState = { ...s, lifetime: { ...s.lifetime, activeToggles: [] } };
       const controlAfter = tick(control, 0.1).state;
-      return controlAfter.lifetime.influence.toNumber() - after.lifetime.influence.toNumber();
+      return controlAfter.lifetime.gold.toNumber() - after.lifetime.gold.toNumber();
     };
-    const full = influenceCost(base(0)); // tier 0
-    const discounted = influenceCost(base(10_000_000)); // tier 4 → ×0.5
+    const full = goldCost(base(0)); // tier 0
+    const discounted = goldCost(base(10_000_000)); // tier 4 → ×0.5
     expect(full).toBeGreaterThan(0);
     expect(discounted / full).toBeCloseTo(0.5, 3);
   });

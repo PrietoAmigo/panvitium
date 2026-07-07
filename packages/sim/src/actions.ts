@@ -107,6 +107,69 @@ export interface StartOptions {
 }
 
 /**
+ * Cost multiplier applied to a cost-outcome action's declared cost at efficiency `eff` (03 §2.1/2.2):
+ *
+ *   - Decimatio: LINEAR (× eff). Its cost is gold, an uncapped resource, so the classic
+ *     cost↔outcome coupling holds — pay eff× the gold, kill eff× as many.
+ *   - Suasio: LOGARITHMIC (× (1 + ln eff)). Its cost is INFLUENCE, hard-capped at the effective max,
+ *     while efficiency is driven by unrelated modifiers (Luxuria levels, Gula skill, Erinyes stacks).
+ *     A linear influence cost made rites unlockable-but-uncastable — Logismoi at its own Luxuria-2
+ *     gate already cost the whole base cap, and a few Erinyes descents (×2 player efficiency each)
+ *     bricked even the 1-influence Suggestion. The log curve keeps the cost rising with power without
+ *     ever outrunning the cap: it equals the base at eff = 1 and grows only ~ln thereafter.
+ *
+ * Never below the base cost (clamped at eff = 1) so no efficiency ever makes a rite cheaper than its
+ * printed price.
+ */
+export function costOutcomeCostMultiplier(category: ActionDef['category'], eff: number): number {
+  if (category === 'suasio') return Math.max(1, 1 + Math.log(Math.max(1, eff)));
+  return Math.max(1, eff);
+}
+
+/**
+ * The gold / influence an action would actually cost to start right now — the single source of truth
+ * shared by `startAction` (what it deducts) and the UI (what it displays and gates the button on),
+ * so the two can never drift. Mirrors `startAction`'s cost pipeline exactly: the cost-outcome
+ * multiplier (`costOutcomeCostMultiplier` — log for Suasio, linear for Decimatio), Emptio's per-target
+ * rolled price softened by the Amy #58 gold reduction, and the Paimon #9 influence reduction. Time-mode
+ * actions (Indagatio/Emptio) don't scale cost by efficiency. For Emptio with no/unknown target the
+ * gold cost is 0 (the caller supplies the target).
+ */
+export function plannedActionCost(
+  state: GameState,
+  actionId: string,
+  options: StartOptions = {},
+): { gold: number; influence: number } {
+  const def = ACTIONS[actionId];
+  if (!def) return { gold: 0, influence: 0 };
+  const eff = options.efficiency ?? categoryEfficiency(state, def.category);
+  const costRed = sigilCostReductionByChannel(
+    state,
+    sigilEffectMultiplier(state.lifetime.maleficia),
+  );
+  let goldCost = def.cost.gold ?? 0;
+  let influenceCost = def.cost.influence ?? 0;
+  if (actionId === 'emptio') {
+    const target = options.target;
+    const malef = target ? MALEFICIA[target] : undefined;
+    if (malef && target) {
+      const rolled = state.lifetime.maleficiaPrices[target] ?? malef.cost;
+      goldCost = costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled;
+    } else {
+      goldCost = 0;
+    }
+  }
+  if (def.efficiencyMode === 'cost-outcome') {
+    const m = costOutcomeCostMultiplier(def.category, eff);
+    goldCost = Math.ceil(goldCost * m);
+    influenceCost = Math.ceil(influenceCost * m);
+  }
+  // Paimon #9 softens action influence costs (after any efficiency scaling), never increasing them.
+  if (costRed.influence) influenceCost = Math.ceil(influenceCost / costRed.influence);
+  return { gold: goldCost, influence: influenceCost };
+}
+
+/**
  * Pay an action's cost and queue it. Affordability compares the FLOORED resource (resources are
  * natural numbers; the bignum gotcha). Efficiency is applied per category's `efficiencyMode`:
  * `cost-outcome` (Suasio/Decimatio) scales the cost; `time` (Indagatio/Emptio) divides the duration
@@ -144,35 +207,23 @@ export function startAction(
 
   const eff = options.efficiency ?? categoryEfficiency(state, def.category);
 
-  // Resolve gold / influence cost. Suasio/Decimatio scale by efficiency; Indagatio/Emptio do not.
-  // Emptio pulls its gold cost from the targeted maleficium.
-  let goldCost = def.cost.gold ?? 0;
-  let influenceCost = def.cost.influence ?? 0;
+  // Resolve gold / influence cost. Emptio validates its per-target purchase first.
   let target: string | undefined;
-  // Sigil cost reductions (Paimon influence, Amy Emptio gold, Orobas soul — soul applied elsewhere).
-  const costRed = sigilCostReductionByChannel(
-    state,
-    sigilEffectMultiplier(state.lifetime.maleficia),
-  );
   if (actionId === 'emptio') {
     if (!options.target) return { ok: false, reason: 'No maleficium chosen.' };
     if (!state.lifetime.emptioList.includes(options.target)) {
       return { ok: false, reason: 'Not in the Emptio list.' };
     }
-    const malef = MALEFICIA[options.target];
-    if (!malef) return { ok: false, reason: 'Unknown maleficium.' };
-    // The price was rolled within the rarity band when the item was discovered; fall back to the
-    // catalog cost for any item surfaced before rolled pricing landed (older saves).
-    const rolled = state.lifetime.maleficiaPrices[options.target] ?? malef.cost;
-    goldCost = costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled;
+    if (!MALEFICIA[options.target]) return { ok: false, reason: 'Unknown maleficium.' };
     target = options.target;
   }
-  if (def.efficiencyMode === 'cost-outcome') {
-    goldCost = Math.ceil(goldCost * eff);
-    influenceCost = Math.ceil(influenceCost * eff);
-  }
-  // Paimon #9 softens action influence costs (after any efficiency scaling), never increasing them.
-  if (costRed.influence) influenceCost = Math.ceil(influenceCost / costRed.influence);
+  // The exact amounts to deduct — the same pipeline the UI reads (`plannedActionCost`): the
+  // cost-outcome multiplier (log for Suasio, linear for Decimatio), Emptio's rolled per-target price
+  // softened by Amy #58, and the Paimon #9 influence reduction.
+  const { gold: goldCost, influence: influenceCost } = plannedActionCost(state, actionId, {
+    ...options,
+    efficiency: eff,
+  });
 
   if (!gte(floor(state.lifetime.gold), goldCost)) return { ok: false, reason: 'not enough gold' };
   if (!gte(floor(state.lifetime.influence), influenceCost)) {
@@ -359,7 +410,13 @@ const uniform = (lo: number, hi: number, k: number): Dim => {
   return { m: (k * (lo + hi)) / 2, v: k * k * ((n * n - 1) / 12) };
 };
 
-function caedesTierDelta(tier: Tier, units: number, pop: number, gold: number): TierDelta {
+function caedesTierDelta(
+  tier: Tier,
+  units: number,
+  pop: number,
+  gold: number,
+  loss: number,
+): TierDelta {
   switch (tier) {
     // Stellar/Excellent remove randint(...)×units (capped by population in `resolveCaedes`; the
     // forecast uses the uncapped moments, an upper bound when the roster is nearly empty). Souls
@@ -377,21 +434,21 @@ function caedesTierDelta(tier: Tier, units: number, pop: number, gold: number): 
       return { ...NO_DELTA, reprobates: fixed(-removed), souls: fixed(removed) };
     }
     case 'bad':
-      return { ...NO_DELTA, gold: fixed(-Math.floor(0.05 * gold)) };
+      return { ...NO_DELTA, gold: fixed(-Math.floor(0.05 * loss * gold)) };
     case 'terrible':
-      return { ...NO_DELTA, gold: fixed(-Math.floor(0.15 * gold)) };
+      return { ...NO_DELTA, gold: fixed(-Math.floor(0.15 * loss * gold)) };
     case 'apocalyptic':
       return {
         ...NO_DELTA,
-        gold: fixed(-Math.floor(0.33 * gold)),
-        reprobates: fixed(-Math.floor(0.25 * pop)),
+        gold: fixed(-Math.floor(0.33 * loss * gold)),
+        reprobates: fixed(-Math.floor(0.25 * loss * pop)),
       };
     default:
       return NO_DELTA; // neutral: the kill fails
   }
 }
 
-function suggestionTierDelta(tier: Tier, units: number, pop: number): TierDelta {
+function suggestionTierDelta(tier: Tier, units: number, pop: number, loss: number): TierDelta {
   switch (tier) {
     case 'stellar':
       return { ...NO_DELTA, reprobates: uniform(4, 8, units) };
@@ -400,23 +457,24 @@ function suggestionTierDelta(tier: Tier, units: number, pop: number): TierDelta 
     case 'good':
       return { ...NO_DELTA, reprobates: fixed(units) };
     case 'bad':
-      return { ...NO_DELTA, reprobates: fixed(-Math.min(units, pop)) };
+      return { ...NO_DELTA, reprobates: fixed(-Math.min(Math.floor(units * loss), pop)) };
     case 'terrible':
-      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.09 * pop)) };
+      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.09 * loss * pop)) };
     case 'apocalyptic':
-      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.5 * pop)) };
+      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.5 * loss * pop)) };
     default:
       return NO_DELTA; // neutral: nothing
   }
 }
 
-function indagatioTierDelta(state: GameState, tier: Tier, gold: number): TierDelta {
+function indagatioTierDelta(state: GameState, tier: Tier, gold: number, loss: number): TierDelta {
   const canFind = (chain: readonly MaleficiumRarity[]): boolean =>
     chain.some(
       (r) => findableIds(r, state.lifetime.maleficia, state.lifetime.emptioList).length > 0,
     );
   // Mirrors resolveIndagatio: each surfacing tier finds one item along its rarity chain (the rare
-  // Furcas double-find is not modeled); the failure tiers bite gold instead.
+  // Furcas double-find is not modeled); the failure tiers bite gold instead (scaled by the runner's
+  // efficiency, matching the resolver).
   switch (tier) {
     case 'stellar':
       return {
@@ -430,9 +488,9 @@ function indagatioTierDelta(state: GameState, tier: Tier, gold: number): TierDel
     case 'neutral':
       return { ...NO_DELTA, maleficia: fixed(canFind(['common']) ? 1 : 0) };
     case 'terrible':
-      return { ...NO_DELTA, gold: fixed(-Math.floor(0.15 * gold)) };
+      return { ...NO_DELTA, gold: fixed(-Math.floor(0.15 * loss * gold)) };
     case 'apocalyptic':
-      return { ...NO_DELTA, gold: fixed(-Math.floor(0.8 * gold)) };
+      return { ...NO_DELTA, gold: fixed(-Math.floor(0.8 * loss * gold)) };
     default:
       return NO_DELTA; // bad: false lead
   }
@@ -446,6 +504,7 @@ export function actionOutcomeForecast(
 ): OutcomeForecast {
   if (!ACTIONS[actionId]) return ZERO_FORECAST;
   const units = Math.max(1, Math.floor(efficiency));
+  const loss = lossScale(efficiency); // negative-outcome scale, matching the resolvers
   const pop = totalReprobates(state);
   const gold = floor(state.lifetime.gold).toNumber();
   const dist: TierWeights = forcedTier
@@ -453,11 +512,11 @@ export function actionOutcomeForecast(
     : actionTierDistribution(state, actionId);
   const tierDelta = (tier: Tier): TierDelta =>
     actionId === 'caedes'
-      ? caedesTierDelta(tier, units, pop, gold)
+      ? caedesTierDelta(tier, units, pop, gold, loss)
       : actionId === 'suggestion'
-        ? suggestionTierDelta(tier, units, pop)
+        ? suggestionTierDelta(tier, units, pop, loss)
         : actionId === 'indagatio'
-          ? indagatioTierDelta(state, tier, gold)
+          ? indagatioTierDelta(state, tier, gold, loss)
           : NO_DELTA;
 
   // Mixture moments via the law of total variance: across tiers, mean = Σ pₜ·mₜ and
@@ -572,7 +631,10 @@ export function resolveAction(
     case 'indagatio': {
       surfaced = [];
       for (let pass = 0; pass < passes; pass += 1) {
-        const r = resolveIndagatio(next, tier, rng);
+        // `eff` carries the runner's efficiency (the Familiar's ~0.01) so a background scry's
+        // failure-tier gold bite is scaled down like every other delegated loss; a hand cast (eff ≥ 1)
+        // is unchanged.
+        const r = resolveIndagatio(next, tier, rng, eff);
         next = r.state;
         surfaced = surfaced.concat(r.surfaced);
       }
@@ -602,6 +664,19 @@ export function resolveAction(
   return { state: next, event };
 }
 
+/**
+ * Loss scale for a resolution's NEGATIVE outcomes: `min(1, max(0, efficiency))`. Positive outcomes
+ * already scale UP with efficiency (`units = max(1, floor(efficiency))`); losses scale DOWN by the
+ * runner's efficiency so a low-efficiency background channel (an acolyte at 0.33, an invocation
+ * runner at 0.05) can't inflict a full-strength catastrophe. The player always casts at efficiency
+ * ≥ 1, so this clamps to 1 and leaves every player-facing loss exactly as before — it only softens
+ * DELEGATED culls, closing the "an acolyte on Purgatio rolls Terrible and burns 100% of your gold"
+ * bankruptcy trap. Never above 1, so no runner is ever punished harder than a hand-cast rite.
+ */
+export function lossScale(efficiency: number): number {
+  return Math.min(1, Math.max(0, efficiency));
+}
+
 /** Suggestion outcome effects (exported for direct testing of each tier). */
 export function resolveSuggestion(
   state: GameState,
@@ -610,6 +685,7 @@ export function resolveSuggestion(
   efficiency = 1,
 ): GameState {
   const units = Math.max(1, Math.floor(efficiency));
+  const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
       // major sin → +randint(4,8) unconverted reprobates (Suasio sheet); efficiency scales the count.
@@ -620,11 +696,11 @@ export function resolveSuggestion(
     case 'good':
       return addReprobates(state, units);
     case 'bad':
-      return removeReprobates(state, units).state; // rejects + redeems another
+      return removeReprobates(state, Math.floor(units * loss)).state; // rejects + redeems another
     case 'terrible':
-      return loseReprobatesFraction(state, 0.09).state; // Church intervention
+      return loseReprobatesFraction(state, 0.09 * loss).state; // Church intervention
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5).state; // mass apostasy (sheet rev)
+      return loseReprobatesFraction(state, 0.5 * loss).state; // mass apostasy (sheet rev)
     case 'neutral':
     default:
       return state;
@@ -634,6 +710,7 @@ export function resolveSuggestion(
 /** Logismoi outcome effects (Suasio sheet; exported for direct testing of each tier). */
 export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
+  const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
       // the word catches fire → +3% of the current population (sheet rev); efficiency scales.
@@ -646,11 +723,11 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
     case 'good':
       return addReprobates(state, randint(rng, 10, 29) * units);
     case 'bad':
-      return removeReprobates(state, units).state; // reject + redeem
+      return removeReprobates(state, Math.floor(units * loss)).state; // reject + redeem
     case 'terrible':
-      return loseReprobatesFraction(state, 0.09).state; // Church intervention
+      return loseReprobatesFraction(state, 0.09 * loss).state; // Church intervention
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5).state; // mass apostasy (sheet rev)
+      return loseReprobatesFraction(state, 0.5 * loss).state; // mass apostasy (sheet rev)
     case 'neutral':
     default:
       return state;
@@ -664,6 +741,7 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
  */
 export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
+  const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
       return mintSouls(
@@ -678,11 +756,11 @@ export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficien
     case 'good':
       return addReprobates(state, randint(rng, 100, 1000) * units);
     case 'bad':
-      return removeReprobates(state, units).state;
+      return removeReprobates(state, Math.floor(units * loss)).state;
     case 'terrible':
-      return loseReprobatesFraction(state, 0.05).state;
+      return loseReprobatesFraction(state, 0.05 * loss).state;
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5).state;
+      return loseReprobatesFraction(state, 0.5 * loss).state;
     case 'neutral':
     default:
       return state;
@@ -692,6 +770,7 @@ export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficien
 /** Caedes outcome effects (exported for direct testing of each tier). */
 export function resolveCaedes(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const scale = Math.max(1, Math.floor(efficiency));
+  const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar': {
       const { state: next, removed } = removeReprobates(state, randint(rng, 15, 45) * scale);
@@ -706,15 +785,16 @@ export function resolveCaedes(state: GameState, tier: Tier, rng: Rng, efficiency
       return mintSouls(next, removed);
     }
     case 'bad':
-      return loseGoldFraction(state, 0.05);
+      return loseGoldFraction(state, 0.05 * loss);
     case 'terrible':
-      return loseGoldFraction(state, 0.15);
+      return loseGoldFraction(state, 0.15 * loss);
     case 'apocalyptic': {
       // A Higher Power stops the assassination and campaigns against you (Decimatio sheet rev):
       // 33% current gold loss and 25% of all reprobates lost — taken from you, not harvested,
-      // so no souls are minted (mirrors the Suggestion "Church" loss).
-      const afterGold = loseGoldFraction(state, 0.33);
-      return loseReprobatesFraction(afterGold, 0.25).state;
+      // so no souls are minted (mirrors the Suggestion "Church" loss). Loss scaled by the runner's
+      // efficiency, so a delegated cull can't inflict the full catastrophe.
+      const afterGold = loseGoldFraction(state, 0.33 * loss);
+      return loseReprobatesFraction(afterGold, 0.25 * loss).state;
     }
     case 'neutral':
     default:
@@ -733,6 +813,7 @@ export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficienc
   // Efficiency lifts the positive cull share (02 §2: Decimatio efficiency modifies positive
   // outcomes), never beyond the whole population.
   const cullFrac = (base: number): number => Math.min(1, base * Math.max(0, efficiency));
+  const loss = lossScale(efficiency); // negative outcomes scale DOWN by the runner's efficiency
   const purge = (frac: number): GameState => {
     const { state: next, removed } = loseReprobatesFraction(state, cullFrac(frac));
     return mintSouls(next, removed);
@@ -745,12 +826,12 @@ export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficienc
     case 'good':
       return purge(0.001);
     case 'bad':
-      return loseGoldFraction(state, 0.05); // mob turns
+      return loseGoldFraction(state, 0.05 * loss); // mob turns
     case 'terrible':
-      return loseReprobatesFraction(state, 0.15).state; // Church seizes the flock
+      return loseReprobatesFraction(state, 0.15 * loss).state; // Church seizes the flock
     case 'apocalyptic':
       // A Higher Power smites the operation: 66% gold and half the flock (sheet rev).
-      return loseReprobatesFraction(loseGoldFraction(state, 0.66), 0.5).state;
+      return loseReprobatesFraction(loseGoldFraction(state, 0.66 * loss), 0.5 * loss).state;
     case 'neutral':
     default:
       return state; // mob disperses; gold already spent
@@ -769,6 +850,7 @@ export function resolvePurgatio(
   _rng: Rng,
   efficiency = 1,
 ): GameState {
+  const loss = lossScale(efficiency); // negative outcomes scale DOWN by the runner's efficiency
   const harvest = (base: number): GameState => {
     const frac = Math.min(1, base * Math.max(0, efficiency));
     const k = Math.floor(totalReprobates(state) * frac);
@@ -783,12 +865,13 @@ export function resolvePurgatio(
     case 'good':
       return harvest(0.01);
     case 'bad':
-      return loseGoldFraction(state, 0.05); // mob turns
+      return loseGoldFraction(state, 0.05 * loss); // mob turns
     case 'terrible':
-      return loseGoldFraction(state, 1); // the whole purse burns (sheet rev)
+      return loseGoldFraction(state, 1 * loss); // the whole purse burns (sheet rev)
     case 'apocalyptic':
-      // Everything burns: all gold AND the whole flock, none of it harvested.
-      return loseReprobatesFraction(loseGoldFraction(state, 1), 1).state;
+      // Everything burns: all gold AND the whole flock, none of it harvested. Scaled by the
+      // runner's efficiency, so a delegated Purgatio can't zero the treasury and the flock at once.
+      return loseReprobatesFraction(loseGoldFraction(state, 1 * loss), 1 * loss).state;
     case 'neutral':
     default:
       return state; // mob disperses; gold already spent
@@ -805,6 +888,7 @@ export function resolveIndagatio(
   state: GameState,
   tier: Tier,
   rng: Rng,
+  efficiency = 1,
 ): { state: GameState; surfaced: string[] } {
   // Walks rarities best→worst from the tier's entry point, stopping at the first one with a
   // findable candidate (Indagatio & Emptio sheet): Stellar→anathema, Excellent→profane, Good→rare,
@@ -820,24 +904,51 @@ export function resolveIndagatio(
           : tier === 'neutral'
             ? ['common']
             : [];
-  // Find one item along the chain; returns the updated state + picked id, or null if none findable.
+  // Ids of maleficia currently being PURCHASED (an in-flight Emptio timer's target). These must not
+  // be evicted from the list to make room for a new find — evicting the item mid-purchase is what
+  // made paid gold vanish with no refund. Protected here; `resolveEmptio` also refunds as a backstop.
+  const inFlightEmptio = new Set(
+    state.lifetime.actionQueue
+      .filter((t) => t.actionId === 'emptio' && t.target !== undefined)
+      .map((t) => t.target as string),
+  );
+  // Find one item along the chain; returns the updated state + picked id, or null if none findable
+  // (or none can be surfaced without evicting a rarer item — see the eviction rule below).
   const findOne = (st: GameState): { state: GameState; picked: string } | null => {
     for (const rarity of fallbackChain) {
       const ids = findableIds(rarity, st.lifetime.maleficia, st.lifetime.emptioList);
       if (ids.length === 0) continue;
       const picked = ids[rng.int(ids.length)];
       if (!picked) continue; // defensive: rng.int could (in theory) land out of range
-      // The Emptio surfaces at most MAX_EMPTIO_LIST_SIZE items; finding the next one drops the
-      // oldest (FIFO) so the list never grows past the cap.
-      const grown = [...st.lifetime.emptioList, picked];
-      const capped =
-        grown.length > MAX_EMPTIO_LIST_SIZE
-          ? grown.slice(grown.length - MAX_EMPTIO_LIST_SIZE)
-          : grown;
+      const pickedRank = rarityRank(picked);
+      let list = st.lifetime.emptioList;
+      // The Emptio holds at most MAX_EMPTIO_LIST_SIZE items. When full, surfacing a new one evicts a
+      // RANDOM existing item of STRICTLY LOWER rarity (else, as a fallback, an item of the SAME
+      // rarity), never a rarer one and never one being purchased — so a common find can't cost you a
+      // bound anathema. If every other listed item is rarer (or in-flight), the new find is the least
+      // valuable and is dropped instead (nothing surfaces this pass).
+      if (list.length >= MAX_EMPTIO_LIST_SIZE) {
+        // Indices of listed items at most `maxRank` rare and not being purchased.
+        const evictable = (maxRank: number): number[] => {
+          const idxs: number[] = [];
+          for (let i = 0; i < list.length; i++) {
+            const id = list[i]!;
+            if (!inFlightEmptio.has(id) && rarityRank(id) <= maxRank) idxs.push(i);
+          }
+          return idxs;
+        };
+        // Prefer a strictly-lower-rarity victim; fall back to a same-rarity one so a full list of
+        // one rarity still churns; give up (drop the find) only when everything left is rarer.
+        const lower = evictable(pickedRank - 1);
+        const pool = lower.length > 0 ? lower : evictable(pickedRank);
+        if (pool.length === 0) return null; // only rarer / in-flight items remain — drop the find
+        const dropIdx = pool[rng.int(pool.length)]!;
+        list = [...list.slice(0, dropIdx), ...list.slice(dropIdx + 1)];
+      }
       return {
         state: {
           ...st,
-          lifetime: { ...st.lifetime, emptioList: capped },
+          lifetime: { ...st.lifetime, emptioList: [...list, picked] },
         },
         picked,
       };
@@ -880,14 +991,30 @@ export function resolveIndagatio(
   }
 
   // Failure tiers bite gold (Indagatio & Emptio sheet): Terrible (Church trap) −15%, Apocalyptic
-  // (Higher-Power agent) −80%. Bad (false lead) and any unfindable rarity fall through unchanged.
+  // (Higher-Power agent) −80%. Scaled by the runner's efficiency so a background scry (the Familiar
+  // at ~0.01) can't torch most of the player's gold on an unattended Apocalyptic; a hand cast at
+  // efficiency ≥ 1 takes the full bite. Bad (false lead) and any unfindable rarity fall through.
+  const loss = lossScale(efficiency);
   if (tier === 'terrible') {
-    return { state: loseGoldFraction(state, 0.15), surfaced: [] };
+    return { state: loseGoldFraction(state, 0.15 * loss), surfaced: [] };
   }
   if (tier === 'apocalyptic') {
-    return { state: loseGoldFraction(state, 0.8), surfaced: [] };
+    return { state: loseGoldFraction(state, 0.8 * loss), surfaced: [] };
   }
   return { state, surfaced: [] };
+}
+
+/** Rarity rank for the Emptio-eviction ordering: common < rare < profane < anathema. Unknown ids
+ *  rank as the lowest (0), so a stray id is the first to be evicted. */
+const RARITY_RANK: Record<MaleficiumRarity, number> = {
+  common: 0,
+  rare: 1,
+  profane: 2,
+  anathema: 3,
+};
+function rarityRank(id: string): number {
+  const def = MALEFICIA[id];
+  return def ? RARITY_RANK[def.rarity] : 0;
 }
 
 /**
@@ -902,10 +1029,6 @@ export function resolveEmptio(
   paidGold?: number,
 ): { state: GameState; acquired: string[]; lostFromList: string[] } {
   if (!target || !MALEFICIA[target]) return { state, acquired: [], lostFromList: [] };
-  if (!state.lifetime.emptioList.includes(target)) {
-    // The target vanished from the list mid-flight (theft, parallel hand). No item, no refund.
-    return { state, acquired: [], lostFromList: [] };
-  }
   const def = MALEFICIA[target];
   // Refunds are relative to the gold actually PAID at startAction — the in-band rolled price
   // (Maleficia sheet Randint per rarity), softened by the Amy Emptio-gold reduction — NOT the flat
@@ -919,6 +1042,17 @@ export function resolveEmptio(
     sigilEffectMultiplier(state.lifetime.maleficia),
   );
   const paid = paidGold ?? (costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled);
+  if (!state.lifetime.emptioList.includes(target)) {
+    // The target vanished from the list mid-flight (evicted by a later find, a parallel hand). The
+    // gold was already deducted at startAction, so REFUND it here rather than pocketing it silently —
+    // the purchase simply could not be completed. (Indagatio's eviction already shields an in-flight
+    // target, so this is a backstop for any other vanish path.)
+    return {
+      state: { ...state, lifetime: { ...state.lifetime, gold: add(state.lifetime.gold, paid) } },
+      acquired: [],
+      lostFromList: [],
+    };
+  }
   // Remove ONE matching entry from the list (stackable items can have multiple copies listed).
   const dropIndex = state.lifetime.emptioList.indexOf(target);
   const trimmedList = [

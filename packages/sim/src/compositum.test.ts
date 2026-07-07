@@ -63,7 +63,9 @@ describe('Vitium Compositum — catalog (ADR-031)', () => {
     expect(p.sins.length).toBe(8);
     expect(p.manualDeactivateForbidden).toBe(true);
     expect(p.costGrowthPerSecond).toBeGreaterThan(1);
-    expect(p.costPerSecond).toEqual({ gold: 1000, influence: 100 });
+    // Gold-only upkeep after the playability retune (a growing influence drain can't coexist with a
+    // multi-minute runtime against a capped influence pool — see compositum.data.ts).
+    expect(p.costPerSecond).toEqual({ gold: 100 });
     expect(p.panvitiumRateBase).toBeGreaterThan(0);
   });
 });
@@ -111,16 +113,16 @@ describe('activateToggle / deactivateToggle', () => {
 });
 
 describe('advanceToggles — upkeep and auto-deactivation (02 §3)', () => {
-  it('deducts the per-second gold + influence cost while affordable (t = 0, growth 1)', () => {
-    // Panvitium costs 1000 gold/s + 100 influence/s at the ramp's foot (e⁰ = 1).
+  it('deducts the per-second gold cost while affordable (t = 0, growth 1)', () => {
+    // Panvitium costs 100 gold/s at the ramp's foot (1.01⁰ = 1); influence upkeep was retired.
     let s = unlockPanvitium(withInfluence(withGold(fresh(), 10_000), 1_000));
     const a = activateToggle(s, 'panvitium');
     if (!a.ok) throw new Error('activate');
     s = a.state;
     const r = advanceToggles(s, 1);
     expect(r.deactivated).toHaveLength(0);
-    expect(r.state.lifetime.gold.toNumber()).toBe(9_000);
-    expect(r.state.lifetime.influence.toNumber()).toBe(900);
+    expect(r.state.lifetime.gold.toNumber()).toBe(9_900);
+    expect(r.state.lifetime.influence.toNumber()).toBe(1_000); // untouched — no influence upkeep
     expect(isToggleActive(r.state, 'panvitium')).toBe(true);
   });
 
@@ -165,20 +167,24 @@ describe('tick — upkeep notices', () => {
 });
 
 describe('Panvitium — the endgame ritual (03 §2.3)', () => {
-  it('cost ramps exponentially (eᵗ) with active duration', () => {
-    // Base ~1000 g/s; eᵗ growth means a few seconds later the same 1 s delta costs far more.
-    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e18), 1e18));
+  it('cost ramps exponentially (1.01ᵗ) with active duration', () => {
+    // Base 100 g/s; the softened 1.01ᵗ ramp climbs gently second-to-second but compounds over
+    // minutes — a ritual sustained ~7 min pays far more per second than at the foot.
+    // 1e9 gold: ample for the ~650k a 7-min burn costs, yet small enough that the 100 g first-second
+    // cost is not lost to float precision (as it would be at ~1e18).
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e9), 1e9));
     const a = activateToggle(s, 'panvitium');
     if (!a.ok) throw new Error('activate');
     s = a.state;
     const goldStart = s.lifetime.gold.toNumber();
     const r1 = advanceToggles(s, 1);
     const firstCost = goldStart - r1.state.lifetime.gold.toNumber();
+    expect(firstCost).toBeCloseTo(100, 6); // 1.01⁰ = 1 → 100 g
     expect(r1.state.lifetime.toggleDurations.panvitium).toBeCloseTo(1, 6);
-    // Advance a few seconds (still affordable on a huge reserve), then one more 1 s tick costs far
-    // more than the first: at duration ~6, growth is e^6 ≈ 403×.
+    // Advance to duration ~420 s (still affordable on a huge reserve), then one more 1 s tick costs
+    // far more than the first: at duration ~420, growth is 1.01^420 ≈ 65×.
     let later = r1.state;
-    for (let i = 0; i < 5; i++) later = advanceToggles(later, 1).state;
+    for (let i = 0; i < 419; i++) later = advanceToggles(later, 1).state;
     expect(isToggleActive(later, 'panvitium')).toBe(true);
     const beforeLate = later.lifetime.gold.toNumber();
     const rLate = advanceToggles(later, 1);
@@ -199,8 +205,8 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
       s.lifetime.gold.toNumber() - advanceToggles(s, 1).state.lifetime.gold.toNumber();
     const full = costOf(base(0));
     const discounted = costOf(base(10_000_000)); // tier 4 → ×0.5
-    expect(full).toBeCloseTo(1000, 6);
-    expect(discounted).toBeCloseTo(500, 6);
+    expect(full).toBeCloseTo(100, 6);
+    expect(discounted).toBeCloseTo(50, 6);
   });
 
   it('auto-deactivates once upkeep outgrows reserves; duration clears', () => {
@@ -248,8 +254,9 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
 
   it('soul harvest compounds the existing soul hoard (souls/s ∝ current souls)', () => {
     let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e18), 1e18));
-    // Seed a soul hoard so the harvest term R(t) × souls is non-trivial. With ~1e6 souls the first
-    // 0.1 s alone mints 0.01 × 1e6 × 0.1 = 1000 souls — far beyond any incidental death souls.
+    // Seed a soul hoard so the harvest term R(t) × souls is non-trivial. With ~1e6 souls, ~2 s of
+    // burst at R₀ = 0.001 mints on the order of 1e6 × 0.001 × 2 ≈ 2000 souls (plus compounding) —
+    // far beyond any incidental death souls.
     s = { ...s, souls: bn(1_000_000) };
     const a = activateToggle(s, 'panvitium');
     if (!a.ok) throw new Error('activate');
@@ -257,6 +264,23 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     const before = s.souls.toNumber();
     for (let i = 0; i < 20; i++) s = tick(s, 0.1).state; // ~2 s burst
     expect(s.souls.toNumber()).toBeGreaterThan(before + 1000);
+  });
+
+  it('an offline catch-up tick lapses Panvitium before simulating (no reload exploit)', () => {
+    // Toggle Panvitium, then simulate a reload: one large offline tick. With `offline: true` the
+    // ritual is torn down BEFORE any harvest, so the start-sampled cost can't undercharge a long
+    // burn and reap an end-sampled harvest (ADR-004 — online and offline must agree).
+    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e12), 1e12));
+    s = { ...s, souls: bn(1_000_000) };
+    const a = activateToggle(s, 'panvitium');
+    if (!a.ok) throw new Error('activate');
+    s = a.state;
+    const before = s.souls.toNumber();
+    const offline = tick(s, 60, { offline: true }).state; // 60 s "away", one tick
+    expect(offline.lifetime.activeToggles).not.toContain('panvitium');
+    expect(offline.lifetime.toggleDurations.panvitium).toBeUndefined();
+    // No Panvitium harvest ran, so the soul hoard is essentially unchanged (no ×thousands blow-up).
+    expect(offline.souls.toNumber()).toBeLessThan(before * 1.001);
   });
 
   it('Katabasis clears toggleDurations', () => {

@@ -17,6 +17,11 @@ import {
   sigilById,
   sigilVisible,
   totalBound,
+  remainingGoldFraction,
+  remainingReprobateFraction,
+  remainingMaleficiaChance,
+  sigilKatabasisBonus,
+  sigilEffectMultiplier,
   eternalSinVisible,
   eternalSinRevealed,
   eternalProgress,
@@ -725,6 +730,20 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
   // Total Souls bound = every soul currently bound across all sigils.
   const totalSoulsBound = useMemo(() => totalBound(state), [state]);
 
+  // What a descent right now would KEEP — the three carry-over fractions the commit rolls against,
+  // inclusive of the Avaritia/Tristitia/Superbia levels AND the bound carry-over sigils (Purson,
+  // Halphas, Semet, …). Same inputs `commitKatabasis` uses, so the Ledger previews the real stakes:
+  // the Altar gate shows nothing, but here the player sees exactly how much survives the plunge.
+  const carryover = useMemo(() => {
+    const mul = sigilEffectMultiplier(state.lifetime.maleficia);
+    return {
+      gold: remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold', mul)),
+      reprobates: remainingReprobateFraction(state, sigilKatabasisBonus(state, 'reprobate', mul)),
+      maleficia: remainingMaleficiaChance(state, sigilKatabasisBonus(state, 'maleficia', mul)),
+    };
+  }, [state]);
+  const asPct = (f: number): string => `${(f * 100).toFixed(1)}%`;
+
   // Bound sigils — name + current effect, sorted most-bound first. A seal appears only once it has
   // souls bound and is visible (Semet stays sealed until the gate opens). The effect text comes from
   // the authoritative `strings.sigils.descriptions` (its trailing ↑/↓ direction arrow stripped, the
@@ -799,6 +818,23 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
           <div className="ls-stat">
             <div className="ls-num">{formatBigNum(totalSoulsBound)}</div>
             <div className="ls-lab">sigil-bound souls</div>
+          </div>
+        </div>
+
+        {/* What a descent right now would carry back — the three commit-side carry-over rolls, so the
+            player knows the stakes before pressing the seal. */}
+        <div className="ledger-summary ledger-summary--carryover">
+          <div className="ls-stat">
+            <div className="ls-num ember">{asPct(carryover.gold)}</div>
+            <div className="ls-lab">gold kept on descent</div>
+          </div>
+          <div className="ls-stat">
+            <div className="ls-num ember">{asPct(carryover.reprobates)}</div>
+            <div className="ls-lab">reprobates kept</div>
+          </div>
+          <div className="ls-stat">
+            <div className="ls-num ember">{asPct(carryover.maleficia)}</div>
+            <div className="ls-lab">maleficia kept (each)</div>
           </div>
         </div>
 
