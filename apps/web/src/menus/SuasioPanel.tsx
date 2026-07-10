@@ -155,10 +155,19 @@ export function SuasioPanel({
                     <div className="suasio-body">
                       <div className="suasio-name">{a.name}</div>
                       <div className="suasio-quote">{a.quote}</div>
-                      {a.active && (
+                      {/* The progress bar + status keep their layout space even when idle
+                          (visibility, not display), so a castable rite's row is a fixed height
+                          and the buttons do not jump when the rite starts or ends. */}
+                      {!a.locked && (
                         <>
-                          <span className="suasio-bar" style={barStyle} aria-hidden="true" />
-                          <div className="suasio-status">{a.status}</div>
+                          <span
+                            className={'suasio-bar' + (a.active ? '' : ' suasio-idle')}
+                            style={barStyle}
+                            aria-hidden="true"
+                          />
+                          <div className={'suasio-status' + (a.active ? '' : ' suasio-idle')}>
+                            {a.status}
+                          </div>
                         </>
                       )}
                       {a.delegation && <div className="suasio-deleg">{a.delegation}</div>}

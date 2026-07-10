@@ -85,7 +85,7 @@ describe('Opus Suasio scroll', () => {
     expect(container!.querySelectorAll('.suasio-row').length).toBe(3);
   });
 
-  it('shows the progress ring, bar and flicker status only for the active rite', () => {
+  it('lights the progress ring for the active rite and reserves the bar/status space on idle rites', () => {
     render({
       actions: [
         baseAction({ id: 'suggestion', active: true, progress: 60, disabled: true }),
@@ -94,13 +94,19 @@ describe('Opus Suasio scroll', () => {
       ],
       onClose: () => {},
     });
+    // The progress ring (arc) is drawn for the active rite alone.
     expect(container!.querySelectorAll('.suasio-arc').length).toBe(1);
-    const bar = container!.querySelector('.suasio-bar') as HTMLElement | null;
-    expect(bar).not.toBeNull();
-    expect(bar!.style.width).toBe('60%');
-    expect(container!.querySelector('.suasio-status')?.textContent).toContain(
-      'A word is being left',
-    );
+    const rows = container!.querySelectorAll('.suasio-row');
+    // The active rite's bar is visible and reflects its progress.
+    const activeBar = rows[0]!.querySelector('.suasio-bar') as HTMLElement;
+    expect(activeBar.classList.contains('suasio-idle')).toBe(false);
+    expect(activeBar.style.width).toBe('60%');
+    expect(rows[0]!.querySelector('.suasio-status')?.textContent).toContain('A word is being left');
+    // An idle (but castable) rite still renders its bar + status, hidden via `suasio-idle`, so the
+    // row keeps a fixed height and the buttons do not jump when a rite starts or ends.
+    const idleBar = rows[1]!.querySelector('.suasio-bar') as HTMLElement;
+    expect(idleBar.classList.contains('suasio-idle')).toBe(true);
+    expect(rows[1]!.querySelector('.suasio-status')?.classList.contains('suasio-idle')).toBe(true);
   });
 
   it('renders a locked rite as sealed: redacted name, the gate, and no action button', () => {
@@ -125,6 +131,8 @@ describe('Opus Suasio scroll', () => {
     expect(sealed!.querySelector('.suasio-gate')?.textContent).toBe('Requires Luxuria III');
     // A sealed rite is unactionable — no Speak/Command button.
     expect(sealed!.querySelector('.suasio-act')).toBeNull();
+    // It can never be active, so it reserves no progress bar (only castable rites do).
+    expect(sealed!.querySelector('.suasio-bar')).toBeNull();
   });
 
   it('fires the real action when an open rite is spoken', () => {

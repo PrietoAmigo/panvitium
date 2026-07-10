@@ -4485,6 +4485,11 @@ body {
 .suasio-row--apex .suasio-status {
   color: #f0d28a;
 }
+/* Idle rite: the bar + status reserve their height but stay invisible, so the row is a
+   fixed size and nothing shifts when the rite becomes active. */
+.suasio-idle {
+  visibility: hidden;
+}
 
 .suasio-deleg {
   margin-top: 12px;
