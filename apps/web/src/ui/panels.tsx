@@ -95,11 +95,12 @@ function delegateGateLabel(actionId: string): string {
 }
 
 /**
- * Acolyte assignment controls (02 §10). A pair of `-` / `+` buttons with the current assigned count
- * between them. The control is ALWAYS shown for a castable rite (design handoff), so the player can
- * see the delegation system exists before it is available: while the rite is not yet delegatable it
- * renders disabled with its Sin gate; once delegatable but no acolytes exist yet, it renders disabled
- * with a "no acolytes yet" hint. Only when delegatable AND acolytes exist do the buttons act.
+ * Acolyte assignment controls (02 §10). A pair of `-` / `+` buttons with the current assigned/total
+ * count between them. The control is ALWAYS shown for a castable rite (design handoff), so the player
+ * can see the delegation system exists before it is available: the count reads "0/0" until acolytes
+ * are recruited, and the buttons render disabled (dimmed) while the rite is not yet delegatable or no
+ * acolytes exist. The reason (Sin gate / "no acolytes yet") rides along as the control's hover hint.
+ * Only when delegatable AND acolytes exist do the buttons act.
  */
 function AcolyteControls({ actionId }: { actionId: string }): ReactElement | null {
   const state = useGameStore((s) => s.state);
@@ -133,17 +134,13 @@ function AcolyteControls({ actionId }: { actionId: string }): ReactElement | nul
       >
         −
       </button>
-      {locked || noAcolytes ? (
-        <span className="acolyte-lock" title={hint}>
-          {'🔒'} {locked ? delegateGateLabel(actionId) : strings.acolytes.noAcolytes}
-        </span>
-      ) : (
-        <span className="acolyte-count" title={strings.acolytes.delegationLabel}>
-          {assigned}
-          <span className="acolyte-count-sep">/</span>
-          {total}
-        </span>
-      )}
+      {/* Always the plain assigned/total count — a rite with no acolytes reads "0/0" rather than a
+          lock glyph. The gate/no-acolytes reason still rides along as the control's hover hint. */}
+      <span className="acolyte-count" title={hint}>
+        {assigned}
+        <span className="acolyte-count-sep">/</span>
+        {total}
+      </span>
       <button
         type="button"
         className="acolyte-btn"

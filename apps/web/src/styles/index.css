@@ -1601,16 +1601,6 @@ body {
 .acolyte-controls--locked {
   opacity: 0.55;
 }
-.acolyte-lock {
-  font-family: var(--font-mono, monospace);
-  color: var(--ash, #c8b48a);
-  font-size: 0.68rem;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  padding: 0 0.2rem;
-  min-width: 2.2rem;
-  text-align: center;
-}
 .acolyte-summary {
   list-style: none;
   margin: 0.4rem 0 0;
