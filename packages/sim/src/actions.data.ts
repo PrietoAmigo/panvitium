@@ -120,7 +120,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     weights: LOGISMOI_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'luxuria', level: 1 }, // 2nd Suasio rite opens at Luxuria I (player tuning; was II)
-    delegateUnlock: { sin: 'luxuria', level: 3 },
+    delegateUnlock: { sin: 'luxuria', level: 2 }, // auto/delegate at Luxuria II (player tuning; was III)
   },
   imperium: {
     id: 'imperium',
@@ -154,7 +154,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     weights: POGROM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'ira', level: 1 }, // 2nd Decimatio rite opens at Ira I (player tuning; was II)
-    delegateUnlock: { sin: 'ira', level: 3 },
+    delegateUnlock: { sin: 'ira', level: 2 }, // auto/delegate at Ira II (player tuning; was III)
   },
   purgatio: {
     id: 'purgatio',

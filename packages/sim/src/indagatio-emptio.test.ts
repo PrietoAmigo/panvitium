@@ -131,6 +131,26 @@ describe('resolveIndagatio (03 §2.5)', () => {
     expect(surfaced.length).toBe(1);
     expect(MALEFICIA[surfaced[0]!]!.rarity).toBe('profane');
   });
+
+  it('never piles a second copy of a listed stackable onto the list (no flooding / starvation)', () => {
+    // Defixio is an ∞-stackable profane. With every OTHER profane already owned and one Defixio
+    // already listed, an Excellent search must not add a SECOND Defixio — it falls through profane →
+    // rare instead. This is the fix for the ever-findable consumable crowding the 20-slot list and
+    // starving the rarer finds out via the eviction rule (which never displaces a rarer relic).
+    const base = fresh();
+    const otherProfanes = Object.keys(MALEFICIA).filter(
+      (id) => MALEFICIA[id]!.rarity === 'profane' && id !== 'defixio',
+    );
+    const seeded: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, maleficia: otherProfanes, emptioList: ['defixio'] },
+    };
+    const { state, surfaced } = resolveIndagatio(seeded, 'excellent', rng());
+    expect(surfaced.length).toBe(1);
+    expect(surfaced[0]).not.toBe('defixio'); // the listed consumable was not duplicated
+    expect(MALEFICIA[surfaced[0]!]!.rarity).toBe('rare'); // fell through profane → rare
+    expect(state.lifetime.emptioList.filter((id) => id === 'defixio').length).toBe(1);
+  });
 });
 
 describe('resolveEmptio (03 §2.6)', () => {

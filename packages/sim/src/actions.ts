@@ -827,6 +827,11 @@ export function resolveCaedes(state: GameState, tier: Tier, rng: Rng, efficiency
  * Stellar/Excellent/Good kill 2.5 / 1 / 0.1 % of the population and harvest a soul per death;
  * positive culls scale with efficiency (clamped to 100%). Bad burns gold; Terrible lets the Church
  * seize the flock; Apocalyptic burns 66% of gold AND half the flock.
+ *
+ * A successful cull always claims at least one soul: the sheet's percentages floor to zero on a
+ * small flock (Good = 0.1% needs 1,000+ reprobates to remove even one), so a Good Pogrom — its most
+ * common outcome (60%) — otherwise did nothing at typical populations and read as a broken rite.
+ * The floor of 1 mirrors Caedes; the percentage still scales past 1 as the flock grows.
  */
 export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficiency = 1): GameState {
   // Efficiency lifts the positive cull share (02 §2: Decimatio efficiency modifies positive
@@ -834,7 +839,10 @@ export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficienc
   const cullFrac = (base: number): number => Math.min(1, base * Math.max(0, efficiency));
   const loss = lossScale(efficiency); // negative outcomes scale DOWN by the runner's efficiency
   const purge = (frac: number): GameState => {
-    const { state: next, removed } = loseReprobatesFraction(state, cullFrac(frac));
+    const pop = totalReprobates(state);
+    if (pop <= 0) return state; // no flock to cull
+    const k = Math.max(1, Math.floor(pop * cullFrac(frac)));
+    const { state: next, removed } = removeReprobates(state, k);
     return mintSouls(next, removed);
   };
   switch (tier) {

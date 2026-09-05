@@ -310,7 +310,12 @@ export const CALLS_IN: readonly CallInData[] = [
     id: 'succubus',
     audio: true,
     class: 'lore',
-    requires: { fcFriendly: true },
+    // The friendly branch of the Fausto arc: it can only ring once his first letter (fausto-1) has
+    // actually arrived, so the Succubus never calls before the arc that summons her has begun.
+    // Astiwihad (the hostile branch) is already gated behind fcFriendly:false, which can only be true
+    // once the threat reply to fausto-1 was sent, so this keeps the two mutually-exclusive lines
+    // symmetric: both require the first Fausto letter.
+    requires: { fcFriendly: true, emails: ['fausto-1'] },
     choices: [{ dim: true }, {}],
   },
   {

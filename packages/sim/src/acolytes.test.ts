@@ -133,9 +133,9 @@ describe('isDelegatable (toggle Sin-level gate)', () => {
     expect(isDelegatable(setSin(fresh(), 'luxuria', 1), 'suggestion')).toBe(true);
     expect(isDelegatable(fresh(), 'caedes')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'ira', 1), 'caedes')).toBe(true);
-    // The higher rites toggle at 3 / 4.
-    expect(isDelegatable(setSin(fresh(), 'luxuria', 2), 'logismoi')).toBe(false);
-    expect(isDelegatable(setSin(fresh(), 'luxuria', 3), 'logismoi')).toBe(true);
+    // Logismoi toggles at Luxuria 2 (player tuning; was 3); Purgatio still at Ira 4.
+    expect(isDelegatable(setSin(fresh(), 'luxuria', 1), 'logismoi')).toBe(false);
+    expect(isDelegatable(setSin(fresh(), 'luxuria', 2), 'logismoi')).toBe(true);
     expect(isDelegatable(setSin(fresh(), 'ira', 3), 'purgatio')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'ira', 4), 'purgatio')).toBe(true);
   });

@@ -66,6 +66,12 @@ export function countCopies(list: readonly string[], id: string): number {
  * non-stackable items must be neither owned nor listed; stackable items must not already saturate
  * `stackMax` across owned + listed (an unbounded `Number.POSITIVE_INFINITY` cap never saturates).
  * Unknown ids return false.
+ *
+ * The *Emptio* list also never holds two copies of the SAME maleficium at once: a stackable already
+ * on the list is not re-found until it is bought (which clears its entry). Owned copies do not block
+ * re-finding, so stacks still grow one purchase at a time. This keeps an ever-findable consumable
+ * (Defixio, Hand of Glory) from flooding the 20-slot list and starving the rarer finds out through
+ * the eviction rule (which never displaces a rarer relic) — so every maleficium stays discoverable.
  */
 export function canSurface(
   id: string,
@@ -74,6 +80,7 @@ export function canSurface(
 ): boolean {
   const def = MALEFICIA[id];
   if (!def) return false;
+  if (countCopies(listed, id) > 0) return false; // one copy per id on the list at a time
   const total = countCopies(owned, id) + countCopies(listed, id);
   if (def.stackMax === undefined) return total === 0;
   return total < def.stackMax;
