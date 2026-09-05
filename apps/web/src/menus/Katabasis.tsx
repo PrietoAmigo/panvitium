@@ -806,6 +806,13 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
           </p>
         </div>
 
+        {/* The Souls total — the run's headline resource, given its own big red KPI above the six
+            standing readouts (moved here from the PC's Analytics program). */}
+        <div className="ledger-souls">
+          <div className="ledger-souls-num">{formatBigNum(state.souls)}</div>
+          <div className="ledger-souls-lab">{strings.resources.souls}</div>
+        </div>
+
         <div className="ledger-summary">
           <div className="ls-stat">
             <div className="ls-num">{totalSinLevel}</div>

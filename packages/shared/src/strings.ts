@@ -135,6 +135,11 @@ export const strings = {
     // Panvitium on the scroll: its open name and the ramping-cost suffix on the cost line.
     panvitium: 'Panvitium',
     panvitiumRising: 'and rising',
+    // The Suasio scroll's outcome ledger, mirroring Decimatio's "Index Opervm": resolved temptations,
+    // newest first, below the rites. Box-drawing rule (U+2500), never a dash (hard copy rule 2).
+    suasioLedgerHeading: '\u2500 INDEX SVASIONVM \u2500',
+    suasioEmptyLedger: 'No temptation has been spoken yet.',
+    suasioNoYield: 'no soul stirred',
 
     // Decimatio: \u201cThe Breathing Dark\u201d (Claude Design rework). The culling program\u2019s PC
     // body: three rites, a live Reprobates KPI, and the \u201cIndex Opervm\u201d ledger of real outcomes.

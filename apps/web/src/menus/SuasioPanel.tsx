@@ -47,6 +47,8 @@ interface SuasioPanelProps {
   closeLabel: string;
   /** The three temptations, in scroll order. */
   actions: readonly SuasioActionView[];
+  /** Resolved-outcome ledger rendered at the foot of the scroll (mirrors Decimatio's Index Opervm). */
+  ledger?: ReactNode;
   /** Dismiss the scroll. */
   onClose: () => void;
 }
@@ -85,6 +87,7 @@ export function SuasioPanel({
   maxim,
   closeLabel,
   actions,
+  ledger,
   onClose,
 }: SuasioPanelProps): ReactElement {
   return (
@@ -194,6 +197,8 @@ export function SuasioPanel({
                 );
               })}
             </div>
+
+            {ledger}
           </div>
         </section>
       </div>

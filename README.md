@@ -103,9 +103,17 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 880** (sim 536 · shared 63 · api 20 · web 261).
+**Current test count: 883** (sim 536 · shared 63 · api 20 · web 264).
 
-> **Latest change — Decimatio gold KPI and a 1/10 gold-cost cut (player tuning).** The Decimatio
+> **Latest change — Suasio ledger + Status Quo Souls KPI (menu polish).** Three UI moves. (1) The
+> **Opus Suasio** scroll no longer shows a scrollbar (the overlay stays scrollable, the bar is hidden,
+> matching Depraedatio), and it now carries an **outcome ledger at its foot** in the same shape as
+> Decimatio's Index Opervm: the resolved temptations, newest first, each a tier chip beside its soul
+> yield. (2) The **Souls** readout is removed from the Analytics program's Main tab and (3) reinstated
+> as a **big red Souls KPI** heading the **Status Quo** Ledger, above the six standing readouts. Net
+> **+3 tests** (web 261 → 264): the Suasio ledger wiring (empty + populated) and the Ledger's Souls KPI.
+
+> **Earlier change — Decimatio gold KPI and a 1/10 gold-cost cut (player tuning).** The Decimatio
 > masthead now carries a live **Gold** KPI beside the Reprobates count, so the currency a cull
 > spends is legible in the same place it is charged. Every Decimatio rite's gold cost also drops to
 > a tenth of the sheet value: **Caedes 100 → 10 g**, **Pogrom 1,000 → 100 g**, **Purgatio
