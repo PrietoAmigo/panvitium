@@ -26,6 +26,7 @@ import {
   makeRng,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
+  remainingReprobateFraction,
   reprobateRates,
   resolveAction,
   resolveIndagatio,
@@ -215,7 +216,8 @@ describe('Katabasis carry-over bonuses', () => {
     const baseFrac = remainingGoldFraction(fresh());
     const s = bound(20, 10_000);
     const bonus = sigilKatabasisBonus(s, 'gold');
-    expect(bonus).toBeCloseTo(sigilStrength(sigilById(20)!, bn(10_000)), 6);
+    // The carry-over bonus is the sheet yield applied "as a percentage" (÷100), not the raw yield.
+    expect(bonus).toBeCloseTo(sigilStrength(sigilById(20)!, bn(10_000)) / 100, 6);
     // The roll clamps to [0,1], so a large bonus saturates rather than overflows.
     expect(remainingGoldFraction(s, bonus)).toBeLessThanOrEqual(1);
     expect(remainingGoldFraction(s, bonus)).toBeGreaterThan(baseFrac);
@@ -226,6 +228,17 @@ describe('Katabasis carry-over bonuses', () => {
     expect(sigilKatabasisBonus(s, 'reprobate')).toBeGreaterThan(0);
     expect(sigilKatabasisBonus(s, 'gold')).toBe(0);
     expect(sigilKatabasisBonus(s, 'maleficia')).toBe(0);
+  });
+
+  it('Camio #53 adds a modest percentage-point bonus, not an instant 100% (the ÷100 fix)', () => {
+    const s = bound(53, 100); // the Sigils sheet's own sample N for Camio
+    const bonus = sigilKatabasisBonus(s, 'reprobate');
+    // Yield ln(101) ≈ 4.6 applies "as a percentage" → +0.046 as a fraction, NOT +4.6 (which used to
+    // saturate the reprobate carry-over to 100% at a trivial binding).
+    expect(bonus).toBeCloseTo(Math.log(101) / 100, 6);
+    expect(bonus).toBeLessThan(0.1);
+    // The carry-over rises only a little and stays well below the 100% clamp.
+    expect(remainingReprobateFraction(s, bonus)).toBeLessThan(0.2);
   });
 
   it('Cimejes #66 also feeds only the maleficia roll', () => {

@@ -159,7 +159,7 @@ export const strings = {
     decimatioSealedSuffix: '\u00b7 sealed',
     // Lock notes shown on a gated rite, explaining why it cannot be worked yet (with its Ira gate).
     decimatioLocked: {
-      pogrom: 'You cannot infuse enough anger into your acolytes yet. Ira II.',
+      pogrom: 'You cannot infuse enough anger into your acolytes yet. Ira I.',
       purgatio: 'Making anger contagious among your followers is not yet possible. Ira III.',
     } as Record<string, string>,
     // Ledger outcome fragments (re-skinned from the real OutcomeEvent deltas).

@@ -44,7 +44,7 @@ describe('buildGoetia view-model adapter', () => {
     }
   });
 
-  it('reports the cap, affordability, and a single bound badge (no copy count)', () => {
+  it('reports the cap, affordability, and the live bound count', () => {
     const base = richState();
     // Stack a stackable invocation and bind a singleton apex (set directly on state).
     const s = {
@@ -55,14 +55,14 @@ describe('buildGoetia view-model adapter', () => {
 
     const fama = view.entries.find((e) => e.id === 'fama')!;
     expect(fama.active).toBe(2);
-    expect(fama.atCap).toBe(false); // stackable — never caps
-    // Stacked copies are never advertised: a stackable invocation reads as a single 'bound' badge.
-    expect(fama.bound).toBe(strings.invocations.active); // 'bound' — no copy count for stacked copies
+    expect(fama.atCap).toBe(false); // 2 of 4 active — below Fama's cap
+    // The bound field is the live count of summoned entities (player request), e.g. '2'.
+    expect(fama.bound).toBe('2');
 
     const midas = view.entries.find((e) => e.id === 'midas')!;
     expect(midas.active).toBe(1);
     expect(midas.atCap).toBe(true); // apex, maxActive 1
-    expect(midas.bound).toBe(strings.invocations.active); // 'bound' — no ×1 for a singleton
+    expect(midas.bound).toBe('1'); // one summoned → '1'
     expect(midas.affordable).toBe(true); // free apex is always affordable
   });
 });

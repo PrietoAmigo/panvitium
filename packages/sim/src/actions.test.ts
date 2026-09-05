@@ -85,9 +85,9 @@ describe('startAction', () => {
 });
 
 describe('action unlock gating (Suasio sheet)', () => {
-  it('gates Logismoi at Luxuria 2 and Imperium at Luxuria 3; ungated actions are always open', () => {
+  it('gates Logismoi at Luxuria 1 and Imperium at Luxuria 3; ungated actions are always open', () => {
     expect(actionUnlocked(fresh(), ACTIONS.logismoi!)).toBe(false);
-    expect(actionUnlocked(withLuxuria(fresh(), 1), ACTIONS.logismoi!)).toBe(false);
+    expect(actionUnlocked(withLuxuria(fresh(), 1), ACTIONS.logismoi!)).toBe(true);
     expect(actionUnlocked(withLuxuria(fresh(), 2), ACTIONS.logismoi!)).toBe(true);
     expect(actionUnlocked(withLuxuria(fresh(), 2), ACTIONS.imperium!)).toBe(false);
     expect(actionUnlocked(withLuxuria(fresh(), 3), ACTIONS.imperium!)).toBe(true);
@@ -396,9 +396,9 @@ describe('resolveAction — per-category success shift (Resignation/Retribution,
 });
 
 describe('Decimatio gating + Pogrom target', () => {
-  it('gates Pogrom at Ira 2 and Purgatio at Ira 3', () => {
+  it('gates Pogrom at Ira 1 and Purgatio at Ira 3', () => {
     expect(actionUnlocked(fresh(), ACTIONS.pogrom!)).toBe(false);
-    expect(actionUnlocked(withIra(fresh(), 2), ACTIONS.pogrom!)).toBe(true);
+    expect(actionUnlocked(withIra(fresh(), 1), ACTIONS.pogrom!)).toBe(true);
     expect(actionUnlocked(withIra(fresh(), 2), ACTIONS.purgatio!)).toBe(false);
     expect(actionUnlocked(withIra(fresh(), 3), ACTIONS.purgatio!)).toBe(true);
     expect(actionUnlocked(fresh(), ACTIONS.caedes!)).toBe(true); // ungated

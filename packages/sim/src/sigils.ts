@@ -378,6 +378,14 @@ export function sigilShutdownRefundMul(state: GameState, effectMul = 1): number 
   return mul;
 }
 
+/**
+ * The Katabasis carry-over bonus one roll receives from bound sigils, as a FRACTION added to that
+ * roll's kept-fraction (Purson→gold, Camio→reprobate, Cimejes→maleficia). Each sigil's `sigilStrength`
+ * is the Sigils sheet's raw yield (`coeff × curve(bound)`), which the sheet defines to apply "as a
+ * percentage" (Camio at 100 souls yields ln(101) ≈ 4.6, i.e. +4.6 percentage points), so it is
+ * divided by 100 before being added to a [0,1] carry-over fraction. Without the ÷100 a few bound
+ * souls saturated every carry-over roll to 100% (the Camio "too powerful" bug).
+ */
 export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effectMul = 1): number {
   let bonus = 0;
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
@@ -386,7 +394,7 @@ export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effec
     if (!def || def.effect.kind !== 'katabasis') continue;
     if (def.effect.rolls.includes(roll)) bonus += sigilStrength(def, bound);
   }
-  return bonus * effectMul;
+  return (bonus / 100) * effectMul;
 }
 
 /** Convenience for tests/UI: the maximum Sin level any gate could require. */

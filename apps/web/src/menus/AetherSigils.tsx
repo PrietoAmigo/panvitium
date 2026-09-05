@@ -147,6 +147,9 @@ export function effectDisplay(def: SigilDef | undefined, bound: BigNum): string 
   const e = def.effect;
   if (e.kind === 'flatGen') return `+${fmtFlat(s)} ${FLAT_UNIT[e.resource] ?? '/s'}`;
   if (e.kind === 'invokingPower') return `+${Math.round(s)} invoking power`;
+  // A Katabasis carry-over yield is ALREADY a percentage (the sheet's `coeff × curve(bound)` applies
+  // "as a percentage"), so show `s` directly rather than ×100 — matching sigilKatabasisBonus's ÷100.
+  if (e.kind === 'katabasis') return `${effectSign(e)}${s.toFixed(1)}%`;
   return `${effectSign(e)}${(s * 100).toFixed(1)}%`;
 }
 
