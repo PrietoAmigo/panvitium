@@ -1,6 +1,6 @@
 /**
  * Sigil tests (02 §5, 03 §5). Pins:
- *   - binding curves (sqrt default, linear, log) and zero/negative handling
+ *   - binding curves (pct percentage default, sqrt, linear, log) and zero/negative handling
  *   - catalog integrity; Semet (#32) carries the all-Sins-≥2 gate
  *   - sigilStrength = coefficient × magnitude
  *   - in-lifetime modifier contributions fold into computeModifiers (increase/decrease, tier)
@@ -69,7 +69,19 @@ function maxSinsTo(s: GameState, level: number): GameState {
 }
 
 describe('Binding curves (02 §5)', () => {
-  it('sqrt is the default and grows gently', () => {
+  it('pct is the default percentage curve: ~5% @10, ~50% @100k souls, no cap', () => {
+    expect(bindingMagnitude('pct', bn(0))).toBe(0);
+    expect(bindingMagnitude('pct', bn(1))).toBe(0); // clamped: below ~3.6 souls the curve is 0
+    expect(bindingMagnitude('pct', bn(10))).toBeCloseTo(0.05, 6);
+    expect(bindingMagnitude('pct', bn(1_000))).toBeCloseTo(0.275, 6);
+    expect(bindingMagnitude('pct', bn(10_000))).toBeCloseTo(0.3875, 6);
+    expect(bindingMagnitude('pct', bn(100_000))).toBeCloseTo(0.5, 6);
+    // No cap: it keeps rising ~+11 points per 10x souls, far tamer than the old √.
+    expect(bindingMagnitude('pct', bn(1e15))).toBeCloseTo(1.625, 6);
+    expect(bindingMagnitude('pct', bn(1e15))).toBeGreaterThan(bindingMagnitude('pct', bn(1e9)));
+  });
+
+  it('sqrt (Andrealphus, opt-in) grows gently', () => {
     expect(bindingMagnitude('sqrt', bn(0))).toBe(0);
     expect(bindingMagnitude('sqrt', bn(100))).toBeCloseTo(10, 6);
     expect(bindingMagnitude('sqrt', bn(10_000))).toBeCloseTo(100, 6);
@@ -104,7 +116,11 @@ describe('Sigil catalog', () => {
 
   it('sigilStrength = coefficient × magnitude', () => {
     const valefor = sigilById(6)!;
-    expect(sigilStrength(valefor, bn(10_000))).toBeCloseTo(valefor.coefficient * 100, 6);
+    // Valefor uses the default pct curve; its strength is coefficient × the pct magnitude.
+    expect(sigilStrength(valefor, bn(10_000))).toBeCloseTo(
+      valefor.coefficient * bindingMagnitude('pct', bn(10_000)),
+      9,
+    );
   });
 });
 
@@ -420,9 +436,15 @@ describe('Flat invoking-power sigil (S7)', () => {
 describe('Cost-reduction sigils (S8)', () => {
   it('sigilCostReductionByChannel yields per-channel (1 + strength) divisors', () => {
     expect(sigilCostReductionByChannel(fresh())).toEqual({});
-    // Paimon 5e-05 × sqrt(4e8) = 1 → factor 2; Orobas 0.0001 × sqrt(1e8) = 1 → factor 2.
-    expect(sigilCostReductionByChannel(bound(9, 400_000_000)).influence).toBeCloseTo(2, 6);
-    expect(sigilCostReductionByChannel(bound(55, 100_000_000)).invocationSoul).toBeCloseTo(2, 6);
+    // Each channel's divisor is 1 + the sigil's (pct-curve) strength on the bound souls.
+    expect(sigilCostReductionByChannel(bound(9, 400_000_000)).influence).toBeCloseTo(
+      1 + sigilStrength(sigilById(9)!, bn(400_000_000)),
+      6,
+    );
+    expect(sigilCostReductionByChannel(bound(55, 100_000_000)).invocationSoul).toBeCloseTo(
+      1 + sigilStrength(sigilById(55)!, bn(100_000_000)),
+      6,
+    );
     // Amy #58 is no longer a cost-reduction sigil (sheet rev: a cursed efficiency penalty).
     expect(sigilCostReductionByChannel(bound(58, 1_000_000)).emptioGold).toBeUndefined();
   });
@@ -438,8 +460,9 @@ describe('Cost-reduction sigils (S8)', () => {
     const base = startAction(seed(fresh()), 'logismoi', { efficiency: 1 });
     const paimon = startAction(seed(bound(9, 400_000_000)), 'logismoi', { efficiency: 1 });
     if (!base.ok || !paimon.ok) throw new Error('start failed');
+    const paimonFactor = 1 + sigilStrength(sigilById(9)!, bn(400_000_000));
     expect(100 - base.state.lifetime.influence.toNumber()).toBe(25); // ceil(25 × 1)
-    expect(100 - paimon.state.lifetime.influence.toNumber()).toBe(13); // ceil(25 / 2)
+    expect(100 - paimon.state.lifetime.influence.toNumber()).toBe(Math.ceil(25 / paimonFactor));
   });
 
   it('Orobas #55 softens the one-time invocation soul cost (Morpheus 90% of pool)', () => {
@@ -448,7 +471,11 @@ describe('Cost-reduction sigils (S8)', () => {
     const morpheus = invocationById('morpheus')!;
     const withPool = (s: GameState): GameState => ({ ...s, souls: bn(1000) });
     expect(invocationSoulCost(withPool(fresh()), morpheus).toNumber()).toBe(900); // 90% of 1000
-    expect(invocationSoulCost(withPool(bound(55, 100_000_000)), morpheus).toNumber()).toBe(450); // halved
+    // Softened by 1 + Orobas's pct strength, then floored (souls are natural numbers).
+    const orobasFactor = 1 + sigilStrength(sigilById(55)!, bn(100_000_000));
+    expect(invocationSoulCost(withPool(bound(55, 100_000_000)), morpheus).toNumber()).toBe(
+      Math.floor(900 / orobasFactor),
+    );
   });
 
   it('Orobas #55 also softens flat invocation upkeep (cost of all invocations)', () => {
@@ -459,7 +486,7 @@ describe('Cost-reduction sigils (S8)', () => {
     });
     expect(invocationUpkeep(withImp(fresh()), 0).flatGoldPerSecond).toBe(10);
     expect(invocationUpkeep(withImp(bound(55, 100_000_000)), 0).flatGoldPerSecond).toBeCloseTo(
-      5,
+      10 / (1 + sigilStrength(sigilById(55)!, bn(100_000_000))),
       6,
     );
   });
@@ -472,9 +499,9 @@ describe('Murder- and positive-tier sigils (S10)', () => {
       field: 'murderRateMul',
       direction: 'increase',
     });
-    // 0.0001 × sqrt(1e8) = 1 → ×2.
+    // Murder rate lifts by 1 + Aim's pct strength on the bound souls.
     const { scalar } = sigilModifierContributions(bound(23, 100_000_000));
-    expect(scalar.murderRateMul).toBeCloseTo(2, 6);
+    expect(scalar.murderRateMul).toBeCloseTo(1 + sigilStrength(sigilById(23)!, bn(100_000_000)), 6);
     // The old subtype-era inerts all carry real effects now.
     expect(sigilById(25)!.effect.kind).toBe('flatGen'); // Glasya-Labolas → flat murder
     expect(sigilById(64)!.effect.kind).toBe('categoryTier'); // Haures → Decimatio Stellar
@@ -524,16 +551,20 @@ describe('Indagatio find-quality sigils (S12)', () => {
     expect(sigilById(49)!.effect).toEqual({ kind: 'indagatioDoubleFind' });
     expect(sigilById(50)!.effect).toEqual({ kind: 'shutdownRefund' }); // Furcas → divestment
     expect(sigilIndagatioDoubleFindChance(fresh())).toBe(0);
-    // 0.0001 × sqrt(1e8) = 1, clamped; 0.0001 × sqrt(2.5e7) = 0.5.
-    expect(sigilIndagatioDoubleFindChance(bound(49, 100_000_000))).toBe(1);
-    expect(sigilIndagatioDoubleFindChance(bound(49, 25_000_000))).toBeCloseTo(0.5, 6);
+    // pct(1e10) ≈ 1.06 → clamped to 1; a smaller binding stays below the cap at its raw strength.
+    expect(sigilIndagatioDoubleFindChance(bound(49, 10_000_000_000))).toBe(1);
+    expect(sigilIndagatioDoubleFindChance(bound(49, 100_000_000))).toBeCloseTo(
+      sigilStrength(sigilById(49)!, bn(100_000_000)),
+      6,
+    );
   });
 
   it('a bound Crocell surfaces two maleficia where one would be found', () => {
     expect(resolveIndagatio(fresh(), 'stellar', makeRng(3)).surfaced).toHaveLength(1);
-    expect(resolveIndagatio(bound(49, 100_000_000), 'stellar', makeRng(3)).surfaced).toHaveLength(
-      2,
-    );
+    // A binding that clamps the double-find chance to 1 guarantees the second surface.
+    expect(
+      resolveIndagatio(bound(49, 10_000_000_000), 'stellar', makeRng(3)).surfaced,
+    ).toHaveLength(2);
   });
 });
 
@@ -543,15 +574,15 @@ describe('Offline resource-rate sigils (S13)', () => {
     expect(sigilById(15)!.effect).toEqual({ kind: 'offlineResource', resource: 'influence' });
     expect(sigilById(16)!.effect).toEqual({ kind: 'offlineResource', resource: 'generation' });
     expect(sigilOfflineResourceMul(fresh())).toEqual({ gold: 1, influence: 1, generation: 1 });
-    // 0.0001 × sqrt(1e8) = 1 → ×2 on the matching resource only.
+    // ×(1 + pct strength) on the matching resource only.
     const g = sigilOfflineResourceMul(bound(19, 100_000_000));
-    expect(g.gold).toBeCloseTo(2, 6);
+    expect(g.gold).toBeCloseTo(1 + sigilStrength(sigilById(19)!, bn(100_000_000)), 6);
     expect(g.influence).toBe(1);
     const i = sigilOfflineResourceMul(bound(15, 100_000_000));
-    expect(i.influence).toBeCloseTo(2, 6);
+    expect(i.influence).toBeCloseTo(1 + sigilStrength(sigilById(15)!, bn(100_000_000)), 6);
     expect(i.gold).toBe(1);
     const z = sigilOfflineResourceMul(bound(16, 100_000_000));
-    expect(z.generation).toBeCloseTo(2, 6);
+    expect(z.generation).toBeCloseTo(1 + sigilStrength(sigilById(16)!, bn(100_000_000)), 6);
     expect(z.gold).toBe(1);
   });
 
@@ -604,12 +635,13 @@ describe('Orphaned ceremony sigils (S14 — ADR-031)', () => {
     const goldGain = (s: GameState): number =>
       tick(s, 1).state.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
     const base = goldGain(withBook(fresh()));
-    const vapula = goldGain(withBook(bound(60, 100_000_000))); // strength 1 → ×2 on the term
-    // Mutuum take 0.05 × 1000 = 50/s; Vapula doubles that term and leaves the 2/s base alone.
-    // Everything rides goldRateMul (the Avaritia-180 Golden Hand intensity is in play here).
+    const vapula = goldGain(withBook(bound(60, 100_000_000))); // ×(1 + strength) on the term
+    // Mutuum take 0.05 × 1000 = 50/s; Vapula scales that term by (1 + strength) and leaves the 2/s
+    // base alone. Everything rides goldRateMul (the Avaritia-180 Golden Hand intensity is in play).
     const rateMul = computeModifiers(withBook(fresh())).goldRateMul;
+    const vapulaMul = 1 + sigilStrength(sigilById(60)!, bn(100_000_000));
     expect(base).toBeCloseTo((2 + 50) * rateMul, 4);
-    expect(vapula).toBeCloseTo((2 + 100) * rateMul, 4);
+    expect(vapula).toBeCloseTo((2 + 50 * vapulaMul) * rateMul, 4);
     const genOf = (s: GameState): number =>
       reprobateRates(s, computeModifiers(s)).generationPerSecond;
     expect(genOf(withBook(bound(60, 100_000_000)))).toBeCloseTo(genOf(withBook(fresh())), 9);
@@ -626,7 +658,7 @@ describe('Per-invocation effectiveness sigils (S15)', () => {
     expect(sigilById(10)!.effect).toEqual({ kind: 'invocationEffect', invocation: 'familiar' });
     expect(sigilById(12)).toBeUndefined(); // Sitri orphaned by the Depraedatio rework
     const c = sigilInvocationEffectContributions(bound(10, 100_000_000));
-    expect(c.familiar).toBeCloseTo(2, 6); // 0.0001 × sqrt(1e8) = 1 → ×2
+    expect(c.familiar).toBeCloseTo(1 + sigilStrength(sigilById(10)!, bn(100_000_000)), 6);
     expect(Object.keys(c)).toEqual(['familiar']);
   });
 
@@ -654,19 +686,20 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
   it('Leraie #14: each murder triggers a suicide with the bound chance', () => {
     expect(sigilById(14)!.effect).toEqual({ kind: 'murderTriggersSuicide' });
     expect(sigilMurderTriggersSuicideChance(fresh())).toBe(0);
-    // 0.0001 × sqrt(2.5e7) = 0.5 → suicides/s gain half the murder rate.
+    // The coupled-suicide chance is Leraie's pct strength on the bound souls.
     const s = {
       ...bound(14, 25_000_000),
       lifetime: { ...bound(14, 25_000_000).lifetime, reprobates: 1000 },
     };
     const mods = computeModifiers(s);
-    expect(mods.murderTriggersSuicideChance).toBeCloseTo(0.5, 6);
+    const chance = mods.murderTriggersSuicideChance;
+    expect(chance).toBeCloseTo(sigilStrength(sigilById(14)!, bn(25_000_000)), 6);
     const rates = reprobateRates(s, mods);
     const baseState = { ...fresh(), lifetime: { ...fresh().lifetime, reprobates: 1000 } };
     const baseRates = reprobateRates(baseState, computeModifiers(baseState));
     expect(rates.murderPerSecond).toBeCloseTo(baseRates.murderPerSecond, 9);
     expect(rates.suicidePerSecond).toBeCloseTo(
-      baseRates.suicidePerSecond + 0.5 * rates.murderPerSecond,
+      baseRates.suicidePerSecond + chance * rates.murderPerSecond,
       9,
     );
   });
@@ -675,22 +708,26 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
     // Re-pinned from the Mercatus divest fraction to `thesaurusRecoveryMul` — the same "recovery"
     // niche, unchanged in magnitude (Depraedatio rework §9).
     expect(sigilById(45)!.effect).toEqual({ kind: 'shutdownRefund' });
-    // 0.0001 × sqrt(1e8) = 1 → ×2.
-    expect(sigilShutdownRefundMul(bound(45, 100_000_000))).toBeCloseTo(2, 6);
+    // Recovery multiplier is 1 + Vine's pct strength; the base recovery fraction is 0.25.
+    const vineMul = 1 + sigilStrength(sigilById(45)!, bn(100_000_000));
+    expect(sigilShutdownRefundMul(bound(45, 100_000_000))).toBeCloseTo(vineMul, 6);
     expect(thesaurusRecoveryFraction(computeModifiers(fresh()))).toBeCloseTo(0.25, 6);
-    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 100_000_000)))).toBeCloseTo(0.5, 6); // 0.25 × 2
-    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 1e18)))).toBe(0.9); // the cap
-    // Vine + Furcas on the same channel compose multiplicatively.
+    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 100_000_000)))).toBeCloseTo(
+      0.25 * vineMul,
+      6,
+    );
+    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 1e30)))).toBe(0.9); // the cap
+    // Vine + Furcas on the same channel compose multiplicatively (same strength at the same souls).
     let both = fresh();
     both = { ...both, souls: bn(200_000_000) };
     both = bindSigil(both, 45, 100_000_000);
     both = bindSigil(both, 50, 100_000_000);
-    expect(sigilShutdownRefundMul(both)).toBeCloseTo(4, 6);
-    expect(computeModifiers(both).thesaurusRecoveryMul).toBeCloseTo(4, 6);
+    expect(sigilShutdownRefundMul(both)).toBeCloseTo(vineMul * vineMul, 6);
+    expect(computeModifiers(both).thesaurusRecoveryMul).toBeCloseTo(vineMul * vineMul, 6);
   });
 
   it('Semet #32 scales the other sigils; Gaap #33 inflates the maleficia enhancer stack', () => {
-    // Valefor at 1e8 has strength 1 (gold ×2). With Semet bound at 5 832 000 souls
+    // Valefor at 1e8 has pct strength ≈ 0.8375 (gold ×1.8375). With Semet bound at 5 832 000 souls
     // (ln(5 832 001) × 0.01 ≈ 0.1561), the Valefor strength reads ×(1 + semet).
     let s = fresh();
     s = { ...s, souls: bn(200_000_000) };
@@ -699,9 +736,10 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
     s = bindSigil(s, 6, 100_000_000);
     const without = computeModifiers(s).goldRateMul;
     const withSemet = computeModifiers(bindSigil(s, 32, 5_832_000)).goldRateMul;
+    const valeforStrength = sigilStrength(sigilById(6)!, bn(100_000_000));
     const semetBonus = 0.01 * Math.log(5_832_001);
-    expect(without / skillBase).toBeCloseTo(2, 6); // Valefor strength 1 → ×2
-    expect(withSemet / skillBase).toBeCloseTo(1 + 1 * (1 + semetBonus), 4);
+    expect(without / skillBase).toBeCloseTo(1 + valeforStrength, 6);
+    expect(withSemet / skillBase).toBeCloseTo(1 + valeforStrength * (1 + semetBonus), 4);
     // Gaap inflates the maleficia-driven bonus: with Solomon's Ring (raw ×1.66) and Gaap bound,
     // the effective enhancer exceeds the ring alone.
     const ring = (g: GameState): GameState => ({
@@ -745,8 +783,11 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
 
   it('Foras #31 extends the offline accrual window; Marax #21 speeds offline action timers', () => {
     expect(sigilOfflineAccrualWindowMul(fresh())).toBe(1);
-    // 2.5e-05 × sqrt(1e8) = 0.25 → ×1.25 on the seven-day cap.
-    expect(sigilOfflineAccrualWindowMul(bound(31, 100_000_000))).toBeCloseTo(1.25, 6);
+    // ×(1 + Foras's pct strength) on the seven-day cap (Foras is a quarter-strength sigil).
+    expect(sigilOfflineAccrualWindowMul(bound(31, 100_000_000))).toBeCloseTo(
+      1 + sigilStrength(sigilById(31)!, bn(100_000_000)),
+      6,
+    );
     // Marax: the tick advances action timers faster when the dep is passed.
     const queued: GameState = {
       ...bound(21, 100_000_000),
@@ -755,10 +796,10 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
         actionQueue: [{ actionId: 'indagatio', remainingSeconds: 100 }],
       },
     };
-    const mul = sigilOfflineActionEfficiencyMul(queued); // 1 + 1 = 2
-    expect(mul).toBeCloseTo(2, 6);
+    const mul = sigilOfflineActionEfficiencyMul(queued); // 1 + Marax's pct strength
+    expect(mul).toBeCloseTo(1 + sigilStrength(sigilById(21)!, bn(100_000_000)), 6);
     const after = tick(queued, 10, { offlineActionTimeMul: mul }).state;
-    expect(after.lifetime.actionQueue[0]!.remainingSeconds).toBeCloseTo(80, 6); // 100 − 10×2
+    expect(after.lifetime.actionQueue[0]!.remainingSeconds).toBeCloseTo(100 - 10 * mul, 6);
     const online = tick(queued, 10).state;
     expect(online.lifetime.actionQueue[0]!.remainingSeconds).toBeCloseTo(90, 6); // dep absent
   });

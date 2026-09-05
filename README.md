@@ -103,9 +103,19 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 890** (sim 542 · shared 63 · api 20 · web 265).
+**Current test count: 891** (sim 543 · shared 63 · api 20 · web 265).
 
-> **Latest change — a game-balance bug-fix pass (calls, maleficia, Pogrom, rite gates).** Five fixes.
+> **Latest change — sigil percentage curve reshaped (player tuning).** Most sigils (every one that
+> increases or decreases a percentage) previously scaled as `0.0001 × √souls`: near-zero early and
+> mid game, then exploding without bound late (≈30,000% at 1e15 souls in a single seal). They now
+> use a new default `pct` curve, `strength = 0.1125·log10(souls) − 0.0625` (clamped at 0): ~5% at 10
+> souls, ~28% at 1k, ~50% at 100k, then creeping up ~+11 points per 10x souls with **no cap** —
+> meaningful early, gentle late. On the new curve a standard sigil carries `coefficient: 1` (Paimon
+> 0.5, Foras 0.25 stay proportionally weaker); the flat generators, Katabasis carry-over seals, and
+> Andrealphus's flat invoking power keep their own curves (`log`/`sqrt`). Net **+1 test** (sim 542 →
+> 543); the many relative sigil assertions now compute their expected value from `sigilStrength`.
+
+> **Earlier change — a game-balance bug-fix pass (calls, maleficia, Pogrom, rite gates).** Five fixes.
 > (1) The **Succubus** call no longer rings before the Fausto arc begins: it now also requires his
 > first letter (`fausto-1`) in the inbox, matching Astiwihad's hostile-branch gate. (2) **Indagatio**
 > no longer lists two copies of the same maleficium at once, so an ever-findable consumable (Defixio,
