@@ -3,7 +3,7 @@
  * sigil's binding curve, strength coefficient, gate, category, and effect. Separated from the logic
  * in `sigils.ts` so the economy knobs live in one editable place. Pure data; types and behaviour
  * stay in `sigils.ts`. Curve defaults to the `pct` percentage curve unless noted; on it a
- * `coefficient` of 1 is the standard strength (~5% at 10 souls, ~50% at 100k, no cap), 0.5 is half.
+ * `coefficient` of 1 is the standard strength (log base 33: ~5% at 33 souls, ~50% at ~39M, no cap), 0.5 is half.
  * '(flat)' effects use the `log` curve with their own coefficients and read as flat amounts.
  */
 import { type SigilDef } from './sigils.js';

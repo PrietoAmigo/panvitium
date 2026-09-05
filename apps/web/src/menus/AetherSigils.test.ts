@@ -28,8 +28,8 @@ describe('toRoman', () => {
 
 describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
   it('shows a percentage for multiplier sigils (Valefor #6, +gold rate)', () => {
-    // Default pct curve: coefficient 1 × (0.1125·log10(1e6) − 0.0625) = 0.6125 → +61.3%
-    expect(effectDisplay(sigilById(6), bn(1_000_000))).toBe('+61.3%');
+    // Default pct curve (log base 33): coefficient 1 × (0.1125·log33(1e6) − 0.0625) ≈ 0.382 → +38.2%
+    expect(effectDisplay(sigilById(6), bn(1_000_000))).toBe('+38.2%');
   });
 
   it('shows a flat per-second value for generator sigils (Haagenti #48, +gold/s)', () => {

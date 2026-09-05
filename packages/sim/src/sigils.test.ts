@@ -69,15 +69,13 @@ function maxSinsTo(s: GameState, level: number): GameState {
 }
 
 describe('Binding curves (02 §5)', () => {
-  it('pct is the default percentage curve: ~5% @10, ~50% @100k souls, no cap', () => {
+  it('pct is the default percentage curve (log base 33): ~5% @33, ~50% @33^5 souls, no cap', () => {
     expect(bindingMagnitude('pct', bn(0))).toBe(0);
-    expect(bindingMagnitude('pct', bn(1))).toBe(0); // clamped: below ~3.6 souls the curve is 0
-    expect(bindingMagnitude('pct', bn(10))).toBeCloseTo(0.05, 6);
-    expect(bindingMagnitude('pct', bn(1_000))).toBeCloseTo(0.275, 6);
-    expect(bindingMagnitude('pct', bn(10_000))).toBeCloseTo(0.3875, 6);
-    expect(bindingMagnitude('pct', bn(100_000))).toBeCloseTo(0.5, 6);
-    // No cap: it keeps rising ~+11 points per 10x souls, far tamer than the old √.
-    expect(bindingMagnitude('pct', bn(1e15))).toBeCloseTo(1.625, 6);
+    expect(bindingMagnitude('pct', bn(5))).toBe(0); // clamped: below ~7 souls the curve is 0
+    expect(bindingMagnitude('pct', bn(33))).toBeCloseTo(0.05, 6); // 5% at the base
+    expect(bindingMagnitude('pct', bn(1_000_000))).toBeCloseTo(0.382, 3);
+    expect(bindingMagnitude('pct', bn(33 ** 5))).toBeCloseTo(0.5, 6); // 50% at base^5 (~39M)
+    // No cap: keeps rising, tamer than the old √ and than the log10 curve it replaced.
     expect(bindingMagnitude('pct', bn(1e15))).toBeGreaterThan(bindingMagnitude('pct', bn(1e9)));
   });
 
@@ -551,8 +549,9 @@ describe('Indagatio find-quality sigils (S12)', () => {
     expect(sigilById(49)!.effect).toEqual({ kind: 'indagatioDoubleFind' });
     expect(sigilById(50)!.effect).toEqual({ kind: 'shutdownRefund' }); // Furcas → divestment
     expect(sigilIndagatioDoubleFindChance(fresh())).toBe(0);
-    // pct(1e10) ≈ 1.06 → clamped to 1; a smaller binding stays below the cap at its raw strength.
-    expect(sigilIndagatioDoubleFindChance(bound(49, 10_000_000_000))).toBe(1);
+    // A very large binding drives the raw strength past 1, so the chance clamps to 1; a smaller
+    // binding stays below the cap at its raw strength.
+    expect(sigilIndagatioDoubleFindChance(bound(49, 1e50))).toBe(1);
     expect(sigilIndagatioDoubleFindChance(bound(49, 100_000_000))).toBeCloseTo(
       sigilStrength(sigilById(49)!, bn(100_000_000)),
       6,
@@ -562,9 +561,7 @@ describe('Indagatio find-quality sigils (S12)', () => {
   it('a bound Crocell surfaces two maleficia where one would be found', () => {
     expect(resolveIndagatio(fresh(), 'stellar', makeRng(3)).surfaced).toHaveLength(1);
     // A binding that clamps the double-find chance to 1 guarantees the second surface.
-    expect(
-      resolveIndagatio(bound(49, 10_000_000_000), 'stellar', makeRng(3)).surfaced,
-    ).toHaveLength(2);
+    expect(resolveIndagatio(bound(49, 1e50), 'stellar', makeRng(3)).surfaced).toHaveLength(2);
   });
 });
 
@@ -716,7 +713,7 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
       0.25 * vineMul,
       6,
     );
-    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 1e30)))).toBe(0.9); // the cap
+    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 1e50)))).toBe(0.9); // the cap
     // Vine + Furcas on the same channel compose multiplicatively (same strength at the same souls).
     let both = fresh();
     both = { ...both, souls: bn(200_000_000) };
@@ -727,7 +724,7 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
   });
 
   it('Semet #32 scales the other sigils; Gaap #33 inflates the maleficia enhancer stack', () => {
-    // Valefor at 1e8 has pct strength ≈ 0.8375 (gold ×1.8375). With Semet bound at 5 832 000 souls
+    // Valefor at 1e8 has pct strength ≈ 0.53 (gold ×1.53). With Semet bound at 5 832 000 souls
     // (ln(5 832 001) × 0.01 ≈ 0.1561), the Valefor strength reads ×(1 + semet).
     let s = fresh();
     s = { ...s, souls: bn(200_000_000) };
@@ -757,8 +754,9 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
   });
 
   it('duplicate-output sigils double a positive resolution (Malphas #39 on Suggestion)', () => {
-    // Malphas at 1e8 → chance 1 (clamped). A Good Suggestion adds 1 reprobate per pass → 2 total.
-    const s = bound(39, 100_000_000);
+    // A very large Malphas binding clamps the dup chance to 1. A Good Suggestion adds 1 reprobate
+    // per pass → 2 total.
+    const s = bound(39, 1e50);
     const r = resolveAction(s, 'suggestion', makeRng(7), { forcedTier: 'good', efficiency: 1 });
     expect(totalReprobates(r.state) - totalReprobates(s)).toBe(2);
     // Negative tiers never duplicate: a Bad outcome removes exactly one.

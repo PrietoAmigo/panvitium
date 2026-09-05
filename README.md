@@ -105,7 +105,15 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 891** (sim 543 · shared 63 · api 20 · web 265).
 
-> **Latest change — sigil percentage curve reshaped (player tuning).** Most sigils (every one that
+> **Latest change — sigil percentage curve rebased to log 33 (player tuning).** The `pct` curve keeps
+> its shape (`strength = 0.1125·log_BASE(souls) − 0.0625`, clamped at 0) but the log base moves from
+> 10 to **33**, so the same milestones spread over more orders of magnitude: ~5% at 33 souls, ~16% at
+> 1k, ~23% at 10k, ~31% at 100k, ~50% at ~39M (33^5), then a slow uncapped creep (~105% at 1e15).
+> That is gentler than the log-10 version late game while still meaningful early. The base is a single
+> named constant (`PCT_LOG_BASE`) so it retunes every percentage sigil at once. No test-count change
+> (891); the curve-pinning tests move to the new anchors, clamp/cap tests bind larger soul counts.
+
+> **Earlier change — sigil percentage curve reshaped (player tuning).** Most sigils (every one that
 > increases or decreases a percentage) previously scaled as `0.0001 × √souls`: near-zero early and
 > mid game, then exploding without bound late (≈30,000% at 1e15 souls in a single seal). They now
 > use a new default `pct` curve, `strength = 0.1125·log10(souls) − 0.0625` (clamped at 0): ~5% at 10

@@ -1,8 +1,8 @@
 /**
  * Sigil binding-to-effect curves (02 §5). The default is the `pct` percentage curve (player tuning):
- * a base-10 logarithm shaped so a standard percentage sigil reads ~5% at 10 bound souls, ~28% at
- * 1k, ~50% at 100k, then keeps creeping up ~+11 points per 10x souls with NO cap — meaningful early,
- * gentle late, and far tamer than the old √ default (which was near-zero early and exploded late).
+ * a log base-33 curve shaped so a standard percentage sigil reads ~5% at 33 bound souls, ~16% at
+ * 1k, ~31% at 100k, ~50% at ~39M, then keeps creeping up with NO cap — meaningful early, gentle
+ * late, and far tamer than the old √ default (which was near-zero early and exploded late).
  * A standard sigil carries `coefficient: 1` (so its strength IS the curve); a weaker sigil scales it
  * down (Paimon 0.5, Foras 0.25). Some sigils override the curve to `sqrt` (Andrealphus's flat
  * invoking power), `linear` (swingy), or `log` (the flat generators / Katabasis carry-over). `bindingMagnitude`
@@ -28,14 +28,19 @@ export { SIGILS };
 export type BindingCurve = 'sqrt' | 'linear' | 'log' | 'pct';
 
 /**
- * Coefficients of the default `pct` percentage curve: `strength = SLOPE·log10(souls) − INTERCEPT`,
- * clamped at 0. Solved so a standard sigil (coefficient 1) reads exactly 5% at 10 souls and 50% at
- * 100,000 souls; every other milestone (≈16% at 100, ≈28% at 1k, ≈39% at 10k, ≈61% at 1M) falls out
- * of the same line, and it keeps rising ~SLOPE per decade with no cap. Player-chosen (see the
- * binding-curve note above); tune here to reshape every percentage sigil at once.
+ * Coefficients of the default `pct` percentage curve:
+ * `strength = SLOPE·log_BASE(souls) − INTERCEPT` (with `log_BASE(x) = log10(x) / log10(BASE)`),
+ * clamped at 0. With BASE = 33 a standard sigil (coefficient 1) reads exactly 5% at 33 souls and 50%
+ * at 33^5 (~39 million) souls; the intervening milestones (≈16% at 1k, ≈23% at 10k, ≈31% at 100k,
+ * ≈38% at 1M) fall out of the same line, and it keeps rising ~SLOPE per BASE-fold of souls with no
+ * cap. Player-chosen (see the binding-curve note above); the BASE sets how fast the curve grows (a
+ * larger base spreads the same milestones over more orders of magnitude — 10 is steep, 100 gentle).
+ * Tune here to reshape every percentage sigil at once.
  */
 const PCT_SLOPE = 0.1125;
 const PCT_INTERCEPT = 0.0625;
+const PCT_LOG_BASE = 33;
+const PCT_LOG_BASE_LOG10 = Math.log10(PCT_LOG_BASE);
 
 /**
  * The magnitude a sigil's effect scales by, given the souls bound to it. Returned as a number:
@@ -48,8 +53,8 @@ export function bindingMagnitude(curve: BindingCurve, boundSouls: BigNum): numbe
   if (curve === 'linear') return x.toNumber();
   if (curve === 'log') return Math.max(0, add(x, 1).ln());
   if (curve === 'sqrt') return x.sqrt().toNumber();
-  // 'pct' — the default: a base-10 log percentage curve (5% at 10 souls, 50% at 100k, no cap).
-  return Math.max(0, PCT_SLOPE * x.log10() - PCT_INTERCEPT);
+  // 'pct' — the default: a log base-33 percentage curve (5% at 33 souls, 50% at ~39M, no cap).
+  return Math.max(0, PCT_SLOPE * (x.log10() / PCT_LOG_BASE_LOG10) - PCT_INTERCEPT);
 }
 
 /** The scalar (single-number) fields of the modifier bundle a sigil may target. */
