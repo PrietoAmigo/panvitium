@@ -27,6 +27,7 @@ import {
   isDelegatable,
   isAutoRepeatable,
   isAutoRepeating,
+  occupiesPlayerSlot,
   ACHIEVEMENTS,
   isUnlocked,
   unreadCount,
@@ -209,11 +210,12 @@ function RiteControls({ actionId }: { actionId: string }): ReactElement {
   );
 }
 
-/** True while a player-driven rite holds the slot (02 §3: one at a time). Indagatio scries in the
- * background and does NOT count, so Suasio/Decimatio/Emptio stay available while a search runs. */
+/** True while a player-driven rite (Suasio/Decimatio) holds the slot (02 §3: one at a time). The
+ * background channels Indagatio and Emptio do NOT count, so a rite stays available while a scry or a
+ * purchase runs (and neither of those disables a rite). */
 function useUnderway(): boolean {
   return useGameStore((s) =>
-    s.state ? s.state.lifetime.actionQueue.some((t) => t.actionId !== 'indagatio') : false,
+    s.state ? s.state.lifetime.actionQueue.some((t) => occupiesPlayerSlot(t.actionId)) : false,
   );
 }
 
@@ -267,7 +269,7 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
   const log = useGameStore((s) => s.log);
   const [confirmingPanvitium, setConfirmingPanvitium] = useState(false);
   const head = useGameStore(
-    (s) => s.state?.lifetime.actionQueue.find((t) => t.actionId !== 'indagatio') ?? null,
+    (s) => s.state?.lifetime.actionQueue.find((t) => occupiesPlayerSlot(t.actionId)) ?? null,
   );
 
   const headerProps = {
@@ -281,7 +283,7 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
 
   const influence = floor(state.lifetime.influence).toNumber();
   const eff = categoryEfficiency(state, 'suasio');
-  const underway = state.lifetime.actionQueue.some((t) => t.actionId !== 'indagatio');
+  const underway = state.lifetime.actionQueue.some((t) => occupiesPlayerSlot(t.actionId));
   const names: Record<string, string> = {
     suggestion: strings.opera.suggestion,
     logismoi: strings.opera.logismoi,

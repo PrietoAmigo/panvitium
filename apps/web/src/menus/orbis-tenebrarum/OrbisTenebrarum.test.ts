@@ -247,6 +247,30 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     expect(container!.querySelectorAll('.orbis-row-progress').length).toBe(1);
   });
 
+  it('locks Acquire while an Emptio is in flight, even for a different affordable relic', () => {
+    const finds: OrbisFind[] = [
+      { ...MOCK_FINDS[0]!, id: 'ars_serpens', affordable: true },
+      { ...MOCK_FINDS[0]!, id: 'second_relic', name: 'Second Relic', affordable: true },
+    ];
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds,
+        gold: '9,000',
+        searching: false,
+        selectedId: 'second_relic', // a different, affordable relic than the one being bought
+        emptioProgress: { id: 'ars_serpens', fraction: 0.5 },
+        onCast: () => {},
+        onSelect: () => {},
+        onAcquire: () => {},
+      }),
+    );
+    // Only one purchase runs at a time, so the whole Acquire control is disabled and says so.
+    const acquire = container!.querySelector<HTMLButtonElement>('.orbis-acquire');
+    expect(acquire).not.toBeNull();
+    expect(acquire!.disabled).toBe(true);
+    expect((acquire!.textContent ?? '').trim()).toBe('Emptio underway');
+  });
+
   it('omits the effect line when a relic grants no effect to show', () => {
     const finds: OrbisFind[] = [{ ...MOCK_FINDS[0]!, effect: '' }];
     mount(

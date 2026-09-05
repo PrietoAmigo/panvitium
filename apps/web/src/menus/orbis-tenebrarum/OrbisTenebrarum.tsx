@@ -597,6 +597,9 @@ export function OrbisTenebrarum({
   useOrbisGlobe(canvasRef, { finds, searching, selectedId }, onSelect);
 
   const selected = finds.find((f) => f.id === selectedId) ?? null;
+  // Only one Emptio may run at once (its own background channel): while a purchase is in flight, the
+  // Acquire control is disabled for every relic, mirroring the sim's single-Emptio rule.
+  const emptioBusy = emptioProgress !== null;
 
   return (
     <div className="orbis-surface">
@@ -697,15 +700,17 @@ export function OrbisTenebrarum({
             {selected.effect && <p className="orbis-detail-effect">{selected.effect}</p>}
             <button
               type="button"
-              className={`orbis-acquire ${selected.acquired ? 'is-owned' : selected.affordable ? 'is-affordable' : 'is-locked'}`}
-              disabled={selected.acquired || !selected.affordable}
+              className={`orbis-acquire ${selected.acquired ? 'is-owned' : selected.affordable && !emptioBusy ? 'is-affordable' : 'is-locked'}`}
+              disabled={selected.acquired || !selected.affordable || emptioBusy}
               onClick={() => onAcquire(selected.id)}
             >
               {selected.acquired
                 ? '\u25C8 Bound'
-                : selected.affordable
-                  ? `Acquire \u00B7 ${selected.costLabel}`
-                  : 'Insufficient gold'}
+                : emptioBusy
+                  ? 'Emptio underway'
+                  : selected.affordable
+                    ? `Acquire \u00B7 ${selected.costLabel}`
+                    : 'Insufficient gold'}
             </button>
           </div>
         )}
