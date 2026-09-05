@@ -419,6 +419,25 @@ describe('resolvePogrom', () => {
     expect(s.lifetime.reprobates).toBe(195); // 200 - floor(200×0.025)
     expect(soulsOf(s)).toBe(5);
   });
+  it('a successful cull always claims at least one soul, even when the % floors to zero', () => {
+    // Good is 0.1%: floor(200×0.001) = 0, which would make the rite a no-op on a small flock. The
+    // floor of 1 keeps a Good Pogrom from silently doing nothing at typical populations.
+    const s = resolvePogrom(seed(), 'good', rng());
+    expect(s.lifetime.reprobates).toBe(199); // 200 - max(1, floor(200×0.001))
+    expect(soulsOf(s)).toBe(1);
+  });
+  it('the cull still scales past one as the flock grows', () => {
+    const big = withGold(addReprobates(fresh(), 5000), 1000);
+    const s = resolvePogrom(big, 'good', rng());
+    expect(s.lifetime.reprobates).toBe(4995); // 5000 - floor(5000×0.001) = 5
+    expect(soulsOf(s)).toBe(5);
+  });
+  it('a positive tier on an empty flock is a harmless no-op (no negative kill)', () => {
+    const empty = withGold(fresh(), 1000);
+    const s = resolvePogrom(empty, 'stellar', rng());
+    expect(totalReprobates(s)).toBe(0);
+    expect(soulsOf(s)).toBe(0);
+  });
   it('Terrible lets the Church seize 15% (no souls); Apocalyptic burns 66% gold AND half the flock', () => {
     const terrible = resolvePogrom(seed(), 'terrible', rng());
     expect(terrible.lifetime.reprobates).toBe(170); // 200 - floor(200×0.15)
@@ -639,9 +658,9 @@ describe('auto-repeat (player-slot looping, 02 §3)', () => {
     // Caedes toggles at Ira 1: sealed at Ira 0, open at Ira 1.
     expect(isAutoRepeatable(fresh(), 'caedes')).toBe(false);
     expect(isAutoRepeatable(withIra(fresh(), 1), 'caedes')).toBe(true);
-    // Pogrom toggles at Ira 3 — still sealed at Ira 1.
+    // Pogrom toggles at Ira 2 (player tuning; was 3) — still sealed at Ira 1.
     expect(isAutoRepeatable(withIra(fresh(), 1), 'pogrom')).toBe(false);
-    expect(isAutoRepeatable(withIra(fresh(), 3), 'pogrom')).toBe(true);
+    expect(isAutoRepeatable(withIra(fresh(), 2), 'pogrom')).toBe(true);
     // No toggle level → never player-auto-repeatable.
     expect(isAutoRepeatable(withIra(fresh(), 3), 'indagatio')).toBe(false);
     expect(isAutoRepeatable(withIra(fresh(), 3), 'emptio')).toBe(false);

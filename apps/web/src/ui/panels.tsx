@@ -706,7 +706,16 @@ export function IndagatioEmptioProgram(): ReactElement {
   const goldNum = floor(state.lifetime.gold).toNumber();
   const owned = state.lifetime.maleficia;
 
-  const finds: OrbisFind[] = state.lifetime.emptioList.flatMap((id) => {
+  // The Emptio list can carry several copies of one stackable maleficium (older saves; a fresh find
+  // no longer duplicates). Collapse them to ONE row per id, with the copy count baked into the name,
+  // so the ledger shows each relic once. A row per raw copy gave every duplicate the same React key
+  // and the same select/acquire/progress id, so buying or selecting one lit up all of them ("buys
+  // all at once") even though the sim only ever consumes a single copy per purchase.
+  const listedCounts = new Map<string, number>();
+  for (const id of state.lifetime.emptioList) {
+    listedCounts.set(id, (listedCounts.get(id) ?? 0) + 1);
+  }
+  const finds: OrbisFind[] = [...listedCounts].flatMap(([id, count]) => {
     const def = MALEFICIA[id];
     if (!def) return [];
     // The actual gold the buy would take — the rolled price softened by the Amy #58 reduction, the
@@ -722,7 +731,7 @@ export function IndagatioEmptioProgram(): ReactElement {
     return [
       {
         id,
-        name: def.name,
+        name: count > 1 ? `${def.name} ×${count}` : def.name,
         rarity: def.rarity,
         // Only surface the invoking-power line for relics that actually grant >= 1 (some are flavour).
         effect: def.invokingPower >= 1 ? `+${def.invokingPower} invoking power` : '',

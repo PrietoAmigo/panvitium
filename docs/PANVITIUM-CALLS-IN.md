@@ -199,7 +199,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 
 - Class: lore
 - Caller: Unknown
-- Requirements: flagFCThreatSent=0
+- Requirements: fausto-1 received and flagFCThreatSent=0
 - Choices:
     - [No, thanks.] -> nothing()
     - [Expello te, succube.] -> nothing()
@@ -253,7 +253,7 @@ How the built calls-in front-end reconciles with this catalogue. The numbers are
 **Flags (as implemented).**
 
 - `katabasisCount` — read from top-level game state (gates `the-looting` ≥1, `the-journalist` ≥5).
-- `flagFCThreatSent` — the Fausto branch (`lifetime.flagFCThreatSent`, set when the threat reply to Fausto #1 is sent). `flagFCThreatSent=0` is the friendly branch, `=1` the hostile one, so Succubus (`=0`) and Astiwihad / `a-name-to-burn` / `the-journalist` (`=1`) are mutually exclusive.
+- `flagFCThreatSent` — the Fausto branch (`lifetime.flagFCThreatSent`, set when the threat reply to Fausto #1 is sent). `flagFCThreatSent=0` is the friendly branch, `=1` the hostile one, so Succubus (`=0`) and Astiwihad / `a-name-to-burn` / `the-journalist` (`=1`) are mutually exclusive. Succubus additionally requires the first Fausto letter (`fausto-1`) to have arrived, so it never rings before the arc begins — matching Astiwihad, whose `=1` gate already implies that letter was received and answered.
 - Emails — `the-ward` is gated on `fr-stahl-2`, `parish-1`, and `parish-2` all sitting in the inbox (see its entry); inbox membership is the permanent per-email "received" record.
 - `heard-the-ward` and other `setFlag(...)` effects are part of the pending effect engine and are **not** written yet.
 

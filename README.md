@@ -103,9 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 886** (sim 538 · shared 63 · api 20 · web 265).
+**Current test count: 890** (sim 542 · shared 63 · api 20 · web 265).
 
-> **Latest change — a tuning + fixes pass (calls, sigils, summons, rite gates).** Five changes.
+> **Latest change — a game-balance bug-fix pass (calls, maleficia, Pogrom, rite gates).** Five fixes.
+> (1) The **Succubus** call no longer rings before the Fausto arc begins: it now also requires his
+> first letter (`fausto-1`) in the inbox, matching Astiwihad's hostile-branch gate. (2) **Indagatio**
+> no longer lists two copies of the same maleficium at once, so an ever-findable consumable (Defixio,
+> Hand of Glory) can no longer flood the 20-slot Emptio list and starve the rarer finds out through
+> eviction; every maleficium stays discoverable. (3) A successful **Pogrom** now always claims at least
+> one soul (its 0.1% Good cull floored to zero on a small flock, reading as a broken rite); the
+> percentage still scales past one as the flock grows. (4) The **Emptio ledger** collapses duplicate
+> copies into a single ×N row (matching the owned cabinet), fixing the visual bug where buying one copy
+> lit up every duplicate as "buying". (5) **Logismoi** and **Pogrom** auto-repeat/delegation now unlock
+> at Sin level **II** instead of III. Net **+4 tests** (sim 538 → 542).
+
+> **Earlier change — a tuning + fixes pass (calls, sigils, summons, rite gates).** Five changes.
 > (1) **Smartphone calls** are now a **Poisson** arrival rolled every 100 ms tick (mean one call per
 > 7.5 min), so arrivals are stochastic rather than a fixed-gap timer. (2) **Fama** gains a `maxActive`
 > of **4** (stackable up to the cap). (3) The Ars Goetia **"Bound"** field shows the **live count** of

@@ -118,22 +118,24 @@ describe('canSurface — stack rules (03 §2.5)', () => {
     expect(canSurface('black_robe', [], ['black_robe'])).toBe(false);
   });
 
-  it('stackable items: blocked only once owned + listed reaches stackMax', () => {
-    // Black Candles: stackMax = 5.
+  it('stackable items: owned copies do not block re-finding, up to stackMax', () => {
+    // Black Candles: stackMax = 5. Owned copies (already bought) never block a new find while the
+    // stack has room — you re-find and re-buy one at a time.
     expect(canSurface('black_candles', [], [])).toBe(true);
-    expect(canSurface('black_candles', ['black_candles'], ['black_candles'])).toBe(true); // 2/5
-    expect(
-      canSurface(
-        'black_candles',
-        ['black_candles', 'black_candles'],
-        ['black_candles', 'black_candles', 'black_candles'],
-      ),
-    ).toBe(false); // 5/5
+    expect(canSurface('black_candles', ['black_candles'], [])).toBe(true); // 1 owned, room for more
+    expect(canSurface('black_candles', Array(4).fill('black_candles'), [])).toBe(true); // 4/5
+    expect(canSurface('black_candles', Array(5).fill('black_candles'), [])).toBe(false); // 5/5 full
   });
 
-  it('unbounded (∞) stacks never saturate — Black Salt Pouch', () => {
-    const many = Array.from({ length: 50 }, () => 'black_salt_pouch');
-    expect(canSurface('black_salt_pouch', many, many)).toBe(true);
+  it('a stackable already on the list is not re-surfaced (one copy per id at a time)', () => {
+    // The new rule that keeps an ever-findable consumable from flooding the 20-slot Emptio list: a
+    // copy already listed blocks another, even for an unbounded (∞) stack, until it is bought.
+    expect(canSurface('black_candles', [], ['black_candles'])).toBe(false);
+    expect(canSurface('black_salt_pouch', [], ['black_salt_pouch'])).toBe(false);
+    expect(canSurface('defixio', [], ['defixio'])).toBe(false);
+    // An unbounded stack the player already OWNS many of is still re-findable while none is listed.
+    const manyOwned = Array.from({ length: 50 }, () => 'black_salt_pouch');
+    expect(canSurface('black_salt_pouch', manyOwned, [])).toBe(true);
   });
 
   it('unknown ids are not findable', () => {

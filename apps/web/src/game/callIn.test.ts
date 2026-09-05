@@ -122,11 +122,15 @@ describe('isCallEligible', () => {
     expect(isCallEligible(freshCtx({ katabasisCount: 1 }), looting)).toBe(true);
   });
 
-  it('makes Succubus and Astiwihad mutually exclusive on the Fausto branch', () => {
+  it('makes Succubus and Astiwihad mutually exclusive on the Fausto branch (both need his first letter)', () => {
     const succubus = CALL_IN_BY_ID['succubus']!;
     const astiwihad = CALL_IN_BY_ID['astiwihad']!;
-    const friendly = freshCtx({ fcFriendly: true });
-    const hostile = freshCtx({ fcFriendly: false });
+    // Succubus is the friendly branch, but it only rings once Fausto's first letter (fausto-1) has
+    // arrived — it never calls before the arc that summons her has begun.
+    const friendlyNoMail = freshCtx({ fcFriendly: true });
+    const friendly = freshCtx({ fcFriendly: true, receivedEmailIds: new Set(['fausto-1']) });
+    const hostile = freshCtx({ fcFriendly: false, receivedEmailIds: new Set(['fausto-1']) });
+    expect(isCallEligible(friendlyNoMail, succubus)).toBe(false); // no Fausto letter yet
     expect(isCallEligible(friendly, succubus)).toBe(true);
     expect(isCallEligible(friendly, astiwihad)).toBe(false);
     expect(isCallEligible(hostile, succubus)).toBe(false);
@@ -172,10 +176,14 @@ describe('pickIncomingCall', () => {
 
   it('restricts the draw to the eligible set (gated calls never ring)', () => {
     const eligible = eligibleCallIds(freshCtx()); // fresh: friendly, no descents, no mail
-    expect(eligible.has('succubus')).toBe(true);
+    expect(eligible.has('succubus')).toBe(false); // Fausto's first letter has not arrived yet
     expect(eligible.has('astiwihad')).toBe(false);
     expect(eligible.has('the-looting')).toBe(false);
     expect(eligible.has('the-journalist')).toBe(false);
+    // Once fausto-1 is received (and the friendly branch is still open), the Succubus can ring.
+    expect(
+      eligibleCallIds(freshCtx({ receivedEmailIds: new Set(['fausto-1']) })).has('succubus'),
+    ).toBe(true);
     for (let i = 0; i < 100; i++) {
       const drawn = pickIncomingCall(seq([Math.random(), Math.random()]), new Set(), eligible);
       expect(drawn).not.toBeNull();
