@@ -170,6 +170,20 @@ export function plannedActionCost(
 }
 
 /**
+ * The actions that run in their OWN background channel rather than the single player-drive slot
+ * (02 §3): Indagatio (scrying) and Emptio (a purchase). Each is single-instance within its own
+ * channel, but it neither blocks nor is blocked by a Suasio/Decimatio rite — so a rite can even
+ * auto-repeat in the slot while a scry or a purchase runs alongside. Only Suasio/Decimatio occupy
+ * the player slot; the UI reads this so a background channel never disables a rite (and vice versa).
+ */
+export const BACKGROUND_ACTIONS: ReadonlySet<string> = new Set(['indagatio', 'emptio']);
+
+/** True for an action that fills the single player-drive slot (everything but a background channel). */
+export function occupiesPlayerSlot(actionId: string): boolean {
+  return !BACKGROUND_ACTIONS.has(actionId);
+}
+
+/**
  * Pay an action's cost and queue it. Affordability compares the FLOORED resource (resources are
  * natural numbers; the bignum gotcha). Efficiency is applied per category's `efficiencyMode`:
  * `cost-outcome` (Suasio/Decimatio) scales the cost; `time` (Indagatio/Emptio) divides the duration
@@ -194,14 +208,19 @@ export function startAction(
     return { ok: false, reason: 'The world is held in Morpheus\u2019s stillness.' };
   }
 
-  // One player-driven action at a time (02 §3) — EXCEPT Indagatio, which scries in the background
-  // and does not occupy the player slot: it neither blocks nor is blocked by Suasio/Decimatio/Emptio.
-  // Only one Indagatio may run at once (the Cast control is single).
+  // One player-driven action at a time (02 §3) — EXCEPT the background channels Indagatio and Emptio,
+  // which do not occupy the player slot: each neither blocks nor is blocked by a Suasio/Decimatio rite,
+  // and only ONE of each may run at once (its Cast / Acquire control is single). So a rite can even
+  // auto-repeat in the slot while a scry or a purchase runs alongside it.
   if (actionId === 'indagatio') {
     if (state.lifetime.actionQueue.some((t) => t.actionId === 'indagatio')) {
       return { ok: false, reason: 'A scrying is already underway.' };
     }
-  } else if (state.lifetime.actionQueue.some((t) => t.actionId !== 'indagatio')) {
+  } else if (actionId === 'emptio') {
+    if (state.lifetime.actionQueue.some((t) => t.actionId === 'emptio')) {
+      return { ok: false, reason: 'A purchase is already underway.' };
+    }
+  } else if (state.lifetime.actionQueue.some((t) => occupiesPlayerSlot(t.actionId))) {
     return { ok: false, reason: 'A rite is already underway.' };
   }
 

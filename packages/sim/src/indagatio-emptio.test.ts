@@ -354,6 +354,44 @@ describe('startAction — Indagatio / Emptio', () => {
       if (!secondInd.ok) expect(secondInd.reason).toContain('scrying');
     }
   });
+
+  it('Emptio buys in the background — it neither blocks nor is blocked by a player rite, one at a time', () => {
+    const base = fresh();
+    const funded: GameState = {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        gold: bn(100_000),
+        emptioList: ['black_robe', 'hand_of_glory'],
+      },
+    };
+
+    // A player rite holds the slot, yet an Emptio still starts alongside it.
+    const player = startAction(funded, 'caedes');
+    expect(player.ok).toBe(true);
+    if (player.ok) {
+      const plusEmptio = startAction(player.state, 'emptio', { target: 'black_robe' });
+      expect(plusEmptio.ok).toBe(true);
+      if (plusEmptio.ok) {
+        expect([...plusEmptio.state.lifetime.actionQueue].map((t) => t.actionId).sort()).toEqual([
+          'caedes',
+          'emptio',
+        ]);
+      }
+    }
+
+    // Emptio first: a player rite AND an Indagatio still start alongside it (independent channels);
+    // a SECOND Emptio is refused (only one purchase at a time).
+    const emptio = startAction(funded, 'emptio', { target: 'black_robe' });
+    expect(emptio.ok).toBe(true);
+    if (emptio.ok) {
+      expect(startAction(emptio.state, 'caedes').ok).toBe(true);
+      expect(startAction(emptio.state, 'indagatio').ok).toBe(true);
+      const secondEmptio = startAction(emptio.state, 'emptio', { target: 'hand_of_glory' });
+      expect(secondEmptio.ok).toBe(false);
+      if (!secondEmptio.ok) expect(secondEmptio.reason).toContain('purchase');
+    }
+  });
 });
 
 describe('resolveAction — dispatch wiring for Indagatio and Emptio', () => {

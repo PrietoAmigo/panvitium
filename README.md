@@ -103,9 +103,17 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 883** (sim 536 · shared 63 · api 20 · web 264).
+**Current test count: 885** (sim 537 · shared 63 · api 20 · web 265).
 
-> **Latest change — Suasio ledger + Status Quo Souls KPI (menu polish).** Three UI moves. (1) The
+> **Latest change — Emptio runs in its own background channel (not the player slot).** Emptio is no
+> longer a player-drive rite: like Indagatio, it neither blocks nor is blocked by a Suasio/Decimatio
+> rite, so a rite can even auto-repeat in the slot while a purchase runs alongside. Only **one Emptio**
+> may run at a time (a second Acquire is refused while one is in flight, and the Acquire control locks
+> and reads "Emptio underway"). A new `occupiesPlayerSlot` helper in the sim is the single source of the
+> slot rule, read by `startAction` and by the Suasio/Decimatio "underway" gating in the UI. Net **+2
+> tests** (sim 536 → 537, web 264 → 265).
+
+> **Earlier change — Suasio ledger + Status Quo Souls KPI (menu polish).** Three UI moves. (1) The
 > **Opus Suasio** scroll no longer shows a scrollbar (the overlay stays scrollable, the bar is hidden,
 > matching Depraedatio), and it now carries an **outcome ledger at its foot** in the same shape as
 > Decimatio's Index Opervm: the resolved temptations, newest first, each a tier chip beside its soul
