@@ -16,11 +16,14 @@ import { VIBRATION_SRC } from '../menus/calls-in.data.js';
 
 /** Ring window before an unanswered call is missed (docs: "Ring window is always 15 seconds"). */
 const RING_WINDOW_MS = 15_000;
-/** Calls arrive 33% more often than the original one-every-10-minutes cadence (player tuning). */
-const CALL_FREQUENCY_MUL = 1.33;
-/** Quiet gap between the line clearing and the next call arriving: the base 10 min divided by the
- *  frequency multiplier, so a higher frequency shortens the gap (now ~7.5 min between calls). */
-const GAP_MS = Math.round((10 * 60 * 1000) / CALL_FREQUENCY_MUL);
+/** Incoming calls arrive as a Poisson process with a mean of one call every 7.5 minutes. Instead of a
+ *  fixed timer, the quiet line is checked once per 100 ms tick and a call arrives on an independent
+ *  roll — so arrivals are stochastic (never a deterministic clockwork gap) while averaging that rate. */
+const MEAN_GAP_MS = 7.5 * 60 * 1000; // 450,000 ms — mean time between calls
+const CHECK_MS = 100; // one arrival roll per 10 Hz tick
+/** Per-tick arrival probability giving that mean, via exact geometric integration (1 − e^(−Δt/T)), so
+ *  the long-run rate holds regardless of the check cadence (the sim's Astiwihad convention). */
+const ARRIVAL_CHANCE_PER_CHECK = 1 - Math.exp(-CHECK_MS / MEAN_GAP_MS);
 /** How many of the most recent calls a just-rung call is suppressed from — so the same call rings at
  *  most once every 5 calls (the previous 4 are excluded from the draw). */
 const RECENT_WINDOW = 4;
@@ -94,7 +97,7 @@ export function useIncomingCall(
 
   const clearArrival = (): void => {
     if (arrivalTimer.current) {
-      clearTimeout(arrivalTimer.current);
+      clearInterval(arrivalTimer.current);
       arrivalTimer.current = null;
     }
   };
@@ -121,11 +124,14 @@ export function useIncomingCall(
       if (ringingRef.current) endRing(); // left the desk mid-ring → the call is let go
       return;
     }
-    if (ringingRef.current || arrivalTimer.current) return; // already ringing / already scheduled
+    if (ringingRef.current || arrivalTimer.current) return; // already ringing / already checking
 
-    arrivalTimer.current = setTimeout(() => {
-      arrivalTimer.current = null;
+    // Poisson arrival: roll once per tick while the line is quiet. Non-deterministic (Math.random),
+    // averaging one call per MEAN_GAP_MS; nothing arrives on the vast majority of ticks. A live ring
+    // (its own miss timer) tears this check down via the cleanup and re-arms once the line clears.
+    arrivalTimer.current = setInterval(() => {
       if (!enabledRef.current || ringingRef.current) return;
+      if (Math.random() >= ARRIVAL_CHANCE_PER_CHECK) return; // no call this tick
       const id = pickIncomingCall(
         Math.random,
         seen.current,
@@ -138,7 +144,7 @@ export function useIncomingCall(
       setRing(id);
       startVibration();
       missTimer.current = setTimeout(endRing, RING_WINDOW_MS);
-    }, GAP_MS);
+    }, CHECK_MS);
 
     return clearArrival;
   }, [enabled, ringing, endRing, startVibration]);

@@ -55,7 +55,7 @@ describe('DecimatioGroup — "The Breathing Dark"', () => {
     const names = Array.from(container!.querySelectorAll('.dec-name')).map((n) =>
       (n.textContent ?? '').trim(),
     );
-    // Caedes is always open; Pogrom (Ira II) and Purgatio (Ira III) are sealed at a fresh start.
+    // Caedes is always open; Pogrom (Ira I) and Purgatio (Ira III) are sealed at a fresh start.
     expect(names).toContain(strings.opera.caedes);
     expect(names).not.toContain(strings.opera.pogrom);
     expect(names).not.toContain(strings.opera.purgatio);

@@ -48,6 +48,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'vanagloria',
     invokingPower: 3,
     sinLevel: 1,
+    maxActive: 4, // cap active Fama summons at 4 (player tuning; stackable up to the cap)
     upkeep: { goldGainFraction: 0.25 }, // 25% of current gold gain/s (Invocatio sheet)
   },
   nightmare: {

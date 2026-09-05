@@ -87,10 +87,10 @@ describe('Invocation catalog', () => {
     ]);
   });
 
-  it('apex entities cap at 1; the rest are stackable', () => {
+  it('apex entities cap at 1, Fama caps at 4, and other stackables are uncapped', () => {
     expect(invocationById('midas')!.maxActive).toBe(1);
     expect(invocationById('doppelgaenger')!.maxActive).toBe(1);
-    expect(invocationById('fama')!.maxActive).toBeUndefined();
+    expect(invocationById('fama')!.maxActive).toBe(4); // player tuning: stackable up to 4
   });
 
   it('only the Familiar (Special) caps among the runners; Normal runners stack', () => {

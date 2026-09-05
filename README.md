@@ -103,9 +103,19 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 885** (sim 537 · shared 63 · api 20 · web 265).
+**Current test count: 886** (sim 538 · shared 63 · api 20 · web 265).
 
-> **Latest change — smartphone calls ring 33% more often.** The incoming-call scheduler's quiet gap
+> **Latest change — a tuning + fixes pass (calls, sigils, summons, rite gates).** Five changes.
+> (1) **Smartphone calls** are now a **Poisson** arrival rolled every 100 ms tick (mean one call per
+> 7.5 min), so arrivals are stochastic rather than a fixed-gap timer. (2) **Fama** gains a `maxActive`
+> of **4** (stackable up to the cap). (3) The Ars Goetia **"Bound"** field shows the **live count** of
+> summoned entities (e.g. "3") instead of a generic badge. (4) **Camio #53** (and its identical siblings
+> Purson #20 / Cimejes #66) no longer saturate the Katabasis carry-over: the sheet yield (a log curve)
+> applies as a **percentage** (÷100), so Camio at 100 souls is +4.6% reprobate carry-over, not the
+> +461% that clamped to 100%. (5) The **second Suasio and Decimatio rites** (Logismoi, Pogrom) now
+> unlock at **level 1** instead of 2. Net **+1 test** (sim 537 → 538).
+
+> **Earlier change — smartphone calls ring 33% more often.** The incoming-call scheduler's quiet gap
 > drops from a flat 10 minutes to the base 10 min divided by a `CALL_FREQUENCY_MUL` of 1.33 (~7.5 min
 > between calls), so the line rings 33% more frequently. A UI-only tuning constant in
 > `useIncomingCall`; no test-count change.
