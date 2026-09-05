@@ -227,6 +227,32 @@ const SUASIO_GLYPHS: Record<string, string> = {
 };
 const SUASIO_NUMERALS = ['I', 'II', 'III'] as const;
 
+/** Per-tier colour for the Suasio ledger's outcome chip — the scroll's candle-gold palette fading to
+ *  ash, mirroring how Decimatio tints its Index Opervm rows. Keyed by the real OutcomeEvent tier. */
+const SUASIO_TIER_COLOR: Record<Tier, string> = {
+  stellar: '#e6c04a',
+  excellent: '#d2a63f',
+  good: '#c9a227',
+  neutral: '#a08a5e',
+  bad: '#8a6a4a',
+  terrible: '#7a4a3a',
+  apocalyptic: '#8a3a2a',
+};
+
+/** Re-skin one resolved Suasio outcome into the ledger's second column: the rite and its net resource
+ *  deltas (souls first), or a "no soul stirred" line when a temptation yielded nothing. */
+function suasioLedgerText(e: OutcomeEvent): string {
+  const name = actionName(e.actionId);
+  const parts: string[] = [];
+  const sign = (n: number): string => `${n > 0 ? '+' : '−'}${Math.abs(n).toLocaleString('en-US')}`;
+  if (e.soulsDelta !== 0) parts.push(`${sign(e.soulsDelta)} ${strings.resources.souls}`);
+  if (e.reprobateDelta !== 0) parts.push(`${sign(e.reprobateDelta)} ${strings.reprobates}`);
+  if (e.goldDelta !== 0) parts.push(`${sign(e.goldDelta)} ${strings.resources.gold}`);
+  return parts.length > 0
+    ? `${name} · ${parts.join(' · ')}`
+    : `${name} · ${strings.opera.suasioNoYield}`;
+}
+
 /**
  * The Suasio scroll (Studio) — "Opus Suasio, the Honeyed Tongue" (Claude Design rework). A
  * self-framed, full-surface overlay (mounted by App like Ars Goetia / the PC, NOT via PanelShell):
@@ -238,6 +264,7 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
   const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
   const activateCeremony = useGameStore((s) => s.activateCeremony);
+  const log = useGameStore((s) => s.log);
   const [confirmingPanvitium, setConfirmingPanvitium] = useState(false);
   const head = useGameStore(
     (s) => s.state?.lifetime.actionQueue.find((t) => t.actionId !== 'indagatio') ?? null,
@@ -344,7 +371,30 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
     });
   }
 
-  return <DesignedSuasio {...headerProps} actions={actions} />;
+  // The scroll's foot mirrors Decimatio's Index Opervm: the resolved temptations (this program's
+  // rites only), newest first, each an outcome tier chip beside its net resource deltas.
+  const ledgerRows = log.filter((e) => (SUASIO_ORDER as readonly string[]).includes(e.actionId));
+  const ledger = (
+    <div className="suasio-ledger">
+      <div className="suasio-ledger-head">{strings.opera.suasioLedgerHeading}</div>
+      {ledgerRows.length === 0 ? (
+        <p className="suasio-ledger-empty">{strings.opera.suasioEmptyLedger}</p>
+      ) : (
+        <div>
+          {ledgerRows.map((e, i) => (
+            <div className="suasio-ledger-row" key={`${i}-${e.actionId}-${e.tier}`}>
+              <span className="suasio-ledger-tier" style={{ color: SUASIO_TIER_COLOR[e.tier] }}>
+                {strings.tiers[e.tier]}
+              </span>
+              <span className="suasio-ledger-text">{suasioLedgerText(e)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  return <DesignedSuasio {...headerProps} actions={actions} ledger={ledger} />;
 }
 
 /** The terminal log (02 §10): the last hundred outcomes, newest first. */

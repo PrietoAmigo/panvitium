@@ -179,6 +179,18 @@ describe('Katabasis flow — orchestrator', () => {
     expect(unbound[0]!.querySelector('.ls-roman')?.textContent).toBe('I');
   });
 
+  it('heads the Ledger with the big Souls KPI (moved out of Analytics)', () => {
+    patch({ souls: bn(12345) });
+    act(() => store().openKatabasis());
+    render();
+    act(() => action('Status quo').click());
+    const souls = container!.querySelector('.ledger-souls');
+    expect(souls).not.toBeNull();
+    expect(souls!.querySelector('.ledger-souls-lab')?.textContent).toBe('Souls');
+    // The headline value reads the live soul total, formatted (below a million: a grouped integer).
+    expect(souls!.querySelector('.ledger-souls-num')?.textContent).toBe('12,345');
+  });
+
   it('lists a bound sigil in the Ledger by name, effect + magnitude, and souls bound', () => {
     // Marbas #5 — always visible; sheet effect "Indagatio positive outcomes ↑".
     patch({ sigilBindings: { 5: bn(100) } });

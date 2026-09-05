@@ -64,11 +64,13 @@ describe('AnalyticsGroup', () => {
   it('defaults to the Main tab with resources and reprobates folded in', () => {
     seed([]);
     render();
-    // Main now carries the resources and the reprobate readouts. The player action + efficiency moved
-    // to the Actions tab, so they must NOT appear here (no overlapping information). There is no longer
-    // a separate Reprobates tab or a vigil line.
-    expect(container!.textContent).toContain('Souls');
+    // Main now carries the resources and the reprobate readouts. Souls moved to the Status Quo Ledger,
+    // so it must NOT appear here; the player action + efficiency moved to the Actions tab, so they must
+    // NOT appear here either (no overlapping information). There is no longer a separate Reprobates tab
+    // or a vigil line.
+    expect(container!.textContent).toContain('Influence');
     expect(container!.textContent).toContain('Reprobates');
+    expect(container!.textContent).not.toContain('Souls');
     expect(container!.textContent).not.toContain('Player action efficiency');
     expect(container!.textContent).not.toContain('vigil kept');
     const tabLabels = Array.from(container!.querySelectorAll('button')).map((b) => b.textContent);

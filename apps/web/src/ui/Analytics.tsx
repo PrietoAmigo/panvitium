@@ -74,7 +74,8 @@ function EfficiencyRow(): ReactElement {
 
 /**
  * The Main tab (Resources + Reprobates folded together, in this order): the live resource readouts —
- * Souls, Influence, Gold — then the reprobate population with its generation / death rates. The player
+ * Influence and Gold (the Souls total now heads the Status Quo Ledger) — then the reprobate population
+ * with its generation / death rates. The player
  * action + efficiency now live on the Actions tab (alongside the acolyte / invocation work boards), so
  * the same readout never appears twice.
  */
@@ -95,7 +96,6 @@ function MainTab(): ReactElement {
   return (
     <div className="analytics-main">
       <div className="analytics-list">
-        <StatRow label={strings.resources.souls} value={formatBigNum(state.souls)} />
         <StatRow
           label={strings.resources.influence}
           value={formatBigNum(state.lifetime.influence)}

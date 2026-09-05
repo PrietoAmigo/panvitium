@@ -2194,6 +2194,30 @@ body {
   font-size: 1.05rem;
   text-wrap: pretty;
 }
+/* The Souls headline KPI — big and red, sitting above the six standing readouts. */
+.katabasis-flow .ledger-souls {
+  text-align: center;
+  margin: 22px auto 6px;
+}
+.katabasis-flow .ledger-souls-num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 3.4rem;
+  line-height: 1;
+  color: #e23b2a;
+  text-shadow:
+    0 0 30px rgba(200, 40, 28, 0.55),
+    0 0 10px rgba(200, 40, 28, 0.4);
+}
+.katabasis-flow .ledger-souls-lab {
+  margin-top: 8px;
+  font-family: var(--font-inscribe);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: #c0503e;
+}
+
 .katabasis-flow .ledger-summary {
   display: flex;
   justify-content: center;
@@ -4127,10 +4151,17 @@ body {
   inset: 0;
   z-index: 40;
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox — keep the scroll, hide the visible bar */
+  -ms-overflow-style: none; /* old Edge */
   background:
     radial-gradient(circle at 50% 50%, transparent 40%, rgba(4, 3, 3, 0.72) 100%),
     radial-gradient(circle at 50% 16%, #16110c 0%, #0b0907 52%, #050403 100%);
   animation: fade-in 0.25s ease both;
+}
+.suasio-overlay::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* WebKit/Chromium — hide the visible bar */
 }
 
 .suasio-scroll {
@@ -4552,6 +4583,49 @@ body {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #a0451e;
+}
+
+/* ---- ledger (resolved outcomes at the scroll's foot; mirrors Decimatio's Index Opervm) ---- */
+.suasio-ledger {
+  margin-top: 30px;
+  padding-top: 6px;
+  border-top: 1px solid #2a2017;
+}
+.suasio-ledger-head {
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #9c7b3e;
+  text-align: center;
+}
+.suasio-ledger-row {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 8px 2px;
+  border-bottom: 1px solid rgba(122, 90, 46, 0.2);
+}
+.suasio-ledger-tier {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex: none;
+  width: 104px;
+}
+.suasio-ledger-text {
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  color: #b7a179;
+}
+.suasio-ledger-empty {
+  margin: 10px 0 0;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: #8a7350;
+  text-align: center;
 }
 
 /* ---- keyframes ---- */
