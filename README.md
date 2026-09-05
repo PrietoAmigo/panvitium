@@ -105,7 +105,12 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 885** (sim 537 · shared 63 · api 20 · web 265).
 
-> **Latest change — Emptio runs in its own background channel (not the player slot).** Emptio is no
+> **Latest change — smartphone calls ring 33% more often.** The incoming-call scheduler's quiet gap
+> drops from a flat 10 minutes to the base 10 min divided by a `CALL_FREQUENCY_MUL` of 1.33 (~7.5 min
+> between calls), so the line rings 33% more frequently. A UI-only tuning constant in
+> `useIncomingCall`; no test-count change.
+
+> **Earlier change — Emptio runs in its own background channel (not the player slot).** Emptio is no
 > longer a player-drive rite: like Indagatio, it neither blocks nor is blocked by a Suasio/Decimatio
 > rite, so a rite can even auto-repeat in the slot while a purchase runs alongside. Only **one Emptio**
 > may run at a time (a second Acquire is refused while one is in flight, and the Acquire control locks

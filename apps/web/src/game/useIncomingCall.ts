@@ -16,8 +16,11 @@ import { VIBRATION_SRC } from '../menus/calls-in.data.js';
 
 /** Ring window before an unanswered call is missed (docs: "Ring window is always 15 seconds"). */
 const RING_WINDOW_MS = 15_000;
-/** Quiet gap between the line clearing and the next call arriving — one incoming call every 10 min. */
-const GAP_MS = 10 * 60 * 1000;
+/** Calls arrive 33% more often than the original one-every-10-minutes cadence (player tuning). */
+const CALL_FREQUENCY_MUL = 1.33;
+/** Quiet gap between the line clearing and the next call arriving: the base 10 min divided by the
+ *  frequency multiplier, so a higher frequency shortens the gap (now ~7.5 min between calls). */
+const GAP_MS = Math.round((10 * 60 * 1000) / CALL_FREQUENCY_MUL);
 /** How many of the most recent calls a just-rung call is suppressed from — so the same call rings at
  *  most once every 5 calls (the previous 4 are excluded from the draw). */
 const RECENT_WINDOW = 4;
