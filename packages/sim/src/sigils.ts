@@ -1,8 +1,12 @@
 /**
- * Sigil binding-to-effect curves (02 §5). The default is √(bound souls) — strong early returns,
- * gentle late, encouraging spreading souls across many sigils. Some sigils override to linear
- * (swingy, build-defining) or logarithmic (splash). `bindingMagnitude` returns the bare magnitude;
- * a per-sigil coefficient multiplies it into a concrete effect strength.
+ * Sigil binding-to-effect curves (02 §5). The default is the `pct` percentage curve (player tuning):
+ * a base-10 logarithm shaped so a standard percentage sigil reads ~5% at 10 bound souls, ~28% at
+ * 1k, ~50% at 100k, then keeps creeping up ~+11 points per 10x souls with NO cap — meaningful early,
+ * gentle late, and far tamer than the old √ default (which was near-zero early and exploded late).
+ * A standard sigil carries `coefficient: 1` (so its strength IS the curve); a weaker sigil scales it
+ * down (Paimon 0.5, Foras 0.25). Some sigils override the curve to `sqrt` (Andrealphus's flat
+ * invoking power), `linear` (swingy), or `log` (the flat generators / Katabasis carry-over). `bindingMagnitude`
+ * returns the bare magnitude; a per-sigil coefficient multiplies it into a concrete effect strength.
  *
  * The catalog (03 §5) is the full Goetia numbering 1..72, with #32 = Semet. THIS slice wires a
  * representative subset across both surfaces a sigil can feed:
@@ -21,11 +25,21 @@ import { type Tier } from './probability.js';
 import { SIGILS } from './sigils.data.js';
 export { SIGILS };
 
-export type BindingCurve = 'sqrt' | 'linear' | 'log';
+export type BindingCurve = 'sqrt' | 'linear' | 'log' | 'pct';
+
+/**
+ * Coefficients of the default `pct` percentage curve: `strength = SLOPE·log10(souls) − INTERCEPT`,
+ * clamped at 0. Solved so a standard sigil (coefficient 1) reads exactly 5% at 10 souls and 50% at
+ * 100,000 souls; every other milestone (≈16% at 100, ≈28% at 1k, ≈39% at 10k, ≈61% at 1M) falls out
+ * of the same line, and it keeps rising ~SLOPE per decade with no cap. Player-chosen (see the
+ * binding-curve note above); tune here to reshape every percentage sigil at once.
+ */
+const PCT_SLOPE = 0.1125;
+const PCT_INTERCEPT = 0.0625;
 
 /**
  * The magnitude a sigil's effect scales by, given the souls bound to it. Returned as a number:
- * sqrt/log keep magnitudes small, and linear stays within Number's exact-integer range for any
+ * pct/sqrt/log keep magnitudes small, and linear stays within Number's exact-integer range for any
  * realistic binding.
  */
 export function bindingMagnitude(curve: BindingCurve, boundSouls: BigNum): number {
@@ -33,7 +47,9 @@ export function bindingMagnitude(curve: BindingCurve, boundSouls: BigNum): numbe
   if (lte(x, ZERO)) return 0;
   if (curve === 'linear') return x.toNumber();
   if (curve === 'log') return Math.max(0, add(x, 1).ln());
-  return x.sqrt().toNumber(); // 'sqrt' — the default
+  if (curve === 'sqrt') return x.sqrt().toNumber();
+  // 'pct' — the default: a base-10 log percentage curve (5% at 10 souls, 50% at 100k, no cap).
+  return Math.max(0, PCT_SLOPE * x.log10() - PCT_INTERCEPT);
 }
 
 /** The scalar (single-number) fields of the modifier bundle a sigil may target. */
@@ -116,9 +132,12 @@ export type CostChannel = 'influence' | 'invocationSoul' | 'emptioGold';
 export interface SigilDef {
   readonly id: SigilId;
   readonly name: string;
-  /** Binding curve; omitted means the √ default (02 §5). */
+  /** Binding curve; omitted means the `pct` percentage default (02 §5; player tuning). */
   readonly curve?: BindingCurve;
-  /** Per-sigil scalar applied to the binding magnitude (spreadsheet-overridable placeholder). */
+  /**
+   * Per-sigil scalar applied to the binding magnitude. For the default `pct` curve this reads as a
+   * plain strength multiplier: 1 = the standard percentage curve, 0.5 = half as strong, etc.
+   */
   readonly coefficient: number;
   readonly effect: SigilEffect;
   /**
@@ -151,7 +170,7 @@ export function sigilVisible(state: GameState, def: SigilDef): boolean {
 
 /** A bound sigil's effect strength: `coefficient × magnitude(curve, boundSouls)`. */
 export function sigilStrength(def: SigilDef, boundSouls: BigNum): number {
-  return def.coefficient * bindingMagnitude(def.curve ?? 'sqrt', boundSouls);
+  return def.coefficient * bindingMagnitude(def.curve ?? 'pct', boundSouls);
 }
 
 /** Partial scalar/tier contributions from every bound sigil, for computeModifiers to fold in. */
