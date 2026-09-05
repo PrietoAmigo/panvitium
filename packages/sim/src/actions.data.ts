@@ -141,7 +141,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     // Tuning override (player request): the entry cull is a 1 s cast so the opening Decimatio loop
     // reads as briskly as Suggestion. Overrides the Decimatio sheet's 10 s baseline.
     baseTimeSeconds: 1,
-    cost: { gold: 100 },
+    cost: { gold: 10 }, // sheet 100; cut to 1/10 (player tuning request)
     weights: CAEDES_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     delegateUnlock: { sin: 'ira', level: 1 },
@@ -150,7 +150,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     id: 'pogrom',
     category: 'decimatio',
     baseTimeSeconds: 60, // sheet: "~60s"
-    cost: { gold: 1000 }, // sheet-pinned
+    cost: { gold: 100 }, // sheet 1,000; cut to 1/10 (player tuning request)
     weights: POGROM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'ira', level: 2 },
@@ -160,7 +160,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     id: 'purgatio',
     category: 'decimatio',
     baseTimeSeconds: 360, // sheet: "~360s" (rev 2026-06-12)
-    cost: { gold: 1_000_000 }, // sheet-pinned (rev 2026-06-12)
+    cost: { gold: 100_000 }, // sheet 1,000,000; cut to 1/10 (player tuning request)
     weights: PURGATIO_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: { sin: 'ira', level: 3 },

@@ -2950,6 +2950,9 @@ body {
   padding: 14px 32px;
   text-align: center;
 }
+.dec-kpi-box + .dec-kpi-box {
+  border-left: 1px solid #4a201a;
+}
 .dec-kpi-value {
   font-size: 32px;
   font-weight: 700;

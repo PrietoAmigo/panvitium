@@ -568,6 +568,10 @@ export function DecimatioGroup(): ReactElement {
               <div className="dec-kpi-value">{totalReprobates(state).toLocaleString('en-US')}</div>
               <div className="dec-kpi-label">{strings.reprobates}</div>
             </div>
+            <div className="dec-kpi-box">
+              <div className="dec-kpi-value">{gold.toLocaleString('en-US')}</div>
+              <div className="dec-kpi-label">{strings.resources.gold}</div>
+            </div>
           </div>
         </div>
 

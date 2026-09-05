@@ -52,7 +52,7 @@ describe('startAction', () => {
     const r = startAction(withGold(fresh(), 150), 'caedes');
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(goldOf(r.state)).toBe(50); // 150 - 100
+      expect(goldOf(r.state)).toBe(140); // 150 - 10
       expect(r.state.lifetime.actionQueue).toEqual([{ actionId: 'caedes', remainingSeconds: 1 }]);
     }
   });
@@ -314,14 +314,14 @@ describe('modifier integration — per-category efficiency', () => {
     expect(r1.ok).toBe(true);
     if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(98); // 100 − 2
 
-    // Caedes on the same state pays base 100 gold (no Decimatio boost in play).
+    // Caedes on the same state pays base 10 gold (no Decimatio boost in play).
     const r2 = startAction(state, 'caedes');
     expect(r2.ok).toBe(true);
-    if (r2.ok) expect(floor(r2.state.lifetime.gold).toNumber()).toBe(400); // 500 − 100
+    if (r2.ok) expect(floor(r2.state.lifetime.gold).toNumber()).toBe(490); // 500 − 10
   });
 
   it('Ira levels scale Caedes cost but not Suggestion (sheet rev 2026-06-12)', () => {
-    // Ira L1 → decimatioEffMul = 2. Caedes gold cost = ceil(100 × 2) = 200.
+    // Ira L1 → decimatioEffMul = 2. Caedes gold cost = ceil(10 × 2) = 20.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -330,7 +330,7 @@ describe('modifier integration — per-category efficiency', () => {
     };
     const r1 = startAction(state, 'caedes');
     expect(r1.ok).toBe(true);
-    if (r1.ok) expect(floor(r1.state.lifetime.gold).toNumber()).toBe(800); // 1000 − 200
+    if (r1.ok) expect(floor(r1.state.lifetime.gold).toNumber()).toBe(980); // 1000 − 20
 
     const r2 = startAction(state, 'suggestion');
     expect(r2.ok).toBe(true);
@@ -695,8 +695,8 @@ describe('auto-repeat (player-slot looping, 02 §3)', () => {
   });
 
   it('a stalled auto-repeat rite retries on a later tick once affordable', () => {
-    // Ira 1 (toggle open) but too poor to pay caedes's 100 gold: enabling stalls (no timer).
-    let s = setAutoRepeat(withIra(withGold(fresh(), 50), 1), 'caedes', true);
+    // Ira 1 (toggle open) but too poor to pay caedes's 20 gold: enabling stalls (no timer).
+    let s = setAutoRepeat(withIra(withGold(fresh(), 10), 1), 'caedes', true);
     expect(s.lifetime.autoRepeat).toEqual(['caedes']);
     expect(s.lifetime.actionQueue).toHaveLength(0); // couldn't afford the first cycle
     // A tick while still broke does not start it.
