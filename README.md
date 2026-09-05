@@ -105,7 +105,15 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 880** (sim 536 · shared 63 · api 20 · web 261).
 
-> **Latest change — a playability pass (game-feel bugs, not technical ones).** A batch of fixes to
+> **Latest change — Decimatio gold KPI and a 1/10 gold-cost cut (player tuning).** The Decimatio
+> masthead now carries a live **Gold** KPI beside the Reprobates count, so the currency a cull
+> spends is legible in the same place it is charged. Every Decimatio rite's gold cost also drops to
+> a tenth of the sheet value: **Caedes 100 → 10 g**, **Pogrom 1,000 → 100 g**, **Purgatio
+> 1,000,000 → 100,000 g** (the Ira `× 2/level` efficiency scaling is unchanged, so the printed and
+> charged costs still track it). A player-requested override, recorded at the `actions.data.ts` cost
+> lines with the affected test assertions retuned; test count unchanged at **880**.
+
+> **Earlier change — a playability pass (game-feel bugs, not technical ones).** A batch of fixes to
 > soft-locks, exploits, automation traps, and misleading feedback. (1) **Panvitium** no longer
 > self-extinguishes in ~3 s or explodes offline: its `× eᵗ` ramp softens to `× 1.01ᵗ`, its upkeep
 > becomes gold-only (a growing influence drain can't coexist with a capped influence pool), so a

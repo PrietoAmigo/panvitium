@@ -38,12 +38,16 @@ afterEach(() => {
 });
 
 describe('DecimatioGroup — "The Breathing Dark"', () => {
-  it('renders the masthead, creed, and the Reprobates KPI', () => {
+  it('renders the masthead, creed, and the Reprobates and Gold KPIs', () => {
     render();
     const text = container!.textContent ?? '';
     expect(container!.querySelector('.dec-title')?.textContent).toBe(strings.opera.decimatio);
     expect(text).toContain(strings.opera.decimatioCreed);
-    expect(container!.querySelector('.dec-kpi-label')?.textContent).toBe(strings.reprobates);
+    const kpiLabels = Array.from(container!.querySelectorAll('.dec-kpi-label')).map((n) =>
+      (n.textContent ?? '').trim(),
+    );
+    expect(kpiLabels).toContain(strings.reprobates);
+    expect(kpiLabels).toContain(strings.resources.gold);
   });
 
   it('shows the Caedes card with its real cost, and seals Pogrom and Purgatio at a fresh start', () => {
@@ -70,8 +74,8 @@ describe('DecimatioGroup — "The Breathing Dark"', () => {
     expect(text).toContain(strings.opera.decimatioLocked.pogrom);
     expect(text).toContain(strings.opera.decimatioLocked.purgatio);
 
-    // Only Caedes surfaces a real catalog cost ("100 g") and a commission CTA.
-    expect(text).toContain('100 g');
+    // Only Caedes surfaces a real catalog cost ("10 g") and a commission CTA.
+    expect(text).toContain('10 g');
     const ctas = Array.from(container!.querySelectorAll('.dec-commission')).map((b) =>
       (b.textContent ?? '').trim(),
     );
