@@ -8,9 +8,9 @@ import {
   invocationRunnerEfficiency,
   categoryEfficiency,
   computeModifiers,
-  perSecondRates,
-  playerEfficiency,
   reprobateRates,
+  resourceFlows,
+  playerEfficiency,
   bn,
   gt,
   mul,
@@ -25,16 +25,93 @@ import { formatBigNum, formatDuration } from '../game/format.js';
 import { actionProgress } from '../game/progress.js';
 import { actionName } from '../game/labels.js';
 import { invocationEffectText } from '../game/invocationEffect.js';
-import { offlineProjection } from '../game/session.js';
+import { offlineFactors, offlineProjection, type OfflineBuff } from '../game/session.js';
 
 type AnalyticsTab = 'main' | 'actions' | 'offline';
 
-/** The window the Offline tab projects over (one hour). */
-const OFFLINE_PREVIEW_SECONDS = 3600;
+/** The away-windows the Offline tab can project over: one hour (default), eight hours, one day. */
+const OFFLINE_WINDOWS: readonly { readonly seconds: number; readonly label: string }[] = [
+  { seconds: 3600, label: strings.analytics.window1h },
+  { seconds: 8 * 3600, label: strings.analytics.window8h },
+  { seconds: 24 * 3600, label: strings.analytics.window24h },
+];
 
 /** An efficiency multiplier as a compact "N×" label (whole numbers bare, fractions to 2 decimals). */
 function effLabel(eff: number): string {
   return Number.isInteger(eff) ? `${eff}×` : `${eff.toFixed(2)}×`;
+}
+
+/** The real minus sign (U+2212) used for signed rate/total readouts, matching the resource lines. */
+const MINUS = '−';
+
+/** One generation/upkeep/net cell trio, pre-formatted for the FlowTable. */
+interface FlowCells {
+  readonly generation: string;
+  readonly upkeep: string;
+  readonly net: string;
+}
+
+/**
+ * Format a {generation, upkeep, net} flow into signed display cells: generation always reads as a
+ * gain (+), upkeep as a draw (−, or a bare 0 when nothing is drawn), net signed by its sign. `fmt`
+ * renders the magnitude (already absolute) and `suffix` is appended to each ("/s" on the Main tab,
+ * empty for offline window totals).
+ */
+function flowCells(
+  flow: { generation: number; upkeep: number; net: number },
+  fmt: (magnitude: number) => string,
+  suffix: string,
+): FlowCells {
+  return {
+    generation: `+${fmt(Math.abs(flow.generation))}${suffix}`,
+    upkeep: flow.upkeep > 1e-9 ? `${MINUS}${fmt(flow.upkeep)}${suffix}` : '0',
+    net: `${flow.net < 0 ? MINUS : '+'}${fmt(Math.abs(flow.net))}${suffix}`,
+  };
+}
+
+/** A resource / population row in the generation / upkeep / net flow table. */
+interface FlowRow extends FlowCells {
+  readonly label: string;
+}
+
+/** The generation / upkeep / net breakdown table (Main: per-second; Offline: totals over the window). */
+function FlowTable({ rows }: { rows: readonly FlowRow[] }): ReactElement {
+  const a = strings.analytics;
+  return (
+    <div className="analytics-flow" role="table">
+      <div className="analytics-flow-row analytics-flow-head" role="row">
+        <span className="analytics-flow-label" />
+        <span className="analytics-flow-cell">{a.generation}</span>
+        <span className="analytics-flow-cell">{a.upkeep}</span>
+        <span className="analytics-flow-cell">{a.net}</span>
+      </div>
+      {rows.map((r) => (
+        <div className="analytics-flow-row" role="row" key={r.label}>
+          <span className="analytics-flow-label">{r.label}</span>
+          <span className="analytics-flow-cell analytics-flow-gen">{r.generation}</span>
+          <span className="analytics-flow-cell analytics-flow-up">{r.upkeep}</span>
+          <span className="analytics-flow-cell analytics-flow-net">{r.net}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The Offline tab's active-effects list: every offline modifier in play, as a multiplier chip. */
+function OfflineBuffs({ buffs }: { buffs: readonly OfflineBuff[] }): ReactElement | null {
+  if (buffs.length === 0) return null;
+  const labels = strings.analytics.offlineBuffLabels;
+  const buffMul = (m: number): string => `×${m >= 10 ? m.toFixed(0) : m.toFixed(2)}`;
+  return (
+    <section className="analytics-section analytics-buffs">
+      <h4 className="analytics-section-title">{strings.analytics.offlineBuffs}</h4>
+      <div className="analytics-list">
+        {buffs.map((b) => (
+          <StatRow key={b.kind} label={labels[b.kind]} value={buffMul(b.mul)} />
+        ))}
+      </div>
+    </section>
+  );
 }
 
 const NO_TIMERS: readonly ActionTimer[] = [];
@@ -88,15 +165,28 @@ function MainTab(): ReactElement {
   const state = useGameStore((s) => s.state);
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
   const mods = computeModifiers(state);
-  const rates = perSecondRates(state);
+  const flows = resourceFlows(state);
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
-  const perSec = (v: string): string => `+${v}/s`;
 
   const repRates = reprobateRates(state, mods);
-  const reps = state.lifetime.reprobates;
   const deaths = repRates.suicidePerSecond + repRates.murderPerSecond;
+  const reps = state.lifetime.reprobates;
   const num = (n: number): string => Math.floor(n).toLocaleString('en-US');
-  const repPerSec = (n: number): string => `${n >= 0 ? '+' : ''}${n.toFixed(2)}/s`;
+
+  // Magnitude formatters (values already absolute): gold/influence as BigNum, reprobates to 2 dp.
+  const big = (n: number): string => formatBigNum(bn(n));
+  const rep = (n: number): string => n.toFixed(2);
+  const repFlow = {
+    generation: repRates.generationPerSecond,
+    upkeep: deaths,
+    net: repRates.generationPerSecond - deaths,
+  };
+
+  const rows: FlowRow[] = [
+    { label: strings.resources.gold, ...flowCells(flows.gold, big, '/s') },
+    { label: strings.resources.influence, ...flowCells(flows.influence, big, '/s') },
+    { label: strings.analytics.reprobates, ...flowCells(repFlow, rep, '/s') },
+  ];
 
   return (
     <div className="analytics-main">
@@ -105,35 +195,20 @@ function MainTab(): ReactElement {
           label={strings.resources.influence}
           value={formatBigNum(state.lifetime.influence)}
           detail={`${strings.analytics.ofMax} ${formatBigNum(effectiveMax)}`}
-          {...(gt(rates.influence, ZERO) ? { rate: perSec(formatBigNum(rates.influence)) } : {})}
         />
-        <StatRow
-          label={strings.resources.gold}
-          value={formatBigNum(state.lifetime.gold)}
-          {...(rates.gold !== 0
-            ? {
-                // Signed: Aurevora's drain (and any net-negative upkeep) reads as a loss rather than
-                // hiding behind a "+", so the readout never shows income while the vault empties.
-                rate: `${rates.gold >= 0 ? '+' : '−'}${formatBigNum(bn(Math.abs(rates.gold)))}/s`,
-              }
-            : {})}
-        />
-      </div>
-      <div className="analytics-rates">
+        <StatRow label={strings.resources.gold} value={formatBigNum(state.lifetime.gold)} />
         <StatRow label={strings.analytics.reprobates} value={num(reps)} />
-        <StatRow
-          label={strings.analytics.generation}
-          value={repPerSec(repRates.generationPerSecond)}
-        />
-        <StatRow label={strings.analytics.deaths} value={repPerSec(-deaths)} />
+      </div>
+      <FlowTable rows={rows} />
+      <div className="analytics-rates">
         <StatRow
           label={strings.analytics.byMurder}
-          value={repPerSec(-repRates.murderPerSecond)}
+          value={`${MINUS}${rep(repRates.murderPerSecond)}/s`}
           indent
         />
         <StatRow
           label={strings.analytics.bySuicide}
-          value={repPerSec(-repRates.suicidePerSecond)}
+          value={`${MINUS}${rep(repRates.suicidePerSecond)}/s`}
           indent
         />
       </div>
@@ -142,29 +217,75 @@ function MainTab(): ReactElement {
 }
 
 /**
- * The Offline tab: a projection of what would accrue over one hour away, run through the real
- * offline catch-up (`offlineProjection`) so it matches what returning actually banks — the reduced
- * offline base rate, offline-only sigils, reprobate dynamics, invocation runners and toggles all
- * included. Gold / influence / souls are BigNum gains; reprobates is a net count (can be negative
- * when culls outrun generation). Recomputed each render (a single big-delta tick, cheap enough).
+ * The Offline tab: what would accrue over the chosen away-window (1h / 8h / 24h), run through the
+ * real offline catch-up (`offlineProjection`) so the NET column matches what returning actually banks
+ * — the reduced offline base rate, offline-only sigils, reprobate dynamics, invocation runners and
+ * toggles all included. Generation is the gross throughput over the window (`resourceFlows` under the
+ * offline income multipliers × the scaled seconds), and upkeep is the gap generation − net, so each
+ * row stays consistent (net = generation − upkeep) while the net stays accurate. Souls carry no
+ * upkeep (deaths mint them), so they show as a single net gain. The active offline effects that
+ * produced the scaling are listed below. Recomputed each render (a couple of big-delta ticks, cheap).
  */
 function OfflineTab(): ReactElement {
   const state = useGameStore((s) => s.state);
+  const [windowSeconds, setWindowSeconds] = useState<number>(OFFLINE_WINDOWS[0]?.seconds ?? 3600);
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const proj = offlineProjection(state, OFFLINE_PREVIEW_SECONDS);
-  const r = strings.resources;
+
+  const factors = offlineFactors(state, windowSeconds);
+  const proj = offlineProjection(state, windowSeconds);
+  const grossFlows = resourceFlows(state, {
+    offlineGoldMul: factors.goldMul,
+    offlineInfluenceMul: factors.influenceMul,
+  });
+  const scaled = factors.scaledSeconds;
+  const mods = computeModifiers(state);
+  const repRates = reprobateRates(state, mods);
+
+  const big = (n: number): string => formatBigNum(bn(n));
+  const repTot = (n: number): string => Math.floor(n).toLocaleString('en-US');
+  // Gross generation over the window; net from the real catch-up; upkeep = the gap (never negative:
+  // net can only be ≤ gross, so this is the total drawn against generation over the window).
+  const flowFrom = (
+    grossPerSecond: number,
+    net: number,
+  ): { generation: number; upkeep: number; net: number } => {
+    const generation = grossPerSecond * scaled;
+    return { generation, upkeep: Math.max(0, generation - net), net };
+  };
+  const goldFlow = flowFrom(grossFlows.gold.generation, proj.gold.toNumber());
+  const inflFlow = flowFrom(grossFlows.influence.generation, proj.influence.toNumber());
+  const repFlow = flowFrom(repRates.generationPerSecond * factors.generationMul, proj.reprobates);
+
+  const rows: FlowRow[] = [
+    { label: strings.resources.gold, ...flowCells(goldFlow, big, '') },
+    { label: strings.resources.influence, ...flowCells(inflFlow, big, '') },
+    { label: strings.analytics.reprobates, ...flowCells(repFlow, repTot, '') },
+  ];
+
   const signedBig = (v: BigNum): string =>
-    gt(ZERO, v) ? `−${formatBigNum(mul(v, -1))}` : `+${formatBigNum(v)}`;
-  const repGain = `${proj.reprobates < 0 ? '−' : '+'}${Math.abs(proj.reprobates).toLocaleString('en-US')}`;
+    gt(ZERO, v) ? `${MINUS}${formatBigNum(mul(v, -1))}` : `+${formatBigNum(v)}`;
+
   return (
     <div className="analytics-main">
       <p className="analytics-offline-note">{strings.analytics.offlineNote}</p>
-      <div className="analytics-list">
-        <StatRow label={r.gold} value={signedBig(proj.gold)} />
-        <StatRow label={r.influence} value={signedBig(proj.influence)} />
-        <StatRow label={strings.analytics.reprobates} value={repGain} />
-        <StatRow label={r.souls} value={signedBig(proj.souls)} />
+      <div className="analytics-offline-windows" role="group">
+        {OFFLINE_WINDOWS.map((w) => (
+          <button
+            key={w.seconds}
+            type="button"
+            aria-pressed={windowSeconds === w.seconds}
+            className={'kat-tab' + (windowSeconds === w.seconds ? ' kat-tab--active' : '')}
+            onClick={() => setWindowSeconds(w.seconds)}
+          >
+            {w.label}
+          </button>
+        ))}
       </div>
+      <FlowTable rows={rows} />
+      <div className="analytics-list">
+        <StatRow label={strings.resources.souls} value={signedBig(proj.souls)} />
+      </div>
+      <OfflineBuffs buffs={factors.buffs} />
     </div>
   );
 }
@@ -174,7 +295,7 @@ function OfflineTab(): ReactElement {
  * an on-demand panel. Three tabs — Main (resources + the reprobate population + dynamics rates),
  * Actions (the unified work board: the player's efficiency + in-flight rite, then each acolyte, then
  * each bound invocation, every one with its efficiency, current action, and progress bar), and
- * Offline (the one-hour away projection).
+ * Offline (the projected gains over a chosen away-window, with the active offline effects).
  */
 export function AnalyticsGroup(): ReactElement {
   const [tab, setTab] = useState<AnalyticsTab>('main');

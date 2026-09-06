@@ -2210,6 +2210,55 @@ body {
   opacity: 0.65;
   font-style: italic;
 }
+/* Generation / upkeep / net flow table (Main + Offline). A 4-column grid; each row is a
+   `display: contents` wrapper so its label + three cells drop straight into the grid tracks. */
+.analytics-flow {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  column-gap: 0.9rem;
+  row-gap: 0.3rem;
+  margin-top: 0.8rem;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.analytics-flow-row {
+  display: contents;
+}
+.analytics-flow-label {
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+.analytics-flow-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+.analytics-flow-head .analytics-flow-label,
+.analytics-flow-head .analytics-flow-cell {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+.analytics-flow-gen {
+  color: var(--candle);
+}
+.analytics-flow-up {
+  opacity: 0.7;
+}
+.analytics-flow-net {
+  font-weight: 600;
+}
+.analytics-offline-windows {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.analytics-buffs {
+  margin-top: 0.9rem;
+}
 .analytics-rate {
   font-size: 0.8rem;
   color: var(--candle);

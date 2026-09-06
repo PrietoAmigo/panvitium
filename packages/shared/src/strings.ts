@@ -396,9 +396,29 @@ export const strings = {
     ofMax: 'of',
     playerEfficiency: 'Player action efficiency',
     offline: 'Offline',
-    // Offline tab: a one-hour projection of what accrues while away (the world runs at a reduced
-    // offline rate; the Acedia sloth compound makes very long absences richer still).
-    offlineNote: 'Projected gains for one hour away. The world runs slower while you are gone.',
+    // Flow-table column headers (Main + Offline): gross generation, the upkeep drawn against it, and
+    // the net (generation minus upkeep). Per second on the Main tab; totals over the window offline.
+    upkeep: 'Upkeep',
+    net: 'Net',
+    // Offline tab window selector (how long away to project over).
+    window1h: '1 hour',
+    window8h: '8 hours',
+    window24h: '24 hours',
+    // Offline tab: a projection of what accrues while away (the world runs at a reduced offline rate;
+    // the Acedia sloth compound makes very long absences richer still, so a longer window is rougher).
+    offlineNote:
+      'Estimated gains for the selected time away. The world runs at a reduced rate offline, so a longer absence is a rougher estimate.',
+    offlineBuffs: 'Active offline effects',
+    // The offline modifiers surfaced on the Offline tab, keyed by OfflineBuffKind. Each reads as a
+    // multiplier chip beside its label (e.g. Sloth compound ×3.20).
+    offlineBuffLabels: {
+      baseRate: 'Offline base rate',
+      offlineTime: 'Offline time',
+      acediaCompound: 'Sloth compound',
+      gold: 'Offline gold',
+      influence: 'Offline influence',
+      generation: 'Offline generation',
+    },
   },
   emails: {
     title: 'Emails',

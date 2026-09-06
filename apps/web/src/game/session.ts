@@ -153,3 +153,61 @@ export function offlineProjection(state: GameState, windowSeconds: number): Offl
     reprobates: totalReprobates(resumed) - totalReprobates(state),
   };
 }
+
+/** One active offline modifier, for the Offline tab's "active effects" list. `mul` is the factor. */
+export type OfflineBuffKind =
+  | 'baseRate'
+  | 'offlineTime'
+  | 'acediaCompound'
+  | 'gold'
+  | 'influence'
+  | 'generation';
+export interface OfflineBuff {
+  readonly kind: OfflineBuffKind;
+  readonly mul: number;
+}
+
+/** The offline scaling factors over a window, plus the active offline effects that produced them. */
+export interface OfflineFactors {
+  /** Effective sim-seconds the window compresses to: window × 0.5 base × offlineTime × Acedia compound. */
+  readonly scaledSeconds: number;
+  /** Offline-only per-resource income multipliers (Sallos gold, Eligos influence, Zepar generation). */
+  readonly goldMul: number;
+  readonly influenceMul: number;
+  readonly generationMul: number;
+  /** The active offline effects (factors ≠ 1, plus the always-on base rate), for display. */
+  readonly buffs: OfflineBuff[];
+}
+
+/**
+ * The offline scaling for a given away-window, mirroring `resumeGame` exactly (base 0.5× player
+ * offline efficiency × Procrastination/Dolce/Lemure `offlineTimeMul` × the Acedia time-compound,
+ * whose exponent saturates at the accrual cap). Also surfaces the offline-only resource multipliers
+ * and a list of the active offline effects so the Analytics Offline tab can both scale its estimate
+ * and explain where the numbers come from. Pure.
+ */
+export function offlineFactors(state: GameState, windowSeconds: number): OfflineFactors {
+  const mods = computeModifiers(state);
+  const offlineMul = mods.offlineTimeMul;
+  const acediaLvl = sinLevel(state.devotion.acedia);
+  const accrualCap = ACEDIA_COMPOUND_CAP_SECONDS * sigilOfflineAccrualWindowMul(state);
+  const acediaSeconds = Math.min(windowSeconds, accrualCap);
+  const acediaCompound =
+    acediaLvl > 0 ? ACEDIA_OFFLINE_COMPOUND_BASE ** (acediaSeconds * acediaLvl * acediaLvl) : 1;
+  const scaledSeconds = windowSeconds * PLAYER_OFFLINE_EFFICIENCY * offlineMul * acediaCompound;
+  const res = sigilOfflineResourceMul(state);
+  const near1 = (x: number): boolean => Math.abs(x - 1) < 1e-9;
+  const buffs: OfflineBuff[] = [{ kind: 'baseRate', mul: PLAYER_OFFLINE_EFFICIENCY }];
+  if (!near1(offlineMul)) buffs.push({ kind: 'offlineTime', mul: offlineMul });
+  if (acediaCompound > 1 + 1e-9) buffs.push({ kind: 'acediaCompound', mul: acediaCompound });
+  if (res.gold > 1 + 1e-9) buffs.push({ kind: 'gold', mul: res.gold });
+  if (res.influence > 1 + 1e-9) buffs.push({ kind: 'influence', mul: res.influence });
+  if (res.generation > 1 + 1e-9) buffs.push({ kind: 'generation', mul: res.generation });
+  return {
+    scaledSeconds,
+    goldMul: res.gold,
+    influenceMul: res.influence,
+    generationMul: res.generation,
+    buffs,
+  };
+}
