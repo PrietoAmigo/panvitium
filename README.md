@@ -103,9 +103,19 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 906** (sim 548 · shared 63 · api 20 · web 275).
+**Current test count: 907** (sim 548 · shared 63 · api 20 · web 276).
 
-> **Latest change — Analytics generation / upkeep / net columns, richer Offline tab.** The Analytics
+> **Latest change — memoize the Analytics Offline projection (performance).** The Offline tab runs a
+> full `resumeGame` catch-up (`offlineProjection`) to fill its columns, and the store ticks at 10 Hz
+> (replacing `state` each tick), so the tab was re-simulating the whole away-window, up to 24 hours,
+> roughly ten times a second while open. The derivation is now pulled into a pure `offlineView` helper
+> and wrapped in `useMemo`, keyed on the selected window plus a **coarse `lastTickAt` bucket**
+> (`OFFLINE_REFRESH_MS`, 2 s): the projection recomputes at most once every couple of seconds, and
+> immediately when the window changes, instead of every render. (The raw clock advances every tick, so
+> bucketing is what makes the memo bite.) No behaviour change beyond refresh cadence. Net **+1 test**
+> (web 275 → 276) pinning that the projection is not recomputed per tick.
+
+> **Earlier change — Analytics generation / upkeep / net columns, richer Offline tab.** The Analytics
 > **Main** tab now breaks gold, influence and reprobates into three columns: **Generation** (gross
 > passive income per second), **Upkeep** (the invocation / Aurevora draws against it), and **Net**
 > (generation minus upkeep), via a new pure `resourceFlows` sim helper that decomposes the tick's own
