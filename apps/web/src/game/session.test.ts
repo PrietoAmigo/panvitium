@@ -5,12 +5,14 @@ import {
   PLAYER_OFFLINE_EFFICIENCY,
   eq,
   gt,
+  totalReprobates,
   type GameState,
 } from '@panvitium/sim';
 import {
   startNewGame,
   resumeGame,
   offlineRecap,
+  offlineProjection,
   ACEDIA_COMPOUND_CAP_SECONDS,
   MIN_OFFLINE_RECAP_SECONDS,
 } from './session.js';
@@ -139,5 +141,30 @@ describe('offlineRecap (welcome-back, 5.4)', () => {
     const saved: GameState = { ...startNewGame(0), inKatabasis: true };
     const now = 3600 * 1000;
     expect(offlineRecap(saved, resumeGame(saved, now), now)).toBeNull();
+  });
+});
+
+describe('offlineProjection (Analytics offline preview)', () => {
+  it('projects positive gold over a one-hour window from the current state', () => {
+    const proj = offlineProjection(startNewGame(0), 3600);
+    expect(proj.windowSeconds).toBe(3600);
+    expect(gt(proj.gold, bn(0))).toBe(true); // base gold accrues offline
+  });
+
+  it('matches the resumeGame diff over the same window (it IS the offline path)', () => {
+    const s = startNewGame(0);
+    const resumed = resumeGame(s, s.lastTickAt + 3600 * 1000);
+    const proj = offlineProjection(s, 3600);
+    expect(proj.gold.toNumber()).toBeCloseTo(
+      resumed.lifetime.gold.toNumber() - s.lifetime.gold.toNumber(),
+      6,
+    );
+    expect(proj.reprobates).toBe(totalReprobates(resumed) - totalReprobates(s));
+  });
+
+  it('projects nothing while frozen mid-descent (no offline sim runs)', () => {
+    const proj = offlineProjection({ ...startNewGame(0), inKatabasis: true }, 3600);
+    expect(eq(proj.gold, bn(0))).toBe(true);
+    expect(proj.reprobates).toBe(0);
   });
 });

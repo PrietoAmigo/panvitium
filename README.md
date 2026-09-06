@@ -103,9 +103,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 891** (sim 543 · shared 63 · api 20 · web 265).
+**Current test count: 895** (sim 543 · shared 63 · api 20 · web 269).
 
-> **Latest change — sigil percentage curve rebased to log 33 (player tuning).** The `pct` curve keeps
+> **Latest change — Analytics Offline tab, Amy flipped to a boon, invocation text audit.** Four
+> tuning/UX fixes. (1) Analytics gains an **Offline** tab: a one-hour projection of gold / influence /
+> reprobates / souls generated while away, run through the real `resumeGame` catch-up (so it reflects
+> the reduced offline rate, offline sigils, dynamics, runners and toggles exactly) via a new pure
+> `offlineProjection` helper. (2) **Amy #58** now _lifts_ Indagatio and Emptio action efficiency
+> (searches finish faster) instead of cutting it: a `modifierMulti` flipped from `decrease` to
+> `increase` (player tuning; the sheet framed it as a cursed penalty). (3) **Doppelgänger** confirmed
+> correct in the sim (cost 50% of influence gain, effect +50% player efficiency); its grimoire effect
+> text dropped a bogus "−0% influence" artifact. (4) Invocation effect texts rechecked: the
+> **Familiar** line now shows its flat +33% player efficiency alongside the Indagatio runner, and
+> **Aurevora** now surfaces its self-dispelling gold drain instead of reading as a free buff. Net
+> **+4 tests** (web 265 → 269).
+
+> **Earlier change — sigil percentage curve rebased to log 33 (player tuning).** The `pct` curve keeps
 > its shape (`strength = 0.1125·log_BASE(souls) − 0.0625`, clamped at 0) but the log base moves from
 > 10 to **33**, so the same milestones spread over more orders of magnitude: ~5% at 33 souls, ~16% at
 > 1k, ~23% at 10k, ~31% at 100k, ~50% at ~39M (33^5), then a slow uncapped creep (~105% at 1e15).

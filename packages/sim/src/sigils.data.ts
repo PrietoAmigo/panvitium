@@ -462,11 +462,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 58,
     name: 'Amy',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): a CURSED sigil: −Indagatio & Emptio action efficiency.
+    // +Indagatio & Emptio action efficiency (player tuning: a boon, so both searches finish faster;
+    // the sheet framed Amy as a cursed −efficiency, overridden here to an improvement).
     effect: {
       kind: 'modifierMulti',
       fields: ['indagatioEfficiencyMul', 'emptioEfficiencyMul'],
-      direction: 'decrease',
+      direction: 'increase',
     },
   },
   // 59 Orias — ORPHANED (ADR-031): its target (the ceremony influence output) retired with the

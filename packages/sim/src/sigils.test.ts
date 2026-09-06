@@ -130,13 +130,13 @@ describe('In-lifetime modifier contributions', () => {
     expect(computeModifiers(s).goldRateMul).toBeCloseTo(base * (1 + strength), 6);
   });
 
-  it('Amy #58 (the cursed sigil) divides Indagatio AND Emptio efficiency by (1 + strength)', () => {
+  it('Amy #58 (a boon, player tuning) lifts Indagatio AND Emptio efficiency by (1 + strength)', () => {
     const s = bound(58, 1_000_000);
     const strength = sigilStrength(sigilById(58)!, bn(1_000_000));
     const m = computeModifiers(s);
-    expect(m.indagatioEfficiencyMul).toBeCloseTo(1 / (1 + strength), 6);
-    expect(m.emptioEfficiencyMul).toBeCloseTo(1 / (1 + strength), 6);
-    expect(m.indagatioEfficiencyMul).toBeLessThan(1);
+    expect(m.indagatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+    expect(m.emptioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+    expect(m.indagatioEfficiencyMul).toBeGreaterThan(1); // faster searches, not slower
   });
 
   it('Bael #1 (tierGroup decrease) damps all three negative tiers at once', () => {
@@ -150,7 +150,7 @@ describe('In-lifetime modifier contributions', () => {
   });
 
   it('two sigils on the same field compose multiplicatively', () => {
-    // Aamon #7 lifts generation; the cursed Amy #58 has no generation leg, so compose Aamon with
+    // Aamon #7 lifts generation; Amy #58 has no generation leg, so compose Aamon with
     // Bael #1 vs Balam #51 on the SAME tier group instead — both damp the negative tiers.
     let s = fresh();
     s = { ...s, souls: bn(2_000_000) };
@@ -443,7 +443,7 @@ describe('Cost-reduction sigils (S8)', () => {
       1 + sigilStrength(sigilById(55)!, bn(100_000_000)),
       6,
     );
-    // Amy #58 is no longer a cost-reduction sigil (sheet rev: a cursed efficiency penalty).
+    // Amy #58 is not a cost-reduction sigil (it lifts Indagatio & Emptio action efficiency instead).
     expect(sigilCostReductionByChannel(bound(58, 1_000_000)).emptioGold).toBeUndefined();
   });
 

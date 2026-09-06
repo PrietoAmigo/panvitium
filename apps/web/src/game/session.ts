@@ -123,3 +123,33 @@ export function offlineRecap(
     reprobates: totalReprobates(resumed) - totalReprobates(saved),
   };
 }
+
+/** A forward projection of what would accrue over `windowSeconds` offline from the CURRENT state. */
+export interface OfflineProjection {
+  /** The window projected over, in seconds. */
+  windowSeconds: number;
+  /** Net gains over the window (souls/gold/influence as BigNum; reprobates as a count). */
+  souls: BigNum;
+  gold: BigNum;
+  influence: BigNum;
+  reprobates: number;
+}
+
+/**
+ * Project offline generation from the current state, for the Analytics "Offline" preview. Runs the
+ * exact `resumeGame` catch-up over `windowSeconds` and diffs the result, so the numbers reflect every
+ * offline effect (the reduced base offline rate, offline-only sigils, reprobate dynamics, invocation
+ * runners, toggles) without re-deriving any of it. Pure — `resumeGame` returns a fresh state that is
+ * discarded here. NOTE: the Acedia sloth compound is time-dependent, so a longer real absence accrues
+ * a little faster than a straight multiple of this window; the window is a near-term estimate.
+ */
+export function offlineProjection(state: GameState, windowSeconds: number): OfflineProjection {
+  const resumed = resumeGame(state, state.lastTickAt + windowSeconds * 1000);
+  return {
+    windowSeconds,
+    souls: sub(resumed.souls, state.souls),
+    gold: sub(resumed.lifetime.gold, state.lifetime.gold),
+    influence: sub(resumed.lifetime.influence, state.lifetime.influence),
+    reprobates: totalReprobates(resumed) - totalReprobates(state),
+  };
+}

@@ -2203,6 +2203,13 @@ body {
   opacity: 0.55;
   font-variant-numeric: tabular-nums;
 }
+.analytics-offline-note {
+  margin: 0 0 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  opacity: 0.65;
+  font-style: italic;
+}
 .analytics-rate {
   font-size: 0.8rem;
   color: var(--candle);
