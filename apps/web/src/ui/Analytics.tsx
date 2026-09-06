@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   ACTIONS,
@@ -16,7 +16,6 @@ import {
   mul,
   ZERO,
   type ActionTimer,
-  type BigNum,
   type GameState,
   type InvocationDef,
 } from '@panvitium/sim';
@@ -35,6 +34,14 @@ const OFFLINE_WINDOWS: readonly { readonly seconds: number; readonly label: stri
   { seconds: 8 * 3600, label: strings.analytics.window8h },
   { seconds: 24 * 3600, label: strings.analytics.window24h },
 ];
+
+/**
+ * How often (ms of logical game time) the Offline projection is allowed to recompute. The projection
+ * runs a full `resumeGame` catch-up, so it is memoized on a QUANTIZED clock bucket (below) rather than
+ * on the live `lastTickAt` — which advances every 10 Hz tick and would defeat the memo. The estimate
+ * refreshes at most once per this interval (and immediately when the away-window changes).
+ */
+const OFFLINE_REFRESH_MS = 2000;
 
 /** An efficiency multiplier as a compact "N×" label (whole numbers bare, fractions to 2 decimals). */
 function effLabel(eff: number): string {
@@ -216,21 +223,18 @@ function MainTab(): ReactElement {
   );
 }
 
-/**
- * The Offline tab: what would accrue over the chosen away-window (1h / 8h / 24h), run through the
- * real offline catch-up (`offlineProjection`) so the NET column matches what returning actually banks
- * — the reduced offline base rate, offline-only sigils, reprobate dynamics, invocation runners and
- * toggles all included. Generation is the gross throughput over the window (`resourceFlows` under the
- * offline income multipliers × the scaled seconds), and upkeep is the gap generation − net, so each
- * row stays consistent (net = generation − upkeep) while the net stays accurate. Souls carry no
- * upkeep (deaths mint them), so they show as a single net gain. The active offline effects that
- * produced the scaling are listed below. Recomputed each render (a couple of big-delta ticks, cheap).
- */
-function OfflineTab(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const [windowSeconds, setWindowSeconds] = useState<number>(OFFLINE_WINDOWS[0]?.seconds ?? 3600);
-  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+/** The Offline tab's whole derived readout for one window: the flow rows, the active offline effects,
+ *  and the net soul gain (pre-formatted). Pure, and the single expensive call site — it wraps the
+ *  `offlineProjection` catch-up (plus the closed-form flows) so the component can memoize it wholesale
+ *  and keep every cell on one refresh cadence. Souls carry no upkeep (deaths mint them), so they read
+ *  as a single signed net gain. */
+interface OfflineView {
+  readonly rows: FlowRow[];
+  readonly buffs: readonly OfflineBuff[];
+  readonly souls: string;
+}
 
+function offlineView(state: GameState, windowSeconds: number): OfflineView {
   const factors = offlineFactors(state, windowSeconds);
   const proj = offlineProjection(state, windowSeconds);
   const grossFlows = resourceFlows(state, {
@@ -238,8 +242,7 @@ function OfflineTab(): ReactElement {
     offlineInfluenceMul: factors.influenceMul,
   });
   const scaled = factors.scaledSeconds;
-  const mods = computeModifiers(state);
-  const repRates = reprobateRates(state, mods);
+  const repRates = reprobateRates(state, computeModifiers(state));
 
   const big = (n: number): string => formatBigNum(bn(n));
   const repTot = (n: number): string => Math.floor(n).toLocaleString('en-US');
@@ -252,18 +255,55 @@ function OfflineTab(): ReactElement {
     const generation = grossPerSecond * scaled;
     return { generation, upkeep: Math.max(0, generation - net), net };
   };
-  const goldFlow = flowFrom(grossFlows.gold.generation, proj.gold.toNumber());
-  const inflFlow = flowFrom(grossFlows.influence.generation, proj.influence.toNumber());
-  const repFlow = flowFrom(repRates.generationPerSecond * factors.generationMul, proj.reprobates);
-
   const rows: FlowRow[] = [
-    { label: strings.resources.gold, ...flowCells(goldFlow, big, '') },
-    { label: strings.resources.influence, ...flowCells(inflFlow, big, '') },
-    { label: strings.analytics.reprobates, ...flowCells(repFlow, repTot, '') },
+    {
+      label: strings.resources.gold,
+      ...flowCells(flowFrom(grossFlows.gold.generation, proj.gold.toNumber()), big, ''),
+    },
+    {
+      label: strings.resources.influence,
+      ...flowCells(flowFrom(grossFlows.influence.generation, proj.influence.toNumber()), big, ''),
+    },
+    {
+      label: strings.analytics.reprobates,
+      ...flowCells(
+        flowFrom(repRates.generationPerSecond * factors.generationMul, proj.reprobates),
+        repTot,
+        '',
+      ),
+    },
   ];
+  const souls = gt(ZERO, proj.souls)
+    ? `${MINUS}${formatBigNum(mul(proj.souls, -1))}`
+    : `+${formatBigNum(proj.souls)}`;
+  return { rows, buffs: factors.buffs, souls };
+}
 
-  const signedBig = (v: BigNum): string =>
-    gt(ZERO, v) ? `${MINUS}${formatBigNum(mul(v, -1))}` : `+${formatBigNum(v)}`;
+/**
+ * The Offline tab: what would accrue over the chosen away-window (1h / 8h / 24h), run through the
+ * real offline catch-up (`offlineProjection`) so the NET column matches what returning actually banks
+ * — the reduced offline base rate, offline-only sigils, reprobate dynamics, invocation runners and
+ * toggles all included. Generation is the gross throughput over the window (`resourceFlows` under the
+ * offline income multipliers × the scaled seconds), and upkeep is the gap generation − net, so each
+ * row stays consistent (net = generation − upkeep) while the net stays accurate.
+ *
+ * The catch-up is expensive (a full `resumeGame` over up to 24h) and the store ticks at 10 Hz,
+ * replacing `state` each tick — so a naive render would re-simulate the whole window ~10×/s. The
+ * derivation (`offlineView`) is therefore memoized on the window plus a COARSE `lastTickAt` bucket
+ * (OFFLINE_REFRESH_MS): it recomputes at most once per that interval, and immediately when the window
+ * changes. Bucketing is essential — the raw `lastTickAt` advances every tick, so it would defeat the memo.
+ */
+function OfflineTab(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  const [windowSeconds, setWindowSeconds] = useState<number>(OFFLINE_WINDOWS[0]?.seconds ?? 3600);
+  // `state` is intentionally sampled through this quantized bucket, not tracked by reference.
+  const clockBucket = Math.floor((state?.lastTickAt ?? 0) / OFFLINE_REFRESH_MS);
+  const view = useMemo(
+    () => (state ? offlineView(state, windowSeconds) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- coarse key by design (see clockBucket)
+    [windowSeconds, clockBucket],
+  );
+  if (!state || !view) return <p className="pc-empty">{strings.opera.notYet}.</p>;
 
   return (
     <div className="analytics-main">
@@ -281,11 +321,11 @@ function OfflineTab(): ReactElement {
           </button>
         ))}
       </div>
-      <FlowTable rows={rows} />
+      <FlowTable rows={view.rows} />
       <div className="analytics-list">
-        <StatRow label={strings.resources.souls} value={signedBig(proj.souls)} />
+        <StatRow label={strings.resources.souls} value={view.souls} />
       </div>
-      <OfflineBuffs buffs={factors.buffs} />
+      <OfflineBuffs buffs={view.buffs} />
     </div>
   );
 }
