@@ -19,6 +19,27 @@ import {
 import { formatDuration } from './format.js';
 import { actionName } from './labels.js';
 
+/**
+ * The player-efficiency line a single copy of `id` contributes, e.g. "+33% player efficiency"
+ * (empty when it adds none). Self-contained so the runner path (the Familiar) can show its flat
+ * player-efficiency boost alongside its Indagatio channel.
+ */
+function playerEffDeltaText(state: GameState, id: string): string {
+  const n = Math.max(1, activeInvocationCount(state, id));
+  const withInv = computeModifiers({
+    ...state,
+    lifetime: { ...state.lifetime, invocations: { ...state.lifetime.invocations, [id]: n } },
+  }).playerEfficiencyMul;
+  const without = computeModifiers({
+    ...state,
+    lifetime: { ...state.lifetime, invocations: { ...state.lifetime.invocations, [id]: 0 } },
+  }).playerEfficiencyMul;
+  if (!(Number.isFinite(without) && without > 0)) return '';
+  const pct = (withInv / without - 1) * 100;
+  const s = pct >= 10 ? pct.toFixed(0) : pct >= 1 ? pct.toFixed(1) : pct.toFixed(2);
+  return `+${Number(s)}% ${strings.invocations.effectLabels.playerEff}`;
+}
+
 /** Live quantified modifier delta of a passive invocation, by diffing computeModifiers with/without it. */
 function passiveEffectText(state: GameState, id: string): string {
   const L = strings.invocations.effectLabels;
@@ -42,8 +63,6 @@ function passiveEffectText(state: GameState, id: string): string {
   };
   const up = (a: number, c: number, label: string): string =>
     `+${fmtPct((a / c - 1) * 100)}% ${label}`;
-  const down = (a: number, c: number, label: string): string =>
-    `\u2212${fmtPct((1 - a / c) * 100)}% ${label}`;
   const times = (a: number, c: number, label: string): string =>
     `\u00D7${Number((a / c).toFixed(1))} ${label}`;
 
@@ -68,7 +87,9 @@ function passiveEffectText(state: GameState, id: string): string {
       return `+${Number(d.toFixed(3))}/s ${L.baseSuicide}`;
     }
     case 'doppelgaenger':
-      return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} \u00B7 ${down(w.influenceRateMul, b.influenceRateMul, L.influence)}`;
+      // The influence cost is upkeep (shown as the cost), not a rate cut, so the effect is the boon
+      // alone: +50% player efficiency. (The old text appended a bogus "-0% influence" from the diff.)
+      return up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff);
     case 'midas': {
       const gold = times(w.goldRateMul, b.goldRateMul, L.gold);
       const wa = w.tierWeightMul.apocalyptic ?? 1;
@@ -77,7 +98,9 @@ function passiveEffectText(state: GameState, id: string): string {
       return `${gold} \u00B7 ${apoc}`;
     }
     case 'aurevora':
-      return up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff);
+      // The live (ramping) efficiency boost, plus a note on the paired gold drain that self-dispels
+      // it — otherwise Aurevora reads as a free permanent buff (the drain is its real cost).
+      return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} · ${strings.invocations.aurevoraDrain}`;
     default:
       return strings.invocations.effects[id] ?? '';
   }
@@ -132,5 +155,11 @@ export function invocationEffectText(state: GameState, id: string): string {
     Number.isFinite(dur) && dur > 0
       ? `${strings.invocations.every} ${formatDuration(dur * 1000)}`
       : '';
-  return [action, outcome, cadence].filter((s) => s !== '').join(' \u00B7 ');
+  const runner = [action, outcome, cadence].filter((s) => s !== '').join(' \u00B7 ');
+  // The Familiar is a hybrid (02 \u00A73): a flat player-efficiency boost PLUS the Indagatio runner, so
+  // its line shows both. Every other runner is its channel alone.
+  if (id === 'familiar') {
+    return [playerEffDeltaText(state, id), runner].filter((s) => s !== '').join(' \u00B7 ');
+  }
+  return runner;
 }

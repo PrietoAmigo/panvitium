@@ -16,6 +16,7 @@ import {
   mul,
   ZERO,
   type ActionTimer,
+  type BigNum,
   type GameState,
   type InvocationDef,
 } from '@panvitium/sim';
@@ -24,8 +25,12 @@ import { formatBigNum, formatDuration } from '../game/format.js';
 import { actionProgress } from '../game/progress.js';
 import { actionName } from '../game/labels.js';
 import { invocationEffectText } from '../game/invocationEffect.js';
+import { offlineProjection } from '../game/session.js';
 
-type AnalyticsTab = 'main' | 'actions';
+type AnalyticsTab = 'main' | 'actions' | 'offline';
+
+/** The window the Offline tab projects over (one hour). */
+const OFFLINE_PREVIEW_SECONDS = 3600;
 
 /** An efficiency multiplier as a compact "N×" label (whole numbers bare, fractions to 2 decimals). */
 function effLabel(eff: number): string {
@@ -137,10 +142,39 @@ function MainTab(): ReactElement {
 }
 
 /**
+ * The Offline tab: a projection of what would accrue over one hour away, run through the real
+ * offline catch-up (`offlineProjection`) so it matches what returning actually banks — the reduced
+ * offline base rate, offline-only sigils, reprobate dynamics, invocation runners and toggles all
+ * included. Gold / influence / souls are BigNum gains; reprobates is a net count (can be negative
+ * when culls outrun generation). Recomputed each render (a single big-delta tick, cheap enough).
+ */
+function OfflineTab(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+  const proj = offlineProjection(state, OFFLINE_PREVIEW_SECONDS);
+  const r = strings.resources;
+  const signedBig = (v: BigNum): string =>
+    gt(ZERO, v) ? `−${formatBigNum(mul(v, -1))}` : `+${formatBigNum(v)}`;
+  const repGain = `${proj.reprobates < 0 ? '−' : '+'}${Math.abs(proj.reprobates).toLocaleString('en-US')}`;
+  return (
+    <div className="analytics-main">
+      <p className="analytics-offline-note">{strings.analytics.offlineNote}</p>
+      <div className="analytics-list">
+        <StatRow label={r.gold} value={signedBig(proj.gold)} />
+        <StatRow label={r.influence} value={signedBig(proj.influence)} />
+        <StatRow label={strings.analytics.reprobates} value={repGain} />
+        <StatRow label={r.souls} value={signedBig(proj.souls)} />
+      </div>
+    </div>
+  );
+}
+
+/**
  * The PC's Analytics program (5.4): the live numeric readouts pulled out of the always-on HUD into
- * an on-demand panel. Two tabs — Main (resources + the reprobate population + dynamics rates) and
+ * an on-demand panel. Three tabs — Main (resources + the reprobate population + dynamics rates),
  * Actions (the unified work board: the player's efficiency + in-flight rite, then each acolyte, then
- * each bound invocation, every one with its efficiency, current action, and progress bar).
+ * each bound invocation, every one with its efficiency, current action, and progress bar), and
+ * Offline (the one-hour away projection).
  */
 export function AnalyticsGroup(): ReactElement {
   const [tab, setTab] = useState<AnalyticsTab>('main');
@@ -164,9 +198,11 @@ export function AnalyticsGroup(): ReactElement {
       <div className="kat-pager" role="tablist">
         {tabBtn('main', strings.analytics.main)}
         {tabBtn('actions', strings.analytics.actions)}
+        {tabBtn('offline', strings.analytics.offline)}
       </div>
       {tab === 'main' && <MainTab />}
       {tab === 'actions' && <ActionsTab />}
+      {tab === 'offline' && <OfflineTab />}
     </>
   );
 }

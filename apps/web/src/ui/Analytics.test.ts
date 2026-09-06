@@ -74,7 +74,7 @@ describe('AnalyticsGroup', () => {
     expect(container!.textContent).not.toContain('Player action efficiency');
     expect(container!.textContent).not.toContain('vigil kept');
     const tabLabels = Array.from(container!.querySelectorAll('button')).map((b) => b.textContent);
-    expect(tabLabels).toEqual(['Main', 'Actions']);
+    expect(tabLabels).toEqual(['Main', 'Actions', 'Offline']);
   });
 
   it('shows the player efficiency on the Actions tab, not the Main tab', () => {
@@ -82,6 +82,19 @@ describe('AnalyticsGroup', () => {
     render();
     clickTab('Actions');
     expect(container!.textContent).toContain('Player action efficiency');
+  });
+
+  it('shows an Offline tab that summarises projected offline generation (souls included)', () => {
+    seed([]);
+    render();
+    clickTab('Offline');
+    const text = container!.textContent ?? '';
+    // The projection lists every offline-generated resource, including Souls (which the Main tab omits).
+    expect(text).toContain('Gold');
+    expect(text).toContain('Influence');
+    expect(text).toContain('Reprobates');
+    expect(text).toContain('Souls');
+    expect(text.toLowerCase()).toContain('hour'); // the one-hour projection note
   });
 });
 

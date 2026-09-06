@@ -49,16 +49,17 @@ describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
   });
 
   it('reads a reduction with a minus sign, matching the seal\u2019s \u2193 description', () => {
-    // Cost reductions (Paimon #9) and `decrease` modifiers/tiers (Amy #58 modifierMulti,
-    // Stolas #36 categoryTier, Bael #1 tierGroup) soften their target \u2014 the magnitude must carry
-    // the direction so it doesn't read as a buff next to a "\u2193" boon.
-    for (const id of [9, 58, 36, 1]) {
+    // Cost reductions (Paimon #9) and `decrease` modifiers/tiers (Stolas #36 categoryTier, Bael #1
+    // tierGroup) soften their target \u2014 the magnitude must carry the direction so it doesn't read
+    // as a buff next to a "\u2193" boon.
+    for (const id of [9, 36, 1]) {
       const out = effectDisplay(sigilById(id), bn(1_000_000));
       expect(out.startsWith('\u2212')).toBe(true); // U+2212 MINUS SIGN
       expect(out).toContain('%');
     }
-    // An `increase` tier (Amdusias #67) still reads with a plus.
+    // `increase` effects read with a plus: Amdusias #67 (tier) and Amy #58 (now a boon, modifierMulti).
     expect(effectDisplay(sigilById(67), bn(1_000_000)).startsWith('+')).toBe(true);
+    expect(effectDisplay(sigilById(58), bn(1_000_000)).startsWith('+')).toBe(true);
   });
 
   it('labels flat death rates as per-capita (Sabnock #43)', () => {

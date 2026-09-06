@@ -306,6 +306,8 @@ export const strings = {
     // Analytics → Invocations tab.
     noneBound: 'No invocations are bound.',
     every: 'every',
+    /** Aurevora's paired cost, appended to its live efficiency boost (numbers from constants.ts). */
+    aurevoraDrain: 'drains 100 gold/s, rising ×1.05/s, self-dispels at 0 gold',
     /** Outcome unit nouns for a runner's expected per-cycle yield (mean ± sd). */
     outcomeUnits: {
       soul: 'soul',
@@ -349,14 +351,15 @@ export const strings = {
       midas: '×3 gold gain but ×100 the Apocalyptic chance.',
       plutus: '+5% Faeneratio output per copy, scaled by your efficiency.',
       succubus: 'A background Imperium at 99% of your efficiency; upkeep takes 99% of gold gain.',
-      doppelgaenger: '+50% player efficiency, at −50% influence gain.',
+      doppelgaenger: '+50% player efficiency (upkeep: 50% of your influence gain).',
       astiwihad:
         'Each second, a 0.01% chance every reprobate suicides at once; each death mints 1 soul.',
       aurevora:
         'Player efficiency ×1.05 per second active; drains gold at 100/s, growing ×1.05 per second, and self-dispels at 0 gold.',
       erinyes:
         'Kills every reprobate (each mints 1 soul); at the next Katabasis, a permanent ×2 player efficiency, but 0% gold and maleficia carried.',
-      morpheus: 'Holds the world still; at Katabasis, carries 100% of gold and 100% of maleficia.',
+      morpheus:
+        'Holds the world still; at Katabasis, carries 100% of gold and maleficia and keeps the Emptio list.',
       specunitas: '×2 influence gain.',
     } as Record<string, string>,
   },
@@ -392,6 +395,10 @@ export const strings = {
     noAcolytes: 'No acolytes recruited yet.',
     ofMax: 'of',
     playerEfficiency: 'Player action efficiency',
+    offline: 'Offline',
+    // Offline tab: a one-hour projection of what accrues while away (the world runs at a reduced
+    // offline rate; the Acedia sloth compound makes very long absences richer still).
+    offlineNote: 'Projected gains for one hour away. The world runs slower while you are gone.',
   },
   emails: {
     title: 'Emails',
