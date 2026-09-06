@@ -103,9 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 895** (sim 543 · shared 63 · api 20 · web 269).
+**Current test count: 906** (sim 548 · shared 63 · api 20 · web 275).
 
-> **Latest change — Analytics Offline tab, Amy flipped to a boon, invocation text audit.** Four
+> **Latest change — Analytics generation / upkeep / net columns, richer Offline tab.** The Analytics
+> **Main** tab now breaks gold, influence and reprobates into three columns: **Generation** (gross
+> passive income per second), **Upkeep** (the invocation / Aurevora draws against it), and **Net**
+> (generation minus upkeep), via a new pure `resourceFlows` sim helper that decomposes the tick's own
+> income/upkeep math (so the readout can never drift from what the tick applies). The **Offline** tab
+> gains the same three-column breakdown as window totals, plus **1 hour / 8 hours / 24 hours** window
+> checks (a selector; the Net column comes from the real `resumeGame` catch-up so it stays accurate,
+> Generation is the gross throughput over the window and Upkeep the gap). It also lists the **active
+> offline effects** in play (the reduced offline base rate, the Procrastination / Dolce / Lemure
+> offline-time multiplier, the Acedia sloth compound, and the Sallos / Eligos / Zepar offline-only
+> sigils) via a new `offlineFactors` helper. Net **+11 tests** (sim 543 → 548, web 269 → 275).
+
+> **Earlier change — Analytics Offline tab, Amy flipped to a boon, invocation text audit.** Four
 > tuning/UX fixes. (1) Analytics gains an **Offline** tab: a one-hour projection of gold / influence /
 > reprobates / souls generated while away, run through the real `resumeGame` catch-up (so it reflects
 > the reduced offline rate, offline sigils, dynamics, runners and toggles exactly) via a new pure

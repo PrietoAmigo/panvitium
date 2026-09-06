@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { bn, eq, floor } from './bignum.js';
 import { createInitialState, type GameState } from './state.js';
-import { tick, perSecondRates } from './tick.js';
+import { tick, perSecondRates, resourceFlows } from './tick.js';
 
 const goldOf = (s: GameState): number => floor(s.lifetime.gold).toNumber();
 const influenceOf = (s: GameState): number => floor(s.lifetime.influence).toNumber();
@@ -108,5 +108,50 @@ describe('perSecondRates — read-only income readout', () => {
     const r = perSecondRates(frozen);
     expect(r.gold).toBe(0);
     expect(eq(r.influence, bn(0))).toBe(true);
+  });
+});
+
+describe('resourceFlows — generation / upkeep / net breakdown', () => {
+  it('splits base income into generation, zero upkeep, and net on a fresh state', () => {
+    const f = resourceFlows(createInitialState('seed', 0));
+    expect(f.gold.generation).toBe(2); // BASE_GOLD_PER_SECOND
+    expect(f.gold.upkeep).toBe(0); // nothing bound draws upkeep
+    expect(f.gold.net).toBe(2);
+    expect(f.influence.generation).toBeCloseTo(0.5, 9); // 0.005 × maxInfluence(100)
+    expect(f.influence.upkeep).toBe(0);
+    expect(f.influence.net).toBeCloseTo(0.5, 9);
+  });
+
+  it('keeps net = generation − upkeep for both resources', () => {
+    const f = resourceFlows(createInitialState('seed', 0));
+    expect(f.gold.net).toBeCloseTo(f.gold.generation - f.gold.upkeep, 9);
+    expect(f.influence.net).toBeCloseTo(f.influence.generation - f.influence.upkeep, 9);
+  });
+
+  it('agrees with perSecondRates on the net income of a fresh state', () => {
+    const s = createInitialState('seed', 0);
+    const f = resourceFlows(s);
+    const r = perSecondRates(s);
+    expect(f.gold.net).toBeCloseTo(r.gold, 9);
+    expect(f.influence.net).toBeCloseTo(r.influence.toNumber(), 9);
+  });
+
+  it('scales generation by the offline income multipliers', () => {
+    const s = createInitialState('seed', 0);
+    const base = resourceFlows(s);
+    const offline = resourceFlows(s, { offlineGoldMul: 3, offlineInfluenceMul: 2 });
+    expect(offline.gold.generation).toBeCloseTo(base.gold.generation * 3, 9);
+    expect(offline.influence.generation).toBeCloseTo(base.influence.generation * 2, 9);
+  });
+
+  it('reads all-zero while frozen under Morpheus', () => {
+    const base = createInitialState('seed', 0);
+    const frozen: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, morpheus: 1 } },
+    };
+    const f = resourceFlows(frozen);
+    expect(f.gold).toEqual({ generation: 0, upkeep: 0, net: 0 });
+    expect(f.influence).toEqual({ generation: 0, upkeep: 0, net: 0 });
   });
 });

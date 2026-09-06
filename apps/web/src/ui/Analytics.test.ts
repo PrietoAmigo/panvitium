@@ -84,6 +84,15 @@ describe('AnalyticsGroup', () => {
     expect(container!.textContent).toContain('Player action efficiency');
   });
 
+  it('breaks resources into generation / upkeep / net columns on the Main tab', () => {
+    seed([]);
+    render();
+    const text = container!.textContent ?? '';
+    expect(text).toContain('Generation');
+    expect(text).toContain('Upkeep');
+    expect(text).toContain('Net');
+  });
+
   it('shows an Offline tab that summarises projected offline generation (souls included)', () => {
     seed([]);
     render();
@@ -94,7 +103,38 @@ describe('AnalyticsGroup', () => {
     expect(text).toContain('Influence');
     expect(text).toContain('Reprobates');
     expect(text).toContain('Souls');
-    expect(text.toLowerCase()).toContain('hour'); // the one-hour projection note
+    // The same generation / upkeep / net breakdown as the Main tab, over the chosen window.
+    expect(text).toContain('Generation');
+    expect(text).toContain('Upkeep');
+    expect(text).toContain('Net');
+    expect(text.toLowerCase()).toContain('hour'); // the window checks (1 hour / 8 hours / 24 hours)
+  });
+
+  it('offers 1h / 8h / 24h offline window checks and lists the active offline effects', () => {
+    seed([]);
+    render();
+    clickTab('Offline');
+    const labels = Array.from(container!.querySelectorAll('button')).map((b) => b.textContent);
+    expect(labels).toContain('1 hour');
+    expect(labels).toContain('8 hours');
+    expect(labels).toContain('24 hours');
+    // The reduced offline base rate is always in effect, so the active-effects list is never empty.
+    expect(container!.textContent).toContain('Active offline effects');
+    expect(container!.textContent).toContain('Offline base rate');
+  });
+
+  it('switches the projected offline window when a different check is chosen', () => {
+    seed([]);
+    render();
+    clickTab('Offline');
+    const btn = (label: string): HTMLButtonElement =>
+      Array.from(container!.querySelectorAll('button')).find(
+        (b) => b.textContent === label,
+      ) as HTMLButtonElement;
+    expect(btn('1 hour').getAttribute('aria-pressed')).toBe('true'); // default window
+    act(() => btn('8 hours').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(btn('8 hours').getAttribute('aria-pressed')).toBe('true');
+    expect(btn('1 hour').getAttribute('aria-pressed')).toBe('false');
   });
 });
 

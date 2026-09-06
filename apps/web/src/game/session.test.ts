@@ -13,6 +13,7 @@ import {
   resumeGame,
   offlineRecap,
   offlineProjection,
+  offlineFactors,
   ACEDIA_COMPOUND_CAP_SECONDS,
   MIN_OFFLINE_RECAP_SECONDS,
 } from './session.js';
@@ -166,5 +167,36 @@ describe('offlineProjection (Analytics offline preview)', () => {
     const proj = offlineProjection({ ...startNewGame(0), inKatabasis: true }, 3600);
     expect(eq(proj.gold, bn(0))).toBe(true);
     expect(proj.reprobates).toBe(0);
+  });
+});
+
+describe('offlineFactors (Analytics offline scaling)', () => {
+  it('scales a fresh window by the base offline efficiency alone', () => {
+    const f = offlineFactors(startNewGame(0), 3600);
+    expect(f.scaledSeconds).toBeCloseTo(3600 * PLAYER_OFFLINE_EFFICIENCY, 6);
+    expect(f.goldMul).toBe(1);
+    expect(f.influenceMul).toBe(1);
+    expect(f.generationMul).toBe(1);
+  });
+
+  it('lists the base offline rate as the only active effect when nothing else is in play', () => {
+    const f = offlineFactors(startNewGame(0), 3600);
+    const base = f.buffs.find((b) => b.kind === 'baseRate');
+    expect(base?.mul).toBe(PLAYER_OFFLINE_EFFICIENCY);
+    expect(f.buffs).toHaveLength(1);
+  });
+
+  it('grows the scaled span super-linearly under the Acedia sloth compound', () => {
+    // Acedia level 2 (Devotion 180^2) gives a positive time-compound exponent, so a longer window
+    // accrues more than a straight multiple of a shorter one (the exponential term).
+    const base = startNewGame(0);
+    const slothful: GameState = {
+      ...base,
+      devotion: { ...base.devotion, acedia: bn(180 ** 2) },
+    };
+    const short = offlineFactors(slothful, 3600);
+    const long = offlineFactors(slothful, 8 * 3600);
+    expect(long.scaledSeconds / short.scaledSeconds).toBeGreaterThan(8);
+    expect(long.buffs.some((b) => b.kind === 'acediaCompound')).toBe(true);
   });
 });

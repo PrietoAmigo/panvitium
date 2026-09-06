@@ -164,6 +164,73 @@ export function perSecondRates(state: GameState): PerSecondRates {
   return { gold, influence };
 }
 
+/** One resource's per-second flow: gross generation, the upkeep drawn against it, and the net. */
+export interface ResourceFlow {
+  /** Gross passive income per second, before upkeep. */
+  readonly generation: number;
+  /** Per-second cost drawn against this resource (invocation %-of-gain + flat upkeep, Aurevora drain). */
+  readonly upkeep: number;
+  /** generation − upkeep (can be negative when upkeep outruns income). */
+  readonly net: number;
+}
+
+/** Per-second generation/upkeep/net for the two upkeep-bearing resources (gold, influence). */
+export interface ResourceFlows {
+  readonly gold: ResourceFlow;
+  readonly influence: ResourceFlow;
+}
+
+/** Offline-only income multipliers for the flow breakdown (Sallos gold, Eligos influence); 1× online. */
+export interface FlowDeps {
+  readonly offlineGoldMul?: number;
+  readonly offlineInfluenceMul?: number;
+}
+
+/**
+ * The per-second gold and influence flows, split into gross generation, upkeep, and net — the same
+ * income/upkeep math as `perSecondRates` and the tick's steps 1/1a, decomposed so the Analytics
+ * panel can show each column instead of only the net. `net` here is uncapped (generation − upkeep),
+ * so it can read negative and, unlike `perSecondRates.influence`, is not floored at 0. Pass the
+ * offline income multipliers in `deps` for the offline projection (they scale generation and, through
+ * it, the %-of-gain upkeep — exactly as the tick applies them). Zero while frozen (mid-descent or
+ * under Morpheus).
+ */
+export function resourceFlows(state: GameState, deps: FlowDeps = {}): ResourceFlows {
+  const zero: ResourceFlow = { generation: 0, upkeep: 0, net: 0 };
+  if (state.inKatabasis === true || (state.lifetime.invocations.morpheus ?? 0) > 0) {
+    return { gold: zero, influence: zero };
+  }
+  const mods = computeModifiers(state);
+  const offlineGoldMul = deps.offlineGoldMul ?? 1;
+  const offlineInfluenceMul = deps.offlineInfluenceMul ?? 1;
+  const grossGold =
+    ((BASE_GOLD_PER_SECOND + faeneratioGoldPerSecond(state, mods) + mods.flatGoldPerSecond) *
+      mods.goldRateMul -
+      anatocismusDepositPerSecond(state, mods)) *
+    offlineGoldMul;
+  const effMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
+  const grossInfluence =
+    (effMax.toNumber() * BASE_INFLUENCE_RATE * mods.influenceRateMul +
+      mods.flatInfluencePerSecond * mods.influenceRateMul) *
+    offlineInfluenceMul;
+  const up = invocationUpkeep(state, effMax.toNumber());
+  const aurevoraDrain =
+    (state.lifetime.invocations.aurevora ?? 0) > 0
+      ? aurevoraDrainPerSecond(state.lifetime.invocationDurations.aurevora ?? 0)
+      : 0;
+  const finiteAurevoraDrain = Number.isFinite(aurevoraDrain) ? aurevoraDrain : 0;
+  const goldUpkeep = grossGold * up.goldGainFraction + up.flatGoldPerSecond + finiteAurevoraDrain;
+  const inflUpkeep = grossInfluence * up.influenceGainFraction + up.flatInfluencePerSecond;
+  return {
+    gold: { generation: grossGold, upkeep: goldUpkeep, net: grossGold - goldUpkeep },
+    influence: {
+      generation: grossInfluence,
+      upkeep: inflUpkeep,
+      net: grossInfluence - inflUpkeep,
+    },
+  };
+}
+
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
 export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}): TickResult {
   if (deltaSeconds <= 0)
