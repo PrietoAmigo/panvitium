@@ -19,6 +19,7 @@ import {
   computeModifiers,
   createInitialState,
   currentInvokingPower,
+  grantStagnationForOffline,
   invocationById,
   invocationRunnerEfficiency,
   invocationSoulCost,
@@ -45,6 +46,9 @@ import {
   sigilVisible,
   SIGIL_IDS,
   SINS,
+  STAGNATION_BASE_MAX,
+  STAGNATION_PER_SECOND,
+  stagnationMax,
   startAction,
   tick,
   totalReprobates,
@@ -94,10 +98,13 @@ describe('Binding curves (02 §5)', () => {
 });
 
 describe('Sigil catalog', () => {
-  it('lists the wired subset in ascending id order', () => {
+  it('is the full Goetia: 72 seals, each named, in ascending id order', () => {
     expect(SIGIL_IDS).toEqual([...SIGIL_IDS].sort((a, b) => a - b));
-    expect(SIGIL_IDS).toContain(32); // Semet
-    expect(SIGIL_IDS).toContain(6); // Valefor
+    expect(SIGIL_IDS).toEqual(Array.from({ length: 72 }, (_, i) => i + 1)); // no gaps: every id 1..72
+    // Every seal now carries a demon name (the full-Goetia naming pass — ADR-033).
+    for (const id of SIGIL_IDS) expect(sigilById(id)!.name).toMatch(/\S/);
+    expect(sigilById(32)!.name).toBe('Semet'); // Semet
+    expect(sigilById(6)!.name).toBe('Valefor'); // Valefor
   });
 
   it('Semet (#32) is named, gated on all Sins ≥ 2, and scales the other sigils', () => {
@@ -555,37 +562,106 @@ describe('Indagatio find-quality sigils (S12)', () => {
   });
 });
 
-describe('Orphaned offline sigils (S13 — ADR-032)', () => {
-  it('Eligos #15, Zepar #16, Sallos #19, Marax #21, Foras #31 have no defs; binding them is harmless', () => {
-    // Their targets — the offline gain / accrual channels — retired with offline progression (the
-    // game now freezes while away). Per ADR-029 an empty catalog state is expressed by deleting the
-    // def; re-homing each onto the stagnation resource awaits a later pass.
-    for (const id of [15, 16, 19, 21, 31]) {
-      expect(sigilById(id)).toBeUndefined();
-      expect(computeModifiers(bound(id, 100_000_000))).toEqual(computeModifiers(fresh()));
-    }
+describe('ADR-033: the ten reactivated seals (names + effects)', () => {
+  // The offline-gain, lesser-ceremony and Depraedatio channels these seals once fed all retired.
+  // ADR-033 re-homes them onto the Stagnation + Desidia system and the live economy, so every one
+  // of the ten now carries a Goetia name and a real effect (no orphaned seals remain).
+  it('names: every reactivated seal carries its Goetia name', () => {
+    expect(sigilById(11)!.name).toBe('Gusion');
+    expect(sigilById(12)!.name).toBe('Sitri');
+    expect(sigilById(15)!.name).toBe('Eligos');
+    expect(sigilById(16)!.name).toBe('Zepar');
+    expect(sigilById(19)!.name).toBe('Sallos');
+    expect(sigilById(21)!.name).toBe('Marax');
+    expect(sigilById(24)!.name).toBe('Naberius');
+    expect(sigilById(31)!.name).toBe('Foras');
+    expect(sigilById(59)!.name).toBe('Orias');
+    expect(sigilById(61)!.name).toBe('Zagan');
+  });
+
+  it("Gusion #11 softens the player's own influence generation (a cursed decrease)", () => {
+    const strength = sigilStrength(sigilById(11)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(11, 100_000_000));
+    expect(scalar.influenceRateMul).toBeCloseTo(1 / (1 + strength), 6);
+  });
+
+  it('Sitri #12 lifts the offline Stagnation-gain rate, banking more over the same span', () => {
+    const strength = sigilStrength(sigilById(12)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(12, 100_000_000));
+    expect(scalar.stagnationGainMul).toBeCloseTo(1 + strength, 6);
+    // The lift flows through grantStagnationForOffline: more banked for the same seconds away (both
+    // spans stay under the fresh cap of 120, so the Math.min never clamps).
+    const hour = 3600;
+    const base = grantStagnationForOffline(fresh(), hour).stagnation;
+    const sitri = grantStagnationForOffline(bound(12, 100_000_000), hour).stagnation;
+    expect(base).toBeCloseTo(hour * STAGNATION_PER_SECOND, 6);
+    expect(sitri).toBeCloseTo(hour * STAGNATION_PER_SECOND * (1 + strength), 6);
+  });
+
+  it('Eligos #15 cuts Emptio gold costs; Zepar #16 cuts invocation soul costs at 1/3 strength', () => {
+    expect(sigilCostReductionByChannel(bound(15, 100_000_000)).emptioGold).toBeCloseTo(
+      1 + sigilStrength(sigilById(15)!, bn(100_000_000)),
+      6,
+    );
+    expect(sigilCostReductionByChannel(bound(16, 100_000_000)).invocationSoul).toBeCloseTo(
+      1 + sigilStrength(sigilById(16)!, bn(100_000_000)),
+      6,
+    );
+    // Zepar #16, Marax #21 and Zagan #61 each carry a third of the standard pct strength (ADR-033).
+    expect(sigilById(16)!.coefficient).toBeCloseTo(1 / 3, 12);
+    expect(sigilById(21)!.coefficient).toBeCloseTo(1 / 3, 12);
+    expect(sigilById(61)!.coefficient).toBeCloseTo(1 / 3, 12);
+  });
+
+  it('Sallos #19 softens the Desidia Stagnation-drain rate (composes with Lemure)', () => {
+    const strength = sigilStrength(sigilById(19)!, bn(100_000_000));
+    // No Lemure bound, so the drain multiplier is exactly the sigil softening.
+    expect(computeModifiers(bound(19, 100_000_000)).desidiaDrainMul).toBeCloseTo(
+      1 / (1 + strength),
+      6,
+    );
+  });
+
+  it('Marax #21 lifts Decimatio efficiency at 1/3 strength', () => {
+    const strength = sigilStrength(sigilById(21)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(21, 100_000_000));
+    expect(scalar.decimatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+  });
+
+  it('Naberius #24 shortens Indagatio (a time-mode lift on indagatioEfficiencyMul)', () => {
+    const strength = sigilStrength(sigilById(24)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(24, 100_000_000));
+    expect(scalar.indagatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+  });
+
+  it('Foras #31 accelerates Desidia time (composes with Acedia Procrastination)', () => {
+    const strength = sigilStrength(sigilById(31)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(31, 100_000_000));
+    expect(scalar.desidiaSpeedMul).toBeCloseTo(1 + strength, 6);
+    // On a fresh state (Acedia intensity 0) the bundle's desidiaSpeedMul is exactly the sigil lift.
+    expect(computeModifiers(bound(31, 100_000_000)).desidiaSpeedMul).toBeCloseTo(1 + strength, 6);
+  });
+
+  it('Orias #59 lifts the maximum Stagnation cap on top of the Acedia doubling', () => {
+    const strength = sigilStrength(sigilById(59)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(59, 100_000_000));
+    expect(scalar.stagnationMaxMul).toBeCloseTo(1 + strength, 6);
+    // Base cap is 120 at Acedia level 0; Orias scales it by (1 + strength).
+    expect(stagnationMax(fresh())).toBeCloseTo(STAGNATION_BASE_MAX, 6);
+    expect(stagnationMax(bound(59, 100_000_000))).toBeCloseTo(
+      STAGNATION_BASE_MAX * (1 + strength),
+      6,
+    );
+  });
+
+  it('Zagan #61 lifts Suasio efficiency at 1/3 strength', () => {
+    const strength = sigilStrength(sigilById(61)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(61, 100_000_000));
+    expect(scalar.suasioEfficiencyMul).toBeCloseTo(1 + strength, 6);
   });
 });
 
-describe('Orphaned ceremony sigils (S14 — ADR-031)', () => {
-  it('Gusion #11, Naberius #24, Orias #59 and Zagan #61 have no defs; binding them is harmless', () => {
-    // Their targets — the ceremony effect/output channels — retired with the lesser ceremonies.
-    // Per ADR-029 an empty catalog state is expressed by deleting the def; re-pinning each awaits
-    // a per-sigil sheet decision.
-    for (const id of [11, 24, 59, 61]) {
-      expect(sigilById(id)).toBeUndefined();
-      expect(computeModifiers(bound(id, 100_000_000))).toEqual(computeModifiers(fresh()));
-    }
-  });
-
-  it('Sitri #12 is orphaned (Depraedatio rework): no def, binding it is harmless', () => {
-    // Its target — the Mercatus breeding channel — retired with the trades; per ADR-029 an empty
-    // catalog state is expressed by deleting the def. Re-pinning awaits a per-sigil sheet decision.
-    expect(sigilById(12)).toBeUndefined();
-    const s = bound(12, 100_000_000);
-    expect(computeModifiers(s)).toEqual(computeModifiers(fresh()));
-  });
-
+describe('Faeneratio output sigil (S14)', () => {
   it('Vapula #60 scales the Faeneratio gold output, never generation', () => {
     const withBook = (s: GameState): GameState => ({
       ...s,
@@ -615,9 +691,15 @@ describe('Per-invocation effectiveness sigils (S15)', () => {
     lifetime: { ...s.lifetime, invocations: { ...s.lifetime.invocations, [id]: n } },
   });
 
-  it('Buer #10 (familiar) scales a named invocation by id; Sitri left the channel', () => {
+  it('Buer #10 (familiar) scales a named invocation by id; Sitri is not on this channel', () => {
     expect(sigilById(10)!.effect).toEqual({ kind: 'invocationEffect', invocation: 'familiar' });
-    expect(sigilById(12)).toBeUndefined(); // Sitri orphaned by the Depraedatio rework
+    // Sitri #12 is wired again (ADR-033), but to stagnationGainMul, not the invocation-effect channel.
+    expect(sigilById(12)!.effect).toEqual({
+      kind: 'modifier',
+      field: 'stagnationGainMul',
+      direction: 'increase',
+    });
+    expect(sigilInvocationEffectContributions(bound(12, 100_000_000))).toEqual({});
     const c = sigilInvocationEffectContributions(bound(10, 100_000_000));
     expect(c.familiar).toBeCloseTo(1 + sigilStrength(sigilById(10)!, bn(100_000_000)), 6);
     expect(Object.keys(c)).toEqual(['familiar']);

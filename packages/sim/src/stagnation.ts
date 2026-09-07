@@ -13,6 +13,7 @@
  * reduced by Lemure via `mods.desidiaDrainMul`). The drain and acceleration live in `tick.ts`; this
  * module owns the constants, the derived cap, the offline grant, and the toggle transform.
  */
+import { computeModifiers } from './modifiers.js';
 import { sinLevel } from './progression.js';
 import { type GameState } from './state.js';
 
@@ -28,15 +29,17 @@ export const DESIDIA_BASE_COST_PER_SECOND = 1;
 /** Base time-speed multiplier while Desidia is active (design: 1.333×; modified by effects). */
 export const DESIDIA_BASE_SPEED = 1.333;
 
-/** Fractional stagnation-drain reduction per bound Lemure (design: 12.5% per copy, multiplicative). */
-export const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.125;
-
 /**
- * The current stagnation cap: base 120, DOUBLED per Acedia tier (each Sin level ×2). Derived from
- * the persistent Acedia Devotion total, so it can never drift (recomputed on demand, never stored).
+ * The current stagnation cap: base 120, DOUBLED per Acedia tier (each Sin level ×2), then scaled by
+ * `stagnationMaxMul` (Orias #59). Derived from the persistent Acedia Devotion total plus the live
+ * modifier bundle, so it can never drift (recomputed on demand, never stored).
  */
 export function stagnationMax(state: GameState): number {
-  return STAGNATION_BASE_MAX * 2 ** sinLevel(state.devotion.acedia);
+  return (
+    STAGNATION_BASE_MAX *
+    2 ** sinLevel(state.devotion.acedia) *
+    computeModifiers(state).stagnationMaxMul
+  );
 }
 
 /**
@@ -46,10 +49,8 @@ export function stagnationMax(state: GameState): number {
  */
 export function grantStagnationForOffline(state: GameState, offlineSeconds: number): GameState {
   if (offlineSeconds <= 0) return state;
-  const next = Math.min(
-    stagnationMax(state),
-    state.stagnation + offlineSeconds * STAGNATION_PER_SECOND,
-  );
+  const gainRate = STAGNATION_PER_SECOND * computeModifiers(state).stagnationGainMul; // Sitri #12 lifts it
+  const next = Math.min(stagnationMax(state), state.stagnation + offlineSeconds * gainRate);
   return next === state.stagnation ? state : { ...state, stagnation: next };
 }
 
