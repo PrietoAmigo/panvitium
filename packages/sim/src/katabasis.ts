@@ -139,6 +139,7 @@ export function enterKatabasis(state: GameState): GameState {
   return {
     ...liquidated,
     inKatabasis: true, // freeze the lifetime in `tick` until commit
+    desidiaActive: false, // a torn-down lifetime cannot be accelerated (ADR-033); stagnation persists
     lifetime: {
       ...liquidated.lifetime,
       activeToggles: [], // toggles stop

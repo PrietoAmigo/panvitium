@@ -18,6 +18,7 @@ import {
   computeModifiers,
   activateToggle,
   deactivateToggle,
+  setDesidia,
   invoke,
   dispel,
   markDoppelgaengerSeen as markDoppelgaengerSeenSim,
@@ -153,6 +154,8 @@ interface GameStore {
   activateCeremony: (vcId: string) => void;
   /** Manually deactivate a Vitium Compositum ceremony toggle. */
   deactivateCeremony: (vcId: string) => void;
+  /** Toggle the Desidia time-acceleration on/off (ADR-033). */
+  toggleDesidia: () => void;
   /**
    * Summon an invocation (02 §7, 03 §2.4). Pays the soul cost and increments the active count.
    * Notice on failure (gates unmet, at cap, not enough souls).
@@ -423,6 +426,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const result = deactivateToggle(current, vcId);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
+  },
+
+  toggleDesidia: () => {
+    const current = get().state;
+    if (!current) return;
+    set({ state: setDesidia(current, !(current.desidiaActive ?? false)), notice: null });
   },
 
   summon: (invocationId) => {

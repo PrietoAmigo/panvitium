@@ -8,11 +8,11 @@
  * left off (`inKatabasis` and everything else untouched — a save written mid-descent reopens the
  * Katabasis menu).
  *
- * The time the player spent away is still knowable to callers as `now - saved.lastTickAt` (a plain
- * subtraction, taken before the clock is reconciled); the forthcoming "stagnation" resource will be
- * granted from it. Nothing consumes it yet.
+ * The one thing the resume path DOES compute from the time away is Stagnation (ADR-033): the
+ * player banks `STAGNATION_PER_SECOND × secondsAway` (clamped to the cap) on return. That is the
+ * whole of "offline progression" now — a single resource grant, not a simulation.
  */
-import { createInitialState, type GameState } from '@panvitium/sim';
+import { createInitialState, grantStagnationForOffline, type GameState } from '@panvitium/sim';
 
 /** A random seed for a brand-new game; keys the deterministic RNG (ADR-011). */
 export function randomSeed(): string {
@@ -25,11 +25,13 @@ export function startNewGame(now: number = Date.now()): GameState {
 }
 
 /**
- * Resume a loaded game. The world froze while away, so no simulation runs: the state is returned
- * unchanged apart from advancing the logical clock to `now` (never backwards, guarding clock skew),
- * so the live 10 Hz loop picks up from here rather than replaying the absence. The player is left
- * exactly where they were when they saved.
+ * Resume a loaded game. The world froze while away, so no simulation runs: the only change is the
+ * Stagnation grant for the time away (ADR-033) and advancing the logical clock to `now` (never
+ * backwards, guarding clock skew), so the live 10 Hz loop picks up from here rather than replaying
+ * the absence. The player is left exactly where they were when they saved.
  */
 export function resumeGame(saved: GameState, now: number = Date.now()): GameState {
-  return { ...saved, lastTickAt: Math.max(saved.lastTickAt, now) };
+  const offlineSeconds = Math.max(0, (now - saved.lastTickAt) / 1000);
+  const withStagnation = grantStagnationForOffline(saved, offlineSeconds);
+  return { ...withStagnation, lastTickAt: Math.max(saved.lastTickAt, now) };
 }

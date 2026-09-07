@@ -169,6 +169,32 @@ describe('flagDoppelgaengerSeen — ADR-023 additive-optional round-trip', () =>
   });
 });
 
+describe('stagnation + desidiaActive — ADR-033 additive-optional round-trip', () => {
+  it('(a/b) a fresh save omits both from the wire (absent ≡ 0 / false)', () => {
+    const fresh = createInitialState('seed', 0);
+    const wire = serializeGameState(fresh);
+    expect('stagnation' in wire).toBe(false);
+    expect('desidiaActive' in wire).toBe(false);
+    const back = deserializeGameState(wire);
+    expect(back.stagnation).toBe(0);
+    expect(back.desidiaActive).toBeUndefined();
+  });
+
+  it('(c) a banked stagnation value and an active Desidia round-trip exactly', () => {
+    const s: GameState = {
+      ...createInitialState('seed', 0),
+      stagnation: 42.5,
+      desidiaActive: true,
+    };
+    const wire = serializeGameState(s);
+    expect(wire.stagnation).toBe(42.5);
+    expect(wire.desidiaActive).toBe(true);
+    const back = deserializeGameState(wire);
+    expect(back.stagnation).toBe(42.5);
+    expect(back.desidiaActive).toBe(true);
+  });
+});
+
 describe('the hoard + Syngraphae — ADR-023 additive-optional (a/b/c round-trip)', () => {
   it('(a) a save without hoard/syngraphae loads with a zero hoard and no contracts', () => {
     const fresh = createInitialState('seed', 0);

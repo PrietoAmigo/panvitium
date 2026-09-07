@@ -45,10 +45,18 @@ describe('session', () => {
     expect(r.inKatabasis).toBe(true);
   });
 
-  it('leaves every non-clock field untouched (only lastTickAt changes)', () => {
+  it('grants Stagnation for the offline span (0.2/min), capped (ADR-033)', () => {
+    const saved = startNewGame(0); // stagnation 0, base cap 120
+    // 10 minutes away = 600 s → 600 × 0.2/60 = 2 stagnation.
+    expect(resumeGame(saved, 600_000).stagnation).toBeCloseTo(2, 6);
+    // A long absence saturates at the cap.
+    expect(resumeGame(saved, 1e12).stagnation).toBe(120);
+  });
+
+  it('leaves every field untouched apart from the clock and the Stagnation grant', () => {
     const saved = startNewGame(1000);
     const r = resumeGame(saved, 500_000);
-    expect({ ...r, lastTickAt: saved.lastTickAt }).toEqual(saved);
+    expect({ ...r, lastTickAt: saved.lastTickAt, stagnation: saved.stagnation }).toEqual(saved);
   });
 
   it('zero elapsed is a pure no-op', () => {

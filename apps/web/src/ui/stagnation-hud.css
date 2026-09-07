@@ -1,0 +1,85 @@
+/*
+ * PLACEHOLDER styling for the Stagnation HUD + Desidia button (ADR-033). Pinned to the viewport's
+ * top-right edge, mirroring the Influence & Gold HUD's top-left placement / z-index. Intentionally
+ * plain — a bordered box with a simple fill bar — pending the final carved-vessel treatment.
+ */
+.stag-hud {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 85;
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none; /* let clicks fall through the padding; the button re-enables itself */
+}
+
+.stag-hud-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  min-width: 150px;
+}
+
+.stag-hud-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9fb0a0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.stag-hud-meter {
+  width: 150px;
+  height: 12px;
+  border: 1px solid rgba(120, 150, 120, 0.5);
+  background: rgba(12, 18, 12, 0.6);
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.stag-hud-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a6b4a, #7fae74);
+  transition: width 180ms ease-out;
+}
+
+.stag-hud-value {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: #d6e2cf;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.stag-hud-desidia {
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #d6e2cf;
+  background: rgba(30, 44, 30, 0.85);
+  border: 1px solid rgba(120, 150, 120, 0.6);
+  border-radius: 3px;
+}
+
+.stag-hud-desidia:hover:not(:disabled) {
+  background: rgba(48, 68, 48, 0.9);
+}
+
+.stag-hud-desidia.is-active {
+  color: #0e140e;
+  background: #7fae74;
+  border-color: #a9d29a;
+  box-shadow: 0 0 10px rgba(127, 174, 116, 0.6);
+}
+
+.stag-hud-desidia:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

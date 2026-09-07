@@ -11,6 +11,7 @@ import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
 import { PANELS, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
 import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
+import { StagnationHud } from './ui/StagnationHud.js';
 import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
@@ -292,6 +293,9 @@ export function App(): ReactElement {
       {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars
           Goetia / Suasio surfaces, pinned to the viewport's top-left edge. */}
       {hudVisible && <InfluenceGoldHud />}
+      {/* Stagnation + Desidia (ADR-033), pinned to the viewport's top-right edge; same visibility as
+          the Influence & Gold HUD. */}
+      {hudVisible && <StagnationHud />}
       {/* The one-time Doppelgänger scare covers EVERYTHING (highest layer), blocks all input, and
           clears itself after 2s — see Jumpscare. */}
       {jumpscare && <Jumpscare onDone={() => setJumpscare(false)} />}

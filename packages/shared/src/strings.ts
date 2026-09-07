@@ -42,6 +42,15 @@ export const strings = {
     souls: 'Souls',
     gold: 'Gold',
     influence: 'Influence',
+    stagnation: 'Stagnation',
+  },
+  // The Stagnation HUD + Desidia toggle (ADR-033). Placeholder copy for the top-right container and
+  // its button; the numeric magnitudes (base 120 cap, 1.333x speed, 1/s drain) live in the sim.
+  stagnation: {
+    label: 'Stagnation',
+    desidia: 'Desidia',
+    desidiaActive: 'Desidia (active)',
+    desidiaHint: 'Spend Stagnation to make time run faster.',
   },
   rooms: {
     studio: 'Studio',
@@ -345,7 +354,8 @@ export const strings = {
       fama: '+5% influence gain per copy, scaled by your efficiency.',
       nightmare: '+0.00005/s base reprobate suicide rate per copy, scaled by your efficiency.',
       harpy: 'A background Good-only Pogrom at 5% of your efficiency.',
-      lemure: 'Dormant, pending the stagnation rework.',
+      lemure:
+        'Reduces Desidia Stagnation drain by 12.5% per copy (up to 4), at 25% of influence gain each.',
       behemoth: '+0.05% Stellar chance per copy, scaled by your efficiency.',
       midas: '×3 gold gain but ×100 the Apocalyptic chance.',
       plutus: '+5% Faeneratio output per copy, scaled by your efficiency.',
@@ -780,10 +790,10 @@ export const strings = {
       english: 'Sloth',
       epithet: 'The Idle Throne',
       skill: 'Procrastination',
-      // Both Sloth effects modified offline gains, which are gone (ADR-032, offline is now a freeze).
-      // Placeholder copy until Sloth is re-homed onto the stagnation resource in a later pass.
-      skillEffect: 'Dormant, pending the stagnation rework.',
-      levelEffect: 'Dormant, pending the stagnation rework.',
+      // Sloth re-homed onto the stagnation system (ADR-033): the skill lifts Desidia's time-speed,
+      // each rank doubles the Stagnation cap (base 120).
+      skillEffect: 'Multiplies the Desidia time-speed by 1 + intensity.',
+      levelEffect: 'Each level doubles your maximum Stagnation (base 120).',
     },
     vanagloria: {
       prince: 'Rosier',

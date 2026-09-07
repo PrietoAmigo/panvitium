@@ -20,6 +20,7 @@ import { advanceInvocationRunners, invocationUpkeep } from './invocations.js';
 import { applyInvocationTickEffects, aurevoraDrainPerSecond } from './apex.js';
 import { anatocismusDepositPerSecond, faeneratioGoldPerSecond } from './faeneratio.js';
 import { advanceToggles, panvitiumRate } from './compositum.js';
+import { DESIDIA_BASE_COST_PER_SECOND, DESIDIA_BASE_SPEED } from './stagnation.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
@@ -208,13 +209,32 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
 
   const rng = makeRng(state.rngState);
 
+  // Desidia (ADR-033): the stagnation time-acceleration toggle. While active it drains stagnation
+  // each REAL second and advances the whole sim by an accelerated `simDelta`; `lastTickAt` still
+  // advances by the real delta (step 6) so the offline anchor stays wall-clock-honest. Charged like
+  // a toggle: the tick it can no longer pay, it drains the remainder and switches off, running that
+  // tick at normal speed (no partial, no refund — cf. Vitium Compositum). Desidia never runs offline
+  // (resumeGame does not tick) or while frozen (handled by the early returns above), so `deltaSeconds`
+  // here is always a live 100 ms step.
+  let simDelta = deltaSeconds;
+  if (state.desidiaActive === true) {
+    const dmods = computeModifiers(state);
+    const drainThisTick = DESIDIA_BASE_COST_PER_SECOND * dmods.desidiaDrainMul * deltaSeconds;
+    if (drainThisTick > 0 && state.stagnation >= drainThisTick) {
+      simDelta = deltaSeconds * DESIDIA_BASE_SPEED * dmods.desidiaSpeedMul;
+      state = { ...state, stagnation: state.stagnation - drainThisTick };
+    } else {
+      state = { ...state, stagnation: 0, desidiaActive: false };
+    }
+  }
+
   // 0. Vitium Compositum upkeep (02 §3). Deduct each active toggle's per-second cost BEFORE any
   //    income is applied, so a toggle never earns on a tick it couldn't afford. Toggles that
   //    cannot pay auto-deactivate; collect a notice per deactivation. We reassign `state` here so
   //    the rest of the tick (modifiers, income, dynamics) sees the post-upkeep toggle set.
   const notices: string[] = [];
   {
-    const toggled = advanceToggles(state, deltaSeconds);
+    const toggled = advanceToggles(state, simDelta);
     state = toggled.state;
     for (const id of toggled.deactivated) {
       notices.push(`${id} ended \u2014 upkeep unpaid.`);
@@ -242,19 +262,19 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     anatocismusPerSecond;
   const proportionalInfluence = mul(
     effectiveMax,
-    BASE_INFLUENCE_RATE * mods.influenceRateMul * deltaSeconds,
+    BASE_INFLUENCE_RATE * mods.influenceRateMul * simDelta,
   );
   // Flat influence/s from invocations (Fama) and sigils (Decarabia #69). Additive, scaled by the
   // influence-rate multiplier and folded under the same maxInfluence cap below.
-  const flatInfluence = mul(mods.flatInfluencePerSecond * mods.influenceRateMul, deltaSeconds);
+  const flatInfluence = mul(mods.flatInfluencePerSecond * mods.influenceRateMul, simDelta);
   const lifetime = {
     ...state.lifetime,
-    gold: add(state.lifetime.gold, mul(goldPerSecond, deltaSeconds)),
+    gold: add(state.lifetime.gold, mul(goldPerSecond, simDelta)),
     // The Anatocismus auto-deposit accrues on the hoard (compound interest by contract). Accrues
     // fractionally on the BigNum like gold; floored only at display/spend (ADR-005).
     hoard:
       anatocismusPerSecond > 0
-        ? add(state.lifetime.hoard, mul(anatocismusPerSecond, deltaSeconds))
+        ? add(state.lifetime.hoard, mul(anatocismusPerSecond, simDelta))
         : state.lifetime.hoard,
     influence: min(
       add(add(state.lifetime.influence, proportionalInfluence), flatInfluence),
@@ -275,8 +295,8 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     const inflGain = sub(working.lifetime.influence, state.lifetime.influence);
     const goldFracCost = mul(goldGain, up.goldGainFraction);
     const inflFracCost = mul(inflGain, up.influenceGainFraction);
-    const goldFlat = mul(bn(up.flatGoldPerSecond), deltaSeconds);
-    const inflFlat = mul(bn(up.flatInfluencePerSecond), deltaSeconds);
+    const goldFlat = mul(bn(up.flatGoldPerSecond), simDelta);
+    const inflFlat = mul(bn(up.flatInfluencePerSecond), simDelta);
     let gold = sub(sub(working.lifetime.gold, goldFracCost), goldFlat);
     let influence = sub(sub(working.lifetime.influence, inflFracCost), inflFlat);
     const dispelled: string[] = [];
@@ -304,7 +324,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   //     to wipe the whole reprobate population. Runs net of this tick's income; the efficiency half
   //     of Aurevora is read from the advanced duration by computeModifiers below.
   {
-    const apex = applyInvocationTickEffects(working, deltaSeconds, rng);
+    const apex = applyInvocationTickEffects(working, simDelta, rng);
     working = apex.state;
     for (const n of apex.notices) notices.push(n);
   }
@@ -317,7 +337,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     const remaining: ActionTimer[] = [];
     const completed: ActionTimer[] = [];
     for (const timer of working.lifetime.actionQueue) {
-      const left = timer.remainingSeconds - deltaSeconds;
+      const left = timer.remainingSeconds - simDelta;
       if (left > 0) {
         remaining.push({
           actionId: timer.actionId,
@@ -350,7 +370,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer
   //    births / suicides / murders (02 §9). Each death mints 1 soul. The pools live on the
   //    lifetime state and persist across save/load (ADR-023 additive optional).
-  working = applyReprobateDynamics(working, deltaSeconds);
+  working = applyReprobateDynamics(working, simDelta);
 
   // 4b. Panvitium soul harvest (03 §2.3): while the ritual burns, it mints souls each second in
   //     proportion to the current soul total — R(t) × souls — compounding the hoard for as long as
@@ -361,7 +381,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     if (panvRate > 0) {
       // Souls minted this tick = souls × R(t) × δ; accrue them on the pool AND on the monotonic
       // totalSoulsObtained tally (05 soul-threshold emails), so the harvest counts like any mint.
-      const harvested = mul(working.souls, panvRate * deltaSeconds);
+      const harvested = mul(working.souls, panvRate * simDelta);
       working = {
         ...working,
         souls: add(working.souls, harvested),
@@ -377,7 +397,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
       ...working,
       lifetime: {
         ...working.lifetime,
-        handOfGloryRemaining: Math.max(0, working.lifetime.handOfGloryRemaining - deltaSeconds),
+        handOfGloryRemaining: Math.max(0, working.lifetime.handOfGloryRemaining - simDelta),
       },
     };
   }
@@ -391,7 +411,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   if (working.lifetime.defixio) {
     const curse = working.lifetime.defixio;
     const before = Math.floor(Math.expm1(curse.elapsed));
-    const after = Math.expm1(curse.elapsed + deltaSeconds);
+    const after = Math.expm1(curse.elapsed + simDelta);
     // A long-lived ramp overflows to Infinity; treat it as "cull everything" (removeReprobates
     // clamps to the living population, and an empty pool lifts the curse below).
     const due = Number.isFinite(after) ? Math.floor(after) - before : Number.POSITIVE_INFINITY;
@@ -404,7 +424,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
             ...working,
             lifetime: {
               ...working.lifetime,
-              defixio: { elapsed: curse.elapsed + deltaSeconds },
+              defixio: { elapsed: curse.elapsed + simDelta },
             },
           };
   }
@@ -415,19 +435,21 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   //    resolve at the acolyte's efficiency and immediately start the next cycle. Acolyte events
   //    fold into the same outcome stream as player events.
   working = autoRecruitAcolytes(working);
-  const acoResult = advanceAcolytes(working, deltaSeconds, rng);
+  const acoResult = advanceAcolytes(working, simDelta, rng);
   working = acoResult.state;
   for (const ev of acoResult.events) events.push({ ...ev, source: 'acolyte' });
 
   // 5b. Autonomous invocation runners (02 §3). The Familiar runs Indagatio in its own channel at a
   //     fraction of the player's efficiency — separate from the player slot and the acolytes.
-  const runResult = advanceInvocationRunners(working, deltaSeconds, rng);
+  const runResult = advanceInvocationRunners(working, simDelta, rng);
   working = runResult.state;
   for (const ev of runResult.events) events.push({ ...ev, source: 'invocation' });
 
   // 6. Achievements (03 §7). Evaluate the catalog against the fully-advanced state; fold any newly-
   //    earned ids into state.achievements and surface them for a toast. Last step, so every change
   //    this tick is reflected.
+  // `lastTickAt` advances by the REAL delta, not `simDelta`: Desidia accelerates the sim but not the
+  // wall clock, so the offline anchor (`now - lastTickAt`) and the runtime score stay honest (ADR-033).
   const finalState: GameState = {
     ...working,
     lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
