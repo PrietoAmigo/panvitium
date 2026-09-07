@@ -89,14 +89,20 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +familiar effectiveness.
     effect: { kind: 'invocationEffect', invocation: 'familiar' },
   },
-  // 11 Gusion — ORPHANED (ADR-031): its target (`vitiumCompositumEffectMul`, the ceremony
-  // rate-boost channel) retired with the lesser ceremonies. Def deleted per ADR-029's pattern;
-  // binding is harmless. Re-pinning needs a per-sigil sheet decision.
-  // 12 Sitri — ORPHANED (Depraedatio gold rework): its target (`vitiumMercaturaGenerationMul`,
-  // the Mercatus breeding channel) retired with the trades. Per ADR-029 an empty catalog state is
-  // expressed by deleting the def (no `inert` kind); the seal keeps its number and name in the
-  // strings catalog and binding it is harmless. Re-pinning needs a per-sigil sheet decision — see
-  // the orphaned-sigils note in the rework ADR.
+  11: {
+    id: 11,
+    name: 'Gusion',
+    coefficient: 1,
+    // ADR-034: −influence generation rate (a cursed seal — it softens the player's own influence).
+    effect: { kind: 'modifier', field: 'influenceRateMul', direction: 'decrease' },
+  },
+  12: {
+    id: 12,
+    name: 'Sitri',
+    coefficient: 1,
+    // ADR-034: +Stagnation generation rate (the offline accrual rate).
+    effect: { kind: 'modifier', field: 'stagnationGainMul', direction: 'increase' },
+  },
   13: {
     id: 13,
     name: 'Beleth',
@@ -116,11 +122,20 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +chance a murder triggers a suicide.
     effect: { kind: 'murderTriggersSuicide' },
   },
-  // 15 Eligos — ORPHANED (offline rework, ADR-032): its target (offline influence gain) retired
-  // with offline progression. Def deleted per the effectless-seal convention (ADR-029/031); binding
-  // is harmless. Awaits re-homing onto the stagnation system.
-  // 16 Zepar — ORPHANED (offline rework, ADR-032): its target (offline reprobate generation)
-  // retired with offline progression. Def deleted; binding is harmless; awaits the stagnation rework.
+  15: {
+    id: 15,
+    name: 'Eligos',
+    coefficient: 1,
+    // ADR-034: −Emptio purchase costs (the emptioGold channel).
+    effect: { kind: 'costReduction', channel: 'emptioGold' },
+  },
+  16: {
+    id: 16,
+    name: 'Zepar',
+    coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
+    // ADR-034: −overall invocation soul costs (invocationSoul channel; composes with Orobas #55).
+    effect: { kind: 'costReduction', channel: 'invocationSoul' },
+  },
   17: {
     id: 17,
     name: 'Botis',
@@ -140,8 +155,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +acolyte action efficiency.
     effect: { kind: 'modifier', field: 'acolyteEfficiencyMul', direction: 'increase' },
   },
-  // 19 Sallos — ORPHANED (offline rework, ADR-032): its target (offline gold gain) retired with
-  // offline progression. Def deleted; binding is harmless; awaits the stagnation rework.
+  19: {
+    id: 19,
+    name: 'Sallos',
+    coefficient: 1,
+    // ADR-034: −Desidia Stagnation drain rate (composes with Lemure on desidiaDrainMul).
+    effect: { kind: 'modifier', field: 'desidiaDrainMul', direction: 'decrease' },
+  },
   20: {
     id: 20,
     name: 'Purson',
@@ -150,8 +170,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +remaining gold % (flat percentage points).
     effect: { kind: 'katabasis', rolls: ['gold'] },
   },
-  // 21 Marax — ORPHANED (offline rework, ADR-032): its target (offline action efficiency) retired
-  // with offline progression. Def deleted; binding is harmless; awaits the stagnation rework.
+  21: {
+    id: 21,
+    name: 'Marax',
+    coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
+    // ADR-034: +Decimatio action efficiency (composes with Raum #40).
+    effect: { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'increase' },
+  },
   22: {
     id: 22,
     name: 'Ipos',
@@ -171,8 +196,14 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +murder rate.
     effect: { kind: 'modifier', field: 'murderRateMul', direction: 'increase' },
   },
-  // 24 Naberius — ORPHANED (ADR-031): shared Gusion's ceremony-effect channel, retired with the
-  // lesser ceremonies. Def deleted; binding is harmless; awaits a per-sigil sheet decision.
+  24: {
+    id: 24,
+    name: 'Naberius',
+    coefficient: 1,
+    // ADR-034: −Indagatio time. Indagatio is a `time`-mode action, so lifting its efficiency
+    // shortens the duration (composes with Bifrons #46).
+    effect: { kind: 'modifier', field: 'indagatioEfficiencyMul', direction: 'increase' },
+  },
   25: {
     id: 25,
     name: 'Glasya-Labolas',
@@ -222,9 +253,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +invoking power (flat).
     effect: { kind: 'invokingPower' },
   },
-  // 31 Foras — ORPHANED (offline rework, ADR-032): its target (the offline accrual window that
-  // extended the Acedia sloth compound) retired with offline progression. Def deleted; binding is
-  // harmless; awaits the stagnation rework.
+  31: {
+    id: 31,
+    name: 'Foras',
+    coefficient: 1,
+    // ADR-034: +Desidia time acceleration (composes with Acedia's Procrastination on desidiaSpeedMul).
+    effect: { kind: 'modifier', field: 'desidiaSpeedMul', direction: 'increase' },
+  },
   32: {
     id: 32,
     name: 'Semet',
@@ -447,9 +482,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
       direction: 'increase',
     },
   },
-  // 59 Orias — ORPHANED (ADR-031): its target (the ceremony influence output) retired with the
-  // lesser ceremonies (Panvitium yields souls, not influence). Def deleted; binding is harmless;
-  // awaits a per-sigil sheet decision.
+  59: {
+    id: 59,
+    name: 'Orias',
+    coefficient: 1,
+    // ADR-034: +maximum Stagnation (multiplies the Acedia-scaled cap).
+    effect: { kind: 'modifier', field: 'stagnationMaxMul', direction: 'increase' },
+  },
   60: {
     id: 60,
     name: 'Vapula',
@@ -458,8 +497,13 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // unchanged in magnitude — the renamed `vitiumMercaturaOutputMul` field.
     effect: { kind: 'modifier', field: 'faenerationOutputMul', direction: 'increase' },
   },
-  // 61 Zagan — ORPHANED (ADR-031): its target (the ceremony gold output) retired with the lesser
-  // ceremonies. Def deleted; binding is harmless; awaits a per-sigil sheet decision.
+  61: {
+    id: 61,
+    name: 'Zagan',
+    coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
+    // ADR-034: +Suasio action efficiency (composes with Dantalion #71).
+    effect: { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'increase' },
+  },
   62: {
     id: 62,
     name: 'Volac',

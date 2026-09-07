@@ -1083,7 +1083,8 @@ builds that system and gives Acedia and the Lemure invocation a purpose again.
   are now genuinely exercised in live play, since `simDelta` > `realDelta` under Desidia — the reason
   ADR-032 kept those tests.
 - The five offline sigils orphaned by ADR-032 (Eligos #15, Zepar #16, Sallos #19, Marax #21, Foras
-  #31) remain orphaned; re-homing them onto stagnation is still open.
+  #31) are re-homed by **ADR-034**, which wires them (with the ADR-031 ceremony orphans and the
+  Depraedatio Sitri #12) onto the stagnation levers and the live economy.
 
 **Alternatives considered.** *Stagnation as a lifetime resource (reset on Katabasis)* — rejected: it
 would discard banked offline time on every descent, fighting its own purpose, and clashes with the
@@ -1092,6 +1093,47 @@ drifts the clock ahead of wall-time, corrupting the next offline grant. *Desidia
 Compositum ceremony* — rejected: its upkeep is Stagnation (not gold/influence) and its effect is a
 time multiplier (not an income/rate), neither of which fits the `CompositumDef` vocabulary; it gets
 its own flag and HUD control.
+
+---
+
+## ADR-034: The full Goetia — all 72 sigils named, the ten orphaned seals re-homed
+
+**Status.** Accepted [2026-09-07]. Closes the orphaned-sigil threads left open by ADR-031 (the four
+ceremony seals), ADR-032 (the five offline seals), and the Depraedatio gold rework (Sitri #12);
+supersedes those ADRs' "awaits a per-sigil sheet decision" notes for these ten ids.
+
+**Context.** Ten seals carried a demon name in `strings.ts` but no catalog def, so binding them did
+nothing (ADR-029's no-`inert` convention: an orphaned seal keeps its id/name and is harmless to
+bind). With Stagnation + Desidia landed (ADR-033) and the live economy stable, each has a natural
+home. The catalog is now the full Goetia 1..72: every seal has a name and a real effect.
+
+**Decision.** Name the whole catalog (all 72 named) and wire the ten seals.
+
+- **Onto the Stagnation / Desidia levers (ADR-033):** **Sitri #12** raises `stagnationGainMul` (the
+  offline accrual rate, read by `grantStagnationForOffline`); **Orias #59** raises `stagnationMaxMul`
+  (the cap, on top of the Acedia doubling, read by `stagnationMax`); **Foras #31** raises
+  `desidiaSpeedMul` (Desidia acceleration, composing with Procrastination); **Sallos #19** lowers
+  `desidiaDrainMul` (the drain, composing with Lemure). The two Desidia fields were already
+  sigil-targetable; Sitri and Orias add two new modifier-bundle fields (`stagnationGainMul`,
+  `stagnationMaxMul`).
+- **Onto the live economy:** **Gusion #11** lowers `influenceRateMul` (a cursed seal); **Eligos #15**
+  reduces the `emptioGold` cost channel; **Zepar #16** reduces the `invocationSoul` cost channel;
+  **Marax #21** raises `decimatioEfficiencyMul`; **Naberius #24** raises `indagatioEfficiencyMul`
+  (Indagatio is time-mode, so the lift shortens the search); **Zagan #61** raises
+  `suasioEfficiencyMul`.
+- **Coefficient 1/3.** Zepar #16, Marax #21 and Zagan #61 carry `coefficient: 1/3` (a third of the
+  standard pct strength), per the brief — following the sub-unit precedent (Paimon 0.5, Foras 0.25).
+
+**Consequences.**
+
+- No orphaned sigils remain: `SIGIL_IDS` is now the full 1..72 and `sigilById(id)` is defined for
+  every id. The ADR-031 / ADR-032 / Depraedatio orphan lists are closed for these ten.
+- No save-schema bump (ADR-023): the two new modifier fields are derived, not persisted; the effects
+  read the existing `sigilBindings`.
+- Determinism (ADR-011) is untouched: none of the ten draws from the RNG (all are passive
+  multipliers or cost divisors), so save sequences stay byte-identical.
+- The `Sigils` sheet stays authoritative for the exact coefficients and curves; the strings-table
+  effect lines gain their ↑/↓ terminals for the Katabasis ledger.
 
 ---
 

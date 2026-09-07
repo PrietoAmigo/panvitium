@@ -385,8 +385,8 @@ The mechanics that change the population each tick produce *fractional* contribu
 become integer events deterministically. The lifetime state carries three fractional pools
 alongside the integer population:
 
-- `generationPool` — fractional births (*Suasio*-adjacent toggles, sigils Ose #57 / Aamon #7 /
-  Zepar #16, Adder Stone, Hand of Glory; the Mercatus `genPerDepth` channel retired with the
+- `generationPool` — fractional births (*Suasio*-adjacent toggles, sigils Ose #57 / Aamon #7,
+  Adder Stone, Hand of Glory; the Mercatus `genPerDepth` channel retired with the
   trades and nothing replaces it by default — a sheet decision).
 - `suicidePool` — fractional removals from despair.
 - `murderPool` — fractional removals from violence.

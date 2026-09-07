@@ -103,9 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 903** (sim 552 · shared 65 · api 20 · web 266).
+**Current test count: 910** (sim 559 · shared 65 · api 20 · web 266).
 
-> **Latest change — Stagnation + Desidia: the offline resource and the time-acceleration toggle (ADR-033).**
+> **Latest change — the full Goetia: all 72 sigils named, the ten orphaned seals reactivated.**
+> Every seal now carries a demon name and a real effect, so no orphaned sigils remain. The ten seals
+> left dormant by ADR-031/032 and the Depraedatio rework are re-homed. Four bind onto the new ADR-033
+> levers: **Sitri #12** raises Stagnation gain, **Orias #59** raises the Stagnation cap, **Foras #31**
+> quickens Desidia acceleration, and **Sallos #19** softens the Desidia drain. Six attach to the live
+> economy: **Gusion #11** softens the player's own influence gain, **Eligos #15** cuts Emptio costs,
+> **Zepar #16** cuts invocation costs, **Marax #21** lifts Decimatio efficiency, **Naberius #24**
+> shortens Indagatio, and **Zagan #61** lifts Suasio efficiency. Zepar, Marax and Zagan carry a third
+> of the standard pct strength (coefficient 1/3). Two new modifier-bundle fields (`stagnationGainMul`,
+> `stagnationMaxMul`) feed `grantStagnationForOffline` / `stagnationMax`; the two Desidia levers were
+> already sigil-targetable. No save-schema bump (additive-optional). Net **+7 tests** (sim 552 → 559).
+
+> **Earlier change — Stagnation + Desidia: the offline resource and the time-acceleration toggle (ADR-033).**
 > The system ADR-032 deferred. **Stagnation** is a new top-level, permanent resource banked on resume
 > from time away (0.2/min, base cap 120, doubled per Acedia tier); `resumeGame` grants it, and it
 > carries across Katabasis like Devotion. **Desidia** is a toggle (button beneath the new top-right

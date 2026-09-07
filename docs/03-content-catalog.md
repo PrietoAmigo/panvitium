@@ -284,27 +284,27 @@ coefficients are in the `Sigils` sheet.
 | 8 | **Barbatos** | Songs of animals | Increases *Gula* invocation effectiveness. |
 | 9 | **Paimon** | Loyalty; returning servants | Reduces influence costs. |
 | 10 | **Buer** | Good familiars | Increases Familiar effectiveness. |
-| 11 | **Gusion** | Reconciles enemies | **Orphaned** (ADR-031): its target — the ceremony effect channel — retired with the lesser ceremonies. Def deleted; binding is harmless; awaits a per-sigil sheet decision. |
-| 12 | **Sitri** | Love | **Orphaned** (Depraedatio gold rework): its target — the Mercatus breeding channel — retired with the trades. Catalog def deleted per ADR-029; binding is harmless. Awaits a per-sigil sheet decision. |
+| 11 | **Gusion** | Reconciles enemies | Reduces the player's own influence generation rate (a cursed seal). |
+| 12 | **Sitri** | Love | Increases the offline Stagnation gain rate. |
 | 13 | **Beleth** | Attended by trumpets | Increases *Decimatio* positive outcome chance. |
 | 14 | **Leraie** | Putrefies wounds | Chance a murder triggers a suicide. |
-| 15 | **Eligos** | Favour of important people | Increases offline influence gain. |
-| 16 | **Zepar** | Makes barren | Increases offline reprobate generation. |
+| 15 | **Eligos** | Favour of important people | Reduces Emptio purchase costs. |
+| 16 | **Zepar** | Makes barren | Reduces overall invocation costs (a third of the standard strength). |
 | 17 | **Botis** | Past and future | Reduces *Suasio* negative outcome chance. |
 | 18 | **Bathin** | Transport | Increases acolyte action efficiency. |
-| 19 | **Sallos** | Peace, idleness | Increases offline gold gain. |
+| 19 | **Sallos** | Peace, idleness | Reduces the Desidia Stagnation drain rate (composes with Lemure). |
 | 20 | **Purson** | Hidden treasures | Increases the Katabasis remaining-gold % (flat). [log] |
-| 21 | **Marax** | Stops, delays | Increases offline action efficiency. |
+| 21 | **Marax** | Stops, delays | Increases Decimatio action efficiency (a third of the standard strength). |
 | 22 | **Ipos** | Valiant, tactical | Reduces *Decimatio* negative outcome chance. |
 | 23 | **Aim** | Sets fire | Increases the murder rate. |
-| 24 | **Naberius** | Arts and rhetoric | **Orphaned** (ADR-031): shared Gusion\u2019s retired ceremony-effect channel. Def deleted; awaits a sheet decision. |
+| 24 | **Naberius** | Arts and rhetoric | Reduces Indagatio time (a time-mode efficiency lift). |
 | 25 | **Glasya-Labolas** | Manslaughter | Increases the murder rate (flat). [log] |
 | 26 | **Bune** | Wisdom | Increases *Vanagloria* invocation effectiveness. |
 | 27 | **Ronove** | Harvests souls near death | Increases the suicide rate. |
 | 28 | **Berith** | Covenant | Increases *Superbia* invocation effectiveness. |
 | 29 | **Astaroth** | Secrets, all times | Increases *Indagatio* Stellar chance. |
 | 30 | **Forneus** | Rhetoric | Increases invoking power (flat). [log] |
-| 31 | **Foras** | Logic, invisibility | Extends the offline accrual window. |
+| 31 | **Foras** | Logic, invisibility | Increases the Desidia time acceleration (composes with Procrastination). |
 | 32 | **Semet** | Final destiny | Increases all sigil effects. Gated (see above). [log] |
 | 33 | **Gaap** | Makes men stupid | Increases maleficia effects. [log] |
 | 34 | **Furfur** | Love; storms | Increases *Luxuria* invocation effectiveness. |
@@ -332,9 +332,9 @@ coefficients are in the `Sigils` sheet.
 | 56 | **Gremory** | Treasures; love | Increases *Suasio* positive outcome chance. |
 | 57 | **Ose** | Changes shape | Generates reprobates (flat). [log] |
 | 58 | **Amy** | Treasures | Increases *Indagatio* and *Emptio* action efficiency. |
-| 59 | **Orias** | Transformations | **Orphaned** (ADR-031): the ceremony influence output retired with the lesser ceremonies. Def deleted; awaits a sheet decision. |
+| 59 | **Orias** | Transformations | Increases the maximum Stagnation (on top of the Acedia doubling). |
 | 60 | **Vapula** | Mechanical arts | Increases the Faeneratio gold output (Mutuum + Thesaurus interest). |
-| 61 | **Zagan** | Fools wise | **Orphaned** (ADR-031): the ceremony gold output retired with the lesser ceremonies. Def deleted; awaits a sheet decision. |
+| 61 | **Zagan** | Fools wise | Increases Suasio action efficiency (a third of the standard strength). |
 | 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
 | 63 | **Andras** | Sows discord | Increases *Emptio* Stellar chance. |
 | 64 | **Haures** | Destroys enemies | Increases *Decimatio* Stellar chance. |
@@ -418,12 +418,11 @@ ceiling it can never cross.
 
 None of these block the current build; all should be tracked.
 
-- **Orphaned sigils: Sitri #12, Gusion #11, Naberius #24, Orias #59, Zagan #61** — Sitri's
-  target (the Mercatus breeding channel) retired with the Depraedatio gold rework; the other
-  four lost their ceremony channels when ADR-031 retired the lesser Vitium Compositum ceremonies.
-  All five defs are deleted (ADR-029's pattern) and each re-pin needs a per-sigil sheet decision.
-  Natural retarget surfaces: hoard size, the Fenus rate, the Mutuum take, Syngraphae costs, the
-  Foedus thresholds. (The ADR-024 sixteen were already resolved by ADR-029.)
+- **Orphaned sigils** (resolved by ADR-034): the ten seals that lacked a def (Sitri #12,
+  Gusion #11, Naberius #24, Orias #59 and Zagan #61 from the ceremony / Depraedatio retirements,
+  plus Eligos #15, Zepar #16, Sallos #19, Marax #21 and Foras #31 from the ADR-032 offline
+  freeze) are all wired onto the Stagnation / Desidia levers and the live economy. The catalog
+  is now the full Goetia 1..72: every seal named and effective.
 - **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
 - **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)
   has its channels in the Studio (`02 §12`) but its message catalog is unwritten; the Katabasis

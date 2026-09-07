@@ -8,12 +8,12 @@
  * invoking power), `linear` (swingy), or `log` (the flat generators / Katabasis carry-over). `bindingMagnitude`
  * returns the bare magnitude; a per-sigil coefficient multiplies it into a concrete effect strength.
  *
- * The catalog (03 §5) is the full Goetia numbering 1..72, with #32 = Semet. THIS slice wires a
- * representative subset across both surfaces a sigil can feed:
+ * The catalog (03 §5) is the full Goetia numbering 1..72, with #32 = Semet. Every seal is now wired
+ * with a demon name and a real effect across the two surfaces a sigil can feed:
  *   - in-lifetime modifiers (computeModifiers reads `sigilModifierContributions`)
  *   - Katabasis carry-over rolls (commitKatabasis reads `sigilKatabasisBonus`)
- * Effect magnitudes are placeholders; the spreadsheet `Sigils` sheet is authoritative. Unwired
- * sigils simply have no catalog entry yet — binding them is harmless and does nothing until added.
+ * The spreadsheet `Sigils` sheet stays authoritative for the effect magnitudes (the per-sigil
+ * coefficients and curves in `sigils.data.ts`).
  */
 import { type BigNum, add, floor, lte, ZERO } from './bignum.js';
 import { MAX_SIN_LEVEL } from './constants.js';
@@ -72,7 +72,13 @@ export type ScalarModifierField =
   | 'murderRateMul'
   | 'faenerationOutputMul'
   | 'acolyteEfficiencyMul'
-  | 'invocationEfficiencyMul';
+  | 'invocationEfficiencyMul'
+  // Stagnation / Desidia levers (ADR-033/034): the offline-gain rate, the cap, and the two Desidia
+  // multipliers, all sigil-targetable. Sitri #12, Orias #59, Foras #31 and Sallos #19 bind here.
+  | 'stagnationGainMul'
+  | 'stagnationMaxMul'
+  | 'desidiaSpeedMul'
+  | 'desidiaDrainMul';
 
 /** Which Katabasis carry-over roll a sigil's bonus feeds. */
 export type KatabasisRoll = 'gold' | 'reprobate' | 'maleficia';

@@ -44,7 +44,6 @@ import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
 import { SYNGRAPHAE, hoardMilestoneBonus, syngraphaSigned } from './syngraphae.js';
 import { aurevoraEfficiencyMul } from './apex.js';
-import { LEMURE_DRAIN_REDUCTION_PER_COPY } from './stagnation.js';
 import {
   sigilMaleficiaEffectMul,
   sigilModifierContributions,
@@ -119,7 +118,7 @@ export interface Modifiers {
   readonly tierWeightMul: TierModifiers;
   /**
    * Multiplier on passive reprobate generation rate (02 §9). Empty for now — base rate is 0 until
-   * Vitium businesses contribute; Aamon (#7) adds to it, Zepar (#16) divides it.
+   * Vitium businesses contribute; Aamon (#7) adds to it.
    */
   readonly reprobateGenerationRateMul: number;
   /**
@@ -195,9 +194,20 @@ export interface Modifiers {
   readonly desidiaSpeedMul: number;
   /**
    * Multiplier on the Desidia stagnation-drain rate (ADR-033): drain/s = `DESIDIA_BASE_COST × this`.
-   * Each bound Lemure reduces it (×0.875 per copy, so lower = cheaper). Default 1×.
+   * Each bound Lemure reduces it (×0.875 per copy, so lower = cheaper); Sallos #19 softens it too.
+   * Default 1×.
    */
   readonly desidiaDrainMul: number;
+  /**
+   * Multiplier on the offline Stagnation-gain rate (ADR-034), consumed by `grantStagnationForOffline`.
+   * Sitri #12 lifts it. Default 1×.
+   */
+  readonly stagnationGainMul: number;
+  /**
+   * Multiplier on the Stagnation cap (ADR-034), consumed by `stagnationMax` on top of the Acedia-tier
+   * doubling. Orias #59 lifts it. Default 1×.
+   */
+  readonly stagnationMaxMul: number;
 }
 
 /** No sources active — every multiplier is 1; tier shifts are absent (all default 1). */
@@ -240,6 +250,8 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   },
   desidiaSpeedMul: 1,
   desidiaDrainMul: 1,
+  stagnationGainMul: 1,
+  stagnationMaxMul: 1,
 };
 
 /** Default skill→effect coupling for a skill that "increases X": X *= (1 + intensity). */
@@ -325,6 +337,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const NIGHTMARE_SUICIDE_FACTOR = 5e-5; // additive increase to base reprobate suicide rate (sheet)
   const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
+  const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.125; // each Lemure: ×0.875 Desidia stagnation drain (ADR-033)
 
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
@@ -364,7 +377,7 @@ export function computeModifiers(state: GameState): Modifiers {
   }
   if (superbiaIntensity > 0) bumpTier('stellar', skillBonus(superbiaIntensity)); // Morning Star
   if (hasMidas) bumpTier('apocalyptic', 100); // Midas hundredfold
-  for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Gusion #11, Foras #31, …
+  for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Bael #1, Balam #51, Amdusias #67
   const tierWeightMul: TierModifiers = {};
   for (const [t, mul] of Object.entries(tierAcc)) if (mul !== 1) tierWeightMul[t as Tier] = mul;
 
@@ -490,7 +503,7 @@ export function computeModifiers(state: GameState): Modifiers {
     emptioEfficiencyMul: sc('emptioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; Luxuria's
-    // Seduction skill lifts it continuously (03 §1); sigils (Aamon #7 up, Zepar #16 down) compose.
+    // Seduction skill lifts it continuously (03 §1); the Aamon #7 sigil (up) composes.
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
       (hasAdderStone ? 1.05 : 1) * // Adder Stone ×1.05 reprobate generation
@@ -538,11 +551,14 @@ export function computeModifiers(state: GameState): Modifiers {
     invocationEfficiencyMul: invEff,
     invocationSinEffectivenessMul: invSinEff,
     // Desidia time-speed (ADR-033): Acedia's Procrastination skill lifts the multiplier applied to
-    // DESIDIA_BASE_SPEED. Sigils could compose here later; none do yet.
-    desidiaSpeedMul: skillBonus(acediaIntensity),
+    // DESIDIA_BASE_SPEED; Foras #31 composes on top.
+    desidiaSpeedMul: skillBonus(acediaIntensity) * sc('desidiaSpeedMul'),
     // Desidia stagnation-drain (ADR-033): each bound Lemure multiplies the drain by (1 − 0.125), so
-    // more Lemures = a cheaper Desidia. Bounded below by the max-4 cap on Lemure.
-    desidiaDrainMul: (1 - LEMURE_DRAIN_REDUCTION_PER_COPY) ** lemureCount,
+    // more Lemures = a cheaper Desidia; Sallos #19 softens it further.
+    desidiaDrainMul: (1 - LEMURE_DRAIN_REDUCTION_PER_COPY) ** lemureCount * sc('desidiaDrainMul'),
+    // Stagnation gain / cap (ADR-034): Sitri #12 lifts the offline accrual rate, Orias #59 the cap.
+    stagnationGainMul: sc('stagnationGainMul'),
+    stagnationMaxMul: sc('stagnationMaxMul'),
   };
 }
 
