@@ -150,6 +150,11 @@ export const serializedGameStateSchema = z.object({
   erinyesEfficiencyStacks: z.number().int().nonnegative().optional(),
   // True while mid-descent (menu open, lifetime frozen). Additive-optional; defaults to false.
   inKatabasis: z.boolean().optional(),
+  // Stagnation (ADR-033): offline-banked torpor, top-level/permanent. Additive-optional (ADR-023):
+  // absent → 0 at load; omitted from the wire when 0 so fresh saves keep a minimal form.
+  stagnation: z.number().nonnegative().optional(),
+  // Desidia toggle active-flag (ADR-033). Additive-optional (ADR-023): absent ≡ false; omitted when false.
+  desidiaActive: z.boolean().optional(),
 });
 
 /** The JSON-safe form of GameState. */
@@ -273,6 +278,10 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ? { erinyesEfficiencyStacks: state.erinyesEfficiencyStacks }
       : {}),
     ...(state.inKatabasis === true ? { inKatabasis: true } : {}),
+    // Stagnation / Desidia (ADR-033): omit when zero/false so fresh and pre-feature saves keep the
+    // prior wire form (ADR-023 additive-optional discipline).
+    ...(state.stagnation > 0 ? { stagnation: state.stagnation } : {}),
+    ...(state.desidiaActive === true ? { desidiaActive: true } : {}),
   };
 }
 
@@ -371,5 +380,8 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     // Frozen-descent flag: present only when true (conditional spread keeps it optional). A save
     // written mid-descent reloads frozen and the store re-opens the menu (see gameStore init).
     ...(s.inKatabasis === true ? { inKatabasis: true } : {}),
+    // Stagnation / Desidia (ADR-033): absent → 0 / false at load (additive-optional, ADR-023).
+    stagnation: s.stagnation ?? 0,
+    ...(s.desidiaActive === true ? { desidiaActive: true } : {}),
   };
 }

@@ -44,6 +44,7 @@ import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
 import { SYNGRAPHAE, hoardMilestoneBonus, syngraphaSigned } from './syngraphae.js';
 import { aurevoraEfficiencyMul } from './apex.js';
+import { LEMURE_DRAIN_REDUCTION_PER_COPY } from './stagnation.js';
 import {
   sigilMaleficiaEffectMul,
   sigilModifierContributions,
@@ -186,6 +187,17 @@ export interface Modifiers {
    * of the global `invocationEfficiencyMul`. Default 1× for every Sin.
    */
   readonly invocationSinEffectivenessMul: Record<Sin, number>;
+  /**
+   * Multiplier on the Desidia time-speed factor (ADR-033): the effective speed while Desidia is
+   * active is `DESIDIA_BASE_SPEED × this`. Acedia's Procrastination skill lifts it by (1 + intensity).
+   * Default 1×.
+   */
+  readonly desidiaSpeedMul: number;
+  /**
+   * Multiplier on the Desidia stagnation-drain rate (ADR-033): drain/s = `DESIDIA_BASE_COST × this`.
+   * Each bound Lemure reduces it (×0.875 per copy, so lower = cheaper). Default 1×.
+   */
+  readonly desidiaDrainMul: number;
 }
 
 /** No sources active — every multiplier is 1; tier shifts are absent (all default 1). */
@@ -226,6 +238,8 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
     vanagloria: 1,
     superbia: 1,
   },
+  desidiaSpeedMul: 1,
+  desidiaDrainMul: 1,
 };
 
 /** Default skill→effect coupling for a skill that "increases X": X *= (1 + intensity). */
@@ -247,6 +261,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const gulaIntensity = skillIntensity(state.devotion.gula);
   const superbiaIntensity = skillIntensity(state.devotion.superbia);
   const luxuriaIntensity = skillIntensity(state.devotion.luxuria); // Seduction → gen rate
+  const acediaIntensity = skillIntensity(state.devotion.acedia); // Procrastination → Desidia speed
 
   // Equipped maleficia (03 §4). Each anathema item is a single, decisive multiplier.
   const owned = state.lifetime.maleficia;
@@ -275,6 +290,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× playerEff × invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: Faeneratio output up (× playerEff × invEff)
+  const lemureCount = inv.lemure ?? 0; // each: ×0.875 Desidia stagnation drain (ADR-033)
   const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×2 influence gain/s (sheet)
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
@@ -521,6 +537,12 @@ export function computeModifiers(state: GameState): Modifiers {
     // rev 2026-06-12). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
     invocationEfficiencyMul: invEff,
     invocationSinEffectivenessMul: invSinEff,
+    // Desidia time-speed (ADR-033): Acedia's Procrastination skill lifts the multiplier applied to
+    // DESIDIA_BASE_SPEED. Sigils could compose here later; none do yet.
+    desidiaSpeedMul: skillBonus(acediaIntensity),
+    // Desidia stagnation-drain (ADR-033): each bound Lemure multiplies the drain by (1 − 0.125), so
+    // more Lemures = a cheaper Desidia. Bounded below by the max-4 cap on Lemure.
+    desidiaDrainMul: (1 - LEMURE_DRAIN_REDUCTION_PER_COPY) ** lemureCount,
   };
 }
 

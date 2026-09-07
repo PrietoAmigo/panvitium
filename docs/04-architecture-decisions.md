@@ -1039,6 +1039,62 @@ their own.
 
 ---
 
+## ADR-033: Stagnation + Desidia — the offline resource and the time-acceleration toggle
+
+**Status.** Accepted [2026-09-07]. Builds on ADR-032 (offline is a freeze): this is the "stagnation
+system" that ADR-032 deferred, and it re-homes the Sloth effects (Acedia, Lemure) that ADR-032 left
+dormant.
+
+**Context.** ADR-032 froze the game offline and recorded that a **stagnation** resource would later
+be granted from time away and spent by a **Desidia** toggle. With the demolition merged, this ADR
+builds that system and gives Acedia and the Lemure invocation a purpose again.
+
+**Decision.**
+
+- **Stagnation** is a top-level, permanent `number` (bounded, so not a BigNum — ADR-005). It is
+  granted only on resume: `STAGNATION_PER_SECOND (0.2/60) × secondsAway`, clamped to `stagnationMax`.
+  It is **top-level and carries across Katabasis** (like Devotion): real-world time away is not a
+  per-lifetime quantity, and its cap scales with the persistent Acedia total, so a per-lifetime reset
+  would make offline accrual pointless for anyone who descends. `stagnationMax = 120 × 2^(Acedia
+  level)` — derived, never stored.
+- **Desidia** is a toggle (`desidiaActive`, top-level, cleared on `enterKatabasis` — a torn-down
+  lifetime cannot be accelerated). Its button lives under the Stagnation HUD, not in the Opera queue.
+  While active the live tick advances the sim by `simDelta = realDelta × DESIDIA_BASE_SPEED (1.333) ×
+  mods.desidiaSpeedMul` and drains `DESIDIA_BASE_COST_PER_SECOND (1) × mods.desidiaDrainMul` per REAL
+  second. Charged like a Vitium Compositum toggle: the tick it cannot pay, it drains the remainder,
+  switches off, and runs at normal speed (no partial, no refund). Desidia never runs offline
+  (`resumeGame` does not tick) or while frozen (handled before the drain).
+- **`lastTickAt` advances by the REAL delta, never `simDelta`.** Desidia accelerates the sim, not the
+  wall clock, so the offline anchor (`now − lastTickAt`) and the runtime score stay honest. Threading
+  a separate `simDelta` through the tick body (income, dynamics, actions, apex, runners, toggles,
+  Panvitium, defixio) while keeping `lastTickAt` on real time is the load-bearing detail.
+- **Acedia re-homed.** Its Procrastination skill lifts `desidiaSpeedMul` by (1 + intensity); each Sin
+  tier doubles `stagnationMax`. **Lemure re-homed**: capped at 4 bound, upkeep 25% of influence gain
+  per copy (so 4 copies consume all influence gain), effect ×0.875 to `desidiaDrainMul` per copy.
+- **HUD placeholders.** A top-right Stagnation container (fill + `value / cap`) with the Desidia
+  toggle button beneath it, wired to live state but deliberately plain (a bar, not the carved-vessel
+  canvas) pending a final art pass.
+
+**Consequences.**
+
+- No save-schema bump (ADR-023): `stagnation` (omit when 0) and `desidiaActive` (omit when false) are
+  additive-optional; nothing existing changed shape.
+- The tick's big-delta correctness invariants (fractional pools, the exact eᵗ / geometric integrals)
+  are now genuinely exercised in live play, since `simDelta` > `realDelta` under Desidia — the reason
+  ADR-032 kept those tests.
+- The five offline sigils orphaned by ADR-032 (Eligos #15, Zepar #16, Sallos #19, Marax #21, Foras
+  #31) remain orphaned; re-homing them onto stagnation is still open.
+
+**Alternatives considered.** *Stagnation as a lifetime resource (reset on Katabasis)* — rejected: it
+would discard banked offline time on every descent, fighting its own purpose, and clashes with the
+Acedia-scaled (persistent) cap. *Advancing `lastTickAt` by the accelerated `simDelta`* — rejected: it
+drifts the clock ahead of wall-time, corrupting the next offline grant. *Desidia as a Vitium
+Compositum ceremony* — rejected: its upkeep is Stagnation (not gold/influence) and its effect is a
+time multiplier (not an income/rate), neither of which fits the `CompositumDef` vocabulary; it gets
+its own flag and HUD control.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.

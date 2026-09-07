@@ -103,9 +103,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 884** (sim 541 · shared 63 · api 20 · web 260).
+**Current test count: 903** (sim 552 · shared 65 · api 20 · web 266).
 
-> **Latest change — offline is now a freeze; the offline-gain machinery is retired (ADR-032).**
+> **Latest change — Stagnation + Desidia: the offline resource and the time-acceleration toggle (ADR-033).**
+> The system ADR-032 deferred. **Stagnation** is a new top-level, permanent resource banked on resume
+> from time away (0.2/min, base cap 120, doubled per Acedia tier); `resumeGame` grants it, and it
+> carries across Katabasis like Devotion. **Desidia** is a toggle (button beneath the new top-right
+> Stagnation HUD) that spends Stagnation to run the live sim faster — base **1.333×** (lifted by
+> Acedia's Procrastination) draining **1/s** (reduced ×0.875 per bound **Lemure**, now capped at 4 and
+> costing 25% of influence gain each). The tick threads a separate `simDelta` for the accelerated sim
+> while `lastTickAt` keeps tracking real wall-clock, so the offline anchor stays honest; Desidia
+> auto-deactivates the tick it can't pay. **Acedia** (Procrastination → Desidia speed, each tier →
+> ×2 Stagnation cap) and **Lemure** are re-homed off their ADR-032 dormancy. HUD additions
+> (Stagnation container + Desidia button) are functional placeholders. No save-schema bump
+> (additive-optional). Net **+19 tests** (sim 541 → 552, shared 63 → 65, web 260 → 266).
+
+> **Earlier change — offline is now a freeze; the offline-gain machinery is retired (ADR-032).**
 > Offline catch-up is gone. `resumeGame` no longer ticks: it only advances the logical clock to now,
 > so the world does not progress while the tab is closed and the player is restored exactly where they
 > left off (a mid-descent save still reopens on the Katabasis menu; the time away is knowable as

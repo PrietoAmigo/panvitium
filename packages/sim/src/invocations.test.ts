@@ -155,15 +155,15 @@ describe('Soul cost (one-time, Morpheus only)', () => {
 });
 
 describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
-  it('aggregates flat, %-of-gain, and %-of-max-influence drains across active copies', () => {
+  it('aggregates flat, %-of-gold-gain, and %-of-influence-gain drains across active copies', () => {
     let s = withInvocation(fresh(), 'imp', 2); // 2 × 10 gold/s
     s = withInvocation(s, 'fama', 1); // 25% gold gain/s
     s = withInvocation(s, 'succubus', 1); // 99% gold gain/s → clamps total to 1
-    s = withInvocation(s, 'lemure', 1); // 1% of max influence/s
+    s = withInvocation(s, 'lemure', 2); // 2 × 25% influence gain/s (ADR-033)
     const up = invocationUpkeep(s, 100);
     expect(up.flatGoldPerSecond).toBe(20);
     expect(up.goldGainFraction).toBe(1); // 0.25 + 0.99 clamped to 1
-    expect(up.flatInfluencePerSecond).toBeCloseTo(1, 6); // 1% of max 100
+    expect(up.influenceGainFraction).toBeCloseTo(0.5, 6); // 2 × 0.25
     expect(up.flatGoldDrainers).toContain('imp');
   });
 
@@ -459,14 +459,14 @@ describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
     expect(r.events.every((e) => e.actionId === 'imperium')).toBe(true);
   });
 
-  it('Lemure is a stackable Acedia influence source — power 3 + Acedia 1', () => {
+  it('Lemure is an Acedia invocation capped at 4, costing 25% of influence gain (ADR-033)', () => {
     const def = invocationById('lemure')!;
     expect(def.sin).toBe('acedia');
     expect(def.invokingPower).toBe(3);
     expect(def.sinLevel).toBe(1);
-    expect(def.maxActive).toBeUndefined(); // stackable
+    expect(def.maxActive).toBe(4); // up to 4 bound
     expect(def.autonomous).toBeUndefined();
-    expect(def.upkeep).toEqual({ maxInfluenceFraction: 0.01 }); // 1% max influence/s upkeep
+    expect(def.upkeep).toEqual({ influenceGainFraction: 0.25 }); // 25% of influence gain/copy
   });
 
   it('runs Decimatio in its own channel — free, mints souls, leaves the player slot free', () => {

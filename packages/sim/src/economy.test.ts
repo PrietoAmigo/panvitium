@@ -66,23 +66,25 @@ describe('tick — modifiers (Sin level / Sin skill)', () => {
   });
 });
 
-describe('tick — Lemure is dormant (ADR-032)', () => {
+describe('tick — Lemure upkeep draws influence gain (ADR-033)', () => {
   function withLemure(lemures: number): GameState {
     const s = createInitialState('lemure', 0);
     return {
       ...s,
       lifetime: {
         ...s.lifetime,
-        maxInfluence: bn(1_000_000),
+        maxInfluence: bn(1_000_000), // high cap so the gain isn't capped away before upkeep
         invocations: { ...s.lifetime.invocations, lemure: lemures },
       },
     };
   }
 
-  it('adds no flat influence (its offline-gain boost retired with offline progression)', () => {
+  it('each copy consumes 25% of the influence gain; the 4-copy cap consumes it all', () => {
     const base = tick(withLemure(0), 1).state.lifetime.influence.toNumber();
-    const withFive = tick(withLemure(5), 1).state.lifetime.influence.toNumber();
-    expect(withFive).toBeCloseTo(base, 6);
+    const one = tick(withLemure(1), 1).state.lifetime.influence.toNumber();
+    const four = tick(withLemure(4), 1).state.lifetime.influence.toNumber();
+    expect(one / base).toBeCloseTo(0.75, 6); // 25% of the gain drawn
+    expect(four).toBeCloseTo(0, 6); // 4 × 25% = 100% of the gain drawn
   });
 });
 

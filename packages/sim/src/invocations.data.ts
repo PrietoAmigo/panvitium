@@ -87,9 +87,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'acedia',
     invokingPower: 3,
     sinLevel: 1,
-    upkeep: { maxInfluenceFraction: 0.01 }, // 1% of max influence/s (Invocatio sheet)
-    // Stackable. Effect DORMANT (ADR-032): it boosted the offline gain rate, which retired with
-    // offline progression. Kept as a bindable placeholder pending the stagnation rework.
+    maxActive: 4, // up to 4 bound (ADR-033)
+    upkeep: { influenceGainFraction: 0.25 }, // 25% of current influence generation per copy (ADR-033)
+    // Effect (modifiers.ts, ADR-033): each copy multiplies the Desidia stagnation-drain rate by
+    // 0.875 (12.5% cheaper per copy). At the 4-copy cap the upkeep consumes all influence gain.
   },
   behemoth: {
     id: 'behemoth',

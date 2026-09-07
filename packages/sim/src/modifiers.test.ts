@@ -334,14 +334,15 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     expect(two.faenerationOutputMul).toBeCloseTo(1 + 0.05 * 1.1, 6); // Plutus bonus × invEff
   });
 
-  it('Lemure is dormant (ADR-032): no flat influence, no modifier contribution', () => {
+  it('Lemure lowers the Desidia drain multiplier ×0.875 per copy (ADR-033)', () => {
     const withLemure = (lemures: number): GameState => {
       const s = fresh();
       return { ...s, lifetime: { ...s.lifetime, invocations: { lemure: lemures } } };
     };
-    // Its old effect (an offline-gain-rate boost) retired with offline progression; it no longer
-    // touches the bundle, and it never contributed flat influence.
-    expect(computeModifiers(withLemure(3)).flatInfluencePerSecond).toBe(0);
-    expect(computeModifiers(withLemure(3))).toEqual(computeModifiers(fresh()));
+    expect(computeModifiers(withLemure(0)).desidiaDrainMul).toBeCloseTo(1, 6);
+    expect(computeModifiers(withLemure(1)).desidiaDrainMul).toBeCloseTo(0.875, 6);
+    expect(computeModifiers(withLemure(4)).desidiaDrainMul).toBeCloseTo(0.875 ** 4, 6);
+    // Its upkeep (25% of influence gain) is charged in the tick, not as a flat modifier drain.
+    expect(computeModifiers(withLemure(4)).flatInfluencePerSecond).toBe(0);
   });
 });
