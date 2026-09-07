@@ -131,10 +131,10 @@ export interface LifetimeState {
    * here. Reset on Katabasis with the rest of the lifetime. Additive-optional on the wire (ADR-023);
    * empty by default — old saves load with nothing auto-repeating.
    *
-   * Online-only: like any player-slot rite, an auto-repeating one advances only while the game is
-   * open (the tick re-queues at most one cycle per tick, including the single offline catch-up tick).
-   * Unattended progress is what acolyte delegation and invocation runners are for — they loop and
-   * catch up across a long absence; the player's own slot does not.
+   * The auto-repeating player slot re-queues at most one cycle per tick, so it advances one cycle at
+   * a time. Looping through many cycles within a single tick is what acolyte delegation and
+   * invocation runners are for; the player's own slot does not. (The game freezes offline (ADR-032),
+   * so none of this advances while away.)
    */
   autoRepeat: string[];
   /**
@@ -322,9 +322,8 @@ export interface GameState {
   /**
    * True while the player is mid-descent — the Katabasis menu is open and allocation is underway
    * (02 §6). The lifetime is frozen: `tick` runs no simulation when this is set, so nothing accrues
-   * online OR offline (a reload mid-descent resumes the menu rather than fast-forwarding a torn-down
-   * lifetime). Set by `enterKatabasis`, cleared by `commitKatabasis`. Additive-optional; defaults to
-   * false (ADR-023).
+   * (a reload mid-descent resumes the menu rather than fast-forwarding a torn-down lifetime). Set by
+   * `enterKatabasis`, cleared by `commitKatabasis`. Additive-optional; defaults to false (ADR-023).
    */
   inKatabasis?: boolean;
 }

@@ -81,8 +81,8 @@ describe('describeCallInEffects', () => {
     expect(describeCallInEffects([timedMul('indagatioEfficiencyMul', 2)])).toBe(
       'Search efficiency doubles for 1 hour',
     );
-    expect(describeCallInEffects([timedMul('offlineRate', 3, 8 * 3600)])).toBe(
-      'Offline progress triples for 8 hours',
+    expect(describeCallInEffects([timedMul('goldGainMul', 3, 8 * 3600)])).toBe(
+      'Gold gain triples for 8 hours',
     );
   });
 

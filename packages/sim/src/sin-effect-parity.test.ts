@@ -3,9 +3,8 @@
  *   - Luxuria's **Seduction** skill lifts `reprobateGenerationRateMul` by (1 + intensity).
  *   - Tristitia's **Resignation** skill lifts `acolyteEfficiencyMul` by (1 + intensity).
  *   - Ira's **Retribution** skill lifts `invocationEfficiencyMul` by (1 + intensity).
- *   - Acedia's **Procrastination** skill lifts the static `offlineTimeMul` by (1 + intensity).
- *   - Acedia's **per-level** applies the dynamic `1.0000002^(s · L²)` compound on the offline
- *     duration used by `resumeGame` (lives in session.ts, not the static bundle).
+ *   (Acedia's Sloth effects modified offline gains and are dormant pending the stagnation rework,
+ *   ADR-032, so there is no Acedia parity case here.)
  *
  * Each effect is multiplicative on the prior NEUTRAL baseline.
  */
@@ -90,19 +89,5 @@ describe('Tristitia / Ira SKILLS — acolyte and invocation efficiency (sheet re
     const base = computeModifiers(fresh()).suasioEfficiencyMul;
     const lifted = computeModifiers(withSinLevel(fresh(), 'luxuria', 2)).suasioEfficiencyMul;
     expect(lifted / base).toBeCloseTo(4, 6);
-  });
-});
-
-describe('Acedia — Procrastination skill lifts the STATIC offlineTimeMul', () => {
-  it('NEUTRAL: 1×', () => {
-    expect(computeModifiers(fresh()).offlineTimeMul).toBe(1);
-  });
-
-  it('with Acedia Devotion, offlineTimeMul ×(1 + Procrastination intensity)', () => {
-    const dev = 1_000_000;
-    const s = withDevotion(fresh(), 'acedia', dev);
-    const intensity = skillIntensity(bn(dev));
-    expect(intensity).toBeGreaterThan(0);
-    expect(computeModifiers(s).offlineTimeMul).toBeCloseTo(1 + intensity, 9);
   });
 });

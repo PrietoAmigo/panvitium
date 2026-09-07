@@ -80,8 +80,8 @@ function passiveEffectText(state: GameState, id: string): string {
       const bs = b.tierWeightMul.stellar ?? 1;
       return ok(bs) ? up(ws, bs, L.stellar) : '';
     }
-    case 'lemure':
-      return ok(b.offlineTimeMul) ? up(w.offlineTimeMul, b.offlineTimeMul, L.offline) : '';
+    // lemure: Sloth's offline-gain boost is dormant (ADR-032); falls through to the placeholder
+    // effect string until re-homed onto the stagnation resource.
     case 'nightmare': {
       const d = w.flatBaseSuicideRatePerSecond - b.flatBaseSuicideRatePerSecond;
       return `+${Number(d.toFixed(3))}/s ${L.baseSuicide}`;

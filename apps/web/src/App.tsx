@@ -17,7 +17,6 @@ import { AchievementToast } from './ui/AchievementToast.js';
 import { KatabasisModal } from './ui/KatabasisModal.js';
 import { SyncPanel } from './ui/SyncPanel.js';
 import { ConflictModal } from './ui/ConflictModal.js';
-import { WelcomeBackModal } from './ui/WelcomeBackModal.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
 import { Jumpscare, JUMPSCARE_IMG } from './ui/Jumpscare.js';
@@ -259,7 +258,6 @@ export function App(): ReactElement {
       <KatabasisModal />
       <SyncPanel />
       <ConflictModal />
-      <WelcomeBackModal />
       <SettingsPanel />
       <TitleSequence />
       {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}

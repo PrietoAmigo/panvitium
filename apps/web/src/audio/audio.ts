@@ -34,8 +34,8 @@ function playOnce(src: string): Promise<void> {
   return el.play();
 }
 
-// A cue can fire from a background tick (the 10 Hz loop, or the offline catch-up replayed on
-// resume) rather than from a click, so the browser may refuse it for lack of a user gesture. When
+// A cue can fire from a background tick (the 10 Hz loop) rather than from a click, so the browser
+// may refuse it for lack of a user gesture. When
 // that happens we stash the latest cue and replay it on the next pointer/key event — the same
 // gesture-retry the title music uses. One listener pair at a time; the newest cue wins.
 let pendingSrc: string | null = null;

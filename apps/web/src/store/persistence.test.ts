@@ -27,7 +27,7 @@ describe('persistence', () => {
     const deviceId = getDeviceId();
     saveGame(state, 3, deviceId);
 
-    const loaded = loadGame(2000); // same "now" -> no offline advance
+    const loaded = loadGame(2000); // same "now" -> clock unchanged
     expect(loaded.saveVersion).toBe(3);
     expect(loaded.deviceId).toBe(deviceId);
     expect(eq(loaded.state.souls, bn('1e50'))).toBe(true);
@@ -58,20 +58,13 @@ describe('persistence', () => {
     expect(() => parseSaveBlob('{"foo":1}')).toThrow();
   });
 
-  it('reports mail delivered by the offline catch-up so its SFX can replay on resume', () => {
-    // Crossing 1e9 lifetime souls while away makes Fausto #5 ("Little pig") eligible; it delivers
-    // during resumeGame's catch-up tick, whose result is otherwise discarded. loadGame surfaces it
-    // so the store can replay the door-knock the live loop would have cued (05 / ADR-014).
+  it('freezes on resume: a long absence advances the clock but mints nothing (ADR-032)', () => {
+    // Crossing 1e9 lifetime souls while away would have made Fausto #5 eligible under offline
+    // catch-up; with the game frozen, no tick runs on resume, so nothing is minted or delivered.
     const saved = { ...startNewGame(1000), totalSoulsObtained: bn('1e9') };
     saveGame(saved, 1, getDeviceId());
-    const loaded = loadGame(101000); // 100s later -> offline catch-up runs and delivers
-    expect(loaded.deliveredOnResume).toContain('fausto-5');
-  });
-
-  it('reports no resume-delivered mail when nothing new arrives', () => {
-    expect(loadGame(2000).deliveredOnResume).toEqual([]); // fresh game (no save) -> empty
-    saveGame(startNewGame(1000), 1, getDeviceId());
-    expect(loadGame(1000).deliveredOnResume).toEqual([]); // same "now" -> no offline advance
-    expect(loadGame(60_000).deliveredOnResume).toEqual([]); // catch-up, but no email is eligible
+    const loaded = loadGame(101000); // 100s later -> the world was frozen while away
+    expect(loaded.state.lastTickAt).toBe(101000); // clock caught up
+    expect(loaded.state.lifetime.inbox).toHaveLength(saved.lifetime.inbox.length); // no new mail
   });
 });

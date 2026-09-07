@@ -1,8 +1,8 @@
 /**
  * The launch title menu suspends the LIVE tick: while `titleOpen` is true, `advance` no-ops, so
- * nothing accrues online behind the menu. Unlike the committed-descent freeze, the held wall-clock
- * is not lost — `dismissTitle` pays it out as offline catch-up (covered in gameStore.test.ts); here
- * we only pin that the live tick is suspended while open and resumes once dismissed.
+ * nothing accrues behind the menu. The held wall-clock is frozen, not paid out (ADR-032):
+ * `dismissTitle` only reconciles the clock to now (covered in gameStore.test.ts); here we pin that
+ * the live tick is suspended while open and resumes once dismissed.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { type GameState } from '@panvitium/sim';

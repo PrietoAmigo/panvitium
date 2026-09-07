@@ -146,7 +146,7 @@ describe('Thesaurus — Fenus interest', () => {
     expect(goldOf(after)).toBeCloseTo(2 + FENUS_RATE * 10_000, 6); // base 2 + interest 5
   });
 
-  it('accrues fractionally: one big offline tick equals the sum of small ticks', () => {
+  it('accrues fractionally: one big tick equals the sum of small ticks', () => {
     const s = withHoard(fresh(), 10_000);
     const big = tick(s, 3600).state;
     let small = s;

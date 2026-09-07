@@ -356,7 +356,7 @@ describe('Familiar — the hybrid (02 §3)', () => {
     expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });
 
-  it('resolves Indagatio cycles at 1% of player efficiency over a large (offline) delta', () => {
+  it('resolves Indagatio cycles at 1% of player efficiency over a large delta', () => {
     const s = withInvocation(fresh(), 'familiar', 1);
     // Cycle time = 300 / (0.01 × playerEff). playerEff = 1.33 (Familiar boost) → ~22.6k s/cycle.
     // A 7-day delta resolves ~26 cycles; assert it produced at least a handful of events.

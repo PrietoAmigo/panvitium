@@ -116,20 +116,11 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +chance a murder triggers a suicide.
     effect: { kind: 'murderTriggersSuicide' },
   },
-  15: {
-    id: 15,
-    name: 'Eligos',
-    coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +offline influence gain rate.
-    effect: { kind: 'offlineResource', resource: 'influence' },
-  },
-  16: {
-    id: 16,
-    name: 'Zepar',
-    coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +offline reprobate generation rate.
-    effect: { kind: 'offlineResource', resource: 'generation' },
-  },
+  // 15 Eligos — ORPHANED (offline rework, ADR-032): its target (offline influence gain) retired
+  // with offline progression. Def deleted per the effectless-seal convention (ADR-029/031); binding
+  // is harmless. Awaits re-homing onto the stagnation system.
+  // 16 Zepar — ORPHANED (offline rework, ADR-032): its target (offline reprobate generation)
+  // retired with offline progression. Def deleted; binding is harmless; awaits the stagnation rework.
   17: {
     id: 17,
     name: 'Botis',
@@ -149,13 +140,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +acolyte action efficiency.
     effect: { kind: 'modifier', field: 'acolyteEfficiencyMul', direction: 'increase' },
   },
-  19: {
-    id: 19,
-    name: 'Sallos',
-    coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +offline gold gain rate.
-    effect: { kind: 'offlineResource', resource: 'gold' },
-  },
+  // 19 Sallos — ORPHANED (offline rework, ADR-032): its target (offline gold gain) retired with
+  // offline progression. Def deleted; binding is harmless; awaits the stagnation rework.
   20: {
     id: 20,
     name: 'Purson',
@@ -164,13 +150,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +remaining gold % (flat percentage points).
     effect: { kind: 'katabasis', rolls: ['gold'] },
   },
-  21: {
-    id: 21,
-    name: 'Marax',
-    coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +offline action efficiency.
-    effect: { kind: 'offlineActionEfficiency' },
-  },
+  // 21 Marax — ORPHANED (offline rework, ADR-032): its target (offline action efficiency) retired
+  // with offline progression. Def deleted; binding is harmless; awaits the stagnation rework.
   22: {
     id: 22,
     name: 'Ipos',
@@ -241,13 +222,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     // Sigils sheet (rev 2026-06-12): +invoking power (flat).
     effect: { kind: 'invokingPower' },
   },
-  31: {
-    id: 31,
-    name: 'Foras',
-    coefficient: 0.25, // quarter the standard pct strength (was 0.25× on the old √ default)
-    // Sigils sheet (rev 2026-06-12): +offline accrual window (extends the Acedia-compound saturation).
-    effect: { kind: 'offlineAccrualWindow' },
-  },
+  // 31 Foras — ORPHANED (offline rework, ADR-032): its target (the offline accrual window that
+  // extended the Acedia sloth compound) retired with offline progression. Def deleted; binding is
+  // harmless; awaits the stagnation rework.
   32: {
     id: 32,
     name: 'Semet',

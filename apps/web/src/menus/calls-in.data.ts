@@ -45,8 +45,7 @@ export type BuffField =
   | 'indagatioEfficiencyMul'
   | 'playerEfficiencyMul'
   | 'acolyteEfficiencyMul'
-  | 'influenceRegenRate'
-  | 'offlineRate';
+  | 'influenceRegenRate';
 
 /**
  * One mechanical effect of a take-option (docs "-> effects"). Structured so the catalogue is the
@@ -166,7 +165,9 @@ export const CALLS_IN: readonly CallInData[] = [
     audio: true,
     class: 'buff-positive',
     choices: [
-      { effects: [{ kind: 'timedMul', field: 'offlineRate', factor: 3, durationSec: 8 * HOUR }] },
+      // "I will join them" granted an offline-progress boost, retired with offline progression
+      // (ADR-032). Effectless placeholder until re-homed onto the stagnation resource.
+      { effects: [] },
       { effects: [{ kind: 'killReprobatesPct', pct: 10 }] },
       { dim: true },
     ],

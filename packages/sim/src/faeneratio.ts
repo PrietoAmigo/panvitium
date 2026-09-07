@@ -69,8 +69,8 @@ export function mutuumGoldPerSecond(state: GameState, mods: Modifiers): number {
 
 /**
  * The hoard's raw interest/s (Fenus): `FENUS_RATE × mods.fenusRateMul × hoard`, paid into LIQUID
- * gold. RAW — the tick composes `× faenerationOutputMul × goldRateMul` (and the offline factors)
- * on top; the Anatocismus split (usura-4) is likewise the tick's concern, applied AFTER all
+ * gold. RAW — the tick composes `× faenerationOutputMul × goldRateMul` on top; the Anatocismus
+ * split (usura-4) is likewise the tick's concern, applied AFTER all
  * multipliers. Collapses the hoard to a number like the other income terms (the pipeline is
  * number-based; BigNum matters only past ~1e308).
  */
@@ -82,7 +82,7 @@ export function thesaurusInterestPerSecond(state: GameState, mods: Modifiers): n
 /**
  * The Faeneratio income term at the tick's gold line (spec §6): the SUM of the Mutuum take and
  * the Thesaurus interest, scaled by `mods.faenerationOutputMul` (Plutus, Vapula #60). Sits exactly
- * where Mercatus revenue sat; `goldRateMul` (and the offline factors) compose on top at the tick.
+ * where Mercatus revenue sat; `goldRateMul` composes on top at the tick.
  */
 export function faeneratioGoldPerSecond(state: GameState, mods: Modifiers): number {
   return (
@@ -94,7 +94,7 @@ export function faeneratioGoldPerSecond(state: GameState, mods: Modifiers): numb
 /**
  * Anatocismus (usura-4, "interest upon interest, by contract"): the gold/s auto-depositing into
  * the hoard — half of each interest payment AFTER all multipliers (`faenerationOutputMul` and
- * `goldRateMul`; the tick applies its offline factor on top). 0 while the contract is unsigned.
+ * `goldRateMul`). 0 while the contract is unsigned.
  * The HUD's gold/s shows the liquid half only; the Thesaurus tab shows this rate.
  */
 export function anatocismusDepositPerSecond(state: GameState, mods: Modifiers): number {

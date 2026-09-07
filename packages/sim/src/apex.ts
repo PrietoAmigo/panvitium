@@ -3,7 +3,8 @@
  * on the lifetime rather than a static entry in the modifier bundle:
  *
  *   - Astiwihad (apex Tristitia): each second, a small chance the ENTIRE reprobate population
- *     suicides at once. Integrated exactly over the tick span so online and offline agree. Every
+ *     suicides at once. Integrated exactly over the tick span so a run of small ticks and one large
+ *     delta agree. Every
  *     death mints one soul (the 1-person-1-soul invariant), so a wipe banks the whole population.
  *   - Aurevora (apex Gula): an exponentially-rising gold drain paid against a similarly-rising
  *     boost to player action efficiency (the efficiency half lives in `computeModifiers`, reading
@@ -53,8 +54,8 @@ export function aurevoraEfficiencyMul(secondsActive: number): number {
 
 /**
  * Probability that Astiwihad triggers at least once over `deltaSeconds`, integrating the per-second
- * chance exactly: `1 - (1 - p)^deltaSeconds`. Bounded in [0, 1) for any non-negative delta, so a big
- * offline catch-up tick can't exceed certainty and needs no separate cap.
+ * chance exactly: `1 - (1 - p)^deltaSeconds`. Bounded in [0, 1) for any non-negative delta, so a
+ * large single delta can't exceed certainty and needs no separate cap.
  */
 export function astiwihadTriggerChance(deltaSeconds: number): number {
   if (deltaSeconds <= 0) return 0;

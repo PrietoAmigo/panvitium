@@ -13,14 +13,14 @@ describe('tick — passive generation', () => {
     expect(eq(state.lifetime.influence, bn(0.5))).toBe(true); // 0.005 × maxInfluence(100) = 0.5/s
   });
 
-  it('accumulates sub-unit gains across 100 ms ticks (online == offline)', () => {
-    let online = createInitialState('seed', 0);
-    for (let i = 0; i < 10; i++) online = tick(online, 0.1).state;
-    const offline = tick(createInitialState('seed', 0), 1).state;
-    expect(goldOf(online)).toBe(goldOf(offline));
-    expect(influenceOf(online)).toBe(influenceOf(offline));
-    expect(goldOf(online)).toBe(2);
-    expect(influenceOf(online)).toBe(0); // floor(0.5)
+  it('accumulates sub-unit gains: ten 100 ms ticks equal one 1 s tick', () => {
+    let many = createInitialState('seed', 0);
+    for (let i = 0; i < 10; i++) many = tick(many, 0.1).state;
+    const single = tick(createInitialState('seed', 0), 1).state;
+    expect(goldOf(many)).toBe(goldOf(single));
+    expect(influenceOf(many)).toBe(influenceOf(single));
+    expect(goldOf(many)).toBe(2);
+    expect(influenceOf(many)).toBe(0); // floor(0.5)
   });
 
   it('caps influence at maxInfluence but lets gold run free', () => {
@@ -66,7 +66,7 @@ describe('tick — modifiers (Sin level / Sin skill)', () => {
   });
 });
 
-describe('tick — Lemure retargeted to offline gain (no flat influence)', () => {
+describe('tick — Lemure is dormant (ADR-032)', () => {
   function withLemure(lemures: number): GameState {
     const s = createInitialState('lemure', 0);
     return {
@@ -79,7 +79,7 @@ describe('tick — Lemure retargeted to offline gain (no flat influence)', () =>
     };
   }
 
-  it('no longer adds flat influence in the tick (Lemure now boosts the offline gain rate)', () => {
+  it('adds no flat influence (its offline-gain boost retired with offline progression)', () => {
     const base = tick(withLemure(0), 1).state.lifetime.influence.toNumber();
     const withFive = tick(withLemure(5), 1).state.lifetime.influence.toNumber();
     expect(withFive).toBeCloseTo(base, 6);
@@ -134,14 +134,6 @@ describe('resourceFlows — generation / upkeep / net breakdown', () => {
     const r = perSecondRates(s);
     expect(f.gold.net).toBeCloseTo(r.gold, 9);
     expect(f.influence.net).toBeCloseTo(r.influence.toNumber(), 9);
-  });
-
-  it('scales generation by the offline income multipliers', () => {
-    const s = createInitialState('seed', 0);
-    const base = resourceFlows(s);
-    const offline = resourceFlows(s, { offlineGoldMul: 3, offlineInfluenceMul: 2 });
-    expect(offline.gold.generation).toBeCloseTo(base.gold.generation * 3, 9);
-    expect(offline.influence.generation).toBeCloseTo(base.influence.generation * 2, 9);
   });
 
   it('reads all-zero while frozen under Morpheus', () => {

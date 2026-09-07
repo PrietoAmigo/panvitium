@@ -138,7 +138,7 @@ export function enterKatabasis(state: GameState): GameState {
   }));
   return {
     ...liquidated,
-    inKatabasis: true, // freeze the lifetime in `tick` (online + offline) until commit
+    inKatabasis: true, // freeze the lifetime in `tick` until commit
     lifetime: {
       ...liquidated.lifetime,
       activeToggles: [], // toggles stop

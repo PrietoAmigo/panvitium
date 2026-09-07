@@ -88,8 +88,8 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 3,
     sinLevel: 1,
     upkeep: { maxInfluenceFraction: 0.01 }, // 1% of max influence/s (Invocatio sheet)
-    // Stackable. Effect (modifiers.ts): an additive boost to the offline gain rate (Invocatio sheet),
-    // 0.025 × player/invocation efficiency per copy.
+    // Stackable. Effect DORMANT (ADR-032): it boosted the offline gain rate, which retired with
+    // offline progression. Kept as a bindable placeholder pending the stagnation rework.
   },
   behemoth: {
     id: 'behemoth',
