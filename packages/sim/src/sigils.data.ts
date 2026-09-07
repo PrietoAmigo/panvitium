@@ -93,14 +93,14 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 11,
     name: 'Gusion',
     coefficient: 1,
-    // ADR-033: −influence generation rate (a cursed seal — it softens the player's own influence).
+    // ADR-034: −influence generation rate (a cursed seal — it softens the player's own influence).
     effect: { kind: 'modifier', field: 'influenceRateMul', direction: 'decrease' },
   },
   12: {
     id: 12,
     name: 'Sitri',
     coefficient: 1,
-    // ADR-033: +Stagnation generation rate (the offline accrual rate).
+    // ADR-034: +Stagnation generation rate (the offline accrual rate).
     effect: { kind: 'modifier', field: 'stagnationGainMul', direction: 'increase' },
   },
   13: {
@@ -126,14 +126,14 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 15,
     name: 'Eligos',
     coefficient: 1,
-    // ADR-033: −Emptio purchase costs (the emptioGold channel).
+    // ADR-034: −Emptio purchase costs (the emptioGold channel).
     effect: { kind: 'costReduction', channel: 'emptioGold' },
   },
   16: {
     id: 16,
     name: 'Zepar',
-    coefficient: 1 / 3, // a third of the standard pct strength (ADR-033)
-    // ADR-033: −overall invocation soul costs (invocationSoul channel; composes with Orobas #55).
+    coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
+    // ADR-034: −overall invocation soul costs (invocationSoul channel; composes with Orobas #55).
     effect: { kind: 'costReduction', channel: 'invocationSoul' },
   },
   17: {
@@ -159,7 +159,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 19,
     name: 'Sallos',
     coefficient: 1,
-    // ADR-033: −Desidia Stagnation drain rate (composes with Lemure on desidiaDrainMul).
+    // ADR-034: −Desidia Stagnation drain rate (composes with Lemure on desidiaDrainMul).
     effect: { kind: 'modifier', field: 'desidiaDrainMul', direction: 'decrease' },
   },
   20: {
@@ -173,8 +173,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   21: {
     id: 21,
     name: 'Marax',
-    coefficient: 1 / 3, // a third of the standard pct strength (ADR-033)
-    // ADR-033: +Decimatio action efficiency (composes with Raum #40).
+    coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
+    // ADR-034: +Decimatio action efficiency (composes with Raum #40).
     effect: { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'increase' },
   },
   22: {
@@ -200,7 +200,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 24,
     name: 'Naberius',
     coefficient: 1,
-    // ADR-033: −Indagatio time. Indagatio is a `time`-mode action, so lifting its efficiency
+    // ADR-034: −Indagatio time. Indagatio is a `time`-mode action, so lifting its efficiency
     // shortens the duration (composes with Bifrons #46).
     effect: { kind: 'modifier', field: 'indagatioEfficiencyMul', direction: 'increase' },
   },
@@ -257,7 +257,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 31,
     name: 'Foras',
     coefficient: 1,
-    // ADR-033: +Desidia time acceleration (composes with Acedia's Procrastination on desidiaSpeedMul).
+    // ADR-034: +Desidia time acceleration (composes with Acedia's Procrastination on desidiaSpeedMul).
     effect: { kind: 'modifier', field: 'desidiaSpeedMul', direction: 'increase' },
   },
   32: {
@@ -486,7 +486,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 59,
     name: 'Orias',
     coefficient: 1,
-    // ADR-033: +maximum Stagnation (multiplies the Acedia-scaled cap).
+    // ADR-034: +maximum Stagnation (multiplies the Acedia-scaled cap).
     effect: { kind: 'modifier', field: 'stagnationMaxMul', direction: 'increase' },
   },
   60: {
@@ -500,8 +500,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   61: {
     id: 61,
     name: 'Zagan',
-    coefficient: 1 / 3, // a third of the standard pct strength (ADR-033)
-    // ADR-033: +Suasio action efficiency (composes with Dantalion #71).
+    coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
+    // ADR-034: +Suasio action efficiency (composes with Dantalion #71).
     effect: { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'increase' },
   },
   62: {

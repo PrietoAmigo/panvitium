@@ -73,7 +73,7 @@ export type ScalarModifierField =
   | 'faenerationOutputMul'
   | 'acolyteEfficiencyMul'
   | 'invocationEfficiencyMul'
-  // Stagnation / Desidia levers (ADR-033): the offline-gain rate, the cap, and the two Desidia
+  // Stagnation / Desidia levers (ADR-033/034): the offline-gain rate, the cap, and the two Desidia
   // multipliers, all sigil-targetable. Sitri #12, Orias #59, Foras #31 and Sallos #19 bind here.
   | 'stagnationGainMul'
   | 'stagnationMaxMul'

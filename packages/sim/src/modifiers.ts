@@ -199,12 +199,12 @@ export interface Modifiers {
    */
   readonly desidiaDrainMul: number;
   /**
-   * Multiplier on the offline Stagnation-gain rate (ADR-033), consumed by `grantStagnationForOffline`.
+   * Multiplier on the offline Stagnation-gain rate (ADR-034), consumed by `grantStagnationForOffline`.
    * Sitri #12 lifts it. Default 1×.
    */
   readonly stagnationGainMul: number;
   /**
-   * Multiplier on the Stagnation cap (ADR-033), consumed by `stagnationMax` on top of the Acedia-tier
+   * Multiplier on the Stagnation cap (ADR-034), consumed by `stagnationMax` on top of the Acedia-tier
    * doubling. Orias #59 lifts it. Default 1×.
    */
   readonly stagnationMaxMul: number;
@@ -556,7 +556,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // Desidia stagnation-drain (ADR-033): each bound Lemure multiplies the drain by (1 − 0.125), so
     // more Lemures = a cheaper Desidia; Sallos #19 softens it further.
     desidiaDrainMul: (1 - LEMURE_DRAIN_REDUCTION_PER_COPY) ** lemureCount * sc('desidiaDrainMul'),
-    // Stagnation gain / cap (ADR-033): Sitri #12 lifts the offline accrual rate, Orias #59 the cap.
+    // Stagnation gain / cap (ADR-034): Sitri #12 lifts the offline accrual rate, Orias #59 the cap.
     stagnationGainMul: sc('stagnationGainMul'),
     stagnationMaxMul: sc('stagnationMaxMul'),
   };

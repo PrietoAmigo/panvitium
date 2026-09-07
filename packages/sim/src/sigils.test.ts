@@ -101,7 +101,7 @@ describe('Sigil catalog', () => {
   it('is the full Goetia: 72 seals, each named, in ascending id order', () => {
     expect(SIGIL_IDS).toEqual([...SIGIL_IDS].sort((a, b) => a - b));
     expect(SIGIL_IDS).toEqual(Array.from({ length: 72 }, (_, i) => i + 1)); // no gaps: every id 1..72
-    // Every seal now carries a demon name (the full-Goetia naming pass — ADR-033).
+    // Every seal now carries a demon name (the full-Goetia naming pass — ADR-034).
     for (const id of SIGIL_IDS) expect(sigilById(id)!.name).toMatch(/\S/);
     expect(sigilById(32)!.name).toBe('Semet'); // Semet
     expect(sigilById(6)!.name).toBe('Valefor'); // Valefor
@@ -562,9 +562,9 @@ describe('Indagatio find-quality sigils (S12)', () => {
   });
 });
 
-describe('ADR-033: the ten reactivated seals (names + effects)', () => {
+describe('ADR-034: the ten reactivated seals (names + effects)', () => {
   // The offline-gain, lesser-ceremony and Depraedatio channels these seals once fed all retired.
-  // ADR-033 re-homes them onto the Stagnation + Desidia system and the live economy, so every one
+  // ADR-034 re-homes them onto the Stagnation + Desidia system and the live economy, so every one
   // of the ten now carries a Goetia name and a real effect (no orphaned seals remain).
   it('names: every reactivated seal carries its Goetia name', () => {
     expect(sigilById(11)!.name).toBe('Gusion');
@@ -607,7 +607,7 @@ describe('ADR-033: the ten reactivated seals (names + effects)', () => {
       1 + sigilStrength(sigilById(16)!, bn(100_000_000)),
       6,
     );
-    // Zepar #16, Marax #21 and Zagan #61 each carry a third of the standard pct strength (ADR-033).
+    // Zepar #16, Marax #21 and Zagan #61 each carry a third of the standard pct strength (ADR-034).
     expect(sigilById(16)!.coefficient).toBeCloseTo(1 / 3, 12);
     expect(sigilById(21)!.coefficient).toBeCloseTo(1 / 3, 12);
     expect(sigilById(61)!.coefficient).toBeCloseTo(1 / 3, 12);
@@ -693,7 +693,7 @@ describe('Per-invocation effectiveness sigils (S15)', () => {
 
   it('Buer #10 (familiar) scales a named invocation by id; Sitri is not on this channel', () => {
     expect(sigilById(10)!.effect).toEqual({ kind: 'invocationEffect', invocation: 'familiar' });
-    // Sitri #12 is wired again (ADR-033), but to stagnationGainMul, not the invocation-effect channel.
+    // Sitri #12 is wired again (ADR-034), but to stagnationGainMul, not the invocation-effect channel.
     expect(sigilById(12)!.effect).toEqual({
       kind: 'modifier',
       field: 'stagnationGainMul',
