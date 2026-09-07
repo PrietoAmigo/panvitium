@@ -13,7 +13,6 @@ import {
   REMAINING_GOLD_PER_AVARITIA_LEVEL,
   REMAINING_REPROBATE_PER_TRISTITIA_LEVEL,
   REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL,
-  ACEDIA_OFFLINE_COMPOUND_BASE,
   sigilById,
   sigilVisible,
   totalBound,
@@ -640,8 +639,8 @@ const VANAGLORIA_INFLUENCE_PER_LEVEL = 1.33;
 // The live numeric magnitude of a Sin's per-rank (Level) effect, in its natural unit, matching the
 // modifier engine exactly. Returns '' while the rank contributes nothing (Rank 0). Units differ by
 // Sin: the multiplicative efficiency ladders read '×N', the descent carry-over fractions read the
-// rank's marginal '+X%', Gula strips the negative tiers ('−X%'), and Acedia compounds offline gains
-// by L² in the exponent (session.ts: BASE^(seconds × L²)).
+// rank's marginal '+X%', and Gula strips the negative tiers ('−X%'). Acedia's per-rank effect is
+// dormant pending the stagnation rework (ADR-032), so it shows no live magnitude.
 function sinLevelEffectValue(sin: Sin, level: number): string {
   if (level <= 0) return '';
   switch (sin) {
@@ -660,7 +659,7 @@ function sinLevelEffectValue(sin: Sin, level: number): string {
     case 'superbia':
       return `+${(REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL * level * 100).toFixed(1)}%`;
     case 'acedia':
-      return `×${ACEDIA_OFFLINE_COMPOUND_BASE}^(${level * level}·s)`;
+      return ''; // dormant (ADR-032), pending the stagnation rework
   }
 }
 
@@ -674,6 +673,9 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
   const level = sinLevel(devotion);
   const dormant = level === 0;
   // Every Sin skill couples as ×(1 + intensity) in the engine, so its live magnitude is +intensity%.
+  // Acedia's Sloth skill is dormant (ADR-032, pending the stagnation rework): it drives nothing, so
+  // its intensity magnitude is hidden rather than shown beside the placeholder copy.
+  const skillDormant = sinKey === 'acedia';
   const skillValue = `+${(skillIntensity(devotion) * 100).toFixed(1)}%`;
   const levelValue = sinLevelEffectValue(sinKey, level);
   return (
@@ -693,8 +695,13 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
         <div className="ledger-eff">
           <span className="ls-tag">Skill</span>
           <span className="ls-txt">
-            <span className="ls-skill">{info.skill}</span>: {info.skillEffect}{' '}
-            <b className="ls-now">{skillValue}</b>
+            <span className="ls-skill">{info.skill}</span>: {info.skillEffect}
+            {!skillDormant && (
+              <>
+                {' '}
+                <b className="ls-now">{skillValue}</b>
+              </>
+            )}
           </span>
         </div>
         <div className="ledger-eff is-lvl">

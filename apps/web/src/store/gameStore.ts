@@ -55,7 +55,7 @@ import {
   serializeSaveBlob,
   parseSaveBlob,
 } from './persistence.js';
-import { resumeGame, type OfflineRecap } from '../game/session.js';
+import { resumeGame } from '../game/session.js';
 import {
   CURRENT_SCHEMA_VERSION,
   serializeGameState,
@@ -106,7 +106,7 @@ interface GameStore {
    * is derived from state (eternalSinRevealed), so this flag is only the one-time "show it now".
    */
   eternalReveal: boolean;
-  /** Load (or start) the game and offline-catch-up. Idempotent. */
+  /** Load (or start) the game. Idempotent. */
   init: () => void;
   /** Advance the simulation by `deltaSeconds`, folding any outcomes into the log/signature. */
   advance: (deltaSeconds: number) => void;
@@ -205,7 +205,7 @@ interface GameStore {
   confirmKatabasis: () => void;
   /** Close the Katabasis menu without descending. */
   closeKatabasis: () => void;
-  /** Dismiss the recap, paying out the time it was open as offline catch-up, and resume the game. */
+  /** Dismiss the recap and resume the game (the time it was open is frozen, not paid out). */
   closeRecap: () => void;
   /** Persist the current state to localStorage, bumping the save version. */
   persist: () => void;
@@ -215,13 +215,9 @@ interface GameStore {
   dismissAchievementToast: () => void;
   /** Clear the active notice. */
   dismissNotice: () => void;
-  /** The "while you were away" recap, shown once on load after a meaningful absence; null otherwise. */
-  offlineRecap: OfflineRecap | null;
-  /** Dismiss the welcome-back recap. */
-  dismissOfflineRecap: () => void;
   /** Wipe the save and start a fresh game. */
   hardReset: () => void;
-  /** Dismiss the launch title menu, paying out the time it was open as offline catch-up. */
+  /** Dismiss the launch title menu (the time it was open is frozen, not paid out). */
   dismissTitle: () => void;
   /** Open the Settings overlay (from the gear or the title menu). */
   openSettings: () => void;
@@ -290,7 +286,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   settingsOpen: false,
   recap: null,
   eternalReveal: false,
-  offlineRecap: null,
   user: null,
   authReady: false,
   syncStatus: 'idle',
@@ -300,31 +295,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   init: () => {
     if (get().ready) return;
-    const { deliveredOnResume, ...loaded } = loadGame(Date.now());
+    const loaded = loadGame(Date.now());
     // A save written mid-descent (inKatabasis) reloads frozen; resume the allocation menu so the
     // player picks up where they left off rather than landing in a torn-down lifetime.
     const phasePatch = loaded.state.inKatabasis === true ? { katabasisPhase: 'menu' as const } : {};
     set({ ...loaded, ...phasePatch, ready: true });
-    // Mail that arrived during the offline catch-up still owes its SFX: the live loop cues these
-    // from the tick result, but the catch-up tick runs inside resumeGame (its result discarded).
-    // Replay Fausto #5's door-knock so crossing the soul threshold while away still knocks (05).
-    if (deliveredOnResume.includes('fausto-5')) audio.play('email-knock');
   },
 
   advance: (deltaSeconds) => {
     const current = get().state;
     if (!current) return;
-    // Three screens suspend the LIVE tick — but they part ways on what becomes of the elapsed time.
-    //  • The Altar gate / Ledger (pre-commit, inKatabasis === false) is NOT suspended at all: the
-    //    soul is not yet under, so the lifetime ticks on online behind the gate.
-    //  • The committed descent — down among the Princes / Goetia seals (inKatabasis === true) — is a
-    //    TRUE freeze: time is lost, nothing accrues, the soul is in trance.
-    //  • The launch title menu and the "You Rise" recap suspend the live tick here, but the wall-
-    //    clock they hold is NOT lost — `dismissTitle` / `closeRecap` pay it out as OFFLINE catch-up
-    //    on exit (half-rate, Acedia compound), so lingering on either counts as offline time.
-    // For all three suspended cases we skip the sim so nothing accrues online (no suicides, no
-    // Mutuum gold, no soul minting). The RAF accumulator drains harmlessly through these no-op
-    // calls, so there is no catch-up burst when the screen closes.
+    // Screens that suspend the LIVE tick. The Altar gate / Ledger (pre-commit, inKatabasis === false)
+    // is NOT suspended: the soul is not yet under, so the lifetime ticks on online behind the gate.
+    // The committed descent (inKatabasis === true), the launch title menu, and the "You Rise" recap
+    // all suspend the tick — nothing accrues while they are open (the world does not advance offline
+    // either, so lingering costs the player nothing and gains nothing). We skip the sim so nothing
+    // accrues (no suicides, no Mutuum gold, no soul minting); the RAF accumulator drains harmlessly
+    // through these no-op calls, so there is no catch-up burst when the screen closes.
     const phase = get().katabasisPhase;
     const suspended =
       phase === 'recap' || (phase === 'menu' && current.inKatabasis === true) || get().titleOpen;
@@ -536,9 +523,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     // Rise the new lifetime's clock to wall-clock NOW (not the descent-frozen `lastTickAt`): the
-    // committed descent was a true freeze, so its duration is intentionally lost, while the recap
-    // that follows is timed from this instant — `closeRecap` pays out only the recap's wall-clock
-    // as offline catch-up, never the descent's.
+    // committed descent was a freeze, so its duration is intentionally lost. The recap that follows
+    // is also frozen (`closeRecap` only reconciles the clock), so its time neither accrues nor
+    // counts against the player.
     const { state, recap } = commitKatabasis(current, Date.now());
     set({ state, recap, katabasisPhase: 'recap', log: [], signature: null, notice: null });
     get().persist();
@@ -546,9 +533,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   openKatabasis: () => set({ katabasisPhase: 'menu', notice: null }),
   closeKatabasis: () => set({ katabasisPhase: null, notice: null }),
-  // The recap suspends the live tick but does not freeze the world: the wall-clock the player spent
-  // reading "You Rise" pays out as OFFLINE progression here (resumeGame: half-rate + Acedia compound,
-  // measured from the rise instant set in `confirmKatabasis`), then advances `lastTickAt` to now.
+  // The recap suspends the live tick and the world is frozen while it is open: `resumeGame` only
+  // reconciles `lastTickAt` to now (no progression), so the time spent reading "You Rise" is lost,
+  // not paid out.
   closeRecap: () => {
     const current = get().state;
     set({
@@ -574,11 +561,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   dismissSignature: () => set({ signature: null }),
   dismissAchievementToast: () => set({ achievementToast: null }),
   dismissNotice: () => set({ notice: null }),
-  dismissOfflineRecap: () => set({ offlineRecap: null }),
 
   hardReset: () => {
     clearSave();
-    const { deliveredOnResume: _delivered, ...loaded } = loadGame(Date.now());
+    const loaded = loadGame(Date.now());
     set({
       ...loaded,
       ready: true,
@@ -591,11 +577,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  // The launch title menu suspends the live tick but does not freeze the world: the wall-clock the
-  // player spent on the title screen pays out as OFFLINE progression on dismissal (resumeGame:
-  // half-rate + Acedia compound, measured from load), then advances `lastTickAt` to now. A New Game
-  // routes through here too, but its `hardReset` has just reset `lastTickAt` to now, so the catch-up
-  // is a no-op.
+  // The launch title menu suspends the live tick and the world is frozen while it is open:
+  // `resumeGame` only reconciles `lastTickAt` to now (no progression), so the time on the title
+  // screen is lost, not paid out. A New Game routes through here too, harmlessly.
   dismissTitle: () => {
     const current = get().state;
     set({
@@ -640,16 +624,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return false;
     }
     // Mirror the conflict chooser's "adopt this blob" path: write it through, then re-init from disk
-    // so the next load reconstructs the state (with offline progression) and resets transient UI.
+    // so the next load reconstructs the state (frozen, no progression) and resets transient UI.
     writeSaveBlob(blob);
-    const { deliveredOnResume: _delivered, ...loaded } = loadGame(Date.now());
+    const loaded = loadGame(Date.now());
     set({
       ...loaded,
       ready: true,
       log: [],
       signature: null,
       notice: null,
-      offlineRecap: null,
       recap: null,
       katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
     });
@@ -715,7 +698,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       // loadGame) would pick up the new localStorage payload; for an immediate effect we write it
       // through and re-init from disk.
       writeSaveBlob(pending.server);
-      const { deliveredOnResume: _delivered, ...loaded } = loadGame(Date.now());
+      const loaded = loadGame(Date.now());
       set({
         ...loaded,
         pendingConflict: null,

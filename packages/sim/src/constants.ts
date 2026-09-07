@@ -13,15 +13,6 @@
 export const BASE_GOLD_PER_SECOND = 2;
 
 /**
- * Player base offline efficiency (Globals row 8: 0.5×). Offline catch-up advances the logical
- * clock at half rate — applied to the elapsed-time scaling in the web's `resumeGame`, alongside
- * `offlineTimeMul` (which Procrastination / Dolce / Lemure / Mercatus Acediae lift). Previously a
- * spreadsheet constant with no code counterpart; wired with the Mercatus signature clauses so the
- * Acediae revenue exemption has a factor to be exempt FROM.
- */
-export const PLAYER_OFFLINE_EFFICIENCY = 0.5;
-
-/**
  * Base passive influence gain, as a fraction of maxInfluence per second (Globals: 0.005, unit
  * "% of max infl / s"). Influence is generated as a percentage of the maximum and capped there
  * (02 §1) — so gain/s = BASE_INFLUENCE_RATE × maxInfluence. (Supersedes the doc's flat "5/s".)
@@ -111,8 +102,7 @@ export const ETERNAL_SIN_THRESHOLD = 8398080000;
 /**
  * Astiwihad (apex Tristitia): per-second probability that the ENTIRE reprobate population commits
  * suicide at once (03 §2.4: "0.01% chance all reprobates commit suicide"). Integrated exactly over
- * a tick's span as `1 - (1 - p)^deltaSeconds`, so the online 10 Hz loop and one big offline catch-up
- * tick agree.
+ * a tick's span as `1 - (1 - p)^deltaSeconds`, so the 10 Hz loop and one large single delta agree.
  */
 export const ASTIWIHAD_WIPE_CHANCE_PER_SECOND = 0.0001;
 
@@ -145,15 +135,6 @@ export const AUREVORA_EFFICIENCY_GROWTH_PER_SECOND = 1.05;
 export const GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL = 0.2;
 export const LUXURIA_SUASIO_EFF_PER_LEVEL = 2;
 export const IRA_DECIMATIO_EFF_PER_LEVEL = 2;
-
-/**
- * Acedia per-level effect (03 §1, "Procrastination" / Belphegor): each level applies a
- * `1.0000002^(X · L²)` multiplier to the offline-time duration used by `resumeGame`, where X is the
- * offline SECONDS (sheet: "s is seconds offline in a row") and L is the Acedia level. Time-dependent — *not* a static modifier; applied at
- * session-resume time. The sheet pins no value for this base, so 1.0000002 is a genuine tuning
- * constant (not awaiting a sheet number); the shape (an exponential in `X · L²`) is authoritative.
- */
-export const ACEDIA_OFFLINE_COMPOUND_BASE = 1.0000002; // per SECOND offline (sheet rev 2026-06-12)
 
 /**
  * Maleficia enhancer magnitudes (03 §4 / Maleficia sheet). Each is an Opera-efficiency multiplier

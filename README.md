@@ -103,9 +103,24 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 907** (sim 548 · shared 63 · api 20 · web 276).
+**Current test count: 884** (sim 541 · shared 63 · api 20 · web 260).
 
-> **Latest change — memoize the Analytics Offline projection (performance).** The Offline tab runs a
+> **Latest change — offline is now a freeze; the offline-gain machinery is retired (ADR-032).**
+> Offline catch-up is gone. `resumeGame` no longer ticks: it only advances the logical clock to now,
+> so the world does not progress while the tab is closed and the player is restored exactly where they
+> left off (a mid-descent save still reopens on the Katabasis menu; the time away is knowable as
+> `now - lastTickAt` for the forthcoming stagnation system, but nothing consumes it yet). Removed the
+> whole offline-gain stack: `PLAYER_OFFLINE_EFFICIENCY`, the Acedia time-compound, the `offlineTimeMul`
+> modifier (Procrastination + Lemure), the `TickDeps.offline` catch-up multipliers and their
+> Panvitium / Aurevora lapse, the web `offlineRecap` / `offlineProjection` / `offlineFactors` helpers,
+> the Analytics **Offline** tab, and the welcome-back "Litany" modal. Five sigils (**Eligos #15**,
+> **Zepar #16**, **Sallos #19**, **Marax #21**, **Foras #31**) are orphaned per ADR-029's no-`inert`
+> pattern with placeholder copy; **Acedia** (Sloth) and the **Lemure** invocation go mechanically
+> dormant with placeholder text, all pending a **stagnation** resource plus a **Desidia**
+> time-acceleration toggle to be designed next. No save-schema bump. Net **−23 tests**
+> (sim 548 → 541, web 276 → 260).
+
+> **Earlier change — memoize the Analytics Offline projection (performance).** The Offline tab runs a
 > full `resumeGame` catch-up (`offlineProjection`) to fill its columns, and the store ticks at 10 Hz
 > (replacing `state` each tick), so the tab was re-simulating the whole away-window, up to 24 hours,
 > roughly ten times a second while open. The derivation is now pulled into a pure `offlineView` helper

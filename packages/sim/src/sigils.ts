@@ -72,8 +72,7 @@ export type ScalarModifierField =
   | 'murderRateMul'
   | 'faenerationOutputMul'
   | 'acolyteEfficiencyMul'
-  | 'invocationEfficiencyMul'
-  | 'offlineTimeMul';
+  | 'invocationEfficiencyMul';
 
 /** Which Katabasis carry-over roll a sigil's bonus feeds. */
 export type KatabasisRoll = 'gold' | 'reprobate' | 'maleficia';
@@ -113,13 +112,10 @@ export type SigilEffect =
   | { readonly kind: 'invokingPower' }
   | { readonly kind: 'costReduction'; readonly channel: CostChannel }
   | { readonly kind: 'indagatioDoubleFind' }
-  | { readonly kind: 'offlineResource'; readonly resource: 'gold' | 'influence' | 'generation' }
   | { readonly kind: 'invocationEffect'; readonly invocation: string }
   | { readonly kind: 'shutdownRefund' }
   | { readonly kind: 'duplicateOutput'; readonly category: 'suasio' | 'decimatio' | 'indagatio' }
   | { readonly kind: 'murderTriggersSuicide' }
-  | { readonly kind: 'offlineActionEfficiency' }
-  | { readonly kind: 'offlineAccrualWindow' }
   | { readonly kind: 'maleficiaEffect' }
   | { readonly kind: 'sigilEffect' }
   | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
@@ -341,28 +337,6 @@ export function sigilIndagatioDoubleFindChance(state: GameState, effectMul = 1):
 }
 
 /**
- * Offline-only income multipliers from bound sigils (Sallos #19 → gold, Forneus #30 → influence).
- * Each is a `(1 + strength)` factor applied to that resource's income during the `resumeGame` offline
- * catch-up only (threaded through `TickDeps`); online ticks are unaffected. `effectMul` carries the
- * sigil enhancers.
- */
-export function sigilOfflineResourceMul(
-  state: GameState,
-  effectMul = 1,
-): { gold: number; influence: number; generation: number } {
-  const out = { gold: 1, influence: 1, generation: 1 };
-  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
-    if (bound === undefined) continue;
-    const def = sigilById(Number(idStr));
-    if (!def || def.effect.kind !== 'offlineResource') continue;
-    const s = sigilStrength(def, bound) * effectMul;
-    if (s <= 0) continue;
-    out[def.effect.resource] *= 1 + s;
-  }
-  return out;
-}
-
-/**
  * Per-invocation effectiveness multipliers from bound sigils (Buer #10 → Familiar, Sitri #12 →
  * Succubus). Each is a `(1 + strength)` factor on that specific invocation's effect coefficient,
  * keyed by invocation id (distinct from the per-Sin `invocationSin` sigils). Consumed in
@@ -425,12 +399,7 @@ export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effec
 /** Σ strengths of one parameterless chance/strength kind across bound sigils. */
 function sumKind(
   state: GameState,
-  kind:
-    | 'murderTriggersSuicide'
-    | 'offlineActionEfficiency'
-    | 'offlineAccrualWindow'
-    | 'maleficiaEffect'
-    | 'sigilEffect',
+  kind: 'murderTriggersSuicide' | 'maleficiaEffect' | 'sigilEffect',
   effectMul = 1,
 ): number {
   let total = 0;
@@ -468,16 +437,6 @@ export function sigilDuplicateOutputChance(
 /** Leraie #14: the chance each murder also drives a witness to the rope (a coupled suicide). */
 export function sigilMurderTriggersSuicideChance(state: GameState, effectMul = 1): number {
   return Math.min(1, sumKind(state, 'murderTriggersSuicide', effectMul));
-}
-
-/** Marax #21: ×(1 + Σ) on action-timer advancement during offline catch-up only. */
-export function sigilOfflineActionEfficiencyMul(state: GameState, effectMul = 1): number {
-  return 1 + sumKind(state, 'offlineActionEfficiency', effectMul);
-}
-
-/** Foras #31: ×(1 + Σ) on the offline accrual window (the Acedia-compound saturation cap). */
-export function sigilOfflineAccrualWindowMul(state: GameState, effectMul = 1): number {
-  return 1 + sumKind(state, 'offlineAccrualWindow', effectMul);
 }
 
 /**

@@ -334,16 +334,14 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     expect(two.faenerationOutputMul).toBeCloseTo(1 + 0.05 * 1.1, 6); // Plutus bonus × invEff
   });
 
-  it('Lemure lifts the offline gain rate (efficiency-scaled), not flat influence', () => {
-    expect(computeModifiers(fresh()).flatInfluencePerSecond).toBe(0);
+  it('Lemure is dormant (ADR-032): no flat influence, no modifier contribution', () => {
     const withLemure = (lemures: number): GameState => {
       const s = fresh();
       return { ...s, lifetime: { ...s.lifetime, invocations: { lemure: lemures } } };
     };
-    // Retargeted off influence/Husk: no flat-influence contribution any more.
+    // Its old effect (an offline-gain-rate boost) retired with offline progression; it no longer
+    // touches the bundle, and it never contributed flat influence.
     expect(computeModifiers(withLemure(3)).flatInfluencePerSecond).toBe(0);
-    // Baseline playerEff = invEff = 1, factor 0.025 per copy, multiplicative on the offline mul.
-    expect(computeModifiers(withLemure(0)).offlineTimeMul).toBeCloseTo(1, 6);
-    expect(computeModifiers(withLemure(2)).offlineTimeMul).toBeCloseTo(1 + 0.025 * 2, 6);
+    expect(computeModifiers(withLemure(3))).toEqual(computeModifiers(fresh()));
   });
 });

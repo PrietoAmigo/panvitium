@@ -14,8 +14,8 @@
  * carrying out an action.)
  *
  * `remaining` is the seconds left on the in-flight cycle, or null when between cycles. The loop
- * counts down and catches up multiple cycles within one (possibly offline) delta, so offline
- * progression and online ticks share this single code path.
+ * counts down and catches up multiple cycles within one (possibly large) delta, so a run of small
+ * ticks and one large delta share this single code path.
  */
 import { resolveAction, runnerCycleDuration } from './actions.js';
 import { type Tier } from './probability.js';

@@ -325,7 +325,6 @@ export const strings = {
       decimatioEff: 'Decimatio efficiency',
       faeneratioOutput: 'Faeneratio output',
       stellar: 'Stellar chance',
-      offline: 'offline gain',
       baseSuicide: 'base suicide rate',
       gold: 'gold',
       apocalyptic: 'Apocalyptic chance',
@@ -346,7 +345,7 @@ export const strings = {
       fama: '+5% influence gain per copy, scaled by your efficiency.',
       nightmare: '+0.00005/s base reprobate suicide rate per copy, scaled by your efficiency.',
       harpy: 'A background Good-only Pogrom at 5% of your efficiency.',
-      lemure: '+2.5% offline gain rate per copy, scaled by your efficiency.',
+      lemure: 'Dormant, pending the stagnation rework.',
       behemoth: '+0.05% Stellar chance per copy, scaled by your efficiency.',
       midas: '×3 gold gain but ×100 the Apocalyptic chance.',
       plutus: '+5% Faeneratio output per copy, scaled by your efficiency.',
@@ -395,30 +394,10 @@ export const strings = {
     noAcolytes: 'No acolytes recruited yet.',
     ofMax: 'of',
     playerEfficiency: 'Player action efficiency',
-    offline: 'Offline',
-    // Flow-table column headers (Main + Offline): gross generation, the upkeep drawn against it, and
-    // the net (generation minus upkeep). Per second on the Main tab; totals over the window offline.
+    // Flow-table column headers (Main): gross generation, the upkeep drawn against it, and the net
+    // (generation minus upkeep), per second.
     upkeep: 'Upkeep',
     net: 'Net',
-    // Offline tab window selector (how long away to project over).
-    window1h: '1 hour',
-    window8h: '8 hours',
-    window24h: '24 hours',
-    // Offline tab: a projection of what accrues while away (the world runs at a reduced offline rate;
-    // the Acedia sloth compound makes very long absences richer still, so a longer window is rougher).
-    offlineNote:
-      'Estimated gains for the selected time away. The world runs at a reduced rate offline, so a longer absence is a rougher estimate.',
-    offlineBuffs: 'Active offline effects',
-    // The offline modifiers surfaced on the Offline tab, keyed by OfflineBuffKind. Each reads as a
-    // multiplier chip beside its label (e.g. Sloth compound ×3.20).
-    offlineBuffLabels: {
-      baseRate: 'Offline base rate',
-      offlineTime: 'Offline time',
-      acediaCompound: 'Sloth compound',
-      gold: 'Offline gold',
-      influence: 'Offline influence',
-      generation: 'Offline generation',
-    },
   },
   emails: {
     title: 'Emails',
@@ -717,15 +696,6 @@ export const strings = {
       },
     },
   },
-  welcomeBack: {
-    title: 'While you were away',
-    away: 'While you stand by',
-    nothing: 'The lair lay quiet; nothing stirred.',
-    dismiss: 'Reengage',
-    mottoLead: 'PRAEMIUM',
-    mottoConjunction: 'sine',
-    mottoTrail: 'LABORE',
-  },
   settings: {
     title: 'Settings',
     exportTitle: 'Export save',
@@ -810,9 +780,10 @@ export const strings = {
       english: 'Sloth',
       epithet: 'The Idle Throne',
       skill: 'Procrastination',
-      skillEffect: 'Multiplies offline generation, gold and efficiency by 1 + intensity.',
-      levelEffect:
-        'Each level compounds your offline time by ×1.0000002 per offline second, per level squared.',
+      // Both Sloth effects modified offline gains, which are gone (ADR-032, offline is now a freeze).
+      // Placeholder copy until Sloth is re-homed onto the stagnation resource in a later pass.
+      skillEffect: 'Dormant, pending the stagnation rework.',
+      levelEffect: 'Dormant, pending the stagnation rework.',
     },
     vanagloria: {
       prince: 'Rosier',
@@ -914,13 +885,13 @@ export const strings = {
       12: 'Its office stands vacant; the trade it fed is gone.',
       13: 'Decimatio positive outcomes \u2191',
       14: 'Murder \u2192 suicide chance \u2191',
-      15: 'Offline influence gain \u2191',
-      16: 'Offline reprobate generation \u2191',
+      15: 'Dormant; the favour it won in idle hours no longer accrues.',
+      16: 'Dormant; the barren broods it bred in idle hours no longer come.',
       17: 'Suasio negative outcomes \u2193',
       18: 'Acolyte efficiency \u2191',
-      19: 'Offline gold gain \u2191',
+      19: 'Dormant; the coin it gathered in idle hours no longer comes.',
       20: 'Gold kept on descent \u2191',
-      21: 'Offline action efficiency \u2191',
+      21: 'Dormant; the idle hours it hastened no longer pass.',
       22: 'Decimatio negative outcomes \u2193',
       23: 'Murder rate \u2191',
       24: 'Vitium Compositum effects \u2191',
@@ -930,7 +901,7 @@ export const strings = {
       28: 'Superbia invocation effect \u2191',
       29: 'Indagatio Stellar chance \u2191',
       30: 'Invoking power \u2191 (flat)',
-      31: 'Offline accrual window \u2191',
+      31: 'Dormant; the long sleep it deepened is no more.',
       32: 'Sigil effects \u2191',
       33: 'Maleficia effects \u2191',
       34: 'Luxuria invocation effect \u2191',
@@ -1028,7 +999,7 @@ export const strings = {
     verse:
       'Iam pridem scis te perditum esse. Quiescere non potes, sed nihil agis: nihil enim venenum acerbissimum est, ornamentum gravissimum, quod cervicem premit nec umquam deponi patitur. At inter has tenebras amor eorum iustus ignem accendit, eaque sola flamma, quamvis tenuis, viam tibi monstrat.',
     scoreLabel: 'Time to ascend',
-    // Total time (online + offline) the lifetime took to reach the reveal.
+    // Total wall-clock time since this game began, to the reveal (lastTickAt minus startedAt).
     runtimeLabel: 'Time',
     dismiss: 'Accept',
   },
@@ -1092,7 +1063,6 @@ export const strings = {
         playerEfficiencyMul: 'your efficiency',
         acolyteEfficiencyMul: 'acolyte efficiency',
         influenceRegenRate: 'influence regeneration',
-        offlineRate: 'offline progress',
       } as Record<string, string>,
       // Option labels only; the sub-label under each option is generated from the choice's effects.
       calls: {

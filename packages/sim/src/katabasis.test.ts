@@ -325,7 +325,7 @@ describe('tick — frozen while inKatabasis (02 §6)', () => {
     };
   }
 
-  it('runs no simulation when inKatabasis — souls and reprobates are unchanged, even offline-sized', () => {
+  it('runs no simulation when inKatabasis — souls and reprobates are unchanged, even over a large delta', () => {
     const frozen: GameState = { ...withReprobates(5000), inKatabasis: true };
     const soulsBefore = frozen.souls.toNumber();
     const r = tick(frozen, 3600); // an hour of would-be suicides

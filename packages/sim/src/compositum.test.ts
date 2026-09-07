@@ -266,23 +266,6 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     expect(s.souls.toNumber()).toBeGreaterThan(before + 1000);
   });
 
-  it('an offline catch-up tick lapses Panvitium before simulating (no reload exploit)', () => {
-    // Toggle Panvitium, then simulate a reload: one large offline tick. With `offline: true` the
-    // ritual is torn down BEFORE any harvest, so the start-sampled cost can't undercharge a long
-    // burn and reap an end-sampled harvest (ADR-004 — online and offline must agree).
-    let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e12), 1e12));
-    s = { ...s, souls: bn(1_000_000) };
-    const a = activateToggle(s, 'panvitium');
-    if (!a.ok) throw new Error('activate');
-    s = a.state;
-    const before = s.souls.toNumber();
-    const offline = tick(s, 60, { offline: true }).state; // 60 s "away", one tick
-    expect(offline.lifetime.activeToggles).not.toContain('panvitium');
-    expect(offline.lifetime.toggleDurations.panvitium).toBeUndefined();
-    // No Panvitium harvest ran, so the soul hoard is essentially unchanged (no ×thousands blow-up).
-    expect(offline.souls.toNumber()).toBeLessThan(before * 1.001);
-  });
-
   it('Katabasis clears toggleDurations', () => {
     let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e12), 1e12));
     const a = activateToggle(s, 'panvitium');

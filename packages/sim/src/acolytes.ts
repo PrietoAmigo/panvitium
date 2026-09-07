@@ -154,7 +154,7 @@ export function assignedCount(state: GameState, actionId: string): number {
  * never stalls on resources.
  *
  * Delegation LOOPS: an assigned acolyte runs its action cycle after cycle — resolving one and
- * starting the next, catching up multiple cycles within one (possibly offline) delta — and stays
+ * starting the next, catching up multiple cycles within one (possibly large) delta — and stays
  * assigned until the player recalls it (or Katabasis clears the retinue). It is set-and-forget
  * automation, not a single errand. (Acolytes can instead be assigned to help run a Vitium Compositum
  * ceremony — a different path.) Events from acolyte resolutions are returned in the same shape as

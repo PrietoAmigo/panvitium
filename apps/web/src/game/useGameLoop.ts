@@ -1,8 +1,8 @@
 /**
  * The game loop (ADR-004): one requestAnimationFrame driver with a fixed 100 ms (10 Hz) logical
- * tick and an accumulator, so a slow or backgrounded tab catches up correctly. Offline
- * progression already happened once at load (see store `init` -> `loadGame`); this drives the
- * live session and the debounced autosave.
+ * tick and an accumulator, so a slow or backgrounded tab catches up correctly. The game does not
+ * advance while offline (ADR-032): load simply restores the saved state frozen (see store `init` ->
+ * `loadGame`). This drives the live session and the debounced autosave.
  */
 import { useEffect } from 'react';
 import { useGameStore } from '../store/gameStore.js';

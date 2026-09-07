@@ -4,9 +4,9 @@
  * across lifetimes). Most predicates derive entirely from current state; the two that need history
  * read the dedicated fields added for them (`katabasisCount`, `toggleDurations`).
  *
- * Evaluation runs as the last step of `tick` (see tick.ts), so unlocks happen at the 10 Hz cadence
- * and offline progression unlocks anything crossed while away. The newly-unlocked ids are returned
- * from the tick so the UI can surface a toast.
+ * Evaluation runs as the last step of `tick` (see tick.ts), so unlocks happen at the 10 Hz cadence.
+ * (The game freezes offline (ADR-032), so nothing is crossed while away.) The newly-unlocked ids are
+ * returned from the tick so the UI can surface a toast.
  *
  * Deferred: "The Goetia, Recited" (bind every one of the 72 sigils across one or more lifetimes) is
  * not wired — it is structurally unearnable until all 72 sigils exist (only a subset is bindable

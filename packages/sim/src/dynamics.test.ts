@@ -81,11 +81,11 @@ describe('reprobate dynamics — suicide pool', () => {
     expect(after).toBe(before);
   });
 
-  it('drains a multi-million-unit pool in one call (uncapped offline catch-up)', () => {
-    // ADR-004 amended: offline progression is uncapped, so one catch-up tick can land millions of
-    // accrued units in a pool at once. The drain must be bulk (O(1)), not unit-at-a-time — the old
-    // per-unit loop respread the whole state each iteration and hung the load for ~1 s per 1e6
-    // units. This would time out under that implementation.
+  it('drains a multi-million-unit pool in one call (large single delta)', () => {
+    // A large single delta (e.g. a future time-acceleration tick) can land millions of accrued units
+    // in a pool at once. The drain must be bulk (O(1)), not unit-at-a-time — the old per-unit loop
+    // respread the whole state each iteration and hung for ~1 s per 1e6 units. This would time out
+    // under that implementation.
     const s = pop(30_000_000);
     const primed: GameState = {
       ...s,

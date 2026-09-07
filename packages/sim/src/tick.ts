@@ -1,9 +1,11 @@
 /**
  * The tick function (ADR-004).
  *
- * One pure function advances the whole game by a span of seconds. The same function serves BOTH the
- * live 10 Hz loop (delta ≈ 0.1 s) and offline progression (one call, large capped delta), so online
- * and offline gains can never drift apart.
+ * One pure function advances the whole game by a span of seconds — the same math whatever the span,
+ * so a run of small ticks and a single large one agree (fractional pools, exact integrals). The live
+ * 10 Hz loop calls it at a fixed 100 ms step. The game does NOT advance while offline: a closed tab
+ * freezes (see `resumeGame`), so no catch-up tick runs on load (ADR-032, superseding ADR-004's
+ * offline catch-up).
  *
  * Purity contract: no DOM access, no `Math.random`, no mutation of the input `state`. All randomness
  * comes from the injected seeded RNG (ADR-011); its advanced state is written back into the result.
@@ -27,62 +29,6 @@ import { makeRng } from './rng.js';
 import { type ActionTimer, type GameState } from './state.js';
 import { evaluateAchievements } from './achievements.js';
 import { deliverEmails } from './emails.js';
-
-/** Injected dependencies for a tick (tuning tables / per-call flags not part of the state). */
-export interface TickDeps {
-  /**
-   * Offline-only income multipliers, applied to this tick's gold / influence income (Sallos #19 /
-   * Forneus #30). Default 1 (online ticks pass nothing, so behaviour is unchanged); `resumeGame`
-   * passes the sigil-derived values for the single offline catch-up tick.
-   */
-  readonly offlineGoldMul?: number;
-  readonly offlineInfluenceMul?: number;
-  /**
-   * Offline-only multiplier on the reprobate-generation pool accrual (Zepar #16). Default 1;
-   * `resumeGame` passes the sigil-derived value for the catch-up tick.
-   */
-  readonly offlineGenerationMul?: number;
-  /**
-   * Offline-only multiplier on ACTION-TIMER advancement (Marax #21 — "+offline action
-   * efficiency"): the in-flight Opera timers advance by `deltaSeconds × this` during the catch-up
-   * tick. Default 1.
-   */
-  readonly offlineActionTimeMul?: number;
-  /**
-   * Set by `resumeGame` for the single offline catch-up tick. Panvitium and Aurevora ramp their
-   * cost / drain exponentially with active duration and are *point-sampled* per tick — correct at
-   * the live 10 Hz loop (δ ≈ 0.1 s) but not over one large offline δ, where the start-sampled cost
-   * undercharges (so the ritual survives a burn that would have self-extinguished online) while the
-   * harvest / efficiency is read at the end-of-span rate. That mismatch let "toggle Panvitium, then
-   * reload" mint orders of magnitude more souls than playing it live (ADR-004: online and offline
-   * must agree). Rather than integrate a compounding harvest exactly (impossible to match the 10 Hz
-   * discrete product), the catch-up tick refuses to run these ramped systems at all: both are torn
-   * down here before any simulation, so a burn left running when the tab closed simply lapses. They
-   * still run normally online, where the live loop advances in fixed 100 ms steps (useGameLoop) even
-   * after the tab is backgrounded, so no large online δ ever reaches them.
-   */
-  readonly offline?: boolean;
-}
-
-/** Tear down the duration-ramped systems (Panvitium, Aurevora) that must not run on an offline
- *  catch-up tick — see `TickDeps.offline`. Pure; a no-op when neither is active. */
-function stripRampedForOffline(state: GameState): GameState {
-  let lifetime = state.lifetime;
-  if (lifetime.activeToggles.includes('panvitium')) {
-    const { panvitium: _drop, ...toggleDurations } = lifetime.toggleDurations;
-    lifetime = {
-      ...lifetime,
-      activeToggles: lifetime.activeToggles.filter((t) => t !== 'panvitium'),
-      toggleDurations,
-    };
-  }
-  if ((lifetime.invocations.aurevora ?? 0) > 0) {
-    const { aurevora: _dropInv, ...invocations } = lifetime.invocations;
-    const { aurevora: _dropDur, ...invocationDurations } = lifetime.invocationDurations;
-    lifetime = { ...lifetime, invocations, invocationDurations };
-  }
-  return lifetime === state.lifetime ? state : { ...state, lifetime };
-}
 
 /** The result of advancing the game: the new state, outcome events, and transient notices. */
 export interface TickResult {
@@ -180,39 +126,27 @@ export interface ResourceFlows {
   readonly influence: ResourceFlow;
 }
 
-/** Offline-only income multipliers for the flow breakdown (Sallos gold, Eligos influence); 1× online. */
-export interface FlowDeps {
-  readonly offlineGoldMul?: number;
-  readonly offlineInfluenceMul?: number;
-}
-
 /**
  * The per-second gold and influence flows, split into gross generation, upkeep, and net — the same
  * income/upkeep math as `perSecondRates` and the tick's steps 1/1a, decomposed so the Analytics
  * panel can show each column instead of only the net. `net` here is uncapped (generation − upkeep),
- * so it can read negative and, unlike `perSecondRates.influence`, is not floored at 0. Pass the
- * offline income multipliers in `deps` for the offline projection (they scale generation and, through
- * it, the %-of-gain upkeep — exactly as the tick applies them). Zero while frozen (mid-descent or
- * under Morpheus).
+ * so it can read negative and, unlike `perSecondRates.influence`, is not floored at 0. Zero while
+ * frozen (mid-descent or under Morpheus).
  */
-export function resourceFlows(state: GameState, deps: FlowDeps = {}): ResourceFlows {
+export function resourceFlows(state: GameState): ResourceFlows {
   const zero: ResourceFlow = { generation: 0, upkeep: 0, net: 0 };
   if (state.inKatabasis === true || (state.lifetime.invocations.morpheus ?? 0) > 0) {
     return { gold: zero, influence: zero };
   }
   const mods = computeModifiers(state);
-  const offlineGoldMul = deps.offlineGoldMul ?? 1;
-  const offlineInfluenceMul = deps.offlineInfluenceMul ?? 1;
   const grossGold =
-    ((BASE_GOLD_PER_SECOND + faeneratioGoldPerSecond(state, mods) + mods.flatGoldPerSecond) *
+    (BASE_GOLD_PER_SECOND + faeneratioGoldPerSecond(state, mods) + mods.flatGoldPerSecond) *
       mods.goldRateMul -
-      anatocismusDepositPerSecond(state, mods)) *
-    offlineGoldMul;
+    anatocismusDepositPerSecond(state, mods);
   const effMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const grossInfluence =
-    (effMax.toNumber() * BASE_INFLUENCE_RATE * mods.influenceRateMul +
-      mods.flatInfluencePerSecond * mods.influenceRateMul) *
-    offlineInfluenceMul;
+    effMax.toNumber() * BASE_INFLUENCE_RATE * mods.influenceRateMul +
+    mods.flatInfluencePerSecond * mods.influenceRateMul;
   const up = invocationUpkeep(state, effMax.toNumber());
   const aurevoraDrain =
     (state.lifetime.invocations.aurevora ?? 0) > 0
@@ -232,14 +166,14 @@ export function resourceFlows(state: GameState, deps: FlowDeps = {}): ResourceFl
 }
 
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
-export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}): TickResult {
+export function tick(state: GameState, deltaSeconds: number): TickResult {
   if (deltaSeconds <= 0)
     return { state, events: [], notices: [], achievementsUnlocked: [], emailsDelivered: [] };
 
   // Frozen during the descent (02 §6): while the Katabasis menu is open the lifetime is in trance.
   // Absorb the elapsed time (advance the clock) but run NO simulation — no income, no reprobate
-  // dynamics, no soul minting — for online ticks and offline catch-up alike. Cleared at commit, so a
-  // reload mid-descent resumes the allocation menu instead of fast-forwarding a torn-down lifetime.
+  // dynamics, no soul minting. Cleared at commit, so a reload mid-descent resumes the allocation
+  // menu instead of fast-forwarding a torn-down lifetime.
   if (state.inKatabasis === true) {
     return {
       state: { ...state, lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000) },
@@ -272,11 +206,6 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
     };
   }
 
-  // Offline catch-up (ADR-004): the duration-ramped systems (Panvitium, Aurevora) cannot be
-  // point-sampled over one large δ without the reload exploit, so they lapse before the catch-up
-  // runs — see `TickDeps.offline`. Online ticks pass nothing, so behaviour there is unchanged.
-  if (deps.offline === true) state = stripRampedForOffline(state);
-
   const rng = makeRng(state.rngState);
 
   // 0. Vitium Compositum upkeep (02 §3). Deduct each active toggle's per-second cost BEFORE any
@@ -298,35 +227,26 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   //    Gold/s = (base + (Mutuum + Thesaurus interest) × faenerationOutputMul + flat) × goldRateMul.
   //    Influence gain = (proportional base + flat sources) × influenceRateMul, capped at
   //    effectiveMax = base × maxInfluenceMul. Faeneratio income obeys the same multipliers as base
-  //    so Avaritia / Silver / Acclaim scale it too. The interest term rides the offline efficiency
-  //    factor like everything else (ADR-026 — no Acediae-style exemption survives the Mercatus
-  //    removal). The ceremony income and percentage-VC terms retired with the lesser ceremonies
-  //    (ADR-031 — Panvitium yields souls, not gold or influence).
+  //    so Avaritia / Silver / Acclaim scale it too. The ceremony income and percentage-VC terms
+  //    retired with the lesser ceremonies (ADR-031 — Panvitium yields souls, not gold or influence).
   //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
   //    only at display/spend/comparison boundary.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
-  // Offline-only income multipliers (Sallos #19 gold, Forneus #30 influence). 1× online.
-  const offlineGoldMul = deps.offlineGoldMul ?? 1;
-  const offlineInfluenceMul = deps.offlineInfluenceMul ?? 1;
   // Anatocismus (usura-4): half of each interest payment auto-deposits into the hoard instead of
   // paying out — split AFTER all multipliers (spec §6), so the liquid line is simply the full
-  // composition minus the deposit rate, and the hoard gains the deposit under the same offline factor.
-  const anatocismusPerSecond = anatocismusDepositPerSecond(state, mods) * offlineGoldMul;
+  // composition minus the deposit rate, and the hoard gains the deposit.
+  const anatocismusPerSecond = anatocismusDepositPerSecond(state, mods);
   const goldPerSecond =
     (BASE_GOLD_PER_SECOND + faeneratioGoldPerSecond(state, mods) + mods.flatGoldPerSecond) *
-      mods.goldRateMul *
-      offlineGoldMul -
+      mods.goldRateMul -
     anatocismusPerSecond;
   const proportionalInfluence = mul(
     effectiveMax,
-    BASE_INFLUENCE_RATE * mods.influenceRateMul * offlineInfluenceMul * deltaSeconds,
+    BASE_INFLUENCE_RATE * mods.influenceRateMul * deltaSeconds,
   );
   // Flat influence/s from invocations (Fama) and sigils (Decarabia #69). Additive, scaled by the
   // influence-rate multiplier and folded under the same maxInfluence cap below.
-  const flatInfluence = mul(
-    mods.flatInfluencePerSecond * mods.influenceRateMul * offlineInfluenceMul,
-    deltaSeconds,
-  );
+  const flatInfluence = mul(mods.flatInfluencePerSecond * mods.influenceRateMul, deltaSeconds);
   const lifetime = {
     ...state.lifetime,
     gold: add(state.lifetime.gold, mul(goldPerSecond, deltaSeconds)),
@@ -391,15 +311,13 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
 
   // 2. Resolve in-flight Opera timers. A timer whose remaining time falls to <= 0 this tick
   //    completes: its outcome is drawn from `rng` and applied, scaled by player efficiency.
-  //    A large (offline) delta resolves every queued action at once. Emptio carries its target
+  //    A large delta resolves every queued action at once. Emptio carries its target
   //    maleficium id on the timer so the resolver knows which item was being bought.
   if (working.lifetime.actionQueue.length > 0) {
-    // Marax #21: during the offline catch-up tick, the in-flight timers advance faster.
-    const actionDelta = deltaSeconds * (deps.offlineActionTimeMul ?? 1);
     const remaining: ActionTimer[] = [];
     const completed: ActionTimer[] = [];
     for (const timer of working.lifetime.actionQueue) {
-      const left = timer.remainingSeconds - actionDelta;
+      const left = timer.remainingSeconds - deltaSeconds;
       if (left > 0) {
         remaining.push({
           actionId: timer.actionId,
@@ -432,9 +350,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer
   //    births / suicides / murders (02 §9). Each death mints 1 soul. The pools live on the
   //    lifetime state and persist across save/load (ADR-023 additive optional).
-  working = applyReprobateDynamics(working, deltaSeconds, {
-    generationMul: deps.offlineGenerationMul ?? 1,
-  });
+  working = applyReprobateDynamics(working, deltaSeconds);
 
   // 4b. Panvitium soul harvest (03 §2.3): while the ritual burns, it mints souls each second in
   //     proportion to the current soul total — R(t) × souls — compounding the hoard for as long as
@@ -469,7 +385,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   // 4d. Defixio curse (Maleficia): a single-use hex on the reprobate pool. It culls the pool at
   //     eᵗ per second (t = seconds the curse has run), integrated exactly over the tick span:
   //     cumulative kills by time t are ⌊∫₀ᵗ eˢ ds⌋ = ⌊eᵗ − 1⌋ and this tick culls the difference —
-  //     so the 10 Hz loop and one big offline catch-up tick agree (ADR-004) and no sub-1 fraction
+  //     so the 10 Hz loop and one big delta agree (ADR-004) and no sub-1 fraction
   //     is lost between ticks. Mints a soul per death until the pool is empty — then the curse
   //     lifts. No RNG draw (single pool).
   if (working.lifetime.defixio) {
@@ -511,7 +427,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
 
   // 6. Achievements (03 §7). Evaluate the catalog against the fully-advanced state; fold any newly-
   //    earned ids into state.achievements and surface them for a toast. Last step, so every change
-  //    this tick (and offline progression run as one big tick) is reflected.
+  //    this tick is reflected.
   const finalState: GameState = {
     ...working,
     lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
@@ -520,7 +436,7 @@ export function tick(state: GameState, deltaSeconds: number, deps: TickDeps = {}
   const ach = evaluateAchievements(finalState);
 
   // 7. Impact-feedback mail (5.2 / content 05). Arm and deliver any newly-triggered emails against
-  //    the fully-advanced state — last, like achievements, so one big offline tick also catches up
+  //    the fully-advanced state — last, like achievements, so one big delta also catches up
   //    the inbox (and its arm timers). `delivered` surfaces this tick's new mail for SFX cues.
   const mailed = deliverEmails(ach.state, finalState.lastTickAt);
 

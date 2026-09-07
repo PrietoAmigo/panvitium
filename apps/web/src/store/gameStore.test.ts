@@ -235,8 +235,8 @@ describe('gameStore — Katabasis', () => {
   });
 });
 
-describe('gameStore — recap & title count as offline time (not a freeze)', () => {
-  it('dismissTitle pays out the title-open wall-clock as offline catch-up', () => {
+describe('gameStore — title & recap are frozen (no offline progression, ADR-032)', () => {
+  it('dismissTitle freezes the title-open time: no gains, clock reconciled to now', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       titleOpen: true,
@@ -250,13 +250,13 @@ describe('gameStore — recap & title count as offline time (not a freeze)', () 
     store().dismissTitle();
     expect(store().titleOpen).toBe(false);
     const after = store().state as GameState;
-    // The hour did not vanish — it paid out at the offline rate.
-    expect(floor(after.souls).toNumber()).toBeGreaterThan(soulsBefore);
-    // …and the clock is reconciled to ~now, so a later reload can't re-count the span.
+    // The hour was frozen — no offline progression, so souls are unchanged.
+    expect(floor(after.souls).toNumber()).toBe(soulsBefore);
+    // …and the clock is reconciled to ~now, so the live loop resumes cleanly from here.
     expect(Math.abs(after.lastTickAt - Date.now())).toBeLessThan(5000);
   });
 
-  it('the committed descent is a true freeze, but the recap that follows counts as offline time', () => {
+  it('both the committed descent and the recap that follows are frozen (no gains)', () => {
     vi.useFakeTimers();
     try {
       vi.setSystemTime(1_700_000_000_000);
@@ -268,14 +268,14 @@ describe('gameStore — recap & title count as offline time (not a freeze)', () 
       store().beginKatabasis(); // down among the Princes — inKatabasis, the soul is under
       vi.setSystemTime(t0 + 1800_000); // 30 minutes spent allocating in Hell
       const soulsAtRise = floor((store().state as GameState).souls).toNumber();
-      store().confirmKatabasis(); // rise: the descent's 30 min mint nothing (true freeze)
+      store().confirmKatabasis(); // rise: the descent's 30 min mint nothing (freeze)
       expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtRise);
       expect(store().katabasisPhase).toBe('recap');
       vi.setSystemTime(t0 + 1800_000 + 3600_000); // read the recap for an hour
       store().closeRecap();
       expect(store().katabasisPhase).toBeNull();
-      // The recap hour paid out as offline; the descent half-hour did not.
-      expect(floor((store().state as GameState).souls).toNumber()).toBeGreaterThan(soulsAtRise);
+      // The recap hour is frozen too — no offline progression, so souls are unchanged.
+      expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtRise);
     } finally {
       vi.useRealTimers();
     }

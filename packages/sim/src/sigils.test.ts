@@ -40,9 +40,6 @@ import {
   sigilKatabasisBonus,
   sigilModifierContributions,
   sigilMurderTriggersSuicideChance,
-  sigilOfflineAccrualWindowMul,
-  sigilOfflineActionEfficiencyMul,
-  sigilOfflineResourceMul,
   sigilShutdownRefundMul,
   sigilStrength,
   sigilVisible,
@@ -179,13 +176,6 @@ describe('In-lifetime modifier contributions', () => {
   it('Belial #68 lifts the influence rate', () => {
     const strength = sigilStrength(sigilById(68)!, bn(100_000));
     expect(computeModifiers(bound(68, 100_000)).influenceRateMul).toBeCloseTo(1 + strength, 6);
-  });
-
-  it('Marax #21 lifts offline ACTION-timer advancement, not the offline time multiplier', () => {
-    const s = bound(21, 10_000);
-    const strength = sigilStrength(sigilById(21)!, bn(10_000));
-    expect(sigilOfflineActionEfficiencyMul(s)).toBeCloseTo(1 + strength, 6);
-    expect(computeModifiers(s).offlineTimeMul).toBe(1);
   });
 
   it('Murmur #54 lifts the overall invocation-effect multiplier', () => {
@@ -565,41 +555,15 @@ describe('Indagatio find-quality sigils (S12)', () => {
   });
 });
 
-describe('Offline resource-rate sigils (S13)', () => {
-  it('Sallos #19 (gold), Eligos #15 (influence), Zepar #16 (generation) are offline-only', () => {
-    expect(sigilById(19)!.effect).toEqual({ kind: 'offlineResource', resource: 'gold' });
-    expect(sigilById(15)!.effect).toEqual({ kind: 'offlineResource', resource: 'influence' });
-    expect(sigilById(16)!.effect).toEqual({ kind: 'offlineResource', resource: 'generation' });
-    expect(sigilOfflineResourceMul(fresh())).toEqual({ gold: 1, influence: 1, generation: 1 });
-    // ×(1 + pct strength) on the matching resource only.
-    const g = sigilOfflineResourceMul(bound(19, 100_000_000));
-    expect(g.gold).toBeCloseTo(1 + sigilStrength(sigilById(19)!, bn(100_000_000)), 6);
-    expect(g.influence).toBe(1);
-    const i = sigilOfflineResourceMul(bound(15, 100_000_000));
-    expect(i.influence).toBeCloseTo(1 + sigilStrength(sigilById(15)!, bn(100_000_000)), 6);
-    expect(i.gold).toBe(1);
-    const z = sigilOfflineResourceMul(bound(16, 100_000_000));
-    expect(z.generation).toBeCloseTo(1 + sigilStrength(sigilById(16)!, bn(100_000_000)), 6);
-    expect(z.gold).toBe(1);
-  });
-
-  it('the tick honours the offline income multipliers (online ticks pass nothing)', () => {
-    const s = fresh();
-    const baseGoldGain = (dt: number, mul?: number): number => {
-      const after = tick(s, dt, mul === undefined ? {} : { offlineGoldMul: mul }).state;
-      return after.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
-    };
-    expect(baseGoldGain(10, 2)).toBeCloseTo(baseGoldGain(10) * 2, 6);
-
-    // Influence: a short span so the maxInfluence cap isn't reached; the boost doubles the gain.
-    const infGain = (mul?: number): number =>
-      tick(
-        s,
-        0.001,
-        mul === undefined ? {} : { offlineInfluenceMul: mul },
-      ).state.lifetime.influence.toNumber() - s.lifetime.influence.toNumber();
-    expect(infGain()).toBeGreaterThan(0);
-    expect(infGain(2)).toBeCloseTo(infGain() * 2, 6);
+describe('Orphaned offline sigils (S13 — ADR-032)', () => {
+  it('Eligos #15, Zepar #16, Sallos #19, Marax #21, Foras #31 have no defs; binding them is harmless', () => {
+    // Their targets — the offline gain / accrual channels — retired with offline progression (the
+    // game now freezes while away). Per ADR-029 an empty catalog state is expressed by deleting the
+    // def; re-homing each onto the stagnation resource awaits a later pass.
+    for (const id of [15, 16, 19, 21, 31]) {
+      expect(sigilById(id)).toBeUndefined();
+      expect(computeModifiers(bound(id, 100_000_000))).toEqual(computeModifiers(fresh()));
+    }
   });
 });
 
@@ -777,28 +741,5 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
     const before = rng.state;
     resolveAction(fresh(), 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
     expect(rng.state).toBe(before);
-  });
-
-  it('Foras #31 extends the offline accrual window; Marax #21 speeds offline action timers', () => {
-    expect(sigilOfflineAccrualWindowMul(fresh())).toBe(1);
-    // ×(1 + Foras's pct strength) on the seven-day cap (Foras is a quarter-strength sigil).
-    expect(sigilOfflineAccrualWindowMul(bound(31, 100_000_000))).toBeCloseTo(
-      1 + sigilStrength(sigilById(31)!, bn(100_000_000)),
-      6,
-    );
-    // Marax: the tick advances action timers faster when the dep is passed.
-    const queued: GameState = {
-      ...bound(21, 100_000_000),
-      lifetime: {
-        ...bound(21, 100_000_000).lifetime,
-        actionQueue: [{ actionId: 'indagatio', remainingSeconds: 100 }],
-      },
-    };
-    const mul = sigilOfflineActionEfficiencyMul(queued); // 1 + Marax's pct strength
-    expect(mul).toBeCloseTo(1 + sigilStrength(sigilById(21)!, bn(100_000_000)), 6);
-    const after = tick(queued, 10, { offlineActionTimeMul: mul }).state;
-    expect(after.lifetime.actionQueue[0]!.remainingSeconds).toBeCloseTo(100 - 10 * mul, 6);
-    const online = tick(queued, 10).state;
-    expect(online.lifetime.actionQueue[0]!.remainingSeconds).toBeCloseTo(90, 6); // dep absent
   });
 });

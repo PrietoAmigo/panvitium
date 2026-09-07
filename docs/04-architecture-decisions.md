@@ -979,6 +979,66 @@ temptation spoken over the whole city.
 
 ---
 
+## ADR-032: Offline is a freeze — no offline progression; the stagnation resource replaces catch-up
+
+**Status.** Accepted [2026-09-07]. Supersedes the offline-progression half of ADR-004 (the offline
+catch-up tick) and all of ADR-026 (player offline efficiency), and retires the offline-gain
+machinery layered on since (the Acedia sloth compound, the offline-only sigils, Lemure's offline
+boost, the Analytics Offline tab, the welcome-back recap).
+
+**Context.** Offline catch-up had become a liability. Resuming a save ran one large `tick`
+(`resumeGame`) that fast-forwarded the whole simulation, scaled by an ever-growing stack of
+offline-only modifiers: a 0.5x base efficiency (ADR-026), a static `offlineTimeMul` (Procrastination
++ Lemure), an exponential Acedia time-compound, and four offline-only sigils. The result was hard to
+reason about, easy to exploit (the Panvitium reload trick, closed defensively by lapsing the ramped
+systems on the catch-up tick), and pulled the whole tick's correctness onto a code path that only
+ran once per load. It also fought the design: an idle game whose reward for closing the tab is a
+fast-forward has little reason to be left open.
+
+**Decision.** The game **freezes while offline.** There is no offline progression at all.
+
+- `resumeGame(saved, now)` no longer ticks: it returns the saved state with `lastTickAt` advanced to
+  `now` (never backwards), so the live loop resumes from the present instead of replaying the
+  absence. The player is restored exactly where they left off — the persisted `inKatabasis` flag
+  already reopens a mid-descent save on the Katabasis menu, and every other screen restores as saved.
+- The only thing the resume path needs is **how long the player was away** (`now - saved.lastTickAt`,
+  a plain subtraction). A forthcoming **stagnation** resource will be granted from that time and spent
+  by a **Desidia** toggle that accelerates the live tick; this ADR records the demolition, not that
+  system.
+- The offline-gain machinery is removed: `PLAYER_OFFLINE_EFFICIENCY`, `ACEDIA_OFFLINE_COMPOUND_BASE`,
+  and the `offlineTimeMul` modifier field with its sources (Acedia's Procrastination skill, the Lemure
+  invocation); the `TickDeps.offline` flag, the four offline income/timer multipliers, and their
+  `stripRampedForOffline` lapse; the web `offlineRecap` / `offlineProjection` / `offlineFactors`
+  helpers, the Analytics **Offline** tab, and the welcome-back "Litany" modal.
+
+**Consequences.**
+
+- **Five sigils are orphaned** per ADR-029's no-`inert` pattern (defs deleted, ids/names kept in
+  strings with placeholder copy, binding harmless): **Eligos #15**, **Zepar #16**, **Sallos #19**,
+  **Marax #21**, **Foras #31** — the offline gain / accrual channels. They join the ADR-029/031
+  orphan list, to be re-homed onto stagnation.
+- **Acedia (Sloth) is mechanically dormant.** Both its Procrastination skill and its per-level
+  time-compound only touched offline gains, so offering Devotion to Acedia currently does nothing; the
+  Sin's strings and Ledger row carry placeholder "pending the stagnation rework" copy and hide the
+  unused magnitude. Re-homing Acedia onto stagnation is the intended next step. The **Lemure**
+  invocation is dormant for the same reason.
+- The tick keeps its big-delta correctness invariants (fractional pools, the exact eᵗ / geometric
+  integrals) even though nothing large reaches it today — the live loop chunks into 100 ms steps and
+  the resume path no longer ticks. Those invariants become load-bearing again the moment Desidia lands
+  (time-acceleration ticks larger spans), so the agreement tests stay.
+- No save-schema bump (ADR-023): sigil bindings and invocation counts persist regardless of what their
+  effects do, and nothing persisted changed shape.
+- The `doing-nothing` call-in's "offline progress triples" option becomes an effectless placeholder
+  pending stagnation.
+
+**Alternatives considered.** *Keeping a bounded offline catch-up* — rejected: it carried the same
+reasoning and exploit surface at a smaller magnitude, and still rewards being closed. *Building
+stagnation in the same pass* — deferred: the demolition is safe and self-contained, while the
+resource, its cap, its generation/spend rates, and the Desidia acceleration curve are a design pass of
+their own.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.

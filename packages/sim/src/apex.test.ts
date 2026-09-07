@@ -77,7 +77,7 @@ describe('Astiwihad trigger chance', () => {
 
   it('is monotone in delta and saturates toward (but stays within) certainty', () => {
     expect(astiwihadTriggerChance(100)).toBeGreaterThan(astiwihadTriggerChance(1));
-    // A large but realistic offline window: near-certain, yet still strictly below 1.
+    // A large but realistic tick span: near-certain, yet still strictly below 1.
     const big = astiwihadTriggerChance(1e5);
     expect(big).toBeGreaterThan(0.999);
     expect(big).toBeLessThan(1);

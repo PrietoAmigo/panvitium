@@ -1,18 +1,9 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createInitialState, addReprobates, type Acolyte, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
-import { offlineProjection } from '../game/session.js';
 import { AnalyticsGroup } from './Analytics.js';
-
-// The Offline tab's projection is the one expensive call (a full resumeGame catch-up over the window).
-// Wrap it so a test can count how often the tab recomputes it; it calls through to the real
-// implementation, so every rendered number stays correct.
-vi.mock('../game/session.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../game/session.js')>();
-  return { ...actual, offlineProjection: vi.fn(actual.offlineProjection) };
-});
 
 /**
  * Guards the Analytics panel against the "Maximum update depth exceeded" loop that a selector
@@ -83,7 +74,7 @@ describe('AnalyticsGroup', () => {
     expect(container!.textContent).not.toContain('Player action efficiency');
     expect(container!.textContent).not.toContain('vigil kept');
     const tabLabels = Array.from(container!.querySelectorAll('button')).map((b) => b.textContent);
-    expect(tabLabels).toEqual(['Main', 'Actions', 'Offline']);
+    expect(tabLabels).toEqual(['Main', 'Actions']);
   });
 
   it('shows the player efficiency on the Actions tab, not the Main tab', () => {
@@ -100,77 +91,6 @@ describe('AnalyticsGroup', () => {
     expect(text).toContain('Generation');
     expect(text).toContain('Upkeep');
     expect(text).toContain('Net');
-  });
-
-  it('shows an Offline tab that summarises projected offline generation (souls included)', () => {
-    seed([]);
-    render();
-    clickTab('Offline');
-    const text = container!.textContent ?? '';
-    // The projection lists every offline-generated resource, including Souls (which the Main tab omits).
-    expect(text).toContain('Gold');
-    expect(text).toContain('Influence');
-    expect(text).toContain('Reprobates');
-    expect(text).toContain('Souls');
-    // The same generation / upkeep / net breakdown as the Main tab, over the chosen window.
-    expect(text).toContain('Generation');
-    expect(text).toContain('Upkeep');
-    expect(text).toContain('Net');
-    expect(text.toLowerCase()).toContain('hour'); // the window checks (1 hour / 8 hours / 24 hours)
-  });
-
-  it('offers 1h / 8h / 24h offline window checks and lists the active offline effects', () => {
-    seed([]);
-    render();
-    clickTab('Offline');
-    const labels = Array.from(container!.querySelectorAll('button')).map((b) => b.textContent);
-    expect(labels).toContain('1 hour');
-    expect(labels).toContain('8 hours');
-    expect(labels).toContain('24 hours');
-    // The reduced offline base rate is always in effect, so the active-effects list is never empty.
-    expect(container!.textContent).toContain('Active offline effects');
-    expect(container!.textContent).toContain('Offline base rate');
-  });
-
-  it('switches the projected offline window when a different check is chosen', () => {
-    seed([]);
-    render();
-    clickTab('Offline');
-    const btn = (label: string): HTMLButtonElement =>
-      Array.from(container!.querySelectorAll('button')).find(
-        (b) => b.textContent === label,
-      ) as HTMLButtonElement;
-    expect(btn('1 hour').getAttribute('aria-pressed')).toBe('true'); // default window
-    act(() => btn('8 hours').dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(btn('8 hours').getAttribute('aria-pressed')).toBe('true');
-    expect(btn('1 hour').getAttribute('aria-pressed')).toBe('false');
-  });
-
-  it('memoizes the offline projection instead of re-running it on every 10 Hz tick', () => {
-    const projMock = vi.mocked(offlineProjection);
-    projMock.mockClear();
-    seed([]); // createInitialState('seed', 0) => lastTickAt 0, so the refresh bucket starts at 0
-    render();
-    clickTab('Offline');
-    const afterOpen = projMock.mock.calls.length;
-    expect(afterOpen).toBeGreaterThan(0); // computed once on mount
-
-    // Five 10 Hz ticks (each replaces `state` with a new reference and advances the clock 100 ms) that
-    // stay inside one refresh bucket. Without the memo this re-ran the whole catch-up on every render.
-    for (let i = 0; i < 5; i++) {
-      act(() => {
-        const cur = useGameStore.getState().state!;
-        useGameStore.setState({ state: { ...cur, lastTickAt: cur.lastTickAt + 100 } });
-      });
-    }
-    expect(projMock.mock.calls.length).toBe(afterOpen); // no recompute within the bucket
-
-    // Crossing the refresh bucket (>= 2 s of game time) recomputes exactly once.
-    act(() => {
-      const cur = useGameStore.getState().state!;
-      useGameStore.setState({ state: { ...cur, lastTickAt: cur.lastTickAt + 2000 } });
-    });
-    expect(projMock.mock.calls.length).toBe(afterOpen + 1);
   });
 });
 

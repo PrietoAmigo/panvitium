@@ -12,7 +12,7 @@ import {
   deserializeGameState,
   type SaveBlob,
 } from '@panvitium/shared';
-import { resumeGame, startNewGame, offlineRecap, type OfflineRecap } from '../game/session.js';
+import { resumeGame, startNewGame } from '../game/session.js';
 
 const SAVE_KEY = 'panvitium:save';
 const DEVICE_KEY = 'panvitium:deviceId';
@@ -22,16 +22,6 @@ export interface LoadedGame {
   state: GameState;
   saveVersion: number;
   deviceId: string;
-  /** The "while you were away" recap when resuming after a meaningful absence, else null. */
-  offlineRecap: OfflineRecap | null;
-  /**
-   * Email ids delivered by the offline catch-up tick (inbox ids present after resume but not before).
-   * The live loop cues per-email SFX off `TickResult.emailsDelivered`, but the catch-up tick runs
-   * inside `resumeGame` whose result is discarded — so mail that arrives while away (e.g. Fausto #5's
-   * door-knock when the soul threshold is crossed offline) would never sound. The caller replays
-   * those cues on resume.
-   */
-  deliveredOnResume: string[];
 }
 
 /** Get this device's stable id, creating and persisting one on first run. */
@@ -56,7 +46,9 @@ export function loadSaveBlob(): SaveBlob | null {
   }
 }
 
-/** Load the game: resume the stored save (with offline progression) or start a new one. */
+/** Load the game: resume the stored save (frozen while away — no offline progression) or start a
+ *  new one. A save written mid-descent resumes with `inKatabasis` set, so the caller reopens the
+ *  Katabasis menu rather than landing in a torn-down lifetime. */
 export function loadGame(now: number = Date.now()): LoadedGame {
   const deviceId = getDeviceId();
   const blob = loadSaveBlob();
@@ -64,30 +56,14 @@ export function loadGame(now: number = Date.now()): LoadedGame {
     try {
       const saved = deserializeGameState(blob.state);
       const state = resumeGame(saved, now);
-      const before = new Set(saved.lifetime.inbox.map((e) => e.id));
-      const deliveredOnResume = state.lifetime.inbox
-        .map((e) => e.id)
-        .filter((id) => !before.has(id));
-      return {
-        state,
-        saveVersion: blob.saveVersion,
-        deviceId,
-        offlineRecap: offlineRecap(saved, state, now),
-        deliveredOnResume,
-      };
+      return { state, saveVersion: blob.saveVersion, deviceId };
     } catch (err) {
-      // The blob validated against the schema but could not be resumed (deserialize or offline
-      // tick threw). Don't brick the game on a single bad save — log and start fresh.
+      // The blob validated against the schema but could not be deserialized. Don't brick the game
+      // on a single bad save — log and start fresh.
       console.error('Failed to resume saved game; starting fresh.', err);
     }
   }
-  return {
-    state: startNewGame(now),
-    saveVersion: 0,
-    deviceId,
-    offlineRecap: null,
-    deliveredOnResume: [],
-  };
+  return { state: startNewGame(now), saveVersion: 0, deviceId };
 }
 
 /** Build the SaveBlob envelope for the current state and return it as a JSON string. */

@@ -67,42 +67,30 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
   };
 }
 
-/** Offline-only scaling options for the pool accrual (Zepar #16 via `resumeGame`'s tick deps). */
-export interface ReprobateDynamicsOptions {
-  readonly generationMul?: number;
-}
-
 /**
  * Advance the three pools by `deltaSeconds` and apply any integer events that fall out.
  * Pure with respect to `state`. Returns the new state.
  */
-export function applyReprobateDynamics(
-  state: GameState,
-  deltaSeconds: number,
-  opts: ReprobateDynamicsOptions = {},
-): GameState {
+export function applyReprobateDynamics(state: GameState, deltaSeconds: number): GameState {
   if (deltaSeconds <= 0) return state;
 
   const mods = computeModifiers(state);
   const rates = reprobateRates(state, mods);
-  const generationMul = opts.generationMul ?? 1;
 
   let working: GameState = {
     ...state,
     lifetime: {
       ...state.lifetime,
-      generationPool:
-        state.lifetime.generationPool + rates.generationPerSecond * generationMul * deltaSeconds,
+      generationPool: state.lifetime.generationPool + rates.generationPerSecond * deltaSeconds,
       suicidePool: state.lifetime.suicidePool + rates.suicidePerSecond * deltaSeconds,
       murderPool: state.lifetime.murderPool + rates.murderPerSecond * deltaSeconds,
     },
   };
 
   // Every whole unit in a pool is identical (single undifferentiated pool, no RNG per event), so
-  // each pool drains in ONE bulk application rather than a unit-at-a-time loop. This matters for
-  // the uncapped offline catch-up tick (ADR-004 amended): a long absence can land millions of
-  // accrued units in a pool at once, and a per-unit loop respreading the state each iteration
-  // would hang the load for minutes.
+  // each pool drains in ONE bulk application rather than a unit-at-a-time loop. This matters for a
+  // large single delta (e.g. a future time-acceleration tick): it can land many accrued units in a
+  // pool at once, and a per-unit loop respreading the state each iteration would hang for minutes.
 
   // 1. Births. Each whole unit produces one reprobate; unbounded by population.
   {

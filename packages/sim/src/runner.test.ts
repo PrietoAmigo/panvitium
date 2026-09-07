@@ -2,7 +2,7 @@
  * Shared runner-engine tests (02 §3). Pins:
  *   - delegated runners carry out actions for FREE — no per-cycle gold/influence cost
  *   - cost-outcome channels resolve at eff and never stall on an empty treasury
- *   - offline catch-up resolves every cycle the budget covers
+ *   - a large delta resolves every cycle the budget covers
  *   - time-mode channels (Indagatio) never stall and always hold an active cycle
  *   - a forced outcome tier is honoured (Imp's Good-only Caedes: pure mint, no gold-loss tier)
  */

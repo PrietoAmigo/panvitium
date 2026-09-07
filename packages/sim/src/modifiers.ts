@@ -24,9 +24,9 @@
  *                 Poppet                      → murderRateMul × 1.05
  *                 Galdrabók                   → murderRateMul × 1.15
  *
- * Other Sin effects (Ira → acolyte/invocation eff, Acedia → offline, Luxuria → reprobate
- * generation) attach as their target systems land — same module, same signature, just a new line
- * per source.
+ * Other Sin effects (Ira → acolyte/invocation eff, Luxuria → reprobate generation) attach as their
+ * target systems land — same module, same signature, just a new line per source. (Acedia's Sloth
+ * effect is dormant pending the stagnation rework — ADR-032.)
  *
  * PER-CATEGORY tier shifts (02 §2) are NOT part of the global bundle: a source that lifts one
  * category's success probability (Resignation → Suasio, Retribution → Decimatio, Lamia → Suasio)
@@ -186,10 +186,6 @@ export interface Modifiers {
    * of the global `invocationEfficiencyMul`. Default 1× for every Sin.
    */
   readonly invocationSinEffectivenessMul: Record<Sin, number>;
-  /**
-   * Multiplier on the duration used during offline catchup (02 §1 / 03 §1 Procrastination).
-   */
-  readonly offlineTimeMul: number;
 }
 
 /** No sources active — every multiplier is 1; tier shifts are absent (all default 1). */
@@ -230,7 +226,6 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
     vanagloria: 1,
     superbia: 1,
   },
-  offlineTimeMul: 1,
 };
 
 /** Default skill→effect coupling for a skill that "increases X": X *= (1 + intensity). */
@@ -252,7 +247,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const gulaIntensity = skillIntensity(state.devotion.gula);
   const superbiaIntensity = skillIntensity(state.devotion.superbia);
   const luxuriaIntensity = skillIntensity(state.devotion.luxuria); // Seduction → gen rate
-  const acediaIntensity = skillIntensity(state.devotion.acedia); // Procrastination → offline
 
   // Equipped maleficia (03 §4). Each anathema item is a single, decisive multiplier.
   const owned = state.lifetime.maleficia;
@@ -281,7 +275,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× playerEff × invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: Faeneratio output up (× playerEff × invEff)
-  const lemureCount = inv.lemure ?? 0; // each: additive offline gain rate (× playerEff × invEff)
   const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×2 influence gain/s (sheet)
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
@@ -316,7 +309,6 @@ export function computeModifiers(state: GameState): Modifiers {
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const NIGHTMARE_SUICIDE_FACTOR = 5e-5; // additive increase to base reprobate suicide rate (sheet)
   const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
-  const LEMURE_OFFLINE_FACTOR = 0.025; // additive increase to offline gain rate
 
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
@@ -529,14 +521,6 @@ export function computeModifiers(state: GameState): Modifiers {
     // rev 2026-06-12). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
     invocationEfficiencyMul: invEff,
     invocationSinEffectivenessMul: invSinEff,
-    // Offline time scaling: Acedia's Procrastination skill lifts (03 §1, continuous); Acedia's
-    // per-level effect compounds on top dynamically in `session.resumeGame` (it depends on the
-    // offline duration itself). The PLAYER_OFFLINE_EFFICIENCY 0.5 base is applied separately in
-    // `resumeGame`, NOT here, so this multiplier stays 1-neutral online.
-    offlineTimeMul:
-      skillBonus(acediaIntensity) *
-      (1 + LEMURE_OFFLINE_FACTOR * playerEff * invEffFor('acedia') * lemureCount) *
-      sc('offlineTimeMul'),
   };
 }
 
