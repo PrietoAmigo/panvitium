@@ -1,10 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
 
 /**
- * E2E coverage for the reworked Depraedatio panel (Depraedatio gold rework): the Thesaurus tab's
- * deposit and two-step withdraw, signing a Syngrapha on the contract tree, and Panvitium as the
- * Suasio scroll's sealed fourth rite (ADR-031). A seeded save (a purse of gold) is written to
- * localStorage before load; since the gating rebalance none of the three flows needs Avaritia.
+ * E2E coverage for the redesigned Depraedatio panel, the "Counting House" private-bank account
+ * (Claude Design): the Portfolio screen's Reserve Account deposit + two-step withdraw, signing a
+ * contract on the Contracts screen, and Panvitium as the Suasio scroll's sealed fourth rite
+ * (ADR-031). A seeded save (a purse of gold) is written to localStorage before load; since the
+ * gating rebalance none of the Faeneratio flows needs Avaritia.
  */
 
 /** A minimal valid v5 save with 10,000 gold, stamped to "now". */
@@ -66,47 +67,43 @@ async function openDepraedatio(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Depraedatio' }).click();
 }
 
-test('deposits into the hoard and withdraws with the two-step confirm', async ({ page }) => {
+test('deposits into the reserve and withdraws with the two-step confirm', async ({ page }) => {
   await openDepraedatio(page);
 
-  // The Thesaurus tab is the default: the loan book is open from the start with its debtors.
-  await expect(page.getByRole('tab', { name: 'Thesaurus' })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
-  await expect(page.locator('.dep-grimoire')).toContainText('debtors');
+  // Portfolio is the default view: the account surfaces mount with the loan book's debtor figure.
+  await expect(page.locator('.ch-navbtn--active')).toContainText('Portfolio');
+  await expect(page.locator('.ch-loanbook')).toContainText('Active debtors');
 
-  // Deposit 500: the hoard readout picks it up.
-  await page.getByLabel('Deposit amount').fill('500');
+  // Deposit 500: the reserve balance readout picks it up.
+  await page.getByLabel('Deposit to reserve').fill('500');
   await page.getByRole('button', { name: 'Deposit', exact: true }).click();
-  await expect(page.locator('[aria-label="The hoard"]')).toContainText('500');
+  await expect(page.locator('.ch-balance-value')).toContainText('500');
 
-  // Withdraw 100: the confirm states the recovery and the forfeit before executing.
-  await page.getByLabel('Withdraw amount').fill('100');
+  // Withdraw 100: the confirm panel states the recovery + forfeit before executing.
+  await page.getByLabel('Withdraw from reserve').fill('100');
   await page.getByRole('button', { name: 'Withdraw', exact: true }).click();
-  await expect(page.locator('.dep-grimoire')).toContainText(
-    'The counting house releases little of what it has tasted.',
-  );
-  await page.getByRole('button', { name: 'Confirm Withdraw' }).click();
-  // The full 100 left the vault (500 → 400); only the recovery fraction returned to gold.
-  await expect(page.locator('[aria-label="The hoard"]')).toContainText('400');
+  await expect(page.locator('.ch-confirm')).toContainText('forfeited to the counting house');
+  await page.getByRole('button', { name: 'Confirm withdrawal' }).click();
+  // The full 100 left the reserve (500 -> 400); only the recovery fraction returned to cash.
+  await expect(page.locator('.ch-balance-value')).toContainText('400');
 });
 
-test('signs a Syngrapha with the two-step confirm (the fee is burned)', async ({ page }) => {
+test('signs a contract with the two-step confirm (the fee is burned)', async ({ page }) => {
   await openDepraedatio(page);
-  await page.getByRole('tab', { name: 'Syngraphae' }).click();
+  await page.getByRole('button', { name: 'Contracts' }).click();
 
-  // The three branch columns render with the named contracts.
-  const grimoire = page.locator('.dep-grimoire');
-  await expect(grimoire).toContainText('Usura');
-  await expect(grimoire).toContainText('Custodia');
-  await expect(grimoire).toContainText('Anatocismus');
-  await expect(grimoire).toContainText('Peculium');
+  // The three branch columns render with the banking names + the named contracts.
+  const branches = page.locator('.ch-branches');
+  await expect(branches).toContainText('Yield');
+  await expect(branches).toContainText('Custody');
+  await expect(branches).toContainText('Compounding');
+  await expect(branches).toContainText('Retained Floor');
 
-  // Sign Usura I (ungated since the rebalance, fee 500): two-step confirm, then Signed.
-  await page.getByRole('button', { name: 'Sign Usura I' }).click();
-  await page.getByRole('button', { name: 'Confirm Sign Usura I' }).click();
-  await expect(grimoire).toContainText('Signed');
+  // Sign Yield I (ungated since the rebalance, fee 500, affordable with 10,000 gold): two-step
+  // confirm, then the node reads Signed.
+  await page.getByRole('button', { name: 'Sign Yield I' }).click();
+  await page.getByRole('button', { name: 'Confirm Yield I' }).click();
+  await expect(branches).toContainText('Signed');
 });
 
 test('the Suasio scroll carries Panvitium as its sealed fourth rite', async ({ page }) => {
