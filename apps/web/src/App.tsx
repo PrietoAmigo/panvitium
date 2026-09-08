@@ -128,6 +128,8 @@ export function App(): ReactElement {
   // interaction (PC / phone / Suasio / the door) then triggers the scare instead of its action.
   const doppelgaengerSeen = useGameStore((s) => s.state?.flagDoppelgaengerSeen ?? false);
   const markDoppelgaengerSeen = useGameStore((s) => s.markDoppelgaengerSeen);
+  // Applies a chosen incoming-call option's effects to the game state (docs/PANVITIUM-CALLS-IN.md).
+  const answerCall = useGameStore((s) => s.answerCall);
   const [jumpscareArmed, setJumpscareArmed] = useState(false);
   const [jumpscare, setJumpscare] = useState(false);
   const doppelgaengerBound = summoned.includes('doppelgaenger');
@@ -266,16 +268,15 @@ export function App(): ReactElement {
       {panel === 'suasio' && <SuasioScroll onClose={closePanel} />}
       {panel === 'phone' && <PhoneDialer onClose={closePanel} />}
       {/* The answered incoming call — a full-screen stage that takes over until the call resolves.
-          Keyed by id so each call mounts fresh (its FSM starts at the answer). `onChoose` is the
-          effect hook the calls-in engine will fill (docs/PANVITIUM-CALLS-IN.md); today picking an
-          option only resolves the call, changing no game state. */}
+          Keyed by id so each call mounts fresh (its FSM starts at the answer). `onChoose` applies the
+          picked option's effects to the game state (docs/PANVITIUM-CALLS-IN.md): a timed buff, a
+          one-shot cost/cull, or a permanent maxInfluence raise. A decline resolves with no effect. */}
       {callInView && (
         <SmartphoneCallIn
           key={answeredCall ?? ''}
           call={callInView}
-          onChoose={() => {
-            // TODO(wire): apply the chosen option's buff/effect through the store once the
-            // incoming-call engine lands. Intentionally a no-op for now.
+          onChoose={(i) => {
+            if (answeredCall) answerCall(answeredCall, i);
           }}
           onDone={() => setAnsweredCall(null)}
         />

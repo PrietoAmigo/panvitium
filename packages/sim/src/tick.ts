@@ -20,6 +20,7 @@ import { advanceInvocationRunners, invocationUpkeep } from './invocations.js';
 import { applyInvocationTickEffects, aurevoraDrainPerSecond } from './apex.js';
 import { anatocismusDepositPerSecond, faeneratioGoldPerSecond } from './faeneratio.js';
 import { advanceToggles, panvitiumRate } from './compositum.js';
+import { advanceCallBuffs } from './callBuffs.js';
 import { DESIDIA_BASE_COST_PER_SECOND, DESIDIA_BASE_SPEED } from './stagnation.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
@@ -401,6 +402,11 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
       },
     };
   }
+
+  // 4e. Incoming-call timed buffs (docs/PANVITIUM-CALLS-IN.md) decay the same way: they lifted this
+  //     tick's income/dynamics via `mods` (computed at the start), so they are decremented now and
+  //     dropped at expiry. Decays by `simDelta` like Hand of Glory (Desidia-invariant total benefit).
+  working = advanceCallBuffs(working, simDelta);
 
   // 4d. Defixio curse (Maleficia): a single-use hex on the reprobate pool. It culls the pool at
   //     eᵗ per second (t = seconds the curse has run), integrated exactly over the tick span:

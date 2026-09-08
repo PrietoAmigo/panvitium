@@ -16,9 +16,9 @@ import { DegradedScene } from './DegradedScene.js';
  *
  * Tap the stage to skip (cut the recording short / reveal the full text + options at once); pick an
  * option to resolve. Purely presentational: it owns only the transient phase/typed/chosen state and
- * the imperative audio/timer handles; the choice EFFECT is the integrator's `onChoose` hook (a
- * documented stub until the calls-in engine lands — docs/PANVITIUM-CALLS-IN.md), and `onDone` unmounts
- * the overlay once the call has faded.
+ * the imperative audio/timer handles; the choice EFFECT is the integrator's `onChoose` hook (App
+ * routes it to the store's `answerCall`, which applies the option's effects — docs/PANVITIUM-CALLS-IN.md),
+ * and `onDone` unmounts the overlay once the call has faded.
  */
 
 type Phase = 'speaking' | 'type' | 'ready' | 'done' | 'fading';

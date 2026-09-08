@@ -7,9 +7,10 @@
 //
 // Active-play only, never offline, dark during Katabasis (06-smartphone-content.md §2): the caller's
 // `enabled` gate (computed in App from the room/panel/title/Katabasis state) is the single switch —
-// when it drops, a pending arrival is cancelled and any live ring is let go. The effect/firing
-// cadence here is a UI-level placeholder; the spreadsheet-pinned weights and the real CALL_TRIGGERS
-// engine are the documented future work, and answering applies no game state yet.
+// when it drops, a pending arrival is cancelled and any live ring is let go. The firing cadence here
+// is a UI-level placeholder (the spreadsheet-pinned weights and the deterministic-in-tick CALL_TRIGGERS
+// scheduler remain future work); answering, however, now applies the option's effects to game state
+// (App's `onChoose` -> the store's `answerCall` -> the sim's `applyCallEffects`).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pickIncomingCall } from './callIn.js';
 import { VIBRATION_SRC } from '../menus/calls-in.data.js';

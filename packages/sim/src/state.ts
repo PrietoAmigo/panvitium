@@ -9,6 +9,7 @@
  * from influence) are computed on demand, not stored, so they can never drift from their source.
  */
 import { type BigNum, bn, ZERO } from './bignum.js';
+import { type CallBuff } from './callBuffs.js';
 import { BASE_MAX_INFLUENCE } from './constants.js';
 import { hashSeed, type RngState } from './rng.js';
 
@@ -174,6 +175,15 @@ export interface LifetimeState {
    * (ADR-023), default 0.
    */
   handOfGloryRemaining: number;
+  /**
+   * Active incoming-call ("calls-in") timed buffs (docs/PANVITIUM-CALLS-IN.md): each a multiplier on
+   * one modifier field, decaying to expiry. Appended by `applyCallEffects` when the player takes a
+   * buff option; decayed each tick by `advanceCallBuffs` (Hand of Glory convention) and folded into
+   * the modifier bundle by `callBuffMultipliers`. Always defined at runtime (default []); reset on
+   * Katabasis with the lifetime. Additive-optional on the wire (ADR-023); absent/empty round-trips
+   * identically to a pre-feature save.
+   */
+  callBuffs: CallBuff[];
   /**
    * Active Defixio curse (Maleficia), or absent when none runs. Cast single-use; it culls the
    * reprobate pool at eᵗ per second (`elapsed` = seconds the curse has run) until the pool is
@@ -384,6 +394,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       suicidePool: 0,
       murderPool: 0,
       handOfGloryRemaining: 0,
+      callBuffs: [],
       inbox: [],
       emailArmedAt: {},
     },

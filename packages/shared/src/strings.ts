@@ -1172,6 +1172,7 @@ export const strings = {
         playerEfficiencyMul: 'your efficiency',
         acolyteEfficiencyMul: 'acolyte efficiency',
         influenceRegenRate: 'influence regeneration',
+        stagnationGainMul: 'stagnation generation',
       } as Record<string, string>,
       // Option labels only; the sub-label under each option is generated from the choice's effects.
       calls: {

@@ -5,15 +5,22 @@
 // *sub-labels* are not authored prose — they are generated from each choice's structured `effects`
 // (see `describeCallInEffects`), so the line under an option always reads out its real effect.
 //
-// The effects are also the spec for the pending calls-in engine: applying them is still future work
-// (CALL_TRIGGERS / INTERACTIONS), so answering a call changes no game state yet — the same
-// documented-stub posture as the email replies and the dialer codes.
+// The effects are LIVE: answering a call applies the chosen option's `effects` through the sim's
+// `applyCallEffects` (the store's `answerCall`), which the sim owns (`callBuffs.ts`, ADR-022). This
+// file stays the structural catalogue; the effect TYPES + application logic live in the sim.
 //
 // Every call is a recording: its `<id>.mp3` lives in apps/web/public/assets/panvitium/music/. The
 // choice arrays MUST stay the same length and order as the matching `strings` choices —
 // `callIn.test.ts` pins that.
 
+import type { CallBuffField, CallInEffect } from '@panvitium/sim';
 import { ASSET_BASE } from './degrade.data.js';
+
+// The effect + buff-field TYPES are owned by the sim (`callBuffs.ts`), which also APPLIES them
+// (`applyCallEffects`) — game logic stays framework-free per ADR-022. Re-exported here so the
+// view-model (`game/callIn.ts`) and tests keep importing them from the catalogue's module.
+export type { CallInEffect };
+export type BuffField = CallBuffField;
 
 /** Selection class (docs "Selection model"). Drives the weighted draw. */
 export type CallInClass = 'buff-positive' | 'buff-tradeoff' | 'lore' | 'easter-egg';
@@ -33,31 +40,12 @@ export interface CallRequirements {
 }
 
 /**
- * The timed-multiplier modifier fields a call buff/debuff can touch (the upstream + side economies;
- * never the one-for-one cull, docs "The cull is one for one"). Display names live in
- * `strings.phone.callIn.fields`; the natural-language sub-label is generated from these in
- * `game/callIn.ts`.
+ * The timed-multiplier modifier fields a call buff/debuff can touch (`CallBuffField` in the sim):
+ * the upstream + side economies, never the one-for-one cull (docs "The cull is one for one").
+ * Display names live in `strings.phone.callIn.fields`; the natural-language sub-label is generated
+ * from these in `game/callIn.ts`. `CallInEffect` (imported above) is the applied-effect union: a
+ * `timedMul` factor above 1 reads as a buff (increases / doubles / triples), below 1 as a debuff.
  */
-export type BuffField =
-  | 'goldGainMul'
-  | 'reprobateGenMul'
-  | 'influenceGainMul'
-  | 'indagatioEfficiencyMul'
-  | 'playerEfficiencyMul'
-  | 'acolyteEfficiencyMul'
-  | 'influenceRegenRate';
-
-/**
- * One mechanical effect of a take-option (docs "-> effects"). Structured so the catalogue is the
- * single source for both the displayed explanation today and the pending effect engine. A `factor`
- * above 1 reads as a buff (increases / doubles / triples), below 1 as a debuff (halves / drops).
- */
-export type CallInEffect =
-  | { kind: 'timedMul'; field: BuffField; factor: number; durationSec: number }
-  | { kind: 'permanentMul'; field: 'maxInfluence'; factor: number }
-  | { kind: 'spendGoldPct'; pct: number }
-  | { kind: 'loseReprobatesPct'; pct: number }
-  | { kind: 'killReprobatesPct'; pct: number };
 
 /** Structural shape of one choice: the decline marker plus its mechanical effects (label is strings). */
 export interface CallInChoiceData {
@@ -165,9 +153,16 @@ export const CALLS_IN: readonly CallInData[] = [
     audio: true,
     class: 'buff-positive',
     choices: [
-      // "I will join them" granted an offline-progress boost, retired with offline progression
-      // (ADR-032). Effectless placeholder until re-homed onto the stagnation resource.
-      { effects: [] },
+      // "I will join them" was an offline-progress boost (buff(offlineRate, x3, 8h)); offline
+      // progression was retired (ADR-032), so it is re-homed onto the resource that now stands in for
+      // time away, Stagnation (ADR-034): it triples the rate Stagnation is banked while away. The
+      // buff only bites offline (the sole time Stagnation is generated), but its timer, like every
+      // call buff, ticks down only while the game runs, so holding it through an absence spends it.
+      {
+        effects: [
+          { kind: 'timedMul', field: 'stagnationGainMul', factor: 3, durationSec: 8 * HOUR },
+        ],
+      },
       { effects: [{ kind: 'killReprobatesPct', pct: 10 }] },
       { dim: true },
     ],

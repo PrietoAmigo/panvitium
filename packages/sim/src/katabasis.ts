@@ -250,6 +250,7 @@ export function commitKatabasis(
     emptioList: pendingMorpheus ? [...state.lifetime.emptioList] : [],
     maleficiaPrices: pendingMorpheus ? { ...state.lifetime.maleficiaPrices } : {},
     handOfGloryRemaining: 0,
+    callBuffs: [], // incoming-call timed buffs end with the lifetime
     activeToggles: [], // toggles stop
     toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle
