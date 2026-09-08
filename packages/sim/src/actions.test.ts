@@ -109,22 +109,22 @@ describe('action unlock gating (Suasio sheet)', () => {
 });
 
 describe('resolveLogismoi', () => {
-  it('good adds 10–29 and excellent 20–58 reprobates (sheet rev)', () => {
+  it('good adds 14..39 and excellent 41..74 reprobates (player tuning)', () => {
     const g = resolveLogismoi(fresh(), 'good', rng()).lifetime.reprobates;
-    expect(g).toBeGreaterThanOrEqual(10);
-    expect(g).toBeLessThanOrEqual(29);
+    expect(g).toBeGreaterThanOrEqual(14);
+    expect(g).toBeLessThanOrEqual(39);
     const e = resolveLogismoi(fresh(), 'excellent', rng()).lifetime.reprobates;
-    expect(e).toBeGreaterThanOrEqual(20);
-    expect(e).toBeLessThanOrEqual(58);
+    expect(e).toBeGreaterThanOrEqual(41);
+    expect(e).toBeLessThanOrEqual(74);
   });
-  it('stellar adds +3% of the current population (sheet rev)', () => {
+  it('stellar adds +5% of the current population (player tuning)', () => {
     const seeded = withReprobates(fresh(), 1000);
     const after = resolveLogismoi(seeded, 'stellar', rng());
-    expect(totalReprobates(after) - 1000).toBe(30); // floor(1000 × 0.03)
+    expect(totalReprobates(after) - 1000).toBe(50); // floor(1000 × 0.05)
   });
-  it('apocalyptic sheds half the flock', () => {
+  it('apocalyptic sheds 5% of the flock (player tuning)', () => {
     const seeded = withReprobates(fresh(), 1000);
-    expect(totalReprobates(resolveLogismoi(seeded, 'apocalyptic', rng()))).toBe(500);
+    expect(totalReprobates(resolveLogismoi(seeded, 'apocalyptic', rng()))).toBe(950);
   });
   it('terrible culls reprobates; neutral does nothing', () => {
     const seeded = addReprobates(fresh(), 100);
@@ -144,16 +144,18 @@ describe('resolveImperium', () => {
     expect(n).toBeLessThanOrEqual(1000);
   });
 
-  it('stellar pays +3% of current souls; excellent +3% of the population (sheet rev)', () => {
+  it('stellar adds +25% and excellent +7% of the population; neither mints souls (player tuning)', () => {
     const seeded = withSouls(withReprobates(fresh(), 1000), 200);
-    expect(soulsOf(resolveImperium(seeded, 'stellar', rng()))).toBe(206); // +floor(200 × 0.03)
-    expect(totalReprobates(resolveImperium(seeded, 'excellent', rng()))).toBe(1030);
+    const stellar = resolveImperium(seeded, 'stellar', rng());
+    expect(totalReprobates(stellar)).toBe(1250); // +floor(1000 × 0.25)
+    expect(soulsOf(stellar)).toBe(200); // Stellar no longer mints souls
+    expect(totalReprobates(resolveImperium(seeded, 'excellent', rng()))).toBe(1070); // +floor(1000 × 0.07)
   });
 
-  it('terrible sheds 5% and apocalyptic half of the flock', () => {
+  it('terrible sheds 2.5% and apocalyptic 10% of the flock (player tuning)', () => {
     const seeded = withReprobates(fresh(), 1000);
-    expect(totalReprobates(resolveImperium(seeded, 'terrible', rng()))).toBe(950);
-    expect(totalReprobates(resolveImperium(seeded, 'apocalyptic', rng()))).toBe(500);
+    expect(totalReprobates(resolveImperium(seeded, 'terrible', rng()))).toBe(975);
+    expect(totalReprobates(resolveImperium(seeded, 'apocalyptic', rng()))).toBe(900);
   });
 });
 
@@ -162,32 +164,32 @@ describe('resolveSuggestion', () => {
     expect(resolveSuggestion(fresh(), 'good', rng()).lifetime.reprobates).toBe(1);
   });
 
-  it('stellar adds 4..8 unconverted reprobates and mints no soul', () => {
+  it('stellar adds 10..25 unconverted reprobates and mints no soul', () => {
     const s = resolveSuggestion(fresh(), 'stellar', rng());
     expect(soulsOf(s)).toBe(0);
     const n = s.lifetime.reprobates;
-    expect(n).toBeGreaterThanOrEqual(4);
-    expect(n).toBeLessThanOrEqual(8);
+    expect(n).toBeGreaterThanOrEqual(10);
+    expect(n).toBeLessThanOrEqual(25);
     expect(totalReprobates(s)).toBe(n); // all unconverted
   });
 
-  it('excellent adds 2–4 reprobates and mints no soul (sheet rev)', () => {
+  it('excellent adds 2..9 reprobates and mints no soul (player tuning)', () => {
     const s = resolveSuggestion(fresh(), 'excellent', rng());
     expect(soulsOf(s)).toBe(0);
     expect(totalReprobates(s)).toBeGreaterThanOrEqual(2);
-    expect(totalReprobates(s)).toBeLessThanOrEqual(4);
+    expect(totalReprobates(s)).toBeLessThanOrEqual(9);
   });
 
-  it('apocalyptic sheds half the flock (sheet rev)', () => {
+  it('apocalyptic sheds a quarter of the flock (player tuning)', () => {
     expect(
       totalReprobates(resolveSuggestion(addReprobates(fresh(), 100), 'apocalyptic', rng())),
-    ).toBe(50);
+    ).toBe(75);
   });
 
-  it('bad removes a reprobate; terrible loses 9% of the population', () => {
+  it('bad removes a reprobate; terrible loses 5% of the population', () => {
     expect(totalReprobates(resolveSuggestion(addReprobates(fresh(), 3), 'bad', rng()))).toBe(2);
     expect(totalReprobates(resolveSuggestion(addReprobates(fresh(), 100), 'terrible', rng()))).toBe(
-      91,
+      95,
     );
   });
 
@@ -510,9 +512,9 @@ describe('delegated (low-efficiency) resolutions scale their LOSSES by efficienc
 
   it('Suggestion Apocalyptic at invocation-runner efficiency 0.05 barely dents the flock', () => {
     const s = addReprobates(fresh(), 1000);
-    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 1))).toBe(500); // −50%
-    // 0.5 × 0.05 = 2.5% loss → floor(1000 × 0.025) = 25 removed.
-    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 0.05))).toBe(975);
+    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 1))).toBe(750); // −25%
+    // 0.25 × 0.05 = 1.25% loss → floor(1000 × 0.0125) = 12 removed.
+    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 0.05))).toBe(988);
   });
 
   it('a hand cast (efficiency ≥ 1) is unchanged — the clamp keeps losses at full strength', () => {
@@ -560,9 +562,9 @@ describe('actionTierDistribution (oracular reveals, 5.1)', () => {
   it('reflects the full Imperium distribution (the fixed-Good certainty is retired)', () => {
     const s = createInitialState('oracle-test', 0);
     const dist = actionTierDistribution(s, 'imperium');
-    expect(dist.good).toBeCloseTo(0.21, 10);
-    expect(dist.stellar).toBeCloseTo(0.035, 10);
-    expect(dist.apocalyptic).toBeCloseTo(0.035, 10);
+    expect(dist.good).toBeCloseTo(0.45, 10);
+    expect(dist.stellar).toBeCloseTo(0.05, 10);
+    expect(dist.apocalyptic).toBeCloseTo(0.05, 10);
   });
 
   it('reflects the base weights for Caedes (Good is the dominant tier)', () => {

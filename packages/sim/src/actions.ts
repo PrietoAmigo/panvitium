@@ -470,17 +470,17 @@ function caedesTierDelta(
 function suggestionTierDelta(tier: Tier, units: number, pop: number, loss: number): TierDelta {
   switch (tier) {
     case 'stellar':
-      return { ...NO_DELTA, reprobates: uniform(4, 8, units) };
+      return { ...NO_DELTA, reprobates: uniform(10, 25, units) };
     case 'excellent':
-      return { ...NO_DELTA, reprobates: uniform(2, 4, units) };
+      return { ...NO_DELTA, reprobates: uniform(2, 9, units) };
     case 'good':
       return { ...NO_DELTA, reprobates: fixed(units) };
     case 'bad':
       return { ...NO_DELTA, reprobates: fixed(-Math.min(Math.floor(units * loss), pop)) };
     case 'terrible':
-      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.09 * loss * pop)) };
+      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.05 * loss * pop)) };
     case 'apocalyptic':
-      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.5 * loss * pop)) };
+      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.25 * loss * pop)) };
     default:
       return NO_DELTA; // neutral: nothing
   }
@@ -707,19 +707,19 @@ export function resolveSuggestion(
   const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
-      // major sin → +randint(4,8) unconverted reprobates (Suasio sheet); efficiency scales the count.
-      return addReprobates(state, randint(rng, 4, 8) * units);
+      // major sin → +randint(10,25) unconverted reprobates (player tuning); efficiency scales the count.
+      return addReprobates(state, randint(rng, 10, 25) * units);
     case 'excellent':
-      // sin spreads → +randint(2,4) reprobates (sheet rev); efficiency scales the count.
-      return addReprobates(state, randint(rng, 2, 4) * units);
+      // sin spreads → +randint(2,9) reprobates (player tuning); efficiency scales the count.
+      return addReprobates(state, randint(rng, 2, 9) * units);
     case 'good':
       return addReprobates(state, units);
     case 'bad':
       return removeReprobates(state, Math.floor(units * loss)).state; // rejects + redeems another
     case 'terrible':
-      return loseReprobatesFraction(state, 0.09 * loss).state; // Church intervention
+      return loseReprobatesFraction(state, 0.05 * loss).state; // Church intervention (player tuning)
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5 * loss).state; // mass apostasy (sheet rev)
+      return loseReprobatesFraction(state, 0.25 * loss).state; // mass apostasy (player tuning)
     case 'neutral':
     default:
       return state;
@@ -732,21 +732,21 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
   const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
-      // the word catches fire → +3% of the current population (sheet rev); efficiency scales.
+      // the word catches fire → +5% of the current population (player tuning); efficiency scales.
       return addReprobates(
         state,
-        Math.floor(totalReprobates(state) * 0.03 * Math.max(0, efficiency)),
+        Math.floor(totalReprobates(state) * 0.05 * Math.max(0, efficiency)),
       );
     case 'excellent':
-      return addReprobates(state, randint(rng, 20, 58) * units); // sheet rev (owner answer #3)
+      return addReprobates(state, randint(rng, 41, 74) * units); // player tuning
     case 'good':
-      return addReprobates(state, randint(rng, 10, 29) * units);
+      return addReprobates(state, randint(rng, 14, 39) * units);
     case 'bad':
       return removeReprobates(state, Math.floor(units * loss)).state; // reject + redeem
     case 'terrible':
-      return loseReprobatesFraction(state, 0.09 * loss).state; // Church intervention
+      return loseReprobatesFraction(state, 0.01 * loss).state; // Church intervention (player tuning)
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5 * loss).state; // mass apostasy (sheet rev)
+      return loseReprobatesFraction(state, 0.05 * loss).state; // mass apostasy (player tuning)
     case 'neutral':
     default:
       return state;
@@ -754,32 +754,32 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
 }
 
 /**
- * Imperium outcomes (Suasio sheet rev 2026-06-12): the fixed "player in control" Good is retired —
- * the late rite carries a full distribution. Stellar pays +3% of CURRENT SOULS; Excellent +3% of
- * the population; Good +randint(100,1000) reprobates; the tails shed the flock.
+ * Imperium outcomes (Suasio sheet, retuned by player request): a full distribution, all in
+ * reprobates now (Stellar no longer mints souls). Stellar +25% of the population; Excellent +7%;
+ * Good +randint(100,1000) reprobates; the tails shed the flock.
  */
 export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
   const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
-      return mintSouls(
+      return addReprobates(
         state,
-        Math.floor(floor(state.souls).toNumber() * 0.03 * Math.max(0, efficiency)),
+        Math.floor(totalReprobates(state) * 0.25 * Math.max(0, efficiency)),
       );
     case 'excellent':
       return addReprobates(
         state,
-        Math.floor(totalReprobates(state) * 0.03 * Math.max(0, efficiency)),
+        Math.floor(totalReprobates(state) * 0.07 * Math.max(0, efficiency)),
       );
     case 'good':
       return addReprobates(state, randint(rng, 100, 1000) * units);
     case 'bad':
       return removeReprobates(state, Math.floor(units * loss)).state;
     case 'terrible':
-      return loseReprobatesFraction(state, 0.05 * loss).state;
+      return loseReprobatesFraction(state, 0.025 * loss).state;
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5 * loss).state;
+      return loseReprobatesFraction(state, 0.1 * loss).state;
     case 'neutral':
     default:
       return state;

@@ -7,37 +7,42 @@
 import { type TierWeights } from './probability.js';
 import { type ActionDef } from './actions.js';
 
+// Suggestion (player tuning): Good raised to 0.5 and Neutral cut to 0.15 so the entry rite lands a
+// gain far more often; Terrible trimmed to 0.049 to keep the column summing to 1.
 const SUGGESTION_WEIGHTS: TierWeights = {
   stellar: 0.001,
   excellent: 0.099,
-  good: 0.25,
-  neutral: 0.35,
+  good: 0.5,
+  neutral: 0.15,
   bad: 0.2,
-  terrible: 0.099,
+  terrible: 0.049,
   apocalyptic: 0.001,
 };
 
-/** Logismoi (Suasio sheet): mid-game reprobate/soul source; richer than Suggestion. */
+// Logismoi (Suasio sheet, retuned by player request): mid-game reprobate/soul source, richer than
+// Suggestion. Neutral removed (0) so the rite almost always moves the flock; the tails (Terrible,
+// Apocalyptic) are fattened to offset the heavier Excellent/Good mass. Column still sums to 1.
 const LOGISMOI_WEIGHTS: TierWeights = {
   stellar: 0.01,
-  excellent: 0.15,
-  good: 0.3,
-  neutral: 0.3,
-  bad: 0.17,
-  terrible: 0.069,
-  apocalyptic: 0.001,
+  excellent: 0.24,
+  good: 0.4,
+  neutral: 0,
+  bad: 0.1,
+  terrible: 0.24,
+  apocalyptic: 0.01,
 };
 
-/** Imperium (Suasio sheet rev 2026-06-12): a full distribution — the "player in control" fixed
- * outcome is retired; the late rite now risks real failure and pays in souls at Stellar. */
+// Imperium (Suasio sheet, retuned by player request): the late rite's full distribution, reweighted
+// toward a dominant Good (0.45) with Neutral removed (0) so a cast almost always swells the flock;
+// the tails stay live. Column sums to 1.
 const IMPERIUM_WEIGHTS: TierWeights = {
-  stellar: 0.035,
-  excellent: 0.18,
-  good: 0.21,
-  neutral: 0.235,
+  stellar: 0.05,
+  excellent: 0.15,
+  good: 0.45,
+  neutral: 0,
   bad: 0.15,
-  terrible: 0.155,
-  apocalyptic: 0.035,
+  terrible: 0.15,
+  apocalyptic: 0.05,
 };
 
 const CAEDES_WEIGHTS: TierWeights = {
