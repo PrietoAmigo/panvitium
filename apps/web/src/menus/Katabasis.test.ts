@@ -13,6 +13,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { bn, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { KatabasisModal } from '../ui/KatabasisModal.js';
+import { splitBoon } from './Katabasis.js';
 
 // jsdom has no real media element; stub the methods the ambient-score effect may touch.
 const media = window.HTMLMediaElement.prototype;
@@ -241,5 +242,33 @@ describe('Katabasis flow — orchestrator', () => {
     // …and the Altar commit gate is gone (we did not rewind to it).
     expect(container!.querySelector('.altar-gate')).toBeNull();
     expect(container!.querySelector('.kat-seal-btn')).toBeNull();
+  });
+});
+
+describe('splitBoon (ledger label)', () => {
+  const UP = '\u2191';
+  const DOWN = '\u2193';
+
+  it('strips a single trailing arrow and returns it as dir', () => {
+    expect(splitBoon(`Gold gain ${UP}`)).toEqual({ text: 'Gold gain', dir: UP });
+    expect(splitBoon(`Opera negative outcomes ${DOWN}`)).toEqual({
+      text: 'Opera negative outcomes',
+      dir: DOWN,
+    });
+  });
+
+  it('drops a trailing (flat) qualifier before the arrow', () => {
+    expect(splitBoon(`Murder rate ${UP} (flat)`).text).toBe('Murder rate');
+  });
+
+  it('strips EVERY arrow of a composite label, leaving no dangling mid-string arrow', () => {
+    // Raum #40: two legs, one arrow each; the magnitude column carries the signs.
+    expect(splitBoon(`Decimatio efficiency ${UP}, Suasio efficiency ${DOWN}`).text).toBe(
+      'Decimatio efficiency, Suasio efficiency',
+    );
+    // Andrealphus #65.
+    expect(splitBoon(`Invocation costs ${DOWN}, Desidia speed ${UP}`).text).toBe(
+      'Invocation costs, Desidia speed',
+    );
   });
 });

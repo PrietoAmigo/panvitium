@@ -613,8 +613,14 @@ function AltarGate({
   );
 }
 
-/** Strip a boon string's trailing direction arrow (↑/↓); the ledger shows the live magnitude there. */
-function splitBoon(desc: string): { text: string; dir: string } {
+/**
+ * Strip a boon string's direction arrows (↑/↓); the ledger shows each leg's live signed
+ * magnitude in their place. A single-effect seal ends in one arrow; a composite seal (Raum #40)
+ * carries one per leg ("Decimatio efficiency ↑, Suasio efficiency ↓"), so strip EVERY arrow,
+ * not just the trailing one, or a mid-string leg keeps a dangling arrow. `dir` stays the trailing
+ * arrow (single-effect seals unchanged); the magnitude column carries each leg's sign.
+ */
+export function splitBoon(desc: string): { text: string; dir: string } {
   // Drop a trailing "(flat)" qualifier first (e.g. "Murder rate ↑ (flat)") — the magnitude column
   // carries the flat per-second unit, and this leaves the arrow trailing so it strips cleanly below.
   const trimmed = desc
@@ -622,10 +628,10 @@ function splitBoon(desc: string): { text: string; dir: string } {
     .replace(/\s*\(flat\)$/i, '')
     .trimEnd();
   const last = trimmed.slice(-1);
-  if (last === '\u2191' || last === '\u2193') {
-    return { text: trimmed.slice(0, -1).trimEnd(), dir: last };
-  }
-  return { text: trimmed, dir: '' };
+  const dir = last === '\u2191' || last === '\u2193' ? last : '';
+  // Remove every arrow (and the space before it) so a multi-leg composite label reads cleanly.
+  const text = trimmed.replace(/\s*[\u2191\u2193]/g, '').trimEnd();
+  return { text, dir };
 }
 
 // The seal's art in the public asset tree \u2014 seal number `id` (1..72) \u2192 `sigils/NN.png` (zero-padded),

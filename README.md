@@ -103,9 +103,18 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 916** (sim 564 · shared 65 · api 20 · web 267).
+**Current test count: 919** (sim 564 · shared 65 · api 20 · web 270).
 
-> **Latest change — composite sigils + the invocation cost channel covers all costs (ADR-035).**
+> **Latest change — post-offline-rework polish: composite ledger labels + "online" copy.** Two small
+> cleanups. (1) The Katabasis ledger's `splitBoon` now strips EVERY direction arrow, not just the
+> trailing one, so a composite seal's second leg (e.g. Raum #40's "…, Suasio ↓") no longer keeps a
+> dangling arrow in the ledger; the signed magnitudes were always shown in the effect column, and the
+> AetherSigils panel (verbatim) was already fine. (2) With offline frozen (ADR-032/033) there is no
+> offline concept, so the redundant "online" is dropped from the player-facing effect copy (Valefor
+> #6 and Aamon #7 sigils, Gula's Insatiability skill) and the matching docs. Net **+3 tests**
+> (web 267 → 270).
+
+> **Earlier change — composite sigils + the invocation cost channel covers all costs (ADR-035).**
 > Two follow-ups from a sigil-redundancy audit. (1) A `composite` effect lets one seal carry several
 > modifier / cost-reduction parts at its single strength, and three exact-duplicate seals are reshaped
 > onto it: **Raum #40** now trades **+Decimatio for −Suasio** efficiency, **Dantalion #71** is its
