@@ -25,7 +25,7 @@ Each Prince is a school of vice with its own temper, pacing, and economy
 
 | Prince | Sin (Latin) | English | Skill | Skill effect (continuous) | Per-level effect |
 |---|---|---|---|---|---|
-| **Beelzebub** | *Gula* | Gluttony | Insatiability | Increases online player efficiency. | Removes a flat share of Bad, Terrible, and Apocalyptic chance per level (additive); at level 4 the negative-outcome chance is 0%. |
+| **Beelzebub** | *Gula* | Gluttony | Insatiability | Increases player efficiency. | Removes a flat share of Bad, Terrible, and Apocalyptic chance per level (additive); at level 4 the negative-outcome chance is 0%. |
 | **Asmodeus** | *Luxuria* | Lust | Seduction | Increases the reprobate generation rate. | Multiplies overall *Suasio* efficiency per level; unlocks the *Suasio* actions and their toggles. |
 | **Mammon** | *Avaritia* | Greed | Golden Hand | Increases the gold gain rate. | Increases the Katabasis remaining-gold percentage per level. |
 | **Leviathan** | *Tristitia* | Sorrow | Resignation | Increases acolyte efficiency. | Increases the Katabasis remaining-reprobate percentage per level. |
@@ -279,8 +279,8 @@ coefficients are in the `Sigils` sheet.
 | 3 | **Vassago** | Foresees past and future | Higher chance of profane and anathema maleficia. |
 | 4 | **Samigina** | Accounts of the dead | Increases *Tristitia* invocation effectiveness. |
 | 5 | **Marbas** | Reveals secrets | Increases *Indagatio* positive outcome chance. |
-| 6 | **Valefor** | Thievery | Increases online gold gain. |
-| 7 | **Aamon** | Reproduction, life | Increases online reprobate generation. |
+| 6 | **Valefor** | Thievery | Increases gold gain. |
+| 7 | **Aamon** | Reproduction, life | Increases reprobate generation. |
 | 8 | **Barbatos** | Songs of animals | Increases *Gula* invocation effectiveness. |
 | 9 | **Paimon** | Loyalty; returning servants | Reduces influence costs. |
 | 10 | **Buer** | Good familiars | Increases Familiar effectiveness. |

@@ -186,7 +186,7 @@ A new action category arriving later declares its own mode at the same site. Mod
 existing modes are stable.
 
 The total efficiency for a specific action is the **product** of the player's global efficiency
-(Gula's Insatiability online, Acedia's Procrastination offline), the action's category
+(Gula's Insatiability), the action's category
 efficiency (Luxuria levels for *Suasio*, Ira levels for *Decimatio*, per-category sigils), and
 the **sum** of all runner contributions on that action: the player's own contribution plus each
 assigned acolyte's plus any invocation contribution.
