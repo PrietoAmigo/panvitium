@@ -38,6 +38,7 @@ import {
   markAllEmailsRead as markAllEmailsReadSim,
   answerEmail as answerEmailSim,
   deleteEmail as deleteEmailSim,
+  applyCallEffects,
   bn,
   add,
   sub,
@@ -57,6 +58,7 @@ import {
   parseSaveBlob,
 } from './persistence.js';
 import { resumeGame } from '../game/session.js';
+import { CALL_IN_BY_ID } from '../menus/calls-in.data.js';
 import {
   CURRENT_SCHEMA_VERSION,
   serializeGameState,
@@ -237,6 +239,14 @@ interface GameStore {
   answerEmail: (id: string, replyIdx: number) => void;
   /** Delete an email (a hide-flag; the entry is kept so it can't re-trigger). */
   deleteEmail: (id: string) => void;
+  /**
+   * Apply a chosen incoming-call option's effects (docs/PANVITIUM-CALLS-IN.md). Looks up the call's
+   * `choiceIndex` effects and applies them via the sim's `applyCallEffects`: timed buffs append to
+   * `lifetime.callBuffs`, one-shot effects (gold cost, reprobate cull/loss, permanent maxInfluence)
+   * apply at once. A no-op for an unknown call/choice or a decline (no effects). Relies on the
+   * debounced autosave (ADR-006), like `act` / `summon`.
+   */
+  answerCall: (callId: string, choiceIndex: number) => void;
   /** Serialize the current game to a portable save string, or null if no game is loaded. */
   exportSave: () => string | null;
   /** Replace the current game with a pasted save string. Returns false if it isn't a valid save. */
@@ -617,6 +627,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   deleteEmail: (id) => {
     const s = get().state;
     if (s) set({ state: deleteEmailSim(s, id) });
+  },
+
+  answerCall: (callId, choiceIndex) => {
+    const current = get().state;
+    if (!current) return;
+    const effects = CALL_IN_BY_ID[callId]?.choices[choiceIndex]?.effects;
+    // Unknown call/choice, or a decline / lore / easter-egg option (no effects) — nothing to apply.
+    if (!effects || effects.length === 0) return;
+    set({ state: applyCallEffects(current, effects), notice: null });
   },
 
   exportSave: () => {

@@ -103,9 +103,27 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 919** (sim 564 · shared 65 · api 20 · web 270).
+**Current test count: 940** (sim 581 · shared 68 · api 20 · web 271).
 
-> **Latest change — the Depraedatio panel reborn as the "Counting House" account (Claude Design
+> **Latest change — incoming-call buffs now apply (the calls-in effect engine), with the offline
+> buff re-homed onto Stagnation.** Answering an incoming call was a documented stub; it now changes
+> game state. The sim owns the effect types and logic in a new framework-free module
+> (`packages/sim/src/callBuffs.ts`, ADR-022): `applyCallEffects` consumes a chosen option's
+> structured `effects`, `advanceCallBuffs` decays the timed ones, and `callBuffMultipliers` folds
+> them into `computeModifiers`. **Timed buffs** live in `lifetime.callBuffs` (additive-optional,
+> ADR-023; cleared at Katabasis) and are decayed each tick exactly like the Hand of Glory buff — a
+> buff active at a tick's start lifts that whole tick — mapping onto the gold / reprobate-generation /
+> influence (gain **and** regen share the one rate) / search / player / acolyte efficiency fields.
+> **One-shot effects** apply at answer time: a gold-percent cost, a reprobate cull (mints one soul
+> per death) vs. a plain loss (no souls, honouring "the cull is one for one"), and a permanent
+> maxInfluence raise. App's `onChoose` routes to the store's `answerCall`; none of it draws the
+> seeded RNG, so a save's sequence is unchanged (ADR-011). **The offline `doing-nothing` buff** ("I
+> will join them"), retired with offline progression (ADR-032), is **re-homed onto Stagnation**: it
+> now triples the Stagnation-generation rate (`stagnationGainMul`, ADR-034) for 8 hours, boosting the
+> torpor banked while away. No save-schema bump (additive-optional). Net **+21 tests** (sim 564 →
+> 581, shared 65 → 68, web 270 → 271).
+
+> **Earlier change — the Depraedatio panel reborn as the "Counting House" account (Claude Design
 > handoff).** The grimoire-styled Thesaurus / Syngraphae tabs are retired; the Faeneratio gold loop is
 > now a calm, mundane private-bank dashboard, a fixed sidebar (managed-account card + Portfolio /
 > Contracts nav) over two screens. **Portfolio** surfaces the reserve balance, a four-cell income grid

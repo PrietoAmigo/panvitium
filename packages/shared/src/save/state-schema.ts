@@ -14,6 +14,7 @@ import {
   SINS,
   serializeBigNum,
   deserializeBigNum,
+  isCallBuffField,
 } from '@panvitium/sim';
 
 /** A BigNum on the wire: break_infinity's exact string form (e.g. "0", "1.5e300"). */
@@ -47,6 +48,14 @@ const actionTimerSchema = z.object({
   // Gold actually paid at startAction (Emptio refund basis). Additive-optional (ADR-023): absent
   // on older saves' in-flight timers, which fall back to recomputing the price at resolution.
   paidGold: z.number().nonnegative().optional(),
+});
+
+// One active incoming-call timed buff (docs/PANVITIUM-CALLS-IN.md): a multiplier on `field` with the
+// seconds it has left. `field` is a string on the wire; the deserializer drops any it doesn't know.
+const callBuffSchema = z.object({
+  field: z.string(),
+  factor: z.number().positive(),
+  remainingSeconds: z.number().nonnegative(),
 });
 
 const inboxEntrySchema = z.object({
@@ -100,6 +109,9 @@ const lifetimeSchema = z.object({
   // cleared at commit. Additive-optional (ADR-023) so it survives a mid-descent reload.
   hoardAtDescent: bigNumString.optional(),
   handOfGloryRemaining: z.number().nonnegative().optional(),
+  // Incoming-call timed buffs (docs/PANVITIUM-CALLS-IN.md). Additive-optional (ADR-023): absent → []
+  // at runtime; omitted from the wire when empty.
+  callBuffs: z.array(callBuffSchema).optional(),
   // Impact-feedback inbox (Phase 5.2). Additive-optional (ADR-023): absent → empty inbox at load.
   inbox: z.array(inboxEntrySchema).optional(),
   // Email arm timers (05): email id -> wall-clock ms its delayed trigger first became eligible.
@@ -230,6 +242,16 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.handOfGloryRemaining > 0
         ? { handOfGloryRemaining: state.lifetime.handOfGloryRemaining }
         : {}),
+      // Incoming-call timed buffs: omit when empty (additive-optional, ADR-023).
+      ...(state.lifetime.callBuffs.length > 0
+        ? {
+            callBuffs: state.lifetime.callBuffs.map((b) => ({
+              field: b.field,
+              factor: b.factor,
+              remainingSeconds: b.remainingSeconds,
+            })),
+          }
+        : {}),
       ...(state.lifetime.inbox.length > 0
         ? {
             inbox: state.lifetime.inbox.map((e) => ({
@@ -337,6 +359,13 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       suicidePool: s.lifetime.suicidePool ?? 0,
       murderPool: s.lifetime.murderPool ?? 0,
       handOfGloryRemaining: s.lifetime.handOfGloryRemaining ?? 0,
+      // Incoming-call timed buffs: additive-optional (ADR-023) — absent → []. Drop any buff whose
+      // `field` isn't a known target (a newer save's field), so it can't feed an unknown modifier.
+      callBuffs: (s.lifetime.callBuffs ?? []).flatMap((b) =>
+        isCallBuffField(b.field)
+          ? [{ field: b.field, factor: b.factor, remainingSeconds: b.remainingSeconds }]
+          : [],
+      ),
       inbox: (s.lifetime.inbox ?? []).map((e) => ({
         id: e.id,
         receivedAt: e.receivedAt,

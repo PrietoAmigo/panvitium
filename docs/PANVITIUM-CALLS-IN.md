@@ -2,7 +2,7 @@
 
 Canonical, single-source list of every call you can RECEIVE and the event it opens when answered. One entry per incoming call, fixed format. A call RINGS for a 15 s window during active play only (never offline; the phone is dark during Katabasis, see `06-smartphone-content.md`). Weights and magnitudes are sheet-pinned placeholders.
 
-**Implementation status.** The calls-in *front-end* is built: the catalogue lives in `apps/web/src/menus/calls-in.data.ts`, the copy in `strings.phone.callIn.<id>`, selection/eligibility in `apps/web/src/game/callIn.ts`, the arrival scheduler in `useIncomingCall`, and answering raises the "voice in the room" overlay (`SmartphoneCallIn`). The *effect engine* is still pending — the planned `CALL_TRIGGERS → INTERACTIONS` wiring and the `-> effects` on every choice below are **not yet applied: answering a call changes no game state today** (the same documented-stub posture as the email replies). The choice effects below are the spec for that engine. See "Implementation notes" at the foot of this file for the flags, the cadence/recency settings, and the determinism caveat.
+**Implementation status.** The calls-in *front-end* is built: the catalogue lives in `apps/web/src/menus/calls-in.data.ts`, the copy in `strings.phone.callIn.<id>`, selection/eligibility in `apps/web/src/game/callIn.ts`, the arrival scheduler in `useIncomingCall`, and answering raises the "voice in the room" overlay (`SmartphoneCallIn`). The **buff / cost / cull effects are now applied**: answering routes App's `onChoose` to the store's `answerCall`, which hands the chosen option's `-> effects` to the sim's `applyCallEffects` (framework-free, ADR-022, `packages/sim/src/callBuffs.ts`). Timed buffs join `lifetime.callBuffs` and fold into the modifier bundle via `callBuffMultipliers` (decayed each tick like Hand of Glory); one-shot effects (gold cost, reprobate cull/loss, permanent maxInfluence) apply at once. **Still pending:** the spreadsheet-pinned weights, moving the trigger/draw into the tick (deterministic + offline-correct), and the lore-only `setFlag(...)` effects. See "Implementation notes" at the foot of this file for the flags, the cadence/recency settings, and the determinism caveat.
 
 **Out of scope: sigils and Princes.** Sigils and the Princes are never interacted with from earth. They belong to the altar and the descent, not to a phone on a desk. So no call here frames a reward as binding a soul to a sigil, feeding a seal, or giving Devotion to a Prince. The phone speaks only of the mundane vice lines, the invocations, the household and its culling, the search, money, and standing.
 
@@ -96,7 +96,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Class: buff-positive
 - Caller: Mai
 - Requirements: none
-    - [I will join them] -> buff(offlineRate, ×3.0, 8 hours). — "Offline progress triples for 8 hours"
+    - [I will join them] -> buff(stagnationGainMul, ×3.0, 8 hours). — "Stagnation generation triples for 8 hours"   (offline progression was retired in ADR-032; this offline buff is re-homed onto the Stagnation-generation rate of ADR-034, so it multiplies the Stagnation banked while away)
     - [Kill them] -> Kills 10% current reprobates. — "Kills 10% of your reprobates"
     - [Let it go] -> nothing()
 
@@ -259,4 +259,4 @@ How the built calls-in front-end reconciles with this catalogue. The numbers are
 
 **Once-only.** Lore and easter-egg calls are consumed on **answer** (not on a miss), so a missed once-only call can ring again; an answered one never does.
 
-**Determinism (ADR-011).** The scheduler draws from `Math.random`, **not** the sim's seeded PRNG, and applies no effects — so it does not advance the RNG stream or alter the save. A save's sequence is identical whether or not a call rang. When the effect engine lands, the trigger/draw should move into the tick (deterministic + offline-correct) and the per-session "seen" set and recency buffer should be persisted (ADR-023 additive-optional).
+**Determinism (ADR-011).** The scheduler draws its arrivals from `Math.random`, **not** the sim's seeded PRNG, so it does not advance the RNG stream. Answering now applies effects, but `applyCallEffects` draws no seeded RNG either (the cull is a deterministic percentage, no per-reprobate roll), so a save's sequence is still identical whether or not a call rang or was answered — only the resources/buffs it granted differ. The remaining determinism work is to move the trigger/draw itself into the tick (deterministic + offline-correct) and persist the per-session "seen" set and recency buffer (ADR-023 additive-optional).

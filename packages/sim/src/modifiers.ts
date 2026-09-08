@@ -44,6 +44,7 @@ import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
 import { SYNGRAPHAE, hoardMilestoneBonus, syngraphaSigned } from './syngraphae.js';
 import { aurevoraEfficiencyMul } from './apex.js';
+import { callBuffMultipliers } from './callBuffs.js';
 import {
   sigilMaleficiaEffectMul,
   sigilModifierContributions,
@@ -275,6 +276,10 @@ export function computeModifiers(state: GameState): Modifiers {
   const luxuriaIntensity = skillIntensity(state.devotion.luxuria); // Seduction → gen rate
   const acediaIntensity = skillIntensity(state.devotion.acedia); // Procrastination → Desidia speed
 
+  // Incoming-call timed buffs (docs/PANVITIUM-CALLS-IN.md): per-field products of the active buffs,
+  // folded multiplicatively into the matching fields below (ADR-022). Neutral (all 1) when none run.
+  const cb = callBuffMultipliers(state);
+
   // Equipped maleficia (03 §4). Each anathema item is a single, decisive multiplier.
   const owned = state.lifetime.maleficia;
   const hasSpear = countCopies(owned, 'spear_of_longinus') > 0;
@@ -408,7 +413,8 @@ export function computeModifiers(state: GameState): Modifiers {
     (hasFamiliar ? 1 + 0.33 * invEffForInv('familiar') : 1) *
     aurevoraEff *
     erinyesStackMul *
-    sc('playerEfficiencyMul');
+    sc('playerEfficiencyMul') *
+    cb.playerEfficiencyMul; // the-discipline-swells call buff (Model 1: also lifts invocation effects)
   // Per-Sin invocation effectiveness (the eight Sin-themed sigils). `invEffFor(sin)` is the global
   // invocation-effect multiplier × that Sin's sigil boost; every efficiency-derived invocation effect
   // below uses it in place of the bare `invEff`, keyed by the invocation's own Sin.
@@ -457,6 +463,7 @@ export function computeModifiers(state: GameState): Modifiers {
       (hasMidas ? 3 : 1) *
       (1 + hoardMilestoneBonus(state)) *
       sc('goldRateMul') *
+      cb.goldRateMul * // the-cycle-turns / a-good-find / blood-in-the-cage call buffs
       faustoCurseMul,
     // Doppelgänger's "50% influence gain" cost is now per-second upkeep (tick.ts 1a), not a cut here.
     influenceRateMul:
@@ -465,6 +472,7 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
       (hasSpecunitas ? 2 : 1) * // Specunitas (apex Vanagloria): ×2 influence gain/s
       sc('influenceRateMul') *
+      cb.influenceRateMul * // eager-hands / ministry / social-platform / parish call buffs (gain ≡ regen)
       faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     maxInfluenceMul: maxInfluenceMulV,
@@ -499,7 +507,7 @@ export function computeModifiers(state: GameState): Modifiers {
       IRA_DECIMATIO_EFF_PER_LEVEL ** iraLvl * // ×2 per Ira level (sheet rev 2026-06-12)
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
       sc('decimatioEfficiencyMul'),
-    indagatioEfficiencyMul: sc('indagatioEfficiencyMul'),
+    indagatioEfficiencyMul: sc('indagatioEfficiencyMul') * cb.indagatioEfficiencyMul, // a-good-find call buff
     emptioEfficiencyMul: sc('emptioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; Luxuria's
@@ -510,6 +518,7 @@ export function computeModifiers(state: GameState): Modifiers {
       (state.lifetime.handOfGloryRemaining > 0 ? HAND_OF_GLORY_GENERATION_MUL : 1) *
       skillBonus(luxuriaIntensity) *
       sc('reprobateGenerationRateMul') *
+      cb.reprobateGenerationRateMul * // the-cycle-turns / eager-hands / the-shipment / parish call buffs
       faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill)
@@ -545,7 +554,8 @@ export function computeModifiers(state: GameState): Modifiers {
     escheatGoldPerSuicide: escheatGoldPerSuicideV,
     // Acolyte efficiency: 0.33 baseline (02 §10); Tristitia's Resignation SKILL lifts it
     // continuously (sheet rev 2026-06-12); Bathin #18 sigil composes on top.
-    acolyteEfficiencyMul: 0.33 * skillBonus(tristitiaIntensity) * sc('acolyteEfficiencyMul'),
+    acolyteEfficiencyMul:
+      0.33 * skillBonus(tristitiaIntensity) * sc('acolyteEfficiencyMul') * cb.acolyteEfficiencyMul, // the-discipline-swells / the-looting call buffs
     // Invocation efficiency: 1× baseline; Ira's Retribution SKILL lifts it continuously (sheet
     // rev 2026-06-12). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
     invocationEfficiencyMul: invEff,
@@ -557,7 +567,8 @@ export function computeModifiers(state: GameState): Modifiers {
     // more Lemures = a cheaper Desidia; Sallos #19 softens it further.
     desidiaDrainMul: (1 - LEMURE_DRAIN_REDUCTION_PER_COPY) ** lemureCount * sc('desidiaDrainMul'),
     // Stagnation gain / cap (ADR-034): Sitri #12 lifts the offline accrual rate, Orias #59 the cap.
-    stagnationGainMul: sc('stagnationGainMul'),
+    // The re-homed offline `doing-nothing` call buff also lifts the gain rate (cb.stagnationGainMul).
+    stagnationGainMul: sc('stagnationGainMul') * cb.stagnationGainMul,
     stagnationMaxMul: sc('stagnationMaxMul'),
   };
 }

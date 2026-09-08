@@ -133,6 +133,53 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
   });
 });
 
+describe('call buffs (calls-in) — ADR-023 additive-optional round-trip', () => {
+  it('a fresh save omits callBuffs from the wire; absent loads as []', () => {
+    const serialized = serializeGameState(createInitialState('seed', 0));
+    expect('callBuffs' in serialized.lifetime).toBe(false);
+    expect(deserializeGameState(serialized).lifetime.callBuffs).toEqual([]);
+  });
+
+  it('active buffs round-trip (field / factor / remaining)', () => {
+    const fresh = createInitialState('seed', 0);
+    const withBuffs: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        callBuffs: [
+          { field: 'goldGainMul', factor: 1.33, remainingSeconds: 3600 },
+          { field: 'stagnationGainMul', factor: 3, remainingSeconds: 28800 },
+        ],
+      },
+    };
+    const back = deserializeGameState(serializeGameState(withBuffs)).lifetime.callBuffs;
+    expect(back).toEqual([
+      { field: 'goldGainMul', factor: 1.33, remainingSeconds: 3600 },
+      { field: 'stagnationGainMul', factor: 3, remainingSeconds: 28800 },
+    ]);
+  });
+
+  it('drops a buff whose field a newer save introduced (unknown target)', () => {
+    const serialized = serializeGameState(createInitialState('seed', 0));
+    const withUnknown = {
+      ...serialized,
+      lifetime: {
+        ...serialized.lifetime,
+        callBuffs: [
+          { field: 'goldGainMul', factor: 2, remainingSeconds: 100 },
+          { field: 'someFutureField', factor: 2, remainingSeconds: 100 },
+        ],
+      },
+    };
+    const parsed = serializedGameStateSchema.safeParse(withUnknown);
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    const back = deserializeGameState(parsed.data).lifetime.callBuffs;
+    expect(back).toHaveLength(1);
+    expect(back[0]!.field).toBe('goldGainMul');
+  });
+});
+
 describe('inbox reply / delete — ADR-023 additive-optional round-trip', () => {
   it('answeredReply + deleted survive the wire; untouched mail carries neither (defaults omitted)', () => {
     const fresh = createInitialState('seed', 0);
