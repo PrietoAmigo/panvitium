@@ -7,13 +7,15 @@
 import { type TierWeights } from './probability.js';
 import { type ActionDef } from './actions.js';
 
+// Suggestion (player tuning): Good raised to 0.5 and Neutral cut to 0.15 so the entry rite lands a
+// gain far more often; Terrible trimmed to 0.049 to keep the column summing to 1.
 const SUGGESTION_WEIGHTS: TierWeights = {
   stellar: 0.001,
   excellent: 0.099,
-  good: 0.25,
-  neutral: 0.35,
+  good: 0.5,
+  neutral: 0.15,
   bad: 0.2,
-  terrible: 0.099,
+  terrible: 0.049,
   apocalyptic: 0.001,
 };
 

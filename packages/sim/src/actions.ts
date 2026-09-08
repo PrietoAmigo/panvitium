@@ -470,17 +470,17 @@ function caedesTierDelta(
 function suggestionTierDelta(tier: Tier, units: number, pop: number, loss: number): TierDelta {
   switch (tier) {
     case 'stellar':
-      return { ...NO_DELTA, reprobates: uniform(4, 8, units) };
+      return { ...NO_DELTA, reprobates: uniform(10, 25, units) };
     case 'excellent':
-      return { ...NO_DELTA, reprobates: uniform(2, 4, units) };
+      return { ...NO_DELTA, reprobates: uniform(2, 9, units) };
     case 'good':
       return { ...NO_DELTA, reprobates: fixed(units) };
     case 'bad':
       return { ...NO_DELTA, reprobates: fixed(-Math.min(Math.floor(units * loss), pop)) };
     case 'terrible':
-      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.09 * loss * pop)) };
+      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.05 * loss * pop)) };
     case 'apocalyptic':
-      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.5 * loss * pop)) };
+      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.25 * loss * pop)) };
     default:
       return NO_DELTA; // neutral: nothing
   }
@@ -707,19 +707,19 @@ export function resolveSuggestion(
   const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
-      // major sin → +randint(4,8) unconverted reprobates (Suasio sheet); efficiency scales the count.
-      return addReprobates(state, randint(rng, 4, 8) * units);
+      // major sin → +randint(10,25) unconverted reprobates (player tuning); efficiency scales the count.
+      return addReprobates(state, randint(rng, 10, 25) * units);
     case 'excellent':
-      // sin spreads → +randint(2,4) reprobates (sheet rev); efficiency scales the count.
-      return addReprobates(state, randint(rng, 2, 4) * units);
+      // sin spreads → +randint(2,9) reprobates (player tuning); efficiency scales the count.
+      return addReprobates(state, randint(rng, 2, 9) * units);
     case 'good':
       return addReprobates(state, units);
     case 'bad':
       return removeReprobates(state, Math.floor(units * loss)).state; // rejects + redeems another
     case 'terrible':
-      return loseReprobatesFraction(state, 0.09 * loss).state; // Church intervention
+      return loseReprobatesFraction(state, 0.05 * loss).state; // Church intervention (player tuning)
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5 * loss).state; // mass apostasy (sheet rev)
+      return loseReprobatesFraction(state, 0.25 * loss).state; // mass apostasy (player tuning)
     case 'neutral':
     default:
       return state;

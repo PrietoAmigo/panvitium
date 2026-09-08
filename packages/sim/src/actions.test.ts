@@ -162,32 +162,32 @@ describe('resolveSuggestion', () => {
     expect(resolveSuggestion(fresh(), 'good', rng()).lifetime.reprobates).toBe(1);
   });
 
-  it('stellar adds 4..8 unconverted reprobates and mints no soul', () => {
+  it('stellar adds 10..25 unconverted reprobates and mints no soul', () => {
     const s = resolveSuggestion(fresh(), 'stellar', rng());
     expect(soulsOf(s)).toBe(0);
     const n = s.lifetime.reprobates;
-    expect(n).toBeGreaterThanOrEqual(4);
-    expect(n).toBeLessThanOrEqual(8);
+    expect(n).toBeGreaterThanOrEqual(10);
+    expect(n).toBeLessThanOrEqual(25);
     expect(totalReprobates(s)).toBe(n); // all unconverted
   });
 
-  it('excellent adds 2–4 reprobates and mints no soul (sheet rev)', () => {
+  it('excellent adds 2..9 reprobates and mints no soul (player tuning)', () => {
     const s = resolveSuggestion(fresh(), 'excellent', rng());
     expect(soulsOf(s)).toBe(0);
     expect(totalReprobates(s)).toBeGreaterThanOrEqual(2);
-    expect(totalReprobates(s)).toBeLessThanOrEqual(4);
+    expect(totalReprobates(s)).toBeLessThanOrEqual(9);
   });
 
-  it('apocalyptic sheds half the flock (sheet rev)', () => {
+  it('apocalyptic sheds a quarter of the flock (player tuning)', () => {
     expect(
       totalReprobates(resolveSuggestion(addReprobates(fresh(), 100), 'apocalyptic', rng())),
-    ).toBe(50);
+    ).toBe(75);
   });
 
-  it('bad removes a reprobate; terrible loses 9% of the population', () => {
+  it('bad removes a reprobate; terrible loses 5% of the population', () => {
     expect(totalReprobates(resolveSuggestion(addReprobates(fresh(), 3), 'bad', rng()))).toBe(2);
     expect(totalReprobates(resolveSuggestion(addReprobates(fresh(), 100), 'terrible', rng()))).toBe(
-      91,
+      95,
     );
   });
 
@@ -510,9 +510,9 @@ describe('delegated (low-efficiency) resolutions scale their LOSSES by efficienc
 
   it('Suggestion Apocalyptic at invocation-runner efficiency 0.05 barely dents the flock', () => {
     const s = addReprobates(fresh(), 1000);
-    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 1))).toBe(500); // −50%
-    // 0.5 × 0.05 = 2.5% loss → floor(1000 × 0.025) = 25 removed.
-    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 0.05))).toBe(975);
+    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 1))).toBe(750); // −25%
+    // 0.25 × 0.05 = 1.25% loss → floor(1000 × 0.0125) = 12 removed.
+    expect(totalReprobates(resolveSuggestion(s, 'apocalyptic', rng(), 0.05))).toBe(988);
   });
 
   it('a hand cast (efficiency ≥ 1) is unchanged — the clamp keeps losses at full strength', () => {
