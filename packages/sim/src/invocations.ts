@@ -135,24 +135,30 @@ export function invocationSoulCost(state: GameState, def: InvocationDef): BigNum
   if (!def.soulCost) return ZERO;
   const pct = floor(mul(state.souls, def.soulCost.fraction));
   const base = max(pct, def.soulCost.minimum);
-  // Orobas #55 softens the soul price (divides by `(1 + strength)`; can pierce the nominal minimum
-  // since it is a genuine discount). Floor keeps souls whole.
+  // The invocation cost channel (Orobas #55 / Zepar #16 / Andrealphus #65) softens the soul price
+  // (divides by `(1 + strength)`; can pierce the nominal minimum since it is a genuine discount).
+  // Floor keeps souls whole.
   const red = sigilCostReductionByChannel(
     state,
     sigilEffectMultiplier(state.lifetime.maleficia),
-  ).invocationSoul;
+  ).invocation;
   return red && red > 1 ? floor(div(base, red)) : base;
 }
 
 /**
  * The gold cost to summon `def` right now (floored). Zero for invocations that don't list a gold
- * cost. Morpheus is the only entry with a gold cost so far (90% of the gold pool, no minimum).
+ * cost. Morpheus is the only entry with a gold cost so far (90% of the gold pool, no minimum). The
+ * invocation cost channel softens it too (ADR-035: the channel covers ALL invocation costs).
  */
 export function invocationGoldCost(state: GameState, def: InvocationDef): BigNum {
   if (!def.goldCost) return ZERO;
   const pct = floor(mul(state.lifetime.gold, def.goldCost.fraction));
-  const min = def.goldCost.minimum ?? 0;
-  return max(pct, min);
+  const base = max(pct, def.goldCost.minimum ?? 0);
+  const red = sigilCostReductionByChannel(
+    state,
+    sigilEffectMultiplier(state.lifetime.maleficia),
+  ).invocation;
+  return red && red > 1 ? floor(div(base, red)) : base;
 }
 
 /** Aggregated per-second invocation upkeep (Invocatio sheet), summed across all active copies. */
@@ -176,8 +182,9 @@ export interface InvocationUpkeep {
  * (for Lemure's 1%-of-max drain). The gain fractions are clamped to 1 so a stack can at most zero a
  * resource's gain, never invert it; flat drains are absolute and can bankrupt a pool (→ dispel).
  *
- * Orobas #55 ("− cost of all invocations") softens the flat, out-of-pocket drains — dividing them by
- * its `(1 + strength)` channel — but leaves the %-of-gain costs (the apex tradeoffs) untouched.
+ * The invocation cost channel ("− cost of all invocations": Orobas #55, Zepar #16, Andrealphus #65)
+ * softens EVERY upkeep cost (ADR-035) — the flat gold/influence drains AND the %-of-gain drains (the
+ * apex tradeoffs) alike — dividing each by its `(1 + strength)` channel.
  */
 export function invocationUpkeep(state: GameState, effectiveMax: number): InvocationUpkeep {
   let goldGainFraction = 0;
@@ -206,12 +213,15 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
       flatInfluenceDrainers.push(id);
     }
   }
-  // Orobas #55 discount on the flat drains (same channel as the one-time soul price).
+  // The invocation cost channel softens EVERY upkeep cost (ADR-035): the %-of-gain drains and the
+  // flat gold/influence drains alike, dividing each by `(1 + strength)`.
   const red = sigilCostReductionByChannel(
     state,
     sigilEffectMultiplier(state.lifetime.maleficia),
-  ).invocationSoul;
+  ).invocation;
   if (red && red > 1) {
+    goldGainFraction /= red;
+    influenceGainFraction /= red;
     flatGoldPerSecond /= red;
     flatInfluencePerSecond /= red;
   }

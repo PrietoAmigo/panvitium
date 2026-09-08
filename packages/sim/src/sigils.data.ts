@@ -133,8 +133,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 16,
     name: 'Zepar',
     coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
-    // ADR-034: −overall invocation soul costs (invocationSoul channel; composes with Orobas #55).
-    effect: { kind: 'costReduction', channel: 'invocationSoul' },
+    // ADR-034/035: −overall invocation costs (the `invocation` channel, now covering every cost;
+    // composes with Orobas #55 and Andrealphus #65).
+    effect: { kind: 'costReduction', channel: 'invocation' },
   },
   17: {
     id: 17,
@@ -338,8 +339,15 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 40,
     name: 'Raum',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +Decimatio action efficiency.
-    effect: { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'increase' },
+    // ADR-035: a tradeoff seal, the mirror of Dantalion #71: lifts Decimatio efficiency while it
+    // dampens Suasio efficiency, both at the seal's single strength.
+    effect: {
+      kind: 'composite',
+      effects: [
+        { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'increase' },
+        { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'decrease' },
+      ],
+    },
   },
   41: {
     id: 41,
@@ -448,7 +456,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Orobas',
     coefficient: 1,
     // Sigils sheet (rev 2026-06-12): −cost of all invocations.
-    effect: { kind: 'costReduction', channel: 'invocationSoul' },
+    effect: { kind: 'costReduction', channel: 'invocation' },
   },
   56: {
     id: 56,
@@ -538,12 +546,17 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   65: {
     id: 65,
     name: 'Andrealphus',
-    // Flat invoking power (rounded to an int), NOT a percentage — keep the √ curve and its original
-    // coefficient so the pct-curve retune leaves this untouched.
-    curve: 'sqrt',
-    coefficient: 0.0001,
-    // Sigils sheet (rev 2026-06-12): +invoking power.
-    effect: { kind: 'invokingPower' },
+    coefficient: 1,
+    // ADR-035: a dual seal on the default pct curve (its old sqrt invoking-power role stays with
+    // Forneus #30). Softens ALL invocation costs (the `invocation` channel, composing with Zepar #16
+    // and Orobas #55) AND quickens Desidia (composes with Foras #31 on desidiaSpeedMul).
+    effect: {
+      kind: 'composite',
+      effects: [
+        { kind: 'costReduction', channel: 'invocation' },
+        { kind: 'modifier', field: 'desidiaSpeedMul', direction: 'increase' },
+      ],
+    },
   },
   66: {
     id: 66,
@@ -586,8 +599,15 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 71,
     name: 'Dantalion',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +Suasio action efficiency.
-    effect: { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'increase' },
+    // ADR-035: a tradeoff seal, the mirror of Raum #40: lifts Suasio efficiency while it dampens
+    // Decimatio efficiency, both at the seal's single strength.
+    effect: {
+      kind: 'composite',
+      effects: [
+        { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'increase' },
+        { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'decrease' },
+      ],
+    },
   },
   72: {
     id: 72,

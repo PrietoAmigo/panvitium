@@ -1137,6 +1137,48 @@ home. The catalog is now the full Goetia 1..72: every seal has a name and a real
 
 ---
 
+## ADR-035: Composite sigil effects; the invocation cost channel covers all costs (renamed)
+
+**Status.** Accepted [2026-09-08]. Extends the sigil effect model (ADR-022/034) and the invocation
+cost-reduction channel.
+
+**Context.** Two limits surfaced while auditing the 72-seal catalog. (1) A seal could carry only ONE
+effect, so several seals duplicated another exactly (Raum #40 was a full-strength twin of the
+Decimatio boost; Dantalion #71 of the Suasio boost; Andrealphus #65 shared Forneus #30's
+invoking-power niche). (2) The invocation cost-reduction channel was named `invocationSoul` and only
+softened the soul summon price plus the flat gold/influence upkeep — not the one-time gold summon
+price (Morpheus) nor the %-of-gain upkeep — so both its name and its reach understated it.
+
+**Decision.**
+
+- **`composite` effect kind.** A seal may bundle several `modifier` / `costReduction` parts under one
+  `{ kind: 'composite', effects: [...] }`, ALL sharing the seal's single strength. `effectParts`
+  flattens a seal's effect(s); `sigilModifierContributions` and `sigilCostReductionByChannel` iterate
+  the parts, so a composite folds into whichever channel each part belongs to. The type permits only
+  those two sub-effect kinds inside a composite, keeping every other dispatch function composite-agnostic.
+- **Three seals rewired onto composites** (closing the exact-duplicate findings):
+  - **Raum #40** → +Decimatio efficiency / −Suasio efficiency (a tradeoff seal).
+  - **Dantalion #71** → +Suasio efficiency / −Decimatio efficiency (Raum's mirror; bound at equal
+    strength the two cancel to neutral).
+  - **Andrealphus #65** → −all invocation costs / +Desidia speed (a dual seal on the default pct
+    curve; its old sqrt invoking-power role stays with Forneus #30).
+- **The cost channel `invocationSoul` is renamed `invocation` and now covers EVERY invocation cost**:
+  the soul and gold summon prices AND every per-second upkeep drain — flat and %-of-gain alike — each
+  divided by `(1 + strength)`. The previously-excluded %-of-gain apex tradeoffs (Succubus,
+  Doppelganger, Lemure, ...) are softened too now.
+
+**Consequences.**
+
+- No save-schema bump (ADR-023): effects are derived, not persisted; a bound composite reads the
+  existing `sigilBindings`.
+- Determinism (ADR-011) is untouched: no new RNG draw.
+- The ledger renders a composite as its parts' signed magnitudes joined (`effectDisplay`) — Raum #40
+  reads `+X% / −X%`; the boon text names which lever is which.
+- Softening the apex %-of-gain tradeoffs is a deliberate balance shift: a heavy `invocation`-channel
+  stack now relieves the steep apex upkeep, not only the flat drains.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.
