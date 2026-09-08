@@ -105,7 +105,27 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 919** (sim 564 · shared 65 · api 20 · web 270).
 
-> **Latest change — post-offline-rework polish: composite ledger labels + "online" copy.** Two small
+> **Latest change — the Depraedatio panel reborn as the "Counting House" account (Claude Design
+> handoff).** The grimoire-styled Thesaurus / Syngraphae tabs are retired; the Faeneratio gold loop is
+> now a calm, mundane private-bank dashboard, a fixed sidebar (managed-account card + Portfolio /
+> Contracts nav) over two screens. **Portfolio** surfaces the reserve balance, a four-cell income grid
+> (available cash, total income, interest, loan book), the Reserve Account card (deposit + a two-step
+> withdraw stating the surrender charge before it commits), the Loan Book, and a dark Account-status
+> tier card with its management-fee-rebate progress; a privacy toggle masks every figure and a
+> session-local "Recent activity" ledger records the player's own moves. **Contracts** renders the
+> twelve-node tree in three branches (Yield / Origination / Custody) with the two-step signing. Every
+> figure binds to the real sim (`thesaurusInterestPerSecond`, `mutuumGoldPerSecond`, `foedusTier`,
+> `thesaurusRecoveryFraction`, the Syngraphae selectors) and the deposit / withdraw / sign store
+> actions; only the player-facing copy changed (banking vocabulary in `strings.faeneratio`), so the
+> sim ids and the save shape are untouched. The terminology carries through to the three sigils that
+> named the old surfaces (Vine #45 / Furcas #50 "Reserve withdrawal recovery", Vapula #60 "Account
+> income"). The contract gate keeps its true **Avaritia** axis (not the hoard-based relationship Tier)
+> so it never contradicts the tier card. A new presentational component
+> (`menus/DepraedatioAccount.tsx`) carries the `.ch-*` styles, and three Google fonts are added
+> (Newsreader, Archivo, IBM Plex Mono). Test count unchanged at **919** (the Depraedatio render smoke
+> retuned to the new nav / screens).
+
+> **Earlier change — post-offline-rework polish: composite ledger labels + "online" copy.** Two small
 > cleanups. (1) The Katabasis ledger's `splitBoon` now strips EVERY direction arrow, not just the
 > trailing one, so a composite seal's second leg (e.g. Raum #40's "…, Suasio ↓") no longer keeps a
 > dangling arrow in the ledger; the signed magnitudes were always shown in the effect column, and the
