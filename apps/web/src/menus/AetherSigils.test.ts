@@ -38,9 +38,21 @@ describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
     expect(out.endsWith('gold/s')).toBe(true);
   });
 
-  it('shows rounded invoking power for Andrealphus #65', () => {
-    // coefficient 0.0001 × √1e8 = 0.0001 × 1e4 = 1 → +1 invoking power
-    expect(effectDisplay(sigilById(65), bn(100_000_000))).toBe('+1 invoking power');
+  it('shows rounded invoking power for Forneus #30 (log curve)', () => {
+    // coefficient 0.5 × ln(1e8 + 1) ≈ 9.21 → +9 invoking power (Andrealphus #65 vacated this niche)
+    expect(effectDisplay(sigilById(30), bn(100_000_000))).toBe('+9 invoking power');
+  });
+
+  it('shows both legs of a composite seal, each signed (ADR-035)', () => {
+    // Andrealphus #65: the cost-reduction leg reads '−', the Desidia-speed increase reads '+'.
+    const and = effectDisplay(sigilById(65), bn(100_000_000));
+    expect(and.startsWith('−')).toBe(true);
+    expect(and).toContain(' / +');
+    expect(and.endsWith('%')).toBe(true);
+    // Raum #40: the +Decimatio leg reads '+', the −Suasio leg reads '−'.
+    const raum = effectDisplay(sigilById(40), bn(100_000_000));
+    expect(raum.startsWith('+')).toBe(true);
+    expect(raum).toContain(' / −');
   });
 
   it('is zero-safe and tolerates an unknown seal', () => {

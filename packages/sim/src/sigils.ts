@@ -84,16 +84,31 @@ export type ScalarModifierField =
 export type KatabasisRoll = 'gold' | 'reprobate' | 'maleficia';
 
 /**
+ * One modifier effect: multiply a scalar modifier-bundle field by `(1 + strength)` (increase) or
+ * `1/(1 + strength)` (decrease). Named so a `composite` seal can carry several of them.
+ */
+export interface ModifierEffect {
+  readonly kind: 'modifier';
+  readonly field: ScalarModifierField;
+  readonly direction: 'increase' | 'decrease';
+}
+
+/** One cost-reduction effect: divide a cost channel by `(1 + strength)`. Named for `composite`. */
+export interface CostReductionEffect {
+  readonly kind: 'costReduction';
+  readonly channel: CostChannel;
+}
+
+/**
  * A sigil's effect. `modifier`/`tier` multiply an in-lifetime value by `(1 + strength)` (increase)
  * or `1/(1 + strength)` (decrease) — the same convention as Sin skills (ADR-022). `katabasis` adds
- * `strength` (a flat fraction) to one or more carry-over rolls.
+ * `strength` (a flat fraction) to one or more carry-over rolls. `composite` (ADR-035) bundles several
+ * modifier / cost-reduction parts onto one seal, ALL sharing the seal's single strength: a tradeoff
+ * seal that lifts one lever while it softens another (Raum #40, Dantalion #71), or a dual seal that
+ * spans two systems at once (Andrealphus #65).
  */
 export type SigilEffect =
-  | {
-      readonly kind: 'modifier';
-      readonly field: ScalarModifierField;
-      readonly direction: 'increase' | 'decrease';
-    }
+  | ModifierEffect
   | {
       readonly kind: 'tierGroup';
       readonly tiers: readonly Tier[];
@@ -116,7 +131,7 @@ export type SigilEffect =
       readonly resource: 'gold' | 'influence' | 'generation' | 'suicideRate' | 'murderRate';
     }
   | { readonly kind: 'invokingPower' }
-  | { readonly kind: 'costReduction'; readonly channel: CostChannel }
+  | CostReductionEffect
   | { readonly kind: 'indagatioDoubleFind' }
   | { readonly kind: 'invocationEffect'; readonly invocation: string }
   | { readonly kind: 'shutdownRefund' }
@@ -124,17 +139,22 @@ export type SigilEffect =
   | { readonly kind: 'murderTriggersSuicide' }
   | { readonly kind: 'maleficiaEffect' }
   | { readonly kind: 'sigilEffect' }
-  | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] };
+  | { readonly kind: 'katabasis'; readonly rolls: readonly KatabasisRoll[] }
+  | {
+      readonly kind: 'composite';
+      readonly effects: readonly (ModifierEffect | CostReductionEffect)[];
+    };
 
 /** The four Opera action categories a per-category tier sigil can target. */
 export type SigilCategory = 'suasio' | 'decimatio' | 'indagatio' | 'emptio';
 
 /**
- * A cost a sigil can soften (Paimon/Orobas/Amy). `influence` = action influence costs, `invocationSoul`
- * = the per-invoke soul price, `emptioGold` = the Emptio purchase gold. Each sigil divides its cost by
- * `(1 + strength)` (never below zero, never an increase).
+ * A cost a sigil can soften (Paimon/Orobas/Andrealphus). `influence` = action influence costs,
+ * `invocation` = ALL invocation costs (the soul and gold summon prices AND every per-second upkeep
+ * drain, flat or %-of-gain; ADR-035), `emptioGold` = the Emptio purchase gold. Each sigil divides
+ * its cost by `(1 + strength)` (never below zero, never an increase).
  */
-export type CostChannel = 'influence' | 'invocationSoul' | 'emptioGold';
+export type CostChannel = 'influence' | 'invocation' | 'emptioGold';
 
 export interface SigilDef {
   readonly id: SigilId;
@@ -187,6 +207,15 @@ export interface SigilContributions {
 }
 
 /**
+ * A sigil effect's parts: a `composite` seal yields its bundled parts; every other effect yields
+ * itself. Each dispatch function iterates these so a composite contributes to whichever channel its
+ * parts belong to, all at the seal's single strength (ADR-035).
+ */
+export function effectParts(effect: SigilEffect): readonly SigilEffect[] {
+  return effect.kind === 'composite' ? effect.effects : [effect];
+}
+
+/**
  * Aggregate the in-lifetime multiplier contributions of all bound sigils. Each contribution is a
  * multiplier (`1 + strength` / `1 / (1 + strength)`); multiple sigils on the same field compose
  * multiplicatively. Returns 1-valued (absent) entries omitted so computeModifiers can fold cleanly.
@@ -200,17 +229,21 @@ export function sigilModifierContributions(state: GameState, effectMul = 1): Sig
     if (!def) continue;
     const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
-    if (def.effect.kind === 'modifier') {
-      const mul = def.effect.direction === 'increase' ? 1 + s : 1 / (1 + s);
-      scalar[def.effect.field] = (scalar[def.effect.field] ?? 1) * mul;
-    } else if (def.effect.kind === 'modifierMulti') {
-      // Amy #58 — one binding, several fields, the same strength on each (cursed: 'decrease').
-      const mul = def.effect.direction === 'increase' ? 1 + s : 1 / (1 + s);
-      for (const f of def.effect.fields) scalar[f] = (scalar[f] ?? 1) * mul;
-    } else if (def.effect.kind === 'tierGroup') {
-      // Bael #1 / Balam #51 / Amdusias #67 — a whole tier group, ALL Opera categories.
-      const mul = def.effect.direction === 'increase' ? 1 + s : 1 / (1 + s);
-      for (const t of def.effect.tiers) tier[t] = (tier[t] ?? 1) * mul;
+    // `composite` (Raum #40, Dantalion #71, Andrealphus #65) folds each of its modifier parts here
+    // at the seal's single strength; its cost-reduction part is picked up by the cost function.
+    for (const part of effectParts(def.effect)) {
+      if (part.kind === 'modifier') {
+        const mul = part.direction === 'increase' ? 1 + s : 1 / (1 + s);
+        scalar[part.field] = (scalar[part.field] ?? 1) * mul;
+      } else if (part.kind === 'modifierMulti') {
+        // Amy #58 — one binding, several fields, the same strength on each (cursed: 'decrease').
+        const mul = part.direction === 'increase' ? 1 + s : 1 / (1 + s);
+        for (const f of part.fields) scalar[f] = (scalar[f] ?? 1) * mul;
+      } else if (part.kind === 'tierGroup') {
+        // Bael #1 / Balam #51 / Amdusias #67 — a whole tier group, ALL Opera categories.
+        const mul = part.direction === 'increase' ? 1 + s : 1 / (1 + s);
+        for (const t of part.tiers) tier[t] = (tier[t] ?? 1) * mul;
+      }
     }
   }
   return { scalar, tier };
@@ -318,10 +351,15 @@ export function sigilCostReductionByChannel(
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
     if (bound === undefined) continue;
     const def = sigilById(Number(idStr));
-    if (!def || def.effect.kind !== 'costReduction') continue;
+    if (!def) continue;
     const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
-    out[def.effect.channel] = (out[def.effect.channel] ?? 1) * (1 + s);
+    // Andrealphus #65 carries its cost-reduction as one part of a composite; iterate parts so it
+    // composes with the pure cost-reduction seals (Paimon #9, Orobas #55, Zepar #16, Eligos #15).
+    for (const part of effectParts(def.effect)) {
+      if (part.kind !== 'costReduction') continue;
+      out[part.channel] = (out[part.channel] ?? 1) * (1 + s);
+    }
   }
   return out;
 }

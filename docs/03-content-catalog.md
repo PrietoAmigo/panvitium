@@ -313,7 +313,7 @@ coefficients are in the `Sigils` sheet.
 | 37 | **Phenex** | Phoenix; sings | Reduces *Emptio* negative outcome chance. |
 | 38 | **Halphas** | Builds towers, arms | Reduces the chance of Common and Rare finds. |
 | 39 | **Malphas** | Builds, demolishes; deceives | Chance to duplicate the output of *Suasio*. |
-| 40 | **Raum** | Steals; destroys cities | Increases *Decimatio* action efficiency. |
+| 40 | **Raum** | Steals; destroys cities | Increases *Decimatio* efficiency, dampens *Suasio* efficiency (a tradeoff seal). |
 | 41 | **Focalor** | Kills by drowning | Chance to duplicate the output of *Decimatio*. |
 | 42 | **Vepar** | Putrefying wounds | Increases *Ira* invocation effectiveness. |
 | 43 | **Sabnock** | Wounds and sores | Increases the suicide rate (flat). [log] |
@@ -338,13 +338,13 @@ coefficients are in the `Sigils` sheet.
 | 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
 | 63 | **Andras** | Sows discord | Increases *Emptio* Stellar chance. |
 | 64 | **Haures** | Destroys enemies | Increases *Decimatio* Stellar chance. |
-| 65 | **Andrealphus** | Mensuration | Increases invoking power. |
+| 65 | **Andrealphus** | Mensuration | Reduces all invocation costs and quickens Desidia (a dual seal). |
 | 66 | **Cimejes** | Lost things; treasures | Increases the Katabasis remaining-maleficia chance. [log] |
 | 67 | **Amdusias** | Harsh music | Increases positive outcome chance across the Opera. |
 | 68 | **Belial** | Favour; preferments | Increases the influence gain rate. |
 | 69 | **Decarabia** | Stones and herbs | Generates influence per second (flat). [log] |
 | 70 | **Seere** | Brings things suddenly | Increases *Emptio* action efficiency. |
-| 71 | **Dantalion** | All human thoughts | Increases *Suasio* action efficiency. |
+| 71 | **Dantalion** | All human thoughts | Increases *Suasio* efficiency, dampens *Decimatio* efficiency (Raum's mirror). |
 | 72 | **Andromalius** | Returns stolen; reveals plots | Increases *Emptio* positive outcome chance. |
 
 Sigil #58 (*Amy*) is authored in the sheet with a sign worth confirming at implementation time

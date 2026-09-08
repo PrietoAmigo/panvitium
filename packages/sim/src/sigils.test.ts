@@ -19,8 +19,10 @@ import {
   computeModifiers,
   createInitialState,
   currentInvokingPower,
+  effectParts,
   grantStagnationForOffline,
   invocationById,
+  invocationGoldCost,
   invocationRunnerEfficiency,
   invocationSoulCost,
   invocationUpkeep,
@@ -410,21 +412,16 @@ describe('Flat-generator sigils (S6)', () => {
 });
 
 describe('Flat invoking-power sigil (S7)', () => {
-  it('Andrealphus #65 adds rounded invoking power, counting toward the invocation gates', () => {
+  it('Forneus #30 adds rounded invoking power on a log curve, counting toward the gates', () => {
     expect(sigilInvokingPower(fresh())).toBe(0);
-    // Sheet rev: 0.0001 × sqrt(1e8) = 1 → +1 invoking power.
-    expect(sigilInvokingPower(bound(65, 100_000_000))).toBe(1);
-    // 0.0001 × sqrt(4e8) = 2 → +2.
-    expect(sigilInvokingPower(bound(65, 400_000_000))).toBe(2);
-    // Small bindings round down to 0.
-    expect(sigilInvokingPower(bound(65, 100))).toBe(0);
-    // Folds into the gate total (no maleficia here, so it is the whole of it).
-    expect(currentInvokingPower(bound(65, 100_000_000))).toBe(1);
-  });
-
-  it('Forneus #30 joins the invoking-power channel on a log curve (sheet rev 2026-06-12)', () => {
     // 0.5 × ln(1e8 + 1) ≈ 9.21 → rounds to 9.
     expect(sigilInvokingPower(bound(30, 100_000_000))).toBe(9);
+    // 0.5 × ln(1001) ≈ 3.45 → rounds to 3.
+    expect(sigilInvokingPower(bound(30, 1000))).toBe(3);
+    // Folds into the gate total (no maleficia here, so it is the whole of it).
+    expect(currentInvokingPower(bound(30, 100_000_000))).toBe(9);
+    // Andrealphus #65 left the invoking-power channel for a composite (ADR-035): it contributes 0.
+    expect(sigilInvokingPower(bound(65, 100_000_000))).toBe(0);
   });
 });
 
@@ -436,8 +433,13 @@ describe('Cost-reduction sigils (S8)', () => {
       1 + sigilStrength(sigilById(9)!, bn(400_000_000)),
       6,
     );
-    expect(sigilCostReductionByChannel(bound(55, 100_000_000)).invocationSoul).toBeCloseTo(
+    expect(sigilCostReductionByChannel(bound(55, 100_000_000)).invocation).toBeCloseTo(
       1 + sigilStrength(sigilById(55)!, bn(100_000_000)),
+      6,
+    );
+    // Andrealphus #65's composite carries a cost-reduction part on the same `invocation` channel.
+    expect(sigilCostReductionByChannel(bound(65, 100_000_000)).invocation).toBeCloseTo(
+      1 + sigilStrength(sigilById(65)!, bn(100_000_000)),
       6,
     );
     // Amy #58 is not a cost-reduction sigil (it lifts Indagatio & Emptio action efficiency instead).
@@ -473,16 +475,40 @@ describe('Cost-reduction sigils (S8)', () => {
     );
   });
 
-  it('Orobas #55 also softens flat invocation upkeep (cost of all invocations)', () => {
-    // An active Imp drains 10 gold/s flat; Orobas halves it. %-of-gain apex costs stay untouched.
+  it('Orobas #55 softens ALL invocation upkeep — flat drains and %-of-gain alike (ADR-035)', () => {
+    const factor = 1 + sigilStrength(sigilById(55)!, bn(100_000_000));
+    // An active Imp drains 10 gold/s flat; Orobas divides it.
     const withImp = (s: GameState): GameState => ({
       ...s,
       lifetime: { ...s.lifetime, invocations: { imp: 1 } },
     });
     expect(invocationUpkeep(withImp(fresh()), 0).flatGoldPerSecond).toBe(10);
     expect(invocationUpkeep(withImp(bound(55, 100_000_000)), 0).flatGoldPerSecond).toBeCloseTo(
-      10 / (1 + sigilStrength(sigilById(55)!, bn(100_000_000))),
+      10 / factor,
       6,
+    );
+    // A bound Lemure drains 25% of influence gain; ADR-035 divides that %-of-gain cost too (it was
+    // previously left untouched as an "apex tradeoff").
+    const withLemure = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, invocations: { lemure: 1 } },
+    });
+    expect(invocationUpkeep(withLemure(fresh()), 0).influenceGainFraction).toBeCloseTo(0.25, 6);
+    expect(
+      invocationUpkeep(withLemure(bound(55, 100_000_000)), 0).influenceGainFraction,
+    ).toBeCloseTo(0.25 / factor, 6);
+  });
+
+  it('the invocation channel now softens the one-time gold summon cost too (ADR-035, Morpheus)', () => {
+    const morpheus = invocationById('morpheus')!;
+    const withGold = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, gold: bn(1000) },
+    });
+    expect(invocationGoldCost(withGold(fresh()), morpheus).toNumber()).toBe(900); // 90% of 1000
+    const factor = 1 + sigilStrength(sigilById(55)!, bn(100_000_000));
+    expect(invocationGoldCost(withGold(bound(55, 100_000_000)), morpheus).toNumber()).toBe(
+      Math.floor(900 / factor),
     );
   });
 });
@@ -598,12 +624,12 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
     expect(sitri).toBeCloseTo(hour * STAGNATION_PER_SECOND * (1 + strength), 6);
   });
 
-  it('Eligos #15 cuts Emptio gold costs; Zepar #16 cuts invocation soul costs at 1/3 strength', () => {
+  it('Eligos #15 cuts Emptio gold costs; Zepar #16 cuts invocation costs at 1/3 strength', () => {
     expect(sigilCostReductionByChannel(bound(15, 100_000_000)).emptioGold).toBeCloseTo(
       1 + sigilStrength(sigilById(15)!, bn(100_000_000)),
       6,
     );
-    expect(sigilCostReductionByChannel(bound(16, 100_000_000)).invocationSoul).toBeCloseTo(
+    expect(sigilCostReductionByChannel(bound(16, 100_000_000)).invocation).toBeCloseTo(
       1 + sigilStrength(sigilById(16)!, bn(100_000_000)),
       6,
     );
@@ -658,6 +684,53 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
     const strength = sigilStrength(sigilById(61)!, bn(100_000_000));
     const { scalar } = sigilModifierContributions(bound(61, 100_000_000));
     expect(scalar.suasioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+  });
+});
+
+describe('Composite (multi-effect) seals (S17 — ADR-035)', () => {
+  it('Raum #40 lifts Decimatio efficiency while it dampens Suasio, at one strength', () => {
+    expect(sigilById(40)!.effect.kind).toBe('composite');
+    const strength = sigilStrength(sigilById(40)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(40, 100_000_000));
+    expect(scalar.decimatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+    expect(scalar.suasioEfficiencyMul).toBeCloseTo(1 / (1 + strength), 6);
+  });
+
+  it('Dantalion #71 mirrors Raum: +Suasio, -Decimatio at one strength', () => {
+    const strength = sigilStrength(sigilById(71)!, bn(100_000_000));
+    const { scalar } = sigilModifierContributions(bound(71, 100_000_000));
+    expect(scalar.suasioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+    expect(scalar.decimatioEfficiencyMul).toBeCloseTo(1 / (1 + strength), 6);
+  });
+
+  it('Raum #40 and Dantalion #71 cancel to neutral when bound at equal strength', () => {
+    // Same souls, same coefficient/curve: their opposite legs compose to ~1x on both efficiencies.
+    let s = { ...fresh(), souls: bn(2_000_000) };
+    s = bindSigil(s, 40, 1_000_000);
+    s = bindSigil(s, 71, 1_000_000);
+    const { scalar } = sigilModifierContributions(s);
+    expect(scalar.decimatioEfficiencyMul).toBeCloseTo(1, 9);
+    expect(scalar.suasioEfficiencyMul).toBeCloseTo(1, 9);
+  });
+
+  it('Andrealphus #65 is a dual seal: softens invocation costs AND quickens Desidia', () => {
+    expect(sigilById(65)!.effect.kind).toBe('composite');
+    const strength = sigilStrength(sigilById(65)!, bn(100_000_000));
+    // Cost-reduction leg -> the invocation channel.
+    expect(sigilCostReductionByChannel(bound(65, 100_000_000)).invocation).toBeCloseTo(
+      1 + strength,
+      6,
+    );
+    // Modifier leg -> desidiaSpeedMul (composes with Foras #31; alone it is exactly the lift).
+    const { scalar } = sigilModifierContributions(bound(65, 100_000_000));
+    expect(scalar.desidiaSpeedMul).toBeCloseTo(1 + strength, 6);
+    expect(computeModifiers(bound(65, 100_000_000)).desidiaSpeedMul).toBeCloseTo(1 + strength, 6);
+  });
+
+  it('effectParts flattens a composite and passes a single effect through unchanged', () => {
+    expect(effectParts(sigilById(40)!.effect)).toHaveLength(2); // Raum: two parts
+    const valefor = sigilById(6)!; // a plain single-effect seal
+    expect(effectParts(valefor.effect)).toEqual([valefor.effect]);
   });
 });
 

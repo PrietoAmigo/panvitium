@@ -103,9 +103,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 910** (sim 559 · shared 65 · api 20 · web 266).
+**Current test count: 916** (sim 564 · shared 65 · api 20 · web 267).
 
-> **Latest change — the full Goetia: all 72 sigils named, the ten orphaned seals reactivated.**
+> **Latest change — composite sigils + the invocation cost channel covers all costs (ADR-035).**
+> Two follow-ups from a sigil-redundancy audit. (1) A `composite` effect lets one seal carry several
+> modifier / cost-reduction parts at its single strength, and three exact-duplicate seals are reshaped
+> onto it: **Raum #40** now trades **+Decimatio for −Suasio** efficiency, **Dantalion #71** is its
+> mirror (**+Suasio, −Decimatio**; bound at equal strength they cancel), and **Andrealphus #65**
+> becomes a dual seal — **−all invocation costs, +Desidia speed** — handing its invoking-power niche
+> to Forneus #30. (2) The invocation cost-reduction channel is renamed `invocationSoul → invocation`
+> and now softens EVERY invocation cost: the soul and gold summon prices and all upkeep, flat and
+> %-of-gain alike (so a heavy stack relieves the apex tradeoffs of Succubus / Doppelganger / Lemure
+> too). No save-schema bump. Net **+6 tests** (sim 559 → 564, web 266 → 267).
+
+> **Earlier change — the full Goetia: all 72 sigils named, the ten orphaned seals reactivated.**
 > Every seal now carries a demon name and a real effect, so no orphaned sigils remain. The ten seals
 > left dormant by ADR-031/032 and the Depraedatio rework are re-homed. Four bind onto the new ADR-033
 > levers: **Sitri #12** raises Stagnation gain, **Orias #59** raises the Stagnation cap, **Foras #31**
