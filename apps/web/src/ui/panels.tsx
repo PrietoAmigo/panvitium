@@ -1,6 +1,7 @@
-import { useState, type CSSProperties, type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
 import {
+  bn,
   floor,
   ACTIONS,
   actionUnlocked,
@@ -9,14 +10,14 @@ import {
   isStackable,
   countCopies,
   MALEFICIA,
-  anatocismusDepositPerSecond,
   computeModifiers,
   foedusTier,
+  FOEDUS_T0,
+  MAX_FOEDUS_TIER,
   mutuumGoldPerSecond,
   sinLevel,
   SYNGRAPHA_BRANCHES,
   syngraphaBranch,
-  syngraphaSignable,
   syngraphaSigned,
   thesaurusInterestPerSecond,
   thesaurusRecoveryFraction,
@@ -41,6 +42,12 @@ import { SmartphoneDialer, type DialResult } from '../menus/SmartphoneDialer.js'
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
 import { SuasioPanel as DesignedSuasio, type SuasioActionView } from '../menus/SuasioPanel.js';
 import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
+import {
+  DepraedatioAccount,
+  type DepBranchView,
+  type DepNodeView,
+  type DepNodeState,
+} from '../menus/DepraedatioAccount.js';
 import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
 import { buildCabinet } from '../game/maleficia.js';
@@ -804,406 +811,129 @@ function formatDuration(totalSec: number): string {
 }
 
 /**
- * Depraedatio: the Faeneratio loop (Depraedatio gold rework). The eight per-Sin Mercatūs
- * retired; in their place a single Avaritia-centric gold economy in two surfaces — the Thesaurus
- * tab (Mutuum, the loan book earning by the head of the damned, plus the hoard paying Fenus
- * interest) and the Syngraphae tab (the burned-gold contract tree). The framing is arm’s-length
- * usury: the damned never pay tribute and never learn the creditor’s name.
+ * Depraedatio: the Faeneratio loop presented as the "Counting House" private-bank dashboard (Claude
+ * Design redesign). This wrapper reads the store, composes every figure from the sim (the realised
+ * Mutuum take + Thesaurus interest, the global Foedus tier and its progress, the withdrawal recovery
+ * fraction, the effective yield multiplier, and the twelve-node Syngraphae contract tree), then
+ * feeds the presentational `DepraedatioAccount` surface and wires its deposit / withdraw / sign
+ * controls to the real store actions. The mundane banking copy lives in `strings.faeneratio`; the
+ * sim ids (thesaurus/mutuum/foedus/usura/faeneratio/custodia) are unchanged. The old grimoire-styled
+ * Thesaurus / Syngraphae tabs are retired.
  */
-
-/** Roman numerals for the Foedus tier badge and the Avaritia gates (1..4). */
-const ROMAN_TIERS = ['', 'I', 'II', 'III', 'IV'] as const;
-
-/** Compact rate readout: 2 decimals under 100, whole numbers above. */
-function formatRate(n: number): string {
-  if (n >= 100) return String(Math.floor(n));
-  return (Math.round(n * 100) / 100).toString();
-}
-
-type DepraedatioTab = 'thesaurus' | 'syngraphae';
-
-const depCard: CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 10,
-  padding: 16,
-  borderRadius: 10,
-  border: '1px solid rgba(255,255,255,.08)',
-  background: 'rgba(12,10,9,.6)',
-};
-const depLabel: CSSProperties = {
-  fontFamily: "'Ubuntu Mono', monospace",
-  fontSize: '.66rem',
-  letterSpacing: '.1em',
-  color: '#8a7e66',
-  textTransform: 'uppercase',
-};
-const depTitle: CSSProperties = {
-  fontFamily: "'Cinzel', serif",
-  fontSize: '1.06rem',
-  letterSpacing: '.02em',
-  color: '#ecd9a8',
-  lineHeight: 1.1,
-};
-const depMono: CSSProperties = {
-  fontFamily: "'Ubuntu Mono', monospace",
-  fontVariantNumeric: 'tabular-nums',
-};
-const depFlavor: CSSProperties = {
-  fontFamily: "'Ubuntu Mono', monospace",
-  fontSize: '.72rem',
-  letterSpacing: '.03em',
-  color: '#c79f63',
-  lineHeight: 1.35,
-};
-
-/** A big gold-rate readout: "12.5 gold/s". */
-function RateReadout({ value, unit }: { value: string; unit: string }): ReactElement {
-  return (
-    <div style={{ lineHeight: 1 }}>
-      <span style={{ ...depMono, fontSize: '1.5rem', color: '#e6a23c' }}>{value}</span>
-      <span style={{ ...depMono, fontSize: '.7rem', color: '#8a7e66', marginLeft: 3 }}>{unit}</span>
-    </div>
-  );
-}
 
 /**
- * The Thesaurus tab: the Mutuum loan-book row (debtor count + take/s, locked flavour below
- * Avaritia I), the hoard with its Fenus interest and the global Foedus badge, the deposit control,
- * and the two-step withdraw (the recovery fraction and the forfeit are stated before confirming).
+ * The account accent (code-level knob, curated by the design): Pine (default), Navy `#1B3A5B`, or
+ * Bordeaux `#5E2233`. `CH_SHOW_SPARKLINE` toggles the decorative balance sparkline.
  */
-function ThesaurusTab(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const deposit = useGameStore((s) => s.depositThesaurus);
-  const withdraw = useGameStore((s) => s.withdrawThesaurus);
-  const [depositText, setDepositText] = useState('');
-  const [withdrawText, setWithdrawText] = useState('');
-  const [confirmingWithdraw, setConfirmingWithdraw] = useState(false);
-  if (!state) return <></>;
-  const F = strings.faeneratio;
-  const mods = computeModifiers(state);
-  const gold = floor(state.lifetime.gold).toNumber();
-  const hoard = state.lifetime.hoard;
-  // Effective realised rates: the raw terms × faenerationOutputMul × goldRateMul, matching the
-  // tick's gold line (spec §6). The Anatocismus deposit rate is already fully composed.
-  const outMul = mods.faenerationOutputMul * mods.goldRateMul;
-  const mutuumRate = mutuumGoldPerSecond(state, mods) * outMul;
-  const interestRate = thesaurusInterestPerSecond(state, mods) * outMul;
-  const anatocismusRate = anatocismusDepositPerSecond(state, mods);
-  const tier = foedusTier(state);
-  const recovery = thesaurusRecoveryFraction(mods);
+const CH_ACCENT = '#1E4638';
+const CH_SHOW_SPARKLINE = true;
 
-  const depositAmount = Math.max(0, Math.floor(Number(depositText) || 0));
-  const withdrawAmount = Math.max(0, Math.floor(Number(withdrawText) || 0));
-  const hoardFloor = floor(hoard).toNumber();
-  const returned = Math.floor(withdrawAmount * recovery);
-  const forfeited = withdrawAmount - returned;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-      {/* Mutuum — the loan book (open from the start; the gating rebalance removed the Avaritia
-          gate the old Mercatūs carried) */}
-      <div style={depCard}>
-        <span style={depTitle} title={F.mutuumBlurb}>
-          {F.mutuum}
-        </span>
-        <RateReadout value={formatRate(mutuumRate)} unit="gold/s" />
-        <span style={{ ...depMono, fontSize: '.8rem', color: '#b59ad6' }}>
-          {totalReprobates(state).toLocaleString('en-US')} {F.debtors}
-        </span>
-        <span style={depFlavor}>{F.mutuumBlurb}</span>
-      </div>
-
-      {/* Thesaurus — the hoard */}
-      <div style={depCard}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          <span style={depTitle} title={F.thesaurusBlurb}>
-            {F.thesaurus}
-          </span>
-          {tier >= 1 && (
-            <span
-              style={{ ...depLabel, color: '#c49e4a' }}
-              title={F.foedusTitle}
-              aria-label={`${F.foedus} ${ROMAN_TIERS[tier]}`}
-            >
-              {F.foedus} {ROMAN_TIERS[tier]}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 26, flexWrap: 'wrap' }}>
-          <div aria-label={F.hoard}>
-            <span style={depLabel}>{F.hoard}</span>
-            <RateReadout value={formatBigNum(floor(hoard))} unit="gold" />
-          </div>
-          <div aria-label={F.interest}>
-            <span style={depLabel}>{F.interest}</span>
-            <RateReadout value={formatRate(interestRate)} unit="gold/s" />
-          </div>
-          {anatocismusRate > 0 && (
-            <div title={F.anatocismusRate}>
-              <span style={depLabel}>{F.anatocismus}</span>
-              <RateReadout value={formatRate(anatocismusRate)} unit="gold/s \u2192 hoard" />
-            </div>
-          )}
-        </div>
-        <span style={depFlavor}>{F.thesaurusBlurb}</span>
-
-        {/* Deposit */}
-        <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            type="number"
-            min={0}
-            className="dep-amount"
-            style={{ ...depMono, width: 110 }}
-            value={depositText}
-            onChange={(e) => setDepositText(e.target.value)}
-            aria-label={`${F.deposit} amount`}
-          />
-          <button
-            type="button"
-            className="dep-deepen"
-            disabled={depositAmount < 1 || depositAmount > gold}
-            onClick={() => {
-              deposit(depositAmount);
-              setDepositText('');
-            }}
-            aria-label={F.deposit}
-          >
-            {F.deposit}
-          </button>
-          <button
-            type="button"
-            className="dep-mini dep-mini--wide"
-            disabled={gold < 1}
-            onClick={() => deposit(gold)}
-            aria-label={`${F.deposit} ${F.depositAll}`}
-          >
-            {F.depositAll}
-          </button>
-        </div>
-
-        {/* Withdraw — two-step: the loss is stated before the confirm. */}
-        <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input
-            type="number"
-            min={0}
-            className="dep-amount"
-            style={{ ...depMono, width: 110 }}
-            value={withdrawText}
-            onChange={(e) => {
-              setWithdrawText(e.target.value);
-              setConfirmingWithdraw(false);
-            }}
-            aria-label={`${F.withdraw} amount`}
-          />
-          {confirmingWithdraw ? (
-            <>
-              <span style={{ ...depFlavor, color: '#c98a6a' }}>
-                {F.withdrawWarning} {F.withdrawRecovers} {returned}, {forfeited}{' '}
-                {F.withdrawForfeits}.
-              </span>
-              <button
-                type="button"
-                className="dep-deepen"
-                onClick={() => {
-                  withdraw(withdrawAmount);
-                  setWithdrawText('');
-                  setConfirmingWithdraw(false);
-                }}
-                aria-label={`${F.confirm} ${F.withdraw}`}
-              >
-                {F.confirm}
-              </button>
-              <button
-                type="button"
-                className="dep-mini dep-mini--wide"
-                onClick={() => setConfirmingWithdraw(false)}
-                aria-label={F.cancel}
-              >
-                {F.cancel}
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              className="dep-mini dep-mini--wide"
-              disabled={withdrawAmount < 1 || withdrawAmount > hoardFloor}
-              onClick={() => setConfirmingWithdraw(true)}
-              title={`${F.withdrawRecovers} ${Math.round(recovery * 100)}%`}
-              aria-label={F.withdraw}
-            >
-              {F.withdraw}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+/** Roman numerals for the Foedus tier badge and the Avaritia gates. */
+const DEP_ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'] as const;
 
 /**
- * The Syngraphae tab: three branch columns (Usura / Faeneratio / Custodia), each a vertical chain
- * of four contracts showing name, effect, fee and gate. States: signed, available, gated (with the
- * Avaritia level required), unaffordable. Signing is a two-step confirm — the fee is burned.
+ * A gold-rate readout: two decimals under 100, grouped/suffixed integers above (the game's own
+ * `formatBigNum`), so an early fractional interest (hoard * 0.0005) still reads rather than rounding
+ * to zero, while a fat realised rate stays legible.
  */
-function SyngraphaeTab(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const sign = useGameStore((s) => s.signSyngrapha);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  if (!state) return <></>;
-  const F = strings.faeneratio;
-  const gold = floor(state.lifetime.gold).toNumber();
-  const avaritiaLevel = sinLevel(state.devotion.avaritia);
-  return (
-    <div>
-      <p className="dep-blurb">{F.syngraphaeIntro}</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 13 }}>
-        {SYNGRAPHA_BRANCHES.map((branch) => (
-          <div key={branch} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <span style={{ ...depLabel, textAlign: 'center', color: '#c49e4a' }}>
-              {F.branches[branch]}
-            </span>
-            {syngraphaBranch(branch).map((node, idx) => {
-              const signed = syngraphaSigned(state, node.id);
-              const gate = syngraphaSignable(state, node);
-              const signable = gate.signable;
-              const affordable = gold >= node.cost;
-              const name = F.nodeNames[node.id] ?? `${F.branches[branch]} ${ROMAN_TIERS[idx + 1]}`;
-              const gatedByLevel = !signed && avaritiaLevel < node.gate;
-              const cardStyle: CSSProperties = signed
-                ? {
-                    ...depCard,
-                    border: '1px solid rgba(196,158,74,.5)',
-                    background: 'rgba(44,32,10,.5)',
-                  }
-                : signable
-                  ? depCard
-                  : { ...depCard, opacity: 0.55, borderStyle: 'dashed' };
-              return (
-                <div key={node.id} style={cardStyle}>
-                  <span style={{ ...depTitle, fontSize: '.95rem' }}>{name}</span>
-                  <span style={depFlavor}>{F.nodeEffects[node.id]}</span>
-                  {signed ? (
-                    <span style={{ ...depLabel, color: '#c49e4a' }}>{F.signed}</span>
-                  ) : (
-                    <>
-                      <span style={depLabel}>
-                        {node.cost.toLocaleString('en-US')} {strings.resources.gold.toLowerCase()}
-                        {' \u00b7 '}
-                        {F.requiresAvaritia} {ROMAN_TIERS[node.gate]}
-                      </span>
-                      {gatedByLevel ? (
-                        <span style={{ ...depLabel, color: '#c98a6a' }}>
-                          {F.requiresAvaritia} {ROMAN_TIERS[node.gate]}
-                        </span>
-                      ) : !signable ? (
-                        <span style={{ ...depLabel, color: '#c98a6a' }}>{F.requiresPrior}</span>
-                      ) : confirmingId === node.id ? (
-                        <div style={{ display: 'flex', gap: 7 }}>
-                          <button
-                            type="button"
-                            className="dep-deepen"
-                            disabled={!affordable}
-                            onClick={() => {
-                              sign(node.id);
-                              setConfirmingId(null);
-                            }}
-                            aria-label={`${F.confirm} ${F.sign} ${name}`}
-                          >
-                            {F.confirm}
-                          </button>
-                          <button
-                            type="button"
-                            className="dep-mini dep-mini--wide"
-                            onClick={() => setConfirmingId(null)}
-                            aria-label={F.cancel}
-                          >
-                            {F.cancel}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          className="dep-deepen"
-                          disabled={!affordable}
-                          onClick={() => setConfirmingId(node.id)}
-                          aria-label={`${F.sign} ${name}`}
-                        >
-                          {F.sign}
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+function formatRateStr(n: number): string {
+  if (!Number.isFinite(n)) return '∞';
+  if (Math.abs(n) < 100) return (Math.round(n * 100) / 100).toString();
+  return formatBigNum(bn(Math.floor(n)));
 }
 
 export function DepraedatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);
   const notice = useGameStore((s) => s.notice);
-  const [tab, setTab] = useState<DepraedatioTab>('thesaurus');
+  const deposit = useGameStore((s) => s.depositThesaurus);
+  const withdraw = useGameStore((s) => s.withdrawThesaurus);
+  const sign = useGameStore((s) => s.signSyngrapha);
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const blurb = tab === 'thesaurus' ? strings.opera.thesaurusBlurb : strings.opera.syngraphaeBlurb;
+
+  const F = strings.faeneratio;
+  const goldUnit = strings.resources.gold.toLowerCase();
+  const mods = computeModifiers(state);
+  const gold = floor(state.lifetime.gold).toNumber();
+  const balance = floor(state.lifetime.hoard).toNumber();
+  // Realised rates: the raw terms x faenerationOutputMul x goldRateMul, matching the tick's gold line.
+  const outMul = mods.faenerationOutputMul * mods.goldRateMul;
+  const interestRate = thesaurusInterestPerSecond(state, mods) * outMul;
+  const mutuumRate = mutuumGoldPerSecond(state, mods) * outMul;
+  const income = interestRate + mutuumRate;
+  const tier = foedusTier(state);
+  const recovery = thesaurusRecoveryFraction(mods);
+  const avaritiaLevel = sinLevel(state.devotion.avaritia);
+
+  // Foedus tier progress: position within the current decade of hoard toward the next threshold.
+  let progressPct = 100;
+  let nextTierRoman: string = DEP_ROMAN[MAX_FOEDUS_TIER] ?? 'IV';
+  let nextThresholdStr: string = F.maxTier;
+  if (tier < MAX_FOEDUS_TIER) {
+    const prev = tier >= 1 ? FOEDUS_T0 * Math.pow(10, tier - 1) : 0;
+    const next = FOEDUS_T0 * Math.pow(10, tier);
+    progressPct = Math.max(0, Math.min(100, ((balance - prev) / (next - prev)) * 100));
+    nextTierRoman = DEP_ROMAN[tier + 1] ?? 'IV';
+    nextThresholdStr = `${formatBigNum(bn(next))} ${goldUnit}`;
+  }
+
+  // The twelve-node contract tree, one linear chain per branch. State per node: signed, available
+  // (prior signed + Avaritia gate met + not yet signed), prior-blocked, or Avaritia-gated. The
+  // 'available' reconstruction matches `syngraphaSignable` exactly, but keeps the prior-vs-gate
+  // distinction the card meta needs.
+  const branches: DepBranchView[] = SYNGRAPHA_BRANCHES.map((branch) => {
+    const chain = syngraphaBranch(branch);
+    const branchName = F.branches[branch] ?? branch;
+    const nodes: DepNodeView[] = chain.map((node, idx) => {
+      const signed = syngraphaSigned(state, node.id);
+      const prev = idx > 0 ? chain[idx - 1] : undefined;
+      const priorSigned = prev ? syngraphaSigned(state, prev.id) : true;
+      const eligible = avaritiaLevel >= node.gate;
+      let nodeState: DepNodeState;
+      if (signed) nodeState = 'signed';
+      else if (!priorSigned) nodeState = 'prior';
+      else if (!eligible) nodeState = 'locked';
+      else nodeState = 'available';
+      return {
+        id: node.id,
+        title: F.nodeNames[node.id] ?? `${branchName} ${DEP_ROMAN[idx + 1] ?? ''}`,
+        effect: F.nodeEffects[node.id] ?? '',
+        state: nodeState,
+        fee: node.cost,
+        feeStr: node.cost.toLocaleString('en-US'),
+        affordable: gold >= node.cost,
+        priorTitle: prev ? (F.nodeNames[prev.id] ?? `${branchName} ${DEP_ROMAN[idx] ?? ''}`) : '',
+        gate: node.gate,
+      };
+    });
+    return { id: branch, nodes };
+  });
+
   return (
-    <div className="dep-wallpaper">
-      <div className="dep-grimoire">
-        <div style={{ textAlign: 'center', marginBottom: 22 }}>
-          <h3
-            style={{
-              fontFamily: "'Cinzel', serif",
-              fontWeight: 700,
-              fontSize: '1.7rem',
-              margin: 0,
-              color: '#ecd9a8',
-              letterSpacing: '.1em',
-            }}
-          >
-            {strings.opera.depraedatio}
-          </h3>
-          <div
-            style={{
-              width: 130,
-              height: 1,
-              background: 'linear-gradient(90deg,transparent,rgba(196,158,74,.6),transparent)',
-              margin: '12px auto 0',
-            }}
-          />
-        </div>
-
-        <div className="dep-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'thesaurus'}
-            className={'dep-tab' + (tab === 'thesaurus' ? ' dep-tab--active' : '')}
-            onClick={() => setTab('thesaurus')}
-          >
-            {strings.faeneratio.thesaurusTab}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'syngraphae'}
-            className={'dep-tab' + (tab === 'syngraphae' ? ' dep-tab--active' : '')}
-            onClick={() => setTab('syngraphae')}
-          >
-            {strings.faeneratio.syngraphaeTab}
-          </button>
-        </div>
-
-        <p className="dep-blurb">{blurb}</p>
-
-        {tab === 'thesaurus' ? <ThesaurusTab /> : <SyngraphaeTab />}
-
-        {notice !== null && <p className="opera-notice dep-notice">{notice}</p>}
-      </div>
-    </div>
+    <DepraedatioAccount
+      balanceStr={formatBigNum(floor(state.lifetime.hoard))}
+      cashStr={formatBigNum(floor(state.lifetime.gold))}
+      interestStr={formatRateStr(interestRate)}
+      loanBookStr={formatRateStr(mutuumRate)}
+      incomeStr={formatRateStr(income)}
+      debtorsStr={totalReprobates(state).toLocaleString('en-US')}
+      recoveryPct={`${Math.round(recovery * 100)}%`}
+      nextThresholdStr={nextThresholdStr}
+      cash={gold}
+      balance={balance}
+      recovery={recovery}
+      incomePerSecond={income}
+      tier={tier}
+      nextTierRoman={nextTierRoman}
+      progressPct={progressPct}
+      yieldMul={mods.fenusRateMul}
+      branches={branches}
+      onDeposit={deposit}
+      onWithdraw={withdraw}
+      onSign={sign}
+      accent={CH_ACCENT}
+      showSparkline={CH_SHOW_SPARKLINE}
+      notice={notice}
+    />
   );
 }
 

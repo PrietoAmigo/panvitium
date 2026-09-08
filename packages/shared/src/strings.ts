@@ -89,8 +89,6 @@ export const strings = {
     emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be obtained.',
     indagatioCta: 'Begin the search',
     depraedatioIntro: 'Coin seeded among the damned returns swollen.',
-    thesaurusBlurb: 'The loan book pays by the head; the hoard pays by its weight.',
-    syngraphaeBlurb: 'Short term contracts.',
     compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
@@ -190,77 +188,178 @@ export const strings = {
     } as Record<string, string>,
   },
   /**
-   * The Faeneratio loop (Depraedatio gold rework): Mutuum the loan book, Thesaurus the hoard,
-   * Syngraphae the contracts. Latin terms untranslated (ADR-020). LOAD-BEARING register: the
-   * damned never pay the player tribute and never know the player exists; the vocabulary is
-   * loans, interest, capital, enterprises, ledgers, counting houses, escheat; never "tribute",
-   * never "the masses pay you".
+   * The Depraedatio "Counting House" account (Claude Design redesign of the Faeneratio loop). The
+   * panel is presented as a mundane private-bank / wealth-management dashboard: the Latin surfaces
+   * (Thesaurus the hoard, Mutuum the loan book, Fenus the interest, Foedus the tier, Syngraphae the
+   * contracts) are relabelled in plain money terms (Reserve, Loan Book, Interest, Tier, Contracts;
+   * the Usura/Faeneratio/Custodia branches read Yield/Origination/Custody). The underlying sim ids
+   * are unchanged (ADR-020 keeps the Latin as internal identifiers); only the player-facing copy is
+   * banking. LOAD-BEARING register: the damned never pay the player tribute and never know the
+   * player exists; the vocabulary is loans, interest, capital, ledgers, counting houses, escheat.
+   * Numbers stay baked into every effect line (hard copy rule 1). No em/en dashes (hard copy rule 2).
    */
   faeneratio: {
-    /** The Depraedatio tab titles the two new surfaces render under. */
-    thesaurusTab: 'Thesaurus',
-    syngraphaeTab: 'Syngraphae',
-    /** Mutuum, the loan book row. */
-    mutuum: 'Mutuum',
-    mutuumBlurb: 'Small sums, lent through brokers against tomorrow\u2019s vice.',
+    // Sidebar brand + managed-account identity
+    brand: 'COUNTING HOUSE',
+    brandSub: 'Private Wealth',
+    monogram: 'CH',
+    managedAccount: 'Managed account',
+    /** The diegetic account name (kept Latin, per the PC program id). */
+    accountName: 'Depraedatio',
+    accountNo: 'No. 66\u00b70142\u00b7G',
+    relationshipTier: 'Relationship tier',
+    // Sidebar nav groups + items (Portfolio + Contracts are live; the Service rows are inert chrome).
+    navAccounts: 'Accounts',
+    navService: 'Service',
+    portfolio: 'Portfolio',
+    contracts: 'Contracts',
+    statements: 'Statements',
+    documents: 'Documents',
+    settings: 'Settings',
+    // Sidebar footer (diegetic relationship-manager chrome).
+    relationshipManager: 'Relationship manager',
+    managerName: 'G. Reyes',
+    statementLine: 'Statement \u00b7 July 2026',
+
+    // Header bar
+    portfolioSubtitle: 'Depraedatio \u00b7 discretionary managed account',
+    contractsSubtitle: 'Standing terms with the counting house',
+    transferFunds: 'Transfer funds',
+    togglePrivacy: 'Toggle privacy',
+
+    // Balance summary card
+    totalBalance: 'Total balance \u00b7 Reserve',
+    trailing12: 'trailing 12 months',
+    availableCash: 'Available cash',
+    availableCashCaption: 'gold, unplaced',
+    totalIncome: 'Total income',
+    perSecond: 'gold / second',
+    interest: 'Interest',
+    loanBookStat: 'Loan book',
+    /** "Realised income, {trailing} gold over {period}." */
+    realisedIncome: 'Realised income,',
+    over: 'over',
+    period: 'Period',
+    period24h: '24 hours',
+    period7d: '7 days',
+    period30d: '30 days',
+    period24hLong: 'the last 24 hours',
+    period7dLong: 'the last 7 days',
+    period30dLong: 'the last 30 days',
+
+    // Reserve Account card (the hoard)
+    reserveAccount: 'Reserve Account',
+    reserveSubtitle: 'Interest-bearing principal held with the counting house',
+    /** Rendered "Yield \u00d7{mult}" from the signed Yield contracts. */
+    yieldPill: 'Yield',
+    balance: 'Balance',
+    interestPerS: 'Interest / s',
+    depositToReserve: 'Deposit to reserve',
+    available: 'Available',
+    allCash: 'All cash',
+    deposit: 'Deposit',
+    withdrawFromReserve: 'Withdraw from reserve',
+    /** "Surrender charge \u00b7 {pct} returned". */
+    surrenderCharge: 'Surrender charge',
+    returned: 'returned',
+    withdraw: 'Withdraw',
+    /** The confirm line: "Returns {n} gold to cash; {n} forfeited to the counting house." */
+    withdrawReturns: 'Returns',
+    withdrawToCash: 'gold to cash;',
+    withdrawForfeit: 'forfeited to the counting house.',
+    cancel: 'Cancel',
+    confirmWithdrawal: 'Confirm withdrawal',
+
+    // Loan Book card
+    loanBook: 'Loan Book',
+    loanBookSubtitle: 'Short-term consumer credit',
+    performing: 'Performing',
+    takePerS: 'Take / s',
+    activeDebtors: 'Active debtors',
     /** The loan book's living collateral: "1,234 debtors". */
     debtors: 'debtors',
-    /** Thesaurus, the hoard. */
-    thesaurus: 'Thesaurus',
-    thesaurusBlurb:
-      'The hoard is placed with the counting house and set upon the enterprises of vice.',
-    hoard: 'The hoard',
-    interest: 'Interest',
-    deposit: 'Deposit',
-    withdraw: 'Withdraw',
-    depositAll: 'All of it',
-    /** The withdraw confirm: the recovery fraction and the forfeit, stated before committing. */
-    withdrawWarning: 'The counting house releases little of what it has tasted.',
-    withdrawRecovers: 'returns',
-    withdrawForfeits: 'forfeited',
-    confirm: 'Confirm',
-    cancel: 'Not yet',
-    /** The Anatocismus auto-deposit readout, shown once usura-4 is signed. */
-    anatocismus: 'Anatocismus',
-    anatocismusRate: 'Interest upon interest, by contract',
-    /** The global Foedus tier badge (tier as a Roman numeral: "Foedus II"). */
-    foedus: 'Foedus',
-    foedusTitle:
-      'A fat vault greases the ceremonies: each Foedus tier cuts their upkeep by 12.5% (one tier per decade of hoard above 10,000, up to IV).',
-    /** Syngraphae, the contract tree. */
-    syngraphaeIntro:
-      'Contracts in the Hoarder\u2019s ink. The fee is burned; the terms endure until the descent.',
+    loanBookBody:
+      'Small sums originated through broker partners and repaid by the head. The book is unsecured and self-renewing; no borrower is contacted directly.',
+
+    // Account status (Foedus tier) card
+    accountStatus: 'Account status',
+    tier: 'Tier',
+    /** "{n}% management-fee rebate" (n = tier x 12.5). */
+    rebateSuffix: 'management-fee rebate',
+    /** "{pct} to Tier {next}". */
+    toTier: 'to Tier',
+    maxTier: 'max tier',
+    tierBody:
+      'Tier advances one step per decade of balance above 10,000 gold, to a maximum of Tier IV. Each tier deepens the management-fee rebate.',
+
+    // Recent activity (a session-local ledger of the player's own moves)
+    recentActivity: 'Recent activity',
+    noActivity: 'No activity yet this session.',
+    ledgerDeposit: 'Deposit',
+    ledgerDepositSub: 'from available cash',
+    ledgerWithdrawal: 'Withdrawal',
+    ledgerWithdrawalSub: 'surrender charge applied',
+    ledgerContractFee: 'Contract fee',
+    /** "{name} signed". */
+    ledgerSignedSuffix: 'signed',
+
+    // Contracts screen
+    contractsIntro:
+      'Standing contracts with the counting house. A one-time fee is charged from available cash; the terms then hold for the life of the account.',
+    active: 'Active',
+    /** "Signed \u00b7 {fee} paid". */
+    signedMeta: 'Signed',
+    paid: 'paid',
+    /** "{fee} \u00b7 eligible". */
+    eligible: 'eligible',
+    /** "Sign \u00b7 {fee}". */
     sign: 'Sign',
-    signed: 'Signed',
-    /** Gated rows: the Avaritia level required, rendered as "Avaritia II". */
-    requiresAvaritia: 'Avaritia',
-    requiresPrior: 'The prior term must be signed first.',
-    /** The three branch column headings. */
+    insufficientCash: 'Insufficient cash',
+    /** "Sign {prior} first". */
+    signFirst: 'first',
+    /**
+     * "Requires Avaritia {N}". The sim gates each contract on the player's Avaritia level (not the
+     * hoard-based relationship Tier shown in the sidebar). The design's mundane theme relabels the
+     * gate generically as "Tier N", but that would contradict the relationship-tier card, so the
+     * gate keeps its true Avaritia axis (a first-class player term elsewhere in the game).
+     */
+    requiresAvaritia: 'Requires Avaritia',
+    /** "Confirm \u00b7 {fee}". */
+    confirm: 'Confirm',
+
+    /** The three branch column headings (banking display names, keyed by internal branch id). */
     branches: {
-      usura: 'Usura',
-      faeneratio: 'Faeneratio',
-      custodia: 'Custodia',
+      usura: 'Yield',
+      faeneratio: 'Origination',
+      custodia: 'Custody',
     } as Record<string, string>,
-    /** Unnamed nodes go by their branch numeral (Usura II); named contracts carry their title. */
+    /** The sub label beneath each branch heading. */
+    branchSubs: {
+      usura: 'Interest terms',
+      faeneratio: 'Loan-book terms',
+      custodia: 'Retention terms',
+    } as Record<string, string>,
+    /** Unnamed nodes go by their branch name + numeral (Yield II); named contracts carry a title. */
     nodeNames: {
-      'usura-4': 'Anatocismus',
+      'usura-4': 'Compounding',
       'faeneratio-2': 'Escheat',
-      'custodia-4': 'Peculium',
+      'custodia-4': 'Retained Floor',
     } as Record<string, string>,
     /** One line per node, shown on its card. Numbers first, so the gain is never a riddle. */
     nodeEffects: {
       'usura-1': 'Interest rate \u00d71.5.',
       'usura-2': 'Interest rate \u00d71.5 (stacks to \u00d72.25).',
       'usura-3': 'Interest rate \u00d72 (stacks to \u00d74.5).',
-      'usura-4': '50% of each interest payment auto-deposits into the hoard.',
+      'usura-4': '50% of each interest payment auto-reinvests into the reserve.',
       'faeneratio-1': 'Loan-book take \u00d71.5 per debtor.',
-      'faeneratio-2': '+1 gold per murder, +0.5 gold per suicide: the estates of the dead escheat.',
+      'faeneratio-2':
+        'Estate recovery: +1 gold per account closed by murder, +0.5 per account closed by suicide.',
       'faeneratio-3': 'Loan-book take \u00d72 (stacks to \u00d73).',
-      'faeneratio-4': 'The Katabasis hoard liquidation pays \u00d71.25.',
+      'faeneratio-4': 'Portfolio liquidation pays \u00d71.25 when the account closes.',
       'custodia-1': 'Withdrawal recovery \u00d71.6 (25% becomes 40%).',
-      'custodia-2': '+2% gold gain per decade of hoard above 1,000, capped at +20%.',
-      'custodia-3': 'Withdrawal recovery \u00d71.5. Stacks to 60%.',
-      'custodia-4': 'At the descent, kept gold is floored at 10% of the hoard.',
+      'custodia-2': '+2% gold gain per decade of reserve above 1,000, capped at +20%.',
+      'custodia-3': 'Withdrawal recovery \u00d71.5 (stacks to 60%).',
+      'custodia-4': 'When the account closes, kept gold is floored at 10% of the reserve.',
     } as Record<string, string>,
   },
   acolytes: {
@@ -925,12 +1024,12 @@ export const strings = {
       42: 'Ira invocation effect \u2191',
       43: 'Suicide rate \u2191 (flat)',
       44: 'Avaritia invocation effect \u2191',
-      45: 'Thesaurus withdrawal recovery \u2191',
+      45: 'Reserve withdrawal recovery \u2191',
       46: 'Indagatio efficiency \u2191',
       47: 'Suasio Stellar chance \u2191',
       48: 'Flat gold generation \u2191',
       49: 'Indagatio double-find chance \u2191',
-      50: 'Thesaurus withdrawal recovery \u2191',
+      50: 'Reserve withdrawal recovery \u2191',
       51: 'All Opera negative outcomes \u2193',
       52: 'Acedia invocation effect \u2191',
       53: 'Reprobates kept on descent \u2191',
@@ -940,7 +1039,7 @@ export const strings = {
       57: 'Flat reprobate generation \u2191',
       58: 'Indagatio & Emptio efficiency \u2193',
       59: 'Maximum Stagnation \u2191',
-      60: 'Faeneratio gold output \u2191',
+      60: 'Account income \u2191',
       61: 'Suasio efficiency \u2191',
       62: 'Indagatio negative outcomes \u2193',
       63: 'Emptio Stellar chance \u2191',
