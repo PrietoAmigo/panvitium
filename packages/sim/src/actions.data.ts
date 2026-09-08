@@ -19,15 +19,17 @@ const SUGGESTION_WEIGHTS: TierWeights = {
   apocalyptic: 0.001,
 };
 
-/** Logismoi (Suasio sheet): mid-game reprobate/soul source; richer than Suggestion. */
+// Logismoi (Suasio sheet, retuned by player request): mid-game reprobate/soul source, richer than
+// Suggestion. Neutral removed (0) so the rite almost always moves the flock; the tails (Terrible,
+// Apocalyptic) are fattened to offset the heavier Excellent/Good mass. Column still sums to 1.
 const LOGISMOI_WEIGHTS: TierWeights = {
   stellar: 0.01,
-  excellent: 0.15,
-  good: 0.3,
-  neutral: 0.3,
-  bad: 0.17,
-  terrible: 0.069,
-  apocalyptic: 0.001,
+  excellent: 0.24,
+  good: 0.4,
+  neutral: 0,
+  bad: 0.1,
+  terrible: 0.24,
+  apocalyptic: 0.01,
 };
 
 /** Imperium (Suasio sheet rev 2026-06-12): a full distribution — the "player in control" fixed

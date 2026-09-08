@@ -109,22 +109,22 @@ describe('action unlock gating (Suasio sheet)', () => {
 });
 
 describe('resolveLogismoi', () => {
-  it('good adds 10–29 and excellent 20–58 reprobates (sheet rev)', () => {
+  it('good adds 14..39 and excellent 41..74 reprobates (player tuning)', () => {
     const g = resolveLogismoi(fresh(), 'good', rng()).lifetime.reprobates;
-    expect(g).toBeGreaterThanOrEqual(10);
-    expect(g).toBeLessThanOrEqual(29);
+    expect(g).toBeGreaterThanOrEqual(14);
+    expect(g).toBeLessThanOrEqual(39);
     const e = resolveLogismoi(fresh(), 'excellent', rng()).lifetime.reprobates;
-    expect(e).toBeGreaterThanOrEqual(20);
-    expect(e).toBeLessThanOrEqual(58);
+    expect(e).toBeGreaterThanOrEqual(41);
+    expect(e).toBeLessThanOrEqual(74);
   });
-  it('stellar adds +3% of the current population (sheet rev)', () => {
+  it('stellar adds +5% of the current population (player tuning)', () => {
     const seeded = withReprobates(fresh(), 1000);
     const after = resolveLogismoi(seeded, 'stellar', rng());
-    expect(totalReprobates(after) - 1000).toBe(30); // floor(1000 × 0.03)
+    expect(totalReprobates(after) - 1000).toBe(50); // floor(1000 × 0.05)
   });
-  it('apocalyptic sheds half the flock', () => {
+  it('apocalyptic sheds 5% of the flock (player tuning)', () => {
     const seeded = withReprobates(fresh(), 1000);
-    expect(totalReprobates(resolveLogismoi(seeded, 'apocalyptic', rng()))).toBe(500);
+    expect(totalReprobates(resolveLogismoi(seeded, 'apocalyptic', rng()))).toBe(950);
   });
   it('terrible culls reprobates; neutral does nothing', () => {
     const seeded = addReprobates(fresh(), 100);

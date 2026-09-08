@@ -732,21 +732,21 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
   const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
-      // the word catches fire → +3% of the current population (sheet rev); efficiency scales.
+      // the word catches fire → +5% of the current population (player tuning); efficiency scales.
       return addReprobates(
         state,
-        Math.floor(totalReprobates(state) * 0.03 * Math.max(0, efficiency)),
+        Math.floor(totalReprobates(state) * 0.05 * Math.max(0, efficiency)),
       );
     case 'excellent':
-      return addReprobates(state, randint(rng, 20, 58) * units); // sheet rev (owner answer #3)
+      return addReprobates(state, randint(rng, 41, 74) * units); // player tuning
     case 'good':
-      return addReprobates(state, randint(rng, 10, 29) * units);
+      return addReprobates(state, randint(rng, 14, 39) * units);
     case 'bad':
       return removeReprobates(state, Math.floor(units * loss)).state; // reject + redeem
     case 'terrible':
-      return loseReprobatesFraction(state, 0.09 * loss).state; // Church intervention
+      return loseReprobatesFraction(state, 0.01 * loss).state; // Church intervention (player tuning)
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5 * loss).state; // mass apostasy (sheet rev)
+      return loseReprobatesFraction(state, 0.05 * loss).state; // mass apostasy (player tuning)
     case 'neutral':
     default:
       return state;
