@@ -4,8 +4,9 @@
  * 1k, ~31% at 100k, ~50% at ~39M, then keeps creeping up with NO cap — meaningful early, gentle
  * late, and far tamer than the old √ default (which was near-zero early and exploded late).
  * A standard sigil carries `coefficient: 1` (so its strength IS the curve); a weaker sigil scales it
- * down (Paimon 0.5, Foras 0.25). Some sigils override the curve to `sqrt` (Andrealphus's flat
- * invoking power), `linear` (swingy), or `log` (the flat generators / Katabasis carry-over). `bindingMagnitude`
+ * down (Paimon 0.5; Zepar #16 / Marax #21 / Zagan #61 at 1/3). Some sigils override the curve to
+ * `linear` (swingy) or `log` (the flat generators, Forneus #30's invoking power, Katabasis
+ * carry-over); the `sqrt` curve is supported but no seal currently uses it. `bindingMagnitude`
  * returns the bare magnitude; a per-sigil coefficient multiplies it into a concrete effect strength.
  *
  * The catalog (03 §5) is the full Goetia numbering 1..72, with #32 = Semet. Every seal is now wired
@@ -323,7 +324,7 @@ export function sigilFlatGeneration(
 }
 
 /**
- * Flat invoking power contributed by bound sigils (Andrealphus #65), rounded to an integer per the
+ * Flat invoking power contributed by bound sigils (Forneus #30), rounded to an integer per the
  * sheet ("+invoking power, round to int"). Added to the maleficia total in `currentInvokingPower`,
  * so it counts toward the invocation gates. `effectMul` carries the sigil enhancers.
  */
