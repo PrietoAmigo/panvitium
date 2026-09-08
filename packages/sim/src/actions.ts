@@ -754,32 +754,32 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
 }
 
 /**
- * Imperium outcomes (Suasio sheet rev 2026-06-12): the fixed "player in control" Good is retired —
- * the late rite carries a full distribution. Stellar pays +3% of CURRENT SOULS; Excellent +3% of
- * the population; Good +randint(100,1000) reprobates; the tails shed the flock.
+ * Imperium outcomes (Suasio sheet, retuned by player request): a full distribution, all in
+ * reprobates now (Stellar no longer mints souls). Stellar +25% of the population; Excellent +7%;
+ * Good +randint(100,1000) reprobates; the tails shed the flock.
  */
 export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
   const loss = lossScale(efficiency);
   switch (tier) {
     case 'stellar':
-      return mintSouls(
+      return addReprobates(
         state,
-        Math.floor(floor(state.souls).toNumber() * 0.03 * Math.max(0, efficiency)),
+        Math.floor(totalReprobates(state) * 0.25 * Math.max(0, efficiency)),
       );
     case 'excellent':
       return addReprobates(
         state,
-        Math.floor(totalReprobates(state) * 0.03 * Math.max(0, efficiency)),
+        Math.floor(totalReprobates(state) * 0.07 * Math.max(0, efficiency)),
       );
     case 'good':
       return addReprobates(state, randint(rng, 100, 1000) * units);
     case 'bad':
       return removeReprobates(state, Math.floor(units * loss)).state;
     case 'terrible':
-      return loseReprobatesFraction(state, 0.05 * loss).state;
+      return loseReprobatesFraction(state, 0.025 * loss).state;
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.5 * loss).state;
+      return loseReprobatesFraction(state, 0.1 * loss).state;
     case 'neutral':
     default:
       return state;

@@ -32,16 +32,17 @@ const LOGISMOI_WEIGHTS: TierWeights = {
   apocalyptic: 0.01,
 };
 
-/** Imperium (Suasio sheet rev 2026-06-12): a full distribution — the "player in control" fixed
- * outcome is retired; the late rite now risks real failure and pays in souls at Stellar. */
+// Imperium (Suasio sheet, retuned by player request): the late rite's full distribution, reweighted
+// toward a dominant Good (0.45) with Neutral removed (0) so a cast almost always swells the flock;
+// the tails stay live. Column sums to 1.
 const IMPERIUM_WEIGHTS: TierWeights = {
-  stellar: 0.035,
-  excellent: 0.18,
-  good: 0.21,
-  neutral: 0.235,
+  stellar: 0.05,
+  excellent: 0.15,
+  good: 0.45,
+  neutral: 0,
   bad: 0.15,
-  terrible: 0.155,
-  apocalyptic: 0.035,
+  terrible: 0.15,
+  apocalyptic: 0.05,
 };
 
 const CAEDES_WEIGHTS: TierWeights = {

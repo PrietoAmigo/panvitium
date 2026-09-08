@@ -144,16 +144,18 @@ describe('resolveImperium', () => {
     expect(n).toBeLessThanOrEqual(1000);
   });
 
-  it('stellar pays +3% of current souls; excellent +3% of the population (sheet rev)', () => {
+  it('stellar adds +25% and excellent +7% of the population; neither mints souls (player tuning)', () => {
     const seeded = withSouls(withReprobates(fresh(), 1000), 200);
-    expect(soulsOf(resolveImperium(seeded, 'stellar', rng()))).toBe(206); // +floor(200 × 0.03)
-    expect(totalReprobates(resolveImperium(seeded, 'excellent', rng()))).toBe(1030);
+    const stellar = resolveImperium(seeded, 'stellar', rng());
+    expect(totalReprobates(stellar)).toBe(1250); // +floor(1000 × 0.25)
+    expect(soulsOf(stellar)).toBe(200); // Stellar no longer mints souls
+    expect(totalReprobates(resolveImperium(seeded, 'excellent', rng()))).toBe(1070); // +floor(1000 × 0.07)
   });
 
-  it('terrible sheds 5% and apocalyptic half of the flock', () => {
+  it('terrible sheds 2.5% and apocalyptic 10% of the flock (player tuning)', () => {
     const seeded = withReprobates(fresh(), 1000);
-    expect(totalReprobates(resolveImperium(seeded, 'terrible', rng()))).toBe(950);
-    expect(totalReprobates(resolveImperium(seeded, 'apocalyptic', rng()))).toBe(500);
+    expect(totalReprobates(resolveImperium(seeded, 'terrible', rng()))).toBe(975);
+    expect(totalReprobates(resolveImperium(seeded, 'apocalyptic', rng()))).toBe(900);
   });
 });
 
@@ -560,9 +562,9 @@ describe('actionTierDistribution (oracular reveals, 5.1)', () => {
   it('reflects the full Imperium distribution (the fixed-Good certainty is retired)', () => {
     const s = createInitialState('oracle-test', 0);
     const dist = actionTierDistribution(s, 'imperium');
-    expect(dist.good).toBeCloseTo(0.21, 10);
-    expect(dist.stellar).toBeCloseTo(0.035, 10);
-    expect(dist.apocalyptic).toBeCloseTo(0.035, 10);
+    expect(dist.good).toBeCloseTo(0.45, 10);
+    expect(dist.stellar).toBeCloseTo(0.05, 10);
+    expect(dist.apocalyptic).toBeCloseTo(0.05, 10);
   });
 
   it('reflects the base weights for Caedes (Good is the dominant tier)', () => {
