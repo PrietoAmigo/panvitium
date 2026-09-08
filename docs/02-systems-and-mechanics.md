@@ -334,7 +334,7 @@ All invocations are dispelled by the descent. Everything in `lifetime` state res
 Summoned entities, maintained from the Invocation Room (`§12`). Mechanics:
 
 - **Invoking power** gates every invocation. Power comes from owned power-source maleficia
-  (`03 §4`) and from sigils (Forneus #30, Andrealphus #65). An invocation becomes *visible* in
+  (`03 §4`) and from sigils (Forneus #30). An invocation becomes *visible* in
   the Ars Goetia book once the player holds at least **half** its required power; it becomes
   summonable at full power plus its Sin-level gate and cost.
 - **Concurrency:** at most one **Apex** invocation active at a time; at most one **Familiar**;

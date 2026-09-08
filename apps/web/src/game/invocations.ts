@@ -55,7 +55,7 @@ function gateLabel(def: InvocationDef): string {
 }
 
 export interface GoetiaView {
-  /** Current invoking power (maleficia + Andrealphus sigil), pre-formatted for display. */
+  /** Current invoking power (maleficia + Forneus sigil), pre-formatted for display. */
   readonly invokingPower: string;
   /** Visible invocations (≥ half their invoking-power requirement, 02 §12), as grimoire entries. */
   readonly entries: GoetiaEntry[];

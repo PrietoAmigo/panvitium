@@ -82,7 +82,7 @@ describe('Binding curves (02 §5)', () => {
     expect(bindingMagnitude('pct', bn(1e15))).toBeGreaterThan(bindingMagnitude('pct', bn(1e9)));
   });
 
-  it('sqrt (Andrealphus, opt-in) grows gently', () => {
+  it('sqrt (an opt-in curve, no seal currently uses it) grows gently', () => {
     expect(bindingMagnitude('sqrt', bn(0))).toBe(0);
     expect(bindingMagnitude('sqrt', bn(100))).toBeCloseTo(10, 6);
     expect(bindingMagnitude('sqrt', bn(10_000))).toBeCloseTo(100, 6);

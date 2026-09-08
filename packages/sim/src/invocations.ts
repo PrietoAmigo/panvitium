@@ -103,7 +103,7 @@ export function invocationById(id: string): InvocationDef | undefined {
   return INVOCATIONS[id];
 }
 
-/** Current invoking power: equipped maleficia + Andrealphus #65 sigil (02 §7). */
+/** Current invoking power: equipped maleficia + Forneus #30 sigil (02 §7). */
 export function currentInvokingPower(state: GameState): number {
   return (
     totalInvokingPower(state.lifetime.maleficia) +
