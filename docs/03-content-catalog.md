@@ -44,21 +44,24 @@ the fixed curve in the spreadsheet.
 
 ### 2.1 *Suasio* — Tempting
 
-Three actions: *Suggestion*, *Logismoi*, and *Imperium*, gated and toggle-gated by *Luxuria*
-level. Efficiency mode is **`cost-outcome`** (`02 §3`): it modifies *Suasio* costs and positive
-outcomes by the same percentage and does not affect action time.
+Three actions: *Suggestion*, *Logismoi*, and *Imperium*, gated and toggle-gated by the player's
+highest Sin level across all Sins (player tuning: the gate is the max Sin level, not *Luxuria*
+specifically). Efficiency mode is **`cost-outcome`** (`02 §3`): it modifies *Suasio* costs and
+positive outcomes by the same percentage and does not affect action time.
 
 - **Suggestion** — the early-game reprobate source. Short, cheap, modest yield.
 - **Logismoi** — the mid-game source; bulk corruption with a wider variance.
 - **Imperium** — the late-game source; the player in control, with soul-minting and
   percentage-of-population outcomes at the top tiers.
 
-Per-action probabilities, outcomes, costs, durations, and the *Luxuria* gates are in the
-`Suasio` sheet.
+Per-action probabilities, outcomes, costs, and durations are in the `Suasio` sheet; the availability
+and toggle gates are keyed to the player's highest Sin level (player tuning), not the sheet's
+*Luxuria* levels.
 
 ### 2.2 *Decimatio* — Culling
 
-Three actions: *Caedes*, *Pogrom*, and *Purgatio*, gated and toggle-gated by *Ira* level.
+Three actions: *Caedes*, *Pogrom*, and *Purgatio*, gated and toggle-gated by the player's highest
+Sin level across all Sins (player tuning: the max Sin level, not *Ira* specifically).
 Efficiency mode is **`cost-outcome`** (`02 §3`, per the sheet): it modifies *Decimatio* costs and
 positive outcomes by the same percentage and does not affect action time.
 

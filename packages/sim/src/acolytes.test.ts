@@ -126,13 +126,17 @@ describe('autoRecruitAcolytes', () => {
 });
 
 describe('isDelegatable (toggle Sin-level gate)', () => {
-  it('Indagatio is always delegatable; the Opera rites gate on their toggle Sin level', () => {
+  it('Indagatio is always delegatable; the Opera rites gate on the max Sin level (any Sin)', () => {
     expect(isDelegatable(fresh(), 'indagatio')).toBe(true);
     // Suggestion / Caedes toggle at Luxuria / Ira 1.
     expect(isDelegatable(fresh(), 'suggestion')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'luxuria', 1), 'suggestion')).toBe(true);
     expect(isDelegatable(fresh(), 'caedes')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'ira', 1), 'caedes')).toBe(true);
+    // Any Sin at the toggle level unlocks delegation, not just the rite's thematic Sin (player tuning):
+    // Caedes via Tristitia I, Logismoi via Gula II.
+    expect(isDelegatable(setSin(fresh(), 'tristitia', 1), 'caedes')).toBe(true);
+    expect(isDelegatable(setSin(fresh(), 'gula', 2), 'logismoi')).toBe(true);
     // Logismoi toggles at Luxuria 2 (player tuning; was 3); Purgatio still at Ira 4.
     expect(isDelegatable(setSin(fresh(), 'luxuria', 1), 'logismoi')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'luxuria', 2), 'logismoi')).toBe(true);

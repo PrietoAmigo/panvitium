@@ -29,7 +29,7 @@ import {
   mintSouls,
   removeReprobates,
 } from './population.js';
-import { type ActionTimer, type GameState, type Sin, totalReprobates } from './state.js';
+import { type ActionTimer, type GameState, SINS, totalReprobates } from './state.js';
 import { sinLevel } from './progression.js';
 import { type OutcomeEvent } from './events.js';
 import {
@@ -72,24 +72,41 @@ export interface ActionDef {
   readonly weights: TierWeights;
   readonly efficiencyMode: EfficiencyMode;
   /**
-   * Sin-level gate that makes the action appear in the Opera (Suasio/Decimatio sheets). Absent =
-   * available from the first lifetime (Suggestion / Caedes, which are gated only on *delegation*,
-   * not availability). Logismoi/Imperium gate on Luxuria, Pogrom/Purgatio on Ira.
+   * Availability gate: the action appears in the Opera once the player's HIGHEST Sin level across
+   * all Sins reaches this level (player tuning: keyed to the max Sin level, not the rite's thematic
+   * Sin, so raising any Sin advances the gate). Absent = available from the first lifetime
+   * (Suggestion / Caedes, gated only on *delegation*). Logismoi/Pogrom open at 1, Imperium/Purgatio
+   * at 3.
    */
-  readonly unlock?: { readonly sin: Sin; readonly level: number };
+  readonly unlock?: number;
   /**
-   * Sin-level gate that enables *delegation* of this action — acolyte assignment / automation (the
-   * Suasio/Decimatio sheets' "toggle" level). Distinct from `unlock` (mere availability): an action
-   * can be playable by hand before it can be automated. Absent on Indagatio/Emptio (handled
-   * separately). Suggestion/Caedes toggle at Luxuria/Ira 1; the higher rites at 3/4.
+   * Delegation gate: acolyte assignment / auto-repeat unlocks once the player's HIGHEST Sin level
+   * across all Sins reaches this level (the Suasio/Decimatio sheets' "toggle" level). Distinct from
+   * `unlock` (mere availability): an action can be playable by hand before it can be automated.
+   * Absent on Indagatio/Emptio (handled separately). Suggestion/Caedes toggle at 1; the higher rites
+   * at 2 and 4.
    */
-  readonly delegateUnlock?: { readonly sin: Sin; readonly level: number };
+  readonly delegateUnlock?: number;
 }
 
-/** Whether `def` is available to start: no gate, or the gating Sin has reached the unlock level. */
+/**
+ * The player's HIGHEST Sin level across all eight Sins. Suasio/Decimatio availability and delegation
+ * gate on this (player tuning), not on the rite's thematic Sin, so advancing ANY Sin advances every
+ * gated rite in lockstep.
+ */
+export function maxSinLevel(state: GameState): number {
+  let max = 0;
+  for (const sin of SINS) {
+    const level = sinLevel(state.devotion[sin]);
+    if (level > max) max = level;
+  }
+  return max;
+}
+
+/** Whether `def` is available to start: no gate, or the highest Sin level has reached `unlock`. */
 export function actionUnlocked(state: GameState, def: ActionDef): boolean {
-  if (!def.unlock) return true;
-  return sinLevel(state.devotion[def.unlock.sin]) >= def.unlock.level;
+  if (def.unlock === undefined) return true;
+  return maxSinLevel(state) >= def.unlock;
 }
 
 /** Inclusive integer in [lo, hi] from the seeded RNG. */
@@ -272,9 +289,9 @@ export function startAction(
 
 /**
  * Whether `actionId` may be set to AUTO-REPEAT: it carries a toggle-level gate (`delegateUnlock` —
- * the Suasio/Decimatio sheets' "toggle" level) and the player has reached it. This is the same gate
- * that opens acolyte delegation; the player's own one-shot rite gains its auto-repeat toggle at the
- * same Sin level (02 §3). Actions without a `delegateUnlock` (Indagatio/Emptio) are never
+ * the Suasio/Decimatio sheets' "toggle" level) and the player's HIGHEST Sin level has reached it.
+ * This is the same gate that opens acolyte delegation; the player's own one-shot rite gains its
+ * auto-repeat toggle at the same level (02 §3). Actions without a `delegateUnlock` (Indagatio/Emptio) are never
  * player-auto-repeatable. Every action's toggle level sits at or above its availability gate
  * (`unlock`), so a reached toggle level implies the rite is also castable — `ensureAutoRepeatStarted`
  * still routes through `startAction`, which re-checks availability, so a future inversion would
@@ -282,8 +299,8 @@ export function startAction(
  */
 export function isAutoRepeatable(state: GameState, actionId: string): boolean {
   const def = ACTIONS[actionId];
-  if (!def?.delegateUnlock) return false;
-  return sinLevel(state.devotion[def.delegateUnlock.sin]) >= def.delegateUnlock.level;
+  if (def?.delegateUnlock === undefined) return false;
+  return maxSinLevel(state) >= def.delegateUnlock;
 }
 
 /** Whether `actionId` is currently set to auto-repeat in the player's slot. */
