@@ -135,8 +135,12 @@ export const strings = {
         maxim: '...donec omnia ardeant.',
       },
     } as Record<string, { name: string; maxim: string }>,
-    // Gate prefix for a sealed row, e.g. \u201cRequires Luxuria III\u201d.
+    // Gate prefix for a sealed row, e.g. \u201cRequires Any Sin III\u201d.
     suasioRequires: 'Requires',
+    // The any-Sin gate token. Suasio/Decimatio rites open at the given level of ANY Sin (not one
+    // specific Sin), so the sealed-row requirement reads "Requires Any Sin III" and the locked
+    // auto/delegate hint reads "Any Sin I".
+    anySin: 'Any Sin',
     // Panvitium's gate on the scroll (all eight Sins at level III).
     suasioPanvitiumGate: 'Every Sin III',
     // Panvitium on the scroll: its open name and the ramping-cost suffix on the cost line.
@@ -164,10 +168,11 @@ export const strings = {
     // A gated rite (Pogrom, Purgatio) before its Ira gate is met shows a sealed card: its name
     // suffixed with this, plus the lock note below.
     decimatioSealedSuffix: '\u00b7 sealed',
-    // Lock notes shown on a gated rite, explaining why it cannot be worked yet (with its Ira gate).
+    // Lock notes shown on a gated rite, explaining why it cannot be worked yet (with its Sin-level
+    // gate: any Sin at the level, not Ira specifically).
     decimatioLocked: {
-      pogrom: 'You cannot infuse enough anger into your acolytes yet. Ira I.',
-      purgatio: 'Making anger contagious among your followers is not yet possible. Ira III.',
+      pogrom: 'You cannot infuse enough anger into your acolytes yet. Any Sin I.',
+      purgatio: 'Making anger contagious among your followers is not yet possible. Any Sin III.',
     } as Record<string, string>,
     // Ledger outcome fragments (re-skinned from the real OutcomeEvent deltas).
     decimatioYield: '(+souls / \u2212reprobates)',

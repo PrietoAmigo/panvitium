@@ -115,7 +115,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { influence: 1 },
     weights: SUGGESTION_WEIGHTS,
     efficiencyMode: 'cost-outcome',
-    delegateUnlock: { sin: 'luxuria', level: 1 },
+    delegateUnlock: 1, // auto/delegate unlocks at max Sin level I
   },
   logismoi: {
     id: 'logismoi',
@@ -124,8 +124,8 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { influence: 25 },
     weights: LOGISMOI_WEIGHTS,
     efficiencyMode: 'cost-outcome',
-    unlock: { sin: 'luxuria', level: 1 }, // 2nd Suasio rite opens at Luxuria I (player tuning; was II)
-    delegateUnlock: { sin: 'luxuria', level: 2 }, // auto/delegate at Luxuria II (player tuning; was III)
+    unlock: 1, // 2nd Suasio rite opens at max Sin level I (player tuning; was Luxuria II)
+    delegateUnlock: 2, // auto/delegate at max Sin level II (player tuning; was Luxuria III)
   },
   imperium: {
     id: 'imperium',
@@ -137,8 +137,8 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { influence: 100 },
     weights: IMPERIUM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
-    unlock: { sin: 'luxuria', level: 3 },
-    delegateUnlock: { sin: 'luxuria', level: 4 },
+    unlock: 3, // opens at max Sin level III
+    delegateUnlock: 4, // auto/delegate at max Sin level IV
   },
   caedes: {
     id: 'caedes',
@@ -149,7 +149,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { gold: 10 }, // sheet 100; cut to 1/10 (player tuning request)
     weights: CAEDES_WEIGHTS,
     efficiencyMode: 'cost-outcome',
-    delegateUnlock: { sin: 'ira', level: 1 },
+    delegateUnlock: 1, // auto/delegate unlocks at max Sin level I
   },
   pogrom: {
     id: 'pogrom',
@@ -158,8 +158,8 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { gold: 100 }, // sheet 1,000; cut to 1/10 (player tuning request)
     weights: POGROM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
-    unlock: { sin: 'ira', level: 1 }, // 2nd Decimatio rite opens at Ira I (player tuning; was II)
-    delegateUnlock: { sin: 'ira', level: 2 }, // auto/delegate at Ira II (player tuning; was III)
+    unlock: 1, // 2nd Decimatio rite opens at max Sin level I (player tuning; was Ira II)
+    delegateUnlock: 2, // auto/delegate at max Sin level II (player tuning; was Ira III)
   },
   purgatio: {
     id: 'purgatio',
@@ -168,8 +168,8 @@ export const ACTIONS: Record<string, ActionDef> = {
     cost: { gold: 100_000 }, // sheet 1,000,000; cut to 1/10 (player tuning request)
     weights: PURGATIO_WEIGHTS,
     efficiencyMode: 'cost-outcome',
-    unlock: { sin: 'ira', level: 3 },
-    delegateUnlock: { sin: 'ira', level: 4 },
+    unlock: 3, // opens at max Sin level III
+    delegateUnlock: 4, // auto/delegate at max Sin level IV
   },
   indagatio: {
     id: 'indagatio',

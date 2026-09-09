@@ -78,8 +78,9 @@ export function autoRecruitAcolytes(state: GameState): GameState {
 /**
  * Which actions can currently be delegated to acolytes. Indagatio (time-mode) is always available;
  * Emptio never (it needs a per-target maleficium). The Suasio/Decimatio rites become delegatable
- * only once their Sin reaches the sheet's "toggle" level (`def.delegateUnlock`), e.g. Suggestion at
- * Luxuria 1, Purgatio at Ira 4 — automating a rite is gated above merely being able to cast it.
+ * only once the player's HIGHEST Sin level reaches the sheet's "toggle" level (`def.delegateUnlock`),
+ * e.g. Suggestion at level 1, Purgatio at level 4 — automating a rite is gated above merely being
+ * able to cast it (player tuning: the gate is the max Sin level, not the rite's thematic Sin).
  */
 export function isDelegatable(state: GameState, actionId: string): boolean {
   // Indagatio is always delegatable; every other action shares the auto-repeat "toggle" gate

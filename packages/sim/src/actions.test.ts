@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { bn, floor } from './bignum.js';
 import { hashSeed, makeRng } from './rng.js';
-import { createInitialState, totalReprobates, type GameState } from './state.js';
+import { createInitialState, totalReprobates, type GameState, type Sin } from './state.js';
 import { addReprobates } from './population.js';
 import {
   startAction,
@@ -40,6 +40,11 @@ const withLuxuria = (s: GameState, level: number): GameState => ({
 const withIra = (s: GameState, level: number): GameState => ({
   ...s,
   devotion: { ...s.devotion, ira: bn(180 ** level) },
+});
+/** Set an arbitrary Sin to `level` (via its exact Devotion threshold) — for max-Sin-level gating. */
+const withSin = (s: GameState, sin: Sin, level: number): GameState => ({
+  ...s,
+  devotion: { ...s.devotion, [sin]: bn(180 ** level) },
 });
 const withReprobates = (s: GameState, n: number): GameState => ({
   ...s,
@@ -84,14 +89,18 @@ describe('startAction', () => {
   });
 });
 
-describe('action unlock gating (Suasio sheet)', () => {
-  it('gates Logismoi at Luxuria 1 and Imperium at Luxuria 3; ungated actions are always open', () => {
+describe('action unlock gating (max Sin level, not a specific Sin)', () => {
+  it('gates Logismoi/Pogrom at level 1 and Imperium at level 3, satisfied by ANY Sin', () => {
     expect(actionUnlocked(fresh(), ACTIONS.logismoi!)).toBe(false);
+    // The gate reads the HIGHEST Sin level across all Sins (player tuning), so a non-Luxuria Sin
+    // opens a Suasio rite and a non-Ira Sin opens a Decimatio rite. Tristitia I unlocks both.
+    expect(actionUnlocked(withSin(fresh(), 'tristitia', 1), ACTIONS.logismoi!)).toBe(true);
     expect(actionUnlocked(withLuxuria(fresh(), 1), ACTIONS.logismoi!)).toBe(true);
-    expect(actionUnlocked(withLuxuria(fresh(), 2), ACTIONS.logismoi!)).toBe(true);
-    expect(actionUnlocked(withLuxuria(fresh(), 2), ACTIONS.imperium!)).toBe(false);
-    expect(actionUnlocked(withLuxuria(fresh(), 3), ACTIONS.imperium!)).toBe(true);
-    expect(actionUnlocked(fresh(), ACTIONS.suggestion!)).toBe(true);
+    expect(actionUnlocked(withSin(fresh(), 'tristitia', 1), ACTIONS.pogrom!)).toBe(true);
+    // Imperium needs level 3 from any Sin: level 2 is not enough, level 3 is.
+    expect(actionUnlocked(withSin(fresh(), 'tristitia', 2), ACTIONS.imperium!)).toBe(false);
+    expect(actionUnlocked(withSin(fresh(), 'tristitia', 3), ACTIONS.imperium!)).toBe(true);
+    expect(actionUnlocked(fresh(), ACTIONS.suggestion!)).toBe(true); // ungated, always open
   });
 
   it('startAction refuses a locked action, then allows it once the Sin level is reached', () => {
@@ -660,6 +669,8 @@ describe('auto-repeat (player-slot looping, 02 §3)', () => {
     // Caedes toggles at Ira 1: sealed at Ira 0, open at Ira 1.
     expect(isAutoRepeatable(fresh(), 'caedes')).toBe(false);
     expect(isAutoRepeatable(withIra(fresh(), 1), 'caedes')).toBe(true);
+    // The gate is the max Sin level, not a specific Sin: a non-Ira Sin opens Caedes' auto-repeat too.
+    expect(isAutoRepeatable(withSin(fresh(), 'luxuria', 1), 'caedes')).toBe(true);
     // Pogrom toggles at Ira 2 (player tuning; was 3) — still sealed at Ira 1.
     expect(isAutoRepeatable(withIra(fresh(), 1), 'pogrom')).toBe(false);
     expect(isAutoRepeatable(withIra(fresh(), 2), 'pogrom')).toBe(true);

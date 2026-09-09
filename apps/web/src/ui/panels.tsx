@@ -95,11 +95,11 @@ function describeOutcome(e: OutcomeEvent): string {
 const SIN_LEVEL_ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'] as const;
 const romanLevel = (n: number): string => SIN_LEVEL_ROMAN[n] ?? String(n);
 
-/** The rite's delegation Sin gate as a short label, e.g. "Ira I" — for the locked-control hint. */
+/** The rite's delegation gate as a short label, e.g. "Any Sin I" — for the locked-control hint. */
 function delegateGateLabel(actionId: string): string {
   const g = ACTIONS[actionId]?.delegateUnlock;
-  if (!g) return '';
-  return `${g.sin.charAt(0).toUpperCase()}${g.sin.slice(1)} ${romanLevel(g.level)}`;
+  if (g === undefined) return '';
+  return `${strings.opera.anySin} ${romanLevel(g)}`;
 }
 
 /**
@@ -296,7 +296,6 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
     logismoi: strings.opera.logismoi,
     imperium: strings.opera.imperium,
   };
-  const cap = (w: string): string => w.charAt(0).toUpperCase() + w.slice(1);
 
   const actions: SuasioActionView[] = SUASIO_ORDER.map((id, i) => {
     const def = ACTIONS[id]!;
@@ -330,10 +329,10 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
       progress,
       disabled: underway || locked || influence < influenceCost,
       onTempt: () => act(id),
-      ...(def.unlock
+      ...(def.unlock !== undefined
         ? {
-            lockLabel: `${strings.opera.suasioRequires} ${cap(def.unlock.sin)} ${romanLevel(
-              def.unlock.level,
+            lockLabel: `${strings.opera.suasioRequires} ${strings.opera.anySin} ${romanLevel(
+              def.unlock,
             )}`,
           }
         : {}),

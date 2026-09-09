@@ -120,7 +120,7 @@ describe('Opus Suasio scroll', () => {
           quote: 'Qoth velim sarnu, ut nescias quod petat.',
           locked: true,
           disabled: true,
-          lockLabel: 'Requires Luxuria III',
+          lockLabel: 'Requires Any Sin III',
         }),
       ],
       onClose: () => {},
@@ -128,7 +128,7 @@ describe('Opus Suasio scroll', () => {
     const sealed = container!.querySelector('.suasio-row--locked');
     expect(sealed).not.toBeNull();
     expect(sealed!.querySelector('.suasio-name')?.textContent).toBe('Xherum Volctan');
-    expect(sealed!.querySelector('.suasio-gate')?.textContent).toBe('Requires Luxuria III');
+    expect(sealed!.querySelector('.suasio-gate')?.textContent).toBe('Requires Any Sin III');
     // A sealed rite is unactionable — no Speak/Command button.
     expect(sealed!.querySelector('.suasio-act')).toBeNull();
     // It can never be active, so it reserves no progress bar (only castable rites do).
