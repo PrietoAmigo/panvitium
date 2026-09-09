@@ -1,8 +1,8 @@
 /**
  * Acolyte system (02 §10). Acolytes are your followers — they run delegated actions in an
  * autonomous channel that does not occupy the player's action slot. Each tick:
- *   - `autoRecruitAcolytes` brings the acolyte count up to `maxAcolytes(state)` based on the
- *     effective `maxInfluence` cap. Recruitment is automatic, free, immediate.
+ *   - `autoRecruitAcolytes` brings the acolyte count up to `maxAcolytes(state)`, which is
+ *     `floor(log100(total Devotion))`. Recruitment is automatic, free, immediate.
  *   - `advanceAcolytes` decrements each assigned acolyte's timer; on completion, the action
  *     resolves at the acolyte's efficiency and the timer is reset for the next cycle.
  *
@@ -15,39 +15,41 @@
  * (shared with invocation runners); the `isDelegatable` predicate gates which actions may be assigned.
  */
 import { ACTIONS, isAutoRepeatable, runnerCycleDuration } from './actions.js';
-import { computeModifiers, type Modifiers } from './modifiers.js';
+import { computeModifiers } from './modifiers.js';
 import { advanceRunnerCycles } from './runner.js';
-import { mul, floor } from './bignum.js';
-import { ACOLYTE_THRESHOLD_BASE, ACOLYTE_THRESHOLD_GROWTH } from './constants.js';
+import { type BigNum, ZERO, add, bn, floor, gte, mul } from './bignum.js';
 import { type Rng } from './rng.js';
-import type { Acolyte, GameState } from './state.js';
+import { SINS, type Acolyte, type GameState } from './state.js';
 import type { OutcomeEvent } from './events.js';
 
 /**
- * Maximum acolytes given the current state, using the EFFECTIVE max influence (post-modifier).
- * Per the Acolytes sheet, the Nth acolyte unlocks once effective max influence reaches the Nth
- * threshold, where thresholds form a ×1.5 geometric series anchored at `ACOLYTE_THRESHOLD_BASE`,
- * compounding UNROUNDED and rounded to the nearest integer only for the comparison
- * (110 → 165 → 248 → 371 → …). A fresh lifetime (base 100 influence) has 0 acolytes; the
- * first unlocks at 110. Influence is floored before the integer comparison (resources are natural
- * numbers; `break_infinity` is a float bignum — ADR-005). The loop self-terminates: each threshold
- * grows ×1.5, so it exits as soon as one exceeds the (finite) influence, and a non-finite influence
- * exits when the threshold itself overflows to Infinity.
+ * Total Devotion across all eight Cardinal Sins: the "devoted souls" (souls offered to the Sins),
+ * as opposed to the free `souls` pool or souls bound to sigils. Drives the acolyte capacity.
  */
-export function maxAcolytes(state: GameState, mods: Modifiers = computeModifiers(state)): number {
-  const effective = Math.floor(
-    floor(mul(state.lifetime.maxInfluence, mods.maxInfluenceMul)).toNumber(),
-  );
-  if (!(effective > 0)) return 0;
-  // Sheet rev 2026-06-12: acolyte N unlocks at round(BASE × GROWTH^(N−1)) — the FIRST at the base
-  // itself (110), then ×1.5 per acolyte (110 → 165 → 248 → 371 → …), rounded to the nearest
-  // integer per the sheet's continuation note.
+function totalDevotion(state: GameState): BigNum {
+  let sum = ZERO;
+  for (const sin of SINS) sum = add(sum, state.devotion[sin]);
+  return sum;
+}
+
+/**
+ * Maximum acolytes given the current state: `floor(log100(total devoted souls))` (player tuning).
+ * Devoted souls = the sum of Devotion across all Sins (NOT the free `souls` pool, NOT sigil-bound
+ * souls). So the Nth acolyte unlocks at 100^N devoted souls (100 -> 1, 10 000 -> 2, 1 000 000 -> 3,
+ * ...); a fresh lifetime (0 Devotion) has 0. Devotion PERSISTS across Katabasis, so this capacity
+ * does too: the lifetime's acolyte list is cleared at rebirth but re-recruited to the cap on the
+ * next tick. Computed as a BigNum threshold loop (floored Devotion vs 100^N) rather than a float
+ * log, so it never drifts at an exact power of 100 (the bignum gotcha, ADR-005); the loop
+ * self-terminates once 100^N outgrows the finite Devotion total.
+ */
+export function maxAcolytes(state: GameState): number {
+  const devoted = floor(totalDevotion(state));
+  const HUNDRED = bn(100);
   let count = 0;
-  let threshold = ACOLYTE_THRESHOLD_BASE;
-  while (Number.isFinite(threshold)) {
-    if (effective >= Math.round(threshold)) count++;
-    else break;
-    threshold = threshold * ACOLYTE_THRESHOLD_GROWTH;
+  let threshold = HUNDRED; // 100^(count + 1)
+  while (gte(devoted, threshold)) {
+    count++;
+    threshold = mul(threshold, HUNDRED);
   }
   return count;
 }

@@ -22,10 +22,10 @@ function patchSouls(v: number): void {
   useGameStore.setState({ state: { ...s, souls: bn(v) } });
 }
 
-/** Raise max influence so acolytes can be recruited (first acolyte unlocks at 242). */
-function patchMaxInfluence(v: number): void {
+/** Raise total Devotion so acolytes can be recruited (first acolyte unlocks at 100 devoted souls). */
+function patchDevotion(v: number): void {
   const s = store().state as GameState;
-  useGameStore.setState({ state: { ...s, lifetime: { ...s.lifetime, maxInfluence: bn(v) } } });
+  useGameStore.setState({ state: { ...s, devotion: { ...s.devotion, superbia: bn(v) } } });
 }
 
 beforeEach(() => {
@@ -335,17 +335,17 @@ describe('gameStore — Depraedatio (deposit / withdraw / sign)', () => {
 });
 
 describe('gameStore — acolyte delegation', () => {
-  it('the first tick auto-recruits one acolyte once influence reaches the first threshold', () => {
+  it('the first tick auto-recruits one acolyte once Devotion reaches the first threshold', () => {
     expect(store().state?.lifetime.acolytes ?? []).toHaveLength(0);
     store().advance(0.1);
-    expect(store().state?.lifetime.acolytes ?? []).toHaveLength(0); // base influence: still none
-    patchMaxInfluence(110);
+    expect(store().state?.lifetime.acolytes ?? []).toHaveLength(0); // 0 Devotion: still none
+    patchDevotion(100);
     store().advance(0.1);
     expect(store().state?.lifetime.acolytes ?? []).toHaveLength(1);
   });
 
   it('assigns and unassigns Indagatio without occupying the player slot', () => {
-    patchMaxInfluence(110);
+    patchDevotion(100);
     store().advance(0.1); // recruit
     store().assignAcolyte('indagatio');
     const s = store().state as GameState;
@@ -366,8 +366,8 @@ describe('gameStore — acolyte delegation', () => {
   });
 
   it('refuses assignment when all acolytes are busy', () => {
-    patchMaxInfluence(110);
-    store().advance(0.1); // recruit (1 acolyte at this influence)
+    patchDevotion(100);
+    store().advance(0.1); // recruit (1 acolyte at this Devotion)
     store().assignAcolyte('indagatio');
     store().assignAcolyte('indagatio'); // no one left to assign
     expect(store().notice).toMatch(/idle acolyte/i);
