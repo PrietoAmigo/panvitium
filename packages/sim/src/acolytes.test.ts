@@ -1,7 +1,7 @@
 /**
  * Acolyte system tests (02 §10). Pins:
- *   - maxAcolytes follows the ×1.5 effective-maxInfluence threshold series (Acolytes sheet):
- *     0 at base, first acolyte at 110, then 165 / 248 / 371 / …
+ *   - maxAcolytes = floor(log100(total Devotion)): 0 at a fresh lifetime, the Nth acolyte at 100^N
+ *     devoted souls (100 / 10 000 / 1 000 000 / ...), summed across all Sins
  *   - autoRecruitAcolytes appends idle acolytes up to the target, never removes
  *   - assignAcolyteToAction takes the LOWEST-id idle acolyte and starts its timer
  *   - unassignAcolyteFromAction takes the HIGHEST-id assigned (LIFO)
@@ -40,15 +40,15 @@ function fresh(seed = 'acolyte', t = 0): GameState {
   return createInitialState(seed, t);
 }
 
-function withMaxInfluence(s: GameState, v: number): GameState {
-  return { ...s, lifetime: { ...s.lifetime, maxInfluence: bn(v) } };
+/** Set total Devotion (all on one Sin) to `v` devoted souls — drives the cap floor(log100(v)). */
+function withDevotion(s: GameState, v: number): GameState {
+  return { ...s, devotion: { ...s.devotion, superbia: bn(v) } };
 }
 
-/** Fresh lifetime with max influence raised to unlock exactly `n` acolytes, then auto-recruited. */
+/** Fresh lifetime with Devotion raised to unlock exactly `n` acolytes (100^n devoted souls), then
+ *  auto-recruited. */
 function recruited(n = 1): GameState {
-  const thresholds = [110, 165, 248, 371]; // Acolytes sheet ×1.5 series (1..4 acolytes)
-  const infl = thresholds[n - 1] ?? thresholds[thresholds.length - 1]!;
-  return autoRecruitAcolytes(withMaxInfluence(fresh(), infl));
+  return autoRecruitAcolytes(withDevotion(fresh(), 100 ** n));
 }
 
 /** Recruited + the Sin toggle levels (Luxuria 1 / Ira 1) that enable Suasio/Decimatio delegation. */
@@ -63,63 +63,69 @@ function setSin(s: GameState, sin: Sin, level: number): GameState {
 }
 
 describe('maxAcolytes', () => {
-  it('is 0 at base maxInfluence (100) — below the first threshold', () => {
+  it('is 0 at a fresh lifetime (0 Devotion)', () => {
     expect(maxAcolytes(fresh())).toBe(0);
   });
 
-  it('unlocks the Nth acolyte at the Nth ×1.5 threshold (110 / 165 / 248 / 371)', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 110))).toBe(1);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 165))).toBe(2);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 248))).toBe(3);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 371))).toBe(4);
+  it('unlocks the Nth acolyte at 100^N devoted souls (floor(log100))', () => {
+    expect(maxAcolytes(withDevotion(fresh(), 100))).toBe(1);
+    expect(maxAcolytes(withDevotion(fresh(), 10_000))).toBe(2);
+    expect(maxAcolytes(withDevotion(fresh(), 1_000_000))).toBe(3);
+    expect(maxAcolytes(withDevotion(fresh(), 100_000_000))).toBe(4);
   });
 
-  it('does not advance until the next threshold is reached', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 109))).toBe(0);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 164))).toBe(1);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 370))).toBe(3);
+  it('does not advance until the next power of 100 is reached', () => {
+    expect(maxAcolytes(withDevotion(fresh(), 99))).toBe(0);
+    expect(maxAcolytes(withDevotion(fresh(), 9_999))).toBe(1);
+    expect(maxAcolytes(withDevotion(fresh(), 999_999))).toBe(2);
   });
 
-  it('keeps climbing past the visual cap (5th at 5663)', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 557))).toBe(5); // round(371.25 × 1.5) = 557
+  it('keeps climbing with Devotion (5th at 100^5 = 1e10)', () => {
+    expect(maxAcolytes(withDevotion(fresh(), 10_000_000_000))).toBe(5);
   });
 
-  it('is 0 below the first threshold — no minimum-of-1 floor anymore', () => {
-    expect(maxAcolytes(withMaxInfluence(fresh(), 1))).toBe(0);
-    expect(maxAcolytes(withMaxInfluence(fresh(), 0))).toBe(0);
+  it('sums Devotion across all Sins, not just one', () => {
+    // 60 + 40 across two Sins = 100 devoted souls = the first acolyte.
+    const s = { ...fresh(), devotion: { ...fresh().devotion, luxuria: bn(60), ira: bn(40) } };
+    expect(maxAcolytes(s)).toBe(1);
+  });
+
+  it('is 0 below the first threshold (1 or 0 devoted souls)', () => {
+    expect(maxAcolytes(withDevotion(fresh(), 1))).toBe(0);
+    expect(maxAcolytes(withDevotion(fresh(), 0))).toBe(0);
   });
 });
 
 describe('autoRecruitAcolytes', () => {
-  it('leaves a fresh base-influence lifetime with 0 acolytes (below the first threshold)', () => {
+  it('leaves a fresh lifetime (0 Devotion) with 0 acolytes', () => {
     const s = autoRecruitAcolytes(fresh());
     expect(s.lifetime.acolytes).toHaveLength(0);
   });
 
-  it('recruits the first acolyte once influence reaches the first threshold (110)', () => {
-    const s = autoRecruitAcolytes(withMaxInfluence(fresh(), 110));
+  it('recruits the first acolyte once Devotion reaches the first threshold (100)', () => {
+    const s = autoRecruitAcolytes(withDevotion(fresh(), 100));
     expect(s.lifetime.acolytes).toHaveLength(1);
     expect(s.lifetime.acolytes[0]!.assignedAction).toBeNull();
     expect(s.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
   });
 
-  it('appends one more when maxInfluence crosses the next threshold (110 → 165)', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 110)); // 1 acolyte
-    s = withMaxInfluence(s, 165);
+  it('appends one more when Devotion crosses the next threshold (100 → 10 000)', () => {
+    let s = autoRecruitAcolytes(withDevotion(fresh(), 100)); // 1 acolyte
+    s = withDevotion(s, 10_000);
     s = autoRecruitAcolytes(s);
     expect(s.lifetime.acolytes).toHaveLength(2);
     expect(s.lifetime.acolytes[1]!.id).toBe(2); // sequential ids
   });
 
   it('does nothing when the count already meets the target', () => {
-    const s = autoRecruitAcolytes(withMaxInfluence(fresh(), 110));
+    const s = autoRecruitAcolytes(withDevotion(fresh(), 100));
     const same = autoRecruitAcolytes(s);
     expect(same).toBe(s); // reference equality — no churn
   });
 
-  it('never removes existing acolytes when maxInfluence drops', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 248)); // 3 acolytes
-    s = withMaxInfluence(s, 50); // back below the first threshold
+  it('never removes existing acolytes when Devotion drops (which it cannot in play)', () => {
+    let s = autoRecruitAcolytes(withDevotion(fresh(), 1_000_000)); // 3 acolytes
+    s = withDevotion(s, 50); // back below the first threshold
     const after = autoRecruitAcolytes(s);
     expect(after.lifetime.acolytes).toHaveLength(3); // no demotion
   });
@@ -289,13 +295,13 @@ describe('advanceAcolytes — Indagatio (looping, one acolyte)', () => {
 });
 
 describe('tick — acolyte system end-to-end', () => {
-  it('a fresh base-influence game recruits no acolyte on tick', () => {
+  it('a fresh game (0 Devotion) recruits no acolyte on tick', () => {
     const after = tick(fresh(), 0.1).state;
     expect(after.lifetime.acolytes).toHaveLength(0);
   });
 
-  it('auto-recruits the first acolyte on tick once influence reaches the first threshold', () => {
-    const s = withMaxInfluence(fresh(), 110);
+  it('auto-recruits the first acolyte on tick once Devotion reaches the first threshold (100)', () => {
+    const s = withDevotion(fresh(), 100);
     expect(s.lifetime.acolytes).toHaveLength(0);
     const after = tick(s, 0.1).state;
     expect(after.lifetime.acolytes).toHaveLength(1);
@@ -313,20 +319,19 @@ describe('tick — acolyte system end-to-end', () => {
   });
 });
 
-describe('Katabasis — acolytes reset to empty', () => {
-  it('rebirth wipes acolytes; auto-recruit re-seeds once influence is regrown', () => {
-    let s = autoRecruitAcolytes(withMaxInfluence(fresh(), 248)); // 3 acolytes
+describe('Katabasis — the acolyte list resets but Devotion (the cap) persists', () => {
+  it('rebirth clears the acolyte list; the next tick re-recruits to the persistent Devotion cap', () => {
+    let s = autoRecruitAcolytes(withDevotion(fresh(), 1_000_000)); // 3 acolytes (log100(1e6) = 3)
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
     const { state: after } = commitKatabasis(s);
-    expect(after.lifetime.acolytes).toHaveLength(0);
-    // maxInfluence reset to BASE (100), still below the first threshold → no acolyte yet.
-    expect(tick(after, 0.1).state.lifetime.acolytes).toHaveLength(0);
-    // Regrow influence past the first threshold and the next tick re-seeds one.
-    const ticked = tick(withMaxInfluence(after, 110), 0.1).state;
-    expect(ticked.lifetime.acolytes).toHaveLength(1);
-    expect(ticked.lifetime.acolytes[0]!.assignedAction).toBeNull();
+    expect(after.lifetime.acolytes).toHaveLength(0); // the lifetime list is wiped at rebirth
+    // Devotion carries across Katabasis, so the cap is unchanged: the next tick re-recruits all
+    // three acolytes, idle again.
+    const ticked = tick(after, 0.1).state;
+    expect(ticked.lifetime.acolytes).toHaveLength(3);
+    expect(ticked.lifetime.acolytes.every((a) => a.assignedAction === null)).toBe(true);
   });
 });
 

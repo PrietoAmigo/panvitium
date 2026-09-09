@@ -423,9 +423,11 @@ throughput, `03 §2.3`), plus the flat and percentage modifiers above.
 
 Lesser practitioners who do the work's lower offices (`00-lore-bible.md` §9). Mechanically:
 
-- **Count is driven by effective maximum influence.** The Nth acolyte unlocks at the Nth
-  threshold of a geometric series anchored at the base threshold (both in the `Acolytes` sheet).
-  Influence resets on Katabasis, so each lifetime re-earns its retinue.
+- **Count is `floor(log100(total devoted souls))`** (player tuning). Devoted souls are the souls
+  offered to the Cardinal Sins (the sum of Devotion across all Sins), not the free `souls` pool and
+  not souls bound to sigils. The Nth acolyte unlocks at 100^N devoted souls (100, 10 000, 1 000 000,
+  ...). Devotion PERSISTS across Katabasis, so the capacity does too: the lifetime's retinue is
+  cleared at rebirth but re-recruited to this cap on the next tick.
 - **Delegation.** Each acolyte runs at most one delegated action at the acolyte efficiency (base
   fraction in `Globals`, raised by Tristitia's Resignation skill and Bathin #18). Delegation
   **loops**: the acolyte runs its action cycle after cycle — for free, consuming no gold/influence —
