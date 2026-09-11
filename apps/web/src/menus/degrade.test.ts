@@ -14,3 +14,17 @@ describe('DEFAULT_DEGRADE — Fausto-curse Vertigo defaults', () => {
     expect(DEFAULT_DEGRADE.reducedMotion).toBe(false);
   });
 });
+
+// The Desidia fast-forward layer is an additive pass gated on `ffw`, exactly like the curse. Same
+// no-effect invariant: shipped off (`ffw` 0), so a frame with Desidia inactive is the normal look;
+// and the author-side strength dial ships at its tuned 0.35. Asserted at the recipe level (no canvas
+// context under jsdom), matching the Vertigo defaults test above.
+describe('DEFAULT_DEGRADE — Desidia fast-forward defaults', () => {
+  it('ships with the fast-forward layer off (ffw 0)', () => {
+    expect(DEFAULT_DEGRADE.ffw).toBe(0);
+  });
+
+  it('keeps the tuned fast-forward strength dial (ffwStrength 0.35)', () => {
+    expect(DEFAULT_DEGRADE.ffwStrength).toBe(0.35);
+  });
+});
