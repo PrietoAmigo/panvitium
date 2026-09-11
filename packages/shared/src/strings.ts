@@ -44,12 +44,11 @@ export const strings = {
     influence: 'Influence',
     stagnation: 'Stagnation',
   },
-  // The Stagnation HUD + Desidia toggle (ADR-033). Placeholder copy for the top-right container and
-  // its button; the numeric magnitudes (base 120 cap, 1.333x speed, 1/s drain) live in the sim.
+  // The Stagnation vessel + Desidia toggle (ADR-033). Copy for the bottom-left cluster: the group /
+  // readout label and the vessel's hover hint (clicking the vessel toggles Desidia, so there is no
+  // button label). The numeric magnitudes (base 120 cap, 1.333x speed, 1/s drain) live in the sim.
   stagnation: {
     label: 'Stagnation',
-    desidia: 'Desidia',
-    desidiaActive: 'Desidia (active)',
     desidiaHint: 'Spend Stagnation to make time run faster.',
   },
   rooms: {
