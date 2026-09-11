@@ -103,9 +103,27 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 940** (sim 581 · shared 68 · api 20 · web 271).
+**Current test count: 943** (sim 582 · shared 68 · api 20 · web 273).
 
-> **Latest change — incoming-call buffs now apply (the calls-in effect engine), with the offline
+> **Latest change — the Stagnation HUD reborn as the carved "Stagnation vessel" (Claude Design
+> handoff).** The placeholder top-right bar and its separate Desidia button are retired; Stagnation now
+> reads from a carved crystal trough pinned bottom-left, mirroring the Influence vessel's treatment.
+> **Clicking the vessel toggles Desidia** (there is no button any more): green liquid fills the glass
+> channel left to right on a low-res canvas upscaled nearest-neighbour (an `85×19` buffer, the same
+> pixel-art treatment as `InfluenceGoldHud`), and while Desidia runs the liquid turns **turbulent** (the
+> leading edge sloshes, currents run through the body, bubbles rise) as the sole active-state affordance:
+> no glow, no label, no colour change. The "Stagnation" label and a **floored** value / cap readout
+> (`Math.floor` of the pool over `stagnationMax`) sit above it. A reduced-motion preference holds the
+> surface flat and signals the active state with `aria-pressed` plus a static, brighter meniscus; an
+> empty pool with Desidia off leaves the vessel inert (`aria-disabled`, no-op click). This is **purely
+> presentational** — it binds the existing pool, cap and toggle, so the sim, the tick-owned drain, and
+> the save shape are all untouched (no schema bump). Ships the `stagnation-vessel-frame.png` art beside
+> the Influence frame, extracts the shared `usePrefersReducedMotion` hook (reused from App's
+> Fausto-curse layer), and drops the now-orphaned Desidia button-label strings. Net **+2 tests** (web
+> 271 → 273: the HUD suite retargets the toggle at the vessel and pins the floored readout, the buffer
+> resolution, and the inert / still-live states).
+
+> **Earlier change — incoming-call buffs now apply (the calls-in effect engine), with the offline
 > buff re-homed onto Stagnation.** Answering an incoming call was a documented stub; it now changes
 > game state. The sim owns the effect types and logic in a new framework-free module
 > (`packages/sim/src/callBuffs.ts`, ADR-022): `applyCallEffects` consumes a chosen option's

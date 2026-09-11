@@ -1,7 +1,9 @@
 /**
- * Render tests for the PLACEHOLDER Stagnation HUD + Desidia button (ADR-033). Pins the wiring: the
- * labelled cluster, the value / derived-cap readout, and that the Desidia button reflects and drives
- * `desidiaActive` through the store. Visibility (which rooms/menus show it) is owned by App.
+ * Render tests for the Stagnation vessel + Desidia toggle (ADR-033). The vessel canvas itself is a
+ * rAF/Canvas2D paint loop (no jsdom surface to assert), so these pin the wiring the rest of the HUD
+ * owns: the labelled cluster, the floored value / derived-cap readout, and that clicking the vessel
+ * (there is no separate Desidia button) reflects and drives `desidiaActive` through the store, going
+ * inert when there is nothing to spend. Visibility (which rooms/menus show it) is owned by App.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { act, createElement } from 'react';
@@ -36,8 +38,9 @@ function render(): void {
   });
 }
 
-function desidiaButton(): HTMLButtonElement {
-  return container!.querySelector('.stag-hud-desidia') as HTMLButtonElement;
+/** The vessel is the toggle: a single button wrapping the pixelated canvas. */
+function vesselButton(): HTMLButtonElement {
+  return container!.querySelector('.stag-hud-vessel-btn') as HTMLButtonElement;
 }
 
 beforeEach(() => {
@@ -53,33 +56,56 @@ afterEach(() => {
   container = null;
 });
 
-describe('Stagnation HUD (placeholder)', () => {
-  it('renders a labelled cluster with the value over the base cap', () => {
-    patch({ stagnation: 45 });
+describe('Stagnation HUD', () => {
+  it('renders a labelled cluster with the floored value over the base cap', () => {
+    patch({ stagnation: 45.7 }); // floored to 45, no decimals
     render();
     const cluster = container!.querySelector('[role="group"]');
     expect(cluster?.getAttribute('aria-label')).toBe('Stagnation');
-    expect(container!.querySelector('.stag-hud-value')?.textContent).toBe('45.0 / 120');
+    expect(container!.querySelector('.stag-hud-label')?.textContent).toBe('Stagnation');
+    expect(container!.querySelector('.stag-hud-value')?.textContent).toBe('45 / 120');
   });
 
   it('shows the Acedia-doubled cap', () => {
     patch({ stagnation: 10, acedia: 180 }); // Acedia level 1 → cap ×2 = 240
     render();
-    expect(container!.querySelector('.stag-hud-value')?.textContent).toBe('10.0 / 240');
+    expect(container!.querySelector('.stag-hud-value')?.textContent).toBe('10 / 240');
   });
 
-  it('clicking the Desidia button toggles desidiaActive in the store', () => {
+  it('paints the pixelation canvas at the design buffer resolution', () => {
+    render();
+    const canvas = container!.querySelector('.stag-hud-canvas') as HTMLCanvasElement | null;
+    expect(canvas).not.toBeNull();
+    expect(canvas!.width).toBe(85);
+    expect(canvas!.height).toBe(19);
+  });
+
+  it('clicking the vessel toggles desidiaActive in the store', () => {
     patch({ stagnation: 50 });
     render();
-    expect(desidiaButton().getAttribute('aria-pressed')).toBe('false');
-    act(() => desidiaButton().dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(vesselButton().getAttribute('aria-pressed')).toBe('false');
+    act(() => vesselButton().dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect((useGameStore.getState().state as GameState).desidiaActive).toBe(true);
   });
 
-  it('disables Desidia when there is no stagnation to spend and it is not already active', () => {
+  it('is inert when there is no stagnation to spend and Desidia is not already active', () => {
     patch({ stagnation: 0, desidiaActive: false });
     render();
-    expect(desidiaButton().disabled).toBe(true);
+    // The vessel is marked aria-disabled (not the native `disabled`, so it stays perceivable) and the
+    // click is a no-op — it must not switch Desidia on with an empty pool.
+    expect(vesselButton().getAttribute('aria-disabled')).toBe('true');
+    act(() => vesselButton().dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect((useGameStore.getState().state as GameState).desidiaActive).toBe(false);
+  });
+
+  it('stays live (not inert) while Desidia runs even with an empty pool', () => {
+    patch({ stagnation: 0, desidiaActive: true });
+    render();
+    // Still active → the vessel must remain clickable so the player can turn Desidia back off.
+    expect(vesselButton().getAttribute('aria-disabled')).toBe('false');
+    expect(vesselButton().getAttribute('aria-pressed')).toBe('true');
+    act(() => vesselButton().dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect((useGameStore.getState().state as GameState).desidiaActive).toBe(false);
   });
 
   it('renders nothing when there is no game state', () => {

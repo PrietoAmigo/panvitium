@@ -12,6 +12,7 @@ import { buildGoetia } from './game/invocations.js';
 import { PANELS, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
 import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { StagnationHud } from './ui/StagnationHud.js';
+import { usePrefersReducedMotion } from './ui/usePrefersReducedMotion.js';
 import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
@@ -34,26 +35,6 @@ import { audio } from './audio/audio.js';
 const PANEL_SHELL: Partial<Record<PanelId, { variant: PanelVariant; hideHeader?: boolean }>> = {
   maleficia: { variant: 'niche', hideHeader: true },
 };
-
-/**
- * Tracks the `prefers-reduced-motion: reduce` media query, reactively. Used to soften the Fausto-curse
- * "Vertigo" layer (its sway/zoom/double-vision are vestibular triggers). SSR-safe: defaults to false
- * when `matchMedia` is unavailable.
- */
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(
-    () =>
-      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
-  );
-  useEffect(() => {
-    if (typeof matchMedia !== 'function') return;
-    const mq = matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = (): void => setReduced(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return reduced;
-}
 
 /**
  * The full-screen Ars Goetia grimoire, wired to real state. Kept as its own subscriber so its
@@ -294,8 +275,8 @@ export function App(): ReactElement {
       {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars
           Goetia / Suasio surfaces, pinned to the viewport's top-left edge. */}
       {hudVisible && <InfluenceGoldHud />}
-      {/* Stagnation + Desidia (ADR-033), pinned to the viewport's top-right edge; same visibility as
-          the Influence & Gold HUD. */}
+      {/* Stagnation + Desidia (ADR-033), pinned to the viewport's bottom-left edge; same visibility
+          as the Influence & Gold HUD. Clicking the vessel toggles Desidia (no separate button). */}
       {hudVisible && <StagnationHud />}
       {/* The one-time Doppelgänger scare covers EVERYTHING (highest layer), blocks all input, and
           clears itself after 2s — see Jumpscare. */}
