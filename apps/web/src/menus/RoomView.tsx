@@ -15,7 +15,9 @@ interface RoomViewProps {
   acolytes: number;
   /** Fausto's curse is in force (`flagFaustoCurse`) — drives the "Vertigo" degrade layer. */
   curseActive: boolean;
-  /** The viewer prefers reduced motion — the curse layer drops its vestibular sub-effects. */
+  /** Desidia is active (`desidiaActive`) — drives the fast-forward VHS ("ffw") degrade layer. */
+  desidiaActive: boolean;
+  /** The viewer prefers reduced motion — the curse and fast-forward layers drop their sub-effects. */
   reducedMotion: boolean;
   /** A call is ringing on the Studio desk — swap in the "incoming call" plate (the lit phone). */
   ringing: boolean;
@@ -39,6 +41,7 @@ export function RoomView({
   doppelgaengerSeen,
   acolytes,
   curseActive,
+  desidiaActive,
   reducedMotion,
   ringing,
   onAction,
@@ -53,9 +56,10 @@ export function RoomView({
       : room.id === 'studio' && ringing
         ? CALL_PLATE_RING
         : ROOM_PLATES[room.id];
-  // Presentation only — read straight off the curse flag; the pass eases the 0/1 target in/out.
+  // Presentation only — read straight off the flags; the pass eases each 0/1 target in/out.
   const degradeSettings: Partial<DegradeSettings> = {
     curseVertigo: curseActive ? 1 : 0,
+    ffw: desidiaActive ? 1 : 0,
     reducedMotion,
   };
   return (

@@ -85,7 +85,11 @@ export function App(): ReactElement {
   // Fausto's curse (05): while his fourth letter sits unbroken in the inbox, the room sways and
   // doubles — the "Vertigo" degrade layer. Read straight off the flag; the pass eases it in/out.
   const curseActive = useGameStore((s) => s.state?.lifetime.flagFaustoCurse === true);
-  // The curse's sway/zoom/double-vision are vestibular triggers; honour prefers-reduced-motion.
+  // Desidia (the Stagnation toggle): while active the room reads as a VHS tape shuttled forward, the
+  // fast-forward degrade layer. Read straight off the flag; the pass eases it in/out.
+  const desidiaActive = useGameStore((s) => s.state?.desidiaActive === true);
+  // The curse's sway/zoom/double-vision and the fast-forward tracking motion are vestibular triggers;
+  // honour prefers-reduced-motion (each layer drops its sub-effects).
   const reducedMotion = usePrefersReducedMotion();
   // The currently-bound invocations. Select a stable primitive key (the sorted set of active ids)
   // so the room only re-renders when the summoned set actually changes, not every 10 Hz tick;
@@ -231,6 +235,7 @@ export function App(): ReactElement {
           doppelgaengerSeen={doppelgaengerSeen}
           acolytes={acolytes}
           curseActive={curseActive}
+          desidiaActive={desidiaActive}
           reducedMotion={reducedMotion}
           ringing={ringing !== null}
           onAction={handleAction}

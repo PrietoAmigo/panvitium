@@ -61,9 +61,19 @@ export interface DegradeSettings {
       toward this every frame, so toggling the flag fades the effect in/out (~0.7s) rather than
       snapping. Presentation-only — it reads off `flagFaustoCurse`, never the sim/RNG/save. */
   curseVertigo: number;
+  /** Desidia fast-forward target intensity 0..1. 0 = clean; set to 1 while Desidia is active. Like
+      `curseVertigo`, the pass eases the applied value toward this every frame (~0.7s), so toggling the
+      Stagnation vessel fades the VHS "tape shuttled forward" layer (snow, tracking lines, torn-line
+      jitter, dropout speckle) in/out rather than snapping it. Presentation-only — it reads off
+      `desidiaActive`, never the sim/RNG/save. */
+  ffw: number;
+  /** Author-side strength dial (0..1) scaling every fast-forward sub-effect. 0.35 is the tuned value;
+      the effect sits UNDER the existing degradation grain, not replacing it. */
+  ffwStrength: number;
   /** Honour `prefers-reduced-motion: reduce`. When set, the Vertigo layer drops the vestibular
-      sub-effects (sway / zoom / double-vision / pulse) and keeps only a steady tunnel vignette, so
-      the curse still registers without inducing motion sickness. */
+      sub-effects (sway / zoom / double-vision / pulse) and keeps only a steady tunnel vignette, and
+      the fast-forward layer drops ALL of its sub-effects (the room simply does not shuttle) — so
+      neither effect induces motion sickness. */
   reducedMotion: boolean;
 }
 
@@ -88,6 +98,8 @@ export const DEFAULT_DEGRADE: DegradeSettings = {
   uniform: true,
   bob: true,
   curseVertigo: 0,
+  ffw: 0,
+  ffwStrength: 0.35,
   reducedMotion: false,
 };
 
@@ -218,6 +230,16 @@ export class DegradePass {
   // frame, then redraw it swayed / doubled). Allocated once; only touched while the curse is active.
   private readonly tmp: HTMLCanvasElement;
   private readonly tctx: CanvasRenderingContext2D;
+  // Second full-res scratch canvas for the Desidia fast-forward layer: every displacement samples a
+  // stable snapshot of the finished frame from here so reads don't fight writes (`tmp` is _dizzy's).
+  private readonly tmp2: HTMLCanvasElement;
+  private readonly t2ctx: CanvasRenderingContext2D;
+  // Low-res (256x144 = VW/5 x VH/5) buffer the fast-forward white-noise field is regenerated into
+  // each frame, then upscaled nearest-neighbour over the picture — the small size IS the snow's 5px
+  // blocks (do not change it). `_noiseData` is reused so the field isn't reallocated every frame.
+  private readonly noise: HTMLCanvasElement;
+  private readonly nctx: CanvasRenderingContext2D;
+  private readonly _noiseData: ImageData;
 
   private s: DegradeSettings = { ...DEFAULT_DEGRADE };
   private scene: EngineScene = { bg: null, sprites: [], signature: false };
@@ -237,6 +259,9 @@ export class DegradePass {
   // Eased curse intensity 0..1 — animation state, NOT a setting. Ramps toward `s.curseVertigo` each
   // rendered frame so the effect fades in/out rather than snapping when the flag flips.
   private _curse = 0;
+  // Eased fast-forward intensity 0..1 — animation state, NOT a setting. Ramps toward `s.ffw` each
+  // rendered frame (same ~0.7s cadence as `_curse`) so the Desidia VHS layer fades in/out.
+  private _ffw = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -258,6 +283,17 @@ export class DegradePass {
     this.tmp.width = VW;
     this.tmp.height = VH;
     this.tctx = this.tmp.getContext('2d')!;
+
+    this.tmp2 = document.createElement('canvas');
+    this.tmp2.width = VW;
+    this.tmp2.height = VH;
+    this.t2ctx = this.tmp2.getContext('2d')!;
+
+    this.noise = document.createElement('canvas');
+    this.noise.width = Math.round(VW / 5);
+    this.noise.height = Math.round(VH / 5);
+    this.nctx = this.noise.getContext('2d')!;
+    this._noiseData = this.nctx.createImageData(this.noise.width, this.noise.height);
   }
 
   /** Merge a partial recipe and repaint a frame immediately. */
@@ -524,6 +560,11 @@ export class DegradePass {
     const curseDelta = curseTarget - this._curse;
     this._curse += Math.sign(curseDelta) * Math.min(curseRate, Math.abs(curseDelta));
 
+    // --- ease the Desidia fast-forward intensity toward its target on the same ~0.7s cadence ---
+    const ffwTarget = Math.max(0, Math.min(1, s.ffw));
+    const ffwDelta = ffwTarget - this._ffw;
+    this._ffw += Math.sign(ffwDelta) * Math.min(dt / 0.7, Math.abs(ffwDelta));
+
     const FADE_RATE = 1 / 0.4; // ~0.4s each way
     if (this._phase === 'out') {
       this._fade += dt * FADE_RATE;
@@ -551,6 +592,7 @@ export class DegradePass {
       ctx.drawImage(this.crisp, 0, 0);
       this._postChrome(ctx, t, false);
       if (this._curse > 0.001) this._dizzy(ctx, t, this._curse);
+      if (this._ffw > 0.001) this._ffwPass(ctx, t, this._ffw);
       this._drawFade(ctx);
       return;
     }
@@ -588,7 +630,110 @@ export class DegradePass {
 
     this._postChrome(ctx, t, true);
     if (this._curse > 0.001) this._dizzy(ctx, t, this._curse);
+    if (this._ffw > 0.001) this._ffwPass(ctx, t, this._ffw);
     this._drawFade(ctx);
+  }
+
+  /**
+   * The Desidia fast-forward layer (design handoff). An additive pass on top of the finished frame,
+   * built exactly like `_dizzy`: one eased scalar `c` (0 = clean, 1 = full effect) times the
+   * `ffwStrength` dial gives `k`, and the picture reads as a VHS tape being shuttled forward. Sub-
+   * effects, in paint order: torn-line jitter (rows displaced sideways), pale tracking lines drifting
+   * up the frame, a white-noise snow field, and tape-dropout speckle — all SLIGHT, sitting under the
+   * existing degradation grain rather than replacing it. When Desidia is inactive (`c ≈ 0`) this never
+   * runs, so the frame is the normal look. Pure canvas math over the existing plates; touches no game
+   * state, RNG, or save (the `Math.random` here drives only pixels, exactly like the pass's grain).
+   *
+   * Accessibility: under `prefers-reduced-motion: reduce` (`s.reducedMotion`) every sub-effect is
+   * skipped and the frame is left untouched — there is no static fallback; the room simply does not
+   * fast-forward.
+   */
+  private _ffwPass(ctx: CanvasRenderingContext2D, t: number, c: number): void {
+    const k = c * Math.max(0, Math.min(1, this.s.ffwStrength));
+    if (k <= 0.001) return;
+    const still = this.s.reducedMotion;
+    // Snapshot the finished frame; every displacement below samples this stable copy so reads never
+    // fight writes (mirrors how `_dizzy` uses `tmp`). Done before the reduced-motion gate so the
+    // structure matches `_dizzy`; when `still` the sampled copy is simply never drawn back.
+    const tmp = this.tmp2;
+    const tctx = this.t2ctx;
+    tctx.clearRect(0, 0, VW, VH);
+    tctx.drawImage(this.canvas, 0, 0);
+
+    if (!still) {
+      // 1. Torn line jitter — a handful of rows displaced sideways each frame, as the head loses
+      // tracking while the tape is shuttled forward.
+      const tears = Math.round(2 + 7 * k);
+      for (let i = 0; i < tears; i++) {
+        const y = Math.random() * VH;
+        const h = 2 + Math.random() * 6;
+        const dx = (Math.random() - 0.5) * (12 + 64 * k);
+        ctx.drawImage(tmp, 0, y, VW, h, dx, y, VW, h);
+      }
+
+      // 2. Tracking lines — two pale bands drifting up the frame, each nudged sideways, where the
+      // head loses lock on the shuttled tape.
+      const bands = 2;
+      for (let i = 0; i < bands; i++) {
+        const p = (t * 0.38 + i / bands) % 1.25;
+        const by = (1.12 - p) * VH;
+        const bh = 20 + 26 * i;
+        if (by + bh < 0 || by > VH) continue;
+        const shift = (8 + 34 * k) * (i % 2 === 0 ? 1 : -0.6);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, by, VW, bh);
+        ctx.clip();
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(tmp, shift, -1);
+        ctx.globalCompositeOperation = 'screen';
+        ctx.globalAlpha = 0.16 * k;
+        ctx.fillStyle = '#cdc6b6';
+        ctx.fillRect(0, by, VW, bh);
+        ctx.restore();
+        // The torn edge — a thin dark bar along the top of the band, unclipped.
+        ctx.save();
+        ctx.globalAlpha = 0.35 * k;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, by, VW, 2);
+        ctx.restore();
+      }
+
+      // 3. White noise — a field of tape snow over the whole picture, regenerated each frame into the
+      // low-res buffer and upscaled nearest-neighbour (the 5px snow blocks).
+      const nd = this._noiseData;
+      const px = nd.data;
+      const density = 0.06 + 0.2 * k;
+      for (let i = 0; i < px.length; i += 4) {
+        if (Math.random() < density) {
+          const v = 150 + Math.random() * 105;
+          px[i] = v;
+          px[i + 1] = v;
+          px[i + 2] = v;
+          px[i + 3] = 90 + Math.random() * 140;
+        } else {
+          px[i + 3] = 0;
+        }
+      }
+      this.nctx.putImageData(nd, 0, 0);
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 0.18 + 0.32 * k;
+      ctx.drawImage(this.noise, 0, 0, VW, VH);
+      ctx.restore();
+
+      // 4. Dropout speckle — short bright flecks where the tape has lost signal.
+      const flecks = Math.round(4 + 30 * k);
+      ctx.save();
+      for (let i = 0; i < flecks; i++) {
+        const w = 4 + Math.random() * 26;
+        const h = 1 + Math.random() * 2;
+        ctx.fillStyle = `rgba(${206 + Math.random() * 49},${200 + Math.random() * 55},${182 + Math.random() * 60},${0.18 + Math.random() * 0.62 * k})`;
+        ctx.fillRect(Math.random() * (VW - w), Math.random() * VH, w, h);
+      }
+      ctx.restore();
+    }
   }
 
   /**

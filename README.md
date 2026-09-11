@@ -103,9 +103,26 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 943** (sim 582 · shared 68 · api 20 · web 273).
+**Current test count: 945** (sim 582 · shared 68 · api 20 · web 275).
 
-> **Latest change — the Stagnation HUD reborn as the carved "Stagnation vessel" (Claude Design
+> **Latest change — the Studio fast-forwards while Desidia runs (Claude Design handoff).** While
+> Desidia is active the room picture reads as a VHS tape being shuttled forward: white-noise snow (a
+> 256×144 field upscaled nearest-neighbour for its 5px blocks), two pale tracking bands
+> drifting up the frame, torn-line jitter, and dropout speckle — all _slight_, sitting UNDER the
+> existing degradation grain, not replacing it. It lands as one new additive layer in the degradation
+> pass (`apps/web/src/menus/degrade.ts`), built exactly like the Fausto-curse "Vertigo" layer: two new
+> `DegradeSettings` (`ffw`, the 0..1 target, and `ffwStrength`, the author dial at the tuned `0.35`), a
+> private eased `_ffw` scalar ramping toward the target on the shared ~0.7s cadence so toggling the
+> Stagnation vessel fades the tape effect rather than snapping it, and a `_ffwPass` called in **both**
+> `render()` branches after `_dizzy`, before the room-change fade (so the fade still covers it).
+> `RoomView`/`App` feed `ffw` straight off the `desidiaActive` flag, alongside `curseVertigo`.
+> **Reduced motion** drops all four sub-effects (the room simply does not shuttle; no static fallback).
+> This is **purely presentational** — it reads the Desidia flag off game state and touches no sim, RNG,
+> or save (its `Math.random` drives only pixels, exactly like the pass's grain), so offline catch-up
+> and the save shape are unchanged. No new assets. Net **+2 tests** (web 273 → 275: the degrade-defaults
+> suite pins the shipped-off `ffw` and the tuned `ffwStrength`, mirroring the Vertigo defaults).
+
+> **Earlier change — the Stagnation HUD reborn as the carved "Stagnation vessel" (Claude Design
 > handoff).** The placeholder top-right bar and its separate Desidia button are retired; Stagnation now
 > reads from a carved crystal trough pinned bottom-left, mirroring the Influence vessel's treatment.
 > **Clicking the vessel toggles Desidia** (there is no button any more): green liquid fills the glass
