@@ -1,51 +1,27 @@
 // Single source of truth for an invocation's human-readable EFFECT line, derived from the
 // authoritative sim — used by both the Analytics "Invocations" tab and the Ars Goetia grimoire so the
-// two can never drift (the grimoire previously read hand-authored copy from menus.data.ts that went
-// stale). Runners describe their action + expected per-cycle outcome (mean ± sd) + cadence; passives
-// describe their live quantified modifier delta at the current bound count (or one copy, if unbound,
-// so the catalog still reads meaningfully before you summon it).
+// two can never drift. Each line is the LIVE quantified magnitude, computed by diffing
+// `computeModifiers` with and without the invocation, so it reflects the REAL CURRENT effect after
+// every invocation-efficiency increase/decrease (Ira's Retribution, Black Candles, the per-Sin
+// sigils). Effects that are not modifier-bundle magnitudes (Astiwihad's world-still carry-over,
+// Erinyes's kill-all) fall back to the static, number-baked catalog string.
 import { strings } from '@panvitium/shared';
 import {
   activeInvocationCount,
-  actionOutcomeForecast,
   computeModifiers,
   invocationById,
-  invocationRunnerEfficiency,
-  runnerCycleDuration,
   type GameState,
-  type OutcomeForecast,
-  type OutcomeMoment,
 } from '@panvitium/sim';
-import { formatDuration } from './format.js';
-import { actionName } from './labels.js';
 
 /**
- * The player-efficiency line a single copy of `id` contributes, e.g. "+33% player efficiency"
- * (empty when it adds none). Self-contained so the runner path (the Familiar) can show its flat
- * player-efficiency boost alongside its Indagatio channel.
+ * The live quantified effect line for a passive/modifier invocation, by diffing `computeModifiers`
+ * with `max(1, boundCount)` copies against 0 copies — for a bound invocation this is its full current
+ * contribution; for an unbound one it is what a single copy would add now (so the grimoire shows a
+ * real magnitude before you summon it). Structural apexes (astiwihad/erinyes) fall through to the
+ * static catalog string.
  */
-function playerEffDeltaText(state: GameState, id: string): string {
-  const n = Math.max(1, activeInvocationCount(state, id));
-  const withInv = computeModifiers({
-    ...state,
-    lifetime: { ...state.lifetime, invocations: { ...state.lifetime.invocations, [id]: n } },
-  }).playerEfficiencyMul;
-  const without = computeModifiers({
-    ...state,
-    lifetime: { ...state.lifetime, invocations: { ...state.lifetime.invocations, [id]: 0 } },
-  }).playerEfficiencyMul;
-  if (!(Number.isFinite(without) && without > 0)) return '';
-  const pct = (withInv / without - 1) * 100;
-  const s = pct >= 10 ? pct.toFixed(0) : pct >= 1 ? pct.toFixed(1) : pct.toFixed(2);
-  return `+${Number(s)}% ${strings.invocations.effectLabels.playerEff}`;
-}
-
-/** Live quantified modifier delta of a passive invocation, by diffing computeModifiers with/without it. */
 function passiveEffectText(state: GameState, id: string): string {
   const L = strings.invocations.effectLabels;
-  // Describe the marginal effect of at least ONE copy: for a bound invocation this is its full current
-  // contribution; for an unbound one (count 0) it's what a single copy would do, so the grimoire still
-  // shows a real magnitude instead of "+0%".
   const n = Math.max(1, activeInvocationCount(state, id));
   const w = computeModifiers({
     ...state,
@@ -55,18 +31,33 @@ function passiveEffectText(state: GameState, id: string): string {
     ...state,
     lifetime: { ...state.lifetime, invocations: { ...state.lifetime.invocations, [id]: 0 } },
   });
+
   const ok = (x: number): boolean => Number.isFinite(x) && x > 0;
   const fmtPct = (p: number): string => {
     const a = Math.abs(p);
     const s = a >= 10 ? a.toFixed(0) : a >= 1 ? a.toFixed(1) : a.toFixed(2);
     return String(Number(s)); // trim trailing zeros: 0.10 → 0.1, 10.0 → 10
   };
+  const fmtNum = (x: number): string =>
+    String(Number(Math.abs(x) >= 10 ? x.toFixed(0) : x.toFixed(3)));
   const up = (a: number, c: number, label: string): string =>
     `+${fmtPct((a / c - 1) * 100)}% ${label}`;
+  const down = (a: number, c: number, label: string): string =>
+    `−${fmtPct((1 - a / c) * 100)}% ${label}`;
   const times = (a: number, c: number, label: string): string =>
-    `\u00D7${Number((a / c).toFixed(1))} ${label}`;
+    `×${Number((a / c).toFixed(1))} ${label}`;
+  const flat = (a: number, c: number, label: string): string => `+${fmtNum(a - c)} ${label}`;
+  const tier = (m: typeof w, t: 'stellar' | 'bad'): number => m.tierWeightMul[t] ?? 1;
 
   switch (id) {
+    // ── Player efficiency ──────────────────────────────────────────────────────────────────────
+    case 'familiar':
+    case 'wendigo':
+    case 'doppelgaenger':
+      return ok(b.playerEfficiencyMul)
+        ? up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)
+        : '';
+    // ── Income multipliers ─────────────────────────────────────────────────────────────────────
     case 'fama':
       return ok(b.influenceRateMul) ? up(w.influenceRateMul, b.influenceRateMul, L.influence) : '';
     case 'specunitas':
@@ -74,92 +65,68 @@ function passiveEffectText(state: GameState, id: string): string {
         ? times(w.influenceRateMul, b.influenceRateMul, L.influence)
         : '';
     case 'plutus':
-      return up(w.faenerationOutputMul, b.faenerationOutputMul, L.faeneratioOutput);
-    case 'behemoth': {
-      const ws = w.tierWeightMul.stellar ?? 1;
-      const bs = b.tierWeightMul.stellar ?? 1;
-      return ok(bs) ? up(ws, bs, L.stellar) : '';
-    }
-    // lemure: Sloth's offline-gain boost is dormant (ADR-032); falls through to the placeholder
-    // effect string until re-homed onto the stagnation resource.
-    case 'nightmare': {
-      const d = w.flatBaseSuicideRatePerSecond - b.flatBaseSuicideRatePerSecond;
-      return `+${Number(d.toFixed(3))}/s ${L.baseSuicide}`;
-    }
-    case 'doppelgaenger':
-      // The influence cost is upkeep (shown as the cost), not a rate cut, so the effect is the boon
-      // alone: +50% player efficiency. (The old text appended a bogus "-0% influence" from the diff.)
-      return up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff);
+      return ok(b.faenerationOutputMul)
+        ? up(w.faenerationOutputMul, b.faenerationOutputMul, L.faeneratioOutput)
+        : '';
+    // ── Flat per-second income (efficiency-scaled) ─────────────────────────────────────────────
+    case 'kobold':
+      return flat(w.flatGoldPerSecond, b.flatGoldPerSecond, L.goldPerSecond);
+    case 'arachne':
+      return flat(w.flatInfluencePerSecond, b.flatInfluencePerSecond, L.influencePerSecond);
+    // ── Reprobate dynamics ─────────────────────────────────────────────────────────────────────
+    case 'imp':
+      return flat(w.flatMurdersPerSecond, b.flatMurdersPerSecond, L.murders);
+    case 'banshee':
+      return flat(w.flatSuicidesPerSecond, b.flatSuicidesPerSecond, L.suicides);
+    case 'empusa':
+    case 'lamia':
+    case 'succubus':
+      return flat(w.flatGenerationPerSecond, b.flatGenerationPerSecond, L.reprobates);
+    case 'harpy':
+      return `+${fmtNum(w.flatBaseMurderRatePerSecond - b.flatBaseMurderRatePerSecond)}/s ${L.baseMurder}`;
+    case 'nightmare':
+      return `+${fmtNum(w.flatBaseSuicideRatePerSecond - b.flatBaseSuicideRatePerSecond)}/s ${L.baseSuicide}`;
+    // ── Stagnation ─────────────────────────────────────────────────────────────────────────────
+    case 'blob':
+    case 'morpheus':
+      return flat(w.flatStagnationPerSecond, b.flatStagnationPerSecond, L.stagnation);
+    // ── Outcome-tier shifts ────────────────────────────────────────────────────────────────────
+    case 'behemoth':
+      return ok(tier(b, 'stellar')) ? up(tier(w, 'stellar'), tier(b, 'stellar'), L.stellar) : '';
+    case 'narcissus':
+      return ok(tier(b, 'stellar'))
+        ? up(tier(w, 'stellar'), tier(b, 'stellar'), L.positiveChances)
+        : '';
+    case 'upir':
+      return ok(tier(b, 'bad')) ? down(tier(w, 'bad'), tier(b, 'bad'), L.negativeChances) : '';
+    // ── Desidia ────────────────────────────────────────────────────────────────────────────────
+    case 'lemure':
+      return ok(b.desidiaDrainMul)
+        ? down(w.desidiaDrainMul, b.desidiaDrainMul, L.desidiaDrain)
+        : '';
+    // ── Midas: two effects on one line ─────────────────────────────────────────────────────────
     case 'midas': {
       const gold = times(w.goldRateMul, b.goldRateMul, L.gold);
       const wa = w.tierWeightMul.apocalyptic ?? 1;
       const ba = b.tierWeightMul.apocalyptic ?? 1;
       const apoc = ok(ba) ? times(wa, ba, L.apocalyptic) : L.apocLocked;
-      return `${gold} \u00B7 ${apoc}`;
+      return `${gold} · ${apoc}`;
     }
+    // ── Aurevora: live ramping efficiency plus the paired gold drain that self-dispels it ───────
     case 'aurevora':
-      // The live (ramping) efficiency boost, plus a note on the paired gold drain that self-dispels
-      // it — otherwise Aurevora reads as a free permanent buff (the drain is its real cost).
       return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} · ${strings.invocations.aurevoraDrain}`;
+    // Structural apex effects (world-still carry-over, kill-all) are not bundle magnitudes.
     default:
       return strings.invocations.effects[id] ?? '';
   }
 }
 
-/** Signed mean: integer-rounded for large magnitudes, 2 decimals otherwise, with a real minus sign. */
-function fmtSigned(n: number): string {
-  const r = Math.abs(n) >= 10 ? Math.round(n) : Number(n.toFixed(2));
-  return `${r < 0 ? '\u2212' : '+'}${Math.abs(r)}`;
-}
-/** Unsigned magnitude for the ± sd term. */
-function fmtNum(n: number): string {
-  return String(Number(n >= 10 ? n.toFixed(0) : n.toFixed(2)));
-}
-
 /**
- * One runner cycle's expected outcome as "mean ± sd unit" per non-trivial dimension, e.g.
- * "+1 soul, −1 reprobate" (deterministic, sd 0) or "+0.31 ±0.7 reprobates, +0.15 souls". The sd is
- * the listable deviation (√variance); it's omitted when ~0 (a deterministic outcome).
- */
-export function formatForecast(f: OutcomeForecast): string {
-  const U = strings.invocations.outcomeUnits;
-  const parts: string[] = [];
-  const add = (m: OutcomeMoment, one: string, many: string): void => {
-    if (Math.abs(m.mean) < 0.005 && m.sd < 0.005) return;
-    const unit = Math.abs(m.mean) === 1 ? one : many;
-    const pm = m.sd >= 0.005 ? ` \u00B1${fmtNum(m.sd)}` : '';
-    parts.push(`${fmtSigned(m.mean)}${pm} ${unit}`);
-  };
-  add(f.souls, U.soul, U.souls);
-  add(f.reprobates, U.reprobate, U.reprobates);
-  add(f.gold, U.gold, U.gold);
-  add(f.maleficia, U.maleficium, U.maleficia);
-  return parts.join(', ');
-}
-
-/**
- * The authoritative effect line for an invocation, by id. Runner invocations (Familiar, Imp, Upir,
- * Lamia) read as "Action · expected outcome · every <cadence>"; passives read as their live modifier
- * delta. Returns '' for an unknown id or an effect with no measurable magnitude.
+ * The authoritative effect line for an invocation, by id. Returns '' for an unknown id or an effect
+ * with no measurable magnitude.
  */
 export function invocationEffectText(state: GameState, id: string): string {
   const def = invocationById(id);
   if (!def) return '';
-  const auto = def.autonomous;
-  if (!auto) return passiveEffectText(state, id);
-  const action = actionName(auto.action);
-  const eff = invocationRunnerEfficiency(state, def);
-  const outcome = formatForecast(actionOutcomeForecast(state, auto.action, eff, auto.forcedTier));
-  const dur = runnerCycleDuration(auto.action, eff);
-  const cadence =
-    Number.isFinite(dur) && dur > 0
-      ? `${strings.invocations.every} ${formatDuration(dur * 1000)}`
-      : '';
-  const runner = [action, outcome, cadence].filter((s) => s !== '').join(' \u00B7 ');
-  // The Familiar is a hybrid (02 \u00A73): a flat player-efficiency boost PLUS the Indagatio runner, so
-  // its line shows both. Every other runner is its channel alone.
-  if (id === 'familiar') {
-    return [playerEffDeltaText(state, id), runner].filter((s) => s !== '').join(' \u00B7 ');
-  }
-  return runner;
+  return passiveEffectText(state, id);
 }

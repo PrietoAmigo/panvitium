@@ -21,10 +21,6 @@ import {
   currentInvokingPower,
   effectParts,
   grantStagnationForOffline,
-  invocationById,
-  invocationGoldCost,
-  invocationRunnerEfficiency,
-  invocationSoulCost,
   invocationUpkeep,
   makeRng,
   NEUTRAL_MODIFIERS,
@@ -341,11 +337,10 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     const base = computeModifiers(fama).influenceRateMul;
     const boosted = computeModifiers(bound(26, 100_000, fama)).influenceRateMul;
     expect(boosted).toBeGreaterThan(base);
-    // Harpy (Ira) is unaffected by a Vanagloria sigil — its Pogrom-runner efficiency is unchanged.
+    // Harpy (Ira) is unaffected by a Vanagloria sigil — its base-murder-rate contribution is unchanged.
     const harpy = withInv('harpy', 2);
-    const harpyDef = invocationById('harpy')!;
-    const harpyBase = invocationRunnerEfficiency(harpy, harpyDef);
-    expect(invocationRunnerEfficiency(bound(26, 100_000, harpy), harpyDef)).toBeCloseTo(
+    const harpyBase = computeModifiers(harpy).flatBaseMurderRatePerSecond;
+    expect(computeModifiers(bound(26, 100_000, harpy)).flatBaseMurderRatePerSecond).toBeCloseTo(
       harpyBase,
       6,
     );
@@ -361,13 +356,13 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     );
   });
 
-  it('Furfur #34 (Luxuria) amplifies the Succubus Imperium runner', () => {
-    // Succubus' effect is now an autonomous Imperium runner; the Luxuria per-Sin term folds into its
-    // runner efficiency (invocationRunnerEfficiency), so Furfur lifts it.
+  it('Furfur #34 (Luxuria) amplifies a Luxuria invocation effect (Succubus reprobate generation)', () => {
+    // Succubus is a Luxuria reprobate generator (flatGenerationPerSecond); the Luxuria per-Sin term
+    // scales its effect, so Furfur lifts it.
     const succ = withInv('succubus', 1);
-    const def = invocationById('succubus')!;
-    const base = invocationRunnerEfficiency(succ, def);
-    const boosted = invocationRunnerEfficiency(bound(34, 100_000, succ), def);
+    const base = computeModifiers(succ).flatGenerationPerSecond;
+    const boosted = computeModifiers(bound(34, 100_000, succ)).flatGenerationPerSecond;
+    expect(base).toBeGreaterThan(0);
     expect(boosted).toBeGreaterThan(base);
   });
 });
@@ -462,19 +457,6 @@ describe('Cost-reduction sigils (S8)', () => {
     expect(100 - paimon.state.lifetime.influence.toNumber()).toBe(Math.ceil(25 / paimonFactor));
   });
 
-  it('Orobas #55 softens the one-time invocation soul cost (Morpheus 90% of pool)', () => {
-    // Normals no longer carry a soul cost (per-second upkeep instead); Morpheus is the only
-    // soul-cost invocation. Its cost is 90% of the current pool; Orobas #55 halves it.
-    const morpheus = invocationById('morpheus')!;
-    const withPool = (s: GameState): GameState => ({ ...s, souls: bn(1000) });
-    expect(invocationSoulCost(withPool(fresh()), morpheus).toNumber()).toBe(900); // 90% of 1000
-    // Softened by 1 + Orobas's pct strength, then floored (souls are natural numbers).
-    const orobasFactor = 1 + sigilStrength(sigilById(55)!, bn(100_000_000));
-    expect(invocationSoulCost(withPool(bound(55, 100_000_000)), morpheus).toNumber()).toBe(
-      Math.floor(900 / orobasFactor),
-    );
-  });
-
   it('Orobas #55 softens ALL invocation upkeep — flat drains and %-of-gain alike (ADR-035)', () => {
     const factor = 1 + sigilStrength(sigilById(55)!, bn(100_000_000));
     // An active Imp drains 10 gold/s flat; Orobas divides it.
@@ -497,18 +479,16 @@ describe('Cost-reduction sigils (S8)', () => {
     expect(
       invocationUpkeep(withLemure(bound(55, 100_000_000)), 0).influenceGainFraction,
     ).toBeCloseTo(0.25 / factor, 6);
-  });
 
-  it('the invocation channel now softens the one-time gold summon cost too (ADR-035, Morpheus)', () => {
-    const morpheus = invocationById('morpheus')!;
-    const withGold = (s: GameState): GameState => ({
+    // The reprobate fraction (Morpheus) and stagnation (Upir) upkeep are softened too.
+    const withMorpheus = (s: GameState): GameState => ({
       ...s,
-      lifetime: { ...s.lifetime, gold: bn(1000) },
+      lifetime: { ...s.lifetime, invocations: { morpheus: 1 } },
     });
-    expect(invocationGoldCost(withGold(fresh()), morpheus).toNumber()).toBe(900); // 90% of 1000
-    const factor = 1 + sigilStrength(sigilById(55)!, bn(100_000_000));
-    expect(invocationGoldCost(withGold(bound(55, 100_000_000)), morpheus).toNumber()).toBe(
-      Math.floor(900 / factor),
+    expect(invocationUpkeep(withMorpheus(fresh()), 0).reprobateFraction).toBeCloseTo(0.05, 6);
+    expect(invocationUpkeep(withMorpheus(bound(55, 100_000_000)), 0).reprobateFraction).toBeCloseTo(
+      0.05 / factor,
+      6,
     );
   });
 });

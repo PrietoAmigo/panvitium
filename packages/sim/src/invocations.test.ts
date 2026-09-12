@@ -1,21 +1,20 @@
 /**
- * Invocation tests (02 §7 / §12, 03 §2.4). Pins:
- *   - catalog integrity for the wired subset
- *   - invoking power = sum of equipped maleficia
- *   - visibility at ≥ half required invoking power; unlock at full + Sin level
- *   - soul cost = max(fraction × pool, minimum); free apexes cost 0
- *   - invoke deducts souls and increments the count; dispel decrements / deletes
- *   - maxActive cap on apex entities (Midas, Doppelgaenger)
- *   - modifier effects: Midas (3× gold, 100× apoc), Doppelgaenger (1.5× eff, ½ infl),
- *     Fama (+infl/stack), Nightmare (+5% suicide/stack), Harpy (+Decimatio eff/stack),
- *     Behemoth (+50% stellar/stack)
- *   - Mark of Cain ×3 murder rate (no longer zeroes apocalyptic)
+ * Invocation tests (02 §7 / §12, 03 §2.4). Pins the reworked roster:
+ *   - catalog integrity (the full id list, gates, caps, upkeep shapes)
+ *   - invoking power = sum of equipped maleficia; visibility at ≥ half; unlock at full + Sin level
+ *   - every invocation is free to summon (no upfront soul/gold cost); the cost is per-second upkeep
+ *   - upkeep aggregation across copies: flat + %-of-gain + reprobate (flat + fraction) + stagnation;
+ *     %-costs are additive (4 copies at 25% zero the gain) and clamp at 1; flat drains dispel
+ *   - modifier effects at baseline (invocation efficiency = 1): player-eff (Familiar/Wendigo/Doppel),
+ *     income muls (Fama/Specunitas/Plutus/Midas), flat dynamics (Imp/Banshee/Empusa/Lamia/Succubus/
+ *     Kobold/Arachne/Harpy/Nightmare), stagnation (Blob/Morpheus), outcome tiers (Behemoth/Narcissus/
+ *     Upir), and that invocation effects DON'T scale with player efficiency
+ *   - dynamics integration: Imp murders mint souls through the tick
  *   - Katabasis dispels everything
  */
 import { describe, expect, it } from 'vitest';
 import {
   activeInvocationCount,
-  advanceInvocationRunners,
   bn,
   commitKatabasis,
   computeModifiers,
@@ -24,14 +23,11 @@ import {
   dispel,
   INVOCATION_IDS,
   invocationById,
-  invocationRunnerEfficiency,
-  invocationRunnerKey,
   invocationSoulCost,
   invocationUnlocked,
   invocationUpkeep,
   invocationVisible,
   invoke,
-  makeRng,
   markDoppelgaengerSeen,
   NEUTRAL_MODIFIERS,
   perSecondRates,
@@ -49,11 +45,12 @@ function withSouls(s: GameState, v: number): GameState {
 function withSin(s: GameState, sin: Sin, level: number): GameState {
   return { ...s, devotion: { ...s.devotion, [sin]: bn(180 ** level) } };
 }
-/** Give the player enough invoking power by equipping power-source maleficia. */
+/** Give the player enough invoking power by equipping power-source maleficia (Black Salt Pouch, +1). */
 function withPower(s: GameState, ip: number): GameState {
-  // Black Salt Pouch grants 1 invoking power each and is stackable — stack to the target.
-  const maleficia = Array.from({ length: ip }, () => 'black_salt_pouch');
-  return { ...s, lifetime: { ...s.lifetime, maleficia } };
+  return {
+    ...s,
+    lifetime: { ...s.lifetime, maleficia: Array.from({ length: ip }, () => 'black_salt_pouch') },
+  };
 }
 /** Set an invocation's active count directly (bypasses gates) for effect tests. */
 function withInvocation(s: GameState, id: string, count: number): GameState {
@@ -64,57 +61,68 @@ function withInvocation(s: GameState, id: string, count: number): GameState {
 }
 
 describe('Invocation catalog', () => {
-  it('exposes the wired subset', () => {
+  it('exposes the full roster clustered by Sin level then invoking power', () => {
     expect(INVOCATION_IDS).toEqual([
       'familiar',
+      'wendigo',
+      'blob',
+      'empusa',
+      'kobold',
       'imp',
+      'banshee',
+      'narcissus',
+      'arachne',
       'upir',
-      'fama',
-      'nightmare',
-      'harpy',
       'lamia',
-      'lemure',
       'behemoth',
-      'midas',
+      'harpy',
       'plutus',
-      'succubus',
-      'doppelgaenger',
-      'astiwihad',
+      'nightmare',
+      'fama',
+      'lemure',
+      'midas',
       'aurevora',
+      'doppelgaenger',
+      'succubus',
+      'specunitas',
+      'astiwihad',
       'erinyes',
       'morpheus',
-      'specunitas',
     ]);
   });
 
-  it('apex entities cap at 1, Fama caps at 4, and other stackables are uncapped', () => {
-    expect(invocationById('midas')!.maxActive).toBe(1);
-    expect(invocationById('doppelgaenger')!.maxActive).toBe(1);
-    expect(invocationById('fama')!.maxActive).toBe(4); // player tuning: stackable up to 4
-  });
-
-  it('only the Familiar (Special) caps among the runners; Normal runners stack', () => {
-    // The Familiar is the lone Special — one only. The Normal-type runners (Imp/Upir/Lamia) have no
-    // cap: each summoned copy runs its own channel, so stacking multiplies throughput.
-    expect(invocationById('familiar')!.maxActive).toBe(1);
-    for (const id of ['imp', 'upir', 'lamia']) {
-      expect(invocationById(id)!.maxActive).toBeUndefined();
+  it('gates and caps match the spec for representative entries', () => {
+    const cases: Array<[string, Sin | null, number, number | undefined, number | undefined]> = [
+      // id, sin, invokingPower, sinLevel, maxActive
+      ['familiar', null, 1, undefined, 1],
+      ['wendigo', 'gula', 2, 1, 10],
+      ['imp', 'ira', 3, 1, 20],
+      ['narcissus', 'superbia', 3, 1, 1],
+      ['upir', 'gula', 4, 2, undefined], // stackable
+      ['behemoth', 'superbia', 4, 2, 1],
+      ['lemure', 'acedia', 6, 2, 4],
+      ['midas', 'avaritia', 7, 3, 1],
+      ['doppelgaenger', 'superbia', 8, 3, 1],
+      ['morpheus', 'acedia', 10, 3, 1],
+    ];
+    for (const [id, sin, ip, lvl, cap] of cases) {
+      const def = invocationById(id)!;
+      expect(def.sin).toBe(sin);
+      expect(def.invokingPower).toBe(ip);
+      expect(def.sinLevel).toBe(lvl);
+      expect(def.maxActive).toBe(cap);
     }
   });
 
-  it('the new per-tick apexes carry their gates and are free, max-1', () => {
-    const astiwihad = invocationById('astiwihad')!;
-    expect(astiwihad.invokingPower).toBe(10);
-    expect(astiwihad.sin).toBe('tristitia');
-    expect(astiwihad.sinLevel).toBe(3);
-    expect(astiwihad.maxActive).toBe(1);
-    expect(astiwihad.soulCost).toBeUndefined();
-    const aurevora = invocationById('aurevora')!;
-    expect(aurevora.invokingPower).toBe(7);
-    expect(aurevora.sin).toBe('gula');
-    expect(aurevora.sinLevel).toBe(3);
-    expect(aurevora.maxActive).toBe(1);
-    expect(aurevora.soulCost).toBeUndefined();
+  it('upkeep shapes: the new cost dimensions (compound, reprobate, fraction, stagnation)', () => {
+    expect(invocationById('imp')!.upkeep).toEqual({ gold: 10, goldGainFraction: 0.01 });
+    expect(invocationById('arachne')!.upkeep).toEqual({ reprobate: 50 });
+    expect(invocationById('upir')!.upkeep).toEqual({ stagnation: 1 });
+    expect(invocationById('morpheus')!.upkeep).toEqual({ reprobateFraction: 0.05 });
+    expect(invocationById('behemoth')!.upkeep).toEqual({
+      goldGainFraction: 0.25,
+      influenceGainFraction: 0.25,
+    });
   });
 });
 
@@ -125,51 +133,57 @@ describe('Invoking power + gates', () => {
   });
 
   it('an invocation is visible at half its required invoking power', () => {
-    const def = invocationById('behemoth')!; // requires 2
+    const def = invocationById('wendigo')!; // requires 2
     expect(invocationVisible(withPower(fresh(), 0), def)).toBe(false); // 0 < 1
     expect(invocationVisible(withPower(fresh(), 1), def)).toBe(true); // 1 ≥ 1 (half of 2)
   });
 
   it('unlock requires full invoking power AND the Sin level', () => {
-    const def = invocationById('behemoth')!; // IP 2, Superbia 1
+    const def = invocationById('wendigo')!; // IP 2, Gula 1
     let s = withPower(fresh(), 2);
-    expect(invocationUnlocked(s, def)).toBe(false); // Superbia 0
-    s = withSin(s, 'superbia', 1);
+    expect(invocationUnlocked(s, def)).toBe(false); // Gula 0
+    s = withSin(s, 'gula', 1);
     expect(invocationUnlocked(s, def)).toBe(true);
   });
 });
 
-describe('Soul cost (one-time, Morpheus only)', () => {
-  it('is a fraction of the current pool (Morpheus 90%)', () => {
-    const morpheus = invocationById('morpheus')!;
-    // pool 2000 → 90% = 1800. Normals no longer carry a soul cost (per-second upkeep instead).
-    expect(invocationSoulCost(withSouls(fresh(), 2000), morpheus).toNumber()).toBe(1800);
-    expect(invocationById('fama')!.soulCost).toBeUndefined();
-  });
-
-  it('is zero for free apex invocations', () => {
-    expect(invocationSoulCost(withSouls(fresh(), 1e9), invocationById('midas')!).toNumber()).toBe(
-      0,
-    );
+describe('No upfront cost — every invocation is free to summon', () => {
+  it('invocationSoulCost is 0 for every invocation (cost is per-second upkeep)', () => {
+    for (const id of INVOCATION_IDS) {
+      expect(invocationSoulCost(withSouls(fresh(), 1e9), invocationById(id)!).toNumber()).toBe(0);
+    }
+    expect(invocationById('morpheus')!.soulCost).toBeUndefined();
+    expect(invocationById('morpheus')!.goldCost).toBeUndefined();
   });
 });
 
 describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
-  it('aggregates flat, %-of-gold-gain, and %-of-influence-gain drains across active copies', () => {
-    let s = withInvocation(fresh(), 'imp', 2); // 2 × 10 gold/s
+  it('aggregates flat, %-of-gain, reprobate (flat + fraction) and stagnation drains across copies', () => {
+    let s = withInvocation(fresh(), 'imp', 2); // 2 × (10 gold/s + 1% gold gain)
     s = withInvocation(s, 'fama', 1); // 25% gold gain/s
-    s = withInvocation(s, 'succubus', 1); // 99% gold gain/s → clamps total to 1
-    s = withInvocation(s, 'lemure', 2); // 2 × 25% influence gain/s (ADR-033)
+    s = withInvocation(s, 'succubus', 1); // 99% gold gain/s → clamps the gold-gain total to 1
+    s = withInvocation(s, 'lemure', 2); // 2 × 25% influence gain/s
+    s = withInvocation(s, 'arachne', 1); // 50 reprobates/s (flat)
+    s = withInvocation(s, 'morpheus', 1); // 5% of the reprobate pool/s
+    s = withInvocation(s, 'upir', 3); // 3 × 1 stagnation/s
     const up = invocationUpkeep(s, 100);
     expect(up.flatGoldPerSecond).toBe(20);
-    expect(up.goldGainFraction).toBe(1); // 0.25 + 0.99 clamped to 1
+    expect(up.goldGainFraction).toBe(1); // 0.02 + 0.25 + 0.99 clamped to 1
     expect(up.influenceGainFraction).toBeCloseTo(0.5, 6); // 2 × 0.25
+    expect(up.flatReprobatesPerSecond).toBe(50);
+    expect(up.reprobateFraction).toBeCloseTo(0.05, 6);
+    expect(up.flatStagnationPerSecond).toBe(3);
     expect(up.flatGoldDrainers).toContain('imp');
+    expect(up.flatReprobateDrainers).toContain('arachne');
+    expect(up.flatStagnationDrainers).toContain('upir');
+  });
+
+  it('%-of-gain costs are additive: four Fama zero the gold gain (clamped at 1)', () => {
+    const four = invocationUpkeep(withInvocation(fresh(), 'fama', 4), 100);
+    expect(four.goldGainFraction).toBe(1); // 4 × 0.25 = 1.0 → all gold gain consumed
   });
 
   it('reduces the net per-second influence rate (perSecondRates), e.g. Plutus 3/s', () => {
-    // High max influence so the gross gain dwarfs the upkeep (no clamp at 0). Plutus has a flat
-    // 3 influence/s upkeep and no gold runner, so the net rate drops by exactly 3.
     const big: GameState = {
       ...fresh(),
       lifetime: { ...fresh().lifetime, maxInfluence: bn(1_000_000) },
@@ -179,46 +193,50 @@ describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
     expect(without - withPlutus).toBeCloseTo(3, 6);
   });
 
-  it('dispels a flat-drain invocation the pool can’t sustain', () => {
-    let s = withSin(withPower(fresh(), 2), 'ira', 1);
+  it('dispels a flat-gold-drain invocation the pool can’t sustain', () => {
+    let s = withSin(withPower(fresh(), 3), 'ira', 1);
     s = { ...s, lifetime: { ...s.lifetime, gold: bn(3), invocations: { imp: 1 } } };
-    const r = tick(s, 1); // 3 + 2 income − 10 upkeep < 0 → Imp dispels, gold keeps the income
+    const r = tick(s, 1); // 3 + 2 income − 10 flat < 0 → Imp dispels; only the tiny fraction is paid
     expect(r.state.lifetime.invocations.imp ?? 0).toBe(0);
-    expect(r.state.lifetime.gold.toNumber()).toBeCloseTo(5, 6); // 3 + 2 income, flat not paid
+    expect(r.state.lifetime.gold.toNumber()).toBeCloseTo(4.98, 2); // 5 − 1% of the 2 gained; flat unpaid
     expect(r.notices.some((n) => n.includes('imp'))).toBe(true);
+  });
+
+  it('dispels a flat-reprobate-drain invocation the population can’t sustain (no souls minted)', () => {
+    const s: GameState = {
+      ...fresh(),
+      souls: bn(0),
+      lifetime: { ...fresh().lifetime, reprobates: 3, invocations: { arachne: 1 } },
+    };
+    const r = tick(s, 1); // Arachne needs 50 reprobates this tick; only 3 alive → dispel, take none
+    expect(r.state.lifetime.invocations.arachne ?? 0).toBe(0);
+    expect(r.state.lifetime.reprobates).toBe(3);
+    expect(r.state.souls.toNumber()).toBe(0); // a cost mints no souls, and none were taken anyway
   });
 });
 
 describe('invoke / dispel', () => {
   it('rejects when gates are unmet', () => {
-    const r = invoke(withSouls(fresh(), 1e6), 'behemoth'); // no power, no Superbia
-    expect(r.ok).toBe(false);
+    expect(invoke(withSouls(fresh(), 1e6), 'behemoth').ok).toBe(false); // no power, no Superbia
   });
 
-  it('summons a normal with no souls — normals have no upfront cost (upkeep is per-tick)', () => {
-    const s = withSin(withPower(fresh(), 2), 'superbia', 1); // 0 souls
-    const r = invoke(s, 'behemoth');
-    expect(r.ok).toBe(true);
-  });
-
-  it('summons a free normal and increments the count without deducting souls', () => {
-    let s = withSin(withPower(fresh(), 2), 'superbia', 1);
+  it('summons a free invocation and increments the count without deducting souls', () => {
+    let s = withSin(withPower(fresh(), 2), 'gula', 1);
     s = withSouls(s, 1000);
-    const r = invoke(s, 'behemoth');
+    const r = invoke(s, 'wendigo');
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(activeInvocationCount(r.state, 'behemoth')).toBe(1);
+    expect(activeInvocationCount(r.state, 'wendigo')).toBe(1);
     expect(r.state.souls.toNumber()).toBe(1000); // no upfront soul cost
   });
 
-  it('stacks a stackable invocation', () => {
-    let s = withSin(withPower(fresh(), 3), 'superbia', 1);
-    s = withSouls(s, 1_000_000);
-    const r1 = invoke(s, 'behemoth');
+  it('stacks an uncapped invocation', () => {
+    const s = withSin(withPower(fresh(), 5), 'avaritia', 2);
+    const r1 = invoke(s, 'plutus');
     if (!r1.ok) throw new Error('r1');
-    const r2 = invoke(r1.state, 'behemoth');
+    const r2 = invoke(r1.state, 'plutus');
     if (!r2.ok) throw new Error('r2');
-    expect(activeInvocationCount(r2.state, 'behemoth')).toBe(2);
+    expect(activeInvocationCount(r2.state, 'plutus')).toBe(2);
   });
 
   it('enforces the maxActive cap on apex entities', () => {
@@ -243,70 +261,127 @@ describe('invoke / dispel', () => {
   });
 });
 
-describe('Invocation modifier effects', () => {
-  it('Midas: 3× gold and 100× apocalyptic weight', () => {
+describe('Invocation modifier effects (baseline invocation efficiency = 1)', () => {
+  it('Midas: ×10 gold and ×10 apocalyptic weight', () => {
     const base = computeModifiers(fresh());
     const mid = computeModifiers(withInvocation(fresh(), 'midas', 1));
-    expect(mid.goldRateMul).toBeCloseTo(base.goldRateMul * 3, 6);
-    expect(mid.tierWeightMul.apocalyptic).toBeCloseTo(100, 6);
+    expect(mid.goldRateMul).toBeCloseTo(base.goldRateMul * 10, 6);
+    expect(mid.tierWeightMul.apocalyptic).toBeCloseTo(10, 6);
   });
 
-  it('Mark of Cain triples murder rate and no longer zeroes apocalyptic (Midas ×100 stands)', () => {
-    let s = withInvocation(fresh(), 'midas', 1);
-    s = { ...s, lifetime: { ...s.lifetime, maleficia: ['mark_of_cain'] } };
-    const m = computeModifiers(s);
-    expect(m.tierWeightMul.apocalyptic).toBeCloseTo(100, 6); // Midas hundredfold; no Cain lock
-    expect(m.murderRateMul).toBeCloseTo(3, 6); // Mark of Cain ×3 murder (sheet rev 2026-06-12)
+  it('Doppelgaenger: +100% player efficiency; Wendigo: +2%/copy; both flat (no invEff scaling)', () => {
+    const base = computeModifiers(fresh()).playerEfficiencyMul;
+    expect(
+      computeModifiers(withInvocation(fresh(), 'doppelgaenger', 1)).playerEfficiencyMul,
+    ).toBeCloseTo(base * 2, 6);
+    expect(computeModifiers(withInvocation(fresh(), 'wendigo', 5)).playerEfficiencyMul).toBeCloseTo(
+      base * (1 + 0.02 * 5),
+      6,
+    );
   });
 
-  it('Doppelgaenger: +50% player efficiency; its influence cost is now per-tick upkeep', () => {
+  it('Specunitas ×3 influence; Fama +15%/copy; Plutus +15%/copy Faeneratio output', () => {
     const base = computeModifiers(fresh());
-    const dop = computeModifiers(withInvocation(fresh(), 'doppelgaenger', 1));
-    expect(dop.playerEfficiencyMul).toBeCloseTo(base.playerEfficiencyMul * 1.5, 6);
-    expect(dop.influenceRateMul).toBeCloseTo(base.influenceRateMul, 6); // no longer halved here
-    expect(invocationById('doppelgaenger')!.upkeep).toEqual({ influenceGainFraction: 0.5 });
+    expect(computeModifiers(withInvocation(fresh(), 'specunitas', 1)).influenceRateMul).toBeCloseTo(
+      base.influenceRateMul * 3,
+      6,
+    );
+    expect(computeModifiers(withInvocation(fresh(), 'fama', 2)).influenceRateMul).toBeCloseTo(
+      base.influenceRateMul * (1 + 0.15 * 2),
+      6,
+    );
+    expect(computeModifiers(withInvocation(fresh(), 'plutus', 2)).faenerationOutputMul).toBeCloseTo(
+      1 + 0.15 * 2,
+      6,
+    );
   });
 
-  it('Specunitas (apex Vanagloria): ×2 influence gain/s', () => {
-    const base = computeModifiers(fresh()).influenceRateMul;
-    const spec = computeModifiers(withInvocation(fresh(), 'specunitas', 1)).influenceRateMul;
-    expect(spec).toBeCloseTo(base * 2, 6);
+  it('flat dynamics contributions: Imp murders, Banshee suicides, generation, gold, influence', () => {
+    expect(computeModifiers(withInvocation(fresh(), 'imp', 3)).flatMurdersPerSecond).toBeCloseTo(
+      3,
+      6,
+    );
+    expect(
+      computeModifiers(withInvocation(fresh(), 'banshee', 4)).flatSuicidesPerSecond,
+    ).toBeCloseTo(4, 6);
+    expect(
+      computeModifiers(withInvocation(fresh(), 'empusa', 2)).flatGenerationPerSecond,
+    ).toBeCloseTo(2, 6);
+    expect(
+      computeModifiers(withInvocation(fresh(), 'lamia', 2)).flatGenerationPerSecond,
+    ).toBeCloseTo(200, 6);
+    expect(
+      computeModifiers(withInvocation(fresh(), 'succubus', 1)).flatGenerationPerSecond,
+    ).toBeCloseTo(10000, 6);
+    expect(computeModifiers(withInvocation(fresh(), 'kobold', 3)).flatGoldPerSecond).toBeCloseTo(
+      300,
+      6,
+    );
+    expect(
+      computeModifiers(withInvocation(fresh(), 'arachne', 2)).flatInfluencePerSecond,
+    ).toBeCloseTo(2, 6);
   });
 
-  it('Fama: additive influence increase scaled by player efficiency (0.05/stack at baseline)', () => {
-    const two = computeModifiers(withInvocation(fresh(), 'fama', 2));
-    // Baseline playerEff = invEff = 1, so each Fama adds 0.05 to the influence-rate multiplier.
-    expect(two.influenceRateMul).toBeCloseTo(1 + 0.05 * 2, 6);
+  it('per-capita base rate shifts: Harpy murder + Nightmare suicide (mul untouched)', () => {
+    const harpy = computeModifiers(withInvocation(fresh(), 'harpy', 2));
+    expect(harpy.flatBaseMurderRatePerSecond).toBeCloseTo(0.005 * 2, 9);
+    expect(harpy.murderRateMul).toBe(NEUTRAL_MODIFIERS.murderRateMul);
+    const nightmare = computeModifiers(withInvocation(fresh(), 'nightmare', 3));
+    expect(nightmare.flatBaseSuicideRatePerSecond).toBeCloseTo(0.005 * 3, 9);
+    expect(nightmare.reprobateSuicideRateMul).toBe(NEUTRAL_MODIFIERS.reprobateSuicideRateMul);
   });
 
-  it('Nightmare: additive increase to base suicide rate, not the multiplier', () => {
-    const three = computeModifiers(withInvocation(fresh(), 'nightmare', 3));
-    // Baseline playerEff = invEff = 1, so each Nightmare adds 5e-5 to the per-capita base rate (sheet).
-    expect(three.flatBaseSuicideRatePerSecond).toBeCloseTo(5e-5 * 3, 9);
-    expect(three.reprobateSuicideRateMul).toBe(NEUTRAL_MODIFIERS.reprobateSuicideRateMul); // mul untouched
+  it('stagnation generation: Blob flat, Morpheus population-scaled', () => {
+    expect(
+      computeModifiers(withInvocation(fresh(), 'blob', 2)).flatStagnationPerSecond,
+    ).toBeCloseTo(0.05 * 2, 6);
+    const withPop: GameState = {
+      ...withInvocation(fresh(), 'morpheus', 1),
+      lifetime: { ...withInvocation(fresh(), 'morpheus', 1).lifetime, reprobates: 1000 },
+    };
+    // 0.05 × 1000 × 0.001 = 0.05/s
+    expect(computeModifiers(withPop).flatStagnationPerSecond).toBeCloseTo(0.05, 6);
   });
 
-  it('Harpy no longer lifts Decimatio efficiency — its effect is now a Pogrom runner (#8)', () => {
-    const two = computeModifiers(withInvocation(fresh(), 'harpy', 2));
-    expect(two.decimatioEfficiencyMul).toBeCloseTo(1, 6); // blanket Decimatio boost retired
-    expect(two.murderRateMul).toBe(NEUTRAL_MODIFIERS.murderRateMul); // murder untouched
-    expect(invocationById('harpy')!.autonomous).toEqual({
-      action: 'pogrom',
-      efficiency: 0.05,
-      forcedTier: 'good',
-    });
+  it('outcome tiers: Behemoth +1% Stellar, Narcissus +10% positives, Upir softens negatives', () => {
+    expect(
+      computeModifiers(withInvocation(fresh(), 'behemoth', 1)).tierWeightMul.stellar,
+    ).toBeCloseTo(1.01, 6);
+    const narc = computeModifiers(withInvocation(fresh(), 'narcissus', 1)).tierWeightMul;
+    expect(narc.stellar).toBeCloseTo(1.1, 6);
+    expect(narc.excellent).toBeCloseTo(1.1, 6);
+    expect(narc.good).toBeCloseTo(1.1, 6);
+    const upir = computeModifiers(withInvocation(fresh(), 'upir', 2)).tierWeightMul;
+    expect(upir.bad).toBeCloseTo(1 / (1 + 0.05 * 2), 6); // asymptotic softening, never negative
+    expect(upir.terrible).toBeCloseTo(1 / (1 + 0.05 * 2), 6);
   });
 
-  it('Behemoth: additive increase to Stellar weight (efficiency-scaled, 0.0005/stack baseline)', () => {
-    const two = computeModifiers(withInvocation(fresh(), 'behemoth', 2));
-    expect(two.tierWeightMul.stellar).toBeCloseTo(1 + 0.0005 * 2, 6); // baseline playerEff/invEff = 1
+  it('invocation effects do NOT scale with player efficiency', () => {
+    // A Doppelgänger (×2 player efficiency) alongside an Imp leaves the Imp's murders unchanged.
+    const imp = computeModifiers(withInvocation(fresh(), 'imp', 1)).flatMurdersPerSecond;
+    const both = computeModifiers(
+      withInvocation(withInvocation(fresh(), 'imp', 1), 'doppelgaenger', 1),
+    ).flatMurdersPerSecond;
+    expect(both).toBeCloseTo(imp, 6);
   });
+});
 
-  it('no invocations → bundle matches the neutral baseline for the affected fields', () => {
-    const m = computeModifiers(fresh());
-    expect(m.murderRateMul).toBe(NEUTRAL_MODIFIERS.murderRateMul);
-    expect(m.tierWeightMul.apocalyptic).toBeUndefined();
-    expect(m.tierWeightMul.stellar).toBeUndefined();
+describe('Dynamics integration through the tick', () => {
+  it('Imp murders mint one soul each (a kill, unlike the reprobate upkeep cost)', () => {
+    const s: GameState = {
+      ...fresh(),
+      souls: bn(0),
+      lifetime: {
+        ...fresh().lifetime,
+        gold: bn(1_000_000), // cover the Imp's gold upkeep so it isn't dispelled
+        reprobates: 1000,
+        invocations: { imp: 3 },
+      },
+    };
+    const r = tick(s, 1);
+    // 3 Imp murders/s + base murder (0.2) → 3 whole murders; base suicide pool (0.1) < 1 → none.
+    expect(r.state.souls.toNumber()).toBe(3);
+    expect(r.state.lifetime.reprobates).toBe(997);
   });
 });
 
@@ -317,268 +392,22 @@ describe('Katabasis dispels all invocations (02 §7)', () => {
     const { state } = commitKatabasis(s);
     expect(Object.keys(state.lifetime.invocations)).toHaveLength(0);
   });
-
-  it('autonomous runners are cleared on rebirth too', () => {
-    const s = {
-      ...withInvocation(fresh(), 'familiar', 1),
-      lifetime: {
-        ...withInvocation(fresh(), 'familiar', 1).lifetime,
-        invocationRunners: { familiar: 1234 },
-      },
-    };
-    const { state } = commitKatabasis(s);
-    expect(Object.keys(state.lifetime.invocationRunners)).toHaveLength(0);
-  });
-});
-
-describe('Familiar — the hybrid (02 §3)', () => {
-  it('caps at 1, costs nothing, gates on invoking power only (no Sin)', () => {
-    const def = invocationById('familiar')!;
-    expect(def.maxActive).toBe(1);
-    expect(def.sin).toBeNull();
-    expect(def.autonomous).toEqual({ action: 'indagatio', efficiency: 0.01 });
-    expect(invocationSoulCost(fresh(), def).toNumber()).toBe(0);
-    expect(invocationUnlocked(withPower(fresh(), 2), def)).toBe(true);
-    expect(invocationUnlocked(withPower(fresh(), 1), def)).toBe(false);
-  });
-
-  it('lifts player efficiency by +33% while active', () => {
-    const base = computeModifiers(fresh()).playerEfficiencyMul;
-    const withFam = computeModifiers(withInvocation(fresh(), 'familiar', 1)).playerEfficiencyMul;
-    expect(withFam).toBeCloseTo(base * 1.33, 6);
-  });
-
-  it('runs Indagatio in its own channel without touching the player slot', () => {
-    const s = withInvocation(fresh(), 'familiar', 1);
-    const r = advanceInvocationRunners(s, 0.1, makeRng(1));
-    // A runner timer is lazily started; the player's action queue is untouched.
-    expect(r.state.lifetime.invocationRunners.familiar).toBeGreaterThan(0);
-    expect(r.state.lifetime.actionQueue).toHaveLength(0);
-  });
-
-  it('resolves Indagatio cycles at 1% of player efficiency over a large delta', () => {
-    const s = withInvocation(fresh(), 'familiar', 1);
-    // Cycle time = 300 / (0.01 × playerEff). playerEff = 1.33 (Familiar boost) → ~22.6k s/cycle.
-    // A 7-day delta resolves ~26 cycles; assert it produced at least a handful of events.
-    const r = advanceInvocationRunners(s, 604_800, makeRng(7));
-    expect(r.events.length).toBeGreaterThanOrEqual(5);
-    expect(r.events.every((e) => e.actionId === 'indagatio')).toBe(true);
-    expect(r.state.lifetime.invocationRunners.familiar).toBeGreaterThan(0); // mid next cycle
-  });
-
-  it('drops the runner timer once the Familiar is dispelled', () => {
-    const s = {
-      ...fresh(),
-      lifetime: { ...fresh().lifetime, invocationRunners: { familiar: 1000 } },
-    };
-    // No active familiar → the stale timer is cleared on the next advance.
-    const r = advanceInvocationRunners(s, 0.1, makeRng(0));
-    expect(Object.keys(r.state.lifetime.invocationRunners)).toHaveLength(0);
-    expect(r.events).toHaveLength(0);
-  });
-});
-
-describe('Imp — autonomous Good-only Decimatio (03 §2.4)', () => {
-  const withGold = (s: GameState, v: number): GameState => ({
-    ...s,
-    lifetime: { ...s.lifetime, gold: bn(v) },
-  });
-  const withReprobates = (s: GameState, n: number): GameState => ({
-    ...s,
-    lifetime: { ...s.lifetime, reprobates: n },
-  });
-
-  it('is gated on power 2 + Ira 1, stackable, and runs a Good-only Caedes channel', () => {
-    const def = invocationById('imp')!;
-    expect(def.sin).toBe('ira');
-    expect(def.invokingPower).toBe(2);
-    expect(def.sinLevel).toBe(1);
-    expect(def.maxActive).toBeUndefined(); // Normal type → stacks (one channel per copy)
-    expect(def.autonomous).toEqual({ action: 'caedes', efficiency: 0.05, forcedTier: 'good' });
-    expect(def.upkeep).toEqual({ gold: 10 }); // 10 gold/s upkeep
-  });
-
-  it('Upir is the Gula counterpart — power 3 + Gula 1, a stackable Good-only Caedes channel', () => {
-    const def = invocationById('upir')!;
-    expect(def.sin).toBe('gula');
-    expect(def.invokingPower).toBe(3);
-    expect(def.sinLevel).toBe(1);
-    expect(def.maxActive).toBeUndefined(); // Normal type → stacks
-    expect(def.autonomous).toEqual({ action: 'caedes', efficiency: 0.05, forcedTier: 'good' });
-    expect(def.upkeep).toEqual({ influence: 1 }); // 1 influence/s upkeep
-  });
-
-  it('Lamia is the Luxuria Logismoi runner — power 4 + Luxuria 2, stackable', () => {
-    const def = invocationById('lamia')!;
-    expect(def.sin).toBe('luxuria');
-    expect(def.invokingPower).toBe(4);
-    expect(def.sinLevel).toBe(2);
-    // Normal type → no cap. Each summoned copy runs its own channel, so stacking scales throughput.
-    expect(def.maxActive).toBeUndefined();
-    expect(def.autonomous).toEqual({ action: 'logismoi', efficiency: 0.05 }); // background Suasio runner (#8)
-    expect(def.upkeep).toEqual({ influence: 3 }); // 3 influence/s upkeep
-  });
-
-  it('Lamia runs a background Suasio (logismoi) channel without touching the player slot', () => {
-    const s = withInvocation(fresh(), 'lamia', 1); // runners are free — no influence needed
-    const r = advanceInvocationRunners(s, 0.1, makeRng(1));
-    expect(r.state.lifetime.invocationRunners.lamia).toBeGreaterThan(0); // a runner timer started
-    expect(r.state.lifetime.actionQueue).toHaveLength(0); // player action slot untouched
-  });
-
-  it('Plutus is a stackable Avaritia output booster — power 5 + Avaritia 2', () => {
-    const def = invocationById('plutus')!;
-    expect(def.sin).toBe('avaritia');
-    expect(def.invokingPower).toBe(5);
-    expect(def.sinLevel).toBe(2);
-    expect(def.maxActive).toBeUndefined(); // stackable
-    expect(def.autonomous).toBeUndefined();
-    expect(def.upkeep).toEqual({ influence: 3 }); // 3 influence/s upkeep
-  });
-
-  it('Succubus is the apex Luxuria — power 9 + Luxuria 3, capped at 1, free', () => {
-    const def = invocationById('succubus')!;
-    expect(def.sin).toBe('luxuria');
-    expect(def.invokingPower).toBe(9);
-    expect(def.sinLevel).toBe(3);
-    expect(def.maxActive).toBe(1);
-    expect(def.soulCost).toBeUndefined(); // no one-time soul cost (its cost is upkeep)
-    expect(invocationSoulCost(withSouls(fresh(), 100_000), def).toNumber()).toBe(0);
-    expect(def.upkeep).toEqual({ goldGainFraction: 0.99 }); // 99% gold gain/s upkeep
-    expect(def.autonomous).toEqual({ action: 'imperium', efficiency: 0.99 }); // #8: Imperium runner
-  });
-
-  it('Succubus runs an autonomous Imperium channel for free (leaves the player slot free)', () => {
-    // Runners carry out their action for free, so no influence cushion is needed to cycle.
-    const s = withInvocation(fresh(), 'succubus', 1);
-    // 25 s over ~10 s cost-outcome cycles → a couple of Imperium resolutions plus a partial timer.
-    const r = advanceInvocationRunners(s, 25, makeRng(3));
-    expect(r.state.lifetime.invocationRunners.succubus).toBeGreaterThan(0); // a runner timer started
-    expect(r.state.lifetime.actionQueue).toHaveLength(0); // player action slot untouched
-    expect(r.events.length).toBeGreaterThan(0);
-    expect(r.events.every((e) => e.actionId === 'imperium')).toBe(true);
-  });
-
-  it('Lemure is an Acedia invocation capped at 4, costing 25% of influence gain (ADR-033)', () => {
-    const def = invocationById('lemure')!;
-    expect(def.sin).toBe('acedia');
-    expect(def.invokingPower).toBe(3);
-    expect(def.sinLevel).toBe(1);
-    expect(def.maxActive).toBe(4); // up to 4 bound
-    expect(def.autonomous).toBeUndefined();
-    expect(def.upkeep).toEqual({ influenceGainFraction: 0.25 }); // 25% of influence gain/copy
-  });
-
-  it('runs Decimatio in its own channel — free, mints souls, leaves the player slot free', () => {
-    const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 1000), 100);
-    const soulsBefore = s.souls.toNumber();
-    // 2.5 s ≈ 2 full 1 s cycles + a partial third (cost-outcome cycle = base 1 s).
-    const r = advanceInvocationRunners(s, 2.5, makeRng(3));
-    expect(r.events.length).toBeGreaterThanOrEqual(2);
-    expect(r.events.every((e) => e.actionId === 'caedes')).toBe(true);
-    expect(r.state.souls.toNumber()).toBe(soulsBefore + r.events.length); // 1 kill → 1 soul each
-    expect(r.state.lifetime.reprobates).toBe(100 - r.events.length);
-    // The runner carries out Caedes for free — gold is untouched by the cycles.
-    expect(r.state.lifetime.gold.toNumber()).toBe(1000);
-    expect(r.state.lifetime.actionQueue).toHaveLength(0);
-  });
-
-  it('Good-only: over many cycles gold is untouched (free, never a gold-loss tier)', () => {
-    const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 1000), 1000);
-    const soulsBefore = s.souls.toNumber();
-    const r = advanceInvocationRunners(s, 10, makeRng(9)); // 10 cycles of 1 s
-    expect(r.events).toHaveLength(10);
-    expect(r.state.lifetime.gold.toNumber()).toBe(1000); // free — no cost, no Bad/Terrible
-    expect(r.state.souls.toNumber()).toBe(soulsBefore + 10);
-    expect(r.state.lifetime.reprobates).toBe(990);
-  });
-
-  it('never stalls on an empty treasury — culls for free even at 0 gold', () => {
-    const s = withReprobates(withGold(withInvocation(fresh(), 'imp', 1), 0), 1000);
-    // 100.5 s → 100 full 1 s cycles plus an in-flight 101st (so a timer key persists), all free.
-    const r = advanceInvocationRunners(s, 100.5, makeRng(4));
-    expect(r.events).toHaveLength(100);
-    expect(r.state.lifetime.gold.toNumber()).toBe(0); // nothing spent
-    expect(r.state.lifetime.reprobates).toBe(900); // 100 Good kills
-    expect(r.state.lifetime.invocationRunners.imp).toBeGreaterThan(0); // in-flight, never stalled
-  });
-
-  it('stacking a runner multiplies throughput — two imps cull ~2× one (independent channels)', () => {
-    const base = withReprobates(withGold(fresh(), 100_000), 1000);
-    // 10.5 s → 10 full 1 s cycles per channel, plus an in-flight 11th (so a timer key persists).
-    const one = advanceInvocationRunners(withInvocation(base, 'imp', 1), 10.5, makeRng(9));
-    const two = advanceInvocationRunners(withInvocation(base, 'imp', 2), 10.5, makeRng(9));
-    // The cost-outcome cycle is a fixed 1 s, so each channel resolves 10 cycles regardless of eff —
-    // a second copy means a second channel, i.e. double the kills.
-    expect(one.events).toHaveLength(10);
-    expect(two.events).toHaveLength(20);
-    const oneSouls = one.state.souls.toNumber() - base.souls.toNumber();
-    const twoSouls = two.state.souls.toNumber() - base.souls.toNumber();
-    expect(twoSouls).toBe(2 * oneSouls); // 1 soul per Good kill, scaled by the copy count
-    // Copy 0 keeps the bare id key; the extra copy runs on its own suffixed channel.
-    expect(two.state.lifetime.invocationRunners.imp).toBeGreaterThan(0);
-    expect(two.state.lifetime.invocationRunners['imp#1']).toBeGreaterThan(0);
-    expect(one.state.lifetime.invocationRunners['imp#1']).toBeUndefined(); // one copy ⇒ no suffix
-  });
-});
-
-describe('Analytics surface: runner key + channel efficiency', () => {
-  it('keys copy 0 bare and stacked copies suffixed', () => {
-    expect(invocationRunnerKey('imp', 0)).toBe('imp');
-    expect(invocationRunnerKey('imp', 1)).toBe('imp#1');
-    expect(invocationRunnerKey('imp', 2)).toBe('imp#2');
-  });
-
-  it('channel efficiency = autonomous.efficiency × the modifier terms (the value the advance uses)', () => {
-    const s = withInvocation(fresh(), 'familiar', 1);
-    const fam = invocationById('familiar')!;
-    const mods = computeModifiers(s);
-    // Familiar has no Sin, so no per-Sin term; it is its own +33% playerEfficiency source.
-    expect(invocationRunnerEfficiency(s, fam)).toBeCloseTo(
-      fam.autonomous!.efficiency * mods.playerEfficiencyMul * mods.invocationEfficiencyMul,
-      10,
-    );
-  });
-
-  it('folds the runner Sin effectiveness term for a Sin-aligned runner (Imp → Ira)', () => {
-    const s = withInvocation(fresh(), 'imp', 1);
-    const imp = invocationById('imp')!;
-    const mods = computeModifiers(s);
-    expect(invocationRunnerEfficiency(s, imp)).toBeCloseTo(
-      imp.autonomous!.efficiency *
-        mods.playerEfficiencyMul *
-        mods.invocationEfficiencyMul *
-        mods.invocationSinEffectivenessMul.ira,
-      10,
-    );
-  });
-
-  it('returns 0 for a passive invocation (no autonomous channel)', () => {
-    expect(invocationRunnerEfficiency(fresh(), invocationById('fama')!)).toBe(0);
-  });
 });
 
 describe('tick outcome source tagging (player-only PC log)', () => {
-  it('tags acolyte and invocation-runner outcomes; player outcomes stay untagged', () => {
+  it('tags acolyte outcomes; player outcomes stay untagged', () => {
     const base = fresh('source-tag', 0);
     const s: GameState = {
       ...base,
       lifetime: {
         ...base.lifetime,
-        // A player Indagatio about to complete (time-mode, free) → an untagged player outcome.
-        actionQueue: [{ actionId: 'indagatio', remainingSeconds: 0.05 }],
-        // An acolyte mid-Indagatio about to complete → an outcome tagged 'acolyte'.
-        acolytes: [{ id: 1, assignedAction: 'indagatio', remainingSeconds: 0.05 }],
-        // A bound Familiar whose Indagatio channel is about to complete → tagged 'invocation'.
-        invocations: { ...base.lifetime.invocations, familiar: 1 },
-        invocationRunners: { familiar: 0.05 },
+        actionQueue: [{ actionId: 'indagatio', remainingSeconds: 0.05 }], // player → untagged
+        acolytes: [{ id: 1, assignedAction: 'indagatio', remainingSeconds: 0.05 }], // → 'acolyte'
       },
     };
-    const { events } = tick(s, 2); // 2s completes all three channels
-    const sources = events.map((e) => e.source);
+    const { events } = tick(s, 2);
     expect(events.some((e) => e.source === undefined)).toBe(true); // player
-    expect(sources).toContain('acolyte');
-    expect(sources).toContain('invocation');
+    expect(events.map((e) => e.source)).toContain('acolyte');
   });
 });
 
@@ -586,13 +415,10 @@ describe('markDoppelgaengerSeen — one-time jumpscare flag (pure + idempotent)'
   it('sets the permanent flag without mutating the input, and is idempotent once set', () => {
     const base = fresh('doppel-seen', 0);
     expect(base.flagDoppelgaengerSeen).toBeUndefined();
-
     const seen = markDoppelgaengerSeen(base);
     expect(seen.flagDoppelgaengerSeen).toBe(true);
     expect(base.flagDoppelgaengerSeen).toBeUndefined(); // input untouched (purity)
-
-    // Idempotent: a second mark returns the same reference (no needless new state).
-    expect(markDoppelgaengerSeen(seen)).toBe(seen);
+    expect(markDoppelgaengerSeen(seen)).toBe(seen); // idempotent
   });
 
   it('survives Katabasis (a once-seen scare never replays in a later lifetime)', () => {

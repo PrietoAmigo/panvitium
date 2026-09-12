@@ -188,11 +188,12 @@ export function commitKatabasis(
 ): { state: GameState; recap: KatabasisRecap } {
   const rng = makeRng(state.rngState);
 
-  // Apex Katabasis overrides (03 §2.4). Erinyes invoke clears any prior pendingMorpheus, so at
-  // most ONE flag is set at commit time. Erinyes zeros gold + maleficia and stacks a permanent
-  // ×2 player-efficiency multiplier; Morpheus maxes both rolls and preserves the Emptio list.
+  // Apex Katabasis overrides (03 §2.4). Only one apex kind may be invoked per lifetime, so at most
+  // one of these flags is set; the `!pendingErinyes` guard is a defensive commit-side mutex. Erinyes
+  // zeros gold + maleficia and stacks a permanent ×2 player-efficiency multiplier; Astiwihad (the
+  // world-still apex, formerly Morpheus) maxes both carry-over rolls and preserves the Emptio list.
   const pendingErinyes = state.lifetime.pendingErinyes === true;
-  const pendingMorpheus = !pendingErinyes && state.lifetime.pendingMorpheus === true;
+  const pendingAstiwihad = !pendingErinyes && state.lifetime.pendingAstiwihad === true;
 
   // Thesaurus liquidation (spec §7): the hoard pays out in full BEFORE the carry-over roll, so
   // the estate participates in the remaining-gold % and not at face value — the hoard is real
@@ -220,7 +221,7 @@ export function commitKatabasis(
   const sigilEffectMul = sigilEffectMultiplier(state.lifetime.maleficia);
   const goldFraction = pendingErinyes
     ? 0
-    : pendingMorpheus
+    : pendingAstiwihad
       ? 1
       : remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold', sigilEffectMul));
   const rolledGold = floor(mul(floor(goldAtDescent), goldFraction));
@@ -236,7 +237,7 @@ export function commitKatabasis(
   // (Halphas #38, Semet #32) lift the chance; Erinyes zeros it, Morpheus maxes it.
   const chance = pendingErinyes
     ? 0
-    : pendingMorpheus
+    : pendingAstiwihad
       ? 1
       : remainingMaleficiaChance(state, sigilKatabasisBonus(state, 'maleficia', sigilEffectMul));
   const maleficiaKept: string[] = [];
@@ -264,8 +265,8 @@ export function commitKatabasis(
     maleficia: maleficiaKept,
     // Morpheus's mercy (03 §2.4): the Emptio list survives the descent so the maleficia surfaced
     // in this lifetime are not lost. Otherwise the list clears (02 §6).
-    emptioList: pendingMorpheus ? [...state.lifetime.emptioList] : [],
-    maleficiaPrices: pendingMorpheus ? { ...state.lifetime.maleficiaPrices } : {},
+    emptioList: pendingAstiwihad ? [...state.lifetime.emptioList] : [],
+    maleficiaPrices: pendingAstiwihad ? { ...state.lifetime.maleficiaPrices } : {},
     indagatioInvestment: ZERO, // folded into the estate above; the new lifetime starts with no stake
     handOfGloryRemaining: 0,
     callBuffs: [], // incoming-call timed buffs end with the lifetime
@@ -279,6 +280,7 @@ export function commitKatabasis(
     generationPool: 0, // pools reset with the fresh lifetime
     suicidePool: 0,
     murderPool: 0,
+    reprobateCostPool: 0, // invocation reprobate-cost accrual resets too
     // The inbox is mail history: it persists across descents (it is never wiped). Carrying it over
     // also keeps `deliverEmails`' once-per-id dedup intact between lifetimes, so a story beat gated on
     // a monotonic tally (a soul-threshold bulletin, Fausto #5's door-knock) is delivered once and
@@ -291,8 +293,9 @@ export function commitKatabasis(
     // verba manent") rather than silently lifting on the descent.
     ...(state.lifetime.flagFCThreatSent === true ? { flagFCThreatSent: true } : {}),
     ...(state.lifetime.flagFaustoCurse === true ? { flagFaustoCurse: true } : {}),
-    // flagFatherMad / flagReubenDead are top-level and carry across. pendingErinyes / pendingMorpheus
-    // / morpheusLockedOut are intentionally omitted — the new lifetime starts clean.
+    // flagFatherMad / flagReubenDead are top-level and carry across. pendingErinyes /
+    // pendingAstiwihad / apexInvoked are intentionally omitted — the new lifetime starts clean, so a
+    // new apex kind can be invoked next lifetime.
   };
 
   return {

@@ -100,6 +100,9 @@ const lifetimeSchema = z.object({
   generationPool: z.number().nonnegative().optional(),
   suicidePool: z.number().nonnegative().optional(),
   murderPool: z.number().nonnegative().optional(),
+  // Invocation reprobate-cost accrual pool (Arachne / Morpheus upkeep). Additive-optional (ADR-023):
+  // absent → 0 at runtime; omitted from the wire when 0.
+  reprobateCostPool: z.number().nonnegative().optional(),
   // The Thesaurus hoard (Depraedatio gold rework): gold placed with the counting house. Optional;
   // absent ≡ zero, omitted when zero so a fresh game's wire form stays minimal. (The Mercatus
   // `mercatusDepths` field was REMOVED in schema v5; v4 saves are migrated by `v4-to-v5.ts` —
@@ -125,11 +128,12 @@ const lifetimeSchema = z.object({
   flagFCThreatSent: z.boolean().optional(),
   flagFaustoCurse: z.boolean().optional(),
   defixio: z.object({ elapsed: z.number().nonnegative() }).optional(),
-  // Apex Katabasis-modifier pending flags + Morpheus lockout (03 §2.4). Additive-optional
-  // (ADR-023): absent in old saves → false at runtime; omitted when false.
+  // Apex Katabasis-modifier pending flags (03 §2.4): Erinyes zeros the carry-over, Astiwihad (the
+  // world-still apex) maxes it. Additive-optional (ADR-023): absent → false at runtime; omitted when
+  // false. `apexInvoked` records which apex kind was summoned this lifetime (one-per-lifetime rule).
   pendingErinyes: z.boolean().optional(),
-  pendingMorpheus: z.boolean().optional(),
-  morpheusLockedOut: z.boolean().optional(),
+  pendingAstiwihad: z.boolean().optional(),
+  apexInvoked: z.string().optional(),
 });
 
 /** Zod schema for the serialized gameplay state. */
@@ -246,6 +250,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
         : {}),
       ...(state.lifetime.suicidePool > 0 ? { suicidePool: state.lifetime.suicidePool } : {}),
       ...(state.lifetime.murderPool > 0 ? { murderPool: state.lifetime.murderPool } : {}),
+      ...(state.lifetime.reprobateCostPool > 0
+        ? { reprobateCostPool: state.lifetime.reprobateCostPool }
+        : {}),
       ...(state.lifetime.handOfGloryRemaining > 0
         ? { handOfGloryRemaining: state.lifetime.handOfGloryRemaining }
         : {}),
@@ -278,11 +285,13 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.flagFCThreatSent === true ? { flagFCThreatSent: true } : {}),
       ...(state.lifetime.flagFaustoCurse === true ? { flagFaustoCurse: true } : {}),
       ...(state.lifetime.defixio ? { defixio: { elapsed: state.lifetime.defixio.elapsed } } : {}),
-      // Apex Katabasis-modifier flags + Morpheus lockout: omit when false so fresh / pre-apex
-      // saves keep the prior wire form (ADR-023 additive-optional discipline).
+      // Apex Katabasis-modifier flags + the invoked-apex kind: omit when false/absent so fresh /
+      // pre-apex saves keep the prior wire form (ADR-023 additive-optional discipline).
       ...(state.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
-      ...(state.lifetime.pendingMorpheus === true ? { pendingMorpheus: true } : {}),
-      ...(state.lifetime.morpheusLockedOut === true ? { morpheusLockedOut: true } : {}),
+      ...(state.lifetime.pendingAstiwihad === true ? { pendingAstiwihad: true } : {}),
+      ...(state.lifetime.apexInvoked !== undefined
+        ? { apexInvoked: state.lifetime.apexInvoked }
+        : {}),
       // The hoard / Syngraphae / Peculium base: omit when zero/empty/absent so fresh games keep a
       // minimal wire form (ADR-023).
       ...(state.lifetime.hoard.gt(0) ? { hoard: serializeBigNum(state.lifetime.hoard) } : {}),
@@ -369,6 +378,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       generationPool: s.lifetime.generationPool ?? 0,
       suicidePool: s.lifetime.suicidePool ?? 0,
       murderPool: s.lifetime.murderPool ?? 0,
+      reprobateCostPool: s.lifetime.reprobateCostPool ?? 0,
       handOfGloryRemaining: s.lifetime.handOfGloryRemaining ?? 0,
       // Incoming-call timed buffs: additive-optional (ADR-023) — absent → []. Drop any buff whose
       // `field` isn't a known target (a newer save's field), so it can't feed an unknown modifier.
@@ -390,11 +400,11 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       ...(s.lifetime.flagFCThreatSent === true ? { flagFCThreatSent: true } : {}),
       ...(s.lifetime.flagFaustoCurse === true ? { flagFaustoCurse: true } : {}),
       ...(s.lifetime.defixio ? { defixio: { elapsed: s.lifetime.defixio.elapsed } } : {}),
-      // Apex Katabasis-modifier flags + Morpheus lockout: conditional spread keeps them optional
+      // Apex Katabasis-modifier flags + invoked-apex kind: conditional spread keeps them optional
       // under exactOptionalPropertyTypes (assigning undefined would type-error).
       ...(s.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
-      ...(s.lifetime.pendingMorpheus === true ? { pendingMorpheus: true } : {}),
-      ...(s.lifetime.morpheusLockedOut === true ? { morpheusLockedOut: true } : {}),
+      ...(s.lifetime.pendingAstiwihad === true ? { pendingAstiwihad: true } : {}),
+      ...(s.lifetime.apexInvoked !== undefined ? { apexInvoked: s.lifetime.apexInvoked } : {}),
       // The hoard / Syngraphae: absent → zero / none (additive-optional, ADR-023). The Peculium
       // base rides along only when present so a mid-descent save reloads it.
       hoard: s.lifetime.hoard ? deserializeBigNum(s.lifetime.hoard) : deserializeBigNum('0'),

@@ -79,10 +79,10 @@ describe('buildGoetia effect lines (sim-derived, not stale static copy)', () => 
     }
   });
 
-  it('Harpy reads as its Pogrom runner (#8), not the stale "Suasio"', () => {
+  it('Harpy reads as a base murder-rate boost (no stale runner blurb)', () => {
     const eff = effectOf('harpy');
-    expect(eff).toMatch(/Pogrom/i);
-    expect(eff).not.toMatch(/Suasio/i);
+    expect(eff.toLowerCase()).toContain('murder');
+    expect(eff).not.toMatch(/Pogrom|Suasio/i);
   });
 
   it('Behemoth reads as a Stellar-chance boost, not the stale "reprobate generation"', () => {
@@ -91,11 +91,9 @@ describe('buildGoetia effect lines (sim-derived, not stale static copy)', () => 
     expect(eff.toLowerCase()).not.toContain('reprobate generation');
   });
 
-  it('runner invocations (Lamia, Imp) describe an action + cadence, not a passive blurb', () => {
-    expect(effectOf('lamia')).toMatch(/Logismoi/i);
-    expect(effectOf('lamia')).toContain('every');
-    expect(effectOf('imp')).toMatch(/Caedes/i);
-    expect(effectOf('imp')).toContain('every');
+  it('flat-dynamics invocations read as a live per-second magnitude (Lamia reprobates, Imp murders)', () => {
+    expect(effectOf('lamia').toLowerCase()).toContain('reprobates/s');
+    expect(effectOf('imp').toLowerCase()).toContain('murders/s');
   });
 
   it('Fama shows a live percentage, not a hardcoded "+50%"', () => {

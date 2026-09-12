@@ -1,35 +1,32 @@
 /**
  * Invocations (02 §7, 03 §2.4) — summon hellish entities that grant passive effects. Each has an
- * **invoking-power** requirement (sum of equipped maleficia `invokingPower`, plus sigils once those
- * land) and may also require a Cardinal Sin level. Summoning is free up front for most entities;
- * the cost is a per-second **upkeep** paid out of income while active (Invocatio sheet — see
- * `invocationUpkeep` + tick.ts step 1a), and a flat drain the pool can't sustain dispels the
- * invocation. Morpheus is the exception: it pays a one-time %-of-pool soul+gold cost on invoke.
- * Most are persistent and dispellable at will; on Katabasis all are dispelled (handled in
- * katabasis.ts — `invocations` reset to {}).
+ * **invoking-power** requirement (sum of equipped maleficia `invokingPower`, plus sigils) and may
+ * also require a Cardinal Sin level. Summoning is always free up front; the cost is a per-second
+ * **upkeep** paid out of income and pools while active (see `invocationUpkeep` + tick.ts step 1a):
+ * flat gold/influence, %-of-gain (gold/influence), a flat or %-of-pool **reprobate** drain (a pure
+ * cost — no souls minted), and a **stagnation** drain. A flat drain the pool can't sustain dispels
+ * the invocation; %-costs only zero a gain or shrink a pool, never bankrupt. Most are persistent and
+ * dispellable at will; on Katabasis all are dispelled (katabasis.ts — `invocations` reset to {}).
  *
  * Visibility (02 §12): an invocation appears in the Ars Goetia list once the player has at least
  * HALF its required invoking power — a teaser that the entity is within reach.
  *
- * THIS SLICE wires the infrastructure plus a representative subset whose effects map cleanly onto
- * the existing modifier bundle (computeModifiers reads `state.lifetime.invocations`):
- *   - Fama        (Vanagloria) — influence gain rate up      [stackable]
- *   - Nightmare   (Tristitia)  — reprobate suicide rate up   [stackable]
- *   - Harpy       (Ira)        — Decimatio efficiency up       [stackable]
- *   - Behemoth    (Superbia)   — Stellar outcome chance up    [stackable]
- *   - Midas       (Avaritia)   — 3× gold, 100× Apocalyptic    [apex, max 1, free]
- *   - Doppelgaenger (Superbia) — +50% player efficiency, half influence [apex, max 1, free]
+ * **The apex entities (Sin level 3) are one-kind-per-lifetime** (see `invoke`): once any apex is
+ * summoned, only that same kind may be re-summoned until the next Katabasis.
  *
- * Phase 4 close: every invocation in the catalog is wired. The three effect shapes are:
- *   (1) autonomous-runner channel — `def.autonomous`, advanced via runner.ts (Familiar, Imp, Upir,
- *       Lamia → Suasio).
- *   (2) static modifier-bundle contribution — a line in modifiers.ts (Fama, Nightmare, Harpy,
- *       Lemure, Behemoth, Midas, Plutus, Succubus, Doppelgänger).
- *   (3) per-tick / per-invoke side-effects — Astiwihad + Aurevora live in apex.ts (per-tick mass
- *       suicide + exponential gold drain); Erinyes + Morpheus are handled at invoke/commit time
- *       in this module + katabasis.ts (kill-all + Katabasis carry-over overrides); Specunitas
- *       feeds the per-subtype conversion-bias hook in dynamics.ts (`conversionBiasMul`).
- * Number magnitudes are placeholders, spreadsheet-overridable; the shape is authoritative.
+ * The effect shapes (no autonomous runners remain — that shape was retired):
+ *   (1) modifier-bundle contribution — a line in modifiers.ts (most entries; the "scaled by
+ *       efficiency" ones scale by the all-invocation × per-Sin invocation-effect multipliers, NOT
+ *       player efficiency). This covers the flat dynamics effects (Imp murders, Banshee suicides,
+ *       Empusa/Lamia/Succubus generation), income (Kobold/Arachne/Fama/Plutus/Specunitas/Midas),
+ *       player efficiency (Familiar/Wendigo/Doppelgänger), the outcome-tier shifts (Behemoth/
+ *       Narcissus/Upir), and stagnation generation (Blob/Morpheus, applied in the tick).
+ *   (2) per-tick side-effect in apex.ts — Aurevora's exponential gold drain ↔ rising efficiency.
+ *   (3) per-invoke / per-commit side-effect (this module + katabasis.ts) — Erinyes kills every
+ *       reprobate and zeroes the Katabasis carry-over (×2 player-efficiency stack); Astiwihad holds
+ *       the world still (tick freeze) and maxes the carry-over. Both set a `pending*` flag at invoke.
+ * The `def.autonomous` field remains on the type for the shared runner infrastructure, but no
+ * invocation currently uses it.
  */
 import { div, floor, gte, max, mul, sub, ZERO, type BigNum } from './bignum.js';
 import { sigilInvokingPower, sigilCostReductionByChannel } from './sigils.js';
@@ -72,6 +69,14 @@ export interface InvocationDef {
    *   - `gold` / `influence`: flat amount per second.
    *   - `goldGainFraction` / `influenceGainFraction`: fraction of that resource's gross gain/second.
    *   - `maxInfluenceFraction`: fraction of the effective max influence per second (Lemure).
+   *   - `reprobate`: flat living reprobates drained per second (Arachne). Whole units leave the pool
+   *     WITHOUT minting souls (upkeep is a cost, not a death); a drain the population can't cover
+   *     dispels the invocation. Accrued fractionally through `lifetime.reprobateCostPool`.
+   *   - `reprobateFraction`: fraction of the CURRENT reprobate pool drained per second (Morpheus).
+   *     Self-limiting like the %-of-gain costs, so it never bankrupts and never triggers a dispel;
+   *     also no souls minted.
+   *   - `stagnation`: flat stagnation drained per second (Upir), from the top-level stagnation pool.
+   *     A drain the pool can't cover dispels the invocation.
    */
   readonly upkeep?: {
     readonly gold?: number;
@@ -79,6 +84,9 @@ export interface InvocationDef {
     readonly goldGainFraction?: number;
     readonly influenceGainFraction?: number;
     readonly maxInfluenceFraction?: number;
+    readonly reprobate?: number;
+    readonly reprobateFraction?: number;
+    readonly stagnation?: number;
   };
   /**
    * Autonomous background runner (02 §3): this invocation runs `action` in its own channel at
@@ -171,10 +179,20 @@ export interface InvocationUpkeep {
   readonly flatGoldPerSecond: number;
   /** Absolute influence/s drained (flat costs + Lemure's %-of-max-influence). */
   readonly flatInfluencePerSecond: number;
+  /** Absolute living reprobates/s drained (Arachne's flat cost). No souls minted. */
+  readonly flatReprobatesPerSecond: number;
+  /** Fraction of the current reprobate pool/s drained (Morpheus). Self-limiting; no souls minted. */
+  readonly reprobateFraction: number;
+  /** Absolute stagnation/s drained (Upir's flat cost) from the top-level stagnation pool. */
+  readonly flatStagnationPerSecond: number;
   /** Ids contributing a flat gold drain — dispelled together if the drain can't be paid. */
   readonly flatGoldDrainers: readonly string[];
   /** Ids contributing a flat influence drain — dispelled together if the drain can't be paid. */
   readonly flatInfluenceDrainers: readonly string[];
+  /** Ids contributing a flat reprobate drain — dispelled together if the population can't cover it. */
+  readonly flatReprobateDrainers: readonly string[];
+  /** Ids contributing a flat stagnation drain — dispelled together if the pool can't cover it. */
+  readonly flatStagnationDrainers: readonly string[];
 }
 
 /**
@@ -191,8 +209,13 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
   let influenceGainFraction = 0;
   let flatGoldPerSecond = 0;
   let flatInfluencePerSecond = 0;
+  let flatReprobatesPerSecond = 0;
+  let reprobateFraction = 0;
+  let flatStagnationPerSecond = 0;
   const flatGoldDrainers: string[] = [];
   const flatInfluenceDrainers: string[] = [];
+  const flatReprobateDrainers: string[] = [];
+  const flatStagnationDrainers: string[] = [];
   for (const id of INVOCATION_IDS) {
     const n = activeInvocationCount(state, id);
     if (n <= 0) continue;
@@ -212,9 +235,19 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
       flatInfluencePerSecond += u.maxInfluenceFraction * n * effectiveMax;
       flatInfluenceDrainers.push(id);
     }
+    if (u.reprobate) {
+      flatReprobatesPerSecond += u.reprobate * n;
+      flatReprobateDrainers.push(id);
+    }
+    if (u.reprobateFraction) reprobateFraction += u.reprobateFraction * n;
+    if (u.stagnation) {
+      flatStagnationPerSecond += u.stagnation * n;
+      flatStagnationDrainers.push(id);
+    }
   }
   // The invocation cost channel softens EVERY upkeep cost (ADR-035): the %-of-gain drains and the
-  // flat gold/influence drains alike, dividing each by `(1 + strength)`.
+  // flat gold/influence/reprobate/stagnation drains alike, dividing each by `(1 + strength)`. The
+  // reprobate FRACTION is a proportion of the pool, so the channel softens it too.
   const red = sigilCostReductionByChannel(
     state,
     sigilEffectMultiplier(state.lifetime.maleficia),
@@ -224,20 +257,34 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
     influenceGainFraction /= red;
     flatGoldPerSecond /= red;
     flatInfluencePerSecond /= red;
+    flatReprobatesPerSecond /= red;
+    reprobateFraction /= red;
+    flatStagnationPerSecond /= red;
   }
   return {
     goldGainFraction: Math.min(1, goldGainFraction),
     influenceGainFraction: Math.min(1, influenceGainFraction),
     flatGoldPerSecond,
     flatInfluencePerSecond,
+    flatReprobatesPerSecond,
+    reprobateFraction: Math.min(1, reprobateFraction),
+    flatStagnationPerSecond,
     flatGoldDrainers,
     flatInfluenceDrainers,
+    flatReprobateDrainers,
+    flatStagnationDrainers,
   };
 }
 
 export type InvokeResult =
   | { readonly ok: true; readonly state: GameState }
   | { readonly ok: false; readonly reason: string };
+
+/** The apex invocations (03 §2.4) — the Sin-level-3 entities capped at one active. Only ONE kind of
+ * apex may be invoked per lifetime (see `invoke`). */
+export function isApexInvocation(def: InvocationDef): boolean {
+  return def.sinLevel === 3;
+}
 
 /**
  * Summon one of `id`. Checks: known id, gates met, under the max-active cap, soul/gold cost
@@ -246,23 +293,29 @@ export type InvokeResult =
  * Persistent by default — stays until dispelled or Katabasis.
  *
  * The two Katabasis-modifying apexes (03 §2.4) carry side-effects at invoke time:
- *   - Erinyes immediately kills every reprobate (each death mints one soul), dispels any active
- *     Morpheus, clears `pendingMorpheus`, sets `morpheusLockedOut`, and sets `pendingErinyes` for
- *     `commitKatabasis` to read.
- *   - Morpheus refuses if `morpheusLockedOut` is set; otherwise pays its cost and sets
- *     `pendingMorpheus`.
+ *   - Erinyes immediately kills every reprobate (each death mints one soul — a kill, not upkeep) and
+ *     sets `pendingErinyes` for `commitKatabasis` to read.
+ *   - Astiwihad sets `pendingAstiwihad` (world held still while active; carry-over maxed at commit).
+ *
+ * Only ONE kind of apex may be invoked per lifetime: once any apex is summoned, `invoke` refuses a
+ * different apex kind until the next Katabasis (re-summoning the same kind, within its cap, is fine).
  */
 export function invoke(state: GameState, id: string): InvokeResult {
   const def = invocationById(id);
   if (!def) return { ok: false, reason: `unknown invocation: ${id}` };
-  if (id === 'morpheus' && state.lifetime.morpheusLockedOut === true) {
-    return { ok: false, reason: 'Morpheus has been silenced by Erinyes\u2019s wrath.' };
-  }
   if (!invocationUnlocked(state, def)) {
     const ip = `${def.invokingPower} invoking power`;
     const lvl =
       def.sinLevel !== undefined && def.sin !== null ? `, ${def.sin} ${def.sinLevel}` : '';
     return { ok: false, reason: `requires ${ip}${lvl}` };
+  }
+  // One apex kind per lifetime: once any apex is invoked, only that same kind may be re-summoned
+  // (subject to its cap) until the next Katabasis. A different apex is refused.
+  if (isApexInvocation(def)) {
+    const already = state.lifetime.apexInvoked;
+    if (already !== undefined && already !== id) {
+      return { ok: false, reason: 'another apex already answers this lifetime' };
+    }
   }
   const cap = def.maxActive ?? Infinity;
   if (activeInvocationCount(state, id) >= cap) {
@@ -277,7 +330,8 @@ export function invoke(state: GameState, id: string): InvokeResult {
     return { ok: false, reason: 'not enough gold' };
   }
 
-  // Standard cost deduction + active-count increment.
+  // Standard cost deduction + active-count increment. Apexes stamp `apexInvoked` so the
+  // one-kind-per-lifetime rule holds even after a dispel + re-summon.
   let working: GameState = {
     ...state,
     souls: sub(state.souls, soulCost),
@@ -285,39 +339,23 @@ export function invoke(state: GameState, id: string): InvokeResult {
       ...state.lifetime,
       gold: sub(state.lifetime.gold, goldCost),
       invocations: { ...state.lifetime.invocations, [id]: activeInvocationCount(state, id) + 1 },
+      ...(isApexInvocation(def) ? { apexInvoked: id } : {}),
     },
   };
 
   // ── Apex side-effects ────────────────────────────────────────────────────────────────────
   if (id === 'erinyes') {
-    // Kill every reprobate at once — each death mints one soul (the 1-person-1-soul invariant).
-    // No RNG draws (a 100% wipe is deterministic) and the integer count is exact.
+    // Kill every reprobate at once — each death mints one soul (the 1-person-1-soul invariant; this
+    // is a KILL, not upkeep). No RNG draws (a 100% wipe is deterministic) and the count is exact.
     const population = totalReprobates(working);
     if (population > 0) {
       working = mintSouls(working, population);
-      working = {
-        ...working,
-        lifetime: { ...working.lifetime, reprobates: 0 },
-      };
+      working = { ...working, lifetime: { ...working.lifetime, reprobates: 0 } };
     }
-    // Dispel any active Morpheus, cancel its pending Katabasis effect, and lock it out.
-    const invocations = { ...working.lifetime.invocations };
-    if ((invocations.morpheus ?? 0) > 0) delete invocations.morpheus;
-    working = {
-      ...working,
-      lifetime: {
-        ...working.lifetime,
-        invocations,
-        pendingErinyes: true,
-        pendingMorpheus: false,
-        morpheusLockedOut: true,
-      },
-    };
-  } else if (id === 'morpheus') {
-    working = {
-      ...working,
-      lifetime: { ...working.lifetime, pendingMorpheus: true },
-    };
+    working = { ...working, lifetime: { ...working.lifetime, pendingErinyes: true } };
+  } else if (id === 'astiwihad') {
+    // The world-still apex (formerly Morpheus): its carry-over is maxed at commit.
+    working = { ...working, lifetime: { ...working.lifetime, pendingAstiwihad: true } };
   }
 
   return { ok: true, state: working };

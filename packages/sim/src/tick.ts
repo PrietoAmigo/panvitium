@@ -21,14 +21,14 @@ import { applyInvocationTickEffects, aurevoraDrainPerSecond } from './apex.js';
 import { anatocismusDepositPerSecond, faeneratioGoldPerSecond } from './faeneratio.js';
 import { advanceToggles, panvitiumRate } from './compositum.js';
 import { advanceCallBuffs } from './callBuffs.js';
-import { DESIDIA_BASE_COST_PER_SECOND, DESIDIA_BASE_SPEED } from './stagnation.js';
+import { DESIDIA_BASE_COST_PER_SECOND, DESIDIA_BASE_SPEED, stagnationMax } from './stagnation.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
 import { computeModifiers } from './modifiers.js';
 import { removeReprobates, mintSouls } from './population.js';
 import { makeRng } from './rng.js';
-import { type ActionTimer, type GameState } from './state.js';
+import { type ActionTimer, type GameState, totalReprobates } from './state.js';
 import { evaluateAchievements } from './achievements.js';
 import { deliverEmails } from './emails.js';
 
@@ -72,12 +72,12 @@ export interface PerSecondRates {
 
 /**
  * The current passive income rates, mirroring this file's income block without advancing the state.
- * Zero while frozen (mid-descent or under Morpheus), since nothing accrues then. Influence is the
+ * Zero while frozen (mid-descent or under Astiwihad), since nothing accrues then. Influence is the
  * gross generation rate — it represents economy throughput, not the net change once the cap is hit.
  * (The percentage-VC base-rate machinery retired with the lesser ceremonies — ADR-031.)
  */
 export function perSecondRates(state: GameState): PerSecondRates {
-  if (state.inKatabasis === true || (state.lifetime.invocations.morpheus ?? 0) > 0) {
+  if (state.inKatabasis === true || (state.lifetime.invocations.astiwihad ?? 0) > 0) {
     return { gold: 0, influence: ZERO };
   }
   const mods = computeModifiers(state);
@@ -133,11 +133,11 @@ export interface ResourceFlows {
  * income/upkeep math as `perSecondRates` and the tick's steps 1/1a, decomposed so the Analytics
  * panel can show each column instead of only the net. `net` here is uncapped (generation − upkeep),
  * so it can read negative and, unlike `perSecondRates.influence`, is not floored at 0. Zero while
- * frozen (mid-descent or under Morpheus).
+ * frozen (mid-descent or under Astiwihad).
  */
 export function resourceFlows(state: GameState): ResourceFlows {
   const zero: ResourceFlow = { generation: 0, upkeep: 0, net: 0 };
-  if (state.inKatabasis === true || (state.lifetime.invocations.morpheus ?? 0) > 0) {
+  if (state.inKatabasis === true || (state.lifetime.invocations.astiwihad ?? 0) > 0) {
     return { gold: zero, influence: zero };
   }
   const mods = computeModifiers(state);
@@ -186,19 +186,19 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     };
   }
 
-  // Morpheus freeze (03 §2.4): while the apex Acedia is active, the lifetime is held in stillness —
-  // no income, no Opera progress, no dynamics, no apex per-tick effects, no Vitium toggle
-  // upkeep. Only the clock and the achievement evaluator advance (the latter so an unlock that
-  // depends on PRE-Morpheus state can still surface; nothing new can be earned mid-freeze because
-  // the underlying state isn't changing). The player can still summon other invocations from the
-  // UI — Erinyes will dispel Morpheus, restoring the normal tick.
-  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
+  // Astiwihad freeze (03 §2.4): while the apex Tristitia is active, the lifetime is held in stillness
+  // — no income, no Opera progress, no dynamics, no apex per-tick effects, no Vitium toggle upkeep.
+  // Only the clock and the achievement evaluator advance (the latter so an unlock that depends on
+  // PRE-freeze state can still surface; nothing new can be earned mid-freeze because the underlying
+  // state isn't changing). Only one apex kind may be invoked per lifetime, so no other apex coexists
+  // with it; the freeze ends when Astiwihad is dispelled or at Katabasis.
+  if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
     const finalState: GameState = {
       ...state,
       lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
     };
     const ach = evaluateAchievements(finalState);
-    // Mail does not arrive while the world is held in Morpheus's stillness (parallel to income/dynamics).
+    // Mail does not arrive while the world is held in Astiwihad's stillness (parallel to income/dynamics).
     return {
       state: ach.state,
       events: [],
@@ -286,10 +286,12 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   const events: OutcomeEvent[] = [];
 
   // 1a. Invocation upkeep (Invocatio sheet): each active invocation pays its per-second cost out of
-  //     this tick's income. %-of-gain costs consume a fraction of what was just gained; flat costs
-  //     subtract an absolute amount. A flat drain the pool can't cover dispels its invocation(s)
-  //     (generalising Aurevora's "dispel at gold 0"); the %-of-gain part alone can only zero a gain,
-  //     never bankrupt, so it never triggers a dispel.
+  //     this tick's income and pools. %-of-gain costs consume a fraction of what was just gained;
+  //     flat gold/influence/reprobate/stagnation costs subtract an absolute amount. A flat drain the
+  //     pool can't cover dispels its invocation(s) (generalising Aurevora's "dispel at gold 0"); the
+  //     %-of-gain / %-of-pool parts alone can only zero a gain (or shrink a pool), never bankrupt, so
+  //     they never trigger a dispel. Reprobate upkeep is a PURE COST — whole units leave the pool
+  //     WITHOUT minting souls (the 1-person-1-soul invariant covers only murder/suicide deaths).
   {
     const up = invocationUpkeep(state, effectiveMax.toNumber());
     const goldGain = sub(working.lifetime.gold, state.lifetime.gold);
@@ -309,6 +311,30 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
       influence = max(ZERO, sub(working.lifetime.influence, inflFracCost));
       dispelled.push(...up.flatInfluenceDrainers);
     }
+
+    // Reprobate upkeep (Arachne's flat drain + Morpheus's %-of-pool drain): accrued fractionally in
+    // `reprobateCostPool` for exactness (ADR-004), then whole units leave the pool WITHOUT souls. A
+    // flat demand the living population can't cover this tick dispels the flat drainer(s).
+    const population = totalReprobates(working);
+    let flatReproDemand = up.flatReprobatesPerSecond * simDelta;
+    if (flatReproDemand > population) {
+      dispelled.push(...up.flatReprobateDrainers);
+      flatReproDemand = 0;
+    }
+    const reproPool =
+      working.lifetime.reprobateCostPool +
+      flatReproDemand +
+      up.reprobateFraction * population * simDelta;
+
+    // Stagnation upkeep (Upir): drained from the top-level stagnation pool; a demand it can't cover
+    // dispels the drainer(s). Stagnation is a float, so no accrual pool is needed.
+    const stagDemand = up.flatStagnationPerSecond * simDelta;
+    let stagnation = state.stagnation;
+    if (stagDemand > 0) {
+      if (stagnation >= stagDemand) stagnation -= stagDemand;
+      else dispelled.push(...up.flatStagnationDrainers);
+    }
+
     let invocations = working.lifetime.invocations;
     if (dispelled.length > 0) {
       invocations = { ...invocations };
@@ -317,17 +343,41 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
         notices.push(`${id} dispelled — upkeep unpaid.`);
       }
     }
-    working = { ...working, lifetime: { ...working.lifetime, gold, influence, invocations } };
+    working = {
+      ...working,
+      stagnation,
+      lifetime: { ...working.lifetime, gold, influence, invocations },
+    };
+    // Drain whole reprobates from the accrued pool (clamped to the living population), no souls.
+    const toRemove = Math.min(Math.floor(reproPool), totalReprobates(working));
+    if (toRemove > 0) working = removeReprobates(working, toRemove).state;
+    working = {
+      ...working,
+      lifetime: { ...working.lifetime, reprobateCostPool: reproPool - toRemove },
+    };
   }
 
   // 1b. Apex invocation per-tick effects (03 §2.4): Aurevora's exponentially-rising gold drain paid
-  //     against its rising efficiency boost (dispels at gold 0), and Astiwihad's per-second chance
-  //     to wipe the whole reprobate population. Runs net of this tick's income; the efficiency half
-  //     of Aurevora is read from the advanced duration by computeModifiers below.
+  //     against its rising efficiency boost (dispels at gold 0). Runs net of this tick's income; the
+  //     efficiency half of Aurevora is read from the advanced duration by computeModifiers below.
   {
-    const apex = applyInvocationTickEffects(working, simDelta, rng);
+    const apex = applyInvocationTickEffects(working, simDelta);
     working = apex.state;
     for (const n of apex.notices) notices.push(n);
+  }
+
+  // 1c. Invocation stagnation generation (Blob's flat yield + Morpheus's per-consumed-reprobate
+  //     yield, both efficiency-scaled — `mods.flatStagnationPerSecond`). Added to the top-level
+  //     stagnation pool over `simDelta`, clamped to the current cap; never reduces a pool already at
+  //     or above the cap. A no-op when no generator is active.
+  if (mods.flatStagnationPerSecond > 0) {
+    const cap = stagnationMax(working);
+    const gained = mods.flatStagnationPerSecond * simDelta;
+    working = {
+      ...working,
+      stagnation:
+        working.stagnation >= cap ? working.stagnation : Math.min(cap, working.stagnation + gained),
+    };
   }
 
   // 2. Resolve in-flight Opera timers. A timer whose remaining time falls to <= 0 this tick

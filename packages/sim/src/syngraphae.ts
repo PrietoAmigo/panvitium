@@ -146,11 +146,11 @@ export function syngraphaSignable(
 /**
  * Sign a Syngrapha: burn the gold cost (paid, never hoarded, never refunded — the fee is the
  * signing fee) and record the node id on the lifetime. Floors gold at the spend boundary
- * (ADR-005). Refused under the Morpheus freeze, like every other initiation of work (03 §2.4).
+ * (ADR-005). Refused under the Astiwihad freeze, like every other initiation of work (03 §2.4).
  */
 export function signSyngrapha(state: GameState, id: string): SignResult {
-  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
-    return { ok: false, reason: 'The world is held in Morpheus’s stillness.' };
+  if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
+    return { ok: false, reason: 'The world is held in Astiwihad’s stillness.' };
   }
   const def = syngraphaById(id);
   if (!def) return { ok: false, reason: 'no such contract' };

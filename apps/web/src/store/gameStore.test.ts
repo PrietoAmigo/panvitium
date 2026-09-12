@@ -450,8 +450,8 @@ describe('gameStore — invocations', () => {
   });
 
   it('summons when gated — normals are free upfront (cost is per-second upkeep)', () => {
-    equipPower(2);
-    patchSuperbia(1);
+    equipPower(4);
+    patchSuperbia(2);
     patchSouls(1000);
     store().summon('behemoth'); // no upfront cost; upkeep is paid per tick
     const s = store().state as GameState;
@@ -461,8 +461,8 @@ describe('gameStore — invocations', () => {
   });
 
   it('dispels an active invocation', () => {
-    equipPower(3);
-    patchSuperbia(1);
+    equipPower(4);
+    patchSuperbia(2);
     patchSouls(1_000_000);
     store().summon('behemoth');
     store().banish('behemoth');

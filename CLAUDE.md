@@ -93,9 +93,11 @@ and the save **envelope** (`save/schema.ts`: `schemaVersion`, monotonic `saveVer
 **Save migrations (ADR-023, `save/migrations/`).** When the persisted shape changes, bump
 `CURRENT_SCHEMA_VERSION` and add a `vN-to-vN+1.ts` migration — never break old saves. Additive,
 optional fields (`additive-optional`) do not require a bump; structural changes do. Current version
-is **5** (`v1-to-v2`: subtype removal; `v2-to-v3`: Mercatus rework; `v3-to-v4`: Decimatio rite id
+is **6** (`v1-to-v2`: subtype removal; `v2-to-v3`: Mercatus rework; `v3-to-v4`: Decimatio rite id
 `caedis` → `caedes` rewritten in persisted action references; `v4-to-v5`: Mercatus → the
-Faeneratio loop — divest-value gold credit, `mercatusDepths` drop).
+Faeneratio loop — divest-value gold credit, `mercatusDepths` drop; `v5-to-v6`: invocation roster
+rework — clear active invocations, `pendingMorpheus` → `pendingAstiwihad`, drop `morpheusLockedOut`,
+seed `apexInvoked`).
 
 ### `apps/web` — the React SPA (the game)
 

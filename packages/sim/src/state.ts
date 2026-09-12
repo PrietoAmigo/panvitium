@@ -180,6 +180,14 @@ export interface LifetimeState {
   suicidePool: number;
   murderPool: number;
   /**
+   * Fractional accrual pool for invocation reprobate UPKEEP (Arachne's flat drain, Morpheus's
+   * %-of-pool drain). Each tick the per-second reprobate cost × delta is added here; whole units
+   * drain living reprobates WITHOUT minting souls (upkeep is a pure cost, not a death — the
+   * 1-person-1-soul invariant only covers murder/suicide). Persists so sub-1 progress is never
+   * lost (ADR-004). Always defined at runtime (default 0); additive-optional on the wire (ADR-023).
+   */
+  reprobateCostPool: number;
+  /**
    * Seconds remaining on the Hand of Glory buff (+100% reprobate generation while > 0; Maleficia
    * sheet). Refilled by activating a Hand of Glory; decays in real time each tick. Additive-optional
    * (ADR-023), default 0.
@@ -201,17 +209,22 @@ export interface LifetimeState {
    */
   defixio?: { elapsed: number };
   /**
-   * Apex-invocation pending Katabasis modifiers (03 §2.4). Set the moment Erinyes/Morpheus is
+   * Apex-invocation pending Katabasis modifiers (03 §2.4). Set the moment Erinyes/Astiwihad is
    * summoned; consumed by `commitKatabasis` to override the carry-over rolls (Erinyes zeroes the
-   * gold + maleficia fractions and stacks a permanent player-efficiency double; Morpheus maxes both
-   * and preserves the Emptio list). Erinyes's invoke clears any prior `pendingMorpheus` and sets
-   * `morpheusLockedOut`. All additive-optional on the wire; absent / false round-trips identically
-   * to a pre-feature save (ADR-023).
+   * gold + maleficia fractions and stacks a permanent player-efficiency double; Astiwihad maxes both
+   * and preserves the Emptio list). All additive-optional on the wire; absent / false round-trips
+   * identically to a pre-feature save (ADR-023).
    */
   pendingErinyes?: boolean;
-  pendingMorpheus?: boolean;
-  /** Set by an Erinyes invoke; blocks any further Morpheus invoke for the rest of the lifetime. */
-  morpheusLockedOut?: boolean;
+  pendingAstiwihad?: boolean;
+  /**
+   * The apex invocation kind invoked this lifetime, if any (the id — e.g. 'midas'). Only ONE kind of
+   * apex may be invoked per lifetime (the interval between Katabases): once set, `invoke` refuses any
+   * apex whose id differs from this one, though re-summoning the same kind (subject to its cap) stays
+   * allowed. Reset with the lifetime at Katabasis. Additive-optional on the wire (ADR-023); absent ≡
+   * no apex invoked yet.
+   */
+  apexInvoked?: string;
   /**
    * The impact-feedback inbox (Phase 5.2): emails delivered as the in-world consequences of the
    * player's actions accrue here, newest appended last. Each entry records which catalog email was
@@ -404,6 +417,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       generationPool: 0,
       suicidePool: 0,
       murderPool: 0,
+      reprobateCostPool: 0,
       handOfGloryRemaining: 0,
       callBuffs: [],
       inbox: [],
