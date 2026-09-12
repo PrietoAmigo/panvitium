@@ -309,7 +309,7 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     ).toBeCloseTo(2, 6);
     expect(
       computeModifiers(withInvocation(fresh(), 'lamia', 2)).flatGenerationPerSecond,
-    ).toBeCloseTo(200, 6);
+    ).toBeCloseTo(50, 6); // 2 × 25
     expect(
       computeModifiers(withInvocation(fresh(), 'succubus', 1)).flatGenerationPerSecond,
     ).toBeCloseTo(10000, 6);
@@ -319,7 +319,7 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     );
     expect(
       computeModifiers(withInvocation(fresh(), 'arachne', 2)).flatInfluencePerSecond,
-    ).toBeCloseTo(2, 6);
+    ).toBeCloseTo(0.5, 6); // 2 × 0.25
   });
 
   it('per-capita base rate shifts: Harpy murder + Nightmare suicide (mul untouched)', () => {
@@ -334,7 +334,7 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
   it('stagnation generation: Blob flat, Morpheus population-scaled', () => {
     expect(
       computeModifiers(withInvocation(fresh(), 'blob', 2)).flatStagnationPerSecond,
-    ).toBeCloseTo(0.05 * 2, 6);
+    ).toBeCloseTo(0.0125 * 2, 6);
     const withPop: GameState = {
       ...withInvocation(fresh(), 'morpheus', 1),
       lifetime: { ...withInvocation(fresh(), 'morpheus', 1).lifetime, reprobates: 1000 },

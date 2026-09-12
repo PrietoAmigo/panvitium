@@ -13,6 +13,7 @@ import {
   invocationGoldCost,
   activeInvocationCount,
   currentInvokingPower,
+  isApexInvocation,
   sigilCostReductionByChannel,
   sigilEffectMultiplier,
   floor,
@@ -25,28 +26,34 @@ import type { GoetiaEntry } from '../menus/ars-goetia.types.js';
 import { INVOCATION_BY_ID, ASSET_BASE } from '../menus/menus.data.js';
 import { invocationEffectText } from './invocationEffect.js';
 
-const ROMAN = [
-  'I',
-  'II',
-  'III',
-  'IV',
-  'V',
-  'VI',
-  'VII',
-  'VIII',
-  'IX',
-  'X',
-  'XI',
-  'XII',
-  'XIII',
-  'XIV',
-  'XV',
-  'XVI',
-  'XVII',
-  'XVIII',
+/** Integer → Roman numeral (1..3999). Used for the Sin-level gate and the Ars Goetia index numerals,
+ *  so every seal reads as a numeral (the old lookup table stopped at XVIII and fell back to Arabic). */
+const ROMAN_UNITS: readonly [number, string][] = [
+  [1000, 'M'],
+  [900, 'CM'],
+  [500, 'D'],
+  [400, 'CD'],
+  [100, 'C'],
+  [90, 'XC'],
+  [50, 'L'],
+  [40, 'XL'],
+  [10, 'X'],
+  [9, 'IX'],
+  [5, 'V'],
+  [4, 'IV'],
+  [1, 'I'],
 ];
 function roman(n: number): string {
-  return ROMAN[n - 1] ?? String(n);
+  if (!Number.isInteger(n) || n < 1) return String(n);
+  let out = '';
+  let rem = n;
+  for (const [value, sym] of ROMAN_UNITS) {
+    while (rem >= value) {
+      out += sym;
+      rem -= value;
+    }
+  }
+  return out;
 }
 
 /** The invoking-power (+ optional Sin level) requirement, shown as the "Seal" on a locked leaf. */
@@ -122,7 +129,8 @@ export function buildGoetia(state: GameState): GoetiaView {
     if (da.invokingPower !== db.invokingPower) return da.invokingPower - db.invokingPower; // then by IP
     return INVOCATION_IDS.indexOf(a) - INVOCATION_IDS.indexOf(b); // stable within a cluster
   });
-  ordered.forEach((id, i) => {
+  let rankNo = 0; // sequential index numeral for the ranked seals (the Familiar carries none)
+  ordered.forEach((id) => {
     const def = invocationById(id)!;
     const unlocked = invocationUnlocked(state, def);
     const soulCost = invocationSoulCost(state, def);
@@ -142,9 +150,15 @@ export function buildGoetia(state: GameState): GoetiaView {
     entries.push({
       id,
       name: strings.invocations.names[id] ?? flavour?.name ?? id,
-      // The Familiar is the base creature, not one of the ranked seals — it carries no numeral.
-      rank: id === 'familiar' ? '' : (flavour?.rank ?? roman(i + 1)),
+      // The Familiar is the base creature, not one of the ranked seals — it carries no numeral. Every
+      // other seal gets a sequential Roman numeral by its position in the index (not the design's
+      // per-id flavour rank), so the index reads I, II, III, … with no Arabic fallthrough.
+      rank: id === 'familiar' ? '' : roman(++rankNo),
       cost: invocationCostLabel(state, def),
+      // Max simultaneously active: the number, or "Unlimited" for the stackable (uncapped) entries.
+      cap: def.maxActive === undefined ? strings.invocations.capUnlimited : String(def.maxActive),
+      // Apex entities (Sin level 3) are one-kind-per-lifetime — flagged so the UI can distinguish them.
+      isApex: isApexInvocation(def),
       unlocked,
       active,
       atCap,

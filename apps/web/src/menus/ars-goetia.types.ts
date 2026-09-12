@@ -15,6 +15,10 @@ export interface GoetiaEntry {
   rank: string;
   /** Pre-formatted soul/power cost, e.g. '12 Souls'. REAL. */
   cost: string;
+  /** Pre-formatted max-active cap, e.g. '1', '4', or 'Unlimited'. REAL. */
+  cap: string;
+  /** True for the apex entities (Sin level 3, one kind per lifetime). REAL. */
+  isApex: boolean;
   /** Pre-formatted gate label, e.g. 'Gula III'. REAL. Omit if ungated. */
   gate?: string;
   /** Effect copy. REAL string where one exists, else omit. */

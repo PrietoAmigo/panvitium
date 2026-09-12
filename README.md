@@ -105,7 +105,19 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 933** (sim 563 · shared 71 · api 20 · web 279).
 
-> **Latest change — invocation roster rework (25 entities, new cost/effect dimensions, one apex per
+> **Latest change — Ars Goetia polish + invocation retune + call-in tweak.** UI and tuning follow-ups
+> to the invocation rework. In the **Ars Goetia**: each seal's detail page now shows its **Cap** (max
+> simultaneously bound) on its own line after Cost and Effect ("Unlimited" for the stackable normals);
+> the index numerals are all **Roman** (a general integer→Roman converter replaces the lookup table
+> that fell back to Arabic past XVIII); **Apex** entities carry a gilt "Apex" chip in both the index
+> and the detail heading to set them apart from the stackable normals; the free entries read **"no
+> cost"** (was "no soul cost"); and the index intro is rewritten from the old flavour blurb to an
+> explanation of caps and Apex (one Apex kind per lifetime). Tuning: **Blob**, **Lamia** and
+> **Arachne** effects are cut to a quarter (Blob 0.05→0.0125 stagnation/s, Lamia 100→25 reprobates/s,
+> Arachne 1→0.25 influence/s). The **doing-nothing** incoming call's stagnation-tripling option drops
+> from **8 hours to 5 minutes**. No save-schema or RNG change; test count unchanged at **933**.
+
+> **Earlier change — invocation roster rework (25 entities, new cost/effect dimensions, one apex per
 > lifetime).** The invocation catalog is rebuilt from the design spec. Seven new Sin-1 entities join
 > the roster (Wendigo, Banshee, Blob, Narcissus, Arachne, Empusa, Kobold) and almost every existing
 > entry changes gate, cost, cap and effect. The autonomous-runner effect shape is retired: former
