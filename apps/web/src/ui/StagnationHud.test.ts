@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { bn, type GameState } from '@panvitium/sim';
+import { bn, stagnationMax, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { StagnationHud } from './StagnationHud.js';
 
@@ -70,6 +70,19 @@ describe('Stagnation HUD', () => {
     patch({ stagnation: 10, acedia: 180 }); // Acedia level 1 → cap ×2 = 240
     render();
     expect(container!.querySelector('.stag-hud-value')?.textContent).toBe('10 / 240');
+  });
+
+  it('floors a fractional cap (a cap sigil) so the readout stays integer-only', () => {
+    // Orias #59 lifts stagnationMaxMul, which makes the derived cap fractional (120 × 1.xxx). The
+    // readout must still show whole numbers only — no decimals, the reported bug.
+    const s = useGameStore.getState().state as GameState;
+    useGameStore.setState({ state: { ...s, stagnation: 0, sigilBindings: { 59: bn(100) } } });
+    const cap = stagnationMax(useGameStore.getState().state as GameState);
+    expect(Number.isInteger(cap)).toBe(false); // guard: the cap really is fractional here
+    render();
+    const text = container!.querySelector('.stag-hud-value')?.textContent ?? '';
+    expect(text).toBe(`0 / ${Math.floor(cap)}`);
+    expect(text).not.toContain('.');
   });
 
   it('paints the pixelation canvas at the design buffer resolution', () => {

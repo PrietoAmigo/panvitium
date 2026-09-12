@@ -2356,6 +2356,10 @@ body {
 .katabasis-flow .ls-devoted {
   color: var(--ember-soft);
 }
+/* Souls still owed to reach the next Level: a muted note beside the (ember) devoted-souls count. */
+.katabasis-flow .ls-tonext {
+  color: var(--faint);
+}
 .katabasis-flow .ledger-sin-effects {
   margin-top: 13px;
   display: flex;

@@ -678,6 +678,9 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
   const devotion = state.devotion[sinKey];
   const level = sinLevel(devotion);
   const dormant = level === 0;
+  // Souls still needed to reach the next Level (null once the Sin is mastered at the cap).
+  const soulsToNext =
+    level >= MAX_SIN_LEVEL ? null : devotionForLevel(level + 1).sub(floor(devotion));
   // Every Sin skill couples as ×(1 + intensity) in the engine, so its live magnitude is +intensity%.
   const skillValue = `+${(skillIntensity(devotion) * 100).toFixed(1)}%`;
   const levelValue = sinLevelEffectValue(sinKey, level);
@@ -693,6 +696,12 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
       <div className="ledger-sin-prince">
         {info.prince} <span aria-hidden="true">&middot;</span>{' '}
         <span className="ls-devoted">{formatBigNum(devotion)} devoted souls</span>
+        {soulsToNext !== null && (
+          <span className="ls-tonext">
+            {' '}
+            <span aria-hidden="true">&middot;</span> {formatBigNum(soulsToNext)} to next level
+          </span>
+        )}
       </div>
       <div className="ledger-sin-effects">
         <div className="ledger-eff">
@@ -703,7 +712,7 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
           </span>
         </div>
         <div className="ledger-eff is-lvl">
-          <span className="ls-tag is-lvl">Rank {toRoman(level) || '0'}</span>
+          <span className="ls-tag is-lvl">Level {toRoman(level) || '0'}</span>
           <span className="ls-txt">
             {info.levelEffect}
             {levelValue && (

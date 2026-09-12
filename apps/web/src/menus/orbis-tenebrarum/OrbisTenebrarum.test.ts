@@ -193,7 +193,8 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
       ),
     );
     expect(container!.querySelector<HTMLButtonElement>('.orbis-cast-btn')!.disabled).toBe(true);
-    expect(container!.querySelector('.orbis-status')).not.toBeNull();
+    // The globe spins to signal the search; there is no "Scrying…" status line any more.
+    expect(container!.querySelector('.orbis-status')).toBeNull();
   });
 });
 
@@ -330,6 +331,8 @@ describe('OrbisTenebrarum — Indagatio investment controls', () => {
     );
     expect(labels).toContain('Default investment');
     expect((container!.querySelector('.orbis-gold-value')?.textContent ?? '').trim()).toBe('640');
+    // Default investment sits center-LEFT (before the Time left / Duration meter) after the swap.
+    expect(labels).toEqual(['Default investment', 'Duration']);
 
     const invest = container!.querySelector<HTMLButtonElement>('.orbis-invest-btn');
     const divest = container!.querySelector<HTMLButtonElement>('.orbis-divest-btn');

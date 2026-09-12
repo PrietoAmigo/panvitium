@@ -645,7 +645,13 @@ export function OrbisTenebrarum({
             </button>
           </div>
 
-          {/* CENTER-LEFT — the running countdown, or the idle duration estimate */}
+          {/* CENTER-LEFT — the gold currently set aside to speed the Search */}
+          <div className="orbis-meter orbis-meter--right">
+            <span className="orbis-meter-label">Default investment</span>
+            <span className="orbis-gold-value">{investment}</span>
+          </div>
+
+          {/* CENTER-RIGHT — the running countdown, or the idle duration estimate */}
           <div className="orbis-meter">
             <span className="orbis-meter-label">{searching ? 'Time left' : 'Duration'}</span>
             <span className={`orbis-meter-value${searching ? ' is-counting' : ''}`}>
@@ -653,19 +659,11 @@ export function OrbisTenebrarum({
             </span>
           </div>
 
-          {/* CENTER-RIGHT — the gold currently set aside to speed the Search */}
-          <div className="orbis-meter orbis-meter--right">
-            <span className="orbis-meter-label">Default investment</span>
-            <span className="orbis-gold-value">{investment}</span>
-          </div>
-
           {/* RIGHT — begin the Search */}
           <button type="button" className="orbis-cast-btn" onClick={onCast} disabled={searching}>
             Cast the Search
           </button>
         </div>
-
-        {searching && <p className="orbis-status">Scrying the world&rsquo;s corners&hellip;</p>}
       </div>
 
       <aside className="orbis-ledger" aria-label="Emptio market">
