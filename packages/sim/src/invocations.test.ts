@@ -280,14 +280,14 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     );
   });
 
-  it('Specunitas ×3 influence; Fama +15%/copy; Plutus +15%/copy Faeneratio output', () => {
+  it('Specunitas ×3 influence; Fama +7.5%/copy; Plutus +15%/copy Faeneratio output', () => {
     const base = computeModifiers(fresh());
     expect(computeModifiers(withInvocation(fresh(), 'specunitas', 1)).influenceRateMul).toBeCloseTo(
       base.influenceRateMul * 3,
       6,
     );
     expect(computeModifiers(withInvocation(fresh(), 'fama', 2)).influenceRateMul).toBeCloseTo(
-      base.influenceRateMul * (1 + 0.15 * 2),
+      base.influenceRateMul * (1 + 0.075 * 2),
       6,
     );
     expect(computeModifiers(withInvocation(fresh(), 'plutus', 2)).faenerationOutputMul).toBeCloseTo(
@@ -334,7 +334,7 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
   it('stagnation generation: Blob flat, Morpheus population-scaled', () => {
     expect(
       computeModifiers(withInvocation(fresh(), 'blob', 2)).flatStagnationPerSecond,
-    ).toBeCloseTo(0.0125 * 2, 6);
+    ).toBeCloseTo(0.00625 * 2, 6);
     const withPop: GameState = {
       ...withInvocation(fresh(), 'morpheus', 1),
       lifetime: { ...withInvocation(fresh(), 'morpheus', 1).lifetime, reprobates: 1000 },

@@ -105,13 +105,25 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 933** (sim 563 · shared 71 · api 20 · web 279).
 
-> **Latest change — Ars Goetia index pager fix.** The Apex "Apex" chip made those index rows taller,
-> and since the index leaf is a fixed-height clipped flex column, a full page of taller rows shoved
-> the page-turn pager past the leaf's bottom edge where it could not be seen. The index list now takes
-> the available leaf height and scrolls internally (`flex: 1 1 auto; min-height: 0; overflow-y: auto`)
-> with the pager pinned below (`flex: 0 0 auto`), so the pager is always visible; the Apex chip is also
-> centered with a tight line-height so it no longer grows the row. CSS only, no behaviour change; test
-> count unchanged at **933**.
+> **Latest change — Ars Goetia single-page index + Blob/Fama/Lemure retune.** The index is rebuilt as
+> one leaf: the title block ("Ars Goetia / The Lesser Key / Invoking power · N") centered at the top,
+> and the **whole roster below in two balanced columns** on a single page (a faint gold rule stands in
+> for the old book gutter). The page-turn **pager and its pagination are gone**, and so is the "Every
+> seal answers only…" intro. The previous fix's visible internal scrollbar is removed: everything fits
+> on one leaf at desktop sizes, and on a very short viewport (a portrait phone, where the landscape
+> grimoire is letterboxed small) the roster scrolls internally with the **bar hidden**. The detail leaf
+> is unchanged. Tuning: **Blob** cap 20→**5** and its effect halved (0.0125→**0.00625** stagnation/s),
+> **Fama** halved (+15%→**+7.5%** influence gain per copy), and **Lemure** halved (drain reduction
+> 12.5%/×0.875 → **6.25%/×0.9375** per copy). The **Plutus** effect line is reworded from "Faeneratio
+> output" to plain **"loan and interest income."** No save-schema or RNG change; test count unchanged
+> at **933**.
+
+> **Earlier change — Ars Goetia index pager fix (superseded above).** The Apex "Apex" chip made those
+> index rows taller, and since the index leaf was a fixed-height clipped flex column, a full page of
+> taller rows shoved the page-turn pager past the leaf's bottom edge where it could not be seen. The
+> index list took the available leaf height and scrolled internally with the pager pinned below; the
+> Apex chip was centered with a tight line-height so it no longer grew the row. (The single-page index
+> above removes the pager and the visible scrollbar entirely.) CSS only, no behaviour change.
 
 > **Earlier change — Ars Goetia polish + invocation retune + call-in tweak.** UI and tuning follow-ups
 > to the invocation rework. In the **Ars Goetia**: each seal's detail page now shows its **Cap** (max

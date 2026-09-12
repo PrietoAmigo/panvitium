@@ -218,7 +218,7 @@ export interface Modifiers {
   readonly desidiaSpeedMul: number;
   /**
    * Multiplier on the Desidia stagnation-drain rate (ADR-033): drain/s = `DESIDIA_BASE_COST × this`.
-   * Each bound Lemure reduces it (×0.875 per copy, so lower = cheaper); Sallos #19 softens it too.
+   * Each bound Lemure reduces it (×0.9375 per copy, so lower = cheaper); Sallos #19 softens it too.
    * Default 1×.
    */
   readonly desidiaDrainMul: number;
@@ -329,7 +329,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const inv = state.lifetime.invocations;
   const hasFamiliar = (inv.familiar ?? 0) > 0; // +33% player efficiency
   const wendigoCount = inv.wendigo ?? 0; // each: +2% player efficiency (flat, not efficiency-scaled)
-  const famaCount = inv.fama ?? 0; // each: +15% influence gain (× invEff)
+  const famaCount = inv.fama ?? 0; // each: +7.5% influence gain (× invEff)
   const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× invEff)
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× invEff)
   const harpyCount = inv.harpy ?? 0; // each: additive to base murder rate (× invEff)
@@ -341,12 +341,12 @@ export function computeModifiers(state: GameState): Modifiers {
   const lamiaCount = inv.lamia ?? 0; // each: +100 reprobates/s (× invEff)
   const koboldCount = inv.kobold ?? 0; // each: +100 gold gain/s (× invEff)
   const arachneCount = inv.arachne ?? 0; // each: +1 influence/s (× invEff)
-  const blobCount = inv.blob ?? 0; // each: +0.05 stagnation/s (× invEff)
+  const blobCount = inv.blob ?? 0; // each: +0.00625 stagnation/s (× invEff)
   const morpheusCount = inv.morpheus ?? 0; // each: +0.001 stagnation per cost-consumed reprobate (× invEff)
   const hasSuccubus = (inv.succubus ?? 0) > 0; // apex Luxuria: +10000 reprobates/s (× invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // ×10 gold, ×10 Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: +15% Faeneratio output (× invEff)
-  const lemureCount = inv.lemure ?? 0; // each: ×0.875 Desidia stagnation drain (× invEff, ADR-033)
+  const lemureCount = inv.lemure ?? 0; // each: ×0.9375 Desidia stagnation drain (× invEff, ADR-033)
   const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×3 influence gain/s
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +100% player eff (upkeep: ½ influence gain)
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
@@ -376,7 +376,7 @@ export function computeModifiers(state: GameState): Modifiers {
   // all-invocation × per-Sin invocation-effect multiplier (`invEffFor(sin)`) — NOT player efficiency
   // (the player-efficiency coupling was removed; the demonic court now scales only with invocation
   // efficiency). The `narcissus`/`wendigo` factors are flat (no efficiency scaling), per the catalog.
-  const FAMA_INFLUENCE_FACTOR = 0.15; // each Fama: +15% influence gain
+  const FAMA_INFLUENCE_FACTOR = 0.075; // each Fama: +7.5% influence gain
   const PLUTUS_FAENERATIO_FACTOR = 0.15; // each Plutus: +15% Faeneratio output (Mutuum + interest)
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const NIGHTMARE_SUICIDE_FACTOR = 0.005; // each Nightmare: +0.005/s base reprobate suicide rate
@@ -392,10 +392,10 @@ export function computeModifiers(state: GameState): Modifiers {
   const SUCCUBUS_GENERATION_PER_SECOND = 10000; // Succubus: +10000 reprobates/s
   const KOBOLD_GOLD_PER_SECOND = 100; // each Kobold: +100 gold gain/s
   const ARACHNE_INFLUENCE_PER_SECOND = 0.25; // each Arachne: +0.25 influence/s
-  const BLOB_STAGNATION_PER_SECOND = 0.0125; // each Blob: +0.0125 stagnation/s
+  const BLOB_STAGNATION_PER_SECOND = 0.00625; // each Blob: +0.00625 stagnation/s
   const MORPHEUS_REPROBATE_FRACTION = 0.05; // Morpheus consumes 5% of the pool/s (mirrors its upkeep)
   const MORPHEUS_STAGNATION_PER_REPROBATE = 0.001; // Morpheus: +0.001 stagnation per consumed reprobate
-  const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.125; // each Lemure: ×0.875 Desidia stagnation drain (× invEff)
+  const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.0625; // each Lemure: ×0.9375 Desidia stagnation drain (× invEff)
 
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
@@ -540,7 +540,7 @@ export function computeModifiers(state: GameState): Modifiers {
     influenceRateMul:
       1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
       (hasCodex ? 1.33 : 1) * // Codex Gigas: ×1.33 influence gain rate (profane, sheet rev)
-      (1 + FAMA_INFLUENCE_FACTOR * invEffFor('vanagloria') * famaCount) * // each Fama: +15% (× invEff)
+      (1 + FAMA_INFLUENCE_FACTOR * invEffFor('vanagloria') * famaCount) * // each Fama: +7.5% (× invEff)
       (hasSpecunitas ? 3 : 1) * // Specunitas (apex Vanagloria): ×3 influence gain/s
       sc('influenceRateMul') *
       cb.influenceRateMul * // eager-hands / ministry / social-platform / parish call buffs (gain ≡ regen)
@@ -576,7 +576,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // added straight to the dynamics pools (each death mints a soul).
     flatMurdersPerSecond: IMP_MURDERS_PER_SECOND * invEffFor('ira') * impCount,
     flatSuicidesPerSecond: BANSHEE_SUICIDES_PER_SECOND * invEffFor('tristitia') * bansheeCount,
-    // Stagnation generated/s: each Blob (+0.05/s) plus Morpheus's per-consumed-reprobate yield
+    // Stagnation generated/s: each Blob (+0.00625/s) plus Morpheus's per-consumed-reprobate yield
     // (0.05 × population × 0.001/s), both × invEff. Applied to the stagnation pool in the tick.
     flatStagnationPerSecond:
       (BLOB_STAGNATION_PER_SECOND * blobCount +
@@ -664,8 +664,8 @@ export function computeModifiers(state: GameState): Modifiers {
     // DESIDIA_BASE_SPEED; Foras #31 composes on top.
     desidiaSpeedMul: skillBonus(acediaIntensity) * sc('desidiaSpeedMul'),
     // Desidia stagnation-drain (ADR-033): each bound Lemure multiplies the drain by a factor that is
-    // ×0.875 at base invocation efficiency and softens further as invEff rises — the asymptotic
-    // "decrease" form ×1/(1 + K·invEff) with K = 0.125/0.875, so invEff = 1 gives exactly ×0.875 and
+    // ×0.9375 at base invocation efficiency and softens further as invEff rises — the asymptotic
+    // "decrease" form ×1/(1 + K·invEff) with K = 0.0625/0.9375, so invEff = 1 gives exactly ×0.9375 and
     // it never reaches 0 (more Lemures / higher invEff = a cheaper Desidia). Sallos #19 composes.
     desidiaDrainMul:
       (1 /

@@ -61,13 +61,13 @@ describe('Desidia modifier fields (ADR-033)', () => {
     expect(computeModifiers(withAcedia(fresh(), 180)).desidiaSpeedMul).toBeGreaterThan(1);
   });
 
-  it('Lemure lowers desidiaDrainMul ×0.875 per copy', () => {
+  it('Lemure lowers desidiaDrainMul ×0.9375 per copy', () => {
     const withLemure = (n: number): GameState => {
       const s = fresh();
       return { ...s, lifetime: { ...s.lifetime, invocations: { lemure: n } } };
     };
     expect(computeModifiers(withLemure(0)).desidiaDrainMul).toBeCloseTo(1, 6);
-    expect(computeModifiers(withLemure(4)).desidiaDrainMul).toBeCloseTo(0.875 ** 4, 6);
+    expect(computeModifiers(withLemure(4)).desidiaDrainMul).toBeCloseTo(0.9375 ** 4, 6);
   });
 });
 
@@ -90,10 +90,10 @@ describe('Desidia in the tick — accelerate the sim, drain stagnation, honest c
     expect(after.lastTickAt).toBe(1000); // wall-clock: 1 real second, NOT 1.333
   });
 
-  it('Lemure cuts the drain (×0.875 per copy)', () => {
+  it('Lemure cuts the drain (×0.9375 per copy)', () => {
     const oneLemure = seeded({ desidiaActive: true });
     oneLemure.lifetime = { ...oneLemure.lifetime, invocations: { lemure: 1 } };
-    expect(tick(oneLemure, 1).state.stagnation).toBeCloseTo(100 - 0.875, 6);
+    expect(tick(oneLemure, 1).state.stagnation).toBeCloseTo(100 - 0.9375, 6);
   });
 
   it('auto-deactivates the tick it cannot pay, running that tick at normal speed', () => {
