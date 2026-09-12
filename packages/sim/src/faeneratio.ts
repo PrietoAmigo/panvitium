@@ -122,11 +122,11 @@ export type ThesaurusResult =
 /**
  * Deposit liquid gold into the hoard — instant, any amount up to liquid gold. The amount is
  * floored at the spend boundary (ADR-005; gold accrues fractionally but is spent in whole coins).
- * Refused under the Morpheus freeze, like every other initiation of work (03 §2.4).
+ * Refused under the Astiwihad freeze, like every other initiation of work (03 §2.4).
  */
 export function depositThesaurus(state: GameState, amount: BigNum | number): ThesaurusResult {
-  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
-    return { ok: false, reason: 'The world is held in Morpheus’s stillness.' };
+  if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
+    return { ok: false, reason: 'The world is held in Astiwihad’s stillness.' };
   }
   const give = floor(bn(amount));
   if (lte(give, ZERO)) return { ok: false, reason: 'nothing to place' };
@@ -155,8 +155,8 @@ export function withdrawThesaurus(
   amount: BigNum | number,
   mods: Modifiers,
 ): ThesaurusResult {
-  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
-    return { ok: false, reason: 'The world is held in Morpheus’s stillness.' };
+  if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
+    return { ok: false, reason: 'The world is held in Astiwihad’s stillness.' };
   }
   const take = floor(bn(amount));
   if (lte(take, ZERO)) return { ok: false, reason: 'nothing to reclaim' };

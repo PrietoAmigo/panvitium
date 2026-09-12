@@ -5,7 +5,7 @@
  *     tick equals the sum of small ticks
  *   - Thesaurus: deposit/withdraw floor semantics (ADR-005); withdraw recovery math + the 0.9 cap;
  *     fractional interest accrual (big tick ≡ Σ small ticks); interest frozen mid-descent and
- *     under Morpheus
+ *     under Astiwihad
  *   - Anatocismus (usura-4): the 50/50 split after all multipliers — hoard grows, liquid gets the
  *     other half, the HUD rate shows the liquid half only
  *   - Foedus: global tier boundaries at T0 decades, cap 4, tier 0 below T0; the upkeep discount on
@@ -72,16 +72,15 @@ describe('Mutuum — the loan book', () => {
     const s = withReprobates(fresh(), 1000);
     const boosted = mutuumGoldPerSecond(s, { ...NEUTRAL_MODIFIERS, mutuumPerCapitaMul: 2 });
     expect(boosted).toBeCloseTo(MUTUUM_PER_CAPITA * 1000 * 2, 9);
-    // Through the tick: a Plutus (faenerationOutputMul) and Midas (goldRateMul ×3) both scale the
-    // realised take.
+    // Through the tick: Midas (goldRateMul ×10) scales the realised gold line.
     const base = tick(s, 1).state;
     const withMidas: GameState = {
       ...s,
       lifetime: { ...s.lifetime, invocations: { midas: 1 } },
     };
     const midas = tick(withMidas, 1).state;
-    // Midas: ×3 on the whole line (base 2 + mutuum 50).
-    expect(goldOf(midas)).toBeCloseTo(goldOf(base) * 3, 6);
+    // Midas: ×10 on the whole line (base 2 + mutuum 50).
+    expect(goldOf(midas)).toBeCloseTo(goldOf(base) * 10, 6);
   });
 
   it('one big tick equals the sum of small ticks (population steady over the span)', () => {
@@ -162,14 +161,14 @@ describe('Thesaurus — Fenus interest', () => {
     );
   });
 
-  it('is frozen mid-descent and under Morpheus (the freeze early-returns cover it)', () => {
+  it('is frozen mid-descent and under Astiwihad (the freeze early-returns cover it)', () => {
     const s = withHoard(fresh(), 1_000_000);
     const descent: GameState = { ...s, inKatabasis: true };
     expect(goldOf(tick(descent, 60).state)).toBe(goldOf(s));
     expect(perSecondRates(descent).gold).toBe(0);
     const asleep: GameState = {
       ...s,
-      lifetime: { ...s.lifetime, invocations: { morpheus: 1 } },
+      lifetime: { ...s.lifetime, invocations: { astiwihad: 1 } },
     };
     expect(goldOf(tick(asleep, 60).state)).toBe(goldOf(s));
     expect(perSecondRates(asleep).gold).toBe(0);

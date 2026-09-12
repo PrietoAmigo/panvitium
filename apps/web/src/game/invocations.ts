@@ -13,6 +13,8 @@ import {
   invocationGoldCost,
   activeInvocationCount,
   currentInvokingPower,
+  sigilCostReductionByChannel,
+  sigilEffectMultiplier,
   floor,
   gte,
   type GameState,
@@ -62,23 +64,32 @@ export interface GoetiaView {
 }
 
 /**
- * The grimoire's cost line. Morpheus carries a one-time %-of-pool cost (soulCost/goldCost); every
- * other paid invocation carries per-second upkeep (Invocatio sheet). Free invocations read "free".
+ * The grimoire's cost line, showing the REAL CURRENT per-copy upkeep — every amount is softened by
+ * the live invocation cost-reduction channel (Orobas #55 / Zepar #16 / Andrealphus #65), exactly as
+ * `invocationUpkeep` charges it, so what the grimoire shows is what a copy actually costs now.
+ * Aurevora's cost is its exponential gold drain (apex.ts), not an upkeep field; free invocations read
+ * "free".
  */
-function invocationCostLabel(def: InvocationDef): string {
+function invocationCostLabel(state: GameState, def: InvocationDef): string {
   const r = strings.resources;
-  const pct = (x: number): number => Math.round(x * 100);
-  if (def.soulCost || def.goldCost) {
-    const parts: string[] = [];
-    if (def.soulCost) parts.push(`${pct(def.soulCost.fraction)}% ${r.souls}`);
-    if (def.goldCost) parts.push(`${pct(def.goldCost.fraction)}% ${r.gold}`);
-    return parts.join(' + ');
-  }
+  const U = strings.invocations.outcomeUnits;
+  if (def.id === 'aurevora') return strings.invocations.aurevoraDrain;
   const u = def.upkeep;
   if (!u) return strings.invocations.free;
+  // The invocation cost channel divides every upkeep cost by (1 + strength) (ADR-035).
+  const red = sigilCostReductionByChannel(
+    state,
+    sigilEffectMultiplier(state.lifetime.maleficia),
+  ).invocation;
+  const soften = (x: number): number => (red && red > 1 ? x / red : x);
+  const pct = (x: number): number => Math.round(soften(x) * 100);
+  const num = (x: number): string => {
+    const v = soften(x);
+    return String(Number(v >= 10 ? v.toFixed(0) : v.toFixed(2)));
+  };
   const parts: string[] = [];
-  if (u.gold) parts.push(`${u.gold} ${r.gold}/s`);
-  if (u.influence) parts.push(`${u.influence} ${r.influence}/s`);
+  if (u.gold) parts.push(`${num(u.gold)} ${r.gold}/s`);
+  if (u.influence) parts.push(`${num(u.influence)} ${r.influence}/s`);
   if (u.goldGainFraction && u.goldGainFraction === u.influenceGainFraction) {
     parts.push(`${pct(u.goldGainFraction)}% ${r.gold} + ${r.influence} gain/s`);
   } else {
@@ -87,16 +98,32 @@ function invocationCostLabel(def: InvocationDef): string {
       parts.push(`${pct(u.influenceGainFraction)}% ${r.influence} gain/s`);
   }
   if (u.maxInfluenceFraction) parts.push(`${pct(u.maxInfluenceFraction)}% max ${r.influence}/s`);
+  if (u.reprobate) parts.push(`${num(u.reprobate)} ${U.reprobates}/s`);
+  if (u.reprobateFraction) parts.push(`${pct(u.reprobateFraction)}% ${U.reprobates}/s`);
+  if (u.stagnation) parts.push(`${num(u.stagnation)} ${r.stagnation}/s`);
   return parts.length > 0 ? parts.join(' · ') : strings.invocations.free;
 }
 
-/** Build the grimoire's presentation view from authoritative sim state. */
+/** Build the grimoire's presentation view from authoritative sim state. The index is CLUSTERED by
+ *  Cardinal Sin level (the unaligned Familiar first), and ordered by required invoking power within
+ *  each cluster — the same reading order the design's Ars Goetia expects. */
 export function buildGoetia(state: GameState): GoetiaView {
   const power = currentInvokingPower(state);
   const entries: GoetiaEntry[] = [];
-  INVOCATION_IDS.forEach((id, i) => {
+  const ordered = INVOCATION_IDS.filter((id) => {
     const def = invocationById(id);
-    if (!def || !invocationVisible(state, def)) return;
+    return def !== undefined && invocationVisible(state, def);
+  }).sort((a, b) => {
+    const da = invocationById(a)!;
+    const db = invocationById(b)!;
+    const la = da.sinLevel ?? 0;
+    const lb = db.sinLevel ?? 0;
+    if (la !== lb) return la - lb; // cluster by Sin level (Familiar, no level, first)
+    if (da.invokingPower !== db.invokingPower) return da.invokingPower - db.invokingPower; // then by IP
+    return INVOCATION_IDS.indexOf(a) - INVOCATION_IDS.indexOf(b); // stable within a cluster
+  });
+  ordered.forEach((id, i) => {
+    const def = invocationById(id)!;
     const unlocked = invocationUnlocked(state, def);
     const soulCost = invocationSoulCost(state, def);
     const goldCost = invocationGoldCost(state, def);
@@ -117,7 +144,7 @@ export function buildGoetia(state: GameState): GoetiaView {
       name: strings.invocations.names[id] ?? flavour?.name ?? id,
       // The Familiar is the base creature, not one of the ranked seals — it carries no numeral.
       rank: id === 'familiar' ? '' : (flavour?.rank ?? roman(i + 1)),
-      cost: invocationCostLabel(def),
+      cost: invocationCostLabel(state, def),
       unlocked,
       active,
       atCap,

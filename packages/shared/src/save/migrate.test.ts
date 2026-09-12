@@ -79,7 +79,7 @@ describe('v1 → v2 migration (reprobate-subtype / conversion removal)', () => {
   }
 
   it('sums the per-subtype counts, drops conversionPool, strips the defixio target', () => {
-    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → v3 → v4 → v5
+    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → v3 → v4 → v5 → v6
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.state.lifetime.reprobates).toBe(200); // 100+40+10+5+5+20+0+15+5
     expect('conversionPool' in migrated.state.lifetime).toBe(false);
@@ -255,5 +255,52 @@ describe('v4 → v5 migration (Mercatus → the Faeneratio loop)', () => {
     const migrated = migrateSave(blob);
     expect(migrated.state.lifetime.gold).toBe('100');
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+  });
+});
+
+describe('v5 → v6 migration (invocation roster rework)', () => {
+  /** A v5-shaped raw blob with active invocations + the old world-still pending flag + lockout. */
+  function v5Blob(): Record<string, unknown> {
+    const base = currentBlob();
+    const lifetime = base.state.lifetime as Record<string, unknown>;
+    return {
+      ...base,
+      schemaVersion: 5,
+      state: {
+        ...base.state,
+        lifetime: {
+          ...lifetime,
+          invocations: { midas: 1, imp: 2 },
+          invocationRunners: { imp: 1.5 },
+          invocationDurations: { aurevora: 3 },
+          pendingMorpheus: true,
+          morpheusLockedOut: true,
+        },
+      },
+    };
+  }
+
+  it('clears active invocations + timers and maps the world-still pending flag to Astiwihad', () => {
+    const migrated = migrateSave(v5Blob());
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.lifetime.invocations).toEqual({});
+    expect('invocationRunners' in migrated.state.lifetime).toBe(false);
+    expect('invocationDurations' in migrated.state.lifetime).toBe(false);
+    expect('pendingMorpheus' in migrated.state.lifetime).toBe(false);
+    expect('morpheusLockedOut' in migrated.state.lifetime).toBe(false);
+    expect(migrated.state.lifetime.pendingAstiwihad).toBe(true);
+    expect(migrated.state.lifetime.apexInvoked).toBe('astiwihad');
+  });
+
+  it('seeds apexInvoked from a pending Erinyes when no Morpheus flag was set', () => {
+    const blob = v5Blob();
+    const lifetime = (blob.state as Record<string, unknown>).lifetime as Record<string, unknown>;
+    delete lifetime.pendingMorpheus;
+    delete lifetime.morpheusLockedOut;
+    lifetime.pendingErinyes = true;
+    const migrated = migrateSave(blob);
+    expect(migrated.state.lifetime.apexInvoked).toBe('erinyes');
+    expect(migrated.state.lifetime.pendingErinyes).toBe(true);
+    expect(migrated.state.lifetime.pendingAstiwihad ?? false).toBe(false);
   });
 });

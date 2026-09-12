@@ -103,9 +103,31 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 966** (sim 598 · shared 69 · api 20 · web 279).
+**Current test count: 933** (sim 563 · shared 71 · api 20 · web 279).
 
-> **Latest change — Indagatio investment polish + Status-Quo and Stagnation readout fixes.** A batch
+> **Latest change — invocation roster rework (25 entities, new cost/effect dimensions, one apex per
+> lifetime).** The invocation catalog is rebuilt from the design spec. Seven new Sin-1 entities join
+> the roster (Wendigo, Banshee, Blob, Narcissus, Arachne, Empusa, Kobold) and almost every existing
+> entry changes gate, cost, cap and effect. The autonomous-runner effect shape is retired: former
+> runners are now flat modifier-bundle effects (Imp → +1 murder/s, Upir → softens negative outcomes,
+> Harpy → base murder rate, Lamia/Succubus → reprobate generation). Effects marked "scaled by
+> efficiency" now scale by the **all-invocation × per-Sin** invocation-effect multipliers, **not**
+> player efficiency. New per-second upkeep dimensions are added and charged in tick step 1a: a
+> compound (flat + %-of-gain) cost, a flat **reprobate** drain and a %-of-pool reprobate drain (a pure
+> cost that mints no souls, accrued through the new `reprobateCostPool`), and a **stagnation** drain;
+> %-of-gain costs stay additive so four 25%-of-gain copies zero the gain. **Blob/Morpheus** generate
+> stagnation (Morpheus converts its consumed reprobates into it). The **world-still** apex moves from
+> Morpheus to **Astiwihad** (which now carries the 100%-gold/maleficia + Emptio Katabasis carry-over),
+> Morpheus becomes a reprobate → stagnation converter, and **Midas ×10/×10**, **Doppelgänger +100%**,
+> **Specunitas ×3** are rescaled. A new rule allows only **one apex kind per lifetime** (replacing the
+> Morpheus lockout), tracked by `lifetime.apexInvoked`. The **Ars Goetia** clusters entries by Sin
+> level then invoking power and shows the **real current** cost (softened by the invocation
+> cost-reduction channel) and effect (diffed live from the modifier bundle). Save schema bumps to
+> **v6** with a migration (`v5-to-v6`: clear active invocations, `pendingMorpheus` → `pendingAstiwihad`,
+> drop `morpheusLockedOut`, seed `apexInvoked`). Net **−33 tests** (sim 598 → 563 as the runner-effect
+> and one-time-cost suites collapse into the new roster tests, shared 69 → 71).
+
+> **Earlier change — Indagatio investment polish + Status-Quo and Stagnation readout fixes.** A batch
 > of UI and behaviour tweaks. On the Orbis Tenebrarum Search the **Investment** meter (renamed from
 > "Default investment") and the **Time left / Duration** meter swap places (investment center-left,
 > timer center-right), and the "Scrying the world's corners…" status line is removed since the

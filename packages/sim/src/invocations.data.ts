@@ -1,149 +1,195 @@
 /**
  * Invocation TUNING DATA (03 §2.4) — the invocation catalog (`INVOCATIONS`): soul/gold costs, caps,
- * gates, upkeep, autonomous-runner actions, and per-invocation effects. Separated from the logic in
+ * gates, per-second upkeep, and the hook each entry's effect reads. Separated from the logic in
  * `invocations.ts` so the economy knobs live in one editable place. Pure data; types and behaviour
- * stay in `invocations.ts`.
+ * stay in `invocations.ts`, and the effect MAGNITUDES live in `modifiers.ts` / `apex.ts`.
+ *
+ * Costs are per COPY and per second (paid out of income while active, tick.ts step 1a); a flat drain
+ * the pool can't cover dispels the invocation. `%`-of-gain / `%`-of-pool costs are additive across
+ * copies (four copies at 25% of gold gain zero the gold gain). Effects marked "scaled by efficiency"
+ * scale by the all-invocation and per-Sin invocation-effect multipliers (NOT player efficiency).
+ *
+ * Entries are ordered by Sin level, then required invoking power — the same clustering the Ars Goetia
+ * index shows.
  */
 import { type InvocationDef } from './invocations.js';
 
-/** The wired subset of the invocation catalog (03 §2.4). Keyed by id. */
+/** The invocation catalog (03 §2.4). Keyed by id. */
 export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
+  // ── The Familiar — the lone unaligned base creature ────────────────────────────────────────
   familiar: {
     id: 'familiar',
     sin: null,
-    invokingPower: 2,
+    invokingPower: 1,
     maxActive: 1,
-    // The lone "Special" invocation: only one Familiar may be bound (unlike the stackable Normals).
-    // Hybrid (02 §3): a flat +33% to player efficiency (applied in modifiers.ts alongside the other
-    // invocation magnitudes) AND a background Indagatio runner at 1% of the player's efficiency
-    // (Invocatio sheet efficiency column).
-    autonomous: { action: 'indagatio', efficiency: 0.01 },
+    // Free. Effect (modifiers.ts): a flat +33% player efficiency.
+  },
+
+  // ── Sin level 1 ─────────────────────────────────────────────────────────────────────────────
+  wendigo: {
+    id: 'wendigo',
+    sin: 'gula',
+    invokingPower: 2,
+    sinLevel: 1,
+    maxActive: 10,
+    upkeep: { influence: 1 }, // 1 influence/s
+    // Effect (modifiers.ts): +2% player efficiency per copy (flat, not efficiency-scaled).
+  },
+  blob: {
+    id: 'blob',
+    sin: 'acedia',
+    invokingPower: 2,
+    sinLevel: 1,
+    maxActive: 20,
+    upkeep: { influence: 2 }, // 2 influence/s
+    // Effect (modifiers.ts → flatStagnationPerSecond, applied in tick): +0.05 stagnation/s per copy,
+    // scaled by invocation efficiency.
+  },
+  empusa: {
+    id: 'empusa',
+    sin: 'luxuria',
+    invokingPower: 2,
+    sinLevel: 1,
+    maxActive: 10,
+    upkeep: { influence: 2 }, // 2 influence/s
+    // Effect (modifiers.ts → flatGenerationPerSecond): +1 reprobate/s per copy, scaled by
+    // invocation efficiency.
+  },
+  kobold: {
+    id: 'kobold',
+    sin: 'avaritia',
+    invokingPower: 2,
+    sinLevel: 1,
+    maxActive: 20,
+    upkeep: { influence: 1 }, // 1 influence/s
+    // Effect (modifiers.ts → flatGoldPerSecond): +100 gold gain/s per copy, scaled by invocation
+    // efficiency.
   },
   imp: {
     id: 'imp',
     sin: 'ira',
-    invokingPower: 2,
-    sinLevel: 1,
-    upkeep: { gold: 10 }, // 10 gold/s (Invocatio sheet)
-    // Stackable (Normal type). Background Decimatio (cost-outcome): each cycle pays
-    // ceil(caedesCost × 0.05×playerEff) and resolves a Good kill. Good-only so a passive entity can
-    // never roll Apocalyptic and gut the player's gold/reprobates unprompted (03 §2.4). Each summoned
-    // copy runs its own channel (advanceInvocationRunners), so N imps cull at ~N× the rate.
-    autonomous: { action: 'caedes', efficiency: 0.05, forcedTier: 'good' },
-  },
-  upir: {
-    id: 'upir',
-    sin: 'gula',
     invokingPower: 3,
     sinLevel: 1,
-    upkeep: { influence: 1 }, // 1 influence/s (Invocatio sheet)
-    // Stackable (Normal type). Gula's background culler. The spreadsheet frames Upir as a Caedes
-    // runner at 0.05 (the doc's "kills 1 / 30 s" was the older mechanic); per the
-    // spreadsheet-wins-on-numbers rule we model it as the engine's cost-outcome runner, Good-only
-    // like the Imp. Each summoned copy runs its own channel, so stacking multiplies throughput.
-    autonomous: { action: 'caedes', efficiency: 0.05, forcedTier: 'good' },
+    maxActive: 20,
+    upkeep: { gold: 10, goldGainFraction: 0.01 }, // 10 gold/s + 1% of gold gain/s
+    // Effect (modifiers.ts → flatMurdersPerSecond): +1 murder/s per copy, scaled by invocation
+    // efficiency. Each murder mints a soul (a death, unlike the reprobate-cost drains).
   },
-  fama: {
-    id: 'fama',
-    sin: 'vanagloria',
-    invokingPower: 3,
-    sinLevel: 1,
-    maxActive: 4, // cap active Fama summons at 4 (player tuning; stackable up to the cap)
-    upkeep: { goldGainFraction: 0.25 }, // 25% of current gold gain/s (Invocatio sheet)
-  },
-  nightmare: {
-    id: 'nightmare',
+  banshee: {
+    id: 'banshee',
     sin: 'tristitia',
     invokingPower: 3,
     sinLevel: 1,
-    upkeep: { influence: 3 }, // 3 influence/s (Invocatio sheet)
+    maxActive: 20,
+    upkeep: { influence: 1 }, // 1 influence/s
+    // Effect (modifiers.ts → flatSuicidesPerSecond): +1 suicide/s per copy, scaled by invocation
+    // efficiency. Each suicide mints a soul.
   },
-  harpy: {
-    id: 'harpy',
-    sin: 'ira',
+  narcissus: {
+    id: 'narcissus',
+    sin: 'superbia',
+    invokingPower: 3,
+    sinLevel: 1,
+    maxActive: 1,
+    upkeep: { influence: 3 }, // 3 influence/s
+    // Effect (modifiers.ts → tierWeightMul): +10% to every positive outcome weight (Stellar /
+    // Excellent / Good). Flat, not efficiency-scaled.
+  },
+  arachne: {
+    id: 'arachne',
+    sin: 'vanagloria',
+    invokingPower: 3,
+    sinLevel: 1,
+    maxActive: 10,
+    upkeep: { reprobate: 50 }, // 50 reprobates/s (a pure cost — no souls minted)
+    // Effect (modifiers.ts → flatInfluencePerSecond): +1 influence/s per copy, scaled by invocation
+    // efficiency.
+  },
+
+  // ── Sin level 2 ─────────────────────────────────────────────────────────────────────────────
+  upir: {
+    id: 'upir',
+    sin: 'gula',
     invokingPower: 4,
     sinLevel: 2,
-    upkeep: { influence: 5 }, // 5 influence/s (Invocatio sheet)
-    // Stackable (Normal type). A background Pogrom runner (Invocatio sheet #8: "action efficiency
-    // applies to Pogrom") — replacing its old blanket Decimatio-efficiency boost. Forced to Good
-    // like the other stackable Decimatio runners (Imp/Upir, 03 §2.4), so a passive channel can't roll
-    // Pogrom's catastrophic tails; it steadily culls + harvests souls per cycle instead.
-    autonomous: { action: 'pogrom', efficiency: 0.05, forcedTier: 'good' },
+    upkeep: { stagnation: 1 }, // 1 stagnation/s drained from the top-level pool
+    // Stackable. Effect (modifiers.ts → tierWeightMul): −5% to every negative outcome weight (Bad /
+    // Terrible / Apocalyptic) per copy, scaled by invocation efficiency (asymptotic, never negative).
   },
   lamia: {
     id: 'lamia',
     sin: 'luxuria',
     invokingPower: 4,
     sinLevel: 2,
-    upkeep: { influence: 3 }, // 3 influence/s (Invocatio sheet)
-    // Stackable (Normal type). A background Logismoi runner at `efficiency × the player's efficiency`
-    // (Invocatio sheet #8: "action efficiency applies to Logismoi"), without occupying the player's
-    // action slot. Logismoi is the L2 Suasio action; natural tier rolls. Each summoned copy runs its
-    // own channel (advanceInvocationRunners), so N lamiae work at ~N× the rate.
-    autonomous: { action: 'logismoi', efficiency: 0.05 },
-  },
-  lemure: {
-    id: 'lemure',
-    sin: 'acedia',
-    invokingPower: 3,
-    sinLevel: 1,
-    maxActive: 4, // up to 4 bound (ADR-033)
-    upkeep: { influenceGainFraction: 0.25 }, // 25% of current influence generation per copy (ADR-033)
-    // Effect (modifiers.ts, ADR-033): each copy multiplies the Desidia stagnation-drain rate by
-    // 0.875 (12.5% cheaper per copy). At the 4-copy cap the upkeep consumes all influence gain.
+    upkeep: { influence: 5 }, // 5 influence/s
+    // Stackable. Effect (modifiers.ts → flatGenerationPerSecond): +100 reprobates/s per copy, scaled
+    // by invocation efficiency.
   },
   behemoth: {
     id: 'behemoth',
     sin: 'superbia',
-    invokingPower: 2,
-    sinLevel: 1,
-    upkeep: { goldGainFraction: 0.05, influenceGainFraction: 0.05 }, // 5% gold+infl gain/s (sheet)
-  },
-  midas: {
-    id: 'midas',
-    sin: 'avaritia',
-    invokingPower: 7,
-    sinLevel: 3,
+    invokingPower: 4,
+    sinLevel: 2,
     maxActive: 1,
+    upkeep: { goldGainFraction: 0.25, influenceGainFraction: 0.25 }, // 25% gold + 25% influence gain/s
+    // Effect (modifiers.ts → tierWeightMul.stellar): +1% Stellar chance, scaled by invocation efficiency.
+  },
+  harpy: {
+    id: 'harpy',
+    sin: 'ira',
+    invokingPower: 5,
+    sinLevel: 2,
+    upkeep: { influence: 3 }, // 3 influence/s
+    // Stackable. Effect (modifiers.ts → flatBaseMurderRatePerSecond): +0.005/s to the per-capita base
+    // murder rate per copy, scaled by invocation efficiency.
   },
   plutus: {
     id: 'plutus',
     sin: 'avaritia',
     invokingPower: 5,
     sinLevel: 2,
-    upkeep: { influence: 3 }, // 3 influence/s (Invocatio sheet)
-    // Stackable. Effect (modifiers.ts): lifts Vitium Mercatura output (gold + generation +
-    // conversion) by a flat factor per copy. A passive modifier source, no autonomous channel.
+    upkeep: { influence: 3 }, // 3 influence/s
+    // Stackable. Effect (modifiers.ts → faenerationOutputMul): +15% Faeneratio output per copy, scaled
+    // by invocation efficiency.
   },
-  succubus: {
-    id: 'succubus',
-    sin: 'luxuria',
-    invokingPower: 9,
-    sinLevel: 3,
-    maxActive: 1,
-    upkeep: { goldGainFraction: 0.99 }, // 99% of current gold gain/s (Invocatio sheet)
-    // Apex Luxuria. Effect (Invocatio sheet #8): an autonomous Imperium runner at 0.99 × player
-    // efficiency — the apex "player in control" rite cast on its own, full distribution (it can roll
-    // Stellar's soul payout AND Apocalyptic's cull). It keeps the 99%-gold-gain upkeep as its cost.
-    autonomous: { action: 'imperium', efficiency: 0.99 },
-  },
-  doppelgaenger: {
-    id: 'doppelgaenger',
-    sin: 'superbia',
-    invokingPower: 8,
-    sinLevel: 3,
-    maxActive: 1,
-    upkeep: { influenceGainFraction: 0.5 }, // 50% of current influence gain/s (Invocatio sheet)
-  },
-  astiwihad: {
-    id: 'astiwihad',
+  nightmare: {
+    id: 'nightmare',
     sin: 'tristitia',
-    invokingPower: 10,
+    invokingPower: 5,
+    sinLevel: 2,
+    upkeep: { influence: 3 }, // 3 influence/s
+    // Stackable. Effect (modifiers.ts → flatBaseSuicideRatePerSecond): +0.005/s to the per-capita base
+    // suicide rate per copy, scaled by invocation efficiency.
+  },
+  fama: {
+    id: 'fama',
+    sin: 'vanagloria',
+    invokingPower: 5,
+    sinLevel: 2,
+    maxActive: 4,
+    upkeep: { goldGainFraction: 0.25 }, // 25% of gold gain/s
+    // Effect (modifiers.ts → influenceRateMul): +15% influence gain per copy, scaled by invocation
+    // efficiency.
+  },
+  lemure: {
+    id: 'lemure',
+    sin: 'acedia',
+    invokingPower: 6,
+    sinLevel: 2,
+    maxActive: 4,
+    upkeep: { influenceGainFraction: 0.25 }, // 25% of influence gain/s per copy
+    // Effect (modifiers.ts → desidiaDrainMul): reduces the Desidia stagnation drain by 12.5% (×0.875)
+    // per copy, scaled by invocation efficiency. At the 4-copy cap the upkeep consumes all influence gain.
+  },
+
+  // ── Sin level 3 — Apex (one kind per lifetime, all cap at 1) ─────────────────────────────────
+  midas: {
+    id: 'midas',
+    sin: 'avaritia',
+    invokingPower: 7,
     sinLevel: 3,
     maxActive: 1,
-    upkeep: { influenceGainFraction: 1 }, // 100% of current influence gain/s (Invocatio sheet)
-    // Apex Tristitia (free). Effect (apex.ts): each second a small chance the whole reprobate
-    // population suicides at once — every death mints a soul, so a wipe banks the lot.
+    // Free. Effect (modifiers.ts): ×10 gold gain, but ×10 the Apocalyptic chance.
   },
   aurevora: {
     id: 'aurevora',
@@ -151,33 +197,27 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 7,
     sinLevel: 3,
     maxActive: 1,
-    // Apex Gula (free). Effect (apex.ts): an exponentially-rising gold drain paid against a
+    // Free of upkeep. Effect (apex.ts): an exponentially-rising gold drain paid against a
     // similarly-rising player-efficiency boost (duration tracked in invocationDurations); when the
     // drain takes gold to 0 it dispels. The efficiency half is folded in by modifiers.ts.
   },
-  erinyes: {
-    id: 'erinyes',
-    sin: 'ira',
-    invokingPower: 10,
+  doppelgaenger: {
+    id: 'doppelgaenger',
+    sin: 'superbia',
+    invokingPower: 8,
     sinLevel: 3,
     maxActive: 1,
-    // Apex Ira (free, one-shot at the next Katabasis). Effects on invoke (see `invoke`): kills the
-    // entire reprobate population (every death mints a soul), dispels any active Morpheus and locks
-    // it out for the rest of the lifetime, and sets `pendingErinyes` for `commitKatabasis` to read
-    // (zero gold + maleficia carry-over and stack a permanent ×2 player-efficiency multiplier).
+    upkeep: { influenceGainFraction: 0.5 }, // 50% of influence gain/s
+    // Effect (modifiers.ts): +100% player efficiency (×2).
   },
-  morpheus: {
-    id: 'morpheus',
-    sin: 'acedia',
-    invokingPower: 10,
+  succubus: {
+    id: 'succubus',
+    sin: 'luxuria',
+    invokingPower: 9,
     sinLevel: 3,
-    soulCost: { fraction: 0.9, minimum: 0 },
-    goldCost: { fraction: 0.9 },
     maxActive: 1,
-    // Apex Acedia (90% souls + 90% gold, Invocatio sheet). Effect on invoke (see `invoke`): refused while
-    // `morpheusLockedOut` is set. Effect while active (see tick.ts): the lifetime is held in
-    // stillness — no income, no dynamics, no Opera or builds; on commit, `pendingMorpheus` overrides
-    // the Katabasis carry-over to gold 100% + maleficia 100% + Emptio-list preserved.
+    upkeep: { goldGainFraction: 0.99 }, // 99% of gold gain/s
+    // Effect (modifiers.ts → flatGenerationPerSecond): +10000 reprobates/s, scaled by invocation efficiency.
   },
   specunitas: {
     id: 'specunitas',
@@ -185,9 +225,37 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 9,
     sinLevel: 3,
     maxActive: 1,
-    upkeep: { goldGainFraction: 0.99 }, // 99% of current gold gain/s (Invocatio sheet)
-    // Apex Vanagloria (free, upkeep aside). Re-targeted from its retired conversion-bias hook to
-    // "×2 influence gain/s" (Invocatio sheet rev 2026-06-12); applied in modifiers.ts via
-    // `hasSpecunitas` on influenceRateMul.
+    upkeep: { goldGainFraction: 0.99 }, // 99% of gold gain/s
+    // Effect (modifiers.ts): ×3 influence gain.
+  },
+  astiwihad: {
+    id: 'astiwihad',
+    sin: 'tristitia',
+    invokingPower: 10,
+    sinLevel: 3,
+    maxActive: 1,
+    // Free. Effect (tick.ts freeze + invoke/commit): holds the world still while active (no income,
+    // no dynamics, no Opera, no gains); at Katabasis it carries 100% of gold + maleficia and preserves
+    // the Emptio list (`pendingAstiwihad`).
+  },
+  erinyes: {
+    id: 'erinyes',
+    sin: 'ira',
+    invokingPower: 10,
+    sinLevel: 3,
+    maxActive: 1,
+    // Free. Effect on invoke (see `invoke`): kills the entire reprobate population (every death mints
+    // a soul) and sets `pendingErinyes` for `commitKatabasis` (zero gold + maleficia carry-over, and
+    // stack a permanent ×2 player-efficiency multiplier).
+  },
+  morpheus: {
+    id: 'morpheus',
+    sin: 'acedia',
+    invokingPower: 10,
+    sinLevel: 3,
+    maxActive: 1,
+    upkeep: { reprobateFraction: 0.05 }, // 5% of the reprobate pool/s (a pure cost — no souls minted)
+    // Effect (modifiers.ts → flatStagnationPerSecond, applied in tick): +0.001 stagnation per
+    // cost-consumed reprobate (i.e. 0.05 × population × 0.001/s), scaled by invocation efficiency.
   },
 } as const;

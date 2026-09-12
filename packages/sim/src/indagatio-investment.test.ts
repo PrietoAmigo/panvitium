@@ -66,10 +66,10 @@ describe('investIndagatio (moves 10% of liquid gold into the default stake)', ()
     expect(r.ok).toBe(false);
   });
 
-  it('is refused under the Morpheus freeze', () => {
-    const r = investIndagatio(withLifetime({ gold: bn(1000), invocations: { morpheus: 1 } }));
+  it('is refused under the Astiwihad freeze', () => {
+    const r = investIndagatio(withLifetime({ gold: bn(1000), invocations: { astiwihad: 1 } }));
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toContain('Morpheus');
+    if (!r.ok) expect(r.reason).toContain('Astiwihad');
   });
 });
 
@@ -100,12 +100,12 @@ describe('divestIndagatio (pulls 10% of the stake back, in full — no penalty)'
     expect(r.ok).toBe(false);
   });
 
-  it('is refused under the Morpheus freeze', () => {
+  it('is refused under the Astiwihad freeze', () => {
     const r = divestIndagatio(
-      withLifetime({ indagatioInvestment: bn(100), invocations: { morpheus: 1 } }),
+      withLifetime({ indagatioInvestment: bn(100), invocations: { astiwihad: 1 } }),
     );
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toContain('Morpheus');
+    if (!r.ok) expect(r.reason).toContain('Astiwihad');
   });
 });
 

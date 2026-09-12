@@ -124,7 +124,7 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     ).toBe(0);
   });
 
-  it('lists a runner with its efficiency, action, and a progress bar — no dropdown/buttons', () => {
+  it('lists a stackable invocation as a passive row (no runner bar/chip) with its live effect', () => {
     const base = createInitialState('seed', 0);
     const withReps = addReprobates(base, 200);
     const state: GameState = {
@@ -136,12 +136,9 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     clickTab('Actions');
     const text = container!.textContent ?? '';
     expect(text).toContain('Imp');
-    expect(text).not.toContain('\u00D72'); // stacked copies are not advertised (the only \u00D7 is the eff chip)
-    expect(text).toContain('Caedes'); // the action it runs
-    expect(/\d\u00d7|\u00d7\d/.test(text)).toBe(true); // the efficiency chip (e.g. "0.05\u00d7")
-    // A runner row carries a progress bar (the same shape the player/acolyte rows use).
-    expect(container!.querySelectorAll('.analytics-invocation .analytics-bar').length).toBe(1);
-    // Still no expandable head button or per-copy channel rows.
+    expect(text.toLowerCase()).toContain('murders/s'); // its live quantified effect (no runner channel)
+    // No autonomous runner anymore \u2192 no progress bar, no per-copy channel rows, no buttons.
+    expect(container!.querySelectorAll('.analytics-invocation .analytics-bar').length).toBe(0);
     expect(container!.querySelectorAll('.analytics-inv-channel').length).toBe(0);
     expect(container!.querySelectorAll('.analytics-invocations button').length).toBe(0);
   });

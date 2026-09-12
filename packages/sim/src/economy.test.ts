@@ -101,11 +101,11 @@ describe('perSecondRates — read-only income readout', () => {
     expect(gained).toBe(Math.floor(perSecondRates(s).gold)); // rate × 1s == realised gain
   });
 
-  it('reads zero while frozen under Morpheus', () => {
+  it('reads zero while frozen under Astiwihad', () => {
     const base = createInitialState('seed', 0);
     const frozen: GameState = {
       ...base,
-      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, morpheus: 1 } },
+      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, astiwihad: 1 } },
     };
     const r = perSecondRates(frozen);
     expect(r.gold).toBe(0);
@@ -138,11 +138,11 @@ describe('resourceFlows — generation / upkeep / net breakdown', () => {
     expect(f.influence.net).toBeCloseTo(r.influence.toNumber(), 9);
   });
 
-  it('reads all-zero while frozen under Morpheus', () => {
+  it('reads all-zero while frozen under Astiwihad', () => {
     const base = createInitialState('seed', 0);
     const frozen: GameState = {
       ...base,
-      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, morpheus: 1 } },
+      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, astiwihad: 1 } },
     };
     const f = resourceFlows(frozen);
     expect(f.gold).toEqual({ generation: 0, upkeep: 0, net: 0 });

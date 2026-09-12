@@ -147,7 +147,7 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
   });
 
   it('schemaVersion is v5 (the Mercatus → Faeneratio rework bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+    expect(CURRENT_SCHEMA_VERSION).toBe(6);
   });
 });
 
@@ -489,18 +489,18 @@ describe('apex Katabasis-modifier flags + Erinyes stacks — ADR-023 additive-op
     const serialized = serializeGameState(fresh);
     // No fields set on a fresh save — omitted from the wire.
     expect('pendingErinyes' in serialized.lifetime).toBe(false);
-    expect('pendingMorpheus' in serialized.lifetime).toBe(false);
-    expect('morpheusLockedOut' in serialized.lifetime).toBe(false);
+    expect('pendingAstiwihad' in serialized.lifetime).toBe(false);
+    expect('apexInvoked' in serialized.lifetime).toBe(false);
     expect('erinyesEfficiencyStacks' in serialized).toBe(false);
     // And the deserializer defaults them when absent.
     const back = deserializeGameState(serialized);
     expect(back.lifetime.pendingErinyes ?? false).toBe(false);
-    expect(back.lifetime.pendingMorpheus ?? false).toBe(false);
-    expect(back.lifetime.morpheusLockedOut ?? false).toBe(false);
+    expect(back.lifetime.pendingAstiwihad ?? false).toBe(false);
+    expect(back.lifetime.apexInvoked ?? null).toBe(null);
     expect(back.erinyesEfficiencyStacks ?? 0).toBe(0);
   });
 
-  it('a mid-flight Erinyes (kill-all + lockout, pending commit) round-trips its flags', () => {
+  it('a mid-flight Erinyes (kill-all, pending commit) round-trips its flags + apex kind', () => {
     const fresh = createInitialState('seed', 0);
     const live: GameState = {
       ...fresh,
@@ -509,16 +509,16 @@ describe('apex Katabasis-modifier flags + Erinyes stacks — ADR-023 additive-op
         ...fresh.lifetime,
         invocations: { erinyes: 1 },
         pendingErinyes: true,
-        morpheusLockedOut: true,
+        apexInvoked: 'erinyes',
       },
     };
     const wire = serializeGameState(live);
     expect(wire.lifetime.pendingErinyes).toBe(true);
-    expect(wire.lifetime.morpheusLockedOut).toBe(true);
+    expect(wire.lifetime.apexInvoked).toBe('erinyes');
     expect(wire.erinyesEfficiencyStacks).toBe(2);
     const back = deserializeGameState(wire);
     expect(back.lifetime.pendingErinyes).toBe(true);
-    expect(back.lifetime.morpheusLockedOut).toBe(true);
+    expect(back.lifetime.apexInvoked).toBe('erinyes');
     expect(back.erinyesEfficiencyStacks).toBe(2);
   });
 });

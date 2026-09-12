@@ -9,6 +9,7 @@ import { migrateV1ToV2 } from './migrations/v1-to-v2.js';
 import { migrateV2ToV3 } from './migrations/v2-to-v3.js';
 import { migrateV3ToV4 } from './migrations/v3-to-v4.js';
 import { migrateV4ToV5 } from './migrations/v4-to-v5.js';
+import { migrateV5ToV6 } from './migrations/v5-to-v6.js';
 
 /** A single forward migration that upgrades a blob from one schema version to the next. */
 export interface SaveMigration {
@@ -20,12 +21,15 @@ export interface SaveMigration {
 /** Registered migrations, applied in sequence (v1 → v2: reprobate-subtype/conversion removal;
  * v2 → v3: legacy business system → Mercatus — gold credit, build-queue fizzle, field drop;
  * v3 → v4: Decimatio rite id `caedis` → `caedes` rewritten in persisted action references;
- * v4 → v5: Mercatus → the Faeneratio loop — divest-value gold credit, `mercatusDepths` drop). */
+ * v4 → v5: Mercatus → the Faeneratio loop — divest-value gold credit, `mercatusDepths` drop;
+ * v5 → v6: invocation roster rework — clear active invocations, pendingMorpheus → pendingAstiwihad,
+ * drop morpheusLockedOut, seed apexInvoked). */
 export const SAVE_MIGRATIONS: readonly SaveMigration[] = [
   migrateV1ToV2,
   migrateV2ToV3,
   migrateV3ToV4,
   migrateV4ToV5,
+  migrateV5ToV6,
 ];
 
 export class SaveMigrationError extends Error {

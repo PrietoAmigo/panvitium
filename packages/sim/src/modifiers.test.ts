@@ -282,10 +282,10 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     };
   };
 
-  it('each Plutus lifts the Faeneratio output multiplier (efficiency-scaled, 0.05/copy baseline)', () => {
+  it('each Plutus lifts the Faeneratio output multiplier (invocation-efficiency-scaled, 0.15/copy baseline)', () => {
     expect(computeModifiers(fresh()).faenerationOutputMul).toBe(1);
-    expect(computeModifiers(withInvocation('plutus', 1)).faenerationOutputMul).toBeCloseTo(1.05, 6);
-    expect(computeModifiers(withInvocation('plutus', 3)).faenerationOutputMul).toBeCloseTo(1.15, 6);
+    expect(computeModifiers(withInvocation('plutus', 1)).faenerationOutputMul).toBeCloseTo(1.15, 6);
+    expect(computeModifiers(withInvocation('plutus', 3)).faenerationOutputMul).toBeCloseTo(1.45, 6);
   });
 
   it('Succubus no longer touches the rate modifiers — its effect is an Imperium runner, cost is upkeep', () => {
@@ -295,7 +295,7 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     expect(m.reprobateGenerationRateMul).toBe(NEUTRAL_MODIFIERS.reprobateGenerationRateMul);
   });
 
-  it('Midas still triples goldRateMul independent of Succubus (whose cost is now upkeep)', () => {
+  it('Midas multiplies goldRateMul ×10 independent of Succubus (whose cost is now upkeep)', () => {
     const s = fresh();
     const both: GameState = {
       ...s,
@@ -304,19 +304,19 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
         invocations: { ...s.lifetime.invocations, succubus: 1, midas: 1 },
       },
     };
-    expect(computeModifiers(both).goldRateMul).toBeCloseTo(3, 6);
+    expect(computeModifiers(both).goldRateMul).toBeCloseTo(10, 6);
   });
 
-  it('invocation effects scale with player efficiency (Model 1)', () => {
-    const plain = computeModifiers(withInvocation('plutus', 1)).faenerationOutputMul; // playerEff 1 → 1.05
+  it('invocation effects no longer scale with player efficiency (only invocation efficiency)', () => {
+    const plain = computeModifiers(withInvocation('plutus', 1)).faenerationOutputMul; // 1.15
     const s = fresh();
     const withDoppel = computeModifiers({
       ...s,
       lifetime: { ...s.lifetime, invocations: { plutus: 1, doppelgaenger: 1 } },
     }).faenerationOutputMul;
-    // Doppelgänger lifts playerEff to 1.5, so the Plutus bonus grows to 0.05 × 1.5.
-    expect(withDoppel).toBeGreaterThan(plain);
-    expect(withDoppel).toBeCloseTo(1 + 0.05 * 1.5, 6);
+    // Doppelgänger lifts PLAYER efficiency, which no longer feeds invocation effects — Plutus is unchanged.
+    expect(withDoppel).toBeCloseTo(plain, 6);
+    expect(withDoppel).toBeCloseTo(1.15, 6);
   });
 
   it('Black Candles raise the invocation-effect multiplier (+5% each) and amplify effects', () => {
@@ -331,7 +331,7 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
       },
     });
     expect(two.invocationEfficiencyMul).toBeCloseTo(1.1, 6); // 1 + 0.05 × 2
-    expect(two.faenerationOutputMul).toBeCloseTo(1 + 0.05 * 1.1, 6); // Plutus bonus × invEff
+    expect(two.faenerationOutputMul).toBeCloseTo(1 + 0.15 * 1.1, 6); // Plutus bonus (0.15) × invEff
   });
 
   it('Lemure lowers the Desidia drain multiplier ×0.875 per copy (ADR-033)', () => {

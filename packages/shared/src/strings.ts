@@ -398,6 +398,13 @@ export const strings = {
     names: {
       familiar: 'Familiar',
       imp: 'Imp',
+      wendigo: 'Wendigo',
+      banshee: 'Banshee',
+      blob: 'Blob',
+      narcissus: 'Narcissus',
+      arachne: 'Arachne',
+      empusa: 'Empusa',
+      kobold: 'Kobold',
       upir: 'Upir',
       fama: 'Fama',
       nightmare: 'Nightmare',
@@ -438,41 +445,59 @@ export const strings = {
       faeneratioOutput: 'Faeneratio output',
       stellar: 'Stellar chance',
       baseSuicide: 'base suicide rate',
+      baseMurder: 'base murder rate',
       gold: 'gold',
       apocalyptic: 'Apocalyptic chance',
       apocLocked: 'Apocalyptic locked to zero',
       suasioEff: 'Suasio efficiency',
       playerEff: 'player efficiency',
+      murders: 'murders/s',
+      suicides: 'suicides/s',
+      reprobates: 'reprobates/s',
+      goldPerSecond: 'gold gain/s',
+      influencePerSecond: 'influence/s',
+      stagnation: 'stagnation/s',
+      positiveChances: 'positive outcome chances',
+      negativeChances: 'negative outcomes',
+      desidiaDrain: 'Desidia drain',
     },
-    /** Fallback line for invocations whose effect isn't a live modifier-bundle magnitude
-     *  (Katabasis / per-tick apex entities). Runners show action + outcome + cycle time instead;
-     *  the other passives show the computed quantified effect. Per hard copy rule 1, every line
-     *  still bakes in its base numbers from the sim (invocations.data.ts, modifiers.ts, apex.ts,
-     *  constants.ts); the scaled invocations state their per-copy base factor. */
+    /** Effect line per invocation. The view-model (invocationEffect.ts) shows a LIVE quantified
+     *  magnitude where the effect is a modifier-bundle field (so the Ars Goetia reflects the real
+     *  current effect after invocation-efficiency increases/decreases); these strings are the
+     *  fallback (and the sole source for the structural apex effects: Astiwihad's world-still carry,
+     *  Erinyes's kill-all). Per hard copy rule 1, every line still bakes in its base numbers from the
+     *  sim (invocations.data.ts, modifiers.ts, apex.ts, constants.ts). */
     effects: {
-      familiar: '+33% player efficiency, plus a background Indagatio at 1% of your efficiency.',
-      imp: 'A background Good-only Caedes at 5% of your efficiency.',
-      upir: 'A background Good-only Caedes at 5% of your efficiency.',
-      lamia: 'A background Logismoi at 5% of your efficiency.',
-      fama: '+5% influence gain per copy, scaled by your efficiency.',
-      nightmare: '+0.00005/s base reprobate suicide rate per copy, scaled by your efficiency.',
-      harpy: 'A background Good-only Pogrom at 5% of your efficiency.',
+      familiar: '+33% player efficiency.',
+      wendigo: '+2% player efficiency per copy.',
+      imp: '+1 murder/s per copy, scaled by invocation efficiency.',
+      banshee: '+1 suicide/s per copy, scaled by invocation efficiency.',
+      blob: '+0.05 stagnation/s per copy, scaled by invocation efficiency.',
+      narcissus: '+10% to every positive outcome chance.',
+      arachne: '+1 influence/s per copy, scaled by invocation efficiency.',
+      empusa: '+1 reprobate/s per copy, scaled by invocation efficiency.',
+      kobold: '+100 gold gain/s per copy, scaled by invocation efficiency.',
+      upir: '5% reduced negative outcomes per copy, scaled by invocation efficiency.',
+      lamia: '+100 reprobates/s per copy, scaled by invocation efficiency.',
+      harpy: '+0.005/s base reprobate murder rate per copy, scaled by invocation efficiency.',
+      fama: '+15% influence gain per copy, scaled by invocation efficiency.',
+      nightmare: '+0.005/s base reprobate suicide rate per copy, scaled by invocation efficiency.',
+      behemoth: '+1% Stellar chance, scaled by invocation efficiency.',
+      plutus: '+15% Faeneratio output per copy, scaled by invocation efficiency.',
       lemure:
-        'Reduces Desidia Stagnation drain by 12.5% per copy (up to 4), at 25% of influence gain each.',
-      behemoth: '+0.05% Stellar chance per copy, scaled by your efficiency.',
-      midas: '×3 gold gain but ×100 the Apocalyptic chance.',
-      plutus: '+5% Faeneratio output per copy, scaled by your efficiency.',
-      succubus: 'A background Imperium at 99% of your efficiency; upkeep takes 99% of gold gain.',
-      doppelgaenger: '+50% player efficiency (upkeep: 50% of your influence gain).',
+        'Reduces Desidia Stagnation drain by 12.5% (×0.875) per copy (up to 4), scaled by invocation efficiency; upkeep takes 25% of influence gain each.',
+      midas: '×10 gold gain, but ×10 the Apocalyptic chance.',
+      succubus: '+10000 reprobates/s, scaled by invocation efficiency.',
+      doppelgaenger: '+100% player efficiency (upkeep: 50% of your influence gain).',
+      specunitas: '×3 influence gain.',
       astiwihad:
-        'Each second, a 0.01% chance every reprobate suicides at once; each death mints 1 soul.',
+        'Holds the world still (no income, dynamics, Opera or gains while active); at Katabasis, carries 100% of gold and maleficia and keeps the Emptio list.',
       aurevora:
         'Player efficiency ×1.05 per second active; drains gold at 100/s, growing ×1.05 per second, and self-dispels at 0 gold.',
       erinyes:
         'Kills every reprobate (each mints 1 soul); at the next Katabasis, a permanent ×2 player efficiency, but 0% gold and maleficia carried.',
       morpheus:
-        'Holds the world still; at Katabasis, carries 100% of gold and maleficia and keeps the Emptio list.',
-      specunitas: '×2 influence gain.',
+        '+0.001 stagnation per cost-consumed reprobate (consumes 5% of the reprobate pool/s), scaled by invocation efficiency.',
     } as Record<string, string>,
   },
   maleficia: {

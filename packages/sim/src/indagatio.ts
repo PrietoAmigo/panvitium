@@ -19,7 +19,7 @@
  * Invest / divest move a fixed FRACTION of the relevant balance per press (10% of liquid gold in,
  * 10% of the current investment back out), with a one-coin floor so small balances still move.
  * Both are pure gold moves between two lifetime buckets — no cost, no loss on the way back — modelled
- * on the Thesaurus deposit/withdraw pair, and refused under the Morpheus freeze like every other
+ * on the Thesaurus deposit/withdraw pair, and refused under the Astiwihad freeze like every other
  * economic action (03 §2.4). The investment lives in `lifetime`, so a descent clears it with the
  * rest of the lifetime's gold.
  */
@@ -54,11 +54,11 @@ export type IndagatioInvestResult =
 /**
  * Move a slice of liquid gold into the default Indagatio investment: `INDAGATIO_INVEST_FRACTION` of
  * current gold, at least one coin, never more than is held. Floored at the spend boundary (ADR-005;
- * gold accrues fractionally but moves in whole coins). Refused under the Morpheus freeze.
+ * gold accrues fractionally but moves in whole coins). Refused under the Astiwihad freeze.
  */
 export function investIndagatio(state: GameState): IndagatioInvestResult {
-  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
-    return { ok: false, reason: 'The world is held in Morpheus’s stillness.' };
+  if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
+    return { ok: false, reason: 'The world is held in Astiwihad’s stillness.' };
   }
   const liquid = floor(state.lifetime.gold);
   if (lte(liquid, ZERO)) return { ok: false, reason: 'no gold to invest' };
@@ -82,11 +82,11 @@ export function investIndagatio(state: GameState): IndagatioInvestResult {
  * Pull a slice of the default investment back into liquid gold: `INDAGATIO_INVEST_FRACTION` of the
  * current investment, at least one coin, never more than is invested. The full amount returns — no
  * recovery penalty (unlike the Thesaurus withdrawal); it is the player's own gold, merely set aside.
- * Refused under the Morpheus freeze.
+ * Refused under the Astiwihad freeze.
  */
 export function divestIndagatio(state: GameState): IndagatioInvestResult {
-  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
-    return { ok: false, reason: 'The world is held in Morpheus’s stillness.' };
+  if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
+    return { ok: false, reason: 'The world is held in Astiwihad’s stillness.' };
   }
   const invested = floor(state.lifetime.indagatioInvestment);
   if (lte(invested, ZERO)) return { ok: false, reason: 'nothing invested' };

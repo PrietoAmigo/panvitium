@@ -38,7 +38,7 @@
  * spreadsheet's `SKILL_INTENSITY_DIVISOR` already sets the intensity curve; per-Sin coefficients on
  * top of this are a future tuning surface.
  */
-import { SINS, type GameState, type Sin } from './state.js';
+import { SINS, totalReprobates, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
@@ -95,10 +95,29 @@ export interface Modifiers {
    */
   readonly flatBaseMurderRatePerSecond: number;
   /**
-   * Flat additive births/s (Ose #57 — "+reprobate generation (flat)"). Added to the generation
-   * term in `reprobateRates` before the generation multiplier. Default 0.
+   * Flat additive births/s (Ose #57 — "+reprobate generation (flat)"; the Empusa / Lamia / Succubus
+   * invocations, efficiency-scaled). Added to the generation term in `reprobateRates` before the
+   * generation multiplier. Default 0.
    */
   readonly flatGenerationPerSecond: number;
+  /**
+   * Absolute murders/s from invocations (each Imp, efficiency-scaled) — NOT per-capita. Added
+   * straight to the murder pool in `reprobateRates`, bypassing the population × `murderRateMul`
+   * scaling. Each resulting death mints a soul. Default 0.
+   */
+  readonly flatMurdersPerSecond: number;
+  /**
+   * Absolute suicides/s from invocations (each Banshee, efficiency-scaled) — NOT per-capita. Added
+   * straight to the suicide pool in `reprobateRates`, bypassing the population × rate scaling. Each
+   * resulting death mints a soul. Default 0.
+   */
+  readonly flatSuicidesPerSecond: number;
+  /**
+   * Flat stagnation generated per second by invocations (each Blob, plus Morpheus's per-consumed-
+   * reprobate yield), efficiency-scaled. Added to the top-level stagnation pool in the tick (clamped
+   * to `stagnationMax`). Default 0.
+   */
+  readonly flatStagnationPerSecond: number;
   /**
    * Chance each murder also drives a witness to suicide (Leraie #14). Applied at the rate level:
    * suicides/s += chance × murders/s. Default 0.
@@ -223,6 +242,9 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   flatBaseSuicideRatePerSecond: 0,
   flatBaseMurderRatePerSecond: 0,
   flatGenerationPerSecond: 0,
+  flatMurdersPerSecond: 0,
+  flatSuicidesPerSecond: 0,
+  flatStagnationPerSecond: 0,
   murderTriggersSuicideChance: 0,
   flatGoldPerSecond: 0,
   maxInfluenceMul: 1,
@@ -305,15 +327,28 @@ export function computeModifiers(state: GameState): Modifiers {
   // live here alongside the other effect coefficients (the catalog in invocations.ts owns the
   // gates and costs, this module owns what each does — mirroring how maleficia effects are coded).
   const inv = state.lifetime.invocations;
-  const hasFamiliar = (inv.familiar ?? 0) > 0; // +33% player efficiency (02 §3 hybrid)
-  const famaCount = inv.fama ?? 0; // each: additive influence increase (× playerEff × invEff)
-  const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× playerEff × invEff)
-  const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× playerEff × invEff)
-  const hasMidas = (inv.midas ?? 0) > 0; // 3× gold, 100× Apocalyptic
-  const plutusCount = inv.plutus ?? 0; // each: Faeneratio output up (× playerEff × invEff)
-  const lemureCount = inv.lemure ?? 0; // each: ×0.875 Desidia stagnation drain (ADR-033)
-  const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×2 influence gain/s (sheet)
-  const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +50% player eff, ½ influence
+  const hasFamiliar = (inv.familiar ?? 0) > 0; // +33% player efficiency
+  const wendigoCount = inv.wendigo ?? 0; // each: +2% player efficiency (flat, not efficiency-scaled)
+  const famaCount = inv.fama ?? 0; // each: +15% influence gain (× invEff)
+  const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× invEff)
+  const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× invEff)
+  const harpyCount = inv.harpy ?? 0; // each: additive to base murder rate (× invEff)
+  const narcissusCount = inv.narcissus ?? 0; // each: +10% positive outcome weights (flat)
+  const upirCount = inv.upir ?? 0; // each: −5% negative outcome weights (× invEff)
+  const impCount = inv.imp ?? 0; // each: +1 murder/s (× invEff)
+  const bansheeCount = inv.banshee ?? 0; // each: +1 suicide/s (× invEff)
+  const empusaCount = inv.empusa ?? 0; // each: +1 reprobate/s (× invEff)
+  const lamiaCount = inv.lamia ?? 0; // each: +100 reprobates/s (× invEff)
+  const koboldCount = inv.kobold ?? 0; // each: +100 gold gain/s (× invEff)
+  const arachneCount = inv.arachne ?? 0; // each: +1 influence/s (× invEff)
+  const blobCount = inv.blob ?? 0; // each: +0.05 stagnation/s (× invEff)
+  const morpheusCount = inv.morpheus ?? 0; // each: +0.001 stagnation per cost-consumed reprobate (× invEff)
+  const hasSuccubus = (inv.succubus ?? 0) > 0; // apex Luxuria: +10000 reprobates/s (× invEff)
+  const hasMidas = (inv.midas ?? 0) > 0; // ×10 gold, ×10 Apocalyptic
+  const plutusCount = inv.plutus ?? 0; // each: +15% Faeneratio output (× invEff)
+  const lemureCount = inv.lemure ?? 0; // each: ×0.875 Desidia stagnation drain (× invEff, ADR-033)
+  const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×3 influence gain/s
+  const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +100% player eff (upkeep: ½ influence gain)
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
   // (apex.ts owns the curve and the paired gold drain). 1× when absent.
   const aurevoraEff =
@@ -337,16 +372,30 @@ export function computeModifiers(state: GameState): Modifiers {
   const PANV_GEN_MUL = 10;
   const PANV_SUICIDE_MUL = 20;
   const PANV_MURDER_MUL = 20;
-  // Invocation effect magnitudes (Invocatio sheet). Each invocation's "action efficiency" (its
-  // per-copy factor below) is the sheet's Efficiency column, applied × the player's current action
-  // efficiency (`playerEff`) × the invocation-effect multiplier (`invEff`), so the demonic court
-  // scales with the build (Model 1).
-  const FAMA_INFLUENCE_FACTOR = 0.05; // additive increase to influence rate
-  const PLUTUS_FAENERATIO_FACTOR = 0.05; // increase to Faeneratio output (Mutuum + interest)
+  // Invocation effect magnitudes. Each per-copy factor marked "(× invEff)" is scaled by the
+  // all-invocation × per-Sin invocation-effect multiplier (`invEffFor(sin)`) — NOT player efficiency
+  // (the player-efficiency coupling was removed; the demonic court now scales only with invocation
+  // efficiency). The `narcissus`/`wendigo` factors are flat (no efficiency scaling), per the catalog.
+  const FAMA_INFLUENCE_FACTOR = 0.15; // each Fama: +15% influence gain
+  const PLUTUS_FAENERATIO_FACTOR = 0.15; // each Plutus: +15% Faeneratio output (Mutuum + interest)
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
-  const NIGHTMARE_SUICIDE_FACTOR = 5e-5; // additive increase to base reprobate suicide rate (sheet)
-  const BEHEMOTH_STELLAR_FACTOR = 0.0005; // additive increase to Stellar chance across Opera
-  const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.125; // each Lemure: ×0.875 Desidia stagnation drain (ADR-033)
+  const NIGHTMARE_SUICIDE_FACTOR = 0.005; // each Nightmare: +0.005/s base reprobate suicide rate
+  const HARPY_MURDER_FACTOR = 0.005; // each Harpy: +0.005/s base reprobate murder rate
+  const BEHEMOTH_STELLAR_FACTOR = 0.01; // Behemoth: +1% Stellar chance
+  const WENDIGO_PLAYER_EFF_FACTOR = 0.02; // each Wendigo: +2% player efficiency (flat)
+  const NARCISSUS_POSITIVE_FACTOR = 0.1; // Narcissus: +10% every positive outcome weight (flat)
+  const UPIR_NEGATIVE_FACTOR = 0.05; // each Upir: −5% every negative outcome weight (× invEff)
+  const IMP_MURDERS_PER_SECOND = 1; // each Imp: +1 murder/s
+  const BANSHEE_SUICIDES_PER_SECOND = 1; // each Banshee: +1 suicide/s
+  const EMPUSA_GENERATION_PER_SECOND = 1; // each Empusa: +1 reprobate/s
+  const LAMIA_GENERATION_PER_SECOND = 100; // each Lamia: +100 reprobates/s
+  const SUCCUBUS_GENERATION_PER_SECOND = 10000; // Succubus: +10000 reprobates/s
+  const KOBOLD_GOLD_PER_SECOND = 100; // each Kobold: +100 gold gain/s
+  const ARACHNE_INFLUENCE_PER_SECOND = 1; // each Arachne: +1 influence/s
+  const BLOB_STAGNATION_PER_SECOND = 0.05; // each Blob: +0.05 stagnation/s
+  const MORPHEUS_REPROBATE_FRACTION = 0.05; // Morpheus consumes 5% of the pool/s (mirrors its upkeep)
+  const MORPHEUS_STAGNATION_PER_REPROBATE = 0.001; // Morpheus: +0.001 stagnation per consumed reprobate
+  const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.125; // each Lemure: ×0.875 Desidia stagnation drain (× invEff)
 
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
@@ -385,7 +434,15 @@ export function computeModifiers(state: GameState): Modifiers {
     bumpTier('apocalyptic', gulaNegFactor);
   }
   if (superbiaIntensity > 0) bumpTier('stellar', skillBonus(superbiaIntensity)); // Morning Star
-  if (hasMidas) bumpTier('apocalyptic', 100); // Midas hundredfold
+  if (hasMidas) bumpTier('apocalyptic', 10); // Midas tenfold
+  // Narcissus (Superbia): +10% to every POSITIVE outcome weight (flat, cap 1). Renormalization
+  // pulls the freed probability off the failure tiers.
+  if (narcissusCount > 0) {
+    const f = 1 + NARCISSUS_POSITIVE_FACTOR * narcissusCount;
+    bumpTier('stellar', f);
+    bumpTier('excellent', f);
+    bumpTier('good', f);
+  }
   for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Bael #1, Balam #51, Amdusias #67
   const tierWeightMul: TierModifiers = {};
   for (const [t, mul] of Object.entries(tierAcc)) if (mul !== 1) tierWeightMul[t as Tier] = mul;
@@ -413,7 +470,8 @@ export function computeModifiers(state: GameState): Modifiers {
   // 2026-06-12); the old ×2-per-Gula-level ladder is retired (levels now strip negative tiers).
   const playerEff =
     skillBonus(gulaIntensity) *
-    (hasDoppel ? 1.5 : 1) *
+    (hasDoppel ? 2 : 1) * // Doppelgänger: +100% player efficiency
+    (1 + WENDIGO_PLAYER_EFF_FACTOR * wendigoCount) * // each Wendigo: +2% player efficiency (flat)
     (hasFamiliar ? 1 + 0.33 * invEffForInv('familiar') : 1) *
     aurevoraEff *
     erinyesStackMul *
@@ -426,13 +484,22 @@ export function computeModifiers(state: GameState): Modifiers {
   const invSinEff = {} as Record<Sin, number>;
   for (const s of SINS) invSinEff[s] = invSinContrib[s] ?? 1;
   const invEffFor = (sin: Sin): number => invEff * invSinEff[sin];
-  // Behemoth (Superbia): additive increase to the Stellar weight, efficiency-scaled (Model 1).
-  // Deferred to here (rather than the tierAcc block above) because it depends on `playerEff`/`invEff`;
-  // folded into the already-built `tierWeightMul` so it composes with Morning Star and Stellar sigils.
+  // Behemoth (Superbia): +1% to the Stellar weight, invocation-efficiency-scaled. Deferred to here
+  // (rather than the tierAcc block above) because it depends on `invEff`; folded into the already-built
+  // `tierWeightMul` so it composes with Morning Star, Narcissus and the Stellar sigils.
   if (behemothCount > 0) {
     tierWeightMul.stellar =
       (tierWeightMul.stellar ?? 1) *
-      (1 + BEHEMOTH_STELLAR_FACTOR * playerEff * invEffFor('superbia') * behemothCount);
+      (1 + BEHEMOTH_STELLAR_FACTOR * invEffFor('superbia') * behemothCount);
+  }
+  // Upir (Gula): −5% to every NEGATIVE outcome weight per copy, invocation-efficiency-scaled. Uses
+  // the asymptotic "decrease" form ×1/(1 + strength) so a large stack softens toward zero weight but
+  // never inverts it. Deferred here for `invEff`; composes with Gula's per-level negative-tier strip.
+  if (upirCount > 0) {
+    const soften = 1 / (1 + UPIR_NEGATIVE_FACTOR * invEffFor('gula') * upirCount);
+    for (const t of ['bad', 'terrible', 'apocalyptic'] as const) {
+      tierWeightMul[t] = (tierWeightMul[t] ?? 1) * soften;
+    }
   }
 
   const maxInfluenceMulV =
@@ -464,7 +531,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // directly — a derived multiplier like any other; the bundle stays derived, never persisted.
     goldRateMul:
       skillBonus(avaritiaIntensity) *
-      (hasMidas ? 3 : 1) *
+      (hasMidas ? 10 : 1) * // Midas (apex Avaritia): ×10 gold gain
       (1 + hoardMilestoneBonus(state)) *
       sc('goldRateMul') *
       cb.goldRateMul * // the-cycle-turns / a-good-find / blood-in-the-cage call buffs
@@ -473,28 +540,51 @@ export function computeModifiers(state: GameState): Modifiers {
     influenceRateMul:
       1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
       (hasCodex ? 1.33 : 1) * // Codex Gigas: ×1.33 influence gain rate (profane, sheet rev)
-      (1 + FAMA_INFLUENCE_FACTOR * playerEff * invEffFor('vanagloria') * famaCount) *
-      (hasSpecunitas ? 2 : 1) * // Specunitas (apex Vanagloria): ×2 influence gain/s
+      (1 + FAMA_INFLUENCE_FACTOR * invEffFor('vanagloria') * famaCount) * // each Fama: +15% (× invEff)
+      (hasSpecunitas ? 3 : 1) * // Specunitas (apex Vanagloria): ×3 influence gain/s
       sc('influenceRateMul') *
       cb.influenceRateMul * // eager-hands / ministry / social-platform / parish call buffs (gain ≡ regen)
       faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     maxInfluenceMul: maxInfluenceMulV,
-    // Flat influence/s: the Decarabia #69 generator sigil (log curve). The Mercatus Vanagloriae
-    // clause retired with the trades (Depraedatio gold rework §9).
-    flatInfluencePerSecond: flatGen.influence,
-    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + Thirty Pieces of Silver, which
-    // adds 0.001% of the current gold pool per second (Maleficia sheet rev 2026-06-12).
-    flatGoldPerSecond: flatGen.gold + (hasSilver ? 1e-5 * state.lifetime.gold.toNumber() : 0),
-    // Additive increase to the base reprobate suicide rate (added to the per-capita base in
-    // `dynamics`, alongside the Doom toggle). Each Nightmare contributes its efficiency-scaled factor.
+    // Flat influence/s: the Decarabia #69 generator sigil (log curve) + each Arachne (+1/s × invEff).
+    flatInfluencePerSecond:
+      flatGen.influence + ARACHNE_INFLUENCE_PER_SECOND * invEffFor('vanagloria') * arachneCount,
+    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + Thirty Pieces of Silver (0.001% of
+    // the gold pool/s) + each Kobold (+100/s × invEff).
+    flatGoldPerSecond:
+      flatGen.gold +
+      (hasSilver ? 1e-5 * state.lifetime.gold.toNumber() : 0) +
+      KOBOLD_GOLD_PER_SECOND * invEffFor('avaritia') * koboldCount,
+    // Additive increase to the base per-capita reprobate suicide rate (added to the base in
+    // `dynamics`). Each Nightmare contributes +0.005/s × invEff.
     flatBaseSuicideRatePerSecond:
-      NIGHTMARE_SUICIDE_FACTOR * playerEff * invEffFor('tristitia') * nightmareCount +
-      flatGen.suicideRate, // Sabnock #43 (log curve, flat per-capita addition)
-    // Glasya-Labolas #25 (log curve): flat addition to the per-capita murder base.
-    flatBaseMurderRatePerSecond: flatGen.murderRate,
-    // Ose #57 (log curve): flat births/s, before the generation multiplier.
-    flatGenerationPerSecond: flatGen.generation,
+      NIGHTMARE_SUICIDE_FACTOR * invEffFor('tristitia') * nightmareCount + flatGen.suicideRate, // Sabnock #43 (log curve, flat per-capita addition)
+    // Flat addition to the per-capita murder base: Glasya-Labolas #25 (log curve) + each Harpy
+    // (+0.005/s × invEff).
+    flatBaseMurderRatePerSecond:
+      flatGen.murderRate + HARPY_MURDER_FACTOR * invEffFor('ira') * harpyCount,
+    // Flat absolute births/s (before the generation multiplier): Ose #57 + the Luxuria reprobate
+    // invocations — each Empusa (+1/s), each Lamia (+100/s), Succubus (+10000/s), all × invEff.
+    flatGenerationPerSecond:
+      flatGen.generation +
+      (EMPUSA_GENERATION_PER_SECOND * empusaCount +
+        LAMIA_GENERATION_PER_SECOND * lamiaCount +
+        (hasSuccubus ? SUCCUBUS_GENERATION_PER_SECOND : 0)) *
+        invEffFor('luxuria'),
+    // Absolute murders/s from each Imp (+1/s × invEff) and suicides/s from each Banshee (+1/s × invEff),
+    // added straight to the dynamics pools (each death mints a soul).
+    flatMurdersPerSecond: IMP_MURDERS_PER_SECOND * invEffFor('ira') * impCount,
+    flatSuicidesPerSecond: BANSHEE_SUICIDES_PER_SECOND * invEffFor('tristitia') * bansheeCount,
+    // Stagnation generated/s: each Blob (+0.05/s) plus Morpheus's per-consumed-reprobate yield
+    // (0.05 × population × 0.001/s), both × invEff. Applied to the stagnation pool in the tick.
+    flatStagnationPerSecond:
+      (BLOB_STAGNATION_PER_SECOND * blobCount +
+        MORPHEUS_REPROBATE_FRACTION *
+          totalReprobates(state) *
+          MORPHEUS_STAGNATION_PER_REPROBATE *
+          morpheusCount) *
+      invEffFor('acedia'),
     // Leraie #14: chance each murder also triggers a suicide (rate-level coupling in dynamics).
     murderTriggersSuicideChance: sigilMurderTriggersSuicideChance(state, sigMul),
     playerEfficiencyMul: playerEff,
@@ -548,7 +638,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // Faeneratio output (Mutuum + Thesaurus interest): each Plutus lifts it (flat factor),
     // Vapula #60 sigil composes; applied to the summed term at the tick's gold-income line.
     faenerationOutputMul:
-      (1 + PLUTUS_FAENERATIO_FACTOR * playerEff * invEffFor('avaritia') * plutusCount) *
+      (1 + PLUTUS_FAENERATIO_FACTOR * invEffFor('avaritia') * plutusCount) * // each Plutus: +15% (× invEff)
       sc('faenerationOutputMul'),
     // The Fenus rate (hoard interest): the Usura Syngraphae.
     fenusRateMul: fenusRateMulV,
@@ -565,16 +655,25 @@ export function computeModifiers(state: GameState): Modifiers {
     // continuously (sheet rev 2026-06-12); Bathin #18 sigil composes on top.
     acolyteEfficiencyMul:
       0.33 * skillBonus(tristitiaIntensity) * sc('acolyteEfficiencyMul') * cb.acolyteEfficiencyMul, // the-discipline-swells / the-looting call buffs
-    // Invocation efficiency: 1× baseline; Ira's Retribution SKILL lifts it continuously (sheet
-    // rev 2026-06-12). Composed in `advanceInvocationRunners` on top of `auto.efficiency × playerEff`.
+    // Invocation efficiency: 1× baseline; Ira's Retribution SKILL lifts it continuously (sheet rev
+    // 2026-06-12). This is the all-invocation multiplier every efficiency-scaled invocation effect
+    // reads (via `invEffFor(sin)` = invEff × the per-Sin term); NOT player efficiency.
     invocationEfficiencyMul: invEff,
     invocationSinEffectivenessMul: invSinEff,
     // Desidia time-speed (ADR-033): Acedia's Procrastination skill lifts the multiplier applied to
     // DESIDIA_BASE_SPEED; Foras #31 composes on top.
     desidiaSpeedMul: skillBonus(acediaIntensity) * sc('desidiaSpeedMul'),
-    // Desidia stagnation-drain (ADR-033): each bound Lemure multiplies the drain by (1 − 0.125), so
-    // more Lemures = a cheaper Desidia; Sallos #19 softens it further.
-    desidiaDrainMul: (1 - LEMURE_DRAIN_REDUCTION_PER_COPY) ** lemureCount * sc('desidiaDrainMul'),
+    // Desidia stagnation-drain (ADR-033): each bound Lemure multiplies the drain by a factor that is
+    // ×0.875 at base invocation efficiency and softens further as invEff rises — the asymptotic
+    // "decrease" form ×1/(1 + K·invEff) with K = 0.125/0.875, so invEff = 1 gives exactly ×0.875 and
+    // it never reaches 0 (more Lemures / higher invEff = a cheaper Desidia). Sallos #19 composes.
+    desidiaDrainMul:
+      (1 /
+        (1 +
+          (LEMURE_DRAIN_REDUCTION_PER_COPY / (1 - LEMURE_DRAIN_REDUCTION_PER_COPY)) *
+            invEffFor('acedia'))) **
+        lemureCount *
+      sc('desidiaDrainMul'),
     // Stagnation gain / cap (ADR-034): Sitri #12 lifts the offline accrual rate, Orias #59 the cap.
     // The re-homed offline `doing-nothing` call buff also lifts the gain rate (cb.stagnationGainMul).
     stagnationGainMul: sc('stagnationGainMul') * cb.stagnationGainMul,

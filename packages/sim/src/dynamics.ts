@@ -54,12 +54,15 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
   // The flat per-capita additions: Nightmares + Sabnock #43 (suicide), Glasya-Labolas #25 (murder).
   const suicideBase = BASE_SUICIDE_RATE_PER_SECOND + mods.flatBaseSuicideRatePerSecond;
   const murderBase = BASE_MURDER_RATE_PER_SECOND + mods.flatBaseMurderRatePerSecond;
-  const murderPerSecond = murderBase * population * mods.murderRateMul;
+  // Per-capita murder (base × population × mul) PLUS the absolute invocation murders/s (each Imp),
+  // which bypass the population × mul scaling — added straight to the rate. Each death mints a soul.
+  const murderPerSecond = murderBase * population * mods.murderRateMul + mods.flatMurdersPerSecond;
   // Leraie #14: each murder drives a witness to the rope with probability p — at the rate level,
-  // suicides gain p × the murder rate.
+  // suicides gain p × the murder rate. Plus the absolute invocation suicides/s (each Banshee).
   const suicidePerSecond =
     suicideBase * population * mods.reprobateSuicideRateMul +
-    mods.murderTriggersSuicideChance * murderPerSecond;
+    mods.murderTriggersSuicideChance * murderPerSecond +
+    mods.flatSuicidesPerSecond;
   return {
     generationPerSecond: Math.max(0, baseGen) * mods.reprobateGenerationRateMul,
     suicidePerSecond,

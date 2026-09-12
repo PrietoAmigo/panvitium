@@ -220,9 +220,9 @@ export function startAction(
     return { ok: false, reason: 'This rite is not yet within your reach.' };
   }
 
-  // Morpheus freeze (03 §2.4): no new Opera can be started while the apex Acedia is active.
-  if ((state.lifetime.invocations.morpheus ?? 0) > 0) {
-    return { ok: false, reason: 'The world is held in Morpheus\u2019s stillness.' };
+  // Astiwihad freeze (03 §2.4): no new Opera can be started while the apex Tristitia (Astiwihad) is active.
+  if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
+    return { ok: false, reason: 'The world is held in Astiwihad\u2019s stillness.' };
   }
 
   // One player-driven action at a time (02 §3) — EXCEPT the background channels Indagatio and Emptio,
@@ -317,7 +317,7 @@ export function isAutoRepeating(state: GameState, actionId: string): boolean {
  * no in-flight timer, (re)start a cycle when it's affordable and unlocked. Called by the tick after
  * resolving completed timers (so a finished cycle re-queues and a stalled one retries) and the moment
  * the player toggles it on (so the loop begins without waiting a tick). `startAction` enforces the
- * one-player-rite-at-a-time slot and the Morpheus freeze, so a busy or frozen slot simply leaves the
+ * one-player-rite-at-a-time slot and the Astiwihad freeze, so a busy or frozen slot simply leaves the
  * action waiting for a later tick — no partial state, no error.
  */
 export function ensureAutoRepeatStarted(state: GameState): GameState {
