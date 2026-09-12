@@ -3799,6 +3799,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.6cqh;
+  /* Take the available leaf height and scroll internally if the roster (e.g. taller Apex rows)
+     overflows, so the pager below is never shoved past the leaf's clipped bottom edge. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 .gb-entry {
   width: 100%;
@@ -3853,6 +3858,10 @@ body {
    normals, in both the index row and the detail heading. */
 .gb-apex-tag {
   font-size: 1.9cqh;
+  /* Centered with a tight line-height so the chip never makes an Apex index row taller than a normal
+     one (which would push the pager off the leaf). */
+  align-self: center;
+  line-height: 1;
   font-variant: small-caps;
   letter-spacing: 0.1em;
   color: var(--gold-leaf, #d8b658);
@@ -3873,6 +3882,7 @@ body {
 /* Index pager — turn between leaves when the roster overflows a page. */
 .gb-pager {
   margin-top: auto;
+  flex: 0 0 auto; /* the pager keeps its height and stays pinned at the leaf's bottom, never clipped */
   display: flex;
   align-items: center;
   justify-content: center;
