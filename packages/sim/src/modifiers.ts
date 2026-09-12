@@ -44,6 +44,7 @@ import { type TierModifiers, type Tier } from './probability.js';
 import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
 import { SYNGRAPHAE, hoardMilestoneBonus, syngraphaSigned } from './syngraphae.js';
 import { aurevoraEfficiencyMul } from './apex.js';
+import { indagatioInvestmentEfficiencyMul } from './indagatio.js';
 import { callBuffMultipliers } from './callBuffs.js';
 import {
   sigilMaleficiaEffectMul,
@@ -111,7 +112,10 @@ export interface Modifiers {
   readonly suasioEfficiencyMul: number;
   /** Multiplier on Decimatio-category action efficiency (Satan / Retribution). */
   readonly decimatioEfficiencyMul: number;
-  /** Multiplier on Indagatio-category action efficiency (time-mode → scales speed). Bifrons #46. */
+  /**
+   * Multiplier on Indagatio-category action efficiency (time-mode → scales speed). Sources: Bifrons
+   * #46, the a-good-find call buff, and the logarithmic default-gold-investment bonus (03 §2.5).
+   */
   readonly indagatioEfficiencyMul: number;
   /** Multiplier on Emptio-category action efficiency (time-mode → scales speed). Seere #70. */
   readonly emptioEfficiencyMul: number;
@@ -507,7 +511,12 @@ export function computeModifiers(state: GameState): Modifiers {
       IRA_DECIMATIO_EFF_PER_LEVEL ** iraLvl * // ×2 per Ira level (sheet rev 2026-06-12)
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
       sc('decimatioEfficiencyMul'),
-    indagatioEfficiencyMul: sc('indagatioEfficiencyMul') * cb.indagatioEfficiencyMul, // a-good-find call buff
+    // Indagatio efficiency: sigils × the a-good-find call buff × the logarithmic bonus from the
+    // default gold investment (03 §2.5 — invested gold makes the Search faster, Indagatio alone).
+    indagatioEfficiencyMul:
+      sc('indagatioEfficiencyMul') *
+      cb.indagatioEfficiencyMul *
+      indagatioInvestmentEfficiencyMul(state.lifetime.indagatioInvestment),
     emptioEfficiencyMul: sc('emptioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; Luxuria's

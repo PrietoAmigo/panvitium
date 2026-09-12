@@ -113,6 +113,14 @@ export interface LifetimeState {
    * Emptio falls back to the catalog `cost` for any id without a rolled price.
    */
   maleficiaPrices: Record<string, number>;
+  /**
+   * Gold set aside as the default Indagatio investment (03 §2.5): liquid gold moved here via
+   * Invest / pulled back via Divest. It grants Indagatio efficiency ALONE, logarithmically
+   * (`indagatioInvestmentEfficiencyMul`, folded into `indagatioEfficiencyMul`), so a bigger stake
+   * scries faster. Always defined at runtime (default ZERO); additive-optional on the wire (ADR-023),
+   * omitted when zero. Reset with the lifetime at Katabasis (it is lifetime gold like any other).
+   */
+  indagatioInvestment: BigNum;
   /** Toggle actions currently active (e.g. 'panvitium', 'bacchanal'). */
   activeToggles: string[];
   /**
@@ -384,6 +392,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       maleficia: [],
       emptioList: [],
       maleficiaPrices: {},
+      indagatioInvestment: ZERO,
       activeToggles: [],
       toggleDurations: {},
       actionQueue: [],

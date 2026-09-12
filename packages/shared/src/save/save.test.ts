@@ -53,6 +53,24 @@ describe('GameState serialization', () => {
     expect(eq(back.sigilBindings[7]!, bn('500'))).toBe(true);
     expect(eq(back.sigilBindings[32]!, bn('1e30'))).toBe(true);
   });
+
+  it('handles the default Indagatio investment (additive-optional, ADR-023)', () => {
+    // (a) A fresh state's investment is zero and is OMITTED from the wire; (b) a pre-feature save
+    // (no field) loads as zero; (c) a populated investment round-trips exactly.
+    const fresh = serializeGameState(createInitialState('seed', 0));
+    expect(fresh.lifetime.indagatioInvestment).toBeUndefined();
+    expect(deserializeGameState(fresh).lifetime.indagatioInvestment.toNumber()).toBe(0);
+
+    const original = createInitialState('seed', 0);
+    const invested: GameState = {
+      ...original,
+      lifetime: { ...original.lifetime, indagatioInvestment: bn('12345') },
+    };
+    const wire = serializeGameState(invested);
+    expect(wire.lifetime.indagatioInvestment).toBe('12345');
+    const back = deserializeGameState(wire);
+    expect(eq(back.lifetime.indagatioInvestment, bn('12345'))).toBe(true);
+  });
 });
 
 describe('SaveBlob envelope', () => {

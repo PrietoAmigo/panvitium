@@ -14,6 +14,7 @@ export * from './events.js';
 export * from './katabasis.js';
 export * from './population.js';
 export * from './actions.js';
+export * from './indagatio.js';
 export * from './modifiers.js';
 export * from './maleficia.js';
 export * from './dynamics.js';
