@@ -6,13 +6,12 @@
 
    Presentational + prop-driven: `entries` and `invokingPower` come from the sim
    (merged with design flavour by id); Summon/Dispel are callbacks. Local state is
-   which entry leaf is open, which index page is showing, and which illustrations
-   404'd (so a seal with no drawing yet falls back to a text plate). */
+   which entry leaf is open and which illustrations 404'd (so a seal with no drawing yet falls back
+   to a text plate). The index is a single leaf: the title block at the top, the whole roster in two
+   columns below. */
 
 import { useState } from 'react';
 import type { ArsGoetiaBookProps } from './ars-goetia.types.js';
-
-const PAGE_SIZE = 10;
 
 export function ArsGoetiaBook({
   entries,
@@ -22,13 +21,8 @@ export function ArsGoetiaBook({
   onClose,
 }: ArsGoetiaBookProps): JSX.Element {
   const [sel, setSel] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
   const [broken, setBroken] = useState<Record<string, boolean>>({});
   const entry = sel !== null ? entries.find((e) => e.id === sel) : undefined;
-
-  const pageCount = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
-  const cur = Math.min(page, pageCount - 1);
-  const shown = entries.slice(cur * PAGE_SIZE, cur * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <div
@@ -48,72 +42,40 @@ export function ArsGoetiaBook({
       </button>
       <div className="goetia-spread" onClick={(e) => e.stopPropagation()}>
         {!entry && (
-          <>
-            <div className="gb-page gb-page--left">
-              <ul className="gb-index">
-                {shown.map((g) => (
-                  <li key={g.id}>
-                    <button
-                      type="button"
-                      className={
-                        'gb-entry' + (g.unlocked ? '' : ' is-locked') + (g.isApex ? ' is-apex' : '')
-                      }
-                      onClick={() => setSel(g.id)}
-                    >
-                      <span className="gb-rank">{g.rank}</span>
-                      <span className="gb-name">{g.name}</span>
-                      {/* Apex entities are marked so they stand out from the stackable normals. */}
-                      {g.isApex && <span className="gb-apex-tag">Apex</span>}
-                      <span className="gb-dots" />
-                      {/* Bound entries show their count; otherwise a locked seal shows its gate. */}
-                      {g.bound ? (
-                        <span className="gb-bound">{g.bound}</span>
-                      ) : (
-                        !g.unlocked && <span className="gb-hint">{g.gate ?? 'Sealed'}</span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              {pageCount > 1 && (
-                <div className="gb-pager">
-                  <button
-                    type="button"
-                    className="gb-pager-btn"
-                    disabled={cur === 0}
-                    onClick={() => setPage(cur - 1)}
-                    aria-label="Previous page"
-                  >
-                    ‹
-                  </button>
-                  <span className="gb-pager-label">
-                    {cur + 1} / {pageCount}
-                  </span>
-                  <button
-                    type="button"
-                    className="gb-pager-btn"
-                    disabled={cur >= pageCount - 1}
-                    onClick={() => setPage(cur + 1)}
-                    aria-label="Next page"
-                  >
-                    ›
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="gb-page gb-page--right">
+          <div className="gb-page gb-page--index">
+            <div className="gb-index-head">
               <h2 className="gb-title">Ars Goetia</h2>
               <p className="gb-subtitle">The Lesser Key</p>
               <div className="gb-rule" />
               <p className="gb-power">Invoking power · {invokingPower}</p>
-              <p className="gb-intro">
-                Every seal answers only in the numbers it will suffer, its <em>cap</em>. The common
-                spirits stack, many to a single binding. The crowned <em>Apex</em>, marked apart,
-                suffer but one of their kind at once, and only a single Apex will heed you between
-                one descent and the next, so choose which crown you wear with care.
-              </p>
             </div>
-          </>
+            {/* The whole roster on one leaf, two columns, clustered by Sin level then invoking power. */}
+            <ul className="gb-index">
+              {entries.map((g) => (
+                <li key={g.id}>
+                  <button
+                    type="button"
+                    className={
+                      'gb-entry' + (g.unlocked ? '' : ' is-locked') + (g.isApex ? ' is-apex' : '')
+                    }
+                    onClick={() => setSel(g.id)}
+                  >
+                    <span className="gb-rank">{g.rank}</span>
+                    <span className="gb-name">{g.name}</span>
+                    {/* Apex entities are marked so they stand out from the stackable normals. */}
+                    {g.isApex && <span className="gb-apex-tag">Apex</span>}
+                    <span className="gb-dots" />
+                    {/* Bound entries show their count; otherwise a locked seal shows its gate. */}
+                    {g.bound ? (
+                      <span className="gb-bound">{g.bound}</span>
+                    ) : (
+                      !g.unlocked && <span className="gb-hint">{g.gate ?? 'Sealed'}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
         {entry && (
           <>

@@ -40,10 +40,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'acedia',
     invokingPower: 2,
     sinLevel: 1,
-    maxActive: 20,
+    maxActive: 5,
     upkeep: { influence: 2 }, // 2 influence/s
-    // Effect (modifiers.ts → flatStagnationPerSecond, applied in tick): +0.05 stagnation/s per copy,
-    // scaled by invocation efficiency.
+    // Effect (modifiers.ts → flatStagnationPerSecond, applied in tick): +0.00625 stagnation/s per
+    // copy, scaled by invocation efficiency.
   },
   empusa: {
     id: 'empusa',
@@ -168,7 +168,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 2,
     maxActive: 4,
     upkeep: { goldGainFraction: 0.25 }, // 25% of gold gain/s
-    // Effect (modifiers.ts → influenceRateMul): +15% influence gain per copy, scaled by invocation
+    // Effect (modifiers.ts → influenceRateMul): +7.5% influence gain per copy, scaled by invocation
     // efficiency.
   },
   lemure: {
@@ -178,7 +178,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 2,
     maxActive: 4,
     upkeep: { influenceGainFraction: 0.25 }, // 25% of influence gain/s per copy
-    // Effect (modifiers.ts → desidiaDrainMul): reduces the Desidia stagnation drain by 12.5% (×0.875)
+    // Effect (modifiers.ts → desidiaDrainMul): reduces the Desidia stagnation drain by 6.25% (×0.9375)
     // per copy, scaled by invocation efficiency. At the 4-copy cap the upkeep consumes all influence gain.
   },
 

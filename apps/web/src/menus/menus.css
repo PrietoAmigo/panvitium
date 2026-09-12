@@ -3751,13 +3751,26 @@ body {
   left: 57.5%;
   width: 33%;
 }
+/* The index is a single wide leaf spanning both old page columns, and a touch taller than the
+   detail leaves so the full roster fits in two columns without a scrollbar. */
+.gb-page--index {
+  top: 6%;
+  left: 12%;
+  width: 76%;
+  height: 88%;
+}
+/* Title block, centered at the top of the index leaf. */
+.gb-index-head {
+  flex: 0 0 auto;
+  text-align: center;
+}
 
 .gb-title {
   font-family: 'IM Fell English SC', serif;
   font-weight: 400;
   font-size: 5.6cqh;
   line-height: 1.05;
-  margin: 1cqh 0 0;
+  margin: 0.5cqh 0 0;
   color: var(--parchment);
   letter-spacing: 0.01em;
 }
@@ -3765,7 +3778,7 @@ body {
   font-family: 'IM Fell English SC', serif;
   font-weight: 400;
   font-size: 4.4cqh;
-  margin: 1cqh 0 1.6cqh;
+  margin: 0.8cqh 0 1.2cqh;
   color: var(--parchment);
 }
 .gb-rule {
@@ -3777,33 +3790,41 @@ body {
     rgba(216, 182, 88, 0.5) 80%,
     transparent
   );
-  margin: 1.4cqh 0;
+  margin: 1cqh 0;
 }
 .gb-power {
   font-size: 2.5cqh;
   font-style: italic;
   color: var(--parchment-shadow);
-  margin: 0 0 1.6cqh;
-}
-.gb-intro {
-  font-size: 2.7cqh;
-  line-height: 1.5;
-  color: var(--parchment);
-  margin: 0;
-  text-align: justify;
+  margin: 0 0 0.8cqh;
 }
 .gb-index {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6cqh;
-  /* Take the available leaf height and scroll internally if the roster (e.g. taller Apex rows)
-     overflows, so the pager below is never shoved past the leaf's clipped bottom edge. */
+  /* The whole roster on one leaf: two balanced columns (fills down the first, then the second),
+     preserving the Sin-level clustering. A faint rule stands in for the old book gutter. */
   flex: 1 1 auto;
   min-height: 0;
+  column-count: 2;
+  column-gap: 3cqw;
+  column-rule: 1px solid rgba(216, 182, 88, 0.18);
+  /* The full roster fits on one leaf at desktop sizes. On a very short viewport (a portrait phone,
+     where the landscape grimoire is letterboxed small) it scrolls internally, with the bar hidden
+     so the parchment is never broken by a scrollbar. */
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+.gb-index::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* WebKit / Blink: no visible bar */
+}
+.gb-index li {
+  /* Never split a seal's row across the column break. */
+  break-inside: avoid;
 }
 .gb-entry {
   width: 100%;
@@ -3812,7 +3833,8 @@ body {
   gap: 0.7em;
   background: none;
   border: none;
-  padding: 0.7cqh 0;
+  padding: 0.45cqh 0;
+  line-height: 1.2;
   cursor: pointer;
   font-family: 'IM Fell English', serif;
   color: var(--parchment);
@@ -3831,12 +3853,12 @@ body {
   cursor: pointer;
 }
 .gb-rank {
-  font-size: 2.7cqh;
+  font-size: 2.4cqh;
   min-width: 2.4em;
   color: rgba(216, 182, 88, 0.7);
 }
 .gb-name {
-  font-size: 3.4cqh;
+  font-size: 3cqh;
   font-variant: small-caps;
   letter-spacing: 0.02em;
 }
@@ -3858,8 +3880,8 @@ body {
    normals, in both the index row and the detail heading. */
 .gb-apex-tag {
   font-size: 1.9cqh;
-  /* Centered with a tight line-height so the chip never makes an Apex index row taller than a normal
-     one (which would push the pager off the leaf). */
+  /* Centered with a tight line-height so the chip never makes an Apex index row taller than a
+     normal one. */
   align-self: center;
   line-height: 1;
   font-variant: small-caps;
@@ -3877,40 +3899,6 @@ body {
 }
 .gb-entry.is-apex .gb-rank {
   color: var(--gold-leaf, #d8b658);
-}
-
-/* Index pager — turn between leaves when the roster overflows a page. */
-.gb-pager {
-  margin-top: auto;
-  flex: 0 0 auto; /* the pager keeps its height and stays pinned at the leaf's bottom, never clipped */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.2em;
-  padding-top: 1.2cqh;
-}
-.gb-pager-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--gold-leaf);
-  font-family: 'IM Fell English SC', serif;
-  font-size: 3.4cqh;
-  line-height: 1;
-  padding: 0 0.3em;
-}
-.gb-pager-btn:hover:not(:disabled) {
-  color: var(--parchment);
-}
-.gb-pager-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-.gb-pager-label {
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
-  font-size: 2.2cqh;
-  color: var(--parchment-shadow);
 }
 
 /* Detail leaf */
