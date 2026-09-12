@@ -169,23 +169,6 @@
   opacity: 0.5;
   cursor: default;
 }
-.orbis-status {
-  margin: 10px 0 0;
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
-  font-size: 13px;
-  color: #56b3a3;
-  animation: orbis-flick 1.3s ease infinite;
-}
-@keyframes orbis-flick {
-  0%,
-  100% {
-    opacity: 0.85;
-  }
-  50% {
-    opacity: 0.45;
-  }
-}
 
 /* ---------- emptio ledger ---------- */
 .orbis-ledger {

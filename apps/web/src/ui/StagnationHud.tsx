@@ -216,8 +216,9 @@ function VesselCanvas({
  * active-state affordance.
  *
  * Reads live state from the store following the repo's Zustand guidance (select the stable `state`,
- * derive the fill ratio + readout in render). The value is floored (`Math.floor(state.stagnation)`)
- * over the derived cap `stagnationMax(state)` (Acedia doubles it per tier). While Stagnation is empty
+ * derive the fill ratio + readout in render). The readout is integer-only: both the value
+ * (`Math.floor(state.stagnation)`) and the derived cap (`Math.floor(stagnationMax(state))`, which a
+ * cap sigil like Orias #59 can otherwise make fractional) are floored. While Stagnation is empty
  * and Desidia is off the vessel is inert: the click is a no-op and it drops its hover brightness
  * (`aria-disabled`).
  *
@@ -243,7 +244,7 @@ export function StagnationHud(): ReactElement | null {
       <div className="stag-hud-readout">
         <span className="stag-hud-label">{s.label}</span>
         <span className="stag-hud-value">
-          {Math.floor(value)} / {max}
+          {Math.floor(value)} / {Math.floor(max)}
         </span>
       </div>
       <button

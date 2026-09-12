@@ -37,8 +37,9 @@ export interface OrbisTenebrarumProps {
   /** The Emptio list — maleficia discovered but not necessarily bought — in discovery order. */
   finds: readonly OrbisFind[];
   /**
-   * The default Indagatio investment, PRE-FORMATTED, e.g. `'1,240'` — the gold set aside to speed
-   * the Search. Shown in the "Default investment" meter; adjusted with the Invest / Divest controls.
+   * The Indagatio investment, PRE-FORMATTED, e.g. `'1,240'` — the gold staked to speed the next
+   * Search (a one-shot stake, consumed when it is cast). Shown in the "Investment" meter; set with
+   * the Invest / Divest controls.
    */
   investment: string;
   /** True while an Indagatio search is underway. Spins the globe + disables Cast. The integrator owns the timer. */

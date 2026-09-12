@@ -11,7 +11,7 @@
  * accept it so the hook exists. Resolution recomputes at the current efficiency rather than storing
  * it on the timer, which avoids changing the serialized state shape.
  */
-import { add, floor, gte, sub } from './bignum.js';
+import { add, floor, gte, sub, ZERO } from './bignum.js';
 import { type Rng } from './rng.js';
 import {
   type Tier,
@@ -283,6 +283,10 @@ export function startAction(
     gold: sub(state.lifetime.gold, goldCost),
     influence: sub(state.lifetime.influence, influenceCost),
     actionQueue: [...state.lifetime.actionQueue, timer],
+    // The Indagatio investment is a ONE-SHOT stake (03 §2.5): its efficiency bonus is already baked
+    // into this search's `duration` above (via `eff`), and it is consumed here so it speeds only this
+    // single search, never a later one. Spent, not refunded — the gold is the price of the boost.
+    ...(actionId === 'indagatio' ? { indagatioInvestment: ZERO } : {}),
   };
   return { ok: true, state: { ...state, lifetime } };
 }

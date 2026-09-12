@@ -3,6 +3,7 @@ import { bn, floor } from './bignum.js';
 import { createInitialState, type GameState } from './state.js';
 import { indagatioInvestmentEfficiencyMul, investIndagatio, divestIndagatio } from './indagatio.js';
 import { categoryEfficiency, computeModifiers } from './modifiers.js';
+import { ACTIONS, startAction } from './actions.js';
 
 const fresh = (): GameState => createInitialState('seed', 0);
 const withLifetime = (patch: Partial<GameState['lifetime']>): GameState => {
@@ -124,5 +125,35 @@ describe('investment feeds Indagatio efficiency alone (ADR-022)', () => {
     expect(mods.decimatioEfficiencyMul).toBe(1);
     expect(mods.emptioEfficiencyMul).toBe(1);
     expect(categoryEfficiency(invested, 'emptio')).toBeCloseTo(1, 10);
+  });
+});
+
+describe('the Cast consumes the investment (one-shot, 03 §2.5)', () => {
+  it('bakes the bonus into the launched search and then zeroes the stake', () => {
+    const invested = withLifetime({ gold: bn(1000), indagatioInvestment: bn(1000) });
+    // 1,000 g staked → +15% Indagatio efficiency at cast.
+    expect(categoryEfficiency(invested, 'indagatio')).toBeCloseTo(1.15, 10);
+    const r = startAction(invested, 'indagatio');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // The launched search's duration used the staked efficiency (baseTime / 1.15)…
+    expect(r.state.lifetime.actionQueue[0]!.remainingSeconds).toBeCloseTo(
+      ACTIONS.indagatio!.baseTimeSeconds / 1.15,
+      6,
+    );
+    // …the stake is spent (zeroed), not refunded to gold (Indagatio has no gold cost)…
+    expect(floor(r.state.lifetime.indagatioInvestment).toNumber()).toBe(0);
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(1000);
+    // …so a later search would run at base speed.
+    expect(categoryEfficiency(r.state, 'indagatio')).toBeCloseTo(1, 10);
+  });
+
+  it('is consumed only by an Indagatio cast, not by starting another rite', () => {
+    // Starting Caedes must leave the staked investment intact — only the Search spends it.
+    const invested = withLifetime({ gold: bn(5000), indagatioInvestment: bn(1000) });
+    const r = startAction(invested, 'caedes');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(floor(r.state.lifetime.indagatioInvestment).toNumber()).toBe(1000);
   });
 });

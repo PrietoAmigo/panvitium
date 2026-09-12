@@ -772,8 +772,9 @@ export function IndagatioEmptioProgram(): ReactElement {
       }
     : null;
 
-  // The Default-investment meter shows gold set aside for the Search; Invest/Divest move 10% of the
-  // relevant balance per press (the sim clamps + floors). Disable each when there is nothing to move.
+  // The Investment meter shows gold staked on the next Search (consumed when cast); Invest/Divest
+  // move 10% of the relevant balance per press (the sim clamps + floors). Disable each when there is
+  // nothing to move.
   const investedGold = floor(state.lifetime.indagatioInvestment);
 
   return (

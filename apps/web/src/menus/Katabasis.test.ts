@@ -180,6 +180,28 @@ describe('Katabasis flow — orchestrator', () => {
     expect(unbound[0]!.querySelector('.ls-roman')?.textContent).toBe('I');
   });
 
+  it('shows each Sin’s Level and the souls owed to the next level (rank renamed to level)', () => {
+    // Gula with 50 devotion sits at Level 0 (Level I needs 180 souls) → 130 still owed.
+    const s = store().state as GameState;
+    patch({ devotion: { ...s.devotion, gula: bn(50) } });
+    act(() => store().openKatabasis());
+    render();
+    act(() => action('Status quo').click());
+    const gulaCard = container!.querySelectorAll('.ledger-sin')[0]!; // SINS order → Gula first
+    // "Rank" was renamed to "Level" on the Status Quo page.
+    expect(gulaCard.querySelector('.ls-tag.is-lvl')?.textContent).toContain('Level 0');
+    // The devoted count carries the souls still owed to the next level beside it.
+    expect(gulaCard.querySelector('.ls-devoted')?.textContent).toContain('50 devoted souls');
+    expect(gulaCard.querySelector('.ls-tonext')?.textContent).toContain('130 to next level');
+    // Nothing on the page still reads "Rank".
+    const lvlTags = Array.from(container!.querySelectorAll('.ls-tag.is-lvl')).map(
+      (n) => n.textContent ?? '',
+    );
+    expect(lvlTags.length).toBe(8);
+    expect(lvlTags.every((t) => t.startsWith('Level'))).toBe(true);
+    expect(lvlTags.some((t) => t.includes('Rank'))).toBe(false);
+  });
+
   it('heads the Ledger with the big Souls KPI (moved out of Analytics)', () => {
     patch({ souls: bn(12345) });
     act(() => store().openKatabasis());
