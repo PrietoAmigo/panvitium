@@ -103,9 +103,27 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 945** (sim 582 · shared 68 · api 20 · web 275).
+**Current test count: 962** (sim 596 · shared 69 · api 20 · web 277).
 
-> **Latest change — the Studio fast-forwards while Desidia runs (Claude Design handoff).** While
+> **Latest change — spend gold to make Indagatio more efficient (the default-investment stake).**
+> The Orbis Tenebrarum Search now carries a gold stake you set aside to scry faster. A new
+> `lifetime.indagatioInvestment` (BigNum, additive-optional on the wire — no schema bump) grants
+> Indagatio efficiency ALONE, folded into `indagatioEfficiencyMul` in `computeModifiers` (ADR-022),
+> so only the player's own Cast speeds up (Suasio/Decimatio/Emptio and the acolyte/Familiar runner
+> channels are untouched). The bonus is **logarithmic** — `1 + 0.05 · log10(gold)`, i.e. 10 g → +5%,
+> 100 g → +10%, 1,000 g → +15%, and so on, clamped so ≤ 1 g grants nothing. Since Indagatio is
+> time-mode, more efficiency means a shorter search (the Duration meter shrinks as you invest). New
+> `investIndagatio` / `divestIndagatio` (sim) move **10% of the relevant balance** per press (liquid
+> gold in, the stake back out), floored with a one-coin minimum and refused under the Morpheus
+> freeze; divest returns the full amount (no recovery penalty). At Katabasis the stake is folded back
+> into the estate before the remaining-gold roll, so it shares the carry-over like liquid gold rather
+> than being lost outright. The merged surface's control row is rebuilt: **Cast the Search** moves to
+> the far right; a gold **Invest** and silver **Divest** button sit at the far left; the
+> **Time left / Duration** meter is center-left and the old Gold meter becomes the **Default
+> investment** meter center-right — all on one baseline. Net **+17 tests** (sim 582 → 596, shared 68
+> → 69, web 275 → 277).
+
+> **Earlier change — the Studio fast-forwards while Desidia runs (Claude Design handoff).** While
 > Desidia is active the room picture reads as a VHS tape being shuttled forward: white-noise snow (a
 > 256×144 field upscaled nearest-neighbour for its 5px blocks), two pale tracking bands
 > drifting up the frame, torn-line jitter, and dropout speckle — all _slight_, sitting UNDER the

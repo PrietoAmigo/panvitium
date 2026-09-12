@@ -153,6 +153,11 @@ export function enterKatabasis(state: GameState): GameState {
       // The signed Syngraphae stay readable through the frozen menu (commit needs custodia-4 for
       // the Peculium floor); the terms lapse with the lifetime reset at commit.
       ...(gt(hoardAtDescent, ZERO) ? { hoardAtDescent } : {}),
+      // The default Indagatio investment (03 §2.5) is gold set aside: fold it back into the estate
+      // BEFORE the remaining-gold roll so it shares the same carry-over as liquid gold, rather than
+      // being lost outright. Zeroed here; the new lifetime starts with no stake.
+      gold: add(liquidated.lifetime.gold, liquidated.lifetime.indagatioInvestment),
+      indagatioInvestment: ZERO,
     },
   };
 }
@@ -194,6 +199,18 @@ export function commitKatabasis(
   // capital subject to the same loss as cash on hand at descent. `enterKatabasis` already
   // liquidated (and stamped `hoardAtDescent`); this defensive repeat is a no-op when the hoard is 0.
   state = liquidateThesaurus(state);
+  // Defensively fold any remaining Indagatio investment into liquid gold before the roll (a no-op
+  // after `enterKatabasis` already folded it) so the stake shares the estate's remaining-gold %.
+  if (gt(state.lifetime.indagatioInvestment, ZERO)) {
+    state = {
+      ...state,
+      lifetime: {
+        ...state.lifetime,
+        gold: add(state.lifetime.gold, state.lifetime.indagatioInvestment),
+        indagatioInvestment: ZERO,
+      },
+    };
+  }
   const goldAtDescent = state.lifetime.gold;
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
@@ -249,6 +266,7 @@ export function commitKatabasis(
     // in this lifetime are not lost. Otherwise the list clears (02 §6).
     emptioList: pendingMorpheus ? [...state.lifetime.emptioList] : [],
     maleficiaPrices: pendingMorpheus ? { ...state.lifetime.maleficiaPrices } : {},
+    indagatioInvestment: ZERO, // folded into the estate above; the new lifetime starts with no stake
     handOfGloryRemaining: 0,
     callBuffs: [], // incoming-call timed buffs end with the lifetime
     activeToggles: [], // toggles stop

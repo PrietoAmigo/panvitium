@@ -63,13 +63,23 @@
   pointer-events: none;
 }
 
-/* ---------- cast control ---------- */
+/* ---------- cast + investment control row ----------
+   One row, everything on the same baseline: Invest/Divest at the far left, the Time-left / Duration
+   meter center-left, the Default-investment meter center-right, and Cast the Search at the far right.
+   `space-between` pins the two ends and spreads the meters evenly through the middle. */
 .orbis-cast-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
   margin-top: auto;
   padding-top: 18px;
+}
+.orbis-invest-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .orbis-meter {
   display: flex;
@@ -121,6 +131,42 @@
 }
 .orbis-cast-btn:disabled {
   opacity: 0.55;
+  cursor: default;
+}
+
+/* Invest (gold) / Divest (silver) — set the default gold stake for the Search. Share the Cast
+   button's shape and type so the three read as one control row; the gilt vs. argent fills mark
+   which way the gold flows. */
+.orbis-invest-btn,
+.orbis-divest-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 12px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.orbis-invest-btn {
+  color: #1a130c;
+  background: linear-gradient(#e7cd7c, #cda23f);
+  border: 1px solid #d8b658;
+  box-shadow: 0 0 18px rgba(216, 182, 88, 0.22);
+}
+.orbis-divest-btn {
+  color: #17181c;
+  background: linear-gradient(#e6e8ec, #a9adb5);
+  border: 1px solid #c4c8d0;
+  box-shadow: 0 0 18px rgba(196, 200, 208, 0.18);
+}
+.orbis-invest-btn:hover:not(:disabled),
+.orbis-divest-btn:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+.orbis-invest-btn:disabled,
+.orbis-divest-btn:disabled {
+  opacity: 0.5;
   cursor: default;
 }
 .orbis-status {

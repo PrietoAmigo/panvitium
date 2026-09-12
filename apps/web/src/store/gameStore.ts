@@ -14,6 +14,8 @@ import {
   startAction,
   depositThesaurus as depositThesaurusSim,
   withdrawThesaurus as withdrawThesaurusSim,
+  investIndagatio as investIndagatioSim,
+  divestIndagatio as divestIndagatioSim,
   signSyngrapha as signSyngraphaSim,
   computeModifiers,
   activateToggle,
@@ -127,6 +129,13 @@ interface GameStore {
    * owned, or a defixio already at work). Like `act`, it relies on the debounced autosave (ADR-006).
    */
   activateMaleficium: (id: string) => void;
+  /**
+   * Adjust the default Indagatio investment (03 §2.5): Invest moves 10% of liquid gold into the
+   * stake, Divest pulls 10% back out. The invested gold speeds the Search (Indagatio efficiency
+   * alone). Each sets a notice on failure (nothing to move, or the Morpheus freeze).
+   */
+  investIndagatio: () => void;
+  divestIndagatio: () => void;
   /**
    * Place liquid gold with the counting house (Depraedatio gold rework §4.2) — instant, floored
    * at the spend boundary. Sets a notice on failure (below Avaritia I, not enough gold, Morpheus).
@@ -378,6 +387,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     const result = activateMaleficiumSim(current, id);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  investIndagatio: () => {
+    const current = get().state;
+    if (!current) return;
+    const result = investIndagatioSim(current);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  divestIndagatio: () => {
+    const current = get().state;
+    if (!current) return;
+    const result = divestIndagatioSim(current);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },

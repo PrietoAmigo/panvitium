@@ -583,13 +583,17 @@ function useOrbisGlobe(
 
 export function OrbisTenebrarum({
   finds,
-  gold,
+  investment,
   searching,
   searchDuration = '30:00',
   searchRemaining = null,
   emptioProgress = null,
   selectedId = null,
+  canInvest = true,
+  canDivest = true,
   onCast,
+  onInvest,
+  onDivest,
   onSelect,
   onAcquire,
 }: OrbisTenebrarumProps): ReactElement {
@@ -621,19 +625,44 @@ export function OrbisTenebrarum({
         </div>
 
         <div className="orbis-cast-row">
-          <div className="orbis-meter orbis-meter--right">
-            <span className="orbis-meter-label">Gold</span>
-            <span className="orbis-gold-value">{gold}</span>
+          {/* LEFT — set the default gold stake that speeds the Search */}
+          <div className="orbis-invest-group">
+            <button
+              type="button"
+              className="orbis-invest-btn"
+              onClick={onInvest}
+              disabled={!canInvest}
+            >
+              Invest
+            </button>
+            <button
+              type="button"
+              className="orbis-divest-btn"
+              onClick={onDivest}
+              disabled={!canDivest}
+            >
+              Divest
+            </button>
           </div>
-          <button type="button" className="orbis-cast-btn" onClick={onCast} disabled={searching}>
-            Cast the Search
-          </button>
+
+          {/* CENTER-LEFT — the running countdown, or the idle duration estimate */}
           <div className="orbis-meter">
             <span className="orbis-meter-label">{searching ? 'Time left' : 'Duration'}</span>
             <span className={`orbis-meter-value${searching ? ' is-counting' : ''}`}>
               {searching ? (searchRemaining ?? searchDuration) : searchDuration}
             </span>
           </div>
+
+          {/* CENTER-RIGHT — the gold currently set aside to speed the Search */}
+          <div className="orbis-meter orbis-meter--right">
+            <span className="orbis-meter-label">Default investment</span>
+            <span className="orbis-gold-value">{investment}</span>
+          </div>
+
+          {/* RIGHT — begin the Search */}
+          <button type="button" className="orbis-cast-btn" onClick={onCast} disabled={searching}>
+            Cast the Search
+          </button>
         </div>
 
         {searching && <p className="orbis-status">Scrying the world&rsquo;s corners&hellip;</p>}

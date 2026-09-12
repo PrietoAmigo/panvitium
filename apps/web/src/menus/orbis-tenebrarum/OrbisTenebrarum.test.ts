@@ -83,11 +83,13 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        gold: '1,500',
+        investment: '1,500',
         searching: false,
         onCast: noop,
         onSelect: noop,
         onAcquire: noop,
+        onInvest: noop,
+        onDivest: noop,
       }),
     );
 
@@ -120,7 +122,7 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        gold: '1,500',
+        investment: '1,500',
         searching: false,
         selectedId: 'ars_serpens',
         onCast: noop,
@@ -130,6 +132,8 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
         onAcquire: (id: string) => {
           acquired = id;
         },
+        onInvest: noop,
+        onDivest: noop,
       }),
     );
 
@@ -157,13 +161,15 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        gold: '1,500',
+        investment: '1,500',
         searching: false,
         onCast: () => {
           casts += 1;
         },
         onSelect: noop,
         onAcquire: noop,
+        onInvest: noop,
+        onDivest: noop,
       }),
     );
     const cast = container!.querySelector<HTMLButtonElement>('.orbis-cast-btn');
@@ -176,11 +182,13 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
       root!.render(
         createElement(OrbisTenebrarum, {
           finds: MOCK_FINDS,
-          gold: '1,500',
+          investment: '1,500',
           searching: true,
           onCast: noop,
           onSelect: noop,
           onAcquire: noop,
+          onInvest: noop,
+          onDivest: noop,
         }),
       ),
     );
@@ -213,13 +221,15 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        gold: '1,000',
+        investment: '1,000',
         searching: true,
         searchDuration: '05:00',
         searchRemaining: '02:30',
         onCast: () => {},
         onSelect: () => {},
         onAcquire: () => {},
+        onInvest: () => {},
+        onDivest: () => {},
       }),
     );
     const meter = container!.querySelector('.orbis-meter-value');
@@ -231,12 +241,14 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        gold: '1,000',
+        investment: '1,000',
         searching: false,
         emptioProgress: { id: MOCK_FINDS[0]!.id, fraction: 0.4 },
         onCast: () => {},
         onSelect: () => {},
         onAcquire: () => {},
+        onInvest: () => {},
+        onDivest: () => {},
       }),
     );
     const fill = container!.querySelector(
@@ -255,13 +267,15 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     mount(
       createElement(OrbisTenebrarum, {
         finds,
-        gold: '9,000',
+        investment: '9,000',
         searching: false,
         selectedId: 'second_relic', // a different, affordable relic than the one being bought
         emptioProgress: { id: 'ars_serpens', fraction: 0.5 },
         onCast: () => {},
         onSelect: () => {},
         onAcquire: () => {},
+        onInvest: () => {},
+        onDivest: () => {},
       }),
     );
     // Only one purchase runs at a time, so the whole Acquire control is disabled and says so.
@@ -276,14 +290,74 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     mount(
       createElement(OrbisTenebrarum, {
         finds,
-        gold: '1,000',
+        investment: '1,000',
         searching: false,
         onCast: () => {},
         onSelect: () => {},
         onAcquire: () => {},
+        onInvest: () => {},
+        onDivest: () => {},
       }),
     );
     expect(container!.querySelector('.orbis-row-effect')).toBeNull();
+  });
+});
+
+describe('OrbisTenebrarum — Indagatio investment controls', () => {
+  it('shows the Default investment meter and fires Invest / Divest', () => {
+    let invested = 0;
+    let divested = 0;
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds: MOCK_FINDS,
+        investment: '640',
+        searching: false,
+        onCast: noop,
+        onSelect: noop,
+        onAcquire: noop,
+        onInvest: () => {
+          invested += 1;
+        },
+        onDivest: () => {
+          divested += 1;
+        },
+      }),
+    );
+
+    // The old Gold meter is now the Default-investment meter, showing the set-aside amount.
+    const labels = [...container!.querySelectorAll('.orbis-meter-label')].map((n) =>
+      (n.textContent ?? '').trim(),
+    );
+    expect(labels).toContain('Default investment');
+    expect((container!.querySelector('.orbis-gold-value')?.textContent ?? '').trim()).toBe('640');
+
+    const invest = container!.querySelector<HTMLButtonElement>('.orbis-invest-btn');
+    const divest = container!.querySelector<HTMLButtonElement>('.orbis-divest-btn');
+    expect((invest?.textContent ?? '').trim()).toBe('Invest');
+    expect((divest?.textContent ?? '').trim()).toBe('Divest');
+    click(invest!);
+    click(divest!);
+    expect(invested).toBe(1);
+    expect(divested).toBe(1);
+  });
+
+  it('disables Invest / Divest when there is nothing to move', () => {
+    mount(
+      createElement(OrbisTenebrarum, {
+        finds: MOCK_FINDS,
+        investment: '0',
+        searching: false,
+        canInvest: false,
+        canDivest: false,
+        onCast: noop,
+        onSelect: noop,
+        onAcquire: noop,
+        onInvest: noop,
+        onDivest: noop,
+      }),
+    );
+    expect(container!.querySelector<HTMLButtonElement>('.orbis-invest-btn')!.disabled).toBe(true);
+    expect(container!.querySelector<HTMLButtonElement>('.orbis-divest-btn')!.disabled).toBe(true);
   });
 });
 

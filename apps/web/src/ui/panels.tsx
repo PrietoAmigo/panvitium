@@ -706,6 +706,8 @@ export function IndagatioEmptioProgram(): ReactElement {
   const eff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'indagatio') : 1));
   const emptioEff = useGameStore((s) => (s.state ? categoryEfficiency(s.state, 'emptio') : 1));
   const act = useGameStore((s) => s.act);
+  const invest = useGameStore((s) => s.investIndagatio);
+  const divest = useGameStore((s) => s.divestIndagatio);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
 
@@ -770,10 +772,14 @@ export function IndagatioEmptioProgram(): ReactElement {
       }
     : null;
 
+  // The Default-investment meter shows gold set aside for the Search; Invest/Divest move 10% of the
+  // relevant balance per press (the sim clamps + floors). Disable each when there is nothing to move.
+  const investedGold = floor(state.lifetime.indagatioInvestment);
+
   return (
     <OrbisTenebrarum
       finds={finds}
-      gold={formatBigNum(floor(state.lifetime.gold))}
+      investment={formatBigNum(investedGold)}
       searching={indagatioTimer !== null}
       searchDuration={formatDuration(actualSec)}
       searchRemaining={
@@ -781,7 +787,11 @@ export function IndagatioEmptioProgram(): ReactElement {
       }
       emptioProgress={emptioProgress}
       selectedId={selectedId}
+      canInvest={goldNum >= 1}
+      canDivest={investedGold.gt(0)}
       onCast={() => act('indagatio')}
+      onInvest={invest}
+      onDivest={divest}
       onSelect={setSelectedId}
       onAcquire={(id) => act('emptio', id)}
     />
