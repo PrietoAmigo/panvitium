@@ -114,7 +114,7 @@ export interface Modifiers {
   readonly decimatioEfficiencyMul: number;
   /**
    * Multiplier on Indagatio-category action efficiency (time-mode → scales speed). Sources: Bifrons
-   * #46, the a-good-find call buff, and the logarithmic default-gold-investment bonus (03 §2.5).
+   * #46, the a-good-find call buff, and the logarithmic gold-investment bonus (03 §2.5).
    */
   readonly indagatioEfficiencyMul: number;
   /** Multiplier on Emptio-category action efficiency (time-mode → scales speed). Seere #70. */
@@ -512,7 +512,7 @@ export function computeModifiers(state: GameState): Modifiers {
       (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
       sc('decimatioEfficiencyMul'),
     // Indagatio efficiency: sigils × the a-good-find call buff × the logarithmic bonus from the
-    // default gold investment (03 §2.5 — invested gold makes the Search faster, Indagatio alone).
+    // gold investment (03 §2.5 — staked gold makes the next Search faster, Indagatio alone).
     indagatioEfficiencyMul:
       sc('indagatioEfficiencyMul') *
       cb.indagatioEfficiencyMul *

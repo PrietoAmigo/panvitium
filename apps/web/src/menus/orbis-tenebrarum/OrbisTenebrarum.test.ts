@@ -325,14 +325,14 @@ describe('OrbisTenebrarum — Indagatio investment controls', () => {
       }),
     );
 
-    // The old Gold meter is now the Default-investment meter, showing the set-aside amount.
+    // The old Gold meter is now the Investment meter, showing the staked amount.
     const labels = [...container!.querySelectorAll('.orbis-meter-label')].map((n) =>
       (n.textContent ?? '').trim(),
     );
-    expect(labels).toContain('Default investment');
+    expect(labels).toContain('Investment');
     expect((container!.querySelector('.orbis-gold-value')?.textContent ?? '').trim()).toBe('640');
-    // Default investment sits center-LEFT (before the Time left / Duration meter) after the swap.
-    expect(labels).toEqual(['Default investment', 'Duration']);
+    // Investment sits center-LEFT (before the Time left / Duration meter) after the swap.
+    expect(labels).toEqual(['Investment', 'Duration']);
 
     const invest = container!.querySelector<HTMLButtonElement>('.orbis-invest-btn');
     const divest = container!.querySelector<HTMLButtonElement>('.orbis-divest-btn');

@@ -114,11 +114,13 @@ export interface LifetimeState {
    */
   maleficiaPrices: Record<string, number>;
   /**
-   * Gold set aside as the default Indagatio investment (03 §2.5): liquid gold moved here via
-   * Invest / pulled back via Divest. It grants Indagatio efficiency ALONE, logarithmically
+   * Gold staked on the Indagatio Search (03 §2.5): liquid gold moved here via Invest / pulled back
+   * via Divest. It grants Indagatio efficiency ALONE, logarithmically
    * (`indagatioInvestmentEfficiencyMul`, folded into `indagatioEfficiencyMul`), so a bigger stake
-   * scries faster. Always defined at runtime (default ZERO); additive-optional on the wire (ADR-023),
-   * omitted when zero. Reset with the lifetime at Katabasis (it is lifetime gold like any other).
+   * scries faster. ONE-SHOT: the next Cast bakes the bonus into its duration and consumes the stake
+   * (`startAction` zeroes it), so it speeds a single search only. Always defined at runtime (default
+   * ZERO); additive-optional on the wire (ADR-023), omitted when zero. Reset with the lifetime at
+   * Katabasis (it is lifetime gold like any other).
    */
   indagatioInvestment: BigNum;
   /** Toggle actions currently active (e.g. 'panvitium', 'bacchanal'). */

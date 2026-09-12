@@ -1,12 +1,16 @@
 /**
  * Indagatio investment (03 §2.5) — gold set aside to make the Search more efficient.
  *
- * The player can move liquid gold into a per-lifetime "default investment"
- * (`lifetime.indagatioInvestment`) and pull it back out again. The invested gold grants action
- * efficiency to Indagatio ALONE (it is folded into `indagatioEfficiencyMul` in `computeModifiers`,
- * which only `categoryEfficiency('indagatio')` — the player's own Cast — reads; Suasio/Decimatio/
- * Emptio and the acolyte/Familiar runner channels never see it). Because Indagatio is a time-mode
- * action, more efficiency means a shorter search (`startAction` divides the duration by it).
+ * The player moves liquid gold into a per-lifetime investment (`lifetime.indagatioInvestment`) and
+ * can pull it back out again. The invested gold grants action efficiency to Indagatio ALONE (it is
+ * folded into `indagatioEfficiencyMul` in `computeModifiers`, which only
+ * `categoryEfficiency('indagatio')` — the player's own Cast — reads; Suasio/Decimatio/Emptio and the
+ * acolyte/Familiar runner channels never see it). Because Indagatio is a time-mode action, more
+ * efficiency means a shorter search (`startAction` divides the duration by it).
+ *
+ * The stake is ONE-SHOT: it powers a single Cast (its bonus is baked into that search's duration)
+ * and is then CONSUMED — `startAction('indagatio')` zeroes it, so it never speeds a later search. The
+ * gold is spent, not refunded; divest reclaims it only while it is still un-spent.
  *
  * The bonus is LOGARITHMIC: each ten-fold of invested gold adds a flat 5% (per the design brief) —
  *   0 g → +0%,  10 g → +5%,  100 g → +10%,  1,000 g → +15%,  and so on.
@@ -32,7 +36,7 @@ export const INDAGATIO_INVESTMENT_EFF_PER_DECADE = 0.05;
 export const INDAGATIO_INVEST_FRACTION = 0.1;
 
 /**
- * The Indagatio-efficiency MULTIPLIER granted by the current default investment (≥ 1). Logarithmic:
+ * The Indagatio-efficiency MULTIPLIER granted by the current investment (≥ 1). Logarithmic:
  * `1 + 0.05 × log10(gold)`, clamped so gold ≤ 1 grants exactly 1× (no bonus, never a penalty).
  * Folded into `indagatioEfficiencyMul` by `computeModifiers`; also read by the UI to show the effect.
  */

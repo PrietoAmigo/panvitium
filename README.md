@@ -103,23 +103,24 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 964** (sim 596 · shared 69 · api 20 · web 279).
+**Current test count: 966** (sim 598 · shared 69 · api 20 · web 279).
 
-> **Latest change — Indagatio counter swap + Status-Quo and Stagnation readout polish.** Four small
-> UI fixes. (1) On the Orbis Tenebrarum Search the **Default investment** and **Time left / Duration**
-> counters swap places (investment center-left, timer center-right), and the "Scrying the world's
-> corners…" status line is removed — the spinning globe already signals a search underway (its CSS +
-> the test that pinned the line go too). (2) On the **Status Quo** Ledger each Cardinal Sin's row now
-> shows the **souls owed to the next level** beside its devoted-souls count (`devotionForLevel(level+1)
-− devotion`, omitted once a Sin is mastered at the cap). (3) That page's per-Sin **"Rank" label is
-> renamed to "Level"** (the offering/altar screen's own "Rank" wording is left as-is). (4) The
-> **Stagnation HUD** readout now floors the cap as well as the value (`Math.floor(stagnationMax)`), so a
-> cap sigil (Orias #59) can no longer surface a fractional `value / max`. Purely presentational — no
-> sim, save-schema, or RNG change. Net **+2 tests** (web 277 → 279: the Status-Quo souls-to-next-level
->
-> - rename, and the Stagnation fractional-cap floor).
+> **Latest change — Indagatio investment polish + Status-Quo and Stagnation readout fixes.** A batch
+> of UI and behaviour tweaks. On the Orbis Tenebrarum Search the **Investment** meter (renamed from
+> "Default investment") and the **Time left / Duration** meter swap places (investment center-left,
+> timer center-right), and the "Scrying the world's corners…" status line is removed since the
+> spinning globe already signals a search underway (its CSS and the test that pinned it go too). The
+> Indagatio stake is now **one-shot**: `startAction('indagatio')` bakes its logarithmic bonus into the
+> launched search's duration and then consumes the stake (zeroed, the gold spent not refunded), so it
+> speeds a single search rather than standing as a permanent bonus. On the **Status Quo** Ledger each
+> Cardinal Sin's row now shows the **souls owed to the next level** beside its devoted-souls count
+> (the next level's threshold less the current devotion, omitted once a Sin is mastered at the cap),
+> and that page's per-Sin **"Rank" label is renamed to "Level"** (the offering/altar screen's own
+> wording is left as-is). The **Stagnation HUD** readout floors the cap as well as the value, so a cap
+> sigil (Orias #59) can no longer surface a fractional value over max. No save-schema or RNG change.
+> Net **+4 tests** (sim 596 → 598, web 277 → 279).
 
-> **Earlier change — spend gold to make Indagatio more efficient (the default-investment stake).**
+> **Earlier change — spend gold to make Indagatio more efficient (the gold-investment stake).**
 > The Orbis Tenebrarum Search now carries a gold stake you set aside to scry faster. A new
 > `lifetime.indagatioInvestment` (BigNum, additive-optional on the wire — no schema bump) grants
 > Indagatio efficiency ALONE, folded into `indagatioEfficiencyMul` in `computeModifiers` (ADR-022),

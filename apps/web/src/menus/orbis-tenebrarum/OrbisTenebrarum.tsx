@@ -645,9 +645,9 @@ export function OrbisTenebrarum({
             </button>
           </div>
 
-          {/* CENTER-LEFT — the gold currently set aside to speed the Search */}
+          {/* CENTER-LEFT — the gold staked on the next Search (consumed when it is cast) */}
           <div className="orbis-meter orbis-meter--right">
-            <span className="orbis-meter-label">Default investment</span>
+            <span className="orbis-meter-label">Investment</span>
             <span className="orbis-gold-value">{investment}</span>
           </div>
 
