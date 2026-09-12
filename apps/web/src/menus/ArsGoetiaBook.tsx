@@ -55,11 +55,15 @@ export function ArsGoetiaBook({
                   <li key={g.id}>
                     <button
                       type="button"
-                      className={'gb-entry' + (g.unlocked ? '' : ' is-locked')}
+                      className={
+                        'gb-entry' + (g.unlocked ? '' : ' is-locked') + (g.isApex ? ' is-apex' : '')
+                      }
                       onClick={() => setSel(g.id)}
                     >
                       <span className="gb-rank">{g.rank}</span>
                       <span className="gb-name">{g.name}</span>
+                      {/* Apex entities are marked so they stand out from the stackable normals. */}
+                      {g.isApex && <span className="gb-apex-tag">Apex</span>}
                       <span className="gb-dots" />
                       {/* Bound entries show their count; otherwise a locked seal shows its gate. */}
                       {g.bound ? (
@@ -103,9 +107,10 @@ export function ArsGoetiaBook({
               <div className="gb-rule" />
               <p className="gb-power">Invoking power · {invokingPower}</p>
               <p className="gb-intro">
-                Every novice can recite the seventy-two kings, princes and presidents of the
-                descent, their names are half the trade in any grimoire. Yet a crown seldom stoops
-                to labour.
+                Every seal answers only in the numbers it will suffer, its <em>cap</em>. The common
+                spirits stack, many to a single binding. The crowned <em>Apex</em>, marked apart,
+                suffer but one of their kind at once, and only a single Apex will heed you between
+                one descent and the next, so choose which crown you wear with care.
               </p>
             </div>
           </>
@@ -120,7 +125,11 @@ export function ArsGoetiaBook({
                 back to index
               </button>
               {entry.rank ? <p className="gb-rank-big">{entry.rank}</p> : null}
-              <h2 className="gb-detail-name">{entry.name}</h2>
+              <h2 className="gb-detail-name">
+                {entry.name}
+                {/* Apex entities read apart from the stackable normals. */}
+                {entry.isApex && <span className="gb-apex-tag gb-apex-tag--detail">Apex</span>}
+              </h2>
               <dl className="gb-stats">
                 <dt>Cost</dt>
                 <dd>{entry.cost}</dd>
@@ -142,6 +151,9 @@ export function ArsGoetiaBook({
                     <dd className="gb-effect">{entry.effect}</dd>
                   </>
                 ) : null}
+                {/* Cap comes after cost and effect: how many may be bound at once. */}
+                <dt>Cap</dt>
+                <dd>{entry.cap}</dd>
               </dl>
               {entry.lore ? <p className="gb-lore">{entry.lore}</p> : null}
               <div className="gb-actions">

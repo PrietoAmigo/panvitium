@@ -57,6 +57,7 @@ export interface CallInChoiceData {
 }
 
 const HOUR = 3600;
+const MINUTE = 60;
 
 /** Structural shape of one incoming call. Text is joined from `strings` by `id`. */
 export interface CallInData {
@@ -160,7 +161,7 @@ export const CALLS_IN: readonly CallInData[] = [
       // call buff, ticks down only while the game runs, so holding it through an absence spends it.
       {
         effects: [
-          { kind: 'timedMul', field: 'stagnationGainMul', factor: 3, durationSec: 8 * HOUR },
+          { kind: 'timedMul', field: 'stagnationGainMul', factor: 3, durationSec: 5 * MINUTE },
         ],
       },
       { effects: [{ kind: 'killReprobatesPct', pct: 10 }] },

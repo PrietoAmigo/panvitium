@@ -388,11 +388,11 @@ export function computeModifiers(state: GameState): Modifiers {
   const IMP_MURDERS_PER_SECOND = 1; // each Imp: +1 murder/s
   const BANSHEE_SUICIDES_PER_SECOND = 1; // each Banshee: +1 suicide/s
   const EMPUSA_GENERATION_PER_SECOND = 1; // each Empusa: +1 reprobate/s
-  const LAMIA_GENERATION_PER_SECOND = 100; // each Lamia: +100 reprobates/s
+  const LAMIA_GENERATION_PER_SECOND = 25; // each Lamia: +25 reprobates/s
   const SUCCUBUS_GENERATION_PER_SECOND = 10000; // Succubus: +10000 reprobates/s
   const KOBOLD_GOLD_PER_SECOND = 100; // each Kobold: +100 gold gain/s
-  const ARACHNE_INFLUENCE_PER_SECOND = 1; // each Arachne: +1 influence/s
-  const BLOB_STAGNATION_PER_SECOND = 0.05; // each Blob: +0.05 stagnation/s
+  const ARACHNE_INFLUENCE_PER_SECOND = 0.25; // each Arachne: +0.25 influence/s
+  const BLOB_STAGNATION_PER_SECOND = 0.0125; // each Blob: +0.0125 stagnation/s
   const MORPHEUS_REPROBATE_FRACTION = 0.05; // Morpheus consumes 5% of the pool/s (mirrors its upkeep)
   const MORPHEUS_STAGNATION_PER_REPROBATE = 0.001; // Morpheus: +0.001 stagnation per consumed reprobate
   const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.125; // each Lemure: ×0.875 Desidia stagnation drain (× invEff)

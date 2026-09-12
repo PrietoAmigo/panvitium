@@ -3849,6 +3849,26 @@ body {
   letter-spacing: 0.04em;
   color: var(--candle, #e6a23c);
 }
+/* Apex marker: a small gilt chip that sets the crowned Apex entities apart from the stackable
+   normals, in both the index row and the detail heading. */
+.gb-apex-tag {
+  font-size: 1.9cqh;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+  color: var(--gold-leaf, #d8b658);
+  border: 1px solid rgba(216, 182, 88, 0.5);
+  border-radius: 0.25em;
+  padding: 0 0.45em;
+  margin-left: 0.6em;
+  white-space: nowrap;
+}
+.gb-apex-tag--detail {
+  font-size: 2.4cqh;
+  vertical-align: middle;
+}
+.gb-entry.is-apex .gb-rank {
+  color: var(--gold-leaf, #d8b658);
+}
 
 /* Index pager — turn between leaves when the roster overflows a page. */
 .gb-pager {
