@@ -103,9 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 933** (sim 563 · shared 71 · api 20 · web 279).
+**Current test count: 937** (sim 567 · shared 71 · api 20 · web 279).
 
-> **Latest change — Ars Goetia single-page index + Blob/Fama/Lemure retune.** The index is rebuilt as
+> **Latest change — Invocation retune (Upir / Narcissus / Behemoth / Lamia) + Behemoth flat Stellar
+> chance.** Ars Goetia detail pages now show the **Bound** count line **below the Effect line** (it was
+> above, next to the gate). Tuning, each cost and effect divided together: **Upir** ÷5 (0.2 stagnation/s
+> upkeep, −1% negative outcomes per copy); **Narcissus** ÷10 with the cap raised **1 → 10** (0.3
+> influence/s, +1% positive outcomes per copy); **Behemoth** ÷40 with the cap raised **1 → 10** (0.625%
+> gold + 0.625% influence gain/s), and its effect changed from a percentual weight lift to a **flat,
+> global Stellar-chance** bump (+0.025% per copy) applied post-normalization at resolution time (a new
+> `flatStellarChance` modifier and the `addFlatTierChance` helper, so it also shows in the oracular
+> reveals); **Lamia** generation ×2 (+50 reprobates/s per copy). No save-schema or RNG change (an
+> inactive Behemoth leaves the tier draw byte-identical). Net **+4 tests** (sim 563 → 567): the
+> flat-chance helper and its global application.
+
+> **Earlier change — Ars Goetia single-page index + Blob/Fama/Lemure retune.** The index is rebuilt as
 > one leaf: the title block ("Ars Goetia / The Lesser Key / Invoking power · N") centered at the top,
 > and the **whole roster below in two balanced columns** on a single page (a faint gold rule stands in
 > for the old book gutter). The page-turn **pager and its pagination are gone**, and so is the "Every

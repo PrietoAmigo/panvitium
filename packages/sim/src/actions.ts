@@ -19,6 +19,7 @@ import {
   TIERS,
   applyTierModifiers,
   normalizeTierWeights,
+  addFlatTierChance,
   resolveTier,
 } from './probability.js';
 import { categoryEfficiency, categoryTierModifiers, computeModifiers } from './modifiers.js';
@@ -386,12 +387,14 @@ export function actionTierDistribution(state: GameState, actionId: string): Tier
     });
   }
   const mods = computeModifiers(state);
-  return normalizeTierWeights(
+  const dist = normalizeTierWeights(
     applyTierModifiers(
       applyTierModifiers(def.weights, mods.tierWeightMul),
       categoryTierModifiers(state, def.category),
     ),
   );
+  // Behemoth's flat Stellar-chance bump is a post-normalization additive (no-op when 0).
+  return addFlatTierChance(dist, 'stellar', mods.flatStellarChance);
 }
 
 /** First two moments (mean and standard deviation) of one resolution's effect on a resource. */
@@ -611,15 +614,20 @@ export function resolveAction(
   // a passive entity must not randomly trigger an Apocalyptic that wipes the player unprompted).
   // Otherwise: global tier multipliers (Sin skills, sigils, maleficia) THEN the per-category success
   // shift (Resignation/Retribution/Lamia, 02 §2) — composed before renormalization in resolveTier.
-  const tier =
-    options.forcedTier ??
-    resolveTier(
-      applyTierModifiers(
-        applyTierModifiers(def.weights, mods.tierWeightMul),
-        categoryTierModifiers(state, def.category),
-      ),
-      rng,
+  let tierWeights = applyTierModifiers(
+    applyTierModifiers(def.weights, mods.tierWeightMul),
+    categoryTierModifiers(state, def.category),
+  );
+  // Behemoth's flat Stellar-chance bump is a post-normalization additive. Applied only when non-zero
+  // so an inactive Behemoth leaves the weights (and thus the RNG-drawn tier) byte-identical (ADR-011).
+  if (mods.flatStellarChance > 0) {
+    tierWeights = addFlatTierChance(
+      normalizeTierWeights(tierWeights),
+      'stellar',
+      mods.flatStellarChance,
     );
+  }
+  const tier = options.forcedTier ?? resolveTier(tierWeights, rng);
 
   let next: GameState = state;
   let surfaced: string[] = [];

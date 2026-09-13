@@ -90,10 +90,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'superbia',
     invokingPower: 3,
     sinLevel: 1,
-    maxActive: 1,
-    upkeep: { influence: 3 }, // 3 influence/s
-    // Effect (modifiers.ts → tierWeightMul): +10% to every positive outcome weight (Stellar /
-    // Excellent / Good). Flat, not efficiency-scaled.
+    maxActive: 10,
+    upkeep: { influence: 0.3 }, // 0.3 influence/s
+    // Effect (modifiers.ts → tierWeightMul): +1% to every positive outcome weight (Stellar /
+    // Excellent / Good) per copy. Flat, not efficiency-scaled.
   },
   arachne: {
     id: 'arachne',
@@ -112,8 +112,8 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'gula',
     invokingPower: 4,
     sinLevel: 2,
-    upkeep: { stagnation: 1 }, // 1 stagnation/s drained from the top-level pool
-    // Stackable. Effect (modifiers.ts → tierWeightMul): −5% to every negative outcome weight (Bad /
+    upkeep: { stagnation: 0.2 }, // 0.2 stagnation/s drained from the top-level pool
+    // Stackable. Effect (modifiers.ts → tierWeightMul): −1% to every negative outcome weight (Bad /
     // Terrible / Apocalyptic) per copy, scaled by invocation efficiency (asymptotic, never negative).
   },
   lamia: {
@@ -122,7 +122,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 4,
     sinLevel: 2,
     upkeep: { influence: 5 }, // 5 influence/s
-    // Stackable. Effect (modifiers.ts → flatGenerationPerSecond): +100 reprobates/s per copy, scaled
+    // Stackable. Effect (modifiers.ts → flatGenerationPerSecond): +50 reprobates/s per copy, scaled
     // by invocation efficiency.
   },
   behemoth: {
@@ -130,9 +130,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'superbia',
     invokingPower: 4,
     sinLevel: 2,
-    maxActive: 1,
-    upkeep: { goldGainFraction: 0.25, influenceGainFraction: 0.25 }, // 25% gold + 25% influence gain/s
-    // Effect (modifiers.ts → tierWeightMul.stellar): +1% Stellar chance, scaled by invocation efficiency.
+    maxActive: 10,
+    upkeep: { goldGainFraction: 0.00625, influenceGainFraction: 0.00625 }, // 0.625% gold + 0.625% influence gain/s
+    // Effect (modifiers.ts → flatStellarChance): +0.025% flat Stellar chance per copy, scaled by
+    // invocation efficiency (an absolute bump applied post-normalization at resolution time).
   },
   harpy: {
     id: 'harpy',

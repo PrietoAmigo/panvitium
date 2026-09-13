@@ -95,12 +95,6 @@ export function ArsGoetiaBook({
               <dl className="gb-stats">
                 <dt>Cost</dt>
                 <dd>{entry.cost}</dd>
-                {entry.active > 0 ? (
-                  <>
-                    <dt>Bound</dt>
-                    <dd>{entry.bound}</dd>
-                  </>
-                ) : null}
                 {entry.gate ? (
                   <>
                     <dt>Gate</dt>
@@ -113,7 +107,14 @@ export function ArsGoetiaBook({
                     <dd className="gb-effect">{entry.effect}</dd>
                   </>
                 ) : null}
-                {/* Cap comes after cost and effect: how many may be bound at once. */}
+                {/* Bound (the live count) sits below the effect line. */}
+                {entry.active > 0 ? (
+                  <>
+                    <dt>Bound</dt>
+                    <dd>{entry.bound}</dd>
+                  </>
+                ) : null}
+                {/* Cap: how many may be bound at once. */}
                 <dt>Cap</dt>
                 <dd>{entry.cap}</dd>
               </dl>

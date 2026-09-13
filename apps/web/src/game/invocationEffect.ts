@@ -91,8 +91,11 @@ function passiveEffectText(state: GameState, id: string): string {
     case 'morpheus':
       return flat(w.flatStagnationPerSecond, b.flatStagnationPerSecond, L.stagnation);
     // ── Outcome-tier shifts ────────────────────────────────────────────────────────────────────
-    case 'behemoth':
-      return ok(tier(b, 'stellar')) ? up(tier(w, 'stellar'), tier(b, 'stellar'), L.stellar) : '';
+    case 'behemoth': {
+      // A FLAT additive to the Stellar chance (percentage points), not a weight multiplier.
+      const pp = (w.flatStellarChance - b.flatStellarChance) * 100;
+      return pp > 0 ? `+${Number(pp.toPrecision(2))}% ${L.stellar}` : '';
+    }
     case 'narcissus':
       return ok(tier(b, 'stellar'))
         ? up(tier(w, 'stellar'), tier(b, 'stellar'), L.positiveChances)

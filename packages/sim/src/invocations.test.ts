@@ -97,9 +97,9 @@ describe('Invocation catalog', () => {
       ['familiar', null, 1, undefined, 1],
       ['wendigo', 'gula', 2, 1, 10],
       ['imp', 'ira', 3, 1, 20],
-      ['narcissus', 'superbia', 3, 1, 1],
+      ['narcissus', 'superbia', 3, 1, 10],
       ['upir', 'gula', 4, 2, undefined], // stackable
-      ['behemoth', 'superbia', 4, 2, 1],
+      ['behemoth', 'superbia', 4, 2, 10],
       ['lemure', 'acedia', 6, 2, 4],
       ['midas', 'avaritia', 7, 3, 1],
       ['doppelgaenger', 'superbia', 8, 3, 1],
@@ -117,11 +117,11 @@ describe('Invocation catalog', () => {
   it('upkeep shapes: the new cost dimensions (compound, reprobate, fraction, stagnation)', () => {
     expect(invocationById('imp')!.upkeep).toEqual({ gold: 10, goldGainFraction: 0.01 });
     expect(invocationById('arachne')!.upkeep).toEqual({ reprobate: 50 });
-    expect(invocationById('upir')!.upkeep).toEqual({ stagnation: 1 });
+    expect(invocationById('upir')!.upkeep).toEqual({ stagnation: 0.2 });
     expect(invocationById('morpheus')!.upkeep).toEqual({ reprobateFraction: 0.05 });
     expect(invocationById('behemoth')!.upkeep).toEqual({
-      goldGainFraction: 0.25,
-      influenceGainFraction: 0.25,
+      goldGainFraction: 0.00625,
+      influenceGainFraction: 0.00625,
     });
   });
 });
@@ -165,14 +165,14 @@ describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
     s = withInvocation(s, 'lemure', 2); // 2 × 25% influence gain/s
     s = withInvocation(s, 'arachne', 1); // 50 reprobates/s (flat)
     s = withInvocation(s, 'morpheus', 1); // 5% of the reprobate pool/s
-    s = withInvocation(s, 'upir', 3); // 3 × 1 stagnation/s
+    s = withInvocation(s, 'upir', 3); // 3 × 0.2 stagnation/s
     const up = invocationUpkeep(s, 100);
     expect(up.flatGoldPerSecond).toBe(20);
     expect(up.goldGainFraction).toBe(1); // 0.02 + 0.25 + 0.99 clamped to 1
     expect(up.influenceGainFraction).toBeCloseTo(0.5, 6); // 2 × 0.25
     expect(up.flatReprobatesPerSecond).toBe(50);
     expect(up.reprobateFraction).toBeCloseTo(0.05, 6);
-    expect(up.flatStagnationPerSecond).toBe(3);
+    expect(up.flatStagnationPerSecond).toBeCloseTo(0.6, 6); // 3 × 0.2
     expect(up.flatGoldDrainers).toContain('imp');
     expect(up.flatReprobateDrainers).toContain('arachne');
     expect(up.flatStagnationDrainers).toContain('upir');
@@ -309,7 +309,7 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     ).toBeCloseTo(2, 6);
     expect(
       computeModifiers(withInvocation(fresh(), 'lamia', 2)).flatGenerationPerSecond,
-    ).toBeCloseTo(50, 6); // 2 × 25
+    ).toBeCloseTo(100, 6); // 2 × 50
     expect(
       computeModifiers(withInvocation(fresh(), 'succubus', 1)).flatGenerationPerSecond,
     ).toBeCloseTo(10000, 6);
@@ -343,17 +343,18 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     expect(computeModifiers(withPop).flatStagnationPerSecond).toBeCloseTo(0.05, 6);
   });
 
-  it('outcome tiers: Behemoth +1% Stellar, Narcissus +10% positives, Upir softens negatives', () => {
-    expect(
-      computeModifiers(withInvocation(fresh(), 'behemoth', 1)).tierWeightMul.stellar,
-    ).toBeCloseTo(1.01, 6);
+  it('outcome tiers: Behemoth flat Stellar chance, Narcissus +1% positives, Upir softens negatives', () => {
+    // Behemoth is now a FLAT additive to the Stellar chance (post-normalization), not a weight mul.
+    const beh = computeModifiers(withInvocation(fresh(), 'behemoth', 1));
+    expect(beh.flatStellarChance).toBeCloseTo(0.00025, 8);
+    expect(beh.tierWeightMul.stellar).toBeUndefined();
     const narc = computeModifiers(withInvocation(fresh(), 'narcissus', 1)).tierWeightMul;
-    expect(narc.stellar).toBeCloseTo(1.1, 6);
-    expect(narc.excellent).toBeCloseTo(1.1, 6);
-    expect(narc.good).toBeCloseTo(1.1, 6);
+    expect(narc.stellar).toBeCloseTo(1.01, 6);
+    expect(narc.excellent).toBeCloseTo(1.01, 6);
+    expect(narc.good).toBeCloseTo(1.01, 6);
     const upir = computeModifiers(withInvocation(fresh(), 'upir', 2)).tierWeightMul;
-    expect(upir.bad).toBeCloseTo(1 / (1 + 0.05 * 2), 6); // asymptotic softening, never negative
-    expect(upir.terrible).toBeCloseTo(1 / (1 + 0.05 * 2), 6);
+    expect(upir.bad).toBeCloseTo(1 / (1 + 0.01 * 2), 6); // asymptotic softening, never negative
+    expect(upir.terrible).toBeCloseTo(1 / (1 + 0.01 * 2), 6);
   });
 
   it('invocation effects do NOT scale with player efficiency', () => {

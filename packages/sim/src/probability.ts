@@ -59,6 +59,25 @@ export function normalizeTierWeights(weights: TierWeights): TierWeights {
 }
 
 /**
+ * Add a FLAT amount to one tier's probability — a post-normalization additive chance boost (the
+ * Behemoth invocation's flat Stellar-chance increase, 03 §2.4). `norm` must already be a normalized
+ * distribution; `flat` (clamped to the [0, 1 − current] headroom) is added to `tier`, and the same
+ * amount is removed from the other tiers in proportion to their current probability, so the result
+ * still sums to 1. Returns `norm` unchanged when `flat` is non-positive or there is no room to give,
+ * so an inactive source is a byte-identical no-op.
+ */
+export function addFlatTierChance(norm: TierWeights, tier: Tier, flat: number): TierWeights {
+  if (!Number.isFinite(flat) || flat <= 0) return norm;
+  const rest = 1 - norm[tier]; // probability mass held by the OTHER tiers
+  const add = Math.min(flat, rest); // never push the tier past 1
+  if (add <= 0 || rest <= 0) return norm;
+  const scale = (rest - add) / rest; // shrink the others to make room
+  const out = zeroTierRecord();
+  for (const t of TIERS) out[t] = t === tier ? norm[t] + add : Math.max(0, norm[t]) * scale;
+  return out;
+}
+
+/**
  * Draw a tier from (possibly unnormalized) weights using the seeded RNG. Weights are normalized
  * internally; floating-point remainder at the tail falls back to the last positive-weight tier, so
  * a zero-weight tier is never returned.
