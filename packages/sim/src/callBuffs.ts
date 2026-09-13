@@ -26,9 +26,9 @@ import { type GameState } from './state.js';
  * (the game has a single proportional influence/s), so both map to `influenceRateMul`. The nouns the
  * UI shows come from `strings.phone.callIn.fields`; the fold-target is `CALL_BUFF_TARGET` below.
  *
- * `stagnationGainMul` is the offline Stagnation-generation rate (ADR-034) — where the retired
- * offline-progress buff (`doing-nothing`) now lands: a buff to how fast Stagnation is banked while
- * away. It only bites offline (the sole time Stagnation is generated); the timer, like every buff,
+ * `desidiaGainMul` is the offline Desidia-generation rate (ADR-034) — where the retired
+ * offline-progress buff (`doing-nothing`) now lands: a buff to how fast Desidia is banked while
+ * away. It only bites offline (the sole time Desidia is generated); the timer, like every buff,
  * decays only while the game ticks (i.e. online), so a buff obtained then held through an absence
  * boosts that absence's accrual.
  */
@@ -40,7 +40,7 @@ export type CallBuffField =
   | 'indagatioEfficiencyMul'
   | 'playerEfficiencyMul'
   | 'acolyteEfficiencyMul'
-  | 'stagnationGainMul';
+  | 'desidiaGainMul';
 
 /** Every buff field, for validation on the wire (an unknown field from a newer save is dropped). */
 export const CALL_BUFF_FIELDS: readonly CallBuffField[] = [
@@ -51,7 +51,7 @@ export const CALL_BUFF_FIELDS: readonly CallBuffField[] = [
   'indagatioEfficiencyMul',
   'playerEfficiencyMul',
   'acolyteEfficiencyMul',
-  'stagnationGainMul',
+  'desidiaGainMul',
 ];
 
 /** Narrow an arbitrary string (a deserialized save field) to a known `CallBuffField`. */
@@ -87,7 +87,7 @@ export interface CallBuffMultipliers {
   readonly indagatioEfficiencyMul: number;
   readonly playerEfficiencyMul: number;
   readonly acolyteEfficiencyMul: number;
-  readonly stagnationGainMul: number;
+  readonly desidiaGainMul: number;
 }
 
 /** Which modifier-bundle field each buff field multiplies (influence gain/regen share one rate). */
@@ -99,7 +99,7 @@ const CALL_BUFF_TARGET: Record<CallBuffField, keyof CallBuffMultipliers> = {
   indagatioEfficiencyMul: 'indagatioEfficiencyMul',
   playerEfficiencyMul: 'playerEfficiencyMul',
   acolyteEfficiencyMul: 'acolyteEfficiencyMul',
-  stagnationGainMul: 'stagnationGainMul',
+  desidiaGainMul: 'desidiaGainMul',
 };
 
 const NEUTRAL_CALL_BUFFS: CallBuffMultipliers = {
@@ -109,7 +109,7 @@ const NEUTRAL_CALL_BUFFS: CallBuffMultipliers = {
   indagatioEfficiencyMul: 1,
   playerEfficiencyMul: 1,
   acolyteEfficiencyMul: 1,
-  stagnationGainMul: 1,
+  desidiaGainMul: 1,
 };
 
 /**

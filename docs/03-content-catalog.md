@@ -288,14 +288,14 @@ coefficients are in the `Sigils` sheet.
 | 9 | **Paimon** | Loyalty; returning servants | Reduces influence costs. |
 | 10 | **Buer** | Good familiars | Increases Familiar effectiveness. |
 | 11 | **Gusion** | Reconciles enemies | Reduces the player's own influence generation rate (a cursed seal). |
-| 12 | **Sitri** | Love | Increases the offline Stagnation gain rate. |
+| 12 | **Sitri** | Love | Increases the offline Desidia gain rate. |
 | 13 | **Beleth** | Attended by trumpets | Increases *Decimatio* positive outcome chance. |
 | 14 | **Leraie** | Putrefies wounds | Chance a murder triggers a suicide. |
 | 15 | **Eligos** | Favour of important people | Reduces Emptio purchase costs. |
 | 16 | **Zepar** | Makes barren | Reduces overall invocation costs (a third of the standard strength). |
 | 17 | **Botis** | Past and future | Reduces *Suasio* negative outcome chance. |
 | 18 | **Bathin** | Transport | Increases acolyte action efficiency. |
-| 19 | **Sallos** | Peace, idleness | Reduces the Desidia Stagnation drain rate (composes with Lemure). |
+| 19 | **Sallos** | Peace, idleness | Reduces the Desidia drain rate (composes with Lemure). |
 | 20 | **Purson** | Hidden treasures | Increases the Katabasis remaining-gold % (flat). [log] |
 | 21 | **Marax** | Stops, delays | Increases Decimatio action efficiency (a third of the standard strength). |
 | 22 | **Ipos** | Valiant, tactical | Reduces *Decimatio* negative outcome chance. |
@@ -335,7 +335,7 @@ coefficients are in the `Sigils` sheet.
 | 56 | **Gremory** | Treasures; love | Increases *Suasio* positive outcome chance. |
 | 57 | **Ose** | Changes shape | Generates reprobates (flat). [log] |
 | 58 | **Amy** | Treasures | Increases *Indagatio* and *Emptio* action efficiency. |
-| 59 | **Orias** | Transformations | Increases the maximum Stagnation (on top of the Acedia doubling). |
+| 59 | **Orias** | Transformations | Increases the maximum Desidia (on top of the Acedia doubling). |
 | 60 | **Vapula** | Mechanical arts | Increases the Faeneratio gold output (Mutuum + Thesaurus interest). |
 | 61 | **Zagan** | Fools wise | Increases Suasio action efficiency (a third of the standard strength). |
 | 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
@@ -424,7 +424,7 @@ None of these block the current build; all should be tracked.
 - **Orphaned sigils** (resolved by ADR-034): the ten seals that lacked a def (Sitri #12,
   Gusion #11, Naberius #24, Orias #59 and Zagan #61 from the ceremony / Depraedatio retirements,
   plus Eligos #15, Zepar #16, Sallos #19, Marax #21 and Foras #31 from the ADR-032 offline
-  freeze) are all wired onto the Stagnation / Desidia levers and the live economy. The catalog
+  freeze) are all wired onto the Desidia levers and the live economy. The catalog
   is now the full Goetia 1..72: every seal named and effective.
 - **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
 - **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)

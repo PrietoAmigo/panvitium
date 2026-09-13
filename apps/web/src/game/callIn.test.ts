@@ -55,9 +55,9 @@ describe('buildCallInView', () => {
     expect(buildCallInView('no-such-call')).toBeNull();
   });
 
-  it('doing-nothing re-homes its retired offline buff onto Stagnation generation', () => {
+  it('doing-nothing re-homes its retired offline buff onto Desidia generation', () => {
     const v = buildCallInView('doing-nothing');
-    expect(v!.choices[0]!.sub).toBe('Stagnation generation triples for 5 minutes');
+    expect(v!.choices[0]!.sub).toBe('Desidia generation triples for 5 minutes');
     expect(v!.choices[1]!.sub).toBe('Kills 10% of your reprobates');
     expect(v!.choices[2]!.dim).toBe(true); // "Let it go"
   });
@@ -92,8 +92,8 @@ describe('describeCallInEffects', () => {
       'Gold gain triples for 8 hours',
     );
     // The re-homed offline `doing-nothing` buff reads out of the same generator.
-    expect(describeCallInEffects([timedMul('stagnationGainMul', 3, 8 * 3600)])).toBe(
-      'Stagnation generation triples for 8 hours',
+    expect(describeCallInEffects([timedMul('desidiaGainMul', 3, 8 * 3600)])).toBe(
+      'Desidia generation triples for 8 hours',
     );
   });
 

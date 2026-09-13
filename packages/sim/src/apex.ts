@@ -13,8 +13,8 @@
  *
  * (Astiwihad's mass-suicide role was retired: Astiwihad is now the world-still apex — the freeze
  * lives in `tick.ts` and its Katabasis carry-over in `invoke`/`commitKatabasis` — so this module no
- * longer draws RNG. Morpheus's reprobate→stagnation conversion is a modifier-bundle field
- * (`flatStagnationPerSecond`) applied in the tick, and its reprobate upkeep is charged in tick 1a.)
+ * longer draws RNG. Morpheus's reprobate→desidia conversion is a modifier-bundle field
+ * (`flatDesidiaPerSecond`) applied in the tick, and its reprobate upkeep is charged in tick 1a.)
  *
  * Pure with respect to `state`. No dependency on the modifier bundle — avoids a cycle, since
  * modifiers.ts reads the Aurevora efficiency curve from here.

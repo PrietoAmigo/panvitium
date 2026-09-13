@@ -3,11 +3,11 @@
  *   - catalog integrity (the full id list, gates, caps, upkeep shapes)
  *   - invoking power = sum of equipped maleficia; visibility at ≥ half; unlock at full + Sin level
  *   - every invocation is free to summon (no upfront soul/gold cost); the cost is per-second upkeep
- *   - upkeep aggregation across copies: flat + %-of-gain + reprobate (flat + fraction) + stagnation;
+ *   - upkeep aggregation across copies: flat + %-of-gain + reprobate (flat + fraction) + desidia;
  *     %-costs are additive (4 copies at 25% zero the gain) and clamp at 1; flat drains dispel
  *   - modifier effects at baseline (invocation efficiency = 1): player-eff (Familiar/Wendigo/Doppel),
  *     income muls (Fama/Specunitas/Plutus/Midas), flat dynamics (Imp/Banshee/Empusa/Lamia/Succubus/
- *     Kobold/Arachne/Harpy/Nightmare), stagnation (Blob/Morpheus), outcome tiers (Behemoth/Narcissus/
+ *     Kobold/Arachne/Harpy/Nightmare), desidia (Blob/Morpheus), outcome tiers (Behemoth/Narcissus/
  *     Upir), and that invocation effects DON'T scale with player efficiency
  *   - dynamics integration: Imp murders mint souls through the tick
  *   - Katabasis dispels everything
@@ -114,10 +114,10 @@ describe('Invocation catalog', () => {
     }
   });
 
-  it('upkeep shapes: the new cost dimensions (compound, reprobate, fraction, stagnation)', () => {
+  it('upkeep shapes: the new cost dimensions (compound, reprobate, fraction, desidia)', () => {
     expect(invocationById('imp')!.upkeep).toEqual({ gold: 10, goldGainFraction: 0.01 });
     expect(invocationById('arachne')!.upkeep).toEqual({ reprobate: 50 });
-    expect(invocationById('upir')!.upkeep).toEqual({ stagnation: 0.2 });
+    expect(invocationById('upir')!.upkeep).toEqual({ desidia: 0.2 });
     expect(invocationById('morpheus')!.upkeep).toEqual({ reprobateFraction: 0.05 });
     expect(invocationById('behemoth')!.upkeep).toEqual({
       goldGainFraction: 0.00625,
@@ -158,24 +158,24 @@ describe('No upfront cost — every invocation is free to summon', () => {
 });
 
 describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
-  it('aggregates flat, %-of-gain, reprobate (flat + fraction) and stagnation drains across copies', () => {
+  it('aggregates flat, %-of-gain, reprobate (flat + fraction) and desidia drains across copies', () => {
     let s = withInvocation(fresh(), 'imp', 2); // 2 × (10 gold/s + 1% gold gain)
     s = withInvocation(s, 'fama', 1); // 25% gold gain/s
     s = withInvocation(s, 'succubus', 1); // 99% gold gain/s → clamps the gold-gain total to 1
     s = withInvocation(s, 'lemure', 2); // 2 × 25% influence gain/s
     s = withInvocation(s, 'arachne', 1); // 50 reprobates/s (flat)
     s = withInvocation(s, 'morpheus', 1); // 5% of the reprobate pool/s
-    s = withInvocation(s, 'upir', 3); // 3 × 0.2 stagnation/s
+    s = withInvocation(s, 'upir', 3); // 3 × 0.2 desidia/s
     const up = invocationUpkeep(s, 100);
     expect(up.flatGoldPerSecond).toBe(20);
     expect(up.goldGainFraction).toBe(1); // 0.02 + 0.25 + 0.99 clamped to 1
     expect(up.influenceGainFraction).toBeCloseTo(0.5, 6); // 2 × 0.25
     expect(up.flatReprobatesPerSecond).toBe(50);
     expect(up.reprobateFraction).toBeCloseTo(0.05, 6);
-    expect(up.flatStagnationPerSecond).toBeCloseTo(0.6, 6); // 3 × 0.2
+    expect(up.flatDesidiaPerSecond).toBeCloseTo(0.6, 6); // 3 × 0.2
     expect(up.flatGoldDrainers).toContain('imp');
     expect(up.flatReprobateDrainers).toContain('arachne');
-    expect(up.flatStagnationDrainers).toContain('upir');
+    expect(up.flatDesidiaDrainers).toContain('upir');
   });
 
   it('%-of-gain costs are additive: four Fama zero the gold gain (clamped at 1)', () => {
@@ -331,16 +331,17 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     expect(nightmare.reprobateSuicideRateMul).toBe(NEUTRAL_MODIFIERS.reprobateSuicideRateMul);
   });
 
-  it('stagnation generation: Blob flat, Morpheus population-scaled', () => {
-    expect(
-      computeModifiers(withInvocation(fresh(), 'blob', 2)).flatStagnationPerSecond,
-    ).toBeCloseTo(0.00625 * 2, 6);
+  it('desidia generation: Blob flat, Morpheus population-scaled', () => {
+    expect(computeModifiers(withInvocation(fresh(), 'blob', 2)).flatDesidiaPerSecond).toBeCloseTo(
+      0.00625 * 2,
+      6,
+    );
     const withPop: GameState = {
       ...withInvocation(fresh(), 'morpheus', 1),
       lifetime: { ...withInvocation(fresh(), 'morpheus', 1).lifetime, reprobates: 1000 },
     };
     // 0.05 × 1000 × 0.001 = 0.05/s
-    expect(computeModifiers(withPop).flatStagnationPerSecond).toBeCloseTo(0.05, 6);
+    expect(computeModifiers(withPop).flatDesidiaPerSecond).toBeCloseTo(0.05, 6);
   });
 
   it('outcome tiers: Behemoth flat Stellar chance, Narcissus +1% positives, Upir softens negatives', () => {

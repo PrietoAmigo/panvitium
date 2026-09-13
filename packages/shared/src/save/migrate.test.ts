@@ -304,3 +304,33 @@ describe('v5 → v6 migration (invocation roster rework)', () => {
     expect(migrated.state.lifetime.pendingAstiwihad ?? false).toBe(false);
   });
 });
+
+describe('v6 → v7 migration (Stagnation resource renamed to Desidia)', () => {
+  /** A v6-shaped raw blob carrying the old top-level `stagnation` field. */
+  function v6Blob(): Record<string, unknown> {
+    const base = currentBlob();
+    return {
+      ...base,
+      schemaVersion: 6,
+      state: { ...(base.state as Record<string, unknown>), stagnation: 42.5, desidiaActive: true },
+    };
+  }
+
+  it('renames state.stagnation to state.desidia, preserving the value and the toggle flag', () => {
+    const migrated = migrateSave(v6Blob());
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.desidia).toBe(42.5);
+    expect('stagnation' in migrated.state).toBe(false);
+    expect(migrated.state.desidiaActive).toBe(true);
+  });
+
+  it('is a no-op for a v6 save that never banked any torpor (neither field on the wire)', () => {
+    const blob = v6Blob();
+    const state = blob.state as Record<string, unknown>;
+    delete state.stagnation;
+    delete state.desidiaActive;
+    const migrated = migrateSave(blob);
+    expect(migrated.state.desidia).toBeUndefined(); // absent on the wire; defaults to 0 at load
+    expect('stagnation' in migrated.state).toBe(false);
+  });
+});

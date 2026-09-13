@@ -146,8 +146,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v5 (the Mercatus → Faeneratio rework bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(6);
+  it('schemaVersion is v7 (the Stagnation → Desidia rename bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(7);
   });
 });
 
@@ -166,14 +166,14 @@ describe('call buffs (calls-in) — ADR-023 additive-optional round-trip', () =>
         ...fresh.lifetime,
         callBuffs: [
           { field: 'goldGainMul', factor: 1.33, remainingSeconds: 3600 },
-          { field: 'stagnationGainMul', factor: 3, remainingSeconds: 28800 },
+          { field: 'desidiaGainMul', factor: 3, remainingSeconds: 28800 },
         ],
       },
     };
     const back = deserializeGameState(serializeGameState(withBuffs)).lifetime.callBuffs;
     expect(back).toEqual([
       { field: 'goldGainMul', factor: 1.33, remainingSeconds: 3600 },
-      { field: 'stagnationGainMul', factor: 3, remainingSeconds: 28800 },
+      { field: 'desidiaGainMul', factor: 3, remainingSeconds: 28800 },
     ]);
   });
 
@@ -234,28 +234,28 @@ describe('flagDoppelgaengerSeen — ADR-023 additive-optional round-trip', () =>
   });
 });
 
-describe('stagnation + desidiaActive — ADR-033 additive-optional round-trip', () => {
+describe('desidia + desidiaActive — ADR-033 additive-optional round-trip', () => {
   it('(a/b) a fresh save omits both from the wire (absent ≡ 0 / false)', () => {
     const fresh = createInitialState('seed', 0);
     const wire = serializeGameState(fresh);
-    expect('stagnation' in wire).toBe(false);
+    expect('desidia' in wire).toBe(false);
     expect('desidiaActive' in wire).toBe(false);
     const back = deserializeGameState(wire);
-    expect(back.stagnation).toBe(0);
+    expect(back.desidia).toBe(0);
     expect(back.desidiaActive).toBeUndefined();
   });
 
-  it('(c) a banked stagnation value and an active Desidia round-trip exactly', () => {
+  it('(c) a banked desidia value and an active Desidia round-trip exactly', () => {
     const s: GameState = {
       ...createInitialState('seed', 0),
-      stagnation: 42.5,
+      desidia: 42.5,
       desidiaActive: true,
     };
     const wire = serializeGameState(s);
-    expect(wire.stagnation).toBe(42.5);
+    expect(wire.desidia).toBe(42.5);
     expect(wire.desidiaActive).toBe(true);
     const back = deserializeGameState(wire);
-    expect(back.stagnation).toBe(42.5);
+    expect(back.desidia).toBe(42.5);
     expect(back.desidiaActive).toBe(true);
   });
 });

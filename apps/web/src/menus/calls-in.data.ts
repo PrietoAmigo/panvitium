@@ -156,12 +156,12 @@ export const CALLS_IN: readonly CallInData[] = [
     choices: [
       // "I will join them" was an offline-progress boost (buff(offlineRate, x3, 8h)); offline
       // progression was retired (ADR-032), so it is re-homed onto the resource that now stands in for
-      // time away, Stagnation (ADR-034): it triples the rate Stagnation is banked while away. The
-      // buff only bites offline (the sole time Stagnation is generated), but its timer, like every
+      // time away, Desidia (ADR-034): it triples the rate Desidia is banked while away. The
+      // buff only bites offline (the sole time Desidia is generated), but its timer, like every
       // call buff, ticks down only while the game runs, so holding it through an absence spends it.
       {
         effects: [
-          { kind: 'timedMul', field: 'stagnationGainMul', factor: 3, durationSec: 5 * MINUTE },
+          { kind: 'timedMul', field: 'desidiaGainMul', factor: 3, durationSec: 5 * MINUTE },
         ],
       },
       { effects: [{ kind: 'killReprobatesPct', pct: 10 }] },

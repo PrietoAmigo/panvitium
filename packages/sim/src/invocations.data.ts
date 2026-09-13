@@ -42,7 +42,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 1,
     maxActive: 5,
     upkeep: { influence: 2 }, // 2 influence/s
-    // Effect (modifiers.ts → flatStagnationPerSecond, applied in tick): +0.00625 stagnation/s per
+    // Effect (modifiers.ts → flatDesidiaPerSecond, applied in tick): +0.00625 desidia/s per
     // copy, scaled by invocation efficiency.
   },
   empusa: {
@@ -112,7 +112,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'gula',
     invokingPower: 4,
     sinLevel: 2,
-    upkeep: { stagnation: 0.2 }, // 0.2 stagnation/s drained from the top-level pool
+    upkeep: { desidia: 0.2 }, // 0.2 desidia/s drained from the top-level pool
     // Stackable. Effect (modifiers.ts → tierWeightMul): −1% to every negative outcome weight (Bad /
     // Terrible / Apocalyptic) per copy, scaled by invocation efficiency (asymptotic, never negative).
   },
@@ -179,7 +179,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 2,
     maxActive: 4,
     upkeep: { influenceGainFraction: 0.25 }, // 25% of influence gain/s per copy
-    // Effect (modifiers.ts → desidiaDrainMul): reduces the Desidia stagnation drain by 6.25% (×0.9375)
+    // Effect (modifiers.ts → desidiaDrainMul): reduces the Desidia drain by 6.25% (×0.9375)
     // per copy, scaled by invocation efficiency. At the 4-copy cap the upkeep consumes all influence gain.
   },
 
@@ -256,7 +256,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 3,
     maxActive: 1,
     upkeep: { reprobateFraction: 0.05 }, // 5% of the reprobate pool/s (a pure cost — no souls minted)
-    // Effect (modifiers.ts → flatStagnationPerSecond, applied in tick): +0.001 stagnation per
+    // Effect (modifiers.ts → flatDesidiaPerSecond, applied in tick): +0.001 desidia per
     // cost-consumed reprobate (i.e. 0.05 × population × 0.001/s), scaled by invocation efficiency.
   },
 } as const;

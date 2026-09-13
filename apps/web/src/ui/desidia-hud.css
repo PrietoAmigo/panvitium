@@ -1,12 +1,12 @@
 /*
- * The Stagnation vessel + Desidia toggle (ADR-033). A carved crystal trough pinned to the viewport's
+ * The Desidia vessel and toggle (ADR-033). A carved crystal trough pinned to the viewport's
  * bottom-left, mirroring the Influence vessel's treatment (.ig-hud-* in styles/index.css), retinted
- * green. The "Stagnation" label and value / max readout sit above the vessel; clicking the vessel
+ * green. The "Desidia" label and value / max readout sit above the vessel; clicking the vessel
  * toggles Desidia (there is no separate button). Same z-index / fade-in as the Influence & Gold HUD;
  * visibility is owned by App. The container lets clicks fall through its padding (pointer-events:none)
  * and the vessel button re-enables its own.
  */
-.stag-hud {
+.desidia-hud {
   position: absolute;
   bottom: 0;
   left: 0;
@@ -22,7 +22,7 @@
 
 /* Readout block, above the vessel. The left offset lines the text up over the glass channel (the
    vessel's own negative left margin pulls its transparent tail off the screen edge). */
-.stag-hud-readout {
+.desidia-hud-readout {
   display: flex;
   flex-direction: column;
   line-height: 1.12;
@@ -30,7 +30,7 @@
 }
 
 /* Green counterpart to the .ig-hud-label rules (Cinzel, wide tracking). */
-.stag-hud-label {
+.desidia-hud-label {
   font-family: var(--font-display);
   font-size: 0.62rem;
   letter-spacing: 0.3em;
@@ -40,7 +40,7 @@
 }
 
 /* Green counterpart to the .ig-hud-value rules. */
-.stag-hud-value {
+.desidia-hud-value {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 1.28rem;
@@ -54,7 +54,7 @@
 
 /* The vessel is the click target. The negative left margin pulls the artwork's transparent left tail
    toward the screen edge, the same trick as .ig-hud-vessel. */
-.stag-hud-vessel-btn {
+.desidia-hud-vessel-btn {
   pointer-events: auto;
   cursor: pointer;
   background: transparent;
@@ -66,11 +66,11 @@
   line-height: 0;
 }
 
-.stag-hud-vessel-btn:hover {
+.desidia-hud-vessel-btn:hover {
   filter: brightness(1.12);
 }
 
-.stag-hud-vessel-btn:focus-visible {
+.desidia-hud-vessel-btn:focus-visible {
   outline: 2px solid rgba(143, 208, 132, 0.8);
   outline-offset: 3px;
   border-radius: 4px;
@@ -78,15 +78,15 @@
 
 /* Empty pool and Desidia off → inert: the click is a no-op (guarded in the component) and it drops
    the hover brightness, the meter's own version of the old button's :disabled state. */
-.stag-hud-vessel-btn.is-inert {
+.desidia-hud-vessel-btn.is-inert {
   cursor: default;
 }
 
-.stag-hud-vessel-btn.is-inert:hover {
+.desidia-hud-vessel-btn.is-inert:hover {
   filter: none;
 }
 
-.stag-hud-vessel-box {
+.desidia-hud-vessel-box {
   position: relative;
   display: block;
   width: 100%;
@@ -97,7 +97,7 @@
 /* The liquid + carved frame composited onto a low-res canvas, upscaled nearest-neighbour so the
    whole vessel reads as pixel art. Use only `pixelated` — adding `crisp-edges` after it reverts to
    `auto` in Chromium and kills the effect (same warning as .ig-hud-canvas). */
-.stag-hud-canvas {
+.desidia-hud-canvas {
   position: absolute;
   inset: 0;
   width: 100%;

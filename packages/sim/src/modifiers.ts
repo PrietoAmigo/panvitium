@@ -26,7 +26,7 @@
  *
  * Other Sin effects (Ira → acolyte/invocation eff, Luxuria → reprobate generation) attach as their
  * target systems land — same module, same signature, just a new line per source. (Acedia's Sloth
- * effect is dormant pending the stagnation rework — ADR-032.)
+ * effect is dormant pending the desidia rework — ADR-032.)
  *
  * PER-CATEGORY tier shifts (02 §2) are NOT part of the global bundle: a source that lifts one
  * category's success probability (Resignation → Suasio, Retribution → Decimatio, Lamia → Suasio)
@@ -113,11 +113,11 @@ export interface Modifiers {
    */
   readonly flatSuicidesPerSecond: number;
   /**
-   * Flat stagnation generated per second by invocations (each Blob, plus Morpheus's per-consumed-
-   * reprobate yield), efficiency-scaled. Added to the top-level stagnation pool in the tick (clamped
-   * to `stagnationMax`). Default 0.
+   * Flat desidia generated per second by invocations (each Blob, plus Morpheus's per-consumed-
+   * reprobate yield), efficiency-scaled. Added to the top-level desidia pool in the tick (clamped
+   * to `desidiaMax`). Default 0.
    */
-  readonly flatStagnationPerSecond: number;
+  readonly flatDesidiaPerSecond: number;
   /**
    * Chance each murder also drives a witness to suicide (Leraie #14). Applied at the rate level:
    * suicides/s += chance × murders/s. Default 0.
@@ -225,21 +225,21 @@ export interface Modifiers {
    */
   readonly desidiaSpeedMul: number;
   /**
-   * Multiplier on the Desidia stagnation-drain rate (ADR-033): drain/s = `DESIDIA_BASE_COST × this`.
+   * Multiplier on the Desidia-drain rate (ADR-033): drain/s = `DESIDIA_BASE_COST × this`.
    * Each bound Lemure reduces it (×0.9375 per copy, so lower = cheaper); Sallos #19 softens it too.
    * Default 1×.
    */
   readonly desidiaDrainMul: number;
   /**
-   * Multiplier on the offline Stagnation-gain rate (ADR-034), consumed by `grantStagnationForOffline`.
+   * Multiplier on the offline Desidia-gain rate (ADR-034), consumed by `grantDesidiaForOffline`.
    * Sitri #12 lifts it. Default 1×.
    */
-  readonly stagnationGainMul: number;
+  readonly desidiaGainMul: number;
   /**
-   * Multiplier on the Stagnation cap (ADR-034), consumed by `stagnationMax` on top of the Acedia-tier
+   * Multiplier on the Desidia cap (ADR-034), consumed by `desidiaMax` on top of the Acedia-tier
    * doubling. Orias #59 lifts it. Default 1×.
    */
-  readonly stagnationMaxMul: number;
+  readonly desidiaMaxMul: number;
 }
 
 /** No sources active — every multiplier is 1; tier shifts are absent (all default 1). */
@@ -252,7 +252,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   flatGenerationPerSecond: 0,
   flatMurdersPerSecond: 0,
   flatSuicidesPerSecond: 0,
-  flatStagnationPerSecond: 0,
+  flatDesidiaPerSecond: 0,
   murderTriggersSuicideChance: 0,
   flatStellarChance: 0,
   flatGoldPerSecond: 0,
@@ -286,8 +286,8 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   },
   desidiaSpeedMul: 1,
   desidiaDrainMul: 1,
-  stagnationGainMul: 1,
-  stagnationMaxMul: 1,
+  desidiaGainMul: 1,
+  desidiaMaxMul: 1,
 };
 
 /** Default skill→effect coupling for a skill that "increases X": X *= (1 + intensity). */
@@ -350,12 +350,12 @@ export function computeModifiers(state: GameState): Modifiers {
   const lamiaCount = inv.lamia ?? 0; // each: +50 reprobates/s (× invEff)
   const koboldCount = inv.kobold ?? 0; // each: +100 gold gain/s (× invEff)
   const arachneCount = inv.arachne ?? 0; // each: +1 influence/s (× invEff)
-  const blobCount = inv.blob ?? 0; // each: +0.00625 stagnation/s (× invEff)
-  const morpheusCount = inv.morpheus ?? 0; // each: +0.001 stagnation per cost-consumed reprobate (× invEff)
+  const blobCount = inv.blob ?? 0; // each: +0.00625 desidia/s (× invEff)
+  const morpheusCount = inv.morpheus ?? 0; // each: +0.001 desidia per cost-consumed reprobate (× invEff)
   const hasSuccubus = (inv.succubus ?? 0) > 0; // apex Luxuria: +10000 reprobates/s (× invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // ×10 gold, ×10 Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: +15% Faeneratio output (× invEff)
-  const lemureCount = inv.lemure ?? 0; // each: ×0.9375 Desidia stagnation drain (× invEff, ADR-033)
+  const lemureCount = inv.lemure ?? 0; // each: ×0.9375 Desidia drain (× invEff, ADR-033)
   const hasSpecunitas = (inv.specunitas ?? 0) > 0; // apex Vanagloria: ×3 influence gain/s
   const hasDoppel = (inv.doppelgaenger ?? 0) > 0; // +100% player eff (upkeep: ½ influence gain)
   // Aurevora (apex Gula): a rising player-efficiency boost scaled by how long it's been active
@@ -401,10 +401,10 @@ export function computeModifiers(state: GameState): Modifiers {
   const SUCCUBUS_GENERATION_PER_SECOND = 10000; // Succubus: +10000 reprobates/s
   const KOBOLD_GOLD_PER_SECOND = 100; // each Kobold: +100 gold gain/s
   const ARACHNE_INFLUENCE_PER_SECOND = 0.25; // each Arachne: +0.25 influence/s
-  const BLOB_STAGNATION_PER_SECOND = 0.00625; // each Blob: +0.00625 stagnation/s
+  const BLOB_DESIDIA_PER_SECOND = 0.00625; // each Blob: +0.00625 desidia/s
   const MORPHEUS_REPROBATE_FRACTION = 0.05; // Morpheus consumes 5% of the pool/s (mirrors its upkeep)
-  const MORPHEUS_STAGNATION_PER_REPROBATE = 0.001; // Morpheus: +0.001 stagnation per consumed reprobate
-  const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.0625; // each Lemure: ×0.9375 Desidia stagnation drain (× invEff)
+  const MORPHEUS_DESIDIA_PER_REPROBATE = 0.001; // Morpheus: +0.001 desidia per consumed reprobate
+  const LEMURE_DRAIN_REDUCTION_PER_COPY = 0.0625; // each Lemure: ×0.9375 Desidia drain (× invEff)
 
   // Bound sigils (03 §5). Each contributes a multiplier to a scalar field or a tier weight; many
   // sigils on one field compose multiplicatively. The catalog + curves live in sigils.ts; here we
@@ -580,13 +580,13 @@ export function computeModifiers(state: GameState): Modifiers {
     // added straight to the dynamics pools (each death mints a soul).
     flatMurdersPerSecond: IMP_MURDERS_PER_SECOND * invEffFor('ira') * impCount,
     flatSuicidesPerSecond: BANSHEE_SUICIDES_PER_SECOND * invEffFor('tristitia') * bansheeCount,
-    // Stagnation generated/s: each Blob (+0.00625/s) plus Morpheus's per-consumed-reprobate yield
-    // (0.05 × population × 0.001/s), both × invEff. Applied to the stagnation pool in the tick.
-    flatStagnationPerSecond:
-      (BLOB_STAGNATION_PER_SECOND * blobCount +
+    // Desidia generated/s: each Blob (+0.00625/s) plus Morpheus's per-consumed-reprobate yield
+    // (0.05 × population × 0.001/s), both × invEff. Applied to the desidia pool in the tick.
+    flatDesidiaPerSecond:
+      (BLOB_DESIDIA_PER_SECOND * blobCount +
         MORPHEUS_REPROBATE_FRACTION *
           totalReprobates(state) *
-          MORPHEUS_STAGNATION_PER_REPROBATE *
+          MORPHEUS_DESIDIA_PER_REPROBATE *
           morpheusCount) *
       invEffFor('acedia'),
     // Leraie #14: chance each murder also triggers a suicide (rate-level coupling in dynamics).
@@ -670,7 +670,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // Desidia time-speed (ADR-033): Acedia's Procrastination skill lifts the multiplier applied to
     // DESIDIA_BASE_SPEED; Foras #31 composes on top.
     desidiaSpeedMul: skillBonus(acediaIntensity) * sc('desidiaSpeedMul'),
-    // Desidia stagnation-drain (ADR-033): each bound Lemure multiplies the drain by a factor that is
+    // Desidia-drain (ADR-033): each bound Lemure multiplies the drain by a factor that is
     // ×0.9375 at base invocation efficiency and softens further as invEff rises — the asymptotic
     // "decrease" form ×1/(1 + K·invEff) with K = 0.0625/0.9375, so invEff = 1 gives exactly ×0.9375 and
     // it never reaches 0 (more Lemures / higher invEff = a cheaper Desidia). Sallos #19 composes.
@@ -681,10 +681,10 @@ export function computeModifiers(state: GameState): Modifiers {
             invEffFor('acedia'))) **
         lemureCount *
       sc('desidiaDrainMul'),
-    // Stagnation gain / cap (ADR-034): Sitri #12 lifts the offline accrual rate, Orias #59 the cap.
-    // The re-homed offline `doing-nothing` call buff also lifts the gain rate (cb.stagnationGainMul).
-    stagnationGainMul: sc('stagnationGainMul') * cb.stagnationGainMul,
-    stagnationMaxMul: sc('stagnationMaxMul'),
+    // Desidia gain / cap (ADR-034): Sitri #12 lifts the offline accrual rate, Orias #59 the cap.
+    // The re-homed offline `doing-nothing` call buff also lifts the gain rate (cb.desidiaGainMul).
+    desidiaGainMul: sc('desidiaGainMul') * cb.desidiaGainMul,
+    desidiaMaxMul: sc('desidiaMaxMul'),
   };
 }
 

@@ -96,7 +96,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Class: buff-positive
 - Caller: Mai
 - Requirements: none
-    - [I will join them] -> buff(stagnationGainMul, ×3.0, 8 hours). — "Stagnation generation triples for 8 hours"   (offline progression was retired in ADR-032; this offline buff is re-homed onto the Stagnation-generation rate of ADR-034, so it multiplies the Stagnation banked while away)
+    - [I will join them] -> buff(desidiaGainMul, ×3.0, 8 hours). — "Desidia generation triples for 8 hours"   (offline progression was retired in ADR-032; this offline buff is re-homed onto the Desidia-generation rate of ADR-034, so it multiplies the Desidia banked while away)
     - [Kill them] -> Kills 10% current reprobates. — "Kills 10% of your reprobates"
     - [Let it go] -> nothing()
 

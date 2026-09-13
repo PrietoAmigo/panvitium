@@ -979,7 +979,7 @@ temptation spoken over the whole city.
 
 ---
 
-## ADR-032: Offline is a freeze — no offline progression; the stagnation resource replaces catch-up
+## ADR-032: Offline is a freeze — no offline progression; the desidia resource replaces catch-up
 
 **Status.** Accepted [2026-09-07]. Supersedes the offline-progression half of ADR-004 (the offline
 catch-up tick) and all of ADR-026 (player offline efficiency), and retires the offline-gain
@@ -1002,7 +1002,7 @@ fast-forward has little reason to be left open.
   absence. The player is restored exactly where they left off — the persisted `inKatabasis` flag
   already reopens a mid-descent save on the Katabasis menu, and every other screen restores as saved.
 - The only thing the resume path needs is **how long the player was away** (`now - saved.lastTickAt`,
-  a plain subtraction). A forthcoming **stagnation** resource will be granted from that time and spent
+  a plain subtraction). A forthcoming **desidia** resource will be granted from that time and spent
   by a **Desidia** toggle that accelerates the live tick; this ADR records the demolition, not that
   system.
 - The offline-gain machinery is removed: `PLAYER_OFFLINE_EFFICIENCY`, `ACEDIA_OFFLINE_COMPOUND_BASE`,
@@ -1016,11 +1016,11 @@ fast-forward has little reason to be left open.
 - **Five sigils are orphaned** per ADR-029's no-`inert` pattern (defs deleted, ids/names kept in
   strings with placeholder copy, binding harmless): **Eligos #15**, **Zepar #16**, **Sallos #19**,
   **Marax #21**, **Foras #31** — the offline gain / accrual channels. They join the ADR-029/031
-  orphan list, to be re-homed onto stagnation.
+  orphan list, to be re-homed onto desidia.
 - **Acedia (Sloth) is mechanically dormant.** Both its Procrastination skill and its per-level
   time-compound only touched offline gains, so offering Devotion to Acedia currently does nothing; the
-  Sin's strings and Ledger row carry placeholder "pending the stagnation rework" copy and hide the
-  unused magnitude. Re-homing Acedia onto stagnation is the intended next step. The **Lemure**
+  Sin's strings and Ledger row carry placeholder "pending the desidia rework" copy and hide the
+  unused magnitude. Re-homing Acedia onto desidia is the intended next step. The **Lemure**
   invocation is dormant for the same reason.
 - The tick keeps its big-delta correctness invariants (fractional pools, the exact eᵗ / geometric
   integrals) even though nothing large reaches it today — the live loop chunks into 100 ms steps and
@@ -1029,36 +1029,41 @@ fast-forward has little reason to be left open.
 - No save-schema bump (ADR-023): sigil bindings and invocation counts persist regardless of what their
   effects do, and nothing persisted changed shape.
 - The `doing-nothing` call-in's "offline progress triples" option becomes an effectless placeholder
-  pending stagnation.
+  pending desidia.
 
 **Alternatives considered.** *Keeping a bounded offline catch-up* — rejected: it carried the same
 reasoning and exploit surface at a smaller magnitude, and still rewards being closed. *Building
-stagnation in the same pass* — deferred: the demolition is safe and self-contained, while the
+desidia in the same pass* — deferred: the demolition is safe and self-contained, while the
 resource, its cap, its generation/spend rates, and the Desidia acceleration curve are a design pass of
 their own.
 
 ---
 
-## ADR-033: Stagnation + Desidia — the offline resource and the time-acceleration toggle
+## ADR-033: Desidia — the offline resource and the time-acceleration toggle
 
-**Status.** Accepted [2026-09-07]. Builds on ADR-032 (offline is a freeze): this is the "stagnation
+**Status.** Accepted [2026-09-07]. Builds on ADR-032 (offline is a freeze): this is the "desidia
 system" that ADR-032 deferred, and it re-homes the Sloth effects (Acedia, Lemure) that ADR-032 left
 dormant.
 
-**Context.** ADR-032 froze the game offline and recorded that a **stagnation** resource would later
-be granted from time away and spent by a **Desidia** toggle. With the demolition merged, this ADR
-builds that system and gives Acedia and the Lemure invocation a purpose again.
+**Note (rename).** The resource named **Stagnation** in the original decision was later renamed
+**Desidia**: the offline resource and its time-acceleration toggle now share one name. The persisted
+`stagnation` field became `desidia` through save migration v6 → v7. This ADR uses the current name
+throughout.
+
+**Context.** ADR-032 froze the game offline and recorded that a **Desidia** resource would later
+be granted from time away and spent by a time-acceleration toggle. With the demolition merged, this
+ADR builds that system and gives Acedia and the Lemure invocation a purpose again.
 
 **Decision.**
 
-- **Stagnation** is a top-level, permanent `number` (bounded, so not a BigNum — ADR-005). It is
-  granted only on resume: `STAGNATION_PER_SECOND (0.2/60) × secondsAway`, clamped to `stagnationMax`.
+- **Desidia** is a top-level, permanent `number` (bounded, so not a BigNum — ADR-005). It is
+  granted only on resume: `DESIDIA_PER_SECOND (0.2/60) × secondsAway`, clamped to `desidiaMax`.
   It is **top-level and carries across Katabasis** (like Devotion): real-world time away is not a
   per-lifetime quantity, and its cap scales with the persistent Acedia total, so a per-lifetime reset
-  would make offline accrual pointless for anyone who descends. `stagnationMax = 120 × 2^(Acedia
+  would make offline accrual pointless for anyone who descends. `desidiaMax = 120 × 2^(Acedia
   level)` — derived, never stored.
-- **Desidia** is a toggle (`desidiaActive`, top-level, cleared on `enterKatabasis` — a torn-down
-  lifetime cannot be accelerated). Its button lives under the Stagnation HUD, not in the Opera queue.
+- **The Desidia toggle** (`desidiaActive`, top-level, cleared on `enterKatabasis` — a torn-down
+  lifetime cannot be accelerated). Its button lives under the Desidia HUD, not in the Opera queue.
   While active the live tick advances the sim by `simDelta = realDelta × DESIDIA_BASE_SPEED (1.333) ×
   mods.desidiaSpeedMul` and drains `DESIDIA_BASE_COST_PER_SECOND (1) × mods.desidiaDrainMul` per REAL
   second. Charged like a Vitium Compositum toggle: the tick it cannot pay, it drains the remainder,
@@ -1069,28 +1074,28 @@ builds that system and gives Acedia and the Lemure invocation a purpose again.
   a separate `simDelta` through the tick body (income, dynamics, actions, apex, runners, toggles,
   Panvitium, defixio) while keeping `lastTickAt` on real time is the load-bearing detail.
 - **Acedia re-homed.** Its Procrastination skill lifts `desidiaSpeedMul` by (1 + intensity); each Sin
-  tier doubles `stagnationMax`. **Lemure re-homed**: capped at 4 bound, upkeep 25% of influence gain
+  tier doubles `desidiaMax`. **Lemure re-homed**: capped at 4 bound, upkeep 25% of influence gain
   per copy (so 4 copies consume all influence gain), effect ×0.875 to `desidiaDrainMul` per copy.
-- **HUD placeholders.** A top-right Stagnation container (fill + `value / cap`) with the Desidia
+- **HUD placeholders.** A top-right Desidia container (fill + `value / cap`) with the
   toggle button beneath it, wired to live state but deliberately plain (a bar, not the carved-vessel
   canvas) pending a final art pass.
 
 **Consequences.**
 
-- No save-schema bump (ADR-023): `stagnation` (omit when 0) and `desidiaActive` (omit when false) are
+- No save-schema bump (ADR-023): `desidia` (omit when 0) and `desidiaActive` (omit when false) are
   additive-optional; nothing existing changed shape.
 - The tick's big-delta correctness invariants (fractional pools, the exact eᵗ / geometric integrals)
   are now genuinely exercised in live play, since `simDelta` > `realDelta` under Desidia — the reason
   ADR-032 kept those tests.
 - The five offline sigils orphaned by ADR-032 (Eligos #15, Zepar #16, Sallos #19, Marax #21, Foras
   #31) are re-homed by **ADR-034**, which wires them (with the ADR-031 ceremony orphans and the
-  Depraedatio Sitri #12) onto the stagnation levers and the live economy.
+  Depraedatio Sitri #12) onto the desidia levers and the live economy.
 
-**Alternatives considered.** *Stagnation as a lifetime resource (reset on Katabasis)* — rejected: it
+**Alternatives considered.** *Desidia as a lifetime resource (reset on Katabasis)* — rejected: it
 would discard banked offline time on every descent, fighting its own purpose, and clashes with the
 Acedia-scaled (persistent) cap. *Advancing `lastTickAt` by the accelerated `simDelta`* — rejected: it
 drifts the clock ahead of wall-time, corrupting the next offline grant. *Desidia as a Vitium
-Compositum ceremony* — rejected: its upkeep is Stagnation (not gold/influence) and its effect is a
+Compositum ceremony* — rejected: its upkeep is Desidia (not gold/influence) and its effect is a
 time multiplier (not an income/rate), neither of which fits the `CompositumDef` vocabulary; it gets
 its own flag and HUD control.
 
@@ -1104,18 +1109,18 @@ supersedes those ADRs' "awaits a per-sigil sheet decision" notes for these ten i
 
 **Context.** Ten seals carried a demon name in `strings.ts` but no catalog def, so binding them did
 nothing (ADR-029's no-`inert` convention: an orphaned seal keeps its id/name and is harmless to
-bind). With Stagnation + Desidia landed (ADR-033) and the live economy stable, each has a natural
+bind). With Desidia landed (ADR-033) and the live economy stable, each has a natural
 home. The catalog is now the full Goetia 1..72: every seal has a name and a real effect.
 
 **Decision.** Name the whole catalog (all 72 named) and wire the ten seals.
 
-- **Onto the Stagnation / Desidia levers (ADR-033):** **Sitri #12** raises `stagnationGainMul` (the
-  offline accrual rate, read by `grantStagnationForOffline`); **Orias #59** raises `stagnationMaxMul`
-  (the cap, on top of the Acedia doubling, read by `stagnationMax`); **Foras #31** raises
+- **Onto the Desidia levers (ADR-033):** **Sitri #12** raises `desidiaGainMul` (the
+  offline accrual rate, read by `grantDesidiaForOffline`); **Orias #59** raises `desidiaMaxMul`
+  (the cap, on top of the Acedia doubling, read by `desidiaMax`); **Foras #31** raises
   `desidiaSpeedMul` (Desidia acceleration, composing with Procrastination); **Sallos #19** lowers
   `desidiaDrainMul` (the drain, composing with Lemure). The two Desidia fields were already
-  sigil-targetable; Sitri and Orias add two new modifier-bundle fields (`stagnationGainMul`,
-  `stagnationMaxMul`).
+  sigil-targetable; Sitri and Orias add two new modifier-bundle fields (`desidiaGainMul`,
+  `desidiaMaxMul`).
 - **Onto the live economy:** **Gusion #11** lowers `influenceRateMul` (a cursed seal); **Eligos #15**
   reduces the `emptioGold` cost channel; **Zepar #16** reduces the `invocationSoul` cost channel;
   **Marax #21** raises `decimatioEfficiencyMul`; **Naberius #24** raises `indagatioEfficiencyMul`
