@@ -123,6 +123,14 @@ export interface Modifiers {
    * suicides/s += chance × murders/s. Default 0.
    */
   readonly murderTriggersSuicideChance: number;
+  /**
+   * Flat additive to the Stellar outcome CHANCE (probability), applied GLOBALLY at action resolution
+   * AFTER the weighted distribution is normalized (probability.ts `addFlatTierChance`) — an absolute
+   * bump to the Stellar tier, not a weight multiplier like `tierWeightMul.stellar`. Source: each
+   * Behemoth (efficiency-scaled). The other tiers shrink proportionally to keep the sum at 1. 0 when
+   * no source is active.
+   */
+  readonly flatStellarChance: number;
   /** Multiplier on the lifetime `maxInfluence` (raises the cap). */
   readonly maxInfluenceMul: number;
   /** Multiplier on the player's own action efficiency (Gula). Stacks with category eff. */
@@ -246,6 +254,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   flatSuicidesPerSecond: 0,
   flatStagnationPerSecond: 0,
   murderTriggersSuicideChance: 0,
+  flatStellarChance: 0,
   flatGoldPerSecond: 0,
   maxInfluenceMul: 1,
   playerEfficiencyMul: 1,
@@ -333,12 +342,12 @@ export function computeModifiers(state: GameState): Modifiers {
   const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× invEff)
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× invEff)
   const harpyCount = inv.harpy ?? 0; // each: additive to base murder rate (× invEff)
-  const narcissusCount = inv.narcissus ?? 0; // each: +10% positive outcome weights (flat)
-  const upirCount = inv.upir ?? 0; // each: −5% negative outcome weights (× invEff)
+  const narcissusCount = inv.narcissus ?? 0; // each: +1% positive outcome weights (flat)
+  const upirCount = inv.upir ?? 0; // each: −1% negative outcome weights (× invEff)
   const impCount = inv.imp ?? 0; // each: +1 murder/s (× invEff)
   const bansheeCount = inv.banshee ?? 0; // each: +1 suicide/s (× invEff)
   const empusaCount = inv.empusa ?? 0; // each: +1 reprobate/s (× invEff)
-  const lamiaCount = inv.lamia ?? 0; // each: +100 reprobates/s (× invEff)
+  const lamiaCount = inv.lamia ?? 0; // each: +50 reprobates/s (× invEff)
   const koboldCount = inv.kobold ?? 0; // each: +100 gold gain/s (× invEff)
   const arachneCount = inv.arachne ?? 0; // each: +1 influence/s (× invEff)
   const blobCount = inv.blob ?? 0; // each: +0.00625 stagnation/s (× invEff)
@@ -381,14 +390,14 @@ export function computeModifiers(state: GameState): Modifiers {
   const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
   const NIGHTMARE_SUICIDE_FACTOR = 0.005; // each Nightmare: +0.005/s base reprobate suicide rate
   const HARPY_MURDER_FACTOR = 0.005; // each Harpy: +0.005/s base reprobate murder rate
-  const BEHEMOTH_STELLAR_FACTOR = 0.01; // Behemoth: +1% Stellar chance
+  const BEHEMOTH_STELLAR_FLAT = 0.00025; // each Behemoth: +0.00025 flat Stellar chance (0.025 pp)
   const WENDIGO_PLAYER_EFF_FACTOR = 0.02; // each Wendigo: +2% player efficiency (flat)
-  const NARCISSUS_POSITIVE_FACTOR = 0.1; // Narcissus: +10% every positive outcome weight (flat)
-  const UPIR_NEGATIVE_FACTOR = 0.05; // each Upir: −5% every negative outcome weight (× invEff)
+  const NARCISSUS_POSITIVE_FACTOR = 0.01; // each Narcissus: +1% every positive outcome weight (flat)
+  const UPIR_NEGATIVE_FACTOR = 0.01; // each Upir: −1% every negative outcome weight (× invEff)
   const IMP_MURDERS_PER_SECOND = 1; // each Imp: +1 murder/s
   const BANSHEE_SUICIDES_PER_SECOND = 1; // each Banshee: +1 suicide/s
   const EMPUSA_GENERATION_PER_SECOND = 1; // each Empusa: +1 reprobate/s
-  const LAMIA_GENERATION_PER_SECOND = 25; // each Lamia: +25 reprobates/s
+  const LAMIA_GENERATION_PER_SECOND = 50; // each Lamia: +50 reprobates/s
   const SUCCUBUS_GENERATION_PER_SECOND = 10000; // Succubus: +10000 reprobates/s
   const KOBOLD_GOLD_PER_SECOND = 100; // each Kobold: +100 gold gain/s
   const ARACHNE_INFLUENCE_PER_SECOND = 0.25; // each Arachne: +0.25 influence/s
@@ -484,15 +493,10 @@ export function computeModifiers(state: GameState): Modifiers {
   const invSinEff = {} as Record<Sin, number>;
   for (const s of SINS) invSinEff[s] = invSinContrib[s] ?? 1;
   const invEffFor = (sin: Sin): number => invEff * invSinEff[sin];
-  // Behemoth (Superbia): +1% to the Stellar weight, invocation-efficiency-scaled. Deferred to here
-  // (rather than the tierAcc block above) because it depends on `invEff`; folded into the already-built
-  // `tierWeightMul` so it composes with Morning Star, Narcissus and the Stellar sigils.
-  if (behemothCount > 0) {
-    tierWeightMul.stellar =
-      (tierWeightMul.stellar ?? 1) *
-      (1 + BEHEMOTH_STELLAR_FACTOR * invEffFor('superbia') * behemothCount);
-  }
-  // Upir (Gula): −5% to every NEGATIVE outcome weight per copy, invocation-efficiency-scaled. Uses
+  // Behemoth (Superbia): a FLAT bump to the Stellar CHANCE, invocation-efficiency-scaled. Unlike the
+  // weight multipliers here, it is applied post-normalization at resolution time (actions.ts →
+  // `addFlatTierChance`); the magnitude is carried out on the `flatStellarChance` field below.
+  // Upir (Gula): −1% to every NEGATIVE outcome weight per copy, invocation-efficiency-scaled. Uses
   // the asymptotic "decrease" form ×1/(1 + strength) so a large stack softens toward zero weight but
   // never inverts it. Deferred here for `invEff`; composes with Gula's per-level negative-tier strip.
   if (upirCount > 0) {
@@ -587,6 +591,9 @@ export function computeModifiers(state: GameState): Modifiers {
       invEffFor('acedia'),
     // Leraie #14: chance each murder also triggers a suicide (rate-level coupling in dynamics).
     murderTriggersSuicideChance: sigilMurderTriggersSuicideChance(state, sigMul),
+    // Behemoth (Superbia): each copy adds a flat Stellar-chance bump, invocation-efficiency-scaled;
+    // applied post-normalization at resolution time (actions.ts → addFlatTierChance).
+    flatStellarChance: BEHEMOTH_STELLAR_FLAT * invEffFor('superbia') * behemothCount,
     playerEfficiencyMul: playerEff,
     // Succubus no longer lifts Suasio efficiency — its effect is now an autonomous Imperium runner
     // (invocations.ts), amplified by the Luxuria per-Sin term like any Luxuria runner.

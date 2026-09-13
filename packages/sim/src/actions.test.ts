@@ -582,6 +582,19 @@ describe('actionTierDistribution (oracular reveals, 5.1)', () => {
     for (const t of TIERS) if (t !== 'good') expect(dist.good).toBeGreaterThan(dist[t]);
   });
 
+  it('Behemoth adds a FLAT bump to the Stellar chance globally (post-normalization)', () => {
+    const base = createInitialState('oracle-test', 0);
+    const withBehemoth: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, invocations: { ...base.lifetime.invocations, behemoth: 4 } },
+    };
+    const b = actionTierDistribution(base, 'imperium');
+    const w = actionTierDistribution(withBehemoth, 'imperium');
+    // 4 copies × 0.00025 × invEff(1) = 0.001 added straight onto the Stellar chance.
+    expect(w.stellar - b.stellar).toBeCloseTo(0.001, 6);
+    expect(TIERS.reduce((acc, t) => acc + w[t], 0)).toBeCloseTo(1, 10); // still a valid distribution
+  });
+
   it('falls back to all-Neutral for an unknown action id', () => {
     const s = createInitialState('oracle-test', 0);
     const dist = actionTierDistribution(s, 'not_an_action');

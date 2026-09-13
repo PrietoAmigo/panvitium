@@ -6,6 +6,7 @@ import {
   type TierWeights,
   applyTierModifiers,
   normalizeTierWeights,
+  addFlatTierChance,
   resolveTier,
 } from './probability.js';
 
@@ -54,6 +55,32 @@ describe('applyTierModifiers', () => {
     const base = weights({ good: 0.5 });
     expect(applyTierModifiers(base, { good: -3 }).good).toBeCloseTo(0.5, 10);
     expect(applyTierModifiers(base, { good: Number.NaN }).good).toBeCloseTo(0.5, 10);
+  });
+});
+
+describe('addFlatTierChance', () => {
+  it('adds a flat amount to the target tier and shrinks the rest, keeping the sum at 1', () => {
+    const norm = normalizeTierWeights(weights({ stellar: 1, good: 6, neutral: 3 })); // 0.1/0.6/0.3
+    const out = addFlatTierChance(norm, 'stellar', 0.1);
+    expect(out.stellar).toBeCloseTo(0.2, 10); // 0.1 + 0.1
+    expect(sum(out)).toBeCloseTo(1, 10);
+    // The other tiers keep their relative proportions (good:neutral stays 2:1).
+    expect(out.good / out.neutral).toBeCloseTo(2, 10);
+    expect(out.good).toBeCloseTo((0.6 * (0.9 - 0.1)) / 0.9, 10); // scaled by (rest − add)/rest
+  });
+
+  it('is a no-op for a non-positive flat amount (returns the input unchanged)', () => {
+    const norm = normalizeTierWeights(weights({ good: 1 }));
+    expect(addFlatTierChance(norm, 'stellar', 0)).toBe(norm);
+    expect(addFlatTierChance(norm, 'stellar', -0.5)).toBe(norm);
+  });
+
+  it('clamps the boost to the available headroom (never exceeds 1)', () => {
+    const norm = normalizeTierWeights(weights({ stellar: 4, good: 1 })); // 0.8 / 0.2
+    const out = addFlatTierChance(norm, 'stellar', 0.5); // only 0.2 of headroom
+    expect(out.stellar).toBeCloseTo(1, 10);
+    expect(out.good).toBeCloseTo(0, 10);
+    expect(sum(out)).toBeCloseTo(1, 10);
   });
 });
 
