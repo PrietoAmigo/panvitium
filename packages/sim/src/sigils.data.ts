@@ -100,8 +100,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 12,
     name: 'Sitri',
     coefficient: 1,
-    // ADR-034: +Stagnation generation rate (the offline accrual rate).
-    effect: { kind: 'modifier', field: 'stagnationGainMul', direction: 'increase' },
+    // ADR-034: +Desidia generation rate (the offline accrual rate).
+    effect: { kind: 'modifier', field: 'desidiaGainMul', direction: 'increase' },
   },
   13: {
     id: 13,
@@ -160,7 +160,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 19,
     name: 'Sallos',
     coefficient: 1,
-    // ADR-034: −Desidia Stagnation drain rate (composes with Lemure on desidiaDrainMul).
+    // ADR-034: −Desidia drain rate (composes with Lemure on desidiaDrainMul).
     effect: { kind: 'modifier', field: 'desidiaDrainMul', direction: 'decrease' },
   },
   20: {
@@ -494,8 +494,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 59,
     name: 'Orias',
     coefficient: 1,
-    // ADR-034: +maximum Stagnation (multiplies the Acedia-scaled cap).
-    effect: { kind: 'modifier', field: 'stagnationMaxMul', direction: 'increase' },
+    // ADR-034: +maximum Desidia (multiplies the Acedia-scaled cap).
+    effect: { kind: 'modifier', field: 'desidiaMaxMul', direction: 'increase' },
   },
   60: {
     id: 60,

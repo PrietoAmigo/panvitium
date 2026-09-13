@@ -42,14 +42,14 @@ export const strings = {
     souls: 'Souls',
     gold: 'Gold',
     influence: 'Influence',
-    stagnation: 'Stagnation',
+    desidia: 'Desidia',
   },
-  // The Stagnation vessel + Desidia toggle (ADR-033). Copy for the bottom-left cluster: the group /
+  // The Desidia vessel and toggle (ADR-033). Copy for the bottom-left cluster: the group /
   // readout label and the vessel's hover hint (clicking the vessel toggles Desidia, so there is no
   // button label). The numeric magnitudes (base 120 cap, 1.333x speed, 1/s drain) live in the sim.
-  stagnation: {
-    label: 'Stagnation',
-    desidiaHint: 'Spend Stagnation to make time run faster.',
+  desidia: {
+    label: 'Desidia',
+    desidiaHint: 'Spend Desidia to make time run faster.',
   },
   rooms: {
     studio: 'Studio',
@@ -458,7 +458,7 @@ export const strings = {
       reprobates: 'reprobates/s',
       goldPerSecond: 'gold gain/s',
       influencePerSecond: 'influence/s',
-      stagnation: 'stagnation/s',
+      desidia: 'desidia/s',
       positiveChances: 'positive outcome chances',
       negativeChances: 'negative outcomes',
       desidiaDrain: 'Desidia drain',
@@ -474,7 +474,7 @@ export const strings = {
       wendigo: '+2% player efficiency per copy.',
       imp: '+1 murder/s per copy, scaled by invocation efficiency.',
       banshee: '+1 suicide/s per copy, scaled by invocation efficiency.',
-      blob: '+0.00625 stagnation/s per copy, scaled by invocation efficiency.',
+      blob: '+0.00625 desidia/s per copy, scaled by invocation efficiency.',
       narcissus: '+1% to every positive outcome chance per copy.',
       arachne: '+0.25 influence/s per copy, scaled by invocation efficiency.',
       empusa: '+1 reprobate/s per copy, scaled by invocation efficiency.',
@@ -487,7 +487,7 @@ export const strings = {
       behemoth: '+0.025% Stellar chance per copy, scaled by invocation efficiency.',
       plutus: '+15% loan and interest income per copy, scaled by invocation efficiency.',
       lemure:
-        'Reduces Desidia Stagnation drain by 6.25% (×0.9375) per copy (up to 4), scaled by invocation efficiency; upkeep takes 25% of influence gain each.',
+        'Reduces Desidia drain by 6.25% (×0.9375) per copy (up to 4), scaled by invocation efficiency; upkeep takes 25% of influence gain each.',
       midas: '×10 gold gain, but ×10 the Apocalyptic chance.',
       succubus: '+10000 reprobates/s, scaled by invocation efficiency.',
       doppelgaenger: '+100% player efficiency (upkeep: 50% of your influence gain).',
@@ -499,7 +499,7 @@ export const strings = {
       erinyes:
         'Kills every reprobate (each mints 1 soul); at the next Katabasis, a permanent ×2 player efficiency, but 0% gold and maleficia carried.',
       morpheus:
-        '+0.001 stagnation per cost-consumed reprobate (consumes 5% of the reprobate pool/s), scaled by invocation efficiency.',
+        '+0.001 desidia per cost-consumed reprobate (consumes 5% of the reprobate pool/s), scaled by invocation efficiency.',
     } as Record<string, string>,
   },
   maleficia: {
@@ -920,10 +920,10 @@ export const strings = {
       english: 'Sloth',
       epithet: 'The Idle Throne',
       skill: 'Procrastination',
-      // Sloth re-homed onto the stagnation system (ADR-033): the skill lifts Desidia's time-speed,
-      // each rank doubles the Stagnation cap (base 120).
+      // Sloth re-homed onto the desidia system (ADR-033): the skill lifts Desidia's time-speed,
+      // each rank doubles the Desidia cap (base 120).
       skillEffect: 'Multiplies the Desidia time-speed by 1 + intensity.',
-      levelEffect: 'Each level doubles your maximum Stagnation (base 120).',
+      levelEffect: 'Each level doubles your maximum Desidia (base 120).',
     },
     vanagloria: {
       prince: 'Rosier',
@@ -1022,14 +1022,14 @@ export const strings = {
       9: 'Influence costs \u2193',
       10: 'Familiar effect \u2191',
       11: 'Influence gain \u2193',
-      12: 'Stagnation gain \u2191',
+      12: 'Desidia gain \u2191',
       13: 'Decimatio positive outcomes \u2191',
       14: 'Murder \u2192 suicide chance \u2191',
       15: 'Emptio costs \u2193',
       16: 'Invocation costs \u2193',
       17: 'Suasio negative outcomes \u2193',
       18: 'Acolyte efficiency \u2191',
-      19: 'Desidia Stagnation drain \u2193',
+      19: 'Desidia drain \u2193',
       20: 'Gold kept on descent \u2191',
       21: 'Decimatio efficiency \u2191',
       22: 'Decimatio negative outcomes \u2193',
@@ -1069,7 +1069,7 @@ export const strings = {
       56: 'Suasio positive outcomes \u2191',
       57: 'Flat reprobate generation \u2191',
       58: 'Indagatio & Emptio efficiency \u2193',
-      59: 'Maximum Stagnation \u2191',
+      59: 'Maximum Desidia \u2191',
       60: 'Account income \u2191',
       61: 'Suasio efficiency \u2191',
       62: 'Indagatio negative outcomes \u2193',
@@ -1203,7 +1203,7 @@ export const strings = {
         playerEfficiencyMul: 'your efficiency',
         acolyteEfficiencyMul: 'acolyte efficiency',
         influenceRegenRate: 'influence regeneration',
-        stagnationGainMul: 'stagnation generation',
+        desidiaGainMul: 'desidia generation',
       } as Record<string, string>,
       // Option labels only; the sub-label under each option is generated from the choice's effects.
       calls: {

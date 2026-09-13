@@ -107,7 +107,7 @@ function invocationCostLabel(state: GameState, def: InvocationDef): string {
   if (u.maxInfluenceFraction) parts.push(`${pct(u.maxInfluenceFraction)}% max ${r.influence}/s`);
   if (u.reprobate) parts.push(`${num(u.reprobate)} ${U.reprobates}/s`);
   if (u.reprobateFraction) parts.push(`${pct(u.reprobateFraction)}% ${U.reprobates}/s`);
-  if (u.stagnation) parts.push(`${num(u.stagnation)} ${r.stagnation}/s`);
+  if (u.desidia) parts.push(`${num(u.desidia)} ${r.desidia}/s`);
   return parts.length > 0 ? parts.join(' · ') : strings.invocations.free;
 }
 

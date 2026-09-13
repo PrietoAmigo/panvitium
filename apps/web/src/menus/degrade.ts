@@ -63,7 +63,7 @@ export interface DegradeSettings {
   curseVertigo: number;
   /** Desidia fast-forward target intensity 0..1. 0 = clean; set to 1 while Desidia is active. Like
       `curseVertigo`, the pass eases the applied value toward this every frame (~0.7s), so toggling the
-      Stagnation vessel fades the VHS "tape shuttled forward" layer (snow, tracking lines, torn-line
+      Desidia vessel fades the VHS "tape shuttled forward" layer (snow, tracking lines, torn-line
       jitter, dropout speckle) in/out rather than snapping it. Presentation-only — it reads off
       `desidiaActive`, never the sim/RNG/save. */
   ffw: number;

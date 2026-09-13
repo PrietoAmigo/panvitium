@@ -1,7 +1,7 @@
 /**
  * Incoming-call buff engine (docs/PANVITIUM-CALLS-IN.md): applying a chosen option's effects, the
  * timed-buff decay, and the per-field aggregation the modifier bundle reads. Also pins the wiring
- * into `computeModifiers`, the tick decay, and the offline Stagnation grant (the re-homed
+ * into `computeModifiers`, the tick decay, and the offline Desidia grant (the re-homed
  * `doing-nothing` buff, ADR-034).
  */
 import { describe, it, expect } from 'vitest';
@@ -10,8 +10,8 @@ import {
   advanceCallBuffs,
   callBuffMultipliers,
   computeModifiers,
-  grantStagnationForOffline,
-  STAGNATION_PER_SECOND,
+  grantDesidiaForOffline,
+  DESIDIA_PER_SECOND,
   tick,
   createInitialState,
   bn,
@@ -90,7 +90,7 @@ describe('callBuffMultipliers', () => {
     const m = callBuffMultipliers(stateWith());
     expect(m.goldRateMul).toBe(1);
     expect(m.influenceRateMul).toBe(1);
-    expect(m.stagnationGainMul).toBe(1);
+    expect(m.desidiaGainMul).toBe(1);
   });
 
   it('folds influence gain AND regen onto the one influence rate (multiplicatively)', () => {
@@ -170,14 +170,14 @@ describe('tick decay', () => {
   });
 });
 
-describe('offline Stagnation (re-homed doing-nothing buff, ADR-034)', () => {
-  it('a stagnationGainMul buff multiplies the offline Stagnation grant', () => {
-    const plain = grantStagnationForOffline(stateWith(), 600);
-    const buffed = grantStagnationForOffline(
-      stateWith({ callBuffs: [{ field: 'stagnationGainMul', factor: 3, remainingSeconds: 100 }] }),
+describe('offline Desidia (re-homed doing-nothing buff, ADR-034)', () => {
+  it('a desidiaGainMul buff multiplies the offline Desidia grant', () => {
+    const plain = grantDesidiaForOffline(stateWith(), 600);
+    const buffed = grantDesidiaForOffline(
+      stateWith({ callBuffs: [{ field: 'desidiaGainMul', factor: 3, remainingSeconds: 100 }] }),
       600,
     );
-    expect(plain.stagnation).toBeCloseTo(STAGNATION_PER_SECOND * 600, 9);
-    expect(buffed.stagnation).toBeCloseTo(STAGNATION_PER_SECOND * 600 * 3, 9);
+    expect(plain.desidia).toBeCloseTo(DESIDIA_PER_SECOND * 600, 9);
+    expect(buffed.desidia).toBeCloseTo(DESIDIA_PER_SECOND * 600 * 3, 9);
   });
 });

@@ -103,11 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 937** (sim 567 · shared 71 · api 20 · web 279).
+**Current test count: 939** (sim 567 · shared 73 · api 20 · web 279).
 
-> **Latest change — Invocation retune (Upir / Narcissus / Behemoth / Lamia) + Behemoth flat Stellar
+> **Latest change — the "Stagnation" resource renamed to "Desidia".** The offline-torpor resource
+> and the time-acceleration toggle that spends it now share one Latin name: what the HUD showed as
+> "Stagnation" is **Desidia** everywhere (the vessel label and hover, sigil / invocation copy, the
+> `stagnation*` sim identifiers → `desidia*`, and the `StagnationHud` / `stagnation-hud.css` /
+> `stagnation-vessel-frame.png` files → their `Desidia` / `desidia` names). Pure rename with no
+> gameplay, economy, or RNG change; the persisted top-level `stagnation` field becomes `desidia`
+> through **save migration v6 → v7** (`CURRENT_SCHEMA_VERSION` 6 → 7; the `desidiaActive` toggle flag
+> already carried the name and is untouched). Net **+2 tests** (shared 71 → 73: the v6 → v7 migration
+> round-trip).
+>
+> **Earlier change — Invocation retune (Upir / Narcissus / Behemoth / Lamia) + Behemoth flat Stellar
 > chance.** Ars Goetia detail pages now show the **Bound** count line **below the Effect line** (it was
-> above, next to the gate). Tuning, each cost and effect divided together: **Upir** ÷5 (0.2 stagnation/s
+> above, next to the gate). Tuning, each cost and effect divided together: **Upir** ÷5 (0.2 desidia/s
 > upkeep, −1% negative outcomes per copy); **Narcissus** ÷10 with the cap raised **1 → 10** (0.3
 > influence/s, +1% positive outcomes per copy); **Behemoth** ÷40 with the cap raised **1 → 10** (0.625%
 > gold + 0.625% influence gain/s), and its effect changed from a percentual weight lift to a **flat,
@@ -124,7 +134,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > seal answers only…" intro. The previous fix's visible internal scrollbar is removed: everything fits
 > on one leaf at desktop sizes, and on a very short viewport (a portrait phone, where the landscape
 > grimoire is letterboxed small) the roster scrolls internally with the **bar hidden**. The detail leaf
-> is unchanged. Tuning: **Blob** cap 20→**5** and its effect halved (0.0125→**0.00625** stagnation/s),
+> is unchanged. Tuning: **Blob** cap 20→**5** and its effect halved (0.0125→**0.00625** desidia/s),
 > **Fama** halved (+15%→**+7.5%** influence gain per copy), and **Lemure** halved (drain reduction
 > 12.5%/×0.875 → **6.25%/×0.9375** per copy). The **Plutus** effect line is reworded from "Faeneratio
 > output" to plain **"loan and interest income."** No save-schema or RNG change; test count unchanged
@@ -145,8 +155,8 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > and the detail heading to set them apart from the stackable normals; the free entries read **"no
 > cost"** (was "no soul cost"); and the index intro is rewritten from the old flavour blurb to an
 > explanation of caps and Apex (one Apex kind per lifetime). Tuning: **Blob**, **Lamia** and
-> **Arachne** effects are cut to a quarter (Blob 0.05→0.0125 stagnation/s, Lamia 100→25 reprobates/s,
-> Arachne 1→0.25 influence/s). The **doing-nothing** incoming call's stagnation-tripling option drops
+> **Arachne** effects are cut to a quarter (Blob 0.05→0.0125 desidia/s, Lamia 100→25 reprobates/s,
+> Arachne 1→0.25 influence/s). The **doing-nothing** incoming call's desidia-tripling option drops
 > from **8 hours to 5 minutes**. No save-schema or RNG change; test count unchanged at **933**.
 
 > **Earlier change — invocation roster rework (25 entities, new cost/effect dimensions, one apex per
@@ -158,11 +168,11 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > efficiency" now scale by the **all-invocation × per-Sin** invocation-effect multipliers, **not**
 > player efficiency. New per-second upkeep dimensions are added and charged in tick step 1a: a
 > compound (flat + %-of-gain) cost, a flat **reprobate** drain and a %-of-pool reprobate drain (a pure
-> cost that mints no souls, accrued through the new `reprobateCostPool`), and a **stagnation** drain;
+> cost that mints no souls, accrued through the new `reprobateCostPool`), and a **desidia** drain;
 > %-of-gain costs stay additive so four 25%-of-gain copies zero the gain. **Blob/Morpheus** generate
-> stagnation (Morpheus converts its consumed reprobates into it). The **world-still** apex moves from
+> desidia (Morpheus converts its consumed reprobates into it). The **world-still** apex moves from
 > Morpheus to **Astiwihad** (which now carries the 100%-gold/maleficia + Emptio Katabasis carry-over),
-> Morpheus becomes a reprobate → stagnation converter, and **Midas ×10/×10**, **Doppelgänger +100%**,
+> Morpheus becomes a reprobate → desidia converter, and **Midas ×10/×10**, **Doppelgänger +100%**,
 > **Specunitas ×3** are rescaled. A new rule allows only **one apex kind per lifetime** (replacing the
 > Morpheus lockout), tracked by `lifetime.apexInvoked`. The **Ars Goetia** clusters entries by Sin
 > level then invoking power and shows the **real current** cost (softened by the invocation
@@ -171,7 +181,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > drop `morpheusLockedOut`, seed `apexInvoked`). Net **−33 tests** (sim 598 → 563 as the runner-effect
 > and one-time-cost suites collapse into the new roster tests, shared 69 → 71).
 
-> **Earlier change — Indagatio investment polish + Status-Quo and Stagnation readout fixes.** A batch
+> **Earlier change — Indagatio investment polish + Status-Quo and Desidia readout fixes.** A batch
 > of UI and behaviour tweaks. On the Orbis Tenebrarum Search the **Investment** meter (renamed from
 > "Default investment") and the **Time left / Duration** meter swap places (investment center-left,
 > timer center-right), and the "Scrying the world's corners…" status line is removed since the
@@ -182,7 +192,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > Cardinal Sin's row now shows the **souls owed to the next level** beside its devoted-souls count
 > (the next level's threshold less the current devotion, omitted once a Sin is mastered at the cap),
 > and that page's per-Sin **"Rank" label is renamed to "Level"** (the offering/altar screen's own
-> wording is left as-is). The **Stagnation HUD** readout floors the cap as well as the value, so a cap
+> wording is left as-is). The **Desidia HUD** readout floors the cap as well as the value, so a cap
 > sigil (Orias #59) can no longer surface a fractional value over max. No save-schema or RNG change.
 > Net **+4 tests** (sim 596 → 598, web 277 → 279).
 
@@ -212,7 +222,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > pass (`apps/web/src/menus/degrade.ts`), built exactly like the Fausto-curse "Vertigo" layer: two new
 > `DegradeSettings` (`ffw`, the 0..1 target, and `ffwStrength`, the author dial at the tuned `0.35`), a
 > private eased `_ffw` scalar ramping toward the target on the shared ~0.7s cadence so toggling the
-> Stagnation vessel fades the tape effect rather than snapping it, and a `_ffwPass` called in **both**
+> Desidia vessel fades the tape effect rather than snapping it, and a `_ffwPass` called in **both**
 > `render()` branches after `_dizzy`, before the room-change fade (so the fade still covers it).
 > `RoomView`/`App` feed `ffw` straight off the `desidiaActive` flag, alongside `curseVertigo`.
 > **Reduced motion** drops all four sub-effects (the room simply does not shuttle; no static fallback).
@@ -221,26 +231,26 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > and the save shape are unchanged. No new assets. Net **+2 tests** (web 273 → 275: the degrade-defaults
 > suite pins the shipped-off `ffw` and the tuned `ffwStrength`, mirroring the Vertigo defaults).
 
-> **Earlier change — the Stagnation HUD reborn as the carved "Stagnation vessel" (Claude Design
-> handoff).** The placeholder top-right bar and its separate Desidia button are retired; Stagnation now
+> **Earlier change — the Desidia HUD reborn as the carved "Desidia vessel" (Claude Design
+> handoff).** The placeholder top-right bar and its separate Desidia button are retired; Desidia now
 > reads from a carved crystal trough pinned bottom-left, mirroring the Influence vessel's treatment.
 > **Clicking the vessel toggles Desidia** (there is no button any more): green liquid fills the glass
 > channel left to right on a low-res canvas upscaled nearest-neighbour (an `85×19` buffer, the same
 > pixel-art treatment as `InfluenceGoldHud`), and while Desidia runs the liquid turns **turbulent** (the
 > leading edge sloshes, currents run through the body, bubbles rise) as the sole active-state affordance:
-> no glow, no label, no colour change. The "Stagnation" label and a **floored** value / cap readout
-> (`Math.floor` of the pool over `stagnationMax`) sit above it. A reduced-motion preference holds the
+> no glow, no label, no colour change. The "Desidia" label and a **floored** value / cap readout
+> (`Math.floor` of the pool over `desidiaMax`) sit above it. A reduced-motion preference holds the
 > surface flat and signals the active state with `aria-pressed` plus a static, brighter meniscus; an
 > empty pool with Desidia off leaves the vessel inert (`aria-disabled`, no-op click). This is **purely
 > presentational** — it binds the existing pool, cap and toggle, so the sim, the tick-owned drain, and
-> the save shape are all untouched (no schema bump). Ships the `stagnation-vessel-frame.png` art beside
+> the save shape are all untouched (no schema bump). Ships the `desidia-vessel-frame.png` art beside
 > the Influence frame, extracts the shared `usePrefersReducedMotion` hook (reused from App's
 > Fausto-curse layer), and drops the now-orphaned Desidia button-label strings. Net **+2 tests** (web
 > 271 → 273: the HUD suite retargets the toggle at the vessel and pins the floored readout, the buffer
 > resolution, and the inert / still-live states).
 
 > **Earlier change — incoming-call buffs now apply (the calls-in effect engine), with the offline
-> buff re-homed onto Stagnation.** Answering an incoming call was a documented stub; it now changes
+> buff re-homed onto Desidia.** Answering an incoming call was a documented stub; it now changes
 > game state. The sim owns the effect types and logic in a new framework-free module
 > (`packages/sim/src/callBuffs.ts`, ADR-022): `applyCallEffects` consumes a chosen option's
 > structured `effects`, `advanceCallBuffs` decays the timed ones, and `callBuffMultipliers` folds
@@ -252,8 +262,8 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > per death) vs. a plain loss (no souls, honouring "the cull is one for one"), and a permanent
 > maxInfluence raise. App's `onChoose` routes to the store's `answerCall`; none of it draws the
 > seeded RNG, so a save's sequence is unchanged (ADR-011). **The offline `doing-nothing` buff** ("I
-> will join them"), retired with offline progression (ADR-032), is **re-homed onto Stagnation**: it
-> now triples the Stagnation-generation rate (`stagnationGainMul`, ADR-034) for 8 hours, boosting the
+> will join them"), retired with offline progression (ADR-032), is **re-homed onto Desidia**: it
+> now triples the Desidia-generation rate (`desidiaGainMul`, ADR-034) for 8 hours, boosting the
 > torpor banked while away. No save-schema bump (additive-optional). Net **+21 tests** (sim 564 →
 > 581, shared 65 → 68, web 270 → 271).
 
@@ -300,40 +310,40 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > **Earlier change — the full Goetia: all 72 sigils named, the ten orphaned seals reactivated.**
 > Every seal now carries a demon name and a real effect, so no orphaned sigils remain. The ten seals
 > left dormant by ADR-031/032 and the Depraedatio rework are re-homed. Four bind onto the new ADR-033
-> levers: **Sitri #12** raises Stagnation gain, **Orias #59** raises the Stagnation cap, **Foras #31**
+> levers: **Sitri #12** raises Desidia gain, **Orias #59** raises the Desidia cap, **Foras #31**
 > quickens Desidia acceleration, and **Sallos #19** softens the Desidia drain. Six attach to the live
 > economy: **Gusion #11** softens the player's own influence gain, **Eligos #15** cuts Emptio costs,
 > **Zepar #16** cuts invocation costs, **Marax #21** lifts Decimatio efficiency, **Naberius #24**
 > shortens Indagatio, and **Zagan #61** lifts Suasio efficiency. Zepar, Marax and Zagan carry a third
-> of the standard pct strength (coefficient 1/3). Two new modifier-bundle fields (`stagnationGainMul`,
-> `stagnationMaxMul`) feed `grantStagnationForOffline` / `stagnationMax`; the two Desidia levers were
+> of the standard pct strength (coefficient 1/3). Two new modifier-bundle fields (`desidiaGainMul`,
+> `desidiaMaxMul`) feed `grantDesidiaForOffline` / `desidiaMax`; the two Desidia levers were
 > already sigil-targetable. No save-schema bump (additive-optional). Net **+7 tests** (sim 552 → 559).
 
-> **Earlier change — Stagnation + Desidia: the offline resource and the time-acceleration toggle (ADR-033).**
-> The system ADR-032 deferred. **Stagnation** is a new top-level, permanent resource banked on resume
+> **Earlier change — Desidia: the offline resource and the time-acceleration toggle (ADR-033).**
+> The system ADR-032 deferred. **Desidia** is a new top-level, permanent resource banked on resume
 > from time away (0.2/min, base cap 120, doubled per Acedia tier); `resumeGame` grants it, and it
 > carries across Katabasis like Devotion. **Desidia** is a toggle (button beneath the new top-right
-> Stagnation HUD) that spends Stagnation to run the live sim faster — base **1.333×** (lifted by
+> Desidia HUD) that spends Desidia to run the live sim faster — base **1.333×** (lifted by
 > Acedia's Procrastination) draining **1/s** (reduced ×0.875 per bound **Lemure**, now capped at 4 and
 > costing 25% of influence gain each). The tick threads a separate `simDelta` for the accelerated sim
 > while `lastTickAt` keeps tracking real wall-clock, so the offline anchor stays honest; Desidia
 > auto-deactivates the tick it can't pay. **Acedia** (Procrastination → Desidia speed, each tier →
-> ×2 Stagnation cap) and **Lemure** are re-homed off their ADR-032 dormancy. HUD additions
-> (Stagnation container + Desidia button) are functional placeholders. No save-schema bump
+> ×2 Desidia cap) and **Lemure** are re-homed off their ADR-032 dormancy. HUD additions
+> (Desidia container + toggle button) are functional placeholders. No save-schema bump
 > (additive-optional). Net **+19 tests** (sim 541 → 552, shared 63 → 65, web 260 → 266).
 
 > **Earlier change — offline is now a freeze; the offline-gain machinery is retired (ADR-032).**
 > Offline catch-up is gone. `resumeGame` no longer ticks: it only advances the logical clock to now,
 > so the world does not progress while the tab is closed and the player is restored exactly where they
 > left off (a mid-descent save still reopens on the Katabasis menu; the time away is knowable as
-> `now - lastTickAt` for the forthcoming stagnation system, but nothing consumes it yet). Removed the
+> `now - lastTickAt` for the forthcoming desidia system, but nothing consumes it yet). Removed the
 > whole offline-gain stack: `PLAYER_OFFLINE_EFFICIENCY`, the Acedia time-compound, the `offlineTimeMul`
 > modifier (Procrastination + Lemure), the `TickDeps.offline` catch-up multipliers and their
 > Panvitium / Aurevora lapse, the web `offlineRecap` / `offlineProjection` / `offlineFactors` helpers,
 > the Analytics **Offline** tab, and the welcome-back "Litany" modal. Five sigils (**Eligos #15**,
 > **Zepar #16**, **Sallos #19**, **Marax #21**, **Foras #31**) are orphaned per ADR-029's no-`inert`
 > pattern with placeholder copy; **Acedia** (Sloth) and the **Lemure** invocation go mechanically
-> dormant with placeholder text, all pending a **stagnation** resource plus a **Desidia**
+> dormant with placeholder text, all pending a **Desidia** resource plus a
 > time-acceleration toggle to be designed next. No save-schema bump. Net **−23 tests**
 > (sim 548 → 541, web 276 → 260).
 

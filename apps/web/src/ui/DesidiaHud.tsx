@@ -1,21 +1,21 @@
 import { useEffect, useRef, type ReactElement } from 'react';
-import { stagnationMax } from '@panvitium/sim';
+import { desidiaMax } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import { useGameStore } from '../store/gameStore.js';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion.js';
-import './stagnation-hud.css';
+import './desidia-hud.css';
 
 // The carved trough artwork the vessel draws behind the liquid (frame knocked out to transparent, the
 // glass channel left translucent so the green liquid reads through it). Served by Vite from public,
 // alongside influence-vessel-frame.png.
-const VESSEL_FRAME_SRC = '/assets/panvitium/hud/stagnation-vessel-frame.png';
+const VESSEL_FRAME_SRC = '/assets/panvitium/hud/desidia-vessel-frame.png';
 
 // The glass channel inside the artwork, as fractions of the canvas (design handoff). The liquid is
 // clipped to a rounded rect over this box and fills left → right.
 const TROUGH = { x0: 0.163, x1: 0.878, y0: 0.283, y1: 0.722 };
 
 /**
- * The pixelated Stagnation vessel: green liquid clipped to the glass channel, filling from the LEFT
+ * The pixelated Desidia vessel: green liquid clipped to the glass channel, filling from the LEFT
  * (the surface is the vertical leading edge), drawn behind the carved frame image, both composited
  * onto an 85×19 canvas upscaled nearest-neighbour — the same treatment as `InfluenceGoldHud`'s
  * vessel, retinted green and turned on its side.
@@ -204,53 +204,59 @@ function VesselCanvas({
   }, []);
 
   return (
-    <canvas ref={canvasRef} width={85} height={19} className="stag-hud-canvas" aria-hidden="true" />
+    <canvas
+      ref={canvasRef}
+      width={85}
+      height={19}
+      className="desidia-hud-canvas"
+      aria-hidden="true"
+    />
   );
 }
 
 /**
- * The persistent Stagnation vessel + Desidia toggle (ADR-033). A bottom-left resource cluster
- * mirroring the Influence vessel's treatment: the "Stagnation" label and `value / max` readout sit
+ * The persistent Desidia vessel and toggle (ADR-033). A bottom-left resource cluster
+ * mirroring the Influence vessel's treatment: the "Desidia" label and `value / max` readout sit
  * above a carved crystal trough that fills left → right with green liquid. There is no separate
  * Desidia button; clicking the vessel toggles Desidia, and the liquid turning turbulent is the only
  * active-state affordance.
  *
  * Reads live state from the store following the repo's Zustand guidance (select the stable `state`,
  * derive the fill ratio + readout in render). The readout is integer-only: both the value
- * (`Math.floor(state.stagnation)`) and the derived cap (`Math.floor(stagnationMax(state))`, which a
- * cap sigil like Orias #59 can otherwise make fractional) are floored. While Stagnation is empty
- * and Desidia is off the vessel is inert: the click is a no-op and it drops its hover brightness
+ * (`Math.floor(state.desidia)`) and the derived cap (`Math.floor(desidiaMax(state))`, which a
+ * cap sigil like Orias #59 can otherwise make fractional) are floored. While Desidia is empty
+ * and the toggle is off the vessel is inert: the click is a no-op and it drops its hover brightness
  * (`aria-disabled`).
  *
  * Mounting/visibility is owned by `App` (shown alongside the Influence & Gold HUD; hidden during
  * Katabasis / over the PC / the Altar gate).
  */
-export function StagnationHud(): ReactElement | null {
+export function DesidiaHud(): ReactElement | null {
   const state = useGameStore((s) => s.state);
   const toggleDesidia = useGameStore((s) => s.toggleDesidia);
   const reducedMotion = usePrefersReducedMotion();
   if (!state) return null;
 
-  const max = stagnationMax(state);
-  const value = state.stagnation;
+  const max = desidiaMax(state);
+  const value = state.desidia;
   const frac = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
   const active = state.desidiaActive === true;
   // Nothing to spend and not already running → the vessel is inert (click is a no-op).
   const inert = value <= 0 && !active;
-  const s = strings.stagnation;
+  const s = strings.desidia;
 
   return (
-    <div className="stag-hud" role="group" aria-label={s.label}>
-      <div className="stag-hud-readout">
-        <span className="stag-hud-label">{s.label}</span>
-        <span className="stag-hud-value">
+    <div className="desidia-hud" role="group" aria-label={s.label}>
+      <div className="desidia-hud-readout">
+        <span className="desidia-hud-label">{s.label}</span>
+        <span className="desidia-hud-value">
           {Math.floor(value)} / {Math.floor(max)}
         </span>
       </div>
       <button
         type="button"
-        className={'stag-hud-vessel-btn' + (inert ? ' is-inert' : '')}
-        aria-label="Stagnation vessel: toggle Desidia"
+        className={'desidia-hud-vessel-btn' + (inert ? ' is-inert' : '')}
+        aria-label="Desidia vessel: toggle time acceleration"
         aria-pressed={active}
         aria-disabled={inert}
         title={s.desidiaHint}
@@ -258,7 +264,7 @@ export function StagnationHud(): ReactElement | null {
           if (!inert) toggleDesidia();
         }}
       >
-        <span className="stag-hud-vessel-box">
+        <span className="desidia-hud-vessel-box">
           <VesselCanvas frac={frac} active={active} reducedMotion={reducedMotion} />
         </span>
       </button>

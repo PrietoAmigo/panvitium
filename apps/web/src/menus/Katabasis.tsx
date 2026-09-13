@@ -645,7 +645,7 @@ const VANAGLORIA_INFLUENCE_PER_LEVEL = 1.33;
 // The live numeric magnitude of a Sin's per-rank (Level) effect, in its natural unit, matching the
 // modifier engine exactly. Returns '' while the rank contributes nothing (Rank 0). Units differ by
 // Sin: the multiplicative efficiency ladders read '×N', the descent carry-over fractions read the
-// rank's marginal '+X%', Gula strips the negative tiers ('−X%'), and Acedia doubles the Stagnation
+// rank's marginal '+X%', Gula strips the negative tiers ('−X%'), and Acedia doubles the Desidia
 // cap each rank ('×N' the base, ADR-033).
 function sinLevelEffectValue(sin: Sin, level: number): string {
   if (level <= 0) return '';
@@ -665,7 +665,7 @@ function sinLevelEffectValue(sin: Sin, level: number): string {
     case 'superbia':
       return `+${(REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL * level * 100).toFixed(1)}%`;
     case 'acedia':
-      return `×${2 ** level}`; // Stagnation cap doubles per rank (ADR-033)
+      return `×${2 ** level}`; // Desidia cap doubles per rank (ADR-033)
   }
 }
 

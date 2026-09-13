@@ -11,7 +11,7 @@ import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
 import { PANELS, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
 import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
-import { StagnationHud } from './ui/StagnationHud.js';
+import { DesidiaHud } from './ui/DesidiaHud.js';
 import { usePrefersReducedMotion } from './ui/usePrefersReducedMotion.js';
 import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
@@ -85,7 +85,7 @@ export function App(): ReactElement {
   // Fausto's curse (05): while his fourth letter sits unbroken in the inbox, the room sways and
   // doubles — the "Vertigo" degrade layer. Read straight off the flag; the pass eases it in/out.
   const curseActive = useGameStore((s) => s.state?.lifetime.flagFaustoCurse === true);
-  // Desidia (the Stagnation toggle): while active the room reads as a VHS tape shuttled forward, the
+  // Desidia (the time-acceleration toggle): while active the room reads as a VHS tape shuttled forward, the
   // fast-forward degrade layer. Read straight off the flag; the pass eases it in/out.
   const desidiaActive = useGameStore((s) => s.state?.desidiaActive === true);
   // The curse's sway/zoom/double-vision and the fast-forward tracking motion are vestibular triggers;
@@ -280,9 +280,9 @@ export function App(): ReactElement {
       {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars
           Goetia / Suasio surfaces, pinned to the viewport's top-left edge. */}
       {hudVisible && <InfluenceGoldHud />}
-      {/* Stagnation + Desidia (ADR-033), pinned to the viewport's bottom-left edge; same visibility
+      {/* Desidia (ADR-033), pinned to the viewport's bottom-left edge; same visibility
           as the Influence & Gold HUD. Clicking the vessel toggles Desidia (no separate button). */}
-      {hudVisible && <StagnationHud />}
+      {hudVisible && <DesidiaHud />}
       {/* The one-time Doppelgänger scare covers EVERYTHING (highest layer), blocks all input, and
           clears itself after 2s — see Jumpscare. */}
       {jumpscare && <Jumpscare onDone={() => setJumpscare(false)} />}

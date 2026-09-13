@@ -3,7 +3,7 @@
  *   - Luxuria's **Seduction** skill lifts `reprobateGenerationRateMul` by (1 + intensity).
  *   - Tristitia's **Resignation** skill lifts `acolyteEfficiencyMul` by (1 + intensity).
  *   - Ira's **Retribution** skill lifts `invocationEfficiencyMul` by (1 + intensity).
- *   (Acedia's Sloth effects modified offline gains and are dormant pending the stagnation rework,
+ *   (Acedia's Sloth effects modified offline gains and are dormant pending the desidia rework,
  *   ADR-032, so there is no Acedia parity case here.)
  *
  * Each effect is multiplicative on the prior NEUTRAL baseline.

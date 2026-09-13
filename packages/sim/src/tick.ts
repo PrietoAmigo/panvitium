@@ -21,7 +21,7 @@ import { applyInvocationTickEffects, aurevoraDrainPerSecond } from './apex.js';
 import { anatocismusDepositPerSecond, faeneratioGoldPerSecond } from './faeneratio.js';
 import { advanceToggles, panvitiumRate } from './compositum.js';
 import { advanceCallBuffs } from './callBuffs.js';
-import { DESIDIA_BASE_COST_PER_SECOND, DESIDIA_BASE_SPEED, stagnationMax } from './stagnation.js';
+import { DESIDIA_BASE_COST_PER_SECOND, DESIDIA_BASE_SPEED, desidiaMax } from './desidia.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
@@ -210,7 +210,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
 
   const rng = makeRng(state.rngState);
 
-  // Desidia (ADR-033): the stagnation time-acceleration toggle. While active it drains stagnation
+  // Desidia (ADR-033): the desidia time-acceleration toggle. While active it drains desidia
   // each REAL second and advances the whole sim by an accelerated `simDelta`; `lastTickAt` still
   // advances by the real delta (step 6) so the offline anchor stays wall-clock-honest. Charged like
   // a toggle: the tick it can no longer pay, it drains the remainder and switches off, running that
@@ -221,11 +221,11 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   if (state.desidiaActive === true) {
     const dmods = computeModifiers(state);
     const drainThisTick = DESIDIA_BASE_COST_PER_SECOND * dmods.desidiaDrainMul * deltaSeconds;
-    if (drainThisTick > 0 && state.stagnation >= drainThisTick) {
+    if (drainThisTick > 0 && state.desidia >= drainThisTick) {
       simDelta = deltaSeconds * DESIDIA_BASE_SPEED * dmods.desidiaSpeedMul;
-      state = { ...state, stagnation: state.stagnation - drainThisTick };
+      state = { ...state, desidia: state.desidia - drainThisTick };
     } else {
-      state = { ...state, stagnation: 0, desidiaActive: false };
+      state = { ...state, desidia: 0, desidiaActive: false };
     }
   }
 
@@ -287,7 +287,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
 
   // 1a. Invocation upkeep (Invocatio sheet): each active invocation pays its per-second cost out of
   //     this tick's income and pools. %-of-gain costs consume a fraction of what was just gained;
-  //     flat gold/influence/reprobate/stagnation costs subtract an absolute amount. A flat drain the
+  //     flat gold/influence/reprobate/desidia costs subtract an absolute amount. A flat drain the
   //     pool can't cover dispels its invocation(s) (generalising Aurevora's "dispel at gold 0"); the
   //     %-of-gain / %-of-pool parts alone can only zero a gain (or shrink a pool), never bankrupt, so
   //     they never trigger a dispel. Reprobate upkeep is a PURE COST — whole units leave the pool
@@ -326,13 +326,13 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
       flatReproDemand +
       up.reprobateFraction * population * simDelta;
 
-    // Stagnation upkeep (Upir): drained from the top-level stagnation pool; a demand it can't cover
-    // dispels the drainer(s). Stagnation is a float, so no accrual pool is needed.
-    const stagDemand = up.flatStagnationPerSecond * simDelta;
-    let stagnation = state.stagnation;
-    if (stagDemand > 0) {
-      if (stagnation >= stagDemand) stagnation -= stagDemand;
-      else dispelled.push(...up.flatStagnationDrainers);
+    // Desidia upkeep (Upir): drained from the top-level desidia pool; a demand it can't cover
+    // dispels the drainer(s). Desidia is a float, so no accrual pool is needed.
+    const desidiaDemand = up.flatDesidiaPerSecond * simDelta;
+    let desidia = state.desidia;
+    if (desidiaDemand > 0) {
+      if (desidia >= desidiaDemand) desidia -= desidiaDemand;
+      else dispelled.push(...up.flatDesidiaDrainers);
     }
 
     let invocations = working.lifetime.invocations;
@@ -345,7 +345,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     }
     working = {
       ...working,
-      stagnation,
+      desidia,
       lifetime: { ...working.lifetime, gold, influence, invocations },
     };
     // Drain whole reprobates from the accrued pool (clamped to the living population), no souls.
@@ -366,17 +366,16 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     for (const n of apex.notices) notices.push(n);
   }
 
-  // 1c. Invocation stagnation generation (Blob's flat yield + Morpheus's per-consumed-reprobate
-  //     yield, both efficiency-scaled — `mods.flatStagnationPerSecond`). Added to the top-level
-  //     stagnation pool over `simDelta`, clamped to the current cap; never reduces a pool already at
+  // 1c. Invocation desidia generation (Blob's flat yield + Morpheus's per-consumed-reprobate
+  //     yield, both efficiency-scaled — `mods.flatDesidiaPerSecond`). Added to the top-level
+  //     desidia pool over `simDelta`, clamped to the current cap; never reduces a pool already at
   //     or above the cap. A no-op when no generator is active.
-  if (mods.flatStagnationPerSecond > 0) {
-    const cap = stagnationMax(working);
-    const gained = mods.flatStagnationPerSecond * simDelta;
+  if (mods.flatDesidiaPerSecond > 0) {
+    const cap = desidiaMax(working);
+    const gained = mods.flatDesidiaPerSecond * simDelta;
     working = {
       ...working,
-      stagnation:
-        working.stagnation >= cap ? working.stagnation : Math.min(cap, working.stagnation + gained),
+      desidia: working.desidia >= cap ? working.desidia : Math.min(cap, working.desidia + gained),
     };
   }
 

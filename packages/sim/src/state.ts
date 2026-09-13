@@ -360,16 +360,16 @@ export interface GameState {
    */
   inKatabasis?: boolean;
   /**
-   * Stagnation (ADR-033): the torpor banked while the world was frozen offline. Gained on resume at
-   * STAGNATION_PER_SECOND × seconds away, clamped to `stagnationMax(state)` (base 120, doubled per
+   * Desidia (ADR-033): the torpor banked while the world was frozen offline. Gained on resume at
+   * DESIDIA_PER_SECOND × seconds away, clamped to `desidiaMax(state)` (base 120, doubled per
    * Acedia tier). Spent by the Desidia toggle to accelerate the live tick. Top-level and PERMANENT:
    * offline time is a real-world quantity, so it carries across Katabasis like Devotion. A bounded
    * count, so a plain `number` (ADR-005). Additive-optional on the wire (ADR-023); defaults to 0.
    */
-  stagnation: number;
+  desidia: number;
   /**
    * True while the Desidia toggle is active (ADR-033): the live tick runs the sim faster (base
-   * 1.333×, lifted by Acedia's Procrastination) and drains stagnation each second (base 1/s, reduced
+   * 1.333×, lifted by Acedia's Procrastination) and drains desidia each second (base 1/s, reduced
    * by Lemure). Auto-deactivates the tick it can no longer pay. Cleared on Katabasis (a torn-down
    * lifetime cannot be accelerated). Additive-optional on the wire (ADR-023); absent ≡ false.
    */
@@ -428,7 +428,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
     startedAt: now,
     achievements: [],
     katabasisCount: 0,
-    stagnation: 0,
+    desidia: 0,
   };
 }
 

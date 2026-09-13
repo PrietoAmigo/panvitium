@@ -2,7 +2,7 @@
  * Save migration v5 → v6 (ADR-023): the invocation roster rework. The invocation catalog was
  * reshuffled wholesale — most entries changed Sin, gate, cost and effect (e.g. the Imp/Upir/Harpy/
  * Lamia autonomous runners became flat modifier effects; the world-still apex moved from Morpheus to
- * Astiwihad; Morpheus became a reprobate → stagnation converter) — and a "one apex kind per lifetime"
+ * Astiwihad; Morpheus became a reprobate → desidia converter) — and a "one apex kind per lifetime"
  * rule was added. Two persisted-shape changes:
  *
  *   1. `lifetime.morpheusLockedOut` is removed (replaced by the one-apex-per-lifetime rule), and the

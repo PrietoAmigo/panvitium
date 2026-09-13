@@ -1,6 +1,6 @@
 /**
  * Katabasis-modifying apex tests (03 §2.4) — Erinyes + Astiwihad — plus the one-apex-per-lifetime
- * rule and Morpheus's reworked reprobate → stagnation conversion. Pins:
+ * rule and Morpheus's reworked reprobate → desidia conversion. Pins:
  *   - catalog entries (gates, free, max 1; Morpheus's reprobate-fraction upkeep)
  *   - Erinyes invoke: kills every reprobate (mints one soul each), sets pendingErinyes + apexInvoked
  *   - Astiwihad invoke: sets pendingAstiwihad + apexInvoked; the tick is then frozen (world-still)
@@ -10,7 +10,7 @@
  *     depositThesaurus / signSyngrapha
  *   - commit: Erinyes → gold 0, maleficia 0, ×2 stack; Astiwihad → gold 100%, maleficia 100%, Emptio
  *     preserved; the mutex favours Erinyes if both flags are set
- *   - Morpheus consumes reprobates as a PURE cost (no souls) and generates stagnation, without
+ *   - Morpheus consumes reprobates as a PURE cost (no souls) and generates desidia, without
  *     freezing the world
  */
 import { describe, expect, it } from 'vitest';
@@ -238,13 +238,13 @@ describe('Mutual exclusion at commit when both flags were set', () => {
   });
 });
 
-describe('Morpheus: reprobate → stagnation, no world freeze', () => {
-  it('consumes reprobates as a pure cost (no souls) and generates stagnation, income still flowing', () => {
+describe('Morpheus: reprobate → desidia, no world freeze', () => {
+  it('consumes reprobates as a pure cost (no souls) and generates desidia, income still flowing', () => {
     const s = withAllGates({ gold: 1000, reprobates: 1000, souls: 0 });
     const active: GameState = {
       ...s,
       souls: bn(0),
-      stagnation: 0,
+      desidia: 0,
       lifetime: { ...s.lifetime, invocations: { morpheus: 1 } },
     };
     // One 0.1s tick: Morpheus drains 5% × 1000 × 0.1 = 5 reprobates; base suicide/murder pools stay
@@ -252,7 +252,7 @@ describe('Morpheus: reprobate → stagnation, no world freeze', () => {
     const r = tick(active, 0.1);
     expect(totalReprobates(r.state)).toBe(995);
     expect(soulsOf(r.state)).toBe(0); // the reprobate cost minted no souls
-    expect(r.state.stagnation).toBeGreaterThan(0); // Morpheus converts consumption to stagnation
+    expect(r.state.desidia).toBeGreaterThan(0); // Morpheus converts consumption to desidia
     expect(r.state.lifetime.gold.toNumber()).toBeGreaterThan(1000); // world NOT frozen
   });
 });

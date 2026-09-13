@@ -86,10 +86,10 @@ function passiveEffectText(state: GameState, id: string): string {
       return `+${fmtNum(w.flatBaseMurderRatePerSecond - b.flatBaseMurderRatePerSecond)}/s ${L.baseMurder}`;
     case 'nightmare':
       return `+${fmtNum(w.flatBaseSuicideRatePerSecond - b.flatBaseSuicideRatePerSecond)}/s ${L.baseSuicide}`;
-    // ── Stagnation ─────────────────────────────────────────────────────────────────────────────
+    // ── Desidia ─────────────────────────────────────────────────────────────────────────────
     case 'blob':
     case 'morpheus':
-      return flat(w.flatStagnationPerSecond, b.flatStagnationPerSecond, L.stagnation);
+      return flat(w.flatDesidiaPerSecond, b.flatDesidiaPerSecond, L.desidia);
     // ── Outcome-tier shifts ────────────────────────────────────────────────────────────────────
     case 'behemoth': {
       // A FLAT additive to the Stellar chance (percentage points), not a weight multiplier.

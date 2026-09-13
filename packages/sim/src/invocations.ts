@@ -4,7 +4,7 @@
  * also require a Cardinal Sin level. Summoning is always free up front; the cost is a per-second
  * **upkeep** paid out of income and pools while active (see `invocationUpkeep` + tick.ts step 1a):
  * flat gold/influence, %-of-gain (gold/influence), a flat or %-of-pool **reprobate** drain (a pure
- * cost — no souls minted), and a **stagnation** drain. A flat drain the pool can't sustain dispels
+ * cost — no souls minted), and a **desidia** drain. A flat drain the pool can't sustain dispels
  * the invocation; %-costs only zero a gain or shrink a pool, never bankrupt. Most are persistent and
  * dispellable at will; on Katabasis all are dispelled (katabasis.ts — `invocations` reset to {}).
  *
@@ -20,7 +20,7 @@
  *       player efficiency). This covers the flat dynamics effects (Imp murders, Banshee suicides,
  *       Empusa/Lamia/Succubus generation), income (Kobold/Arachne/Fama/Plutus/Specunitas/Midas),
  *       player efficiency (Familiar/Wendigo/Doppelgänger), the outcome-tier shifts (Behemoth/
- *       Narcissus/Upir), and stagnation generation (Blob/Morpheus, applied in the tick).
+ *       Narcissus/Upir), and desidia generation (Blob/Morpheus, applied in the tick).
  *   (2) per-tick side-effect in apex.ts — Aurevora's exponential gold drain ↔ rising efficiency.
  *   (3) per-invoke / per-commit side-effect (this module + katabasis.ts) — Erinyes kills every
  *       reprobate and zeroes the Katabasis carry-over (×2 player-efficiency stack); Astiwihad holds
@@ -75,7 +75,7 @@ export interface InvocationDef {
    *   - `reprobateFraction`: fraction of the CURRENT reprobate pool drained per second (Morpheus).
    *     Self-limiting like the %-of-gain costs, so it never bankrupts and never triggers a dispel;
    *     also no souls minted.
-   *   - `stagnation`: flat stagnation drained per second (Upir), from the top-level stagnation pool.
+   *   - `desidia`: flat desidia drained per second (Upir), from the top-level desidia pool.
    *     A drain the pool can't cover dispels the invocation.
    */
   readonly upkeep?: {
@@ -86,7 +86,7 @@ export interface InvocationDef {
     readonly maxInfluenceFraction?: number;
     readonly reprobate?: number;
     readonly reprobateFraction?: number;
-    readonly stagnation?: number;
+    readonly desidia?: number;
   };
   /**
    * Autonomous background runner (02 §3): this invocation runs `action` in its own channel at
@@ -183,16 +183,16 @@ export interface InvocationUpkeep {
   readonly flatReprobatesPerSecond: number;
   /** Fraction of the current reprobate pool/s drained (Morpheus). Self-limiting; no souls minted. */
   readonly reprobateFraction: number;
-  /** Absolute stagnation/s drained (Upir's flat cost) from the top-level stagnation pool. */
-  readonly flatStagnationPerSecond: number;
+  /** Absolute desidia/s drained (Upir's flat cost) from the top-level desidia pool. */
+  readonly flatDesidiaPerSecond: number;
   /** Ids contributing a flat gold drain — dispelled together if the drain can't be paid. */
   readonly flatGoldDrainers: readonly string[];
   /** Ids contributing a flat influence drain — dispelled together if the drain can't be paid. */
   readonly flatInfluenceDrainers: readonly string[];
   /** Ids contributing a flat reprobate drain — dispelled together if the population can't cover it. */
   readonly flatReprobateDrainers: readonly string[];
-  /** Ids contributing a flat stagnation drain — dispelled together if the pool can't cover it. */
-  readonly flatStagnationDrainers: readonly string[];
+  /** Ids contributing a flat desidia drain — dispelled together if the pool can't cover it. */
+  readonly flatDesidiaDrainers: readonly string[];
 }
 
 /**
@@ -211,11 +211,11 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
   let flatInfluencePerSecond = 0;
   let flatReprobatesPerSecond = 0;
   let reprobateFraction = 0;
-  let flatStagnationPerSecond = 0;
+  let flatDesidiaPerSecond = 0;
   const flatGoldDrainers: string[] = [];
   const flatInfluenceDrainers: string[] = [];
   const flatReprobateDrainers: string[] = [];
-  const flatStagnationDrainers: string[] = [];
+  const flatDesidiaDrainers: string[] = [];
   for (const id of INVOCATION_IDS) {
     const n = activeInvocationCount(state, id);
     if (n <= 0) continue;
@@ -240,13 +240,13 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
       flatReprobateDrainers.push(id);
     }
     if (u.reprobateFraction) reprobateFraction += u.reprobateFraction * n;
-    if (u.stagnation) {
-      flatStagnationPerSecond += u.stagnation * n;
-      flatStagnationDrainers.push(id);
+    if (u.desidia) {
+      flatDesidiaPerSecond += u.desidia * n;
+      flatDesidiaDrainers.push(id);
     }
   }
   // The invocation cost channel softens EVERY upkeep cost (ADR-035): the %-of-gain drains and the
-  // flat gold/influence/reprobate/stagnation drains alike, dividing each by `(1 + strength)`. The
+  // flat gold/influence/reprobate/desidia drains alike, dividing each by `(1 + strength)`. The
   // reprobate FRACTION is a proportion of the pool, so the channel softens it too.
   const red = sigilCostReductionByChannel(
     state,
@@ -259,7 +259,7 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
     flatInfluencePerSecond /= red;
     flatReprobatesPerSecond /= red;
     reprobateFraction /= red;
-    flatStagnationPerSecond /= red;
+    flatDesidiaPerSecond /= red;
   }
   return {
     goldGainFraction: Math.min(1, goldGainFraction),
@@ -268,11 +268,11 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
     flatInfluencePerSecond,
     flatReprobatesPerSecond,
     reprobateFraction: Math.min(1, reprobateFraction),
-    flatStagnationPerSecond,
+    flatDesidiaPerSecond,
     flatGoldDrainers,
     flatInfluenceDrainers,
     flatReprobateDrainers,
-    flatStagnationDrainers,
+    flatDesidiaDrainers,
   };
 }
 
