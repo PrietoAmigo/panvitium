@@ -27,7 +27,7 @@ import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
 /**
- * The themed shell each framed panel wears. The Maleficia shelf wears the dark "niche" frame (the
+ * The themed shell each framed panel wears. The Loculi (the Maleficia niches) wears the dark "niche" frame (the
  * carved-alcove rework paints its own background, so it gets a near-frameless dark shell with a
  * float close rather than the old wooden case). Ars Goetia, the PC, the Suasio scroll and Katabasis
  * are their own full-surface overlays and don't appear here.
@@ -214,7 +214,7 @@ export function App(): ReactElement {
   const shell = panel ? PANEL_SHELL[panel] : undefined;
 
   // The persistent Influence/Gold HUD rides over the Invocation and Studio rooms and over the
-  // Maleficia shelf, the Ars Goetia book and the Suasio scroll — but not in the Altar room, not over
+  // Loculi, the Ars Goetia book and the Suasio scroll — but not in the Altar room, not over
   // the PC desk or the Altar gate, not during a descent (the Altar gate + an ongoing Katabasis both
   // hold `katabasisPhase !== null`), and not behind the launch title menu. It mounts at the app
   // level (below) so it layers over those menu overlays rather than under them.

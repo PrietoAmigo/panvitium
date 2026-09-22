@@ -5,6 +5,8 @@ import {
   floor,
   ACTIONS,
   actionUnlocked,
+  actionTierDistribution,
+  TIERS,
   categoryEfficiency,
   plannedActionCost,
   isStackable,
@@ -777,9 +779,19 @@ export function IndagatioEmptioProgram(): ReactElement {
   // nothing to move.
   const investedGold = floor(state.lifetime.indagatioInvestment);
 
+  // The live per-tier odds of a Search (base weights × the player's current tier modifiers), so the
+  // globe shows how likely each outcome — and thus each rarity of find — is right now.
+  const indagatioDist = actionTierDistribution(state, 'indagatio');
+  const tierChances = TIERS.map((t) => ({
+    tier: t,
+    label: strings.tiers[t],
+    chance: formatTierPct(indagatioDist[t]),
+  }));
+
   return (
     <OrbisTenebrarum
       finds={finds}
+      tierChances={tierChances}
       investment={formatBigNum(investedGold)}
       searching={indagatioTimer !== null}
       searchDuration={formatDuration(actualSec)}
@@ -799,8 +811,8 @@ export function IndagatioEmptioProgram(): ReactElement {
   );
 }
 
-/** Maleficia shelf: groups owned items by id; stackables show their count. */
-function MaleficiaShelf(): ReactElement {
+/** Loculi (the Maleficia niches): groups owned items by id; stackables show their count. */
+function Loculi(): ReactElement {
   const state = useGameStore((s) => s.state);
   const activate = useGameStore((s) => s.activateMaleficium);
   const items = state ? buildCabinet(state) : [];
@@ -818,6 +830,15 @@ function formatDuration(totalSec: number): string {
   if (h > 0) return `${h}h ${m}m ${s}s`;
   if (m > 0) return `${m}m ${s}s`;
   return `${s}s`;
+}
+
+/** Format an outcome-tier probability (0..1) as a percentage for the Indagatio odds readout. */
+function formatTierPct(p: number): string {
+  const pct = Math.max(0, p) * 100;
+  if (pct === 0) return '0%';
+  if (pct < 0.1) return '<0.1%';
+  if (pct < 10) return `${pct.toFixed(1)}%`;
+  return `${Math.round(pct)}%`;
 }
 
 /**
@@ -1039,13 +1060,13 @@ interface PanelContent {
 }
 
 /**
- * The framed-panel map. Only the Maleficia shelf is a framed Panel; Ars Goetia, the PC and the
- * Suasio scroll are self-framed full-surface overlays (see `GoetiaBook`, `PcDesk`, `SuasioScroll`)
- * mounted directly by App rather than through this map.
+ * The framed-panel map. Only the Loculi (the Maleficia niches) is a framed Panel; Ars Goetia, the PC
+ * and the Suasio scroll are self-framed full-surface overlays (see `GoetiaBook`, `PcDesk`,
+ * `SuasioScroll`) mounted directly by App rather than through this map.
  */
 export const PANELS: Partial<Record<PanelId, PanelContent>> = {
   maleficia: {
-    title: 'The Maleficia Shelf',
-    body: <MaleficiaShelf />,
+    title: 'Loculi',
+    body: <Loculi />,
   },
 };

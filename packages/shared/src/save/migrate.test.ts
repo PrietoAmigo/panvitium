@@ -78,12 +78,14 @@ describe('v1 → v2 migration (reprobate-subtype / conversion removal)', () => {
     };
   }
 
-  it('sums the per-subtype counts, drops conversionPool, strips the defixio target', () => {
-    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → v3 → v4 → v5 → v6
+  it('sums the per-subtype counts, drops conversionPool, retires the old defixio curse', () => {
+    const migrated = migrateSave(v1Blob()); // chains v1 → v2 → … → v8
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.state.lifetime.reprobates).toBe(200); // 100+40+10+5+5+20+0+15+5
     expect('conversionPool' in migrated.state.lifetime).toBe(false);
-    expect(migrated.state.lifetime.defixio).toEqual({ elapsed: 42 });
+    // v1→v2 stripped the subtype target off the old cull curse; v7→v8 then retired the curse
+    // entirely (Defixio is now a single-use suicide buff), so no defixio survives the full chain.
+    expect('defixio' in migrated.state.lifetime).toBe(false);
   });
 
   it('handles a v1 save with no defixio and an empty reprobate record', () => {
@@ -104,7 +106,7 @@ describe('v1 → v2 migration (reprobate-subtype / conversion removal)', () => {
     delete lifetime.conversionPool;
     const migrated = migrateSave(blob);
     expect(migrated.state.lifetime.reprobates).toBe(0);
-    expect(migrated.state.lifetime.defixio).toBeUndefined();
+    expect('defixio' in migrated.state.lifetime).toBe(false);
   });
 });
 
@@ -332,5 +334,53 @@ describe('v6 → v7 migration (Stagnation resource renamed to Desidia)', () => {
     const migrated = migrateSave(blob);
     expect(migrated.state.desidia).toBeUndefined(); // absent on the wire; defaults to 0 at load
     expect('stagnation' in migrated.state).toBe(false);
+  });
+});
+
+describe('v7 → v8 migration (maleficia rework)', () => {
+  /** A v7-shaped raw blob: a live Hand of Glory timer, an old Defixio curse, and owned Iron Nails. */
+  function v7Blob(): Record<string, unknown> {
+    const base = currentBlob();
+    const state = base.state as Record<string, unknown>;
+    const lifetime = state.lifetime as Record<string, unknown>;
+    return {
+      ...base,
+      schemaVersion: 7,
+      state: {
+        ...state,
+        lifetime: {
+          ...lifetime,
+          handOfGloryRemaining: 900,
+          defixio: { elapsed: 5 },
+          maleficia: ['iron_nails', 'black_robe', 'iron_nails'],
+          emptioList: ['iron_nails', 'ars_serpens'],
+          maleficiaPrices: { iron_nails: 300, ars_serpens: 2000 },
+        },
+      },
+    };
+  }
+
+  it('carries the Hand of Glory timer into maleficiaBuffs, retires Defixio, strips Iron Nails', () => {
+    const migrated = migrateSave(v7Blob());
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.lifetime.maleficiaBuffs).toEqual({ hand_of_glory: 900 });
+    expect('handOfGloryRemaining' in migrated.state.lifetime).toBe(false);
+    expect('defixio' in migrated.state.lifetime).toBe(false);
+    expect(migrated.state.lifetime.maleficia).toEqual(['black_robe']);
+    expect(migrated.state.lifetime.emptioList).toEqual(['ars_serpens']);
+    expect(migrated.state.lifetime.maleficiaPrices).toEqual({ ars_serpens: 2000 });
+  });
+
+  it('is a no-op for a v7 save with no Hand of Glory buff, no curse, and no Iron Nails', () => {
+    const blob = v7Blob();
+    const lifetime = (blob.state as Record<string, unknown>).lifetime as Record<string, unknown>;
+    delete lifetime.handOfGloryRemaining;
+    delete lifetime.defixio;
+    lifetime.maleficia = ['black_robe'];
+    lifetime.emptioList = ['ars_serpens'];
+    lifetime.maleficiaPrices = { ars_serpens: 2000 };
+    const migrated = migrateSave(blob);
+    expect(migrated.state.lifetime.maleficiaBuffs).toBeUndefined(); // absent on the wire → {} at load
+    expect(migrated.state.lifetime.maleficia).toEqual(['black_robe']);
   });
 });

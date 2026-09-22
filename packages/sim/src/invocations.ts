@@ -30,7 +30,11 @@
  */
 import { div, floor, gte, max, mul, sub, ZERO, type BigNum } from './bignum.js';
 import { sigilInvokingPower, sigilCostReductionByChannel } from './sigils.js';
-import { totalInvokingPower, sigilEffectMultiplier } from './maleficia.js';
+import {
+  totalInvokingPower,
+  sigilEffectMultiplier,
+  maleficiaInvocationCostMul,
+} from './maleficia.js';
 import { mintSouls } from './population.js';
 import { sinLevel } from './progression.js';
 import { totalReprobates, type GameState, type Sin } from './state.js';
@@ -145,12 +149,14 @@ export function invocationSoulCost(state: GameState, def: InvocationDef): BigNum
   const base = max(pct, def.soulCost.minimum);
   // The invocation cost channel (Orobas #55 / Zepar #16 / Andrealphus #65) softens the soul price
   // (divides by `(1 + strength)`; can pierce the nominal minimum since it is a genuine discount).
-  // Floor keeps souls whole.
+  // The Black Vessel maleficium then shaves another −7% off (ADR-035: all invocation costs). Floor
+  // keeps souls whole.
   const red = sigilCostReductionByChannel(
     state,
     sigilEffectMultiplier(state.lifetime.maleficia),
   ).invocation;
-  return red && red > 1 ? floor(div(base, red)) : base;
+  const discounted = red && red > 1 ? div(base, red) : base;
+  return floor(mul(discounted, maleficiaInvocationCostMul(state.lifetime.maleficia)));
 }
 
 /**
@@ -166,7 +172,8 @@ export function invocationGoldCost(state: GameState, def: InvocationDef): BigNum
     state,
     sigilEffectMultiplier(state.lifetime.maleficia),
   ).invocation;
-  return red && red > 1 ? floor(div(base, red)) : base;
+  const discounted = red && red > 1 ? div(base, red) : base;
+  return floor(mul(discounted, maleficiaInvocationCostMul(state.lifetime.maleficia)));
 }
 
 /** Aggregated per-second invocation upkeep (Invocatio sheet), summed across all active copies. */
@@ -252,14 +259,18 @@ export function invocationUpkeep(state: GameState, effectiveMax: number): Invoca
     state,
     sigilEffectMultiplier(state.lifetime.maleficia),
   ).invocation;
-  if (red && red > 1) {
-    goldGainFraction /= red;
-    influenceGainFraction /= red;
-    flatGoldPerSecond /= red;
-    flatInfluencePerSecond /= red;
-    flatReprobatesPerSecond /= red;
-    reprobateFraction /= red;
-    flatDesidiaPerSecond /= red;
+  // The Black Vessel maleficium shaves another −7% off every upkeep cost (ADR-035), on top of the
+  // sigil channel: multiply each drain by its cost multiplier (1 when no Black Vessel is equipped).
+  const costMul =
+    (red && red > 1 ? 1 / red : 1) * maleficiaInvocationCostMul(state.lifetime.maleficia);
+  if (costMul !== 1) {
+    goldGainFraction *= costMul;
+    influenceGainFraction *= costMul;
+    flatGoldPerSecond *= costMul;
+    flatInfluencePerSecond *= costMul;
+    flatReprobatesPerSecond *= costMul;
+    reprobateFraction *= costMul;
+    flatDesidiaPerSecond *= costMul;
   }
   return {
     goldGainFraction: Math.min(1, goldGainFraction),

@@ -26,7 +26,7 @@ import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
 import { applyReprobateDynamics } from './dynamics.js';
 import { type OutcomeEvent } from './events.js';
 import { computeModifiers } from './modifiers.js';
-import { removeReprobates, mintSouls } from './population.js';
+import { removeReprobates } from './population.js';
 import { makeRng } from './rng.js';
 import { type ActionTimer, type GameState, totalReprobates } from './state.js';
 import { evaluateAchievements } from './achievements.js';
@@ -53,13 +53,6 @@ export interface TickResult {
    * the inbox; surfaced so the UI can cue per-email SFX (the Fausto #5 door-knock). Empty on most ticks.
    */
   readonly emailsDelivered: string[];
-}
-
-/** Drop the optional Defixio curse from a state's lifetime (EOPT-safe: omits, never sets undefined). */
-function clearDefixio(state: GameState): GameState {
-  if (!state.lifetime.defixio) return state;
-  const { defixio: _drop, ...rest } = state.lifetime;
-  return { ...state, lifetime: rest };
 }
 
 /** Instantaneous passive income, read-only (for the HUD's per-second readouts). */
@@ -440,49 +433,22 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     }
   }
 
-  // 4c. Hand of Glory buff decays in real time (it lifted this tick's generation via the modifier,
-  //     evaluated at the start of the interval like the apex durations); expires at 0.
-  if (working.lifetime.handOfGloryRemaining > 0) {
-    working = {
-      ...working,
-      lifetime: {
-        ...working.lifetime,
-        handOfGloryRemaining: Math.max(0, working.lifetime.handOfGloryRemaining - simDelta),
-      },
-    };
+  // 4c. Single-use maleficia buffs (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt) decay
+  //     in real time: each lifted this tick's modifiers (evaluated at the start of the interval like
+  //     the apex durations), so its timer is decremented now and the id dropped at expiry.
+  if (Object.keys(working.lifetime.maleficiaBuffs).length > 0) {
+    const next: Record<string, number> = {};
+    for (const [id, remaining] of Object.entries(working.lifetime.maleficiaBuffs)) {
+      const left = remaining - simDelta;
+      if (left > 0) next[id] = left;
+    }
+    working = { ...working, lifetime: { ...working.lifetime, maleficiaBuffs: next } };
   }
 
   // 4e. Incoming-call timed buffs (docs/PANVITIUM-CALLS-IN.md) decay the same way: they lifted this
   //     tick's income/dynamics via `mods` (computed at the start), so they are decremented now and
   //     dropped at expiry. Decays by `simDelta` like Hand of Glory (Desidia-invariant total benefit).
   working = advanceCallBuffs(working, simDelta);
-
-  // 4d. Defixio curse (Maleficia): a single-use hex on the reprobate pool. It culls the pool at
-  //     eᵗ per second (t = seconds the curse has run), integrated exactly over the tick span:
-  //     cumulative kills by time t are ⌊∫₀ᵗ eˢ ds⌋ = ⌊eᵗ − 1⌋ and this tick culls the difference —
-  //     so the 10 Hz loop and one big delta agree (ADR-004) and no sub-1 fraction
-  //     is lost between ticks. Mints a soul per death until the pool is empty — then the curse
-  //     lifts. No RNG draw (single pool).
-  if (working.lifetime.defixio) {
-    const curse = working.lifetime.defixio;
-    const before = Math.floor(Math.expm1(curse.elapsed));
-    const after = Math.expm1(curse.elapsed + simDelta);
-    // A long-lived ramp overflows to Infinity; treat it as "cull everything" (removeReprobates
-    // clamps to the living population, and an empty pool lifts the curse below).
-    const due = Number.isFinite(after) ? Math.floor(after) - before : Number.POSITIVE_INFINITY;
-    const culled = removeReprobates(working, due);
-    working = mintSouls(culled.state, culled.removed);
-    working =
-      working.lifetime.reprobates <= 0
-        ? clearDefixio(working) // pool exterminated — the curse lifts
-        : {
-            ...working,
-            lifetime: {
-              ...working.lifetime,
-              defixio: { elapsed: curse.elapsed + simDelta },
-            },
-          };
-  }
 
   // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; unlocks on a
   //    ×1.5 effective-maxInfluence threshold series — 0 at base, first at 110). Then advance each

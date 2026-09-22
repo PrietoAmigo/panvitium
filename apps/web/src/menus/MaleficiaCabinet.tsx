@@ -3,7 +3,7 @@ import { strings } from '@panvitium/shared';
 import type { Maleficium, OracleGroup, Rarity } from './types.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// The Maleficia Shelf as a wall of carved NICHES: each owned maleficium sits in
+// The Loculi (the Maleficia niches) as a wall of carved NICHES: each owned maleficium sits in
 // a recessed alcove in the black, lit from within by the colour of its rarity.
 // Click a niche → a full-bleed close-up (large relic in an ember halo + name,
 // rarity, flavour, effect, and — for consumables — the Use rite, and — for the

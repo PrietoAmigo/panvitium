@@ -90,7 +90,7 @@ describe('gameStore — maleficia activation (5.1)', () => {
     });
     store().activateMaleficium('hand_of_glory');
     expect(store().state?.lifetime.maleficia).toHaveLength(0);
-    expect(store().state?.lifetime.handOfGloryRemaining ?? 0).toBeGreaterThan(0);
+    expect(store().state?.lifetime.maleficiaBuffs.hand_of_glory ?? 0).toBeGreaterThan(0);
     expect(store().notice).toBeNull();
   });
 
@@ -432,7 +432,8 @@ describe('gameStore — Vitium Compositum ceremonies (Panvitium alone, ADR-031)'
 describe('gameStore — invocations', () => {
   function equipPower(ip: number): void {
     const s = store().state as GameState;
-    const maleficia = Array.from({ length: ip }, () => 'black_salt_pouch');
+    // The Dadu grants +1 invoking power per copy (its player-eff bonus is inert to these gate tests).
+    const maleficia = Array.from({ length: ip }, () => 'the_dadu');
     useGameStore.setState({ state: { ...s, lifetime: { ...s.lifetime, maleficia } } });
   }
   function patchSuperbia(level: number): void {

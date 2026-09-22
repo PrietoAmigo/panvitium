@@ -34,7 +34,6 @@ export const MALEFICIA_COORDS: Record<string, readonly [number, number]> = {
   black_robe: [2, 48.8],
   black_candles: [23, 50],
   black_salt_pouch: [15, 60],
-  iron_nails: [12.5, 41.9],
   crossroads_dirt: [-90, 32],
   hollow_effigy: [10, 51],
   defixio: [12, 41.9],

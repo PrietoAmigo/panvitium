@@ -1,22 +1,25 @@
 /**
  * Maleficia catalog (03 §4). Each maleficium is an occult item the player discovers via *Indagatio*
- * and purchases via *Emptio*; once owned it sits on the Invocation Room shelf and (depending on
- * the item) contributes invoking power, an enhancer multiplier through the modifier engine, an
- * oracular reveal, or some combination. The catalog is the authoritative shape; the modifier
- * engine reads it to apply equipped-item effects. Item effects beyond the modifier-engine-wired
- * ones (oracular reveals, targeted single-use items like Hand of Glory / Defixio) attach as their
- * target systems land — they have a slot here ready for it.
+ * and purchases via *Emptio*; once owned it sits in the Loculi (the Invocation Room niches) and
+ * (depending on the item) contributes invoking power, an enhancer multiplier through the modifier
+ * engine, an invocation-cost reduction, a single-use timed buff, or some combination. The catalog is
+ * the authoritative shape; the modifier engine reads it to apply equipped-item effects.
  *
- * Roster, rarity, invoking power and stack caps are pinned to the `Maleficia` sheet (29 items).
+ * Roster, rarity, invoking power and stack caps are pinned to the `Maleficia` sheet (34 items).
  * Effects beyond raw invoking power are listed in each entry's `description`; the enhancer
- * multipliers (Suasio/Decimatio/invocation/sigil), the oracular reveals, and the targeted
- * single-use items are wired into their consuming systems in later slices.
+ * multipliers (Suasio/Desidia/rate/sigil/invocation) are wired in `modifiers.ts`, the invocation-cost
+ * reduction (Black Vessel) in `invocations.ts`, and the single-use consumables in the `maleficiaBuffs`
+ * timer system below.
  *
  * Stack rules (03 §2.5): a non-stackable maleficium already owned OR listed in *Emptio* cannot be
  * surfaced again; a stackable one cannot be surfaced once owned + listed reaches its `stackMax`.
  * Stackable items live in the array as duplicates (one entry per copy); `countOwned` reads them.
  */
-import { SOLOMON_RING_SIGIL_BONUS, IRON_NAILS_SIGIL_BONUS } from './constants.js';
+import {
+  SOLOMON_RING_SIGIL_BONUS,
+  PICATRIX_SIGIL_BONUS,
+  TERAPHIM_SIGIL_BONUS,
+} from './constants.js';
 import type { GameState } from './state.js';
 // The price bands + catalog live in `maleficia.data.ts` (the editable economy knobs); imported for
 // the logic here and re-exported so existing `import { MALEFICIA, ... } from './maleficia.js'` works.
@@ -112,69 +115,131 @@ export function totalInvokingPower(owned: readonly string[]): number {
 
 /**
  * Multiplier applied to every sigil's effect strength from equipped sigil-enhancer maleficia
- * (Solomon's Ring +66%, Iron Nails +1% per copy). 1 when none are equipped. Consumed by
+ * (Solomon's Ring +66%, Picatrix +11%, Teraphim +4%). 1 when none are equipped. Consumed by
  * `sigilModifierContributions` and `sigilKatabasisBonus` so it scales modifier, tier, and
- * Katabasis-carryover sigils alike.
+ * Katabasis-carryover sigils alike. All three are non-stackable, so they compose additively.
  */
 export function sigilEffectMultiplier(owned: readonly string[]): number {
   return (
     1 +
     SOLOMON_RING_SIGIL_BONUS * countCopies(owned, 'solomons_ring') +
-    IRON_NAILS_SIGIL_BONUS * countCopies(owned, 'iron_nails')
+    PICATRIX_SIGIL_BONUS * countCopies(owned, 'picatrix') +
+    TERAPHIM_SIGIL_BONUS * countCopies(owned, 'teraphim')
   );
 }
 
-/** Hand of Glory: one use grants +100% reprobate generation for an hour (Maleficia sheet). */
-export const HAND_OF_GLORY_DURATION_SECONDS = 3600;
-export const HAND_OF_GLORY_GENERATION_MUL = 2; // +100% base generation while the buff is live
+/**
+ * Black Vessel: -7% to every invocation cost (summon soul/gold and per-second upkeep, ADR-035).
+ * Non-stackable, so 0 or 1 copies; returns the multiplier applied to each invocation cost
+ * (`1 - 0.07` when owned, clamped ≥ 0). Consumed in `invocations.ts` alongside the sigil cost channel.
+ */
+export const BLACK_VESSEL_INVOCATION_COST_REDUCTION = 0.07;
+export function maleficiaInvocationCostMul(owned: readonly string[]): number {
+  const factor = 1 - BLACK_VESSEL_INVOCATION_COST_REDUCTION * countCopies(owned, 'black_vessel');
+  return Math.max(0, factor);
+}
+
+// ── Single-use timed buffs ────────────────────────────────────────────────────
+// The consumable maleficia (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt) each grant a
+// one-hour multiplier on a single modifier field when activated. Activation consumes one owned copy
+// and (re)fills that id's timer in `lifetime.maleficiaBuffs` (a fresh use EXTENDS the timer, as Hand
+// of Glory always has); the tick decays each timer by `simDelta` and drops it at 0. `computeModifiers`
+// folds the active buffs into their fields via `maleficiaBuffMultipliers`.
+
+/** How long a single-use maleficium's buff lasts per activation (Maleficia sheet: one hour). */
+export const MALEFICIA_BUFF_DURATION_SECONDS = 3600;
+
+/** The modifier fields a single-use maleficia buff can lift. */
+export type MaleficiaBuffField =
+  | 'reprobateGenerationRateMul'
+  | 'reprobateSuicideRateMul'
+  | 'indagatioEfficiencyMul';
+
+interface MaleficiaBuffDef {
+  readonly field: MaleficiaBuffField;
+  readonly factor: number;
+}
+
+/**
+ * The single-use consumables and the timed multiplier each grants. `factor` is the multiplier on
+ * `field` while the buff is live (magnitudes match the catalog copy):
+ *   - Hand of Glory:     +33% reprobate generation
+ *   - Black Salt Pouch:  +10% reprobate generation
+ *   - Defixio:           +50% suicide rate
+ *   - Crossroads Dirt:   -15% Indagatio time (a search-speed lift: `1 / (1 - 0.15)`)
+ */
+export const MALEFICIA_BUFFS: Record<string, MaleficiaBuffDef> = {
+  hand_of_glory: { field: 'reprobateGenerationRateMul', factor: 1.33 },
+  black_salt_pouch: { field: 'reprobateGenerationRateMul', factor: 1.1 },
+  defixio: { field: 'reprobateSuicideRateMul', factor: 1.5 },
+  crossroads_dirt: { field: 'indagatioEfficiencyMul', factor: 1 / (1 - 0.15) },
+};
+
+/** Ids that can be activated as a single-use timed buff (drives the Loculi "Use" affordance). */
+export const SINGLE_USE_MALEFICIA: readonly string[] = Object.keys(MALEFICIA_BUFFS);
+
+/** The per-field product of the currently-active single-use maleficia buffs. */
+export interface MaleficiaBuffMultipliers {
+  readonly reprobateGenerationRateMul: number;
+  readonly reprobateSuicideRateMul: number;
+  readonly indagatioEfficiencyMul: number;
+}
+
+const NEUTRAL_MALEFICIA_BUFFS: MaleficiaBuffMultipliers = {
+  reprobateGenerationRateMul: 1,
+  reprobateSuicideRateMul: 1,
+  indagatioEfficiencyMul: 1,
+};
+
+/**
+ * Aggregate the active single-use buffs into a per-field product (multiplicative composition,
+ * ADR-022). A timer at or below 0 is ignored (the tick drops it next pass). Returns the neutral
+ * bundle when none is active, so a save with no buffs behaves exactly as before.
+ */
+export function maleficiaBuffMultipliers(state: GameState): MaleficiaBuffMultipliers {
+  const buffs = state.lifetime.maleficiaBuffs;
+  const ids = Object.keys(buffs);
+  if (ids.length === 0) return NEUTRAL_MALEFICIA_BUFFS;
+  const out = { ...NEUTRAL_MALEFICIA_BUFFS };
+  for (const id of ids) {
+    if ((buffs[id] ?? 0) <= 0) continue;
+    const def = MALEFICIA_BUFFS[id];
+    if (def) out[def.field] *= def.factor;
+  }
+  return out;
+}
 
 export type ActivateResult =
   | { readonly ok: true; readonly state: GameState }
   | { readonly ok: false; readonly reason: string };
 
 /**
- * Activate a single-use maleficium from the owned inventory. Hand of Glory consumes one copy and
- * adds an hour to the generation buff (repeat activations extend the timer; the multiplier stays
- * +100% while any time remains). Defixio consumes one copy and begins the eᵗ/s reprobate cull
- * (one curse at a time; see tick.ts 4d). Other items can't be used this way.
+ * Activate a single-use maleficium from the owned inventory. Consumes one copy and (re)fills that
+ * id's one-hour timer in `lifetime.maleficiaBuffs`; a repeat activation extends the timer while the
+ * buff's magnitude stays fixed (the Hand of Glory convention). Non-consumable items can't be used
+ * this way.
  */
 export function activateMaleficium(state: GameState, id: string): ActivateResult {
-  const removeOne = (idx: number): string[] => [
+  if (!MALEFICIA_BUFFS[id]) return { ok: false, reason: 'This maleficium cannot be used.' };
+  const idx = state.lifetime.maleficia.indexOf(id);
+  if (idx === -1) {
+    const def = MALEFICIA[id];
+    return { ok: false, reason: `You hold no ${def ? def.name : 'such maleficium'}.` };
+  }
+  const maleficia = [
     ...state.lifetime.maleficia.slice(0, idx),
     ...state.lifetime.maleficia.slice(idx + 1),
   ];
-  if (id === 'hand_of_glory') {
-    const idx = state.lifetime.maleficia.indexOf('hand_of_glory');
-    if (idx === -1) return { ok: false, reason: 'You hold no Hand of Glory.' };
-    return {
-      ok: true,
-      state: {
-        ...state,
-        lifetime: {
-          ...state.lifetime,
-          maleficia: removeOne(idx),
-          handOfGloryRemaining:
-            state.lifetime.handOfGloryRemaining + HAND_OF_GLORY_DURATION_SECONDS,
-        },
+  const remaining = (state.lifetime.maleficiaBuffs[id] ?? 0) + MALEFICIA_BUFF_DURATION_SECONDS;
+  return {
+    ok: true,
+    state: {
+      ...state,
+      lifetime: {
+        ...state.lifetime,
+        maleficia,
+        maleficiaBuffs: { ...state.lifetime.maleficiaBuffs, [id]: remaining },
       },
-    };
-  }
-  if (id === 'defixio') {
-    if (state.lifetime.defixio) return { ok: false, reason: 'A defixio is already at work.' };
-    const idx = state.lifetime.maleficia.indexOf('defixio');
-    if (idx === -1) return { ok: false, reason: 'You hold no Defixio.' };
-    // The curse begins immediately and culls the reprobate pool at eᵗ/s (no subtype target).
-    return {
-      ok: true,
-      state: {
-        ...state,
-        lifetime: {
-          ...state.lifetime,
-          maleficia: removeOne(idx),
-          defixio: { elapsed: 0 },
-        },
-      },
-    };
-  }
-  return { ok: false, reason: 'This maleficium cannot be used.' };
+    },
+  };
 }

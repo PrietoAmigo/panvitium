@@ -103,9 +103,27 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 939** (sim 567 · shared 73 · api 20 · web 279).
+**Current test count: 939** (sim 569 · shared 75 · api 20 · web 275).
 
-> **Latest change — the "Stagnation" resource renamed to "Desidia".** The offline-torpor resource
+> **Latest change — the maleficia rework (34-item roster) + the Loculi + Indagatio odds.** The
+> Maleficia catalog is retuned end to end: **Iron Nails** is retired and six relics join — **Black
+> Vessel** (−7% invocation costs), **Teraphim** (+4% sigil effects), **Picatrix** (+11%), **Grimoire
+> of Pope Honorius** (+13% invocation effects), **Pilate's Basin** (−50% Desidia drain), and **Achan's
+> Wedge** (+200% gold). Every item's cost, invoking power, stack and effect is re-pinned, with each
+> effect wired onto an existing modifier field (flat per-second murder/suicide/reprobate/influence,
+> gold / murder / suicide / influence-rate percents, Desidia gain/drain, sigil and invocation-effect
+> percents, player efficiency, and Indagatio search-time cuts). The four **single-use consumables**
+> (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt) are unified into one `maleficiaBuffs`
+> timer map (one-hour buffs that decay each tick), replacing the old `handOfGloryRemaining` field and
+> the Defixio cull curse. The five oracular-reveal items were all repurposed, so no maleficium reveals
+> a distribution any more. The **"Maleficia Shelf" is renamed to the Loculi** (label, panel title,
+> comments, e2e), and the **Indagatio menu now shows the live per-tier Search odds** beside the globe.
+> Persisted through **save migration v7 → v8** (`CURRENT_SCHEMA_VERSION` 7 → 8: Hand of Glory timer →
+> `maleficiaBuffs`, drop the old Defixio curse, strip the removed Iron Nails id). Net **±0 tests, still
+> 939** (sim 567 → 569 new buff + enhancer suites, shared 73 → 75 the v7 → v8 round-trip, web 279 → 275
+> as the retired oracle-reveal tests collapse).
+>
+> **Earlier change — the "Stagnation" resource renamed to "Desidia".** The offline-torpor resource
 > and the time-acceleration toggle that spends it now share one Latin name: what the HUD showed as
 > "Stagnation" is **Desidia** everywhere (the vessel label and hover, sigil / invocation copy, the
 > `stagnation*` sim identifiers → `desidia*`, and the `StagnationHud` / `stagnation-hud.css` /

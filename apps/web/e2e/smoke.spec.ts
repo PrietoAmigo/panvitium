@@ -59,13 +59,13 @@ test('opens and closes a diegetic overlay (the desk PC)', async ({ page }) => {
   await expect(pc).toBeHidden();
 });
 
-test('opens the Maleficia cabinet without crashing (no render loop)', async ({ page }) => {
+test('opens the Loculi without crashing (no render loop)', async ({ page }) => {
   await page.goto('/');
   await enterLair(page);
   await page.getByRole('button', { name: 'To the Invocation Room' }).click();
-  await page.getByRole('button', { name: 'Maleficia Shelf' }).click();
+  await page.getByRole('button', { name: 'Loculi' }).click();
   // If a selector returned a fresh reference, this panel would loop and the app would collapse.
-  const cabinet = page.getByRole('dialog', { name: 'The Maleficia Shelf' });
+  const cabinet = page.getByRole('dialog', { name: 'Loculi' });
   await expect(cabinet).toBeVisible();
   await page.getByRole('button', { name: 'Close' }).click();
   await expect(cabinet).toBeHidden();

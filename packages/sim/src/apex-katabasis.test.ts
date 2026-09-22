@@ -52,7 +52,7 @@ function withAllGates(
     lifetime: {
       ...s.lifetime,
       gold: bn(opts.gold ?? 1_000_000),
-      maleficia: Array.from({ length: 20 }, () => 'black_salt_pouch'), // each +1 IP, stackable
+      maleficia: Array.from({ length: 20 }, () => 'the_dadu'), // each +1 IP (its player-eff bonus is inert here)
       reprobates: opts.reprobates ?? 0,
     },
   };

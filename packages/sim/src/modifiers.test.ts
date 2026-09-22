@@ -119,37 +119,46 @@ describe('computeModifiers — tier weight shifts', () => {
   });
 });
 
-describe('computeModifiers — maleficia effects (anathema)', () => {
+describe('computeModifiers — maleficia effects', () => {
   function equipped(ids: string[]): GameState {
     const s = fresh();
     return { ...s, lifetime: { ...s.lifetime, maleficia: ids } };
   }
 
-  it('Spear of Longinus triples maxInfluenceMul', () => {
+  it('Spear of Longinus lifts influence gain by 200% (no longer touches maxInfluence)', () => {
     const m = computeModifiers(equipped(['spear_of_longinus']));
-    expect(m.maxInfluenceMul).toBeCloseTo(3, 6); // base 1 × 3
+    expect(m.influenceRateMul).toBeCloseTo(3, 6); // +200%
+    expect(m.maxInfluenceMul).toBeCloseTo(1, 6);
   });
 
-  it('Codex Gigas lifts influenceRateMul by 33%', () => {
-    const m = computeModifiers(equipped(['codex_gigas']));
-    expect(m.influenceRateMul).toBeCloseTo(1.33, 6);
+  it('Codex Gigas lifts influenceRateMul by 25%', () => {
+    expect(computeModifiers(equipped(['codex_gigas'])).influenceRateMul).toBeCloseTo(1.25, 6);
   });
 
-  it('Thirty Pieces of Silver adds 0.001% of current gold as flat gold/s (not a multiplier)', () => {
-    const s = fresh();
-    const state: GameState = {
-      ...s,
-      lifetime: { ...s.lifetime, gold: bn(1_000_000), maleficia: ['thirty_pieces_of_silver'] },
-    };
-    const m = computeModifiers(state);
-    expect(m.goldRateMul).toBeCloseTo(1, 6); // no longer a gold multiplier
-    expect(m.flatGoldPerSecond).toBeCloseTo(10, 6); // 0.001% of 1,000,000 = 10/s
+  it("Achan's Wedge (+200%) and Dybbuk Box (+10%) lift gold gain and compose", () => {
+    expect(computeModifiers(equipped(['achans_wedge'])).goldRateMul).toBeCloseTo(3, 6);
+    expect(computeModifiers(equipped(['dybbuk_box'])).goldRateMul).toBeCloseTo(1.1, 6);
+    expect(computeModifiers(equipped(['achans_wedge', 'dybbuk_box'])).goldRateMul).toBeCloseTo(
+      3 * 1.1,
+      6,
+    );
   });
 
-  it('Mark of Cain triples murder rate (no longer zeroes the Apocalyptic tier)', () => {
-    const m = computeModifiers(equipped(['mark_of_cain']));
-    expect(m.murderRateMul).toBeCloseTo(3, 6);
-    expect(m.tierWeightMul.apocalyptic).toBeUndefined();
+  it('Thirty Pieces of Silver lifts the suicide rate by 200% (no longer a gold effect)', () => {
+    const m = computeModifiers(equipped(['thirty_pieces_of_silver']));
+    expect(m.reprobateSuicideRateMul).toBeCloseTo(3, 6);
+    expect(m.goldRateMul).toBeCloseTo(1, 6);
+    expect(m.flatGoldPerSecond).toBeCloseTo(0, 6);
+  });
+
+  it('Mark of Cain doubles murder rate; Galdrabók and Ritual Dagger compose on it', () => {
+    expect(computeModifiers(equipped(['mark_of_cain'])).murderRateMul).toBeCloseTo(2, 6); // +100%
+    expect(computeModifiers(equipped(['galdrabok'])).murderRateMul).toBeCloseTo(1.125, 6); // +12.5%
+    expect(computeModifiers(equipped(['ritual_dagger'])).murderRateMul).toBeCloseTo(1.1, 6); // +10%
+    expect(
+      computeModifiers(equipped(['mark_of_cain', 'ritual_dagger', 'galdrabok'])).murderRateMul,
+    ).toBeCloseTo(2 * 1.1 * 1.125, 6);
+    expect(computeModifiers(equipped(['mark_of_cain'])).tierWeightMul.apocalyptic).toBeUndefined();
   });
 
   it('Ars Serpens lifts Suasio efficiency by 33%', () => {
@@ -158,35 +167,26 @@ describe('computeModifiers — maleficia effects (anathema)', () => {
     expect(m).toBeCloseTo(base * 1.33, 6);
   });
 
-  it('The Voynich Manuscript lifts Suasio efficiency by 66%', () => {
-    const base = computeModifiers(fresh()).suasioEfficiencyMul;
-    const m = computeModifiers(equipped(['voynich_manuscript'])).suasioEfficiencyMul;
-    expect(m).toBeCloseTo(base * 1.66, 6);
-  });
-
-  it('Suasio enhancers compose multiplicatively when both are equipped', () => {
-    const base = computeModifiers(fresh()).suasioEfficiencyMul;
-    const m = computeModifiers(equipped(['ars_serpens', 'voynich_manuscript'])).suasioEfficiencyMul;
-    expect(m).toBeCloseTo(base * 1.33 * 1.66, 6);
-  });
-
-  it('Ritual Dagger lifts Decimatio efficiency by 33% and leaves Suasio untouched', () => {
-    const baseDec = computeModifiers(fresh()).decimatioEfficiencyMul;
+  it('The Voynich Manuscript lifts the Desidia gain rate by 25% (no longer Suasio)', () => {
     const baseSua = computeModifiers(fresh()).suasioEfficiencyMul;
-    const m = computeModifiers(equipped(['ritual_dagger']));
-    expect(m.decimatioEfficiencyMul).toBeCloseTo(baseDec * 1.33, 6);
-    expect(m.suasioEfficiencyMul).toBeCloseTo(baseSua, 6); // Suasio enhancers are independent
+    const m = computeModifiers(equipped(['voynich_manuscript']));
+    expect(m.desidiaGainMul).toBeCloseTo(1.25, 6);
+    expect(m.suasioEfficiencyMul).toBeCloseTo(baseSua, 6); // Suasio is left untouched
+  });
+
+  it("Pilate's Basin halves the Desidia drain rate", () => {
+    expect(computeModifiers(equipped(['pilates_basin'])).desidiaDrainMul).toBeCloseTo(0.5, 6);
   });
 
   it('Maleficia effects stack multiplicatively with Sin effects', () => {
-    // Vanagloria L1 → influenceRateMul 1.33; + Codex Gigas ×1.33 → ≈ 1.77.
+    // Vanagloria L1 → influenceRateMul 1.33; + Codex Gigas ×1.25 → ≈ 1.6625.
     const s = fresh();
     const state: GameState = {
       ...s,
       devotion: { ...s.devotion, vanagloria: bn(180) },
       lifetime: { ...s.lifetime, maleficia: ['codex_gigas'] },
     };
-    expect(computeModifiers(state).influenceRateMul).toBeCloseTo(1.33 * 1.33, 2);
+    expect(computeModifiers(state).influenceRateMul).toBeCloseTo(1.33 * 1.25, 2);
   });
 });
 
@@ -319,7 +319,7 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
     expect(withDoppel).toBeCloseTo(1.15, 6);
   });
 
-  it('Black Candles raise the invocation-effect multiplier (+5% each) and amplify effects', () => {
+  it('Black Candles raise the invocation-effect multiplier (+3% each) and amplify effects', () => {
     expect(computeModifiers(fresh()).invocationEfficiencyMul).toBe(1);
     const s = fresh();
     const two = computeModifiers({
@@ -330,8 +330,8 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
         invocations: { plutus: 1 },
       },
     });
-    expect(two.invocationEfficiencyMul).toBeCloseTo(1.1, 6); // 1 + 0.05 × 2
-    expect(two.faenerationOutputMul).toBeCloseTo(1 + 0.15 * 1.1, 6); // Plutus bonus (0.15) × invEff
+    expect(two.invocationEfficiencyMul).toBeCloseTo(1.06, 6); // 1 + 0.03 × 2
+    expect(two.faenerationOutputMul).toBeCloseTo(1 + 0.15 * 1.06, 6); // Plutus bonus (0.15) × invEff
   });
 
   it('Lemure lowers the Desidia drain multiplier ×0.9375 per copy (ADR-033)', () => {

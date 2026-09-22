@@ -33,9 +33,29 @@ export interface OrbisFind {
   coord?: readonly [number, number];
 }
 
+/**
+ * One outcome tier of a Search and its current chance. The Indagatio surfaces a rarity by the tier
+ * its cast rolls (Stellar → anathema, Excellent → profane, Good → rare, Neutral → common; the failure
+ * tiers cost gold or nothing), so these are the live odds of each result. `chance` is PRE-FORMATTED
+ * (e.g. `'4.9%'`) — the component never formats numbers.
+ */
+export interface OrbisTierChance {
+  /** Outcome tier id (`stellar` … `apocalyptic`). Stable React key. */
+  tier: string;
+  /** Display label for the tier (from `strings.tiers`). */
+  label: string;
+  /** Current probability of this tier on a Search, PRE-FORMATTED as a percentage string. */
+  chance: string;
+}
+
 export interface OrbisTenebrarumProps {
   /** The Emptio list — maleficia discovered but not necessarily bought — in discovery order. */
   finds: readonly OrbisFind[];
+  /**
+   * The current per-tier Search odds, best → worst. Rendered beside the globe so the player can read
+   * how likely each outcome (and thus each rarity of find) is right now. Omit to hide the readout.
+   */
+  tierChances?: readonly OrbisTierChance[];
   /**
    * The Indagatio investment, PRE-FORMATTED, e.g. `'1,240'` — the gold staked to speed the next
    * Search (a one-shot stake, consumed when it is cast). Shown in the "Investment" meter; set with

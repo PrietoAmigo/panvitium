@@ -1,5 +1,5 @@
 /**
- * Render smoke tests for the Maleficia Shelf "Niches" rework (Claude Design). These pin the wiring
+ * Render smoke tests for the Loculi "Niches" rework (Claude Design). These pin the wiring
  * the visual swap relies on: items render one niche per maleficium ordered by rarity (anathema →
  * common), opening a niche shows the close-up, a single-use consumable's rite fires `onUse` (and is
  * disabled when not usable), the oracular items render their odds bars, and "back to the niches"
@@ -52,7 +52,7 @@ const ordinary = (over: Partial<Maleficium>): Maleficium => ({
   ...over,
 });
 
-describe('Maleficia Shelf — niches', () => {
+describe('Loculi — niches', () => {
   it('renders one niche per item, ordered by rarity (anathema first, common last)', () => {
     render([
       ordinary({ id: 'c', name: 'Common Charm', rarity: 'common' }),
