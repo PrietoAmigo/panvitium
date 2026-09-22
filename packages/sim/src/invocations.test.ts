@@ -47,9 +47,11 @@ function withSin(s: GameState, sin: Sin, level: number): GameState {
 }
 /** Give the player enough invoking power by equipping power-source maleficia (Black Salt Pouch, +1). */
 function withPower(s: GameState, ip: number): GameState {
+  // The Dadu grants +1 invoking power per copy; `totalInvokingPower` sums entries, so `ip` copies
+  // reach invoking power `ip` (its +5% player-efficiency effect is inert to these gate/cost tests).
   return {
     ...s,
-    lifetime: { ...s.lifetime, maleficia: Array.from({ length: ip }, () => 'black_salt_pouch') },
+    lifetime: { ...s.lifetime, maleficia: Array.from({ length: ip }, () => 'the_dadu') },
   };
 }
 /** Set an invocation's active count directly (bypasses gates) for effect tests. */

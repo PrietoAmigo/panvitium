@@ -583,6 +583,7 @@ function useOrbisGlobe(
 
 export function OrbisTenebrarum({
   finds,
+  tierChances = [],
   investment,
   searching,
   searchDuration = '30:00',
@@ -664,6 +665,20 @@ export function OrbisTenebrarum({
             Cast the Search
           </button>
         </div>
+
+        {tierChances.length > 0 && (
+          <div className="orbis-odds" aria-label="Search odds by outcome tier">
+            <span className="orbis-odds-title">Search odds</span>
+            <ul className="orbis-odds-list">
+              {tierChances.map((t) => (
+                <li key={t.tier} className={`orbis-odds-row tier-${t.tier}`}>
+                  <span className="orbis-odds-tier">{t.label}</span>
+                  <span className="orbis-odds-chance">{t.chance}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <aside className="orbis-ledger" aria-label="Emptio market">

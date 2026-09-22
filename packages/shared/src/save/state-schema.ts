@@ -114,7 +114,9 @@ const lifetimeSchema = z.object({
   // The hoard's value at descent (the custodia-4 Peculium base), stamped by enterKatabasis and
   // cleared at commit. Additive-optional (ADR-023) so it survives a mid-descent reload.
   hoardAtDescent: bigNumString.optional(),
-  handOfGloryRemaining: z.number().nonnegative().optional(),
+  // Single-use maleficia buffs (Maleficia sheet): id -> seconds of buff remaining. Additive-optional
+  // (ADR-023): absent -> {} at runtime; omitted from the wire when empty.
+  maleficiaBuffs: z.record(z.string(), z.number().nonnegative()).optional(),
   // Incoming-call timed buffs (docs/PANVITIUM-CALLS-IN.md). Additive-optional (ADR-023): absent → []
   // at runtime; omitted from the wire when empty.
   callBuffs: z.array(callBuffSchema).optional(),
@@ -127,7 +129,6 @@ const lifetimeSchema = z.object({
   // curse is in force. Additive-optional (ADR-023): absent ≡ false; omitted from the wire when false.
   flagFCThreatSent: z.boolean().optional(),
   flagFaustoCurse: z.boolean().optional(),
-  defixio: z.object({ elapsed: z.number().nonnegative() }).optional(),
   // Apex Katabasis-modifier pending flags (03 §2.4): Erinyes zeros the carry-over, Astiwihad (the
   // world-still apex) maxes it. Additive-optional (ADR-023): absent → false at runtime; omitted when
   // false. `apexInvoked` records which apex kind was summoned this lifetime (one-per-lifetime rule).
@@ -253,8 +254,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.reprobateCostPool > 0
         ? { reprobateCostPool: state.lifetime.reprobateCostPool }
         : {}),
-      ...(state.lifetime.handOfGloryRemaining > 0
-        ? { handOfGloryRemaining: state.lifetime.handOfGloryRemaining }
+      // Single-use maleficia buffs: omit when empty (additive-optional, ADR-023).
+      ...(Object.keys(state.lifetime.maleficiaBuffs).length > 0
+        ? { maleficiaBuffs: { ...state.lifetime.maleficiaBuffs } }
         : {}),
       // Incoming-call timed buffs: omit when empty (additive-optional, ADR-023).
       ...(state.lifetime.callBuffs.length > 0
@@ -284,7 +286,6 @@ export function serializeGameState(state: GameState): SerializedGameState {
       // Fausto-arc per-lifetime flags (05): omit when false (additive-optional, ADR-023).
       ...(state.lifetime.flagFCThreatSent === true ? { flagFCThreatSent: true } : {}),
       ...(state.lifetime.flagFaustoCurse === true ? { flagFaustoCurse: true } : {}),
-      ...(state.lifetime.defixio ? { defixio: { elapsed: state.lifetime.defixio.elapsed } } : {}),
       // Apex Katabasis-modifier flags + the invoked-apex kind: omit when false/absent so fresh /
       // pre-apex saves keep the prior wire form (ADR-023 additive-optional discipline).
       ...(state.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
@@ -379,7 +380,8 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       suicidePool: s.lifetime.suicidePool ?? 0,
       murderPool: s.lifetime.murderPool ?? 0,
       reprobateCostPool: s.lifetime.reprobateCostPool ?? 0,
-      handOfGloryRemaining: s.lifetime.handOfGloryRemaining ?? 0,
+      // Single-use maleficia buffs: additive-optional (ADR-023) — absent in old saves means {}.
+      maleficiaBuffs: { ...(s.lifetime.maleficiaBuffs ?? {}) },
       // Incoming-call timed buffs: additive-optional (ADR-023) — absent → []. Drop any buff whose
       // `field` isn't a known target (a newer save's field), so it can't feed an unknown modifier.
       callBuffs: (s.lifetime.callBuffs ?? []).flatMap((b) =>
@@ -399,7 +401,6 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       // Fausto-arc per-lifetime flags: conditional spread keeps them optional under EOPT.
       ...(s.lifetime.flagFCThreatSent === true ? { flagFCThreatSent: true } : {}),
       ...(s.lifetime.flagFaustoCurse === true ? { flagFaustoCurse: true } : {}),
-      ...(s.lifetime.defixio ? { defixio: { elapsed: s.lifetime.defixio.elapsed } } : {}),
       // Apex Katabasis-modifier flags + invoked-apex kind: conditional spread keeps them optional
       // under exactOptionalPropertyTypes (assigning undefined would type-error).
       ...(s.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),

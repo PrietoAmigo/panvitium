@@ -131,9 +131,11 @@ export const IRA_DECIMATIO_EFF_PER_LEVEL = 2;
  * applied as a separate `(1 + bonus)` factor (multiplicative composition, ADR-022). Items are
  * non-stackable, so the count is 0 or 1.
  */
-export const ARS_SERPENS_SUASIO_BONUS = 0.33;
-export const VOYNICH_SUASIO_BONUS = 0.66;
-export const RITUAL_DAGGER_DECIMATIO_BONUS = 0.33;
-/** Solomon's Ring: +66% to all sigil effect strength (×1.66, Maleficia sheet). Iron Nails: +1% per copy. */
-export const SOLOMON_RING_SIGIL_BONUS = 0.66;
-export const IRON_NAILS_SIGIL_BONUS = 0.01;
+export const ARS_SERPENS_SUASIO_BONUS = 0.33; // Ars Serpens: +33% Suasio efficiency.
+/**
+ * Sigil-effect enhancers: each lifts all sigil effect strength by a flat `(1 + bonus)` factor
+ * (Maleficia sheet). All three are non-stackable (count 0 or 1), so they compose additively here.
+ */
+export const SOLOMON_RING_SIGIL_BONUS = 0.66; // Solomon's Ring: +66% sigil effects.
+export const PICATRIX_SIGIL_BONUS = 0.11; // Picatrix: +11% sigil effects.
+export const TERAPHIM_SIGIL_BONUS = 0.04; // Teraphim: +4% sigil effects.

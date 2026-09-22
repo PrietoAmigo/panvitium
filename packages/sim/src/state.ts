@@ -188,11 +188,13 @@ export interface LifetimeState {
    */
   reprobateCostPool: number;
   /**
-   * Seconds remaining on the Hand of Glory buff (+100% reprobate generation while > 0; Maleficia
-   * sheet). Refilled by activating a Hand of Glory; decays in real time each tick. Additive-optional
-   * (ADR-023), default 0.
+   * Active single-use maleficia buffs: maleficium id -> seconds of buff remaining (Maleficia sheet).
+   * Refilled by activating a consumable (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt),
+   * each a one-hour multiplier on one modifier field (see `MALEFICIA_BUFFS`); decays in real time each
+   * tick and drops the id at 0. Always defined at runtime (default {}); reset on Katabasis with the
+   * lifetime. Additive-optional on the wire (ADR-023); absent/empty round-trips identically.
    */
-  handOfGloryRemaining: number;
+  maleficiaBuffs: Record<string, number>;
   /**
    * Active incoming-call ("calls-in") timed buffs (docs/PANVITIUM-CALLS-IN.md): each a multiplier on
    * one modifier field, decaying to expiry. Appended by `applyCallEffects` when the player takes a
@@ -202,12 +204,6 @@ export interface LifetimeState {
    * identically to a pre-feature save.
    */
   callBuffs: CallBuff[];
-  /**
-   * Active Defixio curse (Maleficia), or absent when none runs. Cast single-use; it culls the
-   * reprobate pool at eᵗ per second (`elapsed` = seconds the curse has run) until the pool is
-   * empty, then the field is dropped. Additive-optional (ADR-023); one curse at a time.
-   */
-  defixio?: { elapsed: number };
   /**
    * Apex-invocation pending Katabasis modifiers (03 §2.4). Set the moment Erinyes/Astiwihad is
    * summoned; consumed by `commitKatabasis` to override the carry-over rolls (Erinyes zeroes the
@@ -418,7 +414,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       suicidePool: 0,
       murderPool: 0,
       reprobateCostPool: 0,
-      handOfGloryRemaining: 0,
+      maleficiaBuffs: {},
       callBuffs: [],
       inbox: [],
       emailArmedAt: {},

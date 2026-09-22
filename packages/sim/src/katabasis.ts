@@ -268,7 +268,7 @@ export function commitKatabasis(
     emptioList: pendingAstiwihad ? [...state.lifetime.emptioList] : [],
     maleficiaPrices: pendingAstiwihad ? { ...state.lifetime.maleficiaPrices } : {},
     indagatioInvestment: ZERO, // folded into the estate above; the new lifetime starts with no stake
-    handOfGloryRemaining: 0,
+    maleficiaBuffs: {}, // single-use maleficia buffs end with the lifetime
     callBuffs: [], // incoming-call timed buffs end with the lifetime
     activeToggles: [], // toggles stop
     toggleDurations: {}, // and their duration counters clear

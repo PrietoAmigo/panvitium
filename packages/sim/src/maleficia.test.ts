@@ -10,13 +10,14 @@ import {
   isStackable,
   sigilEffectMultiplier,
   totalInvokingPower,
-  HAND_OF_GLORY_DURATION_SECONDS,
-  HAND_OF_GLORY_GENERATION_MUL,
+  maleficiaBuffMultipliers,
+  maleficiaInvocationCostMul,
+  MALEFICIA_BUFF_DURATION_SECONDS,
+  SINGLE_USE_MALEFICIA,
 } from './maleficia.js';
 import { createInitialState, type GameState } from './state.js';
 import { computeModifiers } from './modifiers.js';
 import { tick } from './tick.js';
-import { floor } from './bignum.js';
 
 describe('maleficia catalog', () => {
   it('exposes a non-empty id list and every entry has a coherent shape', () => {
@@ -27,6 +28,8 @@ describe('maleficia catalog', () => {
       expect(['common', 'rare', 'profane', 'anathema']).toContain(def.rarity);
       expect(def.cost).toBeGreaterThan(0);
       expect(def.invokingPower).toBeGreaterThanOrEqual(0);
+      // Every effect magnitude is baked into the copy (the description carries the numbers).
+      expect(def.description.length).toBeGreaterThan(0);
     }
   });
 
@@ -41,73 +44,94 @@ describe('maleficia catalog', () => {
   });
 
   it('totalInvokingPower sums per-copy values across the inventory', () => {
-    // Black Robe (1) + Sulfur Censer (2) + Black Salt Pouch ×3 (1 each) = 6.
-    const inv = [
-      'black_robe',
-      'sulfur_censer',
-      'black_salt_pouch',
-      'black_salt_pouch',
-      'black_salt_pouch',
-    ];
-    expect(totalInvokingPower(inv)).toBe(6);
+    // Black Robe (1) + Sulfur Censer (2) + The Voynich Manuscript (7) = 10.
+    expect(totalInvokingPower(['black_robe', 'sulfur_censer', 'voynich_manuscript'])).toBe(10);
   });
 });
 
-describe('maleficia catalog — sheet parity (29 items)', () => {
-  it('has the full 29-item roster', () => {
-    expect(MALEFICIUM_IDS.length).toBe(29);
+describe('maleficia catalog — sheet parity (34 items)', () => {
+  it('has the full 34-item roster', () => {
+    expect(MALEFICIUM_IDS.length).toBe(34);
   });
 
-  it('includes the four rate enhancers', () => {
-    for (const id of ['witch_ladder', 'adder_stone', 'poppet', 'galdrabok']) {
-      expect(MALEFICIA[id]).toBeDefined();
+  it('includes the six new relics and no longer includes the removed Iron Nails', () => {
+    for (const id of [
+      'black_vessel',
+      'teraphim',
+      'picatrix',
+      'grimoire_of_pope_honorius',
+      'pilates_basin',
+      'achans_wedge',
+    ]) {
+      expect(MALEFICIA[id], id).toBeDefined();
     }
+    expect(MALEFICIA.iron_nails).toBeUndefined();
   });
 
-  it('pins the sheet invoking-power values for the power sources', () => {
+  it('pins the sheet invoking-power values', () => {
     const ip = (id: string) => MALEFICIA[id]!.invokingPower;
-    expect(ip('voynich_manuscript')).toBe(6);
+    expect(ip('voynich_manuscript')).toBe(7);
     expect(ip('obsidian_mirror')).toBe(8);
-    expect(ip('blood_chalk')).toBe(4);
-    expect(ip('blackthorn_wand')).toBe(4);
-    expect(ip('dybbuk_box')).toBe(3);
+    expect(ip('galdrabok')).toBe(6);
+    expect(ip('grimoire_of_pope_honorius')).toBe(5);
+    expect(ip('codex_gigas')).toBe(4);
+    expect(ip('picatrix')).toBe(4);
+    expect(ip('dybbuk_box')).toBe(4);
+    expect(ip('blood_chalk')).toBe(3);
+    expect(ip('blackthorn_wand')).toBe(3);
     expect(ip('witch_bottle')).toBe(2);
     expect(ip('mandrake_root')).toBe(2);
-    expect(ip('iron_nails')).toBe(1);
-    // The anathema enhancers and the targeted/enhancer items carry no invoking power.
+    expect(ip('black_vessel')).toBe(1);
+    expect(ip('teraphim')).toBe(1);
+    // The anathema relics and the single-use / rate-flat items carry no invoking power.
     for (const id of [
       'spear_of_longinus',
       'solomons_ring',
+      'mark_of_cain',
+      'thirty_pieces_of_silver',
+      'achans_wedge',
+      'pilates_basin',
       'black_candles',
       'defixio',
       'hand_of_glory',
+      'black_salt_pouch',
+      'crossroads_dirt',
+      'witch_ladder',
+      'adder_stone',
+      'poppet',
     ]) {
-      expect(ip(id)).toBe(0);
+      expect(ip(id), id).toBe(0);
     }
   });
 
-  it('pins the stack caps: ∞ for the unbounded items, 5 for Black Candles, single for the rest', () => {
-    for (const id of ['black_salt_pouch', 'defixio', 'hand_of_glory', 'iron_nails']) {
-      expect(MALEFICIA[id]!.stackMax).toBe(Number.POSITIVE_INFINITY);
+  it('pins the stack caps: ∞ for the consumables, 5 for Black Candles, single for the rest', () => {
+    for (const id of ['black_salt_pouch', 'defixio', 'hand_of_glory', 'crossroads_dirt']) {
+      expect(MALEFICIA[id]!.stackMax, id).toBe(Number.POSITIVE_INFINITY);
     }
     expect(MALEFICIA.black_candles!.stackMax).toBe(5);
     expect(MALEFICIA.black_robe!.stackMax).toBeUndefined();
   });
 
-  it('every cost sits within its rarity price band', () => {
+  it('every cost sits within its (widened) rarity price band', () => {
     for (const id of MALEFICIUM_IDS) {
       const def = MALEFICIA[id]!;
       const band = MALEFICIUM_PRICE_RANGE[def.rarity];
-      expect(def.cost).toBeGreaterThanOrEqual(band.min);
-      expect(def.cost).toBeLessThanOrEqual(band.max);
+      expect(def.cost, id).toBeGreaterThanOrEqual(band.min);
+      expect(def.cost, id).toBeLessThanOrEqual(band.max);
     }
   });
 
-  it("sigilEffectMultiplier reflects Solomon's Ring (+66%) and Iron Nails (+1% each)", () => {
+  it("sigilEffectMultiplier reflects Solomon's Ring (+66%), Picatrix (+11%), Teraphim (+4%)", () => {
     expect(sigilEffectMultiplier([])).toBe(1);
     expect(sigilEffectMultiplier(['solomons_ring'])).toBeCloseTo(1.66, 9);
-    expect(sigilEffectMultiplier(['iron_nails', 'iron_nails', 'iron_nails'])).toBeCloseTo(1.03, 9);
-    expect(sigilEffectMultiplier(['solomons_ring', 'iron_nails'])).toBeCloseTo(1.67, 9);
+    expect(sigilEffectMultiplier(['picatrix'])).toBeCloseTo(1.11, 9);
+    expect(sigilEffectMultiplier(['teraphim'])).toBeCloseTo(1.04, 9);
+    expect(sigilEffectMultiplier(['solomons_ring', 'picatrix', 'teraphim'])).toBeCloseTo(1.81, 9);
+  });
+
+  it('maleficiaInvocationCostMul shaves 7% per Black Vessel (non-stackable)', () => {
+    expect(maleficiaInvocationCostMul([])).toBe(1);
+    expect(maleficiaInvocationCostMul(['black_vessel'])).toBeCloseTo(0.93, 9);
   });
 });
 
@@ -128,8 +152,6 @@ describe('canSurface — stack rules (03 §2.5)', () => {
   });
 
   it('a stackable already on the list is not re-surfaced (one copy per id at a time)', () => {
-    // The new rule that keeps an ever-findable consumable from flooding the 20-slot Emptio list: a
-    // copy already listed blocks another, even for an unbounded (∞) stack, until it is bought.
     expect(canSurface('black_candles', [], ['black_candles'])).toBe(false);
     expect(canSurface('black_salt_pouch', [], ['black_salt_pouch'])).toBe(false);
     expect(canSurface('defixio', [], ['defixio'])).toBe(false);
@@ -140,6 +162,7 @@ describe('canSurface — stack rules (03 §2.5)', () => {
 
   it('unknown ids are not findable', () => {
     expect(canSurface('does_not_exist', [], [])).toBe(false);
+    expect(canSurface('iron_nails', [], [])).toBe(false); // removed from the catalog
   });
 });
 
@@ -159,109 +182,104 @@ describe('findableIds — by rarity, honouring stack rules', () => {
   });
 });
 
-describe('Hand of Glory (single-use generation buff)', () => {
-  const withItem = (n = 1): GameState => {
-    const s = createInitialState('hog', 0);
-    return { ...s, lifetime: { ...s.lifetime, maleficia: Array(n).fill('hand_of_glory') } };
+describe('single-use maleficia buffs', () => {
+  const withItems = (ids: string[]): GameState => {
+    const s = createInitialState('buff', 0);
+    return { ...s, lifetime: { ...s.lifetime, maleficia: ids } };
+  };
+  const buffed = (id: string, seconds = 100): GameState => {
+    const s = createInitialState('buff', 0);
+    return { ...s, lifetime: { ...s.lifetime, maleficiaBuffs: { [id]: seconds } } };
   };
 
+  it('the consumables are exactly Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt', () => {
+    expect(new Set(SINGLE_USE_MALEFICIA)).toEqual(
+      new Set(['hand_of_glory', 'black_salt_pouch', 'defixio', 'crossroads_dirt']),
+    );
+  });
+
   it('activation consumes one copy and grants an hour of buff', () => {
-    const r = activateMaleficium(withItem(2), 'hand_of_glory');
+    const r = activateMaleficium(withItems(['hand_of_glory', 'hand_of_glory']), 'hand_of_glory');
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(countCopies(r.state.lifetime.maleficia, 'hand_of_glory')).toBe(1); // one consumed
-      expect(r.state.lifetime.handOfGloryRemaining).toBe(HAND_OF_GLORY_DURATION_SECONDS);
+      expect(r.state.lifetime.maleficiaBuffs.hand_of_glory).toBe(MALEFICIA_BUFF_DURATION_SECONDS);
     }
   });
 
-  it('repeat activations stack the timer; refuses when none held or item not usable', () => {
-    let s = withItem(2);
-    s = (activateMaleficium(s, 'hand_of_glory') as { ok: true; state: GameState }).state;
-    s = (activateMaleficium(s, 'hand_of_glory') as { ok: true; state: GameState }).state;
-    expect(s.lifetime.handOfGloryRemaining).toBe(2 * HAND_OF_GLORY_DURATION_SECONDS);
-    expect(activateMaleficium(s, 'hand_of_glory').ok).toBe(false); // inventory now empty
-    expect(activateMaleficium(withItem(1), 'black_robe').ok).toBe(false); // not activatable
+  it('repeat activations extend the timer; refuses when none held or item not usable', () => {
+    let s = withItems(['defixio', 'defixio']);
+    s = (activateMaleficium(s, 'defixio') as { ok: true; state: GameState }).state;
+    s = (activateMaleficium(s, 'defixio') as { ok: true; state: GameState }).state;
+    expect(s.lifetime.maleficiaBuffs.defixio).toBe(2 * MALEFICIA_BUFF_DURATION_SECONDS);
+    expect(activateMaleficium(s, 'defixio').ok).toBe(false); // inventory now empty
+    expect(activateMaleficium(withItems(['black_robe']), 'black_robe').ok).toBe(false); // not usable
   });
 
-  it('doubles reprobate generation while live, and is 1× when expired', () => {
-    const active = {
-      ...withItem(),
-      lifetime: { ...withItem().lifetime, handOfGloryRemaining: 100 },
-    };
-    const base = computeModifiers(withItem()).reprobateGenerationRateMul;
-    expect(computeModifiers(active).reprobateGenerationRateMul).toBeCloseTo(
-      base * HAND_OF_GLORY_GENERATION_MUL,
+  it('each buff lifts the field it targets while live (and composes multiplicatively)', () => {
+    // Hand of Glory (+33%) and Black Salt Pouch (+10%) both drive reprobate generation.
+    expect(
+      maleficiaBuffMultipliers(buffed('hand_of_glory')).reprobateGenerationRateMul,
+    ).toBeCloseTo(1.33, 6);
+    expect(
+      maleficiaBuffMultipliers(buffed('black_salt_pouch')).reprobateGenerationRateMul,
+    ).toBeCloseTo(1.1, 6);
+    expect(maleficiaBuffMultipliers(buffed('defixio')).reprobateSuicideRateMul).toBeCloseTo(1.5, 6);
+    expect(maleficiaBuffMultipliers(buffed('crossroads_dirt')).indagatioEfficiencyMul).toBeCloseTo(
+      1 / 0.85,
       6,
     );
   });
 
-  it('the buff decays in real time and expires', () => {
-    const active: GameState = {
-      ...createInitialState('hog', 0),
-      lifetime: { ...createInitialState('hog', 0).lifetime, handOfGloryRemaining: 30 },
-    };
-    expect(tick(active, 10).state.lifetime.handOfGloryRemaining).toBe(20);
-    expect(tick(active, 50).state.lifetime.handOfGloryRemaining).toBe(0); // floors at 0
+  it('Hand of Glory lifts reprobate generation +33% through the full modifier bundle', () => {
+    const base = computeModifiers(withItems([])).reprobateGenerationRateMul;
+    expect(computeModifiers(buffed('hand_of_glory')).reprobateGenerationRateMul).toBeCloseTo(
+      base * 1.33,
+      6,
+    );
+  });
+
+  it('a buff decays in real time and is dropped at expiry', () => {
+    const active = buffed('hand_of_glory', 30);
+    expect(tick(active, 10).state.lifetime.maleficiaBuffs.hand_of_glory).toBe(20);
+    expect(tick(active, 50).state.lifetime.maleficiaBuffs.hand_of_glory).toBeUndefined(); // dropped
   });
 });
 
-describe('Defixio (sustained reprobate-pool curse)', () => {
-  const cursed = (): GameState => {
-    const s = createInitialState('dfx', 0);
-    return {
-      ...s,
-      lifetime: {
-        ...s.lifetime,
-        reprobates: 100,
-        maleficia: ['defixio'],
-      },
-    };
+describe('passive maleficia enhancers (modifier bundle)', () => {
+  const owning = (ids: string[]): GameState => {
+    const s = createInitialState('mod', 0);
+    return { ...s, lifetime: { ...s.lifetime, maleficia: ids } };
   };
 
-  it('activation consumes the item and marks a pending curse; refuses a second while one runs', () => {
-    const r = activateMaleficium(cursed(), 'defixio');
-    expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.state.lifetime.defixio).toEqual({ elapsed: 0 });
-      expect(countCopies(r.state.lifetime.maleficia, 'defixio')).toBe(0);
-      const holdingAnother = {
-        ...r.state,
-        lifetime: { ...r.state.lifetime, maleficia: ['defixio'] },
-      };
-      expect(activateMaleficium(holdingAnother, 'defixio').ok).toBe(false); // one curse at a time
-    }
+  it('percent enhancers land on their fields', () => {
+    expect(computeModifiers(owning(['mark_of_cain'])).murderRateMul).toBeCloseTo(2, 6); // +100%
+    expect(computeModifiers(owning(['ritual_dagger'])).murderRateMul).toBeCloseTo(1.1, 6); // +10%
+    expect(computeModifiers(owning(['achans_wedge'])).goldRateMul).toBeCloseTo(3, 6); // +200%
+    expect(computeModifiers(owning(['spear_of_longinus'])).influenceRateMul).toBeCloseTo(3, 6); // +200%
+    expect(
+      computeModifiers(owning(['thirty_pieces_of_silver'])).reprobateSuicideRateMul,
+    ).toBeCloseTo(3, 6); // +200%
+    expect(computeModifiers(owning(['the_dadu'])).playerEfficiencyMul).toBeCloseTo(1.05, 6); // +5%
+    expect(computeModifiers(owning(['voynich_manuscript'])).desidiaGainMul).toBeCloseTo(1.25, 6);
+    expect(computeModifiers(owning(['pilates_basin'])).desidiaDrainMul).toBeCloseTo(0.5, 6); // −50%
   });
 
-  it('culls the reprobate pool at eᵗ minting souls, and lifts when it is empty', () => {
-    let s = (activateMaleficium(cursed(), 'defixio') as { ok: true; state: GameState }).state;
-    s = tick(s, 1).state; // starts culling immediately
-    expect(s.lifetime.reprobates).toBeLessThan(100);
-    // The exponential ramp exterminates the pool within a short span.
-    for (let i = 0; i < 30 && s.lifetime.defixio; i++) s = tick(s, 1).state;
-    expect(s.lifetime.defixio).toBeUndefined(); // curse has lifted
-    expect(s.lifetime.reprobates).toBe(0);
-    expect(floor(s.souls).toNumber()).toBeGreaterThanOrEqual(100); // a soul per culled reprobate
+  it('flat-per-second enhancers land on their flat fields', () => {
+    expect(computeModifiers(owning(['hollow_effigy'])).flatMurdersPerSecond).toBeCloseTo(0.1, 6);
+    expect(computeModifiers(owning(['poppet'])).flatSuicidesPerSecond).toBeCloseTo(0.075, 6);
+    expect(computeModifiers(owning(['adder_stone'])).flatGenerationPerSecond).toBeCloseTo(0.6, 6);
+    expect(computeModifiers(owning(['black_robe'])).flatInfluencePerSecond).toBeCloseTo(0.4, 6);
   });
 
-  it('lifts immediately when there are no reprobates to curse', () => {
-    const empty = (() => {
-      const s = createInitialState('dfx', 0);
-      return { ...s, lifetime: { ...s.lifetime, maleficia: ['defixio'] } }; // pool at 0
-    })();
-    const cast = (activateMaleficium(empty, 'defixio') as { ok: true; state: GameState }).state;
-    expect(tick(cast, 1).state.lifetime.defixio).toBeUndefined();
-  });
-
-  it('culls identically in small 10 Hz ticks and in one big delta — exact eᵗ integral', () => {
-    // Cumulative kills by time t are ⌊eᵗ − 1⌋, so a sum of small ticks and one large delta must
-    // agree exactly (ADR-004) — no sub-1 fraction is lost between 100 ms ticks.
-    const cast = (activateMaleficium(cursed(), 'defixio') as { ok: true; state: GameState }).state;
-    let stepped = cast;
-    for (let i = 0; i < 40; i++) stepped = tick(stepped, 0.1).state;
-    const oneShot = tick(cast, 4).state;
-    expect(stepped.lifetime.reprobates).toBe(oneShot.lifetime.reprobates);
-    expect(stepped.lifetime.reprobates).toBe(100 - Math.floor(Math.expm1(4))); // 100 − 53
-    // The first whole kill lands once eᵗ − 1 crosses 1 (t = ln 2 ≈ 0.69 s), not seconds later.
-    expect(tick(cast, 0.7).state.lifetime.reprobates).toBe(99);
+  it('Crow Feather and Obsidian Mirror shorten the Indagatio search', () => {
+    expect(computeModifiers(owning(['crow_feather'])).indagatioEfficiencyMul).toBeCloseTo(
+      1 / 0.9,
+      6,
+    );
+    expect(computeModifiers(owning(['obsidian_mirror'])).indagatioEfficiencyMul).toBeCloseTo(
+      1 / 0.67,
+      6,
+    );
   });
 });

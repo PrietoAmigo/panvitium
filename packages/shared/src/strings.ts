@@ -514,8 +514,7 @@ export const strings = {
     },
     invokingPower: 'invoking power',
     use: 'Use',
-    handOfGloryLeft: 'of fevered generation remain',
-    defixioOn: 'A curse gnaws at the reprobates',
+    buffRemaining: 'remaining',
     oracleCaption: 'The odds of each outcome, as the omens already weigh them, should you act now:',
   },
   analytics: {

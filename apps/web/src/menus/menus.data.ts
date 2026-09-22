@@ -23,7 +23,7 @@ export const ROOMS: Record<RoomId, RoomDef> = {
     hotspots: [
       {
         id: 'maleficia',
-        label: 'Maleficia Shelf',
+        label: 'Loculi',
         rect: { x: 0.5, y: 28, w: 24.5, h: 53 },
         action: { type: 'panel', panel: 'maleficia' },
       },
@@ -183,7 +183,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'profane',
     img: `${ASSET_BASE}/maleficia/obsidian_mirror.png`,
     desc: 'It shows what the future is already weighing.',
-    effect: 'Reveals every Opera distribution.',
+    effect: '-33% Indagatio time.',
   },
   {
     id: 'voynich_manuscript',
@@ -191,7 +191,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'profane',
     img: `${ASSET_BASE}/maleficia/voynich_manuscript.png`,
     desc: 'Unreadable to the faithful; fluent to the fallen.',
-    effect: '+66% Suasio efficiency.',
+    effect: '+25% Desidia gain rate.',
   },
   {
     id: 'defixio',
@@ -199,7 +199,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'profane',
     img: `${ASSET_BASE}/maleficia/defixio.png`,
     desc: 'A name, a nail, a curse folded into lead and buried.',
-    effect: 'Single-use: culls a random subtype.',
+    effect: 'Single-use: +50% suicide rate for an hour.',
   },
   {
     id: 'codex_gigas',
@@ -207,7 +207,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'profane',
     img: `${ASSET_BASE}/maleficia/codex_gigas.png`,
     desc: 'One scribe. One night. One signature in the margin no Pope has ever erased.',
-    effect: '\u00D71.33 influence gain rate.',
+    effect: '+25% influence gain rate.',
   },
   {
     id: 'spear_of_longinus',
@@ -215,7 +215,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/longinus.png`,
     desc: 'Just the tip.',
-    effect: '\u00D73 maximum influence.',
+    effect: '+200% influence gain rate.',
   },
   {
     id: 'mark_of_cain',
@@ -223,7 +223,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/mark_of_cain.png`,
     desc: 'The sevenfold vengeance was never a curse. It was a guarantee.',
-    effect: '×3 murder rate.',
+    effect: '+100% murder rate.',
   },
   {
     id: 'thirty_pieces_of_silver',
@@ -231,7 +231,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/30_pieces.png`,
     desc: 'Counted out, refused, returned, refused again \u2014 coinage that always finds its way back into a hand.',
-    effect: '+0.001% gold gain per current gold.',
+    effect: '+200% suicide rate.',
   },
   {
     id: 'solomons_ring',
@@ -255,7 +255,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'rare',
     img: `${ASSET_BASE}/maleficia/ritual_dagger.png`,
     desc: 'A rare hour of convergence: when offering and offerer cease to be separate.',
-    effect: '+33% Decimatio efficiency.',
+    effect: '+10% murder rate.',
   },
   {
     id: 'blood_chalk',
@@ -263,7 +263,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'rare',
     img: `${ASSET_BASE}/maleficia/blood_chalk.png`,
     desc: 'Drawn in a circle no priest will step inside.',
-    effect: '+4 invoking power.',
+    effect: '+2 influence per second.',
   },
   {
     id: 'blackthorn_wand',
@@ -271,7 +271,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'rare',
     img: `${ASSET_BASE}/maleficia/blackthorn_wand.png`,
     desc: 'Cut on a moonless night from a tree that took root over a grave.',
-    effect: '+4 invoking power.',
+    effect: '+2 influence per second.',
   },
   {
     id: 'witch_bottle',
@@ -279,7 +279,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/witch_bottle.png`,
     desc: 'Urine, pins, and rosemary, corked against the dark \u2014 and aimed back at it.',
-    effect: '+2 invoking power.',
+    effect: '+0.8 reprobates per second.',
   },
   {
     id: 'sulfur_censer',
@@ -287,7 +287,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/sulfur_censer.png`,
     desc: 'Where it has burned, prayer no longer travels upward.',
-    effect: '+2 invoking power.',
+    effect: '+0.6 influence per second.',
   },
   {
     id: 'mandrake_root',
@@ -295,7 +295,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/mandrake_root.png`,
     desc: 'It screamed when it was pulled. You kept it anyway.',
-    effect: '+2 invoking power.',
+    effect: '+0.05 suicides per second.',
   },
   {
     id: 'black_robe',
@@ -303,15 +303,15 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/black_robe.png`,
     desc: 'What separates the celebrant from the congregation is mostly fabric.',
-    effect: '+1 invoking power.',
+    effect: '+0.4 influence per second.',
   },
   {
     id: 'black_candles',
     name: 'Black Candles',
-    rarity: 'common',
+    rarity: 'rare',
     img: `${ASSET_BASE}/maleficia/black_candle.png`,
     desc: 'Each flame a small renunciation of the light.',
-    effect: '+5% invocation effect per candle.',
+    effect: '+3% invocation effect per candle, up to +15%.',
   },
   {
     id: 'black_salt_pouch',
@@ -319,15 +319,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/black_salt_pouch.png`,
     desc: 'Drawn from ash, charcoal, and graveyard earth.',
-    effect: '+1 invoking power.',
-  },
-  {
-    id: 'iron_nails',
-    name: 'Iron Nails',
-    rarity: 'common',
-    img: `${ASSET_BASE}/maleficia/iron_nails.png`,
-    desc: 'Pulled from the True Cross, or near enough to sell.',
-    effect: '+1% sigil effects & +1 invoking power each.',
+    effect: 'Single-use: +10% reprobate generation for an hour.',
   },
   {
     id: 'crossroads_dirt',
@@ -335,7 +327,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/crossroads_dirt.png`,
     desc: 'Gathered where four roads meet at midnight.',
-    effect: 'Reveals the Emptio distribution.',
+    effect: 'Single-use: -15% Indagatio time for an hour.',
   },
   {
     id: 'crow_feather',
@@ -343,7 +335,7 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/crow_feather.png`,
     desc: 'The bird that counts the dead leaves you one.',
-    effect: 'Reveals the Indagatio distribution.',
+    effect: '-10% Indagatio time.',
   },
   {
     id: 'hollow_effigy',
@@ -351,6 +343,6 @@ export const MALEFICIA: Maleficium[] = [
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/hollow_effigy.png`,
     desc: "Wax in your likeness, and in someone else's.",
-    effect: 'Reveals the Suasio distribution.',
+    effect: '+0.1 murders per second.',
   },
 ];

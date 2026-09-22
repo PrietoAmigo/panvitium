@@ -15,14 +15,25 @@
  *                 Satan      (Retribution)    → invocationEfficiencyMul
  *                 Gula       (Insatiability)  → playerEfficiencyMul
  *                 Lucifer    (Morning Star)   → tierWeightMul.stellar (lifted)
- *   - MALEFICIA:  Spear of Longinus           → maxInfluenceMul × 3
- *                 Codex Gigas                 → influenceRateMul × 1.33
- *                 Thirty Pieces of Silver     → flat gold/s = 0.001% of current gold
- *                 Mark of Cain                → murderRateMul × 3
- *                 Witch Ladder                → reprobateSuicideRateMul × 1.05
- *                 Adder Stone                 → reprobateGenerationRateMul × 1.05
- *                 Poppet                      → murderRateMul × 1.05
- *                 Galdrabók                   → murderRateMul × 1.15
+ *   - MALEFICIA (Maleficia sheet rev 2026-09):
+ *                 Spear of Longinus           → influenceRateMul × 3 (+200% influence gain)
+ *                 Codex Gigas                 → influenceRateMul × 1.25 (+25%)
+ *                 Achan's Wedge               → goldRateMul × 3 (+200% gold gain)
+ *                 Dybbuk Box                  → goldRateMul × 1.10 (+10%)
+ *                 Thirty Pieces of Silver     → reprobateSuicideRateMul × 3 (+200% suicide rate)
+ *                 Mark of Cain                → murderRateMul × 2 (+100%)
+ *                 Ritual Dagger               → murderRateMul × 1.10 (+10%)
+ *                 Galdrabók                   → murderRateMul × 1.125 (+12.5%)
+ *                 The Dadu                    → playerEfficiencyMul × 1.05 (+5%)
+ *                 Voynich Manuscript          → desidiaGainMul × 1.25 (+25%)
+ *                 Pilate's Basin              → desidiaDrainMul × 0.5 (−50% drain)
+ *                 Crow Feather / Obsidian     → indagatioEfficiencyMul (−10% / −33% Indagatio time)
+ *                 Grimoire of Pope Honorius   → invocationEfficiencyMul × 1.13 (+13%)
+ *                 flat/s: Black Robe/Blood Chalk/Blackthorn Wand/Sulfur Censer → influence;
+ *                         Hollow Effigy/Witch Ladder → murders; Poppet/Mandrake Root → suicides;
+ *                         Adder Stone/Witch Bottle → generation
+ *                 single-use buffs (maleficiaBuffs): Hand of Glory +33% gen, Black Salt Pouch +10% gen,
+ *                         Defixio +50% suicide rate, Crossroads Dirt −15% Indagatio time
  *
  * Other Sin effects (Ira → acolyte/invocation eff, Luxuria → reprobate generation) attach as their
  * target systems land — same module, same signature, just a new line per source. (Acedia's Sloth
@@ -41,7 +52,7 @@
 import { SINS, totalReprobates, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
-import { countCopies, sigilEffectMultiplier, HAND_OF_GLORY_GENERATION_MUL } from './maleficia.js';
+import { countCopies, sigilEffectMultiplier, maleficiaBuffMultipliers } from './maleficia.js';
 import { SYNGRAPHAE, hoardMilestoneBonus, syngraphaSigned } from './syngraphae.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import { indagatioInvestmentEfficiencyMul } from './indagatio.js';
@@ -63,8 +74,6 @@ import {
   GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL,
   IRA_DECIMATIO_EFF_PER_LEVEL,
   LUXURIA_SUASIO_EFF_PER_LEVEL,
-  RITUAL_DAGGER_DECIMATIO_BONUS,
-  VOYNICH_SUASIO_BONUS,
 } from './constants.js';
 
 export interface Modifiers {
@@ -315,22 +324,15 @@ export function computeModifiers(state: GameState): Modifiers {
   // folded multiplicatively into the matching fields below (ADR-022). Neutral (all 1) when none run.
   const cb = callBuffMultipliers(state);
 
-  // Equipped maleficia (03 §4). Each anathema item is a single, decisive multiplier.
+  // Equipped maleficia (03 §4). Every enhancer relic here is non-stackable, so `c(id)` is 0 or 1 and
+  // each folds in as a `(1 + bonus·c)` (percent) or flat-per-second term. `mBuff` is the per-field
+  // product of the currently-active single-use buffs (Hand of Glory, Black Salt Pouch, Defixio,
+  // Crossroads Dirt), each a one-hour multiplier decayed by the tick.
   const owned = state.lifetime.maleficia;
-  const hasSpear = countCopies(owned, 'spear_of_longinus') > 0;
-  const hasCodex = countCopies(owned, 'codex_gigas') > 0;
-  const hasSilver = countCopies(owned, 'thirty_pieces_of_silver') > 0;
-  const hasMarkOfCain = countCopies(owned, 'mark_of_cain') > 0;
-  // Rate enhancers (Maleficia sheet rev 2026-06-12), each a flat multiplier on its rate. Non-stackable.
-  const hasPoppet = countCopies(owned, 'poppet') > 0; // ×1.05 murder rate
-  const hasGaldrabok = countCopies(owned, 'galdrabok') > 0; // ×1.15 murder rate
-  const hasWitchLadder = countCopies(owned, 'witch_ladder') > 0; // ×1.05 suicide rate
-  const hasAdderStone = countCopies(owned, 'adder_stone') > 0; // ×1.05 reprobate generation
-  // Opera-efficiency enhancers (Maleficia sheet): each a separate multiplicative `(1 + bonus)`
-  // factor on its category's efficiency mul. Non-stackable, so the count is 0 or 1.
-  const arsSerpens = countCopies(owned, 'ars_serpens');
-  const voynich = countCopies(owned, 'voynich_manuscript');
-  const ritualDagger = countCopies(owned, 'ritual_dagger');
+  const c = (id: string): number => countCopies(owned, id);
+  const mBuff = maleficiaBuffMultipliers(state);
+  // Indagatio time reductions read as search-speed lifts: −X% time ⇒ ×1/(1−X) efficiency.
+  const INDAGATIO_TIME_MUL = (frac: number): number => 1 / (1 - frac);
 
   // Active invocations (03 §2.4). Counts read straight from the lifetime map; effect magnitudes
   // live here alongside the other effect coefficients (the catalog in invocations.ts owns the
@@ -387,7 +389,7 @@ export function computeModifiers(state: GameState): Modifiers {
   // efficiency). The `narcissus`/`wendigo` factors are flat (no efficiency scaling), per the catalog.
   const FAMA_INFLUENCE_FACTOR = 0.075; // each Fama: +7.5% influence gain
   const PLUTUS_FAENERATIO_FACTOR = 0.15; // each Plutus: +15% Faeneratio output (Mutuum + interest)
-  const BLACK_CANDLES_INVOCATION_BONUS = 0.05; // each Black Candle: +5% invocation effect
+  const BLACK_CANDLES_INVOCATION_BONUS = 0.03; // each Black Candle: +3% invocation effect (cap 5 → +15%)
   const NIGHTMARE_SUICIDE_FACTOR = 0.005; // each Nightmare: +0.005/s base reprobate suicide rate
   const HARPY_MURDER_FACTOR = 0.005; // each Harpy: +0.005/s base reprobate murder rate
   const BEHEMOTH_STELLAR_FLAT = 0.00025; // each Behemoth: +0.00025 flat Stellar chance (0.025 pp)
@@ -464,12 +466,14 @@ export function computeModifiers(state: GameState): Modifiers {
   // scale against — Model 1). Lifted to a local so the efficiency-scaled invocation effects below
   // can read it. Invocation-effect multiplier: Ira's Retribution per level × Black Candles (+5%
   // each, stack-capped at 5 by the catalog). Both runner and passive invocation effects use it.
-  const blackCandles = countCopies(owned, 'black_candles');
+  const blackCandles = c('black_candles');
   // Ira's Retribution SKILL (intensity, continuous) drives invocation efficiency (sheet rev
-  // 2026-06-12); the old ×1.33-per-Ira-level ladder is retired.
+  // 2026-06-12); the old ×1.33-per-Ira-level ladder is retired. Black Candles (+3% each, cap 5) and
+  // the Grimoire of Pope Honorius (+13%) are the maleficia that lift the invocation effect.
   const invEff =
     skillBonus(iraIntensity) *
     (1 + BLACK_CANDLES_INVOCATION_BONUS * blackCandles) *
+    (1 + 0.13 * c('grimoire_of_pope_honorius')) *
     sc('invocationEfficiencyMul');
   // Per-INVOCATION effectiveness (Buer #10 → familiar, Sitri #12 → succubus), keyed by id. Scales a
   // specific invocation's effect coefficient; 1× when no such sigil is bound.
@@ -481,6 +485,7 @@ export function computeModifiers(state: GameState): Modifiers {
     skillBonus(gulaIntensity) *
     (hasDoppel ? 2 : 1) * // Doppelgänger: +100% player efficiency
     (1 + WENDIGO_PLAYER_EFF_FACTOR * wendigoCount) * // each Wendigo: +2% player efficiency (flat)
+    (1 + 0.05 * c('the_dadu')) * // The Dadu: +5% player efficiency (Maleficia)
     (hasFamiliar ? 1 + 0.33 * invEffForInv('familiar') : 1) *
     aurevoraEff *
     erinyesStackMul *
@@ -506,8 +511,7 @@ export function computeModifiers(state: GameState): Modifiers {
     }
   }
 
-  const maxInfluenceMulV =
-    skillBonus(vanagloriaIntensity) * (hasSpear ? 3 : 1) * sc('maxInfluenceMul');
+  const maxInfluenceMulV = skillBonus(vanagloriaIntensity) * sc('maxInfluenceMul');
 
   // Signed Syngraphae (the Avaritia contract tree, spec §4.3/§5): the modifier-fold nodes compose
   // multiplicatively per ADR-022 (the mechanism nodes — Anatocismus, the liquidation bonus,
@@ -536,6 +540,8 @@ export function computeModifiers(state: GameState): Modifiers {
     goldRateMul:
       skillBonus(avaritiaIntensity) *
       (hasMidas ? 10 : 1) * // Midas (apex Avaritia): ×10 gold gain
+      (1 + 0.1 * c('dybbuk_box')) * // Dybbuk Box: +10% gold gain
+      (1 + 2 * c('achans_wedge')) * // Achan's Wedge: +200% gold gain
       (1 + hoardMilestoneBonus(state)) *
       sc('goldRateMul') *
       cb.goldRateMul * // the-cycle-turns / a-good-find / blood-in-the-cage call buffs
@@ -543,7 +549,8 @@ export function computeModifiers(state: GameState): Modifiers {
     // Doppelgänger's "50% influence gain" cost is now per-second upkeep (tick.ts 1a), not a cut here.
     influenceRateMul:
       1.33 ** vanagloriaLvl * // ×1.33 influence gain per Vanagloria level (sheet rev 2026-06-12)
-      (hasCodex ? 1.33 : 1) * // Codex Gigas: ×1.33 influence gain rate (profane, sheet rev)
+      (1 + 0.25 * c('codex_gigas')) * // Codex Gigas: +25% influence gain rate
+      (1 + 2 * c('spear_of_longinus')) * // Spear of Longinus: +200% influence gain rate
       (1 + FAMA_INFLUENCE_FACTOR * invEffFor('vanagloria') * famaCount) * // each Fama: +7.5% (× invEff)
       (hasSpecunitas ? 3 : 1) * // Specunitas (apex Vanagloria): ×3 influence gain/s
       sc('influenceRateMul') *
@@ -553,13 +560,15 @@ export function computeModifiers(state: GameState): Modifiers {
     maxInfluenceMul: maxInfluenceMulV,
     // Flat influence/s: the Decarabia #69 generator sigil (log curve) + each Arachne (+1/s × invEff).
     flatInfluencePerSecond:
-      flatGen.influence + ARACHNE_INFLUENCE_PER_SECOND * invEffFor('vanagloria') * arachneCount,
-    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + Thirty Pieces of Silver (0.001% of
-    // the gold pool/s) + each Kobold (+100/s × invEff).
-    flatGoldPerSecond:
-      flatGen.gold +
-      (hasSilver ? 1e-5 * state.lifetime.gold.toNumber() : 0) +
-      KOBOLD_GOLD_PER_SECOND * invEffFor('avaritia') * koboldCount,
+      flatGen.influence +
+      ARACHNE_INFLUENCE_PER_SECOND * invEffFor('vanagloria') * arachneCount +
+      // Maleficia flat influence/s: Black Robe +0.4, Blood Chalk +2, Blackthorn Wand +2, Sulfur Censer +0.6.
+      0.4 * c('black_robe') +
+      2 * c('blood_chalk') +
+      2 * c('blackthorn_wand') +
+      0.6 * c('sulfur_censer'),
+    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + each Kobold (+100/s × invEff).
+    flatGoldPerSecond: flatGen.gold + KOBOLD_GOLD_PER_SECOND * invEffFor('avaritia') * koboldCount,
     // Additive increase to the base per-capita reprobate suicide rate (added to the base in
     // `dynamics`). Each Nightmare contributes +0.005/s × invEff.
     flatBaseSuicideRatePerSecond:
@@ -575,11 +584,22 @@ export function computeModifiers(state: GameState): Modifiers {
       (EMPUSA_GENERATION_PER_SECOND * empusaCount +
         LAMIA_GENERATION_PER_SECOND * lamiaCount +
         (hasSuccubus ? SUCCUBUS_GENERATION_PER_SECOND : 0)) *
-        invEffFor('luxuria'),
+        invEffFor('luxuria') +
+      // Maleficia flat births/s: Adder Stone +0.6, Witch Bottle +0.8.
+      0.6 * c('adder_stone') +
+      0.8 * c('witch_bottle'),
     // Absolute murders/s from each Imp (+1/s × invEff) and suicides/s from each Banshee (+1/s × invEff),
     // added straight to the dynamics pools (each death mints a soul).
-    flatMurdersPerSecond: IMP_MURDERS_PER_SECOND * invEffFor('ira') * impCount,
-    flatSuicidesPerSecond: BANSHEE_SUICIDES_PER_SECOND * invEffFor('tristitia') * bansheeCount,
+    // Maleficia flat murders/s (Hollow Effigy +0.1, Witch Ladder +0.15) and suicides/s (Poppet
+    // +0.075, Mandrake Root +0.05) join the invocation flats, each death minting a soul.
+    flatMurdersPerSecond:
+      IMP_MURDERS_PER_SECOND * invEffFor('ira') * impCount +
+      0.1 * c('hollow_effigy') +
+      0.15 * c('witch_ladder'),
+    flatSuicidesPerSecond:
+      BANSHEE_SUICIDES_PER_SECOND * invEffFor('tristitia') * bansheeCount +
+      0.075 * c('poppet') +
+      0.05 * c('mandrake_root'),
     // Desidia generated/s: each Blob (+0.00625/s) plus Morpheus's per-consumed-reprobate yield
     // (0.05 × population × 0.001/s), both × invEff. Applied to the desidia pool in the tick.
     flatDesidiaPerSecond:
@@ -599,48 +619,52 @@ export function computeModifiers(state: GameState): Modifiers {
     // (invocations.ts), amplified by the Luxuria per-Sin term like any Luxuria runner.
     suasioEfficiencyMul:
       LUXURIA_SUASIO_EFF_PER_LEVEL ** luxuriaLvl * // ×2 per Luxuria level (sheet rev 2026-06-12)
-      (1 + ARS_SERPENS_SUASIO_BONUS * arsSerpens) *
-      (1 + VOYNICH_SUASIO_BONUS * voynich) *
+      (1 + ARS_SERPENS_SUASIO_BONUS * c('ars_serpens')) * // Ars Serpens: +33% Suasio efficiency
       sc('suasioEfficiencyMul'),
     // Harpy no longer lifts blanket Decimatio efficiency — its effect is now a Pogrom runner
-    // (invocations.ts), amplified by the Ira per-Sin term like any Ira runner.
+    // (invocations.ts), amplified by the Ira per-Sin term like any Ira runner. (Ritual Dagger moved to
+    // a murder-rate enhancer — see `murderRateMul`.)
     decimatioEfficiencyMul:
       IRA_DECIMATIO_EFF_PER_LEVEL ** iraLvl * // ×2 per Ira level (sheet rev 2026-06-12)
-      (1 + RITUAL_DAGGER_DECIMATIO_BONUS * ritualDagger) *
       sc('decimatioEfficiencyMul'),
-    // Indagatio efficiency: sigils × the a-good-find call buff × the logarithmic bonus from the
-    // gold investment (03 §2.5 — staked gold makes the next Search faster, Indagatio alone).
+    // Indagatio efficiency: sigils × the a-good-find call buff × the logarithmic bonus from the gold
+    // investment (03 §2.5) × the maleficia that shorten the Search — Crow Feather (−10% time) and
+    // Obsidian Mirror (−33%) passively, Crossroads Dirt (−15%, single-use buff via `mBuff`).
     indagatioEfficiencyMul:
       sc('indagatioEfficiencyMul') *
       cb.indagatioEfficiencyMul *
-      indagatioInvestmentEfficiencyMul(state.lifetime.indagatioInvestment),
+      indagatioInvestmentEfficiencyMul(state.lifetime.indagatioInvestment) *
+      (c('crow_feather') ? INDAGATIO_TIME_MUL(0.1) : 1) *
+      (c('obsidian_mirror') ? INDAGATIO_TIME_MUL(0.33) : 1) *
+      mBuff.indagatioEfficiencyMul,
     emptioEfficiencyMul: sc('emptioEfficiencyMul'),
     tierWeightMul,
     // Reprobate generation: base 0 + Vitium flat contributions; Panvitium amplifies; Luxuria's
     // Seduction skill lifts it continuously (03 §1); the Aamon #7 sigil (up) composes.
     reprobateGenerationRateMul:
       (panvitiumActive ? PANV_GEN_MUL : 1) *
-      (hasAdderStone ? 1.05 : 1) * // Adder Stone ×1.05 reprobate generation
-      (state.lifetime.handOfGloryRemaining > 0 ? HAND_OF_GLORY_GENERATION_MUL : 1) *
+      mBuff.reprobateGenerationRateMul * // Hand of Glory (+33%) / Black Salt Pouch (+10%), single-use
       skillBonus(luxuriaIntensity) *
       sc('reprobateGenerationRateMul') *
       cb.reprobateGenerationRateMul * // the-cycle-turns / eager-hands / the-shipment / parish call buffs
       faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
-    // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill)
-    // moved to acolyte efficiency, and the per-level doubling is retired. The pressure sources
-    // are maleficia, invocations and sigils. Panvitium multiplies while active.
+    // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill) moved
+    // to acolyte efficiency, and the per-level doubling is retired. Pressure sources are maleficia
+    // (Thirty Pieces of Silver +200%, Defixio +50% single-use), invocations and sigils. Panvitium
+    // multiplies while active.
     reprobateSuicideRateMul:
       (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
-      (hasWitchLadder ? 1.05 : 1) * // Witch Ladder ×1.05 suicide rate
+      (1 + 2 * c('thirty_pieces_of_silver')) * // Thirty Pieces of Silver: +200% suicide rate
+      mBuff.reprobateSuicideRateMul * // Defixio (+50%), single-use
       sc('reprobateSuicideRateMul'),
-    // Murder: Panvitium multiplies while active; Aim #23 sigil composes. The Mercatus Irae clause
-    // retired with the trades. Murder is a per-capita cull of the whole population.
+    // Murder: Panvitium multiplies while active; Aim #23 sigil composes. Murder is a per-capita cull
+    // of the whole population, lifted by Mark of Cain (+100%), Ritual Dagger (+10%), Galdrabók (+12.5%).
     murderRateMul:
       (panvitiumActive ? PANV_MURDER_MUL : 1) *
-      (hasMarkOfCain ? 3 : 1) * // Mark of Cain ×3 murder rate (sheet rev 2026-06-12)
-      (hasPoppet ? 1.05 : 1) * // Poppet ×1.05 murder rate
-      (hasGaldrabok ? 1.15 : 1) * // Galdrabók ×1.15 murder rate
+      (1 + c('mark_of_cain')) * // Mark of Cain: +100% murder rate (×2)
+      (1 + 0.1 * c('ritual_dagger')) * // Ritual Dagger: +10% murder rate
+      (1 + 0.125 * c('galdrabok')) * // Galdrabók: +12.5% murder rate
       sc('murderRateMul'),
     // Faeneratio output (Mutuum + Thesaurus interest): each Plutus lifts it (flat factor),
     // Vapula #60 sigil composes; applied to the summed term at the tick's gold-income line.
@@ -680,10 +704,12 @@ export function computeModifiers(state: GameState): Modifiers {
           (LEMURE_DRAIN_REDUCTION_PER_COPY / (1 - LEMURE_DRAIN_REDUCTION_PER_COPY)) *
             invEffFor('acedia'))) **
         lemureCount *
+      (1 - 0.5 * c('pilates_basin')) * // Pilate's Basin: −50% Desidia drain rate
       sc('desidiaDrainMul'),
     // Desidia gain / cap (ADR-034): Sitri #12 lifts the offline accrual rate, Orias #59 the cap.
-    // The re-homed offline `doing-nothing` call buff also lifts the gain rate (cb.desidiaGainMul).
-    desidiaGainMul: sc('desidiaGainMul') * cb.desidiaGainMul,
+    // The re-homed offline `doing-nothing` call buff also lifts the gain rate (cb.desidiaGainMul);
+    // the Voynich Manuscript maleficium lifts it +25%.
+    desidiaGainMul: (1 + 0.25 * c('voynich_manuscript')) * sc('desidiaGainMul') * cb.desidiaGainMul,
     desidiaMaxMul: sc('desidiaMaxMul'),
   };
 }

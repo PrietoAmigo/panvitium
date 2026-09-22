@@ -146,8 +146,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v7 (the Stagnation → Desidia rename bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(7);
+  it('schemaVersion is v8 (the maleficia rework bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(8);
   });
 });
 
@@ -316,8 +316,7 @@ describe('the hoard + Syngraphae — ADR-023 additive-optional (a/b/c round-trip
         hoard: bn('1.5e42'),
         syngraphae: ['usura-1', 'faeneratio-1', 'faeneratio-2'],
         hoardAtDescent: bn('7.25e12'),
-        handOfGloryRemaining: 1234,
-        defixio: { elapsed: 42 },
+        maleficiaBuffs: { hand_of_glory: 1234, defixio: 42 },
       },
     };
     const wire = serializeGameState(withVault);
@@ -325,8 +324,7 @@ describe('the hoard + Syngraphae — ADR-023 additive-optional (a/b/c round-trip
     expect(eq(back.lifetime.hoard, bn('1.5e42'))).toBe(true);
     expect(back.lifetime.syngraphae).toEqual(['usura-1', 'faeneratio-1', 'faeneratio-2']);
     expect(eq(back.lifetime.hoardAtDescent!, bn('7.25e12'))).toBe(true);
-    expect(back.lifetime.handOfGloryRemaining).toBe(1234);
-    expect(back.lifetime.defixio).toEqual({ elapsed: 42 });
+    expect(back.lifetime.maleficiaBuffs).toEqual({ hand_of_glory: 1234, defixio: 42 });
   });
 });
 

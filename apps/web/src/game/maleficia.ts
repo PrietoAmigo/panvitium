@@ -7,7 +7,12 @@
 // the button-enabled state and the current-effect status line — from existing lifetime state
 // (`handOfGloryRemaining`, `defixio`). No new sim: this only surfaces what `activateMaleficium` and
 // the tick already maintain.
-import { MALEFICIA as CATALOG, countCopies, type GameState } from '@panvitium/sim';
+import {
+  MALEFICIA as CATALOG,
+  countCopies,
+  SINGLE_USE_MALEFICIA,
+  type GameState,
+} from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import { MALEFICIA as DESIGN } from '../menus/menus.data.js';
 import type { Maleficium, MaleficiumUse, Rarity } from '../menus/types.js';
@@ -19,25 +24,20 @@ const DESIGN_BY_ID: Record<string, Maleficium> = Object.fromEntries(DESIGN.map((
 /** Derive the Use affordance for the single-use consumables; `undefined` for ordinary maleficia. */
 function makeAffordance(state: GameState): (id: string) => MaleficiumUse | undefined {
   const S = strings.maleficia;
+  const buffs = state.lifetime.maleficiaBuffs;
+  const single = new Set(SINGLE_USE_MALEFICIA);
   return (id) => {
-    if (id === 'hand_of_glory') {
-      // Stacking is always allowed (a fresh use extends the timer), so it is enabled whenever owned.
-      const remaining = state.lifetime.handOfGloryRemaining;
-      return {
-        label: S.use,
-        enabled: true,
-        ...(remaining > 0
-          ? { status: `${formatDuration(remaining * 1000)} ${S.handOfGloryLeft}` }
-          : {}),
-      };
-    }
-    if (id === 'defixio') {
-      // Only one curse at a time (the sim refuses a second); disable with a status while one runs.
-      const active = state.lifetime.defixio;
-      if (!active) return { label: S.use, enabled: true };
-      return { label: S.use, enabled: false, status: S.defixioOn };
-    }
-    return undefined;
+    if (!single.has(id)) return undefined;
+    // A single-use maleficium is always usable (a fresh use extends its one-hour timer); when the
+    // buff is live, surface the remaining time as a status line.
+    const remaining = buffs[id] ?? 0;
+    return {
+      label: S.use,
+      enabled: true,
+      ...(remaining > 0
+        ? { status: `${formatDuration(remaining * 1000)} ${S.buffRemaining}` }
+        : {}),
+    };
   };
 }
 

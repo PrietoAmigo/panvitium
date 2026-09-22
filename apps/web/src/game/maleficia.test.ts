@@ -71,21 +71,24 @@ describe('buildCabinet — single-use affordance (5.1)', () => {
   });
 
   it('Hand of Glory shows remaining buff time while active (and stays usable to extend it)', () => {
-    const [item] = buildCabinet(withLifetime(['hand_of_glory'], { handOfGloryRemaining: 125 }));
+    const [item] = buildCabinet(
+      withLifetime(['hand_of_glory'], { maleficiaBuffs: { hand_of_glory: 125 } }),
+    );
     expect(item!.use!.enabled).toBe(true);
     expect(item!.use!.status).toContain('2m');
-    expect(item!.use!.status).toContain(strings.maleficia.handOfGloryLeft);
+    expect(item!.use!.status).toContain(strings.maleficia.buffRemaining);
   });
 
-  it('Defixio is usable when no curse runs', () => {
+  it('Defixio is usable with no status when its buff is dormant', () => {
     const [item] = buildCabinet(owning(['defixio']));
     expect(item!.use!.enabled).toBe(true);
     expect(item!.use!.status).toBeUndefined();
   });
 
-  it('Defixio is disabled while a curse is at work', () => {
-    const [item] = buildCabinet(withLifetime(['defixio'], { defixio: { elapsed: 5 } }));
-    expect(item!.use!.enabled).toBe(false);
-    expect(item!.use!.status).toBe(strings.maleficia.defixioOn);
+  it('Defixio stays usable while its buff runs, showing the remaining time', () => {
+    const [item] = buildCabinet(withLifetime(['defixio'], { maleficiaBuffs: { defixio: 125 } }));
+    expect(item!.use!.enabled).toBe(true);
+    expect(item!.use!.status).toContain('2m');
+    expect(item!.use!.status).toContain(strings.maleficia.buffRemaining);
   });
 });
