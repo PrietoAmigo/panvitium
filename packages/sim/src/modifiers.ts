@@ -417,9 +417,11 @@ export function computeModifiers(state: GameState): Modifiers {
   // SCOPE (deliberate): this inflated `sigMul` enhances only the PASSIVE modifier-bundle sigil
   // contributions folded in below. Resolution-time / cost-time channels computed in their own
   // standalone functions — per-category tier shifts (`categoryTierModifiers`), invoking power and
-  // invocation cost/upkeep (invocations.ts), action cost reductions (actions.ts), and Katabasis
-  // carry-over (katabasis.ts) — intentionally take the RAW `sigilEffectMultiplier` instead, so Gaap
-  // and Semet do not reach those channels. Keep that split when adding sigil sources.
+  // invocation cost/upkeep (invocations.ts), action cost reductions and the duplicate-output /
+  // Crocell double-find chances (actions.ts), Katabasis carry-over (katabasis.ts), and the Vine /
+  // Furcas Thesaurus recovery below — intentionally take the RAW `sigilEffectMultiplier` instead, so
+  // Gaap and Semet do not reach those channels. Every sigil channel takes ONE of the two stacks;
+  // none may take neither. Keep that split when adding sigil sources.
   const rawSigilMul = sigilEffectMultiplier(owned);
   const maleficiaSigilMul = sigilMaleficiaEffectMul(state, rawSigilMul);
   const sigMul = maleficiaSigilMul * sigilSelfEffectMul(state, maleficiaSigilMul);
@@ -677,8 +679,8 @@ export function computeModifiers(state: GameState): Modifiers {
     mutuumPerCapitaMul: mutuumPerCapitaMulV,
     // Thesaurus withdrawal recovery: the Custodia Syngraphae × the recovery sigils (Vine #45,
     // Furcas #50 — re-pinned from the Mercatus divest fraction to the same niche here). The raw
-    // enhancer stack only, matching the divest-era scope (no Gaap/Semet inflation).
-    thesaurusRecoveryMul: thesaurusRecoveryMulV * sigilShutdownRefundMul(state),
+    // enhancer stack only (ADR-030: "raw-enhancer scope preserved"; no Gaap/Semet inflation).
+    thesaurusRecoveryMul: thesaurusRecoveryMulV * sigilShutdownRefundMul(state, rawSigilMul),
     // Escheat (faeneratio-2): flat gold per applied murder / suicide, minted in `dynamics`.
     escheatGoldPerMurder: escheatGoldPerMurderV,
     escheatGoldPerSuicide: escheatGoldPerSuicideV,
@@ -727,9 +729,9 @@ const SUCCESS_TIERS: readonly Tier[] = ['stellar', 'excellent', 'good'];
  * `tierWeightMul` bundle because it targets a single category's distribution. "Increase overall
  * success" effects lift the Stellar + Excellent + Good weights by the same factor (03 §1); on
  * renormalization that pulls probability off the failure tiers. Wired sources:
- *   - Suasio:    Resignation (Tristitia skill) and each Lamia invocation.
+ *   - Suasio:    Resignation (Tristitia skill).
  *   - Decimatio: Retribution (Ira skill).
- * Indagatio / Emptio have no success-shift source yet (their tier-success sigils attach later).
+ *   - All four categories: the per-category tier sigils (below).
  * `resolveAction` composes this on top of the global tier multipliers before resolving the tier.
  */
 export function categoryTierModifiers(
@@ -744,8 +746,9 @@ export function categoryTierModifiers(
     successMul *= skillBonus(skillIntensity(state.devotion.ira)); // Retribution
   }
   if (successMul !== 1) for (const t of SUCCESS_TIERS) out[t] = successMul;
-  // Per-category sigil contributions (Agares/Beleth/Botis/Ipos/Astaroth/Andras/Andromalius/Naberius),
-  // scaled by the RAW sigil-effect enhancers only (Solomon's Ring / Iron Nails). This resolution-time
+  // Per-category sigil contributions (the `categoryTier` seals: Vassago, Marbas, Beleth, Botis, Ipos,
+  // Astaroth, Stolas, Phenex, Halphas, Vual, Gremory, Volac, Andras, Haures, Andromalius), scaled by
+  // the RAW sigil-effect enhancers only (Solomon's Ring / Picatrix / Teraphim). This resolution-time
   // channel deliberately does NOT receive the Gaap #33 / Semet #32 inflation that `computeModifiers`
   // applies to the passive modifier bundle — see the scope note at the `sigMul` chain there.
   const sigCat = sigilCategoryTierContributions(

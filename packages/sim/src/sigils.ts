@@ -499,9 +499,9 @@ export function sigilMaleficiaEffectMul(state: GameState, rawMaleficiaMul: numbe
  * `maleficiaMul × (1 + semet)`. Semet's own strength is read against the (Gaap-inflated) maleficia
  * stack, never against itself. Scope (deliberate): this inflation reaches only the sigil
  * contributions composed in `computeModifiers`; the resolution-time / cost-time channels
- * (per-category tier shifts, invoking power, invocation & action cost reductions, Katabasis
- * carry-over) take the raw enhancer and are NOT scaled by Semet or Gaap. See the scope note at the
- * `sigMul` chain in modifiers.ts.
+ * (per-category tier shifts, invoking power, invocation & action cost reductions, duplicate-output
+ * and double-find chances, Thesaurus recovery, Katabasis carry-over) take the raw enhancer and are
+ * NOT scaled by Semet or Gaap. See the scope note at the `sigMul` chain in modifiers.ts.
  */
 export function sigilSelfEffectMul(state: GameState, maleficiaMul: number): number {
   return 1 + sumKind(state, 'sigilEffect', maleficiaMul);

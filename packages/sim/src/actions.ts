@@ -645,9 +645,17 @@ export function resolveAction(
   const positiveTier = tier === 'stellar' || tier === 'excellent' || tier === 'good';
   // Compute the duplication chance FIRST and only draw from the RNG when it is live. An unbound
   // dup-sigil roster yields chance 0, so gating the draw keeps the seeded stream byte-identical to
-  // the pre-sigil sequence (ADR-011) — mirroring the Furcas double-find guard in resolveIndagatio.
+  // the pre-sigil sequence (ADR-011) — mirroring the Crocell double-find guard in resolveIndagatio.
+  // A resolution-time channel, so it takes the RAW sigil-effect enhancer stack (Solomon's Ring,
+  // Picatrix, Teraphim), not the Gaap/Semet-inflated one (see the scope note in modifiers.ts).
   const dupChance =
-    dupCategory !== null && positiveTier ? sigilDuplicateOutputChance(state, dupCategory) : 0;
+    dupCategory !== null && positiveTier
+      ? sigilDuplicateOutputChance(
+          state,
+          dupCategory,
+          sigilEffectMultiplier(state.lifetime.maleficia),
+        )
+      : 0;
   const applyTwice = dupChance > 0 && rng.float() < dupChance;
   const passes = applyTwice ? 2 : 1;
 
@@ -1033,9 +1041,14 @@ export function resolveIndagatio(
   if (first) {
     let working = first.state;
     const surfaced = [first.picked];
-    // Furcas #50: a chance to surface a SECOND item in the same search. The float is drawn only when
-    // the chance is live, so an unbound roster leaves the RNG stream (and existing tests) untouched.
-    const chance = sigilIndagatioDoubleFindChance(state);
+    // Crocell #49: a chance to surface a SECOND item in the same search, scaled by the RAW
+    // sigil-effect enhancer stack like every resolution-time sigil channel. The float is drawn only
+    // when the chance is live, so an unbound roster leaves the RNG stream (and existing tests)
+    // untouched.
+    const chance = sigilIndagatioDoubleFindChance(
+      state,
+      sigilEffectMultiplier(state.lifetime.maleficia),
+    );
     if (chance > 0 && rng.float() < chance) {
       const second = findOne(working);
       if (second) {

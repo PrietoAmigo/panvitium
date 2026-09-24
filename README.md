@@ -103,9 +103,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 939** (sim 569 · shared 75 · api 20 · web 275).
+**Current test count: 943** (sim 573 · shared 75 · api 20 · web 275).
 
-> **Latest change — the maleficia rework (34-item roster) + the Loculi + Indagatio odds.** The
+> **Latest change — dead-modifier audit: the sigil-effect relics now reach every seal.** An audit
+> of every modifier source (all 72 seals, the 34 maleficia, the invocation roster, the call buffs
+> and the Syngraphae) found that **Solomon's Ring / Picatrix / Teraphim** ("+X% sigil effects")
+> silently skipped six seals: the duplicate-output rolls (**Agares #2**, **Malphas #39**, **Focalor
+> #41**), **Crocell #49**'s double find, and the **Vine #45 / Furcas #50** Thesaurus recovery. Those
+> three call sites passed no enhancer at all, contradicting the documented split (and ADR-030's
+> "raw-enhancer scope preserved"). Each now takes the RAW enhancer stack, like every other
+> resolution-time channel, so Gaap/Semet still stay out. The unused
+> `ASTIWIHAD_WIPE_CHANCE_PER_SECOND` constant (left over from Astiwihad's retired mass-suicide
+> role) is removed, and stale scope comments are corrected. No save-schema change. The
+> dup/double-find draws stay gated on a bound seal, so a save without one keeps a byte-identical RNG
+> stream (ADR-011). Net **+4 tests** (sim 569 → 573).
+>
+> **Earlier change — the maleficia rework (34-item roster) + the Loculi + Indagatio odds.** The
 > Maleficia catalog is retuned end to end: **Iron Nails** is retired and six relics join — **Black
 > Vessel** (−7% invocation costs), **Teraphim** (+4% sigil effects), **Picatrix** (+11%), **Grimoire
 > of Pope Honorius** (+13% invocation effects), **Pilate's Basin** (−50% Desidia drain), and **Achan's

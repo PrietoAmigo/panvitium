@@ -115,9 +115,11 @@ export function totalInvokingPower(owned: readonly string[]): number {
 
 /**
  * Multiplier applied to every sigil's effect strength from equipped sigil-enhancer maleficia
- * (Solomon's Ring +66%, Picatrix +11%, Teraphim +4%). 1 when none are equipped. Consumed by
- * `sigilModifierContributions` and `sigilKatabasisBonus` so it scales modifier, tier, and
- * Katabasis-carryover sigils alike. All three are non-stackable, so they compose additively.
+ * (Solomon's Ring +66%, Picatrix +11%, Teraphim +4%). 1 when none are equipped. Every sigil
+ * channel takes it: the passive bundle (via the Gaap/Semet chain in `computeModifiers`) and, raw,
+ * the per-category tiers, cost reductions, invoking power, duplicate-output and double-find
+ * chances, Thesaurus recovery and Katabasis carry-over. All three are non-stackable, so they
+ * compose additively.
  */
 export function sigilEffectMultiplier(owned: readonly string[]): number {
   return (
