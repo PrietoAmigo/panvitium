@@ -20,7 +20,7 @@ import {
   remainingReprobateFraction,
   remainingMaleficiaChance,
   sigilKatabasisBonus,
-  sigilEffectMultiplier,
+  sigilStrengthMul,
   eternalSinVisible,
   eternalSinRevealed,
   eternalProgress,
@@ -746,10 +746,11 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
 
   // What a descent right now would KEEP — the three carry-over fractions the commit rolls against,
   // inclusive of the Avaritia/Tristitia/Superbia levels AND the bound carry-over sigils (Purson,
-  // Halphas, Semet, …). Same inputs `commitKatabasis` uses, so the Ledger previews the real stakes:
+  // Camio, Cimejes; scaled by the relics and Semet). Same inputs `commitKatabasis` uses, so the Ledger
+  // previews the real stakes:
   // the Altar gate shows nothing, but here the player sees exactly how much survives the plunge.
   const carryover = useMemo(() => {
-    const mul = sigilEffectMultiplier(state.lifetime.maleficia);
+    const mul = sigilStrengthMul(state);
     return {
       gold: remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold', mul)),
       reprobates: remainingReprobateFraction(state, sigilKatabasisBonus(state, 'reprobate', mul)),

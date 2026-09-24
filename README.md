@@ -103,9 +103,24 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 943** (sim 573 · shared 75 · api 20 · web 275).
+**Current test count: 967** (sim 595 · shared 75 · api 20 · web 277).
 
-> **Latest change — dead-modifier audit: the sigil-effect relics now reach every seal.** An audit
+> **Latest change — every modifier reaches everything it claims (ADR-036).** Follow-up rulings on
+> the dead-modifier audit. **Semet #32** now scales every other seal in every channel (it reached
+> only 41 of 70): one `sigilStrengthMul` (the sigil-effect relics, Gaap-boosted, × Semet) feeds the
+> modifier bundle, per-category tiers, cost reductions, invoking power, Katabasis carry-over and the
+> dup / double-find / recovery chances. **Gaap #33** now boosts every maleficium's effect (rates,
+> flats, the single-use buffs, Black Vessel, the relics), with cuts in an asymptotic form that never
+> inverts; alone it does nothing. **Every invocation cost** is cut by `1/(1 + x)` for each of
+> Orobas, Zepar, Andrealphus and Black Vessel (now exactly −7% in that form), including Aurevora's
+> gold drain, and the Ars Goetia cost line finally shows the Black Vessel discount. The unused
+> summon-price fields are deleted. The dormant **invocation-runner channel** is removed (tick step,
+> timers, bundle field, Analytics row) through **save migration v8 → v9** (`CURRENT_SCHEMA_VERSION`
+> 8 → 9: drop `invocationRunners`). **Amy #58** reads ↑ to match its efficiency boost. No RNG change.
+> Net **+24 tests** (sim 573 → 595, web 275 → 277; shared flat at 75 as three runner round-trip
+> tests give way to the v8 → v9 migration pair and a no-runners pin).
+>
+> **Earlier change — dead-modifier audit: the sigil-effect relics now reach every seal.** An audit
 > of every modifier source (all 72 seals, the 34 maleficia, the invocation roster, the call buffs
 > and the Syngraphae) found that **Solomon's Ring / Picatrix / Teraphim** ("+X% sigil effects")
 > silently skipped six seals: the duplicate-output rolls (**Agares #2**, **Malphas #39**, **Focalor

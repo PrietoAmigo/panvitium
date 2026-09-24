@@ -201,7 +201,6 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
         toggleDurations: { panvitium: 12 },
         actionQueue: [{ actionId: 'caedes', remainingSeconds: 4 }],
         invocations: { imp: 1 },
-        invocationRunners: { imp: 7 },
         acolytes: [{ id: 1, assignedAction: 'caedes', remainingSeconds: 3 }],
       },
     };
@@ -230,13 +229,12 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
     expect(after.lifetime.gold.toNumber()).toBe(1000 + 400 * 1.25);
   });
 
-  it('stops toggles, fizzles the action queue, and dispels invocations + their channels', () => {
+  it('stops toggles, fizzles the action queue, and dispels invocations', () => {
     const after = enterKatabasis(loaded());
     expect(after.lifetime.activeToggles).toHaveLength(0);
     expect(Object.keys(after.lifetime.toggleDurations)).toHaveLength(0);
     expect(after.lifetime.actionQueue).toHaveLength(0);
     expect(Object.keys(after.lifetime.invocations)).toHaveLength(0);
-    expect(Object.keys(after.lifetime.invocationRunners)).toHaveLength(0);
   });
 
   it('drops acolyte assignments but keeps the carry-over inputs (reprobates, maleficia) intact', () => {

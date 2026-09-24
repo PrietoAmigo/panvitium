@@ -16,8 +16,8 @@
 import { add, bn, lt, max, min, mul, sub, ZERO, type BigNum } from './bignum.js';
 import { ensureAutoRepeatStarted, resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
-import { advanceInvocationRunners, invocationUpkeep } from './invocations.js';
-import { applyInvocationTickEffects, aurevoraDrainPerSecond } from './apex.js';
+import { invocationUpkeep } from './invocations.js';
+import { applyInvocationTickEffects, aurevoraDrainNow } from './apex.js';
 import { anatocismusDepositPerSecond, faeneratioGoldPerSecond } from './faeneratio.js';
 import { advanceToggles, panvitiumRate } from './compositum.js';
 import { advanceCallBuffs } from './callBuffs.js';
@@ -87,17 +87,11 @@ export function perSecondRates(state: GameState): PerSecondRates {
   );
   // Net of invocation upkeep (Invocatio sheet): %-of-gain costs cut the gain, flat costs subtract
   // an absolute amount — mirroring the tick's step 1a, so the readout matches realised net income.
-  const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
-  const up = invocationUpkeep(state, effectiveMax.toNumber());
+  const up = invocationUpkeep(state);
   // Aurevora (apex Gula) drains gold at an exponentially-rising rate while active (apex.ts); the
-  // HUD's gold/s must net it out or it reads positive while the vault visibly empties. Evaluated at
-  // the current active-duration, matching the tick's per-second drain.
-  const aurevoraDrain =
-    (state.lifetime.invocations.aurevora ?? 0) > 0
-      ? aurevoraDrainPerSecond(state.lifetime.invocationDurations.aurevora ?? 0)
-      : 0;
-  const finiteAurevoraDrain = Number.isFinite(aurevoraDrain) ? aurevoraDrain : 0;
-  const gold = grossGold * (1 - up.goldGainFraction) - up.flatGoldPerSecond - finiteAurevoraDrain;
+  // HUD's gold/s must net it out or it reads positive while the vault visibly empties.
+  const gold =
+    grossGold * (1 - up.goldGainFraction) - up.flatGoldPerSecond - aurevoraDrainNow(state);
   const influence = max(
     ZERO,
     sub(mul(grossInfluence, 1 - up.influenceGainFraction), bn(up.flatInfluencePerSecond)),
@@ -142,13 +136,9 @@ export function resourceFlows(state: GameState): ResourceFlows {
   const grossInfluence =
     effMax.toNumber() * BASE_INFLUENCE_RATE * mods.influenceRateMul +
     mods.flatInfluencePerSecond * mods.influenceRateMul;
-  const up = invocationUpkeep(state, effMax.toNumber());
-  const aurevoraDrain =
-    (state.lifetime.invocations.aurevora ?? 0) > 0
-      ? aurevoraDrainPerSecond(state.lifetime.invocationDurations.aurevora ?? 0)
-      : 0;
-  const finiteAurevoraDrain = Number.isFinite(aurevoraDrain) ? aurevoraDrain : 0;
-  const goldUpkeep = grossGold * up.goldGainFraction + up.flatGoldPerSecond + finiteAurevoraDrain;
+  const up = invocationUpkeep(state);
+  const goldUpkeep =
+    grossGold * up.goldGainFraction + up.flatGoldPerSecond + aurevoraDrainNow(state);
   const inflUpkeep = grossInfluence * up.influenceGainFraction + up.flatInfluencePerSecond;
   return {
     gold: { generation: grossGold, upkeep: goldUpkeep, net: grossGold - goldUpkeep },
@@ -286,7 +276,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   //     they never trigger a dispel. Reprobate upkeep is a PURE COST — whole units leave the pool
   //     WITHOUT minting souls (the 1-person-1-soul invariant covers only murder/suicide deaths).
   {
-    const up = invocationUpkeep(state, effectiveMax.toNumber());
+    const up = invocationUpkeep(state);
     const goldGain = sub(working.lifetime.gold, state.lifetime.gold);
     const inflGain = sub(working.lifetime.influence, state.lifetime.influence);
     const goldFracCost = mul(goldGain, up.goldGainFraction);
@@ -459,12 +449,6 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   const acoResult = advanceAcolytes(working, simDelta, rng);
   working = acoResult.state;
   for (const ev of acoResult.events) events.push({ ...ev, source: 'acolyte' });
-
-  // 5b. Autonomous invocation runners (02 §3). The Familiar runs Indagatio in its own channel at a
-  //     fraction of the player's efficiency — separate from the player slot and the acolytes.
-  const runResult = advanceInvocationRunners(working, simDelta, rng);
-  working = runResult.state;
-  for (const ev of runResult.events) events.push({ ...ev, source: 'invocation' });
 
   // 6. Achievements (03 §7). Evaluate the catalog against the fully-advanced state; fold any newly-
   //    earned ids into state.achievements and surface them for a toast. Last step, so every change

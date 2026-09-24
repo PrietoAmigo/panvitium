@@ -31,10 +31,9 @@ export interface GoetiaEntry {
   unlocked: boolean;
   /** How many copies are currently bound/active. REAL (0 = none summoned). */
   active: number;
-  /** True when at its max-active cap (apexes + the runner singletons cap at 1). REAL. */
+  /** True when at its max-active cap (the apexes cap at 1). REAL. Summoning itself is free: an
+   *  invocation's whole cost is its per-second upkeep (`cost`). */
   atCap: boolean;
-  /** True when the current soul (and gold) cost is affordable right now. REAL. */
-  affordable: boolean;
   /** Pre-formatted bound badge, e.g. 'bound' or 'bound ×2'. Omit when nothing is bound. REAL. */
   bound?: string;
 }

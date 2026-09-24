@@ -123,7 +123,7 @@ export function ArsGoetiaBook({
                 <button
                   type="button"
                   className="gb-summon"
-                  disabled={!entry.unlocked || entry.atCap || !entry.affordable}
+                  disabled={!entry.unlocked || entry.atCap}
                   onClick={() => onSummon(entry.id)}
                 >
                   {entry.atCap ? 'Bound' : entry.unlocked ? 'Summon' : 'Sealed'}

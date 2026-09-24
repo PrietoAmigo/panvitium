@@ -347,12 +347,11 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     );
   });
 
-  it('exposes a per-Sin effectiveness map defaulting to 1', () => {
-    const m = computeModifiers(fresh());
-    expect(m.invocationSinEffectivenessMul.ira).toBe(1);
+  it('Vepar #42 (Ira) scales an Ira invocation effect by (1 + strength) (the Imp murders/s)', () => {
+    const imp = withInv('imp', 1);
     const strength = sigilStrength(sigilById(42)!, bn(100_000)); // Vepar → Ira
-    expect(computeModifiers(bound(42, 100_000)).invocationSinEffectivenessMul.ira).toBeCloseTo(
-      1 + strength,
+    expect(computeModifiers(bound(42, 100_000, imp)).flatMurdersPerSecond).toBeCloseTo(
+      computeModifiers(imp).flatMurdersPerSecond * (1 + strength),
       6,
     );
   });
@@ -465,8 +464,8 @@ describe('Cost-reduction sigils (S8)', () => {
       ...s,
       lifetime: { ...s.lifetime, invocations: { imp: 1 } },
     });
-    expect(invocationUpkeep(withImp(fresh()), 0).flatGoldPerSecond).toBe(10);
-    expect(invocationUpkeep(withImp(bound(55, 100_000_000)), 0).flatGoldPerSecond).toBeCloseTo(
+    expect(invocationUpkeep(withImp(fresh())).flatGoldPerSecond).toBe(10);
+    expect(invocationUpkeep(withImp(bound(55, 100_000_000))).flatGoldPerSecond).toBeCloseTo(
       10 / factor,
       6,
     );
@@ -476,18 +475,19 @@ describe('Cost-reduction sigils (S8)', () => {
       ...s,
       lifetime: { ...s.lifetime, invocations: { lemure: 1 } },
     });
-    expect(invocationUpkeep(withLemure(fresh()), 0).influenceGainFraction).toBeCloseTo(0.25, 6);
-    expect(
-      invocationUpkeep(withLemure(bound(55, 100_000_000)), 0).influenceGainFraction,
-    ).toBeCloseTo(0.25 / factor, 6);
+    expect(invocationUpkeep(withLemure(fresh())).influenceGainFraction).toBeCloseTo(0.25, 6);
+    expect(invocationUpkeep(withLemure(bound(55, 100_000_000))).influenceGainFraction).toBeCloseTo(
+      0.25 / factor,
+      6,
+    );
 
     // The reprobate fraction (Morpheus) and desidia (Upir) upkeep are softened too.
     const withMorpheus = (s: GameState): GameState => ({
       ...s,
       lifetime: { ...s.lifetime, invocations: { morpheus: 1 } },
     });
-    expect(invocationUpkeep(withMorpheus(fresh()), 0).reprobateFraction).toBeCloseTo(0.05, 6);
-    expect(invocationUpkeep(withMorpheus(bound(55, 100_000_000)), 0).reprobateFraction).toBeCloseTo(
+    expect(invocationUpkeep(withMorpheus(fresh())).reprobateFraction).toBeCloseTo(0.05, 6);
+    expect(invocationUpkeep(withMorpheus(bound(55, 100_000_000))).reprobateFraction).toBeCloseTo(
       0.05 / factor,
       6,
     );
@@ -930,7 +930,7 @@ describe('Sigil-effect maleficia reach every sigil channel', () => {
     ).toHaveLength(2);
   });
 
-  it('the ring lifts the Vine #45 / Furcas #50 Thesaurus recovery (raw stack, not Gaap-inflated)', () => {
+  it('the ring lifts the Vine #45 / Furcas #50 Thesaurus recovery', () => {
     const strength = sigilStrength(sigilById(45)!, bn(SOULS));
     for (const id of [45, 50]) {
       expect(computeModifiers(bound(id, SOULS)).thesaurusRecoveryMul).toBeCloseTo(1 + strength, 6);
@@ -943,10 +943,5 @@ describe('Sigil-effect maleficia reach every sigil channel', () => {
       0.25 * (1 + 1.66 * strength),
       6,
     );
-    // Gaap #33 inflates only the PASSIVE bundle's enhancer stack; this raw channel ignores it.
-    const withGaap = ring(
-      bindSigil(bound(45, SOULS, { ...fresh(), souls: bn(2 * SOULS) }), 33, SOULS),
-    );
-    expect(computeModifiers(withGaap).thesaurusRecoveryMul).toBeCloseTo(1 + 1.66 * strength, 6);
   });
 });

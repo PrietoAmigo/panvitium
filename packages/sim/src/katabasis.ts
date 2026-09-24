@@ -13,8 +13,7 @@
 import { add, clamp, floor, gt, isZero, max, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
 import { liquidateThesaurus } from './faeneratio.js';
 import { peculiumFloorFraction } from './syngraphae.js';
-import { sigilKatabasisBonus } from './sigils.js';
-import { sigilEffectMultiplier } from './maleficia.js';
+import { sigilKatabasisBonus, sigilStrengthMul } from './sigils.js';
 import {
   BASE_MAX_INFLUENCE,
   BASE_REMAINING_GOLD,
@@ -115,8 +114,8 @@ export function bindSigil(
  * Begin the descent (02 §6): the moment the player commits to Katabasis, the lifetime's *productive*
  * systems are torn down — NOT later when they rise. The Thesaurus hoard liquidates in full into
  * gold (the descent voids the contracts; the faeneratio-4 bonus applies — so the estate rides the
- * later carry-over roll), toggles stop, the action queue clears, invocations are dispelled and
- * their autonomous channels stop, and acolytes drop their assignments. What the commit will roll
+ * later carry-over roll), toggles stop, the action queue clears, invocations are dispelled, and
+ * acolytes drop their assignments. What the commit will roll
  * for carry-over (gold, reprobates, maleficia) is left intact and frozen; the store suspends
  * ticking while the menu is open, so nothing accrues during allocation. `commitKatabasis` finishes
  * the descent (the carry-over rolls + lifetime reset) when the player confirms.
@@ -147,7 +146,6 @@ export function enterKatabasis(state: GameState): GameState {
       actionQueue: [], // uncompleted player actions fizzle
       autoRepeat: [], // auto-repeating rites stop with the slot
       invocations: {}, // all invocations dispelled (02 §7)
-      invocationRunners: {}, // …and their autonomous channels stop
       invocationDurations: {}, // …and any apex duration counters (Aurevora) clear
       acolytes, // followers drop their tasks (the list itself clears at commit)
       // The signed Syngraphae stay readable through the frozen menu (commit needs custodia-4 for
@@ -215,10 +213,10 @@ export function commitKatabasis(
   const goldAtDescent = state.lifetime.gold;
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
-  // hoard liquidation folded in above. Sigils (Purson #20, Semet #32) lift the fraction;
-  // Erinyes/Morpheus override it outright. Sigil-enhancer maleficia (Solomon's Ring, Iron Nails)
-  // scale every sigil's carry-over strength.
-  const sigilEffectMul = sigilEffectMultiplier(state.lifetime.maleficia);
+  // hoard liquidation folded in above. Purson #20 lifts the fraction; Erinyes/Astiwihad override it
+  // outright. The shared sigil-strength multiplier (the sigil-effect relics, Gaap #33, Semet #32)
+  // scales every carry-over seal, like every other sigil channel (ADR-036).
+  const sigilEffectMul = sigilStrengthMul(state);
   const goldFraction = pendingErinyes
     ? 0
     : pendingAstiwihad
@@ -233,8 +231,8 @@ export function commitKatabasis(
     peculium > 0 ? floor(mul(state.lifetime.hoardAtDescent ?? ZERO, peculium)) : ZERO;
   const goldKept = pendingErinyes ? rolledGold : max(rolledGold, peculiumFloor);
 
-  // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8). Sigils
-  // (Halphas #38, Semet #32) lift the chance; Erinyes zeros it, Morpheus maxes it.
+  // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8). Cimejes
+  // #66 lifts the chance; Erinyes zeros it, Astiwihad maxes it.
   const chance = pendingErinyes
     ? 0
     : pendingAstiwihad
@@ -247,7 +245,7 @@ export function commitKatabasis(
     else maleficiaLost.push(m);
   }
 
-  // Remaining reprobates: a fraction of the pool survives the descent. Sigils (Semet #32) lift it.
+  // Remaining reprobates: a fraction of the pool survives the descent. Camio #53 lifts it.
   const reprobates = Math.floor(
     state.lifetime.reprobates *
       remainingReprobateFraction(state, sigilKatabasisBonus(state, 'reprobate', sigilEffectMul)),
@@ -260,7 +258,6 @@ export function commitKatabasis(
     reprobates,
     acolytes: [], // re-grow from influence
     invocations: {}, // all invocations dispelled (02 §7)
-    invocationRunners: {}, // …and their autonomous channels stop
     invocationDurations: {}, // …and any apex duration counters (Aurevora) clear
     maleficia: maleficiaKept,
     // Morpheus's mercy (03 §2.4): the Emptio list survives the descent so the maleficia surfaced

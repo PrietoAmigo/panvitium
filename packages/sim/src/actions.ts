@@ -38,13 +38,13 @@ import {
   MALEFICIUM_PRICE_RANGE,
   MAX_EMPTIO_LIST_SIZE,
   findableIds,
-  sigilEffectMultiplier,
   type MaleficiumRarity,
 } from './maleficia.js';
 import {
   sigilCostReductionByChannel,
   sigilDuplicateOutputChance,
   sigilIndagatioDoubleFindChance,
+  sigilStrengthMul,
 } from './sigils.js';
 // The action catalog + tier-weight distributions live in `actions.data.ts` (the editable economy
 // knobs); imported for the engine here and re-exported so `import { ACTIONS } from './actions.js'`
@@ -161,10 +161,7 @@ export function plannedActionCost(
   const def = ACTIONS[actionId];
   if (!def) return { gold: 0, influence: 0 };
   const eff = options.efficiency ?? categoryEfficiency(state, def.category);
-  const costRed = sigilCostReductionByChannel(
-    state,
-    sigilEffectMultiplier(state.lifetime.maleficia),
-  );
+  const costRed = sigilCostReductionByChannel(state, sigilStrengthMul(state));
   let goldCost = def.cost.gold ?? 0;
   let influenceCost = def.cost.influence ?? 0;
   if (actionId === 'emptio') {
@@ -646,15 +643,10 @@ export function resolveAction(
   // Compute the duplication chance FIRST and only draw from the RNG when it is live. An unbound
   // dup-sigil roster yields chance 0, so gating the draw keeps the seeded stream byte-identical to
   // the pre-sigil sequence (ADR-011) — mirroring the Crocell double-find guard in resolveIndagatio.
-  // A resolution-time channel, so it takes the RAW sigil-effect enhancer stack (Solomon's Ring,
-  // Picatrix, Teraphim), not the Gaap/Semet-inflated one (see the scope note in modifiers.ts).
+  // Scaled by the sigil-strength multiplier every sigil channel shares (relics, Gaap, Semet).
   const dupChance =
     dupCategory !== null && positiveTier
-      ? sigilDuplicateOutputChance(
-          state,
-          dupCategory,
-          sigilEffectMultiplier(state.lifetime.maleficia),
-        )
+      ? sigilDuplicateOutputChance(state, dupCategory, sigilStrengthMul(state))
       : 0;
   const applyTwice = dupChance > 0 && rng.float() < dupChance;
   const passes = applyTwice ? 2 : 1;
@@ -1041,14 +1033,10 @@ export function resolveIndagatio(
   if (first) {
     let working = first.state;
     const surfaced = [first.picked];
-    // Crocell #49: a chance to surface a SECOND item in the same search, scaled by the RAW
-    // sigil-effect enhancer stack like every resolution-time sigil channel. The float is drawn only
-    // when the chance is live, so an unbound roster leaves the RNG stream (and existing tests)
-    // untouched.
-    const chance = sigilIndagatioDoubleFindChance(
-      state,
-      sigilEffectMultiplier(state.lifetime.maleficia),
-    );
+    // Crocell #49: a chance to surface a SECOND item in the same search, scaled by the shared
+    // sigil-strength multiplier. The float is drawn only when the chance is live, so an unbound
+    // roster leaves the RNG stream (and existing tests) untouched.
+    const chance = sigilIndagatioDoubleFindChance(state, sigilStrengthMul(state));
     if (chance > 0 && rng.float() < chance) {
       const second = findOne(working);
       if (second) {
@@ -1106,10 +1094,7 @@ export function resolveEmptio(
   // reduction changed mid-flight. An in-flight timer from an older save lacks the field; recompute
   // it the same way startAction did (falling back to `def.cost` for pre-rolled-pricing items).
   const rolled = state.lifetime.maleficiaPrices[target] ?? def.cost;
-  const costRed = sigilCostReductionByChannel(
-    state,
-    sigilEffectMultiplier(state.lifetime.maleficia),
-  );
+  const costRed = sigilCostReductionByChannel(state, sigilStrengthMul(state));
   const paid = paidGold ?? (costRed.emptioGold ? Math.ceil(rolled / costRed.emptioGold) : rolled);
   if (!state.lifetime.emptioList.includes(target)) {
     // The target vanished from the list mid-flight (evicted by a later find, a parallel hand). The

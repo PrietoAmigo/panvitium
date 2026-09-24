@@ -16,6 +16,9 @@
  * longer draws RNG. Morpheus's reprobate→desidia conversion is a modifier-bundle field
  * (`flatDesidiaPerSecond`) applied in the tick, and its reprobate upkeep is charged in tick 1a.)
  *
+ * The drain is an invocation cost, so it takes `invocationCostMul` (the Orobas / Zepar / Andrealphus
+ * cost channel and Black Vessel, ADR-035/036) exactly like every upkeep drain.
+ *
  * Pure with respect to `state`. No dependency on the modifier bundle — avoids a cycle, since
  * modifiers.ts reads the Aurevora efficiency curve from here.
  */
@@ -25,16 +28,33 @@ import {
   AUREVORA_DRAIN_GROWTH_PER_SECOND,
   AUREVORA_EFFICIENCY_GROWTH_PER_SECOND,
 } from './constants.js';
+import { invocationCostMul } from './sigils.js';
 import { type GameState } from './state.js';
 
 /**
- * Aurevora gold drain per second at a given active-duration: `base × growth^secondsActive`. May
- * exceed Number range for a long-lived ramp; the caller guards with `Number.isFinite` and treats a
- * non-finite drain as "eats everything" (dispel). Returns 0 for a non-positive duration guard.
+ * Aurevora gold drain per second at a given active-duration: `base × growth^secondsActive × costMul`,
+ * where `costMul` is the invocation cost multiplier (`invocationCostMul`, 1 when nothing softens
+ * it). May exceed Number range for a long-lived ramp; the caller guards with `Number.isFinite` and
+ * treats a non-finite drain as "eats everything" (dispel). A negative duration reads as t = 0.
  */
-export function aurevoraDrainPerSecond(secondsActive: number): number {
-  if (secondsActive < 0) return AUREVORA_BASE_GOLD_DRAIN_PER_SECOND;
-  return AUREVORA_BASE_GOLD_DRAIN_PER_SECOND * AUREVORA_DRAIN_GROWTH_PER_SECOND ** secondsActive;
+export function aurevoraDrainPerSecond(secondsActive: number, costMul = 1): number {
+  const t = Math.max(0, secondsActive);
+  return AUREVORA_BASE_GOLD_DRAIN_PER_SECOND * AUREVORA_DRAIN_GROWTH_PER_SECOND ** t * costMul;
+}
+
+/**
+ * Aurevora's CURRENT gold drain per second, for the income readouts (`perSecondRates`,
+ * `resourceFlows`): 0 when Aurevora is not active, and 0 for a runaway (non-finite) ramp, which the
+ * tick treats as "eats everything" instead. Evaluated at the current active duration, softened by
+ * `invocationCostMul` like the tick's own drain.
+ */
+export function aurevoraDrainNow(state: GameState): number {
+  if ((state.lifetime.invocations.aurevora ?? 0) <= 0) return 0;
+  const drain = aurevoraDrainPerSecond(
+    state.lifetime.invocationDurations.aurevora ?? 0,
+    invocationCostMul(state),
+  );
+  return Number.isFinite(drain) ? drain : 0;
 }
 
 /**
@@ -66,7 +86,7 @@ export function applyInvocationTickEffects(
     // Evaluate the ramp at the duration BEFORE this tick's increment, mirroring Panvitium's
     // duration-scaled cost (compositum.ts), then advance the counter by deltaSeconds.
     const prevDuration = working.lifetime.invocationDurations.aurevora ?? 0;
-    const drainPerSecond = aurevoraDrainPerSecond(prevDuration);
+    const drainPerSecond = aurevoraDrainPerSecond(prevDuration, invocationCostMul(working));
     const gold = working.lifetime.gold;
 
     let dispel = false;

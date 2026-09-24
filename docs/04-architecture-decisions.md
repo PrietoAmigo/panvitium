@@ -1182,6 +1182,56 @@ price (Morpheus) nor the %-of-gain upkeep — so both its name and its reach und
 - Softening the apex %-of-gain tradeoffs is a deliberate balance shift: a heavy `invocation`-channel
   stack now relieves the steep apex upkeep, not only the flat drains.
 
+## ADR-036: One sigil-strength multiplier; Gaap boosts every maleficium; every invocation cost cut by 1/(1 + x); the runner channel removed
+
+**Status.** Accepted [2026-09-24]. Supersedes the "SCOPE (deliberate)" split in `computeModifiers`
+and ADR-029's narrow reading of Gaap #33; extends ADR-035's cost channel.
+
+**Context.** A dead-modifier audit found several modifiers that were defined but reached only part
+of what they claim. (1) Semet #32 ("Increases all sigil effects") scaled only the passive-bundle
+seals, 41 of the other 70; the per-category tier, cost-reduction, invoking-power, Katabasis,
+duplicate-output, double-find and Thesaurus-recovery seals took a "raw" stack without it. (2) Gaap
+#33 ("Maleficia effects ↑") boosted only the three sigil-effect relics' bonus, so with none of
+them equipped it did nothing. (3) Six seals took no enhancer at all (fixed in the same pass). (4)
+Black Vessel cut invocation costs linearly (×0.93) and was missing from the grimoire's cost line;
+the "summon price" half of the cost channel (`soulCost`/`goldCost`) had no entry using it, and
+Aurevora's gold drain, shown as its cost, took no discount. (5) The autonomous invocation-runner
+channel had no user since the roster rework, yet still ran every tick and persisted its timers.
+
+**Decision.**
+
+- **One multiplier for every seal.** `sigilEffectStack(state)` (sigils.ts) evaluates, in one
+  acyclic order: the relics' raw bonus → Semet's strength (read against the raw bonus) → Gaap's
+  strength (read against raw × (1 + Semet)) → the relics' bonus boosted by Gaap → `sigilMul =
+  relics × (1 + Semet)`. EVERY sigil channel takes `sigilStrengthMul(state)`; none may skip it.
+  Semet no longer reads against the Gaap-inflated stack (that order would be cyclic now that Semet
+  scales Gaap).
+- **Gaap boosts every maleficium effect.** `maleficiaBoost = 1 + Gaap` multiplies every maleficium
+  magnitude: rate percents, flat per-second amounts, the single-use buffs, Black Vessel's cut and
+  the sigil-effect relics' bonus. Increases scale linearly (`1 + bonus × boost`); cuts use the
+  asymptotic form `1 / (1 + k × boost)` with `k = 1/factor − 1` (`boostMaleficiumFactor`), so a
+  boosted cut deepens toward zero and never inverts. Invoking power is a gate stat, not an effect,
+  and is not boosted.
+- **Every invocation cost is cut by 1/(1 + x).** `invocationCostMul(state)` = the cost channel's
+  `1/(1 + strength)` (Orobas #55, Zepar #16, Andrealphus #65) × Black Vessel's `1/(1 + k)`
+  (exactly −7% at base, Gaap-boostable). It applies to every upkeep drain (flat, %-of-gain,
+  %-of-pool, desidia) and to Aurevora's exponential gold drain, and the grimoire's cost line reads
+  the same multiplier. The unused `soulCost` / `goldCost` / `upkeep.maxInfluenceFraction`
+  dimensions are deleted: summoning is free, the whole cost is upkeep.
+- **The runner channel is removed.** `InvocationDef.autonomous`, `advanceInvocationRunners`, the
+  tick step, `lifetime.invocationRunners`, the `invocationSinEffectivenessMul` bundle field and the
+  `'invocation'` event source go. `runner.ts` stays: acolytes use it.
+
+**Consequences.**
+
+- Save schema **v8 → v9** (ADR-023): `lifetime.invocationRunners` is dropped by
+  `migrations/v8-to-v9.ts`.
+- Balance: every enhancer now reaches every seal, and a Gaap binding now lifts the whole maleficia
+  loadout, so late-game sigil and relic stacks are stronger. Without Gaap, Semet or a relic every
+  number is unchanged.
+- Determinism (ADR-011): no new RNG draw; the dup / double-find draws stay gated on a bound seal.
+- Amy #58's description arrow is corrected to ↑, matching its (player-tuned) efficiency increase.
+
 ---
 
 ## Open items not yet decided

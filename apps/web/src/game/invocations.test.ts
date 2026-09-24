@@ -63,7 +63,6 @@ describe('buildGoetia view-model adapter', () => {
     expect(midas.active).toBe(1);
     expect(midas.atCap).toBe(true); // apex, maxActive 1
     expect(midas.bound).toBe('1'); // one summoned → '1'
-    expect(midas.affordable).toBe(true); // free apex is always affordable
   });
 });
 
@@ -100,5 +99,26 @@ describe('buildGoetia effect lines (sim-derived, not stale static copy)', () => 
     const eff = effectOf('fama');
     expect(eff).toMatch(/%/);
     expect(eff).not.toContain('50%');
+  });
+});
+
+describe('buildGoetia cost line (every invocation cost is cut, ADR-035/036)', () => {
+  // Obsidian Mirror (8) + Witch Bottle (2) = 10 invoking power reveals every entry.
+  function withRelics(extra: string[]) {
+    const s = createInitialState('goetia-cost', 0);
+    const maleficia = ['obsidian_mirror', 'witch_bottle', ...extra];
+    return { ...s, lifetime: { ...s.lifetime, maleficia } };
+  }
+  const cost = (state: ReturnType<typeof withRelics>, id: string): string =>
+    buildGoetia(state).entries.find((e) => e.id === id)!.cost;
+
+  it("shows Lemure's 25%-of-influence-gain upkeep cut to 23% by Black Vessel", () => {
+    expect(cost(withRelics([]), 'lemure')).toContain('25%');
+    expect(cost(withRelics(['black_vessel']), 'lemure')).toContain('23%');
+  });
+
+  it("shows Aurevora's starting drain cut by Black Vessel (100 to 93 gold/s)", () => {
+    expect(cost(withRelics([]), 'aurevora')).toContain('drains 100 gold/s');
+    expect(cost(withRelics(['black_vessel']), 'aurevora')).toContain('drains 93 gold/s');
   });
 });

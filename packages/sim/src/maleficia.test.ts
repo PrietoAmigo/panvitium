@@ -8,7 +8,7 @@ import {
   countCopies,
   findableIds,
   isStackable,
-  sigilEffectMultiplier,
+  rawRelicSigilMul,
   totalInvokingPower,
   maleficiaBuffMultipliers,
   maleficiaInvocationCostMul,
@@ -121,12 +121,12 @@ describe('maleficia catalog — sheet parity (34 items)', () => {
     }
   });
 
-  it("sigilEffectMultiplier reflects Solomon's Ring (+66%), Picatrix (+11%), Teraphim (+4%)", () => {
-    expect(sigilEffectMultiplier([])).toBe(1);
-    expect(sigilEffectMultiplier(['solomons_ring'])).toBeCloseTo(1.66, 9);
-    expect(sigilEffectMultiplier(['picatrix'])).toBeCloseTo(1.11, 9);
-    expect(sigilEffectMultiplier(['teraphim'])).toBeCloseTo(1.04, 9);
-    expect(sigilEffectMultiplier(['solomons_ring', 'picatrix', 'teraphim'])).toBeCloseTo(1.81, 9);
+  it("rawRelicSigilMul reflects Solomon's Ring (+66%), Picatrix (+11%), Teraphim (+4%)", () => {
+    expect(rawRelicSigilMul([])).toBe(1);
+    expect(rawRelicSigilMul(['solomons_ring'])).toBeCloseTo(1.66, 9);
+    expect(rawRelicSigilMul(['picatrix'])).toBeCloseTo(1.11, 9);
+    expect(rawRelicSigilMul(['teraphim'])).toBeCloseTo(1.04, 9);
+    expect(rawRelicSigilMul(['solomons_ring', 'picatrix', 'teraphim'])).toBeCloseTo(1.81, 9);
   });
 
   it('maleficiaInvocationCostMul shaves 7% per Black Vessel (non-stackable)', () => {
