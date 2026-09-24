@@ -275,7 +275,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     name: 'Gaap',
     curve: 'log',
     coefficient: 0.01,
-    // Sigils sheet (rev 2026-06-12): +maleficia effect % (scales the maleficia sigil-enhancer stack).
+    // Sigils sheet (rev 2026-06-12): +maleficia effect % (boosts EVERY maleficium's effect, ADR-036).
     effect: { kind: 'maleficiaEffect' },
   },
   34: {

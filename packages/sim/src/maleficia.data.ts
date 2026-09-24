@@ -24,8 +24,9 @@ export const MALEFICIUM_PRICE_RANGE: Record<
 /**
  * The full 34-item catalog. Effects are carried in each entry's `description` (magnitudes baked in
  * per the copy rule) and wired into their consuming systems: the modifier engine (`modifiers.ts`)
- * for the passive rate/percent/flat enhancers, `invocations.ts` for the invocation-cost reduction,
- * and the single-use timed-buff system (`maleficiaBuffs`) for the consumables.
+ * for the passive rate/percent/flat enhancers, `sigils.ts` for the sigil-effect relics and the
+ * invocation-cost reduction, and the single-use timed-buff system (`maleficiaBuffs`) for the
+ * consumables. Gaap #33 boosts every one of these effects (ADR-036).
  */
 export const MALEFICIA: Record<string, MaleficiumDef> = {
   // ── Common ─────────────────────────────────────────────────────────────────

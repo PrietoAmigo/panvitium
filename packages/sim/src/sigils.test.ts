@@ -51,6 +51,7 @@ import {
   tick,
   totalReprobates,
   type GameState,
+  type Rng,
 } from './index.js';
 
 function fresh(seed = 'sigils', t = 0): GameState {
@@ -346,12 +347,11 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
     );
   });
 
-  it('exposes a per-Sin effectiveness map defaulting to 1', () => {
-    const m = computeModifiers(fresh());
-    expect(m.invocationSinEffectivenessMul.ira).toBe(1);
+  it('Vepar #42 (Ira) scales an Ira invocation effect by (1 + strength) (the Imp murders/s)', () => {
+    const imp = withInv('imp', 1);
     const strength = sigilStrength(sigilById(42)!, bn(100_000)); // Vepar → Ira
-    expect(computeModifiers(bound(42, 100_000)).invocationSinEffectivenessMul.ira).toBeCloseTo(
-      1 + strength,
+    expect(computeModifiers(bound(42, 100_000, imp)).flatMurdersPerSecond).toBeCloseTo(
+      computeModifiers(imp).flatMurdersPerSecond * (1 + strength),
       6,
     );
   });
@@ -464,8 +464,8 @@ describe('Cost-reduction sigils (S8)', () => {
       ...s,
       lifetime: { ...s.lifetime, invocations: { imp: 1 } },
     });
-    expect(invocationUpkeep(withImp(fresh()), 0).flatGoldPerSecond).toBe(10);
-    expect(invocationUpkeep(withImp(bound(55, 100_000_000)), 0).flatGoldPerSecond).toBeCloseTo(
+    expect(invocationUpkeep(withImp(fresh())).flatGoldPerSecond).toBe(10);
+    expect(invocationUpkeep(withImp(bound(55, 100_000_000))).flatGoldPerSecond).toBeCloseTo(
       10 / factor,
       6,
     );
@@ -475,18 +475,19 @@ describe('Cost-reduction sigils (S8)', () => {
       ...s,
       lifetime: { ...s.lifetime, invocations: { lemure: 1 } },
     });
-    expect(invocationUpkeep(withLemure(fresh()), 0).influenceGainFraction).toBeCloseTo(0.25, 6);
-    expect(
-      invocationUpkeep(withLemure(bound(55, 100_000_000)), 0).influenceGainFraction,
-    ).toBeCloseTo(0.25 / factor, 6);
+    expect(invocationUpkeep(withLemure(fresh())).influenceGainFraction).toBeCloseTo(0.25, 6);
+    expect(invocationUpkeep(withLemure(bound(55, 100_000_000))).influenceGainFraction).toBeCloseTo(
+      0.25 / factor,
+      6,
+    );
 
     // The reprobate fraction (Morpheus) and desidia (Upir) upkeep are softened too.
     const withMorpheus = (s: GameState): GameState => ({
       ...s,
       lifetime: { ...s.lifetime, invocations: { morpheus: 1 } },
     });
-    expect(invocationUpkeep(withMorpheus(fresh()), 0).reprobateFraction).toBeCloseTo(0.05, 6);
-    expect(invocationUpkeep(withMorpheus(bound(55, 100_000_000)), 0).reprobateFraction).toBeCloseTo(
+    expect(invocationUpkeep(withMorpheus(fresh())).reprobateFraction).toBeCloseTo(0.05, 6);
+    expect(invocationUpkeep(withMorpheus(bound(55, 100_000_000))).reprobateFraction).toBeCloseTo(
       0.05 / factor,
       6,
     );
@@ -873,5 +874,74 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
     const before = rng.state;
     resolveAction(fresh(), 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
     expect(rng.state).toBe(before);
+  });
+});
+
+describe('Sigil-effect maleficia reach every sigil channel', () => {
+  // Solomon's Ring (+66%), Picatrix (+11%) and Teraphim (+4%) read "+X% sigil effects". The
+  // resolution-time channels (duplicate output, Crocell's double find) and the Vine / Furcas
+  // Thesaurus recovery used to take NO enhancer at all, so the relics silently skipped those six
+  // seals. Each channel now takes the RAW enhancer stack (the documented split in modifiers.ts).
+  const ring = (g: GameState): GameState => ({
+    ...g,
+    lifetime: { ...g.lifetime, maleficia: [...g.lifetime.maleficia, 'solomons_ring'] },
+  });
+  /** A stub RNG pinned to one float, so a chance roll lands exactly where the test puts it. */
+  const pinnedRng = (x: number): Rng => ({
+    float: () => x,
+    int: (n: number) => Math.floor(x * n),
+    range: (lo: number, hi: number) => lo + x * (hi - lo),
+    chance: (p: number) => x < p,
+    state: 0,
+  });
+  // At 1e6 souls a standard pct seal reads ~0.382; the ring lifts it to ~0.634. A roll pinned at 0.5
+  // misses the bare chance and hits the enhanced one.
+  const SOULS = 1_000_000;
+  const ROLL = 0.5;
+
+  it('the ring lifts the duplicate-output chance (Malphas #39 on a Good Suggestion)', () => {
+    const strength = sigilStrength(sigilById(39)!, bn(SOULS));
+    expect(strength).toBeLessThan(ROLL);
+    expect(strength * 1.66).toBeGreaterThan(ROLL);
+    const opts = { forcedTier: 'good' as const, efficiency: 1 };
+    const bare = bound(39, SOULS);
+    const r0 = resolveAction(bare, 'suggestion', pinnedRng(ROLL), opts);
+    expect(totalReprobates(r0.state) - totalReprobates(bare)).toBe(1);
+    const lifted = ring(bare);
+    const r1 = resolveAction(lifted, 'suggestion', pinnedRng(ROLL), opts);
+    expect(totalReprobates(r1.state) - totalReprobates(lifted)).toBe(2);
+  });
+
+  it('the ring alone never draws the duplicate roll (RNG stream stays byte-identical)', () => {
+    const s = ring(fresh());
+    const rng = makeRng(s.rngState);
+    const before = rng.state;
+    resolveAction(s, 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
+    expect(rng.state).toBe(before);
+  });
+
+  it("the ring lifts Crocell #49's double-find chance", () => {
+    const strength = sigilStrength(sigilById(49)!, bn(SOULS));
+    expect(strength).toBeLessThan(ROLL);
+    expect(strength * 1.66).toBeGreaterThan(ROLL);
+    expect(resolveIndagatio(bound(49, SOULS), 'stellar', pinnedRng(ROLL)).surfaced).toHaveLength(1);
+    expect(
+      resolveIndagatio(ring(bound(49, SOULS)), 'stellar', pinnedRng(ROLL)).surfaced,
+    ).toHaveLength(2);
+  });
+
+  it('the ring lifts the Vine #45 / Furcas #50 Thesaurus recovery', () => {
+    const strength = sigilStrength(sigilById(45)!, bn(SOULS));
+    for (const id of [45, 50]) {
+      expect(computeModifiers(bound(id, SOULS)).thesaurusRecoveryMul).toBeCloseTo(1 + strength, 6);
+      expect(computeModifiers(ring(bound(id, SOULS))).thesaurusRecoveryMul).toBeCloseTo(
+        1 + 1.66 * strength,
+        6,
+      );
+    }
+    expect(thesaurusRecoveryFraction(computeModifiers(ring(bound(45, SOULS))))).toBeCloseTo(
+      0.25 * (1 + 1.66 * strength),
+      6,
+    );
   });
 });

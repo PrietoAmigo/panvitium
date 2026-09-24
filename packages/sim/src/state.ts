@@ -89,13 +89,6 @@ export interface LifetimeState {
   /** Active invocations as type -> count (most stack; the apex ones are capped at 1). */
   invocations: Record<string, number>;
   /**
-   * Autonomous-channel runners for invocations that run an action in the background (02 §3) —
-   * keyed by invocation id, value is the remaining seconds on the current cycle. The Familiar runs
-   * Indagatio here. This does NOT occupy the player's action slot. Lazily started/cleared by the
-   * tick from the active-invocation set; additive-optional on the wire (ADR-023), empty by default.
-   */
-  invocationRunners: Record<string, number>;
-  /**
    * Seconds each duration-scaled invocation has been active, keyed by invocation id (mirrors
    * `toggleDurations`). Used by apex invocations whose effect ramps with how long they have been
    * summoned — Aurevora's exponential gold-drain ↔ rising-efficiency (03 §2.4). Accrued each tick
@@ -143,8 +136,8 @@ export interface LifetimeState {
    * empty by default — old saves load with nothing auto-repeating.
    *
    * The auto-repeating player slot re-queues at most one cycle per tick, so it advances one cycle at
-   * a time. Looping through many cycles within a single tick is what acolyte delegation and
-   * invocation runners are for; the player's own slot does not. (The game freezes offline (ADR-032),
+   * a time. Looping through many cycles within a single tick is what acolyte delegation is for;
+   * the player's own slot does not. (The game freezes offline (ADR-032),
    * so none of this advances while away.)
    */
   autoRepeat: string[];
@@ -398,7 +391,6 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       reprobates: 0,
       acolytes: [],
       invocations: {},
-      invocationRunners: {},
       invocationDurations: {},
       maleficia: [],
       emptioList: [],

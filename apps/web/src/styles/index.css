@@ -2319,9 +2319,8 @@ body {
   text-transform: uppercase;
   opacity: 0.6;
 }
-/* Efficiency chip, shared by acolyte + invocation runner rows. */
-.analytics-acolyte-eff,
-.analytics-inv-eff {
+/* Efficiency chip on acolyte rows. */
+.analytics-acolyte-eff {
   font-variant-numeric: tabular-nums;
   font-size: 0.82rem;
   color: var(--candle);
@@ -2345,15 +2344,6 @@ body {
 .analytics-inv-name {
   font-family: var(--font-display, Georgia, serif);
   letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-.analytics-inv-action {
-  flex: 1 1 auto;
-  opacity: 0.9;
-}
-.analytics-inv-time {
-  font-variant-numeric: tabular-nums;
-  opacity: 0.8;
   white-space: nowrap;
 }
 .analytics-inv-detail {

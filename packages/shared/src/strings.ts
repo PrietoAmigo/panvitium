@@ -427,8 +427,13 @@ export const strings = {
     // Analytics → Invocations tab.
     noneBound: 'No invocations are bound.',
     every: 'every',
-    /** Aurevora's paired cost, appended to its live efficiency boost (numbers from constants.ts). */
-    aurevoraDrain: 'drains 100 gold/s, rising ×1.05/s, self-dispels at 0 gold',
+    /**
+     * Aurevora's paired cost, appended to its live efficiency boost: "drains {n} gold/s, rising
+     * ×1.05/s, self-dispels at 0 gold". The UI composes the live starting drain {n} (100 gold/s,
+     * softened by the invocation cost cuts; numbers from constants.ts).
+     */
+    aurevoraDrains: 'drains',
+    aurevoraDrainRest: 'gold/s, rising ×1.05/s, self-dispels at 0 gold',
     /** Outcome unit nouns for a runner's expected per-cycle yield (mean ± sd). */
     outcomeUnits: {
       soul: 'soul',
@@ -1067,7 +1072,7 @@ export const strings = {
       55: 'Invocation costs \u2193',
       56: 'Suasio positive outcomes \u2191',
       57: 'Flat reprobate generation \u2191',
-      58: 'Indagatio & Emptio efficiency \u2193',
+      58: 'Indagatio & Emptio efficiency \u2191',
       59: 'Maximum Desidia \u2191',
       60: 'Account income \u2191',
       61: 'Suasio efficiency \u2191',

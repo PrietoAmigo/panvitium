@@ -12,6 +12,7 @@ import { migrateV4ToV5 } from './migrations/v4-to-v5.js';
 import { migrateV5ToV6 } from './migrations/v5-to-v6.js';
 import { migrateV6ToV7 } from './migrations/v6-to-v7.js';
 import { migrateV7ToV8 } from './migrations/v7-to-v8.js';
+import { migrateV8ToV9 } from './migrations/v8-to-v9.js';
 
 /** A single forward migration that upgrades a blob from one schema version to the next. */
 export interface SaveMigration {
@@ -28,7 +29,8 @@ export interface SaveMigration {
  * drop morpheusLockedOut, seed apexInvoked;
  * v6 → v7: the Stagnation resource renamed to Desidia — state.stagnation → state.desidia;
  * v7 → v8: maleficia rework — Hand of Glory timer → maleficiaBuffs, drop the old Defixio curse,
- * strip the removed Iron Nails id). */
+ * strip the removed Iron Nails id;
+ * v8 → v9: the retired invocation-runner channel — drop `invocationRunners`). */
 export const SAVE_MIGRATIONS: readonly SaveMigration[] = [
   migrateV1ToV2,
   migrateV2ToV3,
@@ -37,6 +39,7 @@ export const SAVE_MIGRATIONS: readonly SaveMigration[] = [
   migrateV5ToV6,
   migrateV6ToV7,
   migrateV7ToV8,
+  migrateV8ToV9,
 ];
 
 export class SaveMigrationError extends Error {

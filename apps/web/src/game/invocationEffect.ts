@@ -7,11 +7,24 @@
 // Erinyes's kill-all) fall back to the static, number-baked catalog string.
 import { strings } from '@panvitium/shared';
 import {
+  AUREVORA_BASE_GOLD_DRAIN_PER_SECOND,
   activeInvocationCount,
   computeModifiers,
   invocationById,
+  invocationCostMul,
   type GameState,
 } from '@panvitium/sim';
+
+/**
+ * Aurevora's paired cost line: "drains N gold/s, rising ×1.05/s, self-dispels at 0 gold", where N is
+ * its starting drain softened by the live invocation cost cuts (`invocationCostMul`: the Orobas /
+ * Zepar / Andrealphus channel and Black Vessel), exactly as the tick charges it.
+ */
+export function aurevoraDrainText(state: GameState): string {
+  const n = AUREVORA_BASE_GOLD_DRAIN_PER_SECOND * invocationCostMul(state);
+  const shown = String(Number(n >= 10 ? n.toFixed(0) : n.toFixed(2)));
+  return `${strings.invocations.aurevoraDrains} ${shown} ${strings.invocations.aurevoraDrainRest}`;
+}
 
 /**
  * The live quantified effect line for a passive/modifier invocation, by diffing `computeModifiers`
@@ -117,7 +130,7 @@ function passiveEffectText(state: GameState, id: string): string {
     }
     // ── Aurevora: live ramping efficiency plus the paired gold drain that self-dispels it ───────
     case 'aurevora':
-      return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} · ${strings.invocations.aurevoraDrain}`;
+      return `${up(w.playerEfficiencyMul, b.playerEfficiencyMul, L.playerEff)} · ${aurevoraDrainText(state)}`;
     // Structural apex effects (world-still carry-over, kill-all) are not bundle magnitudes.
     default:
       return strings.invocations.effects[id] ?? '';

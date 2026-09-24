@@ -10,14 +10,15 @@
  * returns the bare magnitude; a per-sigil coefficient multiplies it into a concrete effect strength.
  *
  * The catalog (03 §5) is the full Goetia numbering 1..72, with #32 = Semet. Every seal is now wired
- * with a demon name and a real effect across the two surfaces a sigil can feed:
- *   - in-lifetime modifiers (computeModifiers reads `sigilModifierContributions`)
- *   - Katabasis carry-over rolls (commitKatabasis reads `sigilKatabasisBonus`)
+ * with a demon name and a real effect. Each channel function below takes an `effectMul`: callers
+ * ALWAYS pass `sigilStrengthMul(state)` (the sigil-effect relics, Gaap-boosted, × Semet #32; see
+ * `sigilEffectStack`, ADR-036), so every enhancer reaches every seal.
  * The spreadsheet `Sigils` sheet stays authoritative for the effect magnitudes (the per-sigil
  * coefficients and curves in `sigils.data.ts`).
  */
 import { type BigNum, add, floor, lte, ZERO } from './bignum.js';
 import { MAX_SIN_LEVEL } from './constants.js';
+import { maleficiaInvocationCostMul, rawRelicSigilMul } from './maleficia.js';
 import { sinLevel } from './progression.js';
 import { SINS, type GameState, type SigilId, type Sin } from './state.js';
 import { type Tier } from './probability.js';
@@ -150,10 +151,11 @@ export type SigilEffect =
 export type SigilCategory = 'suasio' | 'decimatio' | 'indagatio' | 'emptio';
 
 /**
- * A cost a sigil can soften (Paimon/Orobas/Andrealphus). `influence` = action influence costs,
- * `invocation` = ALL invocation costs (the soul and gold summon prices AND every per-second upkeep
- * drain, flat or %-of-gain; ADR-035), `emptioGold` = the Emptio purchase gold. Each sigil divides
- * its cost by `(1 + strength)` (never below zero, never an increase).
+ * A cost a sigil can soften (Paimon/Orobas/Zepar/Andrealphus/Eligos). `influence` = action influence
+ * costs, `invocation` = ALL invocation costs (every per-second upkeep drain, flat or %-of-gain, and
+ * Aurevora's gold drain; ADR-035/036, composed by `invocationCostMul`), `emptioGold` = the Emptio
+ * purchase gold. Each sigil divides its cost by `(1 + strength)` (never below zero, never an
+ * increase).
  */
 export type CostChannel = 'influence' | 'invocation' | 'emptioGold';
 
@@ -277,8 +279,8 @@ export function sigilCategoryTierContributions(
 /**
  * Per-Sin invocation-effectiveness multipliers from bound sigils (Samigina/Barbatos/Bune/Berith/
  * Furfur/Vepar/Shax/Alloces). Each is a `(1 + strength)` factor on the effectiveness of invocations
- * belonging to that Sin; consumed by `computeModifiers` (passive magnitudes) and the runner engine
- * (autonomous channels) via `invocationSinEffectivenessMul`. `effectMul` carries the sigil enhancers.
+ * belonging to that Sin; consumed by `computeModifiers`, which scales each efficiency-derived
+ * invocation magnitude by its own Sin's term. `effectMul` carries the sigil enhancers.
  */
 export function sigilInvocationSinContributions(
   state: GameState,
@@ -485,26 +487,52 @@ export function sigilMurderTriggersSuicideChance(state: GameState, effectMul = 1
 }
 
 /**
- * Gaap #33 (+maleficia effect %): inflates the BONUS part of the maleficia sigil-enhancer stack —
- * `1 + (raw − 1) × (1 + gaap)`. Gaap's own strength is read against the raw stack (no circularity).
+ * The sigil-effect stack (ADR-036): the two global scalers every sigil and maleficium reads.
+ *   - `sigilMul` multiplies EVERY sigil's strength in EVERY channel (the passive modifier bundle,
+ *     per-category tiers, cost reductions, invoking power, duplicate-output and double-find chances,
+ *     Thesaurus recovery, Katabasis carry-over). Semet #32 alone is excluded: it cannot scale itself.
+ *   - `maleficiaBoost` (1 + Gaap #33's strength) multiplies EVERY maleficium's effect magnitude
+ *     (rates, flats, the single-use buffs, Black Vessel's cost cut and the sigil-effect relics' own
+ *     bonus). Consumers apply it through `boostMaleficiumFactor`, so a boosted cut never inverts.
+ *
+ * Evaluated in one acyclic order so no seal feeds itself:
+ *   1. `raw`: the sigil-effect relics' bonus as printed (Solomon's Ring, Picatrix, Teraphim).
+ *   2. Semet's strength, read against `raw`.
+ *   3. Gaap's strength, read against `raw × (1 + semet)` (Semet reaches Gaap like any other seal).
+ *   4. The relics' bonus, boosted by Gaap: `1 + (raw − 1) × (1 + gaap)` (relics are maleficia).
+ *   5. `sigilMul = relics × (1 + semet)`.
  */
-export function sigilMaleficiaEffectMul(state: GameState, rawMaleficiaMul: number): number {
-  const gaap = sumKind(state, 'maleficiaEffect', rawMaleficiaMul);
-  return 1 + (rawMaleficiaMul - 1) * (1 + gaap);
+export interface SigilEffectStack {
+  readonly sigilMul: number;
+  readonly maleficiaBoost: number;
+}
+
+export function sigilEffectStack(state: GameState): SigilEffectStack {
+  const raw = rawRelicSigilMul(state.lifetime.maleficia);
+  const semet = sumKind(state, 'sigilEffect', raw);
+  const gaap = sumKind(state, 'maleficiaEffect', raw * (1 + semet));
+  const maleficiaBoost = 1 + gaap;
+  const relics = 1 + (raw - 1) * maleficiaBoost;
+  return { sigilMul: relics * (1 + semet), maleficiaBoost };
+}
+
+/** The multiplier on every sigil's strength in every channel (`sigilEffectStack(state).sigilMul`). */
+export function sigilStrengthMul(state: GameState): number {
+  return sigilEffectStack(state).sigilMul;
 }
 
 /**
- * Semet #32 (+sigil effect %): the Eternal Sin's sigil scales the strength of every other sigil
- * folded into the PASSIVE modifier bundle — the final per-sigil effect multiplier is
- * `maleficiaMul × (1 + semet)`. Semet's own strength is read against the (Gaap-inflated) maleficia
- * stack, never against itself. Scope (deliberate): this inflation reaches only the sigil
- * contributions composed in `computeModifiers`; the resolution-time / cost-time channels
- * (per-category tier shifts, invoking power, invocation & action cost reductions, Katabasis
- * carry-over) take the raw enhancer and are NOT scaled by Semet or Gaap. See the scope note at the
- * `sigMul` chain in modifiers.ts.
+ * The multiplier on EVERY invocation cost (ADR-035/036): each per-second upkeep drain, flat or
+ * %-of-gain/%-of-pool, and Aurevora's exponential gold drain. The invocation cost channel (Orobas
+ * #55, Zepar #16, Andrealphus #65) divides by `1 + strength`, and Black Vessel adds its own
+ * `1/(1 + k)` cut (−7% at base, deepened by Gaap). 1 when no source is present.
  */
-export function sigilSelfEffectMul(state: GameState, maleficiaMul: number): number {
-  return 1 + sumKind(state, 'sigilEffect', maleficiaMul);
+export function invocationCostMul(
+  state: GameState,
+  stack: SigilEffectStack = sigilEffectStack(state),
+): number {
+  const red = sigilCostReductionByChannel(state, stack.sigilMul).invocation ?? 1;
+  return maleficiaInvocationCostMul(state.lifetime.maleficia, stack.maleficiaBoost) / red;
 }
 
 export const SIGIL_MAX_GATE = MAX_SIN_LEVEL;

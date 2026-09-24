@@ -87,14 +87,8 @@ export const ETERNAL_SIN_THRESHOLD = 8398080000;
 
 // ── Apex invocation per-tick effects (03 §2.4) ───────────────────────────────
 // Placeholders, spreadsheet-overridable (the `Invocations` sheet wins on numbers); the SHAPE of
-// each effect is authoritative.
-
-/**
- * Astiwihad (apex Tristitia): per-second probability that the ENTIRE reprobate population commits
- * suicide at once (03 §2.4: "0.01% chance all reprobates commit suicide"). Integrated exactly over
- * a tick's span as `1 - (1 - p)^deltaSeconds`, so the 10 Hz loop and one large single delta agree.
- */
-export const ASTIWIHAD_WIPE_CHANCE_PER_SECOND = 0.0001;
+// each effect is authoritative. (Astiwihad's old per-second mass-suicide chance retired with its
+// re-homing as the world-still apex; see apex.ts.)
 
 /**
  * Aurevora (apex Gula): an exponentially-rising gold sink paid against a similarly-rising boost to

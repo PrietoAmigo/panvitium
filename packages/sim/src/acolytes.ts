@@ -12,7 +12,7 @@
  * Delegation covers Indagatio (time-mode) plus Suasio and Decimatio (cost-outcome). Acolytes carry
  * out their delegated actions WITHOUT spending resources — a delegated cycle pays no gold/influence
  * cost and so never stalls on an empty treasury. The per-channel cycle logic lives in `runner.ts`
- * (shared with invocation runners); the `isDelegatable` predicate gates which actions may be assigned.
+ * (`advanceRunnerCycles`); the `isDelegatable` predicate gates which actions may be assigned.
  */
 import { ACTIONS, isAutoRepeatable, runnerCycleDuration } from './actions.js';
 import { computeModifiers } from './modifiers.js';

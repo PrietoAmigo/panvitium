@@ -73,7 +73,11 @@ Every derived multiplier (Sin levels, Sin skills, sigils, maleficia, invocations
 `computeModifiers` and consumed by tick/actions/probability. Adding a new modifier source is "one
 more line per source" in this module — do not scatter multipliers across systems. The exception is
 _per-category_ tier shifts (one category's success distribution), returned by
-`categoryTierModifiers` and composed at resolution time in `resolveAction`.
+`categoryTierModifiers` and composed at resolution time in `resolveAction`. Two scalers reach
+everything (ADR-036): every sigil channel must pass `sigilStrengthMul(state)` as its `effectMul`
+(the sigil-effect relics, Gaap-boosted, × Semet), and every maleficium magnitude must be scaled by
+Gaap's `maleficiaBoost` (via `boostMaleficiumFactor`); every invocation cost goes through
+`invocationCostMul`.
 
 `break_infinity.js` is the only runtime dependency (ADR-005); use the `bignum.ts` wrappers (`bn`,
 `add`, `mul`, …) — souls/gold are `BigNum`, not `number`.
@@ -93,13 +97,14 @@ and the save **envelope** (`save/schema.ts`: `schemaVersion`, monotonic `saveVer
 **Save migrations (ADR-023, `save/migrations/`).** When the persisted shape changes, bump
 `CURRENT_SCHEMA_VERSION` and add a `vN-to-vN+1.ts` migration — never break old saves. Additive,
 optional fields (`additive-optional`) do not require a bump; structural changes do. Current version
-is **8** (`v1-to-v2`: subtype removal; `v2-to-v3`: Mercatus rework; `v3-to-v4`: Decimatio rite id
+is **9** (`v1-to-v2`: subtype removal; `v2-to-v3`: Mercatus rework; `v3-to-v4`: Decimatio rite id
 `caedis` → `caedes` rewritten in persisted action references; `v4-to-v5`: Mercatus → the
 Faeneratio loop — divest-value gold credit, `mercatusDepths` drop; `v5-to-v6`: invocation roster
 rework — clear active invocations, `pendingMorpheus` → `pendingAstiwihad`, drop `morpheusLockedOut`,
 seed `apexInvoked`; `v6-to-v7`: the Stagnation resource renamed to Desidia, `state.stagnation` →
 `state.desidia`; `v7-to-v8`: maleficia rework — Hand of Glory timer `handOfGloryRemaining` → the
-unified `maleficiaBuffs` map, drop the old Defixio cull curse, strip the removed Iron Nails id).
+unified `maleficiaBuffs` map, drop the old Defixio cull curse, strip the removed Iron Nails id;
+`v8-to-v9`: the retired invocation-runner channel, drop `invocationRunners`).
 
 ### `apps/web` — the React SPA (the game)
 

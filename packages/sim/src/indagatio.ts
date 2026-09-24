@@ -5,7 +5,7 @@
  * can pull it back out again. The invested gold grants action efficiency to Indagatio ALONE (it is
  * folded into `indagatioEfficiencyMul` in `computeModifiers`, which only
  * `categoryEfficiency('indagatio')` — the player's own Cast — reads; Suasio/Decimatio/Emptio and the
- * acolyte/Familiar runner channels never see it). Because Indagatio is a time-mode action, more
+ * acolyte channels never see it). Because Indagatio is a time-mode action, more
  * efficiency means a shorter search (`startAction` divides the duration by it).
  *
  * The stake is ONE-SHOT: it powers a single Cast (its bonus is baked into that search's duration)

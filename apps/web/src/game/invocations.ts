@@ -1,6 +1,6 @@
 // View-model adapter: maps the authoritative `packages/sim` invocation catalog + live game state
 // onto the presentation `Invocation` shape the designed Ars Goetia grimoire consumes. The dynamic
-// fields (name, gate, soul cost, unlocked, bound count, invoking power) are all real; the design's
+// fields (name, gate, upkeep cost, unlocked, bound count, invoking power) are all real; the design's
 // art / lore / rank are reused where the handoff illustrated an entry, with a graceful fallback
 // (the Ars Goetia plate + a computed rank, and an omitted effect/lore line) for the rest. No flavour
 // is fabricated — un-illustrated entries simply show their real gate, cost and name.
@@ -9,22 +9,17 @@ import {
   invocationById,
   invocationVisible,
   invocationUnlocked,
-  invocationSoulCost,
-  invocationGoldCost,
   activeInvocationCount,
   currentInvokingPower,
   isApexInvocation,
-  sigilCostReductionByChannel,
-  sigilEffectMultiplier,
-  floor,
-  gte,
+  invocationCostMul,
   type GameState,
   type InvocationDef,
 } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import type { GoetiaEntry } from '../menus/ars-goetia.types.js';
 import { INVOCATION_BY_ID, ASSET_BASE } from '../menus/menus.data.js';
-import { invocationEffectText } from './invocationEffect.js';
+import { aurevoraDrainText, invocationEffectText } from './invocationEffect.js';
 
 /** Integer → Roman numeral (1..3999). Used for the Sin-level gate and the Ars Goetia index numerals,
  *  so every seal reads as a numeral (the old lookup table stopped at XVIII and fell back to Arabic). */
@@ -72,23 +67,19 @@ export interface GoetiaView {
 
 /**
  * The grimoire's cost line, showing the REAL CURRENT per-copy upkeep — every amount is softened by
- * the live invocation cost-reduction channel (Orobas #55 / Zepar #16 / Andrealphus #65), exactly as
- * `invocationUpkeep` charges it, so what the grimoire shows is what a copy actually costs now.
- * Aurevora's cost is its exponential gold drain (apex.ts), not an upkeep field; free invocations read
- * "free".
+ * the live invocation cost cuts (`invocationCostMul`: the Orobas #55 / Zepar #16 / Andrealphus #65
+ * channel and Black Vessel), exactly as `invocationUpkeep` charges it, so what the grimoire shows is
+ * what a copy actually costs now. Aurevora's cost is its exponential gold drain (apex.ts), softened
+ * the same way; free invocations read "free".
  */
 function invocationCostLabel(state: GameState, def: InvocationDef): string {
   const r = strings.resources;
   const U = strings.invocations.outcomeUnits;
-  if (def.id === 'aurevora') return strings.invocations.aurevoraDrain;
+  if (def.id === 'aurevora') return aurevoraDrainText(state);
   const u = def.upkeep;
   if (!u) return strings.invocations.free;
-  // The invocation cost channel divides every upkeep cost by (1 + strength) (ADR-035).
-  const red = sigilCostReductionByChannel(
-    state,
-    sigilEffectMultiplier(state.lifetime.maleficia),
-  ).invocation;
-  const soften = (x: number): number => (red && red > 1 ? x / red : x);
+  const costMul = invocationCostMul(state);
+  const soften = (x: number): number => x * costMul;
   const pct = (x: number): number => Math.round(soften(x) * 100);
   const num = (x: number): string => {
     const v = soften(x);
@@ -104,7 +95,6 @@ function invocationCostLabel(state: GameState, def: InvocationDef): string {
     if (u.influenceGainFraction)
       parts.push(`${pct(u.influenceGainFraction)}% ${r.influence} gain/s`);
   }
-  if (u.maxInfluenceFraction) parts.push(`${pct(u.maxInfluenceFraction)}% max ${r.influence}/s`);
   if (u.reprobate) parts.push(`${num(u.reprobate)} ${U.reprobates}/s`);
   if (u.reprobateFraction) parts.push(`${pct(u.reprobateFraction)}% ${U.reprobates}/s`);
   if (u.desidia) parts.push(`${num(u.desidia)} ${r.desidia}/s`);
@@ -133,12 +123,8 @@ export function buildGoetia(state: GameState): GoetiaView {
   ordered.forEach((id) => {
     const def = invocationById(id)!;
     const unlocked = invocationUnlocked(state, def);
-    const soulCost = invocationSoulCost(state, def);
-    const goldCost = invocationGoldCost(state, def);
     const active = activeInvocationCount(state, def.id);
     const atCap = def.maxActive !== undefined && active >= def.maxActive;
-    const affordable =
-      gte(floor(state.souls), soulCost) && gte(floor(state.lifetime.gold), goldCost);
     // The "Bound" field shows the live count of summoned entities (player request): e.g. "3" while
     // three copies are active (was a generic "bound" badge that hid the count). Absent when none.
     const bound = active > 0 ? String(active) : undefined;
@@ -162,7 +148,6 @@ export function buildGoetia(state: GameState): GoetiaView {
       unlocked,
       active,
       atCap,
-      affordable,
       // Optional fields omitted (not set to undefined) per exactOptionalPropertyTypes: a locked
       // entry carries its real gate; the effect/lore/bound lines degrade to absent.
       ...(unlocked ? {} : { gate: gateLabel(def) }),

@@ -146,8 +146,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v8 (the maleficia rework bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(8);
+  it('schemaVersion is v9 (the invocation-runner removal bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(9);
   });
 });
 
@@ -411,38 +411,17 @@ describe('toggleDurations — ADR-023 additive-optional', () => {
   });
 });
 
-describe('invocationRunners — ADR-023 additive-optional', () => {
-  it('a save predating autonomous runners loads with an empty map', () => {
-    const fresh = createInitialState('seed', 0);
-    const serialized = serializeGameState(fresh);
-    const { invocationRunners, ...rest } = serialized.lifetime;
-    void invocationRunners;
-    const parsed = serializedGameStateSchema.safeParse({ ...serialized, lifetime: rest });
-    expect(parsed.success).toBe(true);
-    if (!parsed.success) return;
-    const back = deserializeGameState(parsed.data);
-    expect(back.lifetime.invocationRunners).toEqual({});
-  });
-
-  it('a fresh save omits invocationRunners from the wire', () => {
-    const serialized = serializeGameState(createInitialState('seed', 0));
-    expect('invocationRunners' in serialized.lifetime).toBe(false);
-  });
-
-  it('a Familiar mid-cycle round-trips its background-Indagatio timer', () => {
+describe('invocationRunners — removed with the runner channel (v8 → v9, ADR-036)', () => {
+  it('no save carries a runner-timer map any more', () => {
     const fresh = createInitialState('seed', 0);
     const live: GameState = {
       ...fresh,
-      lifetime: {
-        ...fresh.lifetime,
-        invocations: { familiar: 1 },
-        invocationRunners: { familiar: 3120.5 },
-      },
+      lifetime: { ...fresh.lifetime, invocations: { familiar: 1 } },
     };
-    const wire = serializeGameState(live);
-    expect(wire.lifetime.invocationRunners).toEqual({ familiar: 3120.5 });
-    const back = deserializeGameState(wire);
-    expect(back.lifetime.invocationRunners.familiar).toBe(3120.5);
+    expect('invocationRunners' in serializeGameState(live).lifetime).toBe(false);
+    expect('invocationRunners' in deserializeGameState(serializeGameState(live)).lifetime).toBe(
+      false,
+    );
   });
 });
 

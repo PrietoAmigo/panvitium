@@ -3,13 +3,15 @@
  * and purchases via *Emptio*; once owned it sits in the Loculi (the Invocation Room niches) and
  * (depending on the item) contributes invoking power, an enhancer multiplier through the modifier
  * engine, an invocation-cost reduction, a single-use timed buff, or some combination. The catalog is
- * the authoritative shape; the modifier engine reads it to apply equipped-item effects.
+ * the authoritative shape; the modifier engine reads it to apply equipped-item effects. Every effect
+ * magnitude (never invoking power, a gate stat) is boosted by Gaap #33 (ADR-036).
  *
  * Roster, rarity, invoking power and stack caps are pinned to the `Maleficia` sheet (34 items).
  * Effects beyond raw invoking power are listed in each entry's `description`; the enhancer
- * multipliers (Suasio/Desidia/rate/sigil/invocation) are wired in `modifiers.ts`, the invocation-cost
- * reduction (Black Vessel) in `invocations.ts`, and the single-use consumables in the `maleficiaBuffs`
- * timer system below.
+ * multipliers (Suasio/Desidia/rate/invocation) are wired in `modifiers.ts`, the sigil-effect relics
+ * in `sigilEffectStack` (sigils.ts), the invocation-cost reduction (Black Vessel) in
+ * `invocationCostMul` (sigils.ts), and the single-use consumables in the `maleficiaBuffs` timer
+ * system below.
  *
  * Stack rules (03 §2.5): a non-stackable maleficium already owned OR listed in *Emptio* cannot be
  * surfaced again; a stackable one cannot be surfaced once owned + listed reaches its `stackMax`.
@@ -114,12 +116,24 @@ export function totalInvokingPower(owned: readonly string[]): number {
 }
 
 /**
- * Multiplier applied to every sigil's effect strength from equipped sigil-enhancer maleficia
- * (Solomon's Ring +66%, Picatrix +11%, Teraphim +4%). 1 when none are equipped. Consumed by
- * `sigilModifierContributions` and `sigilKatabasisBonus` so it scales modifier, tier, and
- * Katabasis-carryover sigils alike. All three are non-stackable, so they compose additively.
+ * A maleficium's effect factor scaled by the Gaap #33 maleficia-effect boost (ADR-036). An increase
+ * (`factor ≥ 1`) grows its bonus linearly, `1 + (factor − 1) × boost`. A cut (`factor < 1`) is read
+ * in the asymptotic "decrease" form `1 / (1 + k)` with `k = 1/factor − 1`, and `k` scales by the
+ * boost, so a boosted cut deepens toward zero but never inverts. Both return `factor` at boost 1.
  */
-export function sigilEffectMultiplier(owned: readonly string[]): number {
+export function boostMaleficiumFactor(factor: number, boost: number): number {
+  if (factor >= 1) return 1 + (factor - 1) * boost;
+  if (factor <= 0) return 0;
+  return 1 / (1 + (1 / factor - 1) * boost);
+}
+
+/**
+ * The RAW bonus of the equipped sigil-effect relics (Solomon's Ring +66%, Picatrix +11%, Teraphim
+ * +4%), as printed: 1 when none are equipped. All three are non-stackable, so they compose
+ * additively. NOT the multiplier a sigil channel applies: that is `sigilStrengthMul` /
+ * `sigilEffectStack` in sigils.ts, which boosts this by Gaap #33 and scales it by Semet #32.
+ */
+export function rawRelicSigilMul(owned: readonly string[]): number {
   return (
     1 +
     SOLOMON_RING_SIGIL_BONUS * countCopies(owned, 'solomons_ring') +
@@ -129,14 +143,15 @@ export function sigilEffectMultiplier(owned: readonly string[]): number {
 }
 
 /**
- * Black Vessel: -7% to every invocation cost (summon soul/gold and per-second upkeep, ADR-035).
- * Non-stackable, so 0 or 1 copies; returns the multiplier applied to each invocation cost
- * (`1 - 0.07` when owned, clamped ≥ 0). Consumed in `invocations.ts` alongside the sigil cost channel.
+ * Black Vessel: −7% to every invocation cost (every per-second upkeep drain and Aurevora's gold
+ * drain, ADR-035/036). Non-stackable, so 0 or 1 copies. Applied in the asymptotic `1/(1 + k)` form
+ * (exactly ×0.93 at base) so the Gaap `boost` deepens the cut without ever inverting it. Composed
+ * with the sigil cost channel by `invocationCostMul` (sigils.ts).
  */
 export const BLACK_VESSEL_INVOCATION_COST_REDUCTION = 0.07;
-export function maleficiaInvocationCostMul(owned: readonly string[]): number {
-  const factor = 1 - BLACK_VESSEL_INVOCATION_COST_REDUCTION * countCopies(owned, 'black_vessel');
-  return Math.max(0, factor);
+export function maleficiaInvocationCostMul(owned: readonly string[], boost = 1): number {
+  if (countCopies(owned, 'black_vessel') === 0) return 1;
+  return boostMaleficiumFactor(1 - BLACK_VESSEL_INVOCATION_COST_REDUCTION, boost);
 }
 
 // ── Single-use timed buffs ────────────────────────────────────────────────────
@@ -194,9 +209,10 @@ const NEUTRAL_MALEFICIA_BUFFS: MaleficiaBuffMultipliers = {
 /**
  * Aggregate the active single-use buffs into a per-field product (multiplicative composition,
  * ADR-022). A timer at or below 0 is ignored (the tick drops it next pass). Returns the neutral
- * bundle when none is active, so a save with no buffs behaves exactly as before.
+ * bundle when none is active, so a save with no buffs behaves exactly as before. `boost` is the
+ * Gaap #33 maleficia-effect boost (ADR-036), applied to each buff's factor.
  */
-export function maleficiaBuffMultipliers(state: GameState): MaleficiaBuffMultipliers {
+export function maleficiaBuffMultipliers(state: GameState, boost = 1): MaleficiaBuffMultipliers {
   const buffs = state.lifetime.maleficiaBuffs;
   const ids = Object.keys(buffs);
   if (ids.length === 0) return NEUTRAL_MALEFICIA_BUFFS;
@@ -204,7 +220,7 @@ export function maleficiaBuffMultipliers(state: GameState): MaleficiaBuffMultipl
   for (const id of ids) {
     if ((buffs[id] ?? 0) <= 0) continue;
     const def = MALEFICIA_BUFFS[id];
-    if (def) out[def.field] *= def.factor;
+    if (def) out[def.field] *= boostMaleficiumFactor(def.factor, boost);
   }
   return out;
 }

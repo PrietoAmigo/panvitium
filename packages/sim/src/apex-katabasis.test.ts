@@ -70,7 +70,6 @@ describe('Catalog', () => {
       expect(def.sinLevel).toBe(3);
       expect(def.maxActive).toBe(1);
       expect(def.upkeep).toBeUndefined();
-      expect(def.soulCost).toBeUndefined();
     }
   });
 
@@ -81,8 +80,6 @@ describe('Catalog', () => {
     expect(def.sinLevel).toBe(3);
     expect(def.maxActive).toBe(1);
     expect(def.upkeep?.reprobateFraction).toBe(0.05);
-    expect(def.soulCost).toBeUndefined();
-    expect(def.goldCost).toBeUndefined();
   });
 });
 

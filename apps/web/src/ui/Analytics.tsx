@@ -5,7 +5,6 @@ import {
   INVOCATION_IDS,
   activeInvocationCount,
   invocationById,
-  invocationRunnerEfficiency,
   categoryEfficiency,
   computeModifiers,
   reprobateRates,
@@ -15,7 +14,6 @@ import {
   mul,
   type ActionTimer,
   type GameState,
-  type InvocationDef,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
@@ -284,53 +282,18 @@ function AcolyteRow({ state, id }: { state: GameState; id: number }): ReactEleme
 }
 
 /**
- * One bound invocation per row. Runners (the autonomous channels — Familiar, Imp, Upir, Lamia, Harpy,
- * Succubus, …) show their per-copy runner efficiency, their action, the primary channel's remaining
- * cycle time, and a 0→100% progress bar (the same `actionProgress` rule the player/acolyte bars use).
- * Passive invocations carry no action, so they keep their live quantified total-effect line instead.
+ * One bound invocation per row, with its live quantified total-effect line. Every invocation is
+ * passive (the autonomous-runner channel was removed, ADR-036), so there is no action or progress.
  */
-function InvocationRow({
-  state,
-  id,
-  def,
-}: {
-  state: GameState;
-  id: string;
-  def: InvocationDef;
-}): ReactElement {
+function InvocationRow({ state, id }: { state: GameState; id: string }): ReactElement {
   // Stackable invocations may hold multiple copies, but we never show the count \u2014 a stacked
   // invocation reads as a single bound entry, not "name \u00D7N".
   const countLabel = strings.invocations.names[id] ?? id;
-  const auto = def.autonomous;
-
-  // Passive invocation: no action/progress \u2014 show its modifier delta as before.
-  if (!auto) {
-    const detail = invocationEffectText(state, id);
-    return (
-      <div className="analytics-invocation analytics-invocation--passive">
-        <span className="analytics-inv-name">{countLabel}</span>
-        {detail !== '' && <span className="analytics-inv-detail">{detail}</span>}
-      </div>
-    );
-  }
-
-  // Runner invocation: efficiency + action + progress bar. The primary channel's timer keys off the
-  // bare id (`invocationRunnerKey(id, 0)`); it's absent until the first cycle starts, so the bar reads
-  // 0% until then.
-  const eff = invocationRunnerEfficiency(state, def);
-  const remaining = state.lifetime.invocationRunners[id] ?? null;
-  const pct = remaining !== null ? actionProgress(auto.action, remaining, eff) : 0;
-  const time = remaining !== null ? formatDuration(Math.max(0, Math.ceil(remaining)) * 1000) : '';
-
+  const detail = invocationEffectText(state, id);
   return (
-    <div className="analytics-invocation">
+    <div className="analytics-invocation analytics-invocation--passive">
       <span className="analytics-inv-name">{countLabel}</span>
-      <span className="analytics-inv-eff">{effLabel(eff)}</span>
-      <span className="analytics-inv-action">{actionName(auto.action)}</span>
-      {time !== '' && <span className="analytics-inv-time">{time}</span>}
-      <span className="analytics-bar">
-        <span className="analytics-bar-fill" style={{ width: `${(pct * 100).toFixed(0)}%` }} />
-      </span>
+      {detail !== '' && <span className="analytics-inv-detail">{detail}</span>}
     </div>
   );
 }
@@ -389,10 +352,9 @@ function ActionsTab(): ReactElement {
           <p className="pc-empty">{strings.invocations.noneBound}</p>
         ) : (
           <div className="analytics-invocations">
-            {bound.map((id) => {
-              const def = invocationById(id);
-              return def ? <InvocationRow key={id} state={state} id={id} def={def} /> : null;
-            })}
+            {bound.map((id) =>
+              invocationById(id) ? <InvocationRow key={id} state={state} id={id} /> : null,
+            )}
           </div>
         )}
       </section>

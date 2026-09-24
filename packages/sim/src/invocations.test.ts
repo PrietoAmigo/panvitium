@@ -23,7 +23,7 @@ import {
   dispel,
   INVOCATION_IDS,
   invocationById,
-  invocationSoulCost,
+  SINS,
   invocationUnlocked,
   invocationUpkeep,
   invocationVisible,
@@ -150,12 +150,27 @@ describe('Invoking power + gates', () => {
 });
 
 describe('No upfront cost — every invocation is free to summon', () => {
-  it('invocationSoulCost is 0 for every invocation (cost is per-second upkeep)', () => {
+  it('summoning deducts no souls and no gold (the whole cost is per-second upkeep)', () => {
+    // Every gate met: all eight Sins at level 3 and 10 invoking power (Obsidian Mirror 8 + Witch
+    // Bottle 2), so each entry is actually summoned rather than refused at its gate.
+    const devotion = { ...fresh().devotion };
+    for (const sin of SINS) devotion[sin] = bn(180 ** 3);
+    const rich: GameState = {
+      ...withSouls(fresh(), 1e9),
+      devotion,
+      lifetime: {
+        ...fresh().lifetime,
+        gold: bn(1e9),
+        maleficia: ['obsidian_mirror', 'witch_bottle'],
+      },
+    };
     for (const id of INVOCATION_IDS) {
-      expect(invocationSoulCost(withSouls(fresh(), 1e9), invocationById(id)!).toNumber()).toBe(0);
+      const r = invoke(rich, id);
+      expect(r.ok).toBe(true);
+      if (!r.ok) continue;
+      expect(r.state.souls.toNumber()).toBe(1e9);
+      expect(r.state.lifetime.gold.toNumber()).toBe(1e9);
     }
-    expect(invocationById('morpheus')!.soulCost).toBeUndefined();
-    expect(invocationById('morpheus')!.goldCost).toBeUndefined();
   });
 });
 
@@ -168,7 +183,7 @@ describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
     s = withInvocation(s, 'arachne', 1); // 50 reprobates/s (flat)
     s = withInvocation(s, 'morpheus', 1); // 5% of the reprobate pool/s
     s = withInvocation(s, 'upir', 3); // 3 × 0.2 desidia/s
-    const up = invocationUpkeep(s, 100);
+    const up = invocationUpkeep(s);
     expect(up.flatGoldPerSecond).toBe(20);
     expect(up.goldGainFraction).toBe(1); // 0.02 + 0.25 + 0.99 clamped to 1
     expect(up.influenceGainFraction).toBeCloseTo(0.5, 6); // 2 × 0.25
@@ -181,7 +196,7 @@ describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
   });
 
   it('%-of-gain costs are additive: four Fama zero the gold gain (clamped at 1)', () => {
-    const four = invocationUpkeep(withInvocation(fresh(), 'fama', 4), 100);
+    const four = invocationUpkeep(withInvocation(fresh(), 'fama', 4));
     expect(four.goldGainFraction).toBe(1); // 4 × 0.25 = 1.0 → all gold gain consumed
   });
 

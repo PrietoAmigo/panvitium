@@ -384,3 +384,34 @@ describe('v7 → v8 migration (maleficia rework)', () => {
     expect(migrated.state.lifetime.maleficia).toEqual(['black_robe']);
   });
 });
+
+describe('v8 → v9 migration (the retired invocation-runner channel)', () => {
+  /** A v8-shaped raw blob still carrying a stale runner-timer map. */
+  function v8Blob(runners?: Record<string, number>): Record<string, unknown> {
+    const base = currentBlob();
+    const state = base.state as Record<string, unknown>;
+    const lifetime = state.lifetime as Record<string, unknown>;
+    return {
+      ...base,
+      schemaVersion: 8,
+      state: {
+        ...state,
+        lifetime: runners ? { ...lifetime, invocationRunners: runners } : lifetime,
+      },
+    };
+  }
+
+  it('drops a lingering invocationRunners map and stamps the current version', () => {
+    const migrated = migrateSave(v8Blob({ familiar: 3120.5, 'imp#1': 2 }));
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect('invocationRunners' in migrated.state.lifetime).toBe(false);
+  });
+
+  it('is a no-op for a v8 save without runner timers', () => {
+    const blob = v8Blob();
+    const migrated = migrateSave(blob);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const lifetime = (blob.state as Record<string, unknown>).lifetime;
+    expect(migrated.state.lifetime).toEqual(lifetime);
+  });
+});

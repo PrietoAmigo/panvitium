@@ -2,7 +2,7 @@ import { runnerCycleDuration } from '@panvitium/sim';
 
 /**
  * Fraction complete (0–1) of an action timer, for a progress bar — the single rule every action bar
- * uses, whether the action belongs to the player, an acolyte, or an invocation runner.
+ * uses, whether the action belongs to the player or an acolyte.
  *
  * The denominator is the action's *actual* duration at the given efficiency (`runnerCycleDuration`,
  * the same formula the sim starts timers with): time-mode actions finish sooner at higher efficiency

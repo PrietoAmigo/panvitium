@@ -74,9 +74,6 @@ const lifetimeSchema = z.object({
   reprobates: z.number().int().nonnegative(),
   acolytes: z.array(acolyteSchema),
   invocations: z.record(z.string(), z.number().int().nonnegative()),
-  // Autonomous-runner timers (Familiar's background Indagatio, 02 §3): invocation id -> remaining
-  // seconds. Additive-optional (ADR-023): absent in old saves → {} at runtime; omitted when empty.
-  invocationRunners: z.record(z.string(), z.number().nonnegative()).optional(),
   // Per-invocation active-duration counters for duration-scaled apex effects (Aurevora's ramp,
   // 03 §2.4). Additive-optional (ADR-023): absent in old saves → {} at runtime; omitted when empty.
   invocationDurations: z.record(z.string(), z.number().nonnegative()).optional(),
@@ -215,9 +212,6 @@ export function serializeGameState(state: GameState): SerializedGameState {
         ...(a.remainingSeconds === null ? {} : { remainingSeconds: a.remainingSeconds }),
       })),
       invocations: { ...state.lifetime.invocations },
-      ...(Object.keys(state.lifetime.invocationRunners).length > 0
-        ? { invocationRunners: { ...state.lifetime.invocationRunners } }
-        : {}),
       ...(Object.keys(state.lifetime.invocationDurations).length > 0
         ? { invocationDurations: { ...state.lifetime.invocationDurations } }
         : {}),
@@ -356,7 +350,6 @@ export function deserializeGameState(s: SerializedGameState): GameState {
         remainingSeconds: a.remainingSeconds ?? null,
       })),
       invocations: { ...s.lifetime.invocations },
-      invocationRunners: { ...(s.lifetime.invocationRunners ?? {}) },
       invocationDurations: { ...(s.lifetime.invocationDurations ?? {}) },
       maleficia: [...s.lifetime.maleficia],
       emptioList: [...s.lifetime.emptioList],
