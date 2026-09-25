@@ -3886,16 +3886,18 @@ body {
   color: var(--gold-leaf, #d8b658);
 }
 
-/* Detail leaf */
+/* Detail leaf. The right-hand page holds the entry's painted plate (Claude Design, "Invocation
+   Plates"): a 3:4 cave-stone panel at the full width of the column, centred down it. */
 .gb-illus-page {
   align-items: center;
   justify-content: center;
 }
 .gb-illus-img {
-  max-width: 94%;
-  max-height: 82%;
-  object-fit: contain;
-  filter: drop-shadow(0 1cqh 1.4cqh rgba(0, 0, 0, 0.6));
+  display: block;
+  width: 100%;
+  height: auto;
+  /* The plate's own base fill, holding its place until the image decodes. */
+  background: #17110d;
 }
 .gb-back {
   align-self: flex-start;

@@ -103,9 +103,28 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1026** (sim 595 · shared 75 · api 20 · web 336).
+**Current test count: 1061** (sim 595 · shared 75 · api 20 · web 371).
 
-> **Latest change — UI: no outcome banner, no room name, a quieter Loculi.** A Stellar or
+> **Latest change — UI: the Ars Goetia's painted plates (Claude Design).** Every invocation's leaf
+> in the Ars Goetia now carries its plate on the right-hand page, from the delivered "Invocation
+> Plates" handoff (archived in `docs/frontend/`): one painted concept per invocation rather than a
+> figure (Aurevora a maw of gold, Astiwihad a noose, Morpheus a closed eye over two sleepers), a
+> fast dry brush in one yellow ochre on dark cave stone. All 25 ship as static 600 × 800 PNGs in
+> `public/assets/panvitium/invocations-ars-goetia/`, the handoff's recommended route: no browser
+> runs the stone and wobble SVG filters, and every browser shows the same plate. Their source
+> lives in the new `apps/web/src/art/`: the handoff's procedural brush ported to TypeScript
+> (`brush.ts`: a seeded mulberry32, Catmull-Rom centrelines, the fan of dry bristles) and the 25
+> gesture tables in the design's own notation (`invocationPlates.data.ts`, whose order seeds the
+> strokes). A new `pnpm --filter @panvitium/web bake:plates [id …]` rasterizes them through
+> Playwright's Chromium and records a digest of each plate's SVG, which a test compares with the
+> source, so a plate retuned but not re-baked fails the suite (see `DEVELOPMENT.md`). The bake
+> reproduces the design reference byte for byte. The plate spans the column's width as a decorative
+> image (`alt=""`, `aria-hidden`: the name already heads the left page); the "No plate has been
+> drawn for this seal." text fallback retires, and a plate that fails to load is simply hidden. The
+> art is not in the app bundle. No sim, save or RNG change. Net **+35 tests** (web 336 → 371),
+> plus an Ars Goetia e2e spec.
+>
+> **Earlier change — UI: no outcome banner, no room name, a quieter Loculi.** A Stellar or
 > Apocalyptic outcome no longer raises a banner at the top centre of the screen; the outcome still
 > reaches the PC's Logs as before. The `SignaturePopup` retires with its store channel (`signature`
 > / `dismissSignature`) and the sim's `isSignatureTier`, which only fed it. The room's name no
@@ -1590,10 +1609,11 @@ _The track gated on the `assets/` tree (which lives in the repo but outside a co
 single GIMP degrade recipe. The room/menu degraded-photoreal pipeline is already in; what remains is
 content._
 
-- **Illustration.** Draw the un-illustrated invocations and maleficia — both the Ars Goetia _book_
-  drawings (`public/assets/panvitium/invocations-ars-goetia/<id>.png`, currently a text-plate fallback for
-  un-drawn seals) and the photoreal specimen art for the Maleficia cabinet — through the one ADR-021
-  degrade recipe, so the whole diegetic frame reads at a single fidelity.
+- **Illustration.** The Ars Goetia _book_ plates are done: every invocation carries a painted plate
+  (Claude Design, "Invocation Plates"), baked from `apps/web/src/art/` by `bake:plates` into
+  `public/assets/panvitium/invocations-ars-goetia/<id>.png`. What remains is the photoreal specimen art
+  for the un-illustrated maleficia, through the one ADR-021 degrade recipe, so the whole diegetic frame
+  reads at a single fidelity.
 - **Audio.** Bring up the Howler layer over the existing `audio.play(event)` stub (ADR-014): settle the
   event taxonomy, supply the asset set, and add a mute/volume control (which folds into the settings panel
   in 5.4).

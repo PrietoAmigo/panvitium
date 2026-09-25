@@ -30,8 +30,8 @@ describe('buildGoetia view-model adapter', () => {
       // Unlocked → no gate shown (omitted); locked → the gate carries the real requirement.
       if (e.unlocked) expect(e.gate).toBeUndefined();
       else expect(typeof e.gate).toBe('string');
-      // Every seal points its book drawing at the dedicated folder, keyed by id; a missing
-      // drawing 404s at runtime and the book falls back to a text plate (handled in the component).
+      // Every seal points its painted plate at the dedicated folder, keyed by id (every catalog id
+      // has a baked plate there: pinned in art/invocationPlates.test.ts).
       expect(e.illus).toBe(`/assets/panvitium/invocations-ars-goetia/${e.id}.png`);
     }
   });

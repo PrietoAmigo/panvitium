@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#0d0a08}a{color:#d9a53f}a:hover{color:#f0d9a6}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<filter id="wob" x="-10%" y="-10%" width="120%" height="120%">
+<feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="5" result="w"></feTurbulence>
+<feDisplacementMap in="SourceGraphic" in2="w" scale="6" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+</filter>
+<filter id="rockA" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.007 0.011" numOctaves="5" seed="11"></feTurbulence><feDiffuseLighting lighting-color="#3a2e24" surfaceScale="3.5"><feDistantLight azimuth="235" elevation="48"></feDistantLight></feDiffuseLighting></filter>
+<filter id="rockB" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.009 0.006" numOctaves="5" seed="27"></feTurbulence><feDiffuseLighting lighting-color="#372b22" surfaceScale="3.5"><feDistantLight azimuth="220" elevation="50"></feDistantLight></feDiffuseLighting></filter>
+<filter id="rockC" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.006 0.01" numOctaves="5" seed="63"></feTurbulence><feDiffuseLighting lighting-color="#3d3026" surfaceScale="3.5"><feDistantLight azimuth="250" elevation="46"></feDistantLight></feDiffuseLighting></filter>
+<radialGradient id="vig" cx="45%" cy="40%" r="75%"><stop offset="0.4" stop-color="#0b0706" stop-opacity="0"></stop><stop offset="1" stop-color="#0b0706" stop-opacity="0.85"></stop></radialGradient>
+</defs>
+</svg>
+<div style="min-height:100vh;box-sizing:border-box;padding:{{ pad }};display:flex;flex-direction:column;align-items:center;gap:32px">
+<sc-if value="{{ gallery }}" hint-placeholder-val="{{ true }}">
+<div style="font-family:'IM Fell English SC',serif;color:#8f7d64;font-size:22px;letter-spacing:.2em">Invocatio · Tabulae</div>
+</sc-if>
+<div style="width:100%;max-width:{{ maxW }};display:grid;grid-template-columns:{{ cols }};gap:40px 28px">
+<sc-for list="{{ plates }}" as="p" hint-placeholder-count="25">
+<figure id="{{ p.id }}" style="margin:0;display:flex;flex-direction:column;gap:12px">
+<svg viewBox="0 0 300 400" style="display:block;width:100%;height:auto;background:#17110d">
+<rect width="300" height="400" filter="url(#{{ p.rock }})"></rect>
+<rect width="300" height="400" fill="url(#vig)"></rect>
+<g filter="url(#wob)">{{ p.art }}</g>
+</svg>
+<sc-if value="{{ captions }}" hint-placeholder-val="{{ true }}"><figcaption style="font-family:'IM Fell English SC',serif;color:#c9b99c;font-size:18px;letter-spacing:.08em;text-align:center">{{ p.name }}</figcaption></sc-if>
+</figure>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;invocation&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;all&quot;,&quot;options&quot;:[&quot;all&quot;,&quot;familiar&quot;,&quot;wendigo&quot;,&quot;blob&quot;,&quot;empusa&quot;,&quot;kobold&quot;,&quot;imp&quot;,&quot;banshee&quot;,&quot;narcissus&quot;,&quot;arachne&quot;,&quot;upir&quot;,&quot;lamia&quot;,&quot;behemoth&quot;,&quot;harpy&quot;,&quot;plutus&quot;,&quot;nightmare&quot;,&quot;fama&quot;,&quot;lemure&quot;,&quot;midas&quot;,&quot;aurevora&quot;,&quot;doppelgaenger&quot;,&quot;succubus&quot;,&quot;specunitas&quot;,&quot;astiwihad&quot;,&quot;erinyes&quot;,&quot;morpheus&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;captions&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const PAINT = '#d9a53f';
+const g = (p, w, o = {}) => ({ p, w, ...o });
+const D = (x, y, rx, ry) => ({ dot: [x, y, rx, ry ?? rx] });
+const mirror = pts => pts.map(([x, y]) => [300 - x, y]);
+
+const PLATES = [
+ ['familiar','Familiar',[
+  g([[90,290],[60,210],[100,130],[180,120],[235,180],[225,260],[165,295],[120,270],[115,215],[150,190],[180,210]],26,{dry:.35}),
+  g([[90,290],[70,322],[38,318]],14,{splat:3}),
+  g([[125,152],[118,112]],12), g([[170,144],[182,106]],12),
+  D(142,232,6,4), D(174,236,6,4)]],
+ ['imp','Imp',[
+  g([[125,200],[95,160],[98,110],[122,82]],22),
+  g(mirror([[125,200],[95,160],[98,110],[122,82]]),22),
+  g([[80,250],[120,292],[180,292],[222,250]],18,{splat:4}),
+  g([[124,284],[127,266]],7), g([[150,290],[150,270]],7), g([[176,284],[173,266]],7)]],
+ ['upir','Upir',[
+  g([[150,160],[90,110],[30,110]],24), g([[150,165],[90,150],[45,178]],18,{dry:.5}), g([[150,170],[105,192],[80,218]],14,{dry:.6}),
+  g(mirror([[150,160],[90,110],[30,110]]),24), g(mirror([[150,165],[90,150],[45,178]]),18,{dry:.5}), g(mirror([[150,170],[105,192],[80,218]]),14,{dry:.6}),
+  g([[135,205],[138,252]],10), g([[165,205],[162,252]],10),
+  D(137,276,4,7), D(161,292,4,8), D(150,334,5,9)]],
+ ['fama','Fama',[
+  g([[70,188],[78,216]],32),
+  g([[115,140],[135,200],[115,260]],12), g([[150,110],[178,200],[150,290]],11,{dry:.45}),
+  g([[188,80],[222,200],[188,320]],9,{dry:.65}), g([[228,55],[266,200],[228,345]],8,{dry:.85,splat:3})]],
+ ['nightmare','Nightmare',[
+  g([[60,60],[110,110],[130,170]],20,{dry:.5}), g([[120,40],[150,100],[155,165]],18,{dry:.5}),
+  g([[200,50],[195,110],[180,168]],16,{dry:.6}), g([[260,80],[230,130],[215,180]],14,{dry:.7}),
+  g([[55,240],[110,190],[190,190],[245,240]],14), g([[55,240],[110,285],[190,285],[245,240]],10,{dry:.4}),
+  g([[150,224],[152,258]],36)]],
+ ['harpy','Harpy',[
+  g([[40,130],[120,70],[260,90]],30,{dry:.3}), g([[60,160],[150,110],[250,140]],18,{dry:.55}),
+  g([[90,190],[100,270],[80,350]],16,{splat:2}), g([[150,185],[158,275],[140,360]],18,{splat:2}), g([[210,190],[220,270],[205,350]],16,{splat:2})]],
+ ['lamia','Lamia',[
+  g([[200,98],[120,110],[120,165],[200,205],[200,255],[110,270],[100,330],[170,352],[240,320]],22,{dry:.3}),
+  g([[190,96],[216,108]],28),
+  g([[224,110],[246,104]],4,{n:3}), g([[246,104],[258,94]],3,{n:2}), g([[246,104],[258,114]],3,{n:2})]],
+ ['lemure','Lemure',[
+  g([[70,360],[90,280],[60,200],[85,120]],14,{dry:.75}), g([[130,370],[115,290],[140,210],[120,110],[140,50]],16,{dry:.65}),
+  g([[190,360],[210,270],[180,190],[205,100]],14,{dry:.75}), g([[245,340],[230,260],[250,190]],10,{dry:.85}),
+  g([[120,140],[122,160]],10), g([[150,140],[152,160]],10)]],
+ ['behemoth','Behemoth',[
+  g([[20,290],[70,170],[170,130],[260,180],[285,290]],60,{dry:.2}),
+  g([[40,292],[150,232],[270,292]],60,{dry:.25}),
+  g([[205,230],[250,240],[272,205],[265,165]],14), g([[175,240],[210,255],[235,230]],11),
+  g([[20,320],[280,324]],12,{dry:.6})]],
+ ['midas','Midas',[
+  g([[80,130],[95,70],[122,110],[150,55],[178,110],[205,70],[220,130],[80,130]],14,{lin:true}),
+  g([[150,230],[150,180]],10), g([[128,240],[100,205]],10), g([[172,240],[200,205]],10),
+  g([[120,262],[80,258]],9), g([[180,262],[220,258]],9), g([[128,285],[100,316]],9), g([[172,285],[200,316]],9), g([[150,292],[150,342]],9),
+  g([[144,256],[156,264]],26)]],
+ ['plutus','Plutus',[
+  g([[150,120],[95,160],[95,230],[150,255],[205,230],[205,160],[150,120]],30,{dry:.25}),
+  g([[128,118],[172,118]],12), g([[140,110],[150,85],[162,105]],12),
+  g([[70,356],[230,356]],18), g([[90,333],[210,333]],16), g([[115,311],[185,311]],14), g([[140,291],[160,291]],12,{splat:4})]],
+ ['succubus','Succubus',[
+  g([[150,70],[80,110],[55,220],[110,330],[140,342]],22,{dry:.3}),
+  g(mirror([[150,70],[80,110],[55,220],[110,330],[140,342]]),22,{dry:.3}),
+  g([[70,150],[108,176]],8,{dry:.5}), g([[62,210],[104,226]],8,{dry:.5}), g([[78,270],[112,276]],8,{dry:.5}),
+  g(mirror([[70,150],[108,176]]),8,{dry:.5}), g(mirror([[62,210],[104,226]]),8,{dry:.5}), g(mirror([[78,270],[112,276]]),8,{dry:.5}),
+  g([[130,122],[112,92],[128,72]],10), g([[170,122],[188,92],[172,72]],10)]],
+ ['doppelganger','Doppelgänger',[
+  g([[140,60],[70,140],[70,260],[140,340]],26),
+  g(mirror([[140,60],[70,140],[70,260],[140,340]]),26),
+  g([[150,80],[150,320]],3,{dry:.8,n:3}),
+  D(110,190,6), D(190,190,6)]],
+ ['specunitas','Specunitas',[
+  g([[150,90],[80,120],[62,200],[95,275],[170,292],[232,240],[238,160],[195,105],[165,96]],22,{dry:.4,splat:3}),
+  g([[110,195],[150,170],[190,195]],8), g([[110,195],[150,220],[190,195]],7,{dry:.4}),
+  g([[148,188],[152,202]],18)]],
+ ['astiwihad','Astiwihad',[
+  g([[40,70],[260,78]],18,{dry:.4}),
+  g([[190,76],[192,160]],8),
+  g([[192,160],[160,190],[165,250],[192,262],[220,250],[225,190],[192,160]],9),
+  g([[188,158],[196,172]],16), g([[196,172],[204,212]],5,{dry:.5})]],
+ ['aurevora','Aurevora',[
+  g([[40,170],[110,110],[200,105],[265,150]],26), g([[50,250],[120,305],[205,305],[262,258]],26),
+  g([[265,150],[285,205],[262,258]],22),
+  g([[80,138],[88,170]],9), g([[110,122],[116,160]],9), g([[140,116],[144,156]],9), g([[170,114],[172,154]],9), g([[200,118],[200,154]],9), g([[230,132],[228,162]],8),
+  g([[95,272],[102,240]],9), g([[125,290],[130,254]],9), g([[155,296],[157,258]],9), g([[185,294],[185,258]],9), g([[215,284],[212,250]],8),
+  D(40,70,6), D(70,60,5), D(58,100,4), D(96,82,4), D(24,120,3.5), D(120,200,5), D(160,210,6), D(200,196,4)]],
+ ['erinyes','Erinyes',[
+  g([[60,60],[110,150],[70,240],[120,340]],12,{dry:.35,splat:3}),
+  g([[150,50],[190,140],[140,230],[180,350]],14,{dry:.35,splat:3}),
+  g([[240,60],[210,150],[250,240],[200,340]],12,{dry:.35,splat:3})]],
+ ['morpheus','Morpheus',[
+  g([[80,130],[120,165],[180,165],[220,130]],12),
+  g([[100,150],[94,166]],5,{n:4}), g([[125,159],[122,176]],5,{n:4}), g([[150,162],[150,180]],5,{n:4}), g([[175,159],[178,176]],5,{n:4}), g([[200,150],[206,166]],5,{n:4}),
+  g([[150,240],[160,246],[152,254],[138,248],[146,232],[168,240],[168,260],[146,272],[122,250],[140,218],[176,218]],8),
+  g([[56,318],[62,322]],20), g([[72,322],[170,324]],12,{dry:.35}),
+  g([[126,350],[132,354]],20), g([[142,354],[240,356]],12,{dry:.35})]],
+];
+PLATES.push(
+ ['wendigo','Wendigo',[
+  g([[150,190],[120,120],[90,60]],12), g([[118,114],[80,100],[56,70]],9), g([[102,84],[110,48]],8), g([[70,92],[42,98]],7,{dry:.5}),
+  g(mirror([[150,190],[120,120],[90,60]]),12), g(mirror([[118,114],[80,100],[56,70]]),9), g(mirror([[102,84],[110,48]]),8), g(mirror([[70,92],[42,98]]),7,{dry:.5}),
+  g([[150,200],[150,350]],8,{dry:.5}),
+  g([[100,230],[150,215],[200,230]],10), g([[96,264],[150,248],[204,264]],10), g([[100,298],[150,282],[200,298]],9,{dry:.45}), g([[108,330],[150,316],[192,330]],8,{dry:.6})]],
+ ['blob','Blob',[
+  g([[40,300],[80,250],[160,236],[240,258],[268,306]],50,{dry:.2}),
+  g([[30,320],[150,300],[272,322]],44,{dry:.3}),
+  g([[96,330],[98,370]],10,{dry:.4}), g([[176,332],[180,380]],12,{dry:.4}), g([[232,326],[234,356]],8,{dry:.5}),
+  D(98,384,5,7), D(180,392,6,8)]],
+ ['empusa','Empusa',[
+  g([[150,330],[120,260],[160,200],[130,130],[160,60]],24,{dry:.35}),
+  g([[180,320],[196,250],[172,200],[196,150]],12,{dry:.6}), g([[118,320],[100,270],[116,230]],10,{dry:.65}),
+  g([[124,350],[176,350]],22)]],
+ ['kobold','Kobold',[
+  g([[60,150],[150,95],[240,150]],20),
+  g([[150,100],[150,300]],13),
+  g([[140,300],[160,300]],18),
+  D(80,334,8,6), D(110,350,6), D(212,340,9,7), D(240,318,5), D(186,360,6,5)]],
+ ['banshee','Banshee',[
+  g([[150,120],[120,150],[124,230],[150,262],[176,230],[180,150],[150,120]],18),
+  g([[100,90],[86,200],[70,360]],12,{dry:.65}), g([[118,80],[110,220],[104,370]],10,{dry:.7}),
+  g([[200,90],[214,200],[230,360]],12,{dry:.65}), g([[182,80],[190,220],[196,370]],10,{dry:.7}),
+  g([[40,190],[60,196]],6,{n:4}), g([[34,220],[60,222]],6,{n:4}), g([[260,196],[240,200]],6,{n:4}), g([[266,226],[240,226]],6,{n:4})]],
+ ['narcissus','Narcissus',[
+  g([[150,200],[152,130]],7),
+  g([[152,120],[130,92],[118,110],[152,120]],10), g([[152,120],[176,92],[188,112],[152,120]],10), g([[152,120],[150,86]],10), g([[146,122],[154,122]],18),
+  g([[40,208],[260,208]],10,{dry:.4}),
+  g([[150,216],[152,280]],6,{dry:.8}), g([[152,290],[130,318],[118,300],[152,290]],8,{dry:.8}), g([[152,290],[176,318],[188,298],[152,290]],8,{dry:.8}),
+  g([[60,240],[120,242]],5,{dry:.7,n:4}), g([[180,262],[250,262]],5,{dry:.7,n:4})]],
+ ['arachne','Arachne',[
+  g([[150,200],[150,40]],5,{n:5}), g([[150,200],[270,110]],5,{n:5}), g([[150,200],[280,280]],5,{n:5}), g([[150,200],[150,370]],5,{n:5}), g([[150,200],[20,280]],5,{n:5}), g([[150,200],[30,110]],5,{n:5}),
+  g([[150,90],[240,130],[252,260],[150,316],[46,262],[60,130],[150,90]],5,{n:5,dry:.5}),
+  g([[150,140],[200,160],[204,236],[150,262],[96,236],[100,160],[150,140]],5,{n:5,dry:.45}),
+  g([[150,190],[150,212]],30),
+  g([[140,196],[112,176]],5,{n:4}), g([[160,196],[188,176]],5,{n:4}), g([[140,208],[110,226]],5,{n:4}), g([[160,208],[190,226]],5,{n:4})]]
+);
+{ const dp = PLATES.find(p => p[0] === 'doppelganger'); if (dp) dp[0] = 'doppelgaenger'; }
+const ORDER = ['familiar','wendigo','blob','empusa','kobold','imp','banshee','narcissus','arachne','upir','lamia','behemoth','harpy','plutus','nightmare','fama','lemure','midas','aurevora','doppelgaenger','succubus','specunitas','astiwihad','erinyes','morpheus'];
+PLATES.sort((a, b) => ORDER.indexOf(a[0]) - ORDER.indexOf(b[0]));
+const ROCKS = ['rockA','rockB','rockC'];
+
+function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+function sample(pts, lin) {
+  const out = [], n = pts.length;
+  if (n === 2 || lin) {
+    for (let i = 0; i < n - 1; i++) { const [a, b] = [pts[i], pts[i + 1]]; const steps = Math.max(6, Math.round(Math.hypot(b[0]-a[0], b[1]-a[1]) / 4)); for (let k = 0; k < steps; k++) { const t = k / steps; out.push([a[0] + (b[0]-a[0]) * t, a[1] + (b[1]-a[1]) * t]); } }
+    out.push(pts[n - 1]); return out;
+  }
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = pts[Math.max(i-1,0)], p1 = pts[i], p2 = pts[i+1], p3 = pts[Math.min(i+2,n-1)];
+    const steps = Math.max(6, Math.round(Math.hypot(p2[0]-p1[0], p2[1]-p1[1]) / 4));
+    for (let k = 0; k < steps; k++) {
+      const t = k / steps, t2 = t*t, t3 = t2*t;
+      const f = j => 0.5 * ((2*p1[j]) + (-p0[j]+p2[j])*t + (2*p0[j]-5*p1[j]+4*p2[j]-p3[j])*t2 + (-p0[j]+3*p1[j]-3*p2[j]+p3[j])*t3);
+      out.push([f(0), f(1)]);
+    }
+  }
+  out.push(pts[n - 1]); return out;
+}
+
+function stroke(gs, R, key) {
+  const h = React.createElement;
+  if (gs.dot) { const [x, y, rx, ry] = gs.dot; return [h('ellipse', { key, cx: x, cy: y, rx, ry, fill: PAINT, opacity: 0.9 })]; }
+  const { p, dry: dry0 = 0.3, splat = 0, lin } = gs;
+  const w = gs.w * (gs.n ? 1 : 1.55), dry = Math.min(0.95, dry0 + 0.15);
+  const c = sample(p, lin), m = c.length;
+  const L = [0]; for (let i = 1; i < m; i++) L.push(L[i-1] + Math.hypot(c[i][0]-c[i-1][0], c[i][1]-c[i-1][1]));
+  const total = L[m-1] || 1;
+  const nrm = c.map((_, i) => { const a = c[Math.max(i-1,0)], b = c[Math.min(i+1,m-1)]; const dx = b[0]-a[0], dy = b[1]-a[1], l = Math.hypot(dx, dy) || 1; return [-dy/l, dx/l]; });
+  const N = gs.n ?? Math.max(4, Math.min(48, Math.round(w / 1.3)));
+  const out = [];
+  for (let b = 0; b < N; b++) {
+    const u = N === 1 ? 0 : (b / (N - 1)) * 2 - 1, e = Math.abs(u);
+    const off = u * w / 2 + (R() - .5) * w * 0.12;
+    const drift = (R() - .5) * w * 0.75;
+    const t0 = R() * 0.06 + e * e * R() * 0.22;
+    const t1 = 1 - (R() * 0.1 + e * R() * 0.32 + R() * dry * 0.35);
+    let d = '';
+    for (let i = 0; i < m; i++) {
+      const t = L[i] / total; if (t < t0 || t > t1) continue;
+      const o = off * (1 - 0.3 * t) + drift * t * t;
+      d += (d ? 'L' : 'M') + (c[i][0] + nrm[i][0] * o).toFixed(1) + ' ' + (c[i][1] + nrm[i][1] * o).toFixed(1);
+    }
+    if (!d) continue;
+    const props = { key: key + '-' + b, d, fill: 'none', stroke: PAINT, strokeWidth: (0.6 + R() * R() * 5 * (w > 25 ? 1.3 : 1)).toFixed(2), strokeLinecap: 'round', strokeLinejoin: 'round', opacity: (0.5 + R() * 0.5).toFixed(2) };
+    if (R() < dry + e * 0.3) {
+      const segs = []; let s = 0;
+      while (s < 100) { const a = 8 + R() * 38, gp = 1 + R() * 9 * (dry + .2); segs.push(a.toFixed(1), gp.toFixed(1)); s += a + gp; }
+      props.pathLength = 100; props.strokeDasharray = segs.join(' ');
+    }
+    out.push(h('path', props));
+  }
+  const end = c[m-1];
+  for (let k = 0; k < splat; k++) {
+    const a = R() * Math.PI * 2, r = w * 0.8 + R() * 30;
+    out.push(h('circle', { key: key + '-s' + k, cx: end[0] + Math.cos(a) * r, cy: end[1] + Math.sin(a) * r, r: (0.8 + R() * 2.8).toFixed(1), fill: PAINT, opacity: 0.85 }));
+  }
+  return out;
+}
+
+let CACHE = null;
+function buildArt() {
+  if (CACHE) return CACHE;
+  CACHE = PLATES.map(([id, name, gestures], pi) => {
+    const kids = [];
+    gestures.forEach((gs, gi) => kids.push(...stroke(gs, rng(pi * 997 + gi * 31 + 7), id + gi)));
+    return { id, name, rock: ROCKS[pi % 3], art: React.createElement('g', null, kids) };
+  });
+  return CACHE;
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const all = buildArt();
+    const inv = this.props.invocation ?? 'all';
+    const gallery = !all.some(p => p.id === inv);
+    return {
+      plates: gallery ? all : all.filter(p => p.id === inv),
+      gallery,
+      captions: this.props.captions ?? true,
+      cols: gallery ? 'repeat(auto-fill, minmax(240px, 1fr))' : 'minmax(0, 1fr)',
+      maxW: gallery ? '1400px' : 'none',
+      pad: gallery ? '48px 32px 80px' : '0',
+    };
+  }
+}
+</script>
+</body>
+</html>

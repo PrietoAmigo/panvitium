@@ -55,6 +55,24 @@ Each `*.data.ts` is pure, typed, commented data (the type and behaviour stay in 
 `*.ts`), so edits are type-checked and Vite hot-reloads them in dev. The spreadsheet remains the
 source of truth; the inline comments record each reconciliation.
 
+## Baking the invocation plates
+
+The Ars Goetia's painted plates (one per invocation) ship as static PNGs in
+`apps/web/public/assets/panvitium/invocations-ars-goetia/`, baked from the source in
+`apps/web/src/art/`: `brush.ts` (the procedural dry brush) and `invocationPlates.data.ts` (each
+plate's gestures). To retune a plate, edit its gestures, then re-bake:
+
+```bash
+pnpm --filter @panvitium/web bake:plates           # every plate
+pnpm --filter @panvitium/web bake:plates imp fama  # only these
+```
+
+The bake rasterizes through Playwright's Chromium (run `pnpm --filter @panvitium/web e2e:install`
+once, or set `CHROMIUM_PATH` to another Chromium binary) and records each plate's SVG digest in
+`src/art/invocationPlates.baked.json`; a unit test compares those digests with the source, so a
+plate edited but not re-baked fails the suite. A plate's position in the table seeds its strokes:
+append new plates, never reorder.
+
 ## Verifying end-to-end
 
 The web app does not call the API yet (that wiring is a later step), so exercise the backend
