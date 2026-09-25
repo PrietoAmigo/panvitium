@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 
 /**
  * Smoke coverage for the current web shell (ADR-012): every launch opens on the title menu; Continue
@@ -19,31 +19,35 @@ async function enterLair(page: Page): Promise<void> {
   await expect(page.locator('.entry-fade')).toHaveCount(0, { timeout: 15_000 });
 }
 
+/** The room on screen: its scene carries the room's name as its accessible label. */
+function room(page: Page, name: string): Locator {
+  return page.getByRole('group', { name, exact: true });
+}
+
 test('loads the lair in the Altar room', async ({ page }) => {
   await page.goto('/');
   // The title menu carries the gold-leaf wordmark and the Continue entry.
   await expect(page.getByRole('dialog', { name: 'Panvitium' })).toBeVisible();
   await enterLair(page);
   // The game opens in the Altar room.
-  await expect(page.locator('.room-name')).toHaveText('The Altar Room');
+  await expect(room(page, 'The Altar Room')).toBeVisible();
 });
 
 test('navigates between the three rooms by their doors', async ({ page }) => {
   await page.goto('/');
   await enterLair(page);
-  const roomName = page.locator('.room-name');
 
   await page.getByRole('button', { name: 'To the Studio' }).click();
-  await expect(roomName).toHaveText('The Studio');
+  await expect(room(page, 'The Studio')).toBeVisible();
 
   await page.getByRole('button', { name: 'To the Altar' }).click();
-  await expect(roomName).toHaveText('The Altar Room');
+  await expect(room(page, 'The Altar Room')).toBeVisible();
 
   await page.getByRole('button', { name: 'To the Invocation Room' }).click();
-  await expect(roomName).toHaveText('The Invocation Room');
+  await expect(room(page, 'The Invocation Room')).toBeVisible();
 
   await page.getByRole('button', { name: 'To the Altar' }).click();
-  await expect(roomName).toHaveText('The Altar Room');
+  await expect(room(page, 'The Altar Room')).toBeVisible();
 });
 
 test('opens and closes a diegetic overlay (the desk PC)', async ({ page }) => {
@@ -89,7 +93,7 @@ test('opens the Analytics program with its live readouts', async ({ page }) => {
 test('persists state across a reload', async ({ page }) => {
   await page.goto('/');
   await enterLair(page);
-  await expect(page.locator('.room-name')).toHaveText('The Altar Room');
+  await expect(room(page, 'The Altar Room')).toBeVisible();
 
   const deviceIdBefore = await page.evaluate(() => localStorage.getItem('panvitium:deviceId'));
   expect(deviceIdBefore).toBeTruthy();
@@ -113,5 +117,5 @@ test('persists state across a reload', async ({ page }) => {
 
   // The reload opens on the title menu again; Continue still boots back into the lair.
   await enterLair(page);
-  await expect(page.locator('.room-name')).toHaveText('The Altar Room');
+  await expect(room(page, 'The Altar Room')).toBeVisible();
 });

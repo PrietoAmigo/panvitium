@@ -1,7 +1,7 @@
 /**
- * Outcome events — the transient record of what an Opera action produced, surfaced to the UI for
- * the log and the Stellar/Apocalyptic pop-ups (02 §2). These are NOT part of the persisted state;
- * `tick` returns the events generated that tick and the caller decides what to show.
+ * Outcome events — the transient record of what an Opera action produced (02 §2), surfaced to the
+ * UI for the log and the Unveiling. These are NOT part of the persisted state; `tick` returns the
+ * events generated that tick and the caller decides what to show.
  */
 import { type Tier } from './probability.js';
 
@@ -28,8 +28,3 @@ export interface OutcomeEvent {
 
 /** The origin of an outcome event. */
 export type EventSource = 'player' | 'acolyte';
-
-/** Tiers dramatic enough to warrant a pop-up (02 §2). */
-export function isSignatureTier(tier: Tier): boolean {
-  return tier === 'stellar' || tier === 'apocalyptic';
-}

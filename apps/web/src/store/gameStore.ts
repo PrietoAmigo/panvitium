@@ -5,9 +5,8 @@
  * components, not here.
  *
  * It also keeps transient, NON-persisted channels surfaced from the sim each tick: a rolling
- * outcome `log` (the PC's game log, 02 §10), the latest `signature` outcome — a Stellar or
- * Apocalyptic result that earns a pop-up (02 §2) — and the maleficia Emptio has just brought home,
- * queued for their Unveiling. None of them is part of the save.
+ * outcome `log` (the PC's game log, 02 §10) and the maleficia Emptio has just brought home, queued
+ * for their Unveiling. None of them is part of the save.
  */
 import { create } from 'zustand';
 import {
@@ -29,7 +28,6 @@ import {
   unassignAcolyteFromAction,
   setAutoRepeat,
   activateMaleficium as activateMaleficiumSim,
-  isSignatureTier,
   unbindAllSigils,
   bindSigil as bindSigilSim,
   offerDevotion,
@@ -113,10 +111,8 @@ interface GameStore {
   ready: boolean;
   /** Recent outcomes, newest first (transient; not persisted). */
   log: OutcomeEvent[];
-  /** The latest Stellar/Apocalyptic outcome awaiting its pop-up, or null. */
   /** The id of the most recently unlocked achievement (03 §7), for a toast; null when dismissed. */
   achievementToast: string | null;
-  signature: OutcomeEvent | null;
   /**
    * Maleficia Emptio has brought home, awaiting their Unveiling pop-up, oldest first (transient).
    * Filled only from live tick outcomes, so a load or a Katabasis carry-over never plays one.
@@ -145,7 +141,7 @@ interface GameStore {
   eternalReveal: boolean;
   /** Load (or start) the game. Idempotent. */
   init: () => void;
-  /** Advance the simulation by `deltaSeconds`, folding any outcomes into the log/signature. */
+  /** Advance the sim by `deltaSeconds`, folding its outcomes into the log and the Unveilings. */
   advance: (deltaSeconds: number) => void;
   /** Begin an Opera action (pays its cost and queues it), or set a notice if it can't start. */
   act: (actionId: string, target?: string) => void;
@@ -256,8 +252,6 @@ interface GameStore {
   closeRecap: () => void;
   /** Persist the current state to localStorage, bumping the save version. */
   persist: () => void;
-  /** Dismiss the active signature pop-up. */
-  dismissSignature: () => void;
   /** Retire the Unveiling that has finished (a no-op unless `seq` is the one at the head). */
   dismissUnveiling: (seq: number) => void;
   /** Forget the last-obtained focus (the Loculi has closed). */
@@ -337,7 +331,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   deviceId: '',
   ready: false,
   log: [],
-  signature: null,
   ...NO_OBTAINED,
   notice: null,
   achievementToast: null,
@@ -397,20 +390,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((s) => {
       // The PC Logs program is the player's own action log: acolyte- and invocation-runner outcomes
       // are tagged with a source and excluded here (they have their own surfaces — the Analytics
-      // Acolytes/Invocations tabs). Signature pop-ups still fire from any source.
+      // Acolytes/Invocations tabs).
       const playerEvents = events.filter((e) => e.source === undefined || e.source === 'player');
       const log =
         playerEvents.length > 0
           ? [...playerEvents].reverse().concat(s.log).slice(0, LOG_CAP)
           : s.log;
-      let signature = s.signature;
-      for (const e of events) if (isSignatureTier(e.tier)) signature = e;
       // An Emptio purchase that completed brings its maleficium home: queue its Unveiling.
       const acquired = events.flatMap((e) => e.maleficiaAcquired ?? []);
       return {
         state,
         log,
-        signature,
         ...obtainedPatch(s.unveilQueue, acquired),
         ...noticePatch,
         ...achievementPatch,
@@ -623,7 +613,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       recap,
       katabasisPhase: 'recap',
       log: [],
-      signature: null,
       ...NO_OBTAINED,
       notice: null,
     });
@@ -657,7 +646,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  dismissSignature: () => set({ signature: null }),
   dismissUnveiling: (seq) =>
     set((s) => (s.unveilQueue[0]?.seq === seq ? { unveilQueue: s.unveilQueue.slice(1) } : s)),
   clearLastObtained: () => set({ lastObtained: null }),
@@ -671,7 +659,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...loaded,
       ready: true,
       log: [],
-      signature: null,
       ...NO_OBTAINED,
       notice: null,
       katabasisPhase: null,
@@ -743,7 +730,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...loaded,
       ready: true,
       log: [],
-      signature: null,
       ...NO_OBTAINED,
       notice: null,
       recap: null,
@@ -816,7 +802,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ...loaded,
         pendingConflict: null,
         log: [],
-        signature: null,
         ...NO_OBTAINED,
         notice: null,
         katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,

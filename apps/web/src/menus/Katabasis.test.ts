@@ -46,7 +46,6 @@ beforeEach(() => {
     recap: null,
     eternalReveal: false,
     log: [],
-    signature: null,
     notice: null,
     titleOpen: false,
   });

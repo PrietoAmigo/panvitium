@@ -111,7 +111,8 @@ unified `maleficiaBuffs` map, drop the old Defixio cull curse, strip the removed
 - **State (ADR-003): Zustand, `store/gameStore.ts`.** Owns the authoritative `GameState` + save
   metadata and delegates _all_ logic to the sim's `tick`/`startAction`/etc. UI-only state (current
   room, open panel) lives in components, not the store. It also surfaces two transient,
-  non-persisted channels from each tick: the rolling outcome `log` and the latest `signature` outcome.
+  non-persisted channels from each tick: the rolling outcome `log` and the `unveilQueue` of
+  maleficia Emptio has just brought home.
 - `game/` — thin **view-model adapters** (`buildGoetia`, `buildAltar`, `buildCabinet`, …) that map
   the sim catalogs + live state onto presentation shapes, plus formatting/labels. No game logic.
 - `menus/` — the diegetic room/panel UI (the integrated design handoff): `RoomView`, `PanelShell`,
