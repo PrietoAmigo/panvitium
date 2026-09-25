@@ -213,12 +213,14 @@ describe('gameStore — outcome log', () => {
 });
 
 describe('gameStore — Katabasis', () => {
-  it('beginKatabasis opens the menu', () => {
+  it('beginKatabasis opens the menu on the descent', () => {
     store().beginKatabasis();
     expect(store().katabasisPhase).toBe('menu');
+    // The altar sigil's commit: the flow opens on the Abyss transition, not among the Princes.
+    expect(store().katabasisEntry).toBe('descent');
   });
 
-  it('openKatabasis opens the gate without committing — no teardown until beginKatabasis', () => {
+  it('openKatabasis opens the Status Quo Ledger without committing — no teardown', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
@@ -228,12 +230,14 @@ describe('gameStore — Katabasis', () => {
     });
     store().openKatabasis();
     const st = store().state as GameState;
-    expect(store().katabasisPhase).toBe('menu'); // gate is showing…
+    expect(store().katabasisPhase).toBe('menu'); // the Ledger is showing…
+    expect(store().katabasisEntry).toBe('ledger');
     expect(st.inKatabasis).not.toBe(true); // …but the lifetime is intact (nothing torn down)
     expect(st.lifetime.hoard.toNumber()).toBe(200);
-    // Turning back is a clean exit.
+    // Returning to the altar is a clean exit.
     store().closeKatabasis();
     expect(store().katabasisPhase).toBeNull();
+    expect(store().katabasisEntry).toBeNull();
     expect((store().state as GameState).lifetime.hoard.toNumber()).toBe(200);
   });
 
@@ -275,7 +279,7 @@ describe('gameStore — Katabasis', () => {
     expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtEntry);
   });
 
-  it('keeps ticking at the Altar gate (pre-commit) — time only stops once the descent begins', () => {
+  it('keeps ticking on the Status Quo Ledger (pre-commit) — time only stops once the descent begins', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
@@ -283,7 +287,7 @@ describe('gameStore — Katabasis', () => {
         lifetime: { ...s0.lifetime, reprobates: 5000 },
       },
     });
-    store().openKatabasis(); // the gate / Ledger menu — no teardown, inKatabasis stays false
+    store().openKatabasis(); // the Status Quo Ledger — no teardown, inKatabasis stays false
     expect((store().state as GameState).inKatabasis).not.toBe(true);
     const soulsAtEntry = floor((store().state as GameState).souls).toNumber();
     store().advance(3600); // an hour of suicides still lands — the soul is not yet under
@@ -321,6 +325,8 @@ describe('gameStore — Katabasis', () => {
     store().init();
     expect(store().katabasisPhase).toBe('menu');
     expect((store().state as GameState).inKatabasis).toBe(true);
+    // Not a fresh commit: the flow resumes among the Princes rather than replaying the descent.
+    expect(store().katabasisEntry).toBeNull();
   });
 });
 
@@ -360,6 +366,7 @@ describe('gameStore — title & recap are frozen (no offline progression, ADR-03
       store().confirmKatabasis(); // rise: the descent's 30 min mint nothing (freeze)
       expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtRise);
       expect(store().katabasisPhase).toBe('recap');
+      expect(store().katabasisEntry).toBeNull(); // the descent's entry is spent
       vi.setSystemTime(t0 + 1800_000 + 3600_000); // read the recap for an hour
       store().closeRecap();
       expect(store().katabasisPhase).toBeNull();

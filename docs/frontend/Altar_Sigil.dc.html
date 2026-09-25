@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=EB+Garamond:ital,wght@0,400;0,500;1,400&amp;family=IM+Fell+English:ital@0;1&amp;family=IM+Fell+English+SC&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(circle at 50% 30%,#120d0a 0%,#0a0807 70%,#050403 100%);color:#e7d8b4;font-family:'EB Garamond',Georgia,serif;font-size:18px;overflow:hidden}
+a{color:#d9b25a}a:hover{color:#ffd9cf}
+button{font-family:inherit;color:inherit}
+.ledger-scroll::-webkit-scrollbar{width:0;height:0;display:none}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+@keyframes kat-ov-in{from{opacity:0}to{opacity:1}}
+@keyframes kat-ov-out{from{opacity:1}to{opacity:0}}
+@keyframes kat-sq-in{from{opacity:0;letter-spacing:.36em}to{opacity:1;letter-spacing:.22em}}
+@keyframes kat-seal-breathe{0%,100%{filter:drop-shadow(0 0 12px rgba(215,50,30,.8)) drop-shadow(0 0 28px rgba(195,35,22,.4))}50%{filter:drop-shadow(0 0 24px rgba(230,70,42,1)) drop-shadow(0 0 50px rgba(205,45,28,.75))}}
+@keyframes kat-seal-pulse{0%,100%{transform:scale(.97)}50%{transform:scale(1.05)}}
+@keyframes kat-seal-vibe{0%{transform:translate(0,0) rotate(0)}10%{transform:translate(-3px,2px) rotate(-1.4deg)}20%{transform:translate(3px,-2px) rotate(1.2deg)}30%{transform:translate(-4px,-1px) rotate(-.8deg)}40%{transform:translate(4px,3px) rotate(1.6deg)}50%{transform:translate(-2px,3px) rotate(-1.2deg)}60%{transform:translate(3px,-3px) rotate(1deg)}70%{transform:translate(-4px,1px) rotate(-1.6deg)}80%{transform:translate(2px,2px) rotate(.8deg)}90%{transform:translate(-3px,-2px) rotate(-1deg)}100%{transform:translate(0,0) rotate(0)}}
+@keyframes kat-seal-pulse-armed{0%,100%{transform:scale(1.55)}50%{transform:scale(1.78)}}
+@keyframes kat-seal-breathe-armed{0%,100%{filter:drop-shadow(0 0 28px rgba(230,70,42,1)) drop-shadow(0 0 64px rgba(205,40,25,.9))}50%{filter:drop-shadow(0 0 46px rgba(240,90,55,1)) drop-shadow(0 0 110px rgba(215,50,30,.95))}}
+@keyframes kat-seal-vibe-strong{0%{transform:translate(0,0) rotate(0)}8%{transform:translate(-9px,5px) rotate(-3.6deg)}16%{transform:translate(10px,-6px) rotate(3.2deg)}24%{transform:translate(-11px,-3px) rotate(-2.4deg)}32%{transform:translate(11px,7px) rotate(4deg)}40%{transform:translate(-6px,8px) rotate(-3.2deg)}50%{transform:translate(9px,-8px) rotate(2.8deg)}60%{transform:translate(-12px,3px) rotate(-4deg)}70%{transform:translate(8px,6px) rotate(2.2deg)}80%{transform:translate(-8px,-6px) rotate(-2.8deg)}90%{transform:translate(7px,4px) rotate(3deg)}100%{transform:translate(0,0) rotate(0)}}
+@keyframes kat-word-breathe{0%,100%{text-shadow:0 0 34px rgba(255,50,28,.7),0 0 12px rgba(255,110,60,.85)}50%{text-shadow:0 0 56px rgba(255,50,28,1),0 0 20px rgba(255,130,70,1)}}
+@keyframes kat-word-in{from{letter-spacing:.62em;transform:translateY(16px)}to{letter-spacing:.3em;transform:none}}
+@keyframes kat-sub-in{from{opacity:0}to{opacity:1}}
+@keyframes kat-abyss-down{0%{transform:scale(2.4);opacity:.2}45%{opacity:1}100%{transform:scale(.55);opacity:.9}}
+</style>
+</helmet>
+
+<div data-screen-label="Altar Room" style="position:relative;height:100vh;display:flex">
+  <main style="position:relative;flex:1;margin:auto;width:min(100%, 1280px);aspect-ratio:16 / 9;max-height:100%;overflow:hidden;box-shadow:inset 0 0 240px 40px rgba(0,0,0,0.78);animation:fade-in 1.8s ease both">
+    <div role="group" aria-label="The Altar Room" style="position:absolute;inset:0;background-color:#0a0807;background-image:url('assets/altar_0acolytes.png');background-size:cover;background-position:center;image-rendering:pixelated">
+      <div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 180px 30px rgba(0,0,0,0.55)"></div>
+
+      <sc-for list="{{ hotspots }}" as="h" hint-placeholder-count="3">
+        <button type="button" aria-label="{{ h.label }}" onClick="{{ h.onClick }}" onMouseEnter="{{ h.onEnter }}" onMouseLeave="{{ h.onLeave }}" style="position:absolute;left:{{ h.left }};top:{{ h.top }};width:{{ h.width }};height:{{ h.height }};background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;padding:0;display:flex;align-items:{{ h.align }};justify-content:center;z-index:5">
+          <sc-if value="{{ h.isDoor }}" hint-placeholder-val="{{ false }}">
+            <span style="position:absolute;font-family:Cinzel, Georgia, serif;font-size:1.4rem;color:{{ h.glyphColor }};text-shadow:{{ h.glyphShadow }};transition:color .25s ease, text-shadow .25s ease;pointer-events:none">{{ h.glyph }}</span>
+          </sc-if>
+          <span style="margin-bottom:{{ h.labelMb }};padding:0.2rem 0.7rem;font-family:Cinzel, Georgia, serif;font-size:0.66rem;letter-spacing:0.16em;text-transform:uppercase;color:#e7d8b4;background:rgba(10,8,7,0.82);border:1px solid rgba(216,182,88,0.35);white-space:nowrap;opacity:{{ h.labelOpacity }};transform:{{ h.labelTransform }};transition:opacity .25s ease, transform .25s ease">{{ h.label }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ overlayOn }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:20;pointer-events:none;animation:{{ overlayAnim }}">
+        <sc-if value="{{ dimRoom }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 52%, rgba(150,22,18,0.26), transparent 46%), radial-gradient(ellipse at 50% 50%, rgba(7,5,10,0.35), rgba(7,5,10,0.72) 80%)"></div>
+        </sc-if>
+
+        <sc-if value="{{ showIdle }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(360px, 46vh);height:min(360px, 46vh);display:grid;place-items:center;pointer-events:auto">
+            <button type="button" onClick="{{ pressSigil }}" aria-label="Press the sigil" style="display:grid;place-items:center;background:none;border:0;margin:0;padding:0;cursor:pointer;transition:transform 0.28s cubic-bezier(0.2,0.7,0.3,1)" style-hover="transform:scale(1.06)" style-active="transform:scale(0.95)">
+              <span style="display:grid;place-items:center;animation:kat-seal-pulse 3.4s ease-in-out infinite">
+                <img src="assets/seal-panvitium.png" alt="" draggable="false" style="display:block;width:clamp(150px, 30vw, 240px);will-change:transform, filter;animation:kat-seal-vibe 0.12s linear infinite, kat-seal-breathe 3.4s ease-in-out infinite">
+              </span>
+            </button>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:2.4rem;display:flex;justify-content:center;pointer-events:none">
+            <button type="button" onClick="{{ openStatusQuo }}" style="pointer-events:auto;background:none;border:0;padding:0.6rem 1.2rem;cursor:pointer;font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.05rem;letter-spacing:0.22em;padding-left:calc(1.2rem + 0.22em);text-transform:uppercase;color:#ffd9cf;text-shadow:0 0 18px rgba(140,24,22,0.9), 0 2px 6px #000;animation:kat-sq-in 0.7s ease both;transition:color .18s, text-shadow .18s" style-hover="color:#fff1ea;text-shadow:0 0 22px rgba(255,90,60,0.85), 0 0 8px rgba(255,90,60,0.5), 0 2px 6px #000">Status Quo</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showArmed }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(360px, 46vh);height:min(360px, 46vh);display:grid;place-items:center;pointer-events:auto">
+            <button type="button" onClick="{{ pressSigil }}" aria-label="Confirm the descent — there is no return" style="display:grid;place-items:center;background:none;border:0;margin:0;padding:0;cursor:pointer;transition:transform 0.28s cubic-bezier(0.2,0.7,0.3,1)" style-hover="transform:scale(1.06)" style-active="transform:scale(0.95)">
+              <span style="display:grid;place-items:center;animation:kat-seal-pulse-armed 1s ease-in-out infinite">
+                <img src="assets/seal-panvitium.png" alt="" draggable="false" style="display:block;width:clamp(150px, 30vw, 240px);will-change:transform, filter;animation:kat-seal-vibe-strong 0.07s linear infinite, kat-seal-breathe-armed 1s ease-in-out infinite">
+              </span>
+            </button>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ showDescent }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Katabasis transition" onClick="{{ endDescent }}" style="position:fixed;inset:0;z-index:80;overflow:hidden;background:#050204;display:flex;align-items:center;justify-content:center;color:#c9c4bc;cursor:pointer">
+      <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 50%, rgba(190,30,18,0.55), rgba(90,10,8,0.35) 30%, rgba(8,2,3,0.9) 64%, #050204 80%);animation:kat-abyss-down 4s cubic-bezier(0.5,0.05,0.4,1) both"></div>
+      <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%, transparent 0%, rgba(120,14,14,0.18) 45%, #000 86%)"></div>
+      <div style="position:relative;z-index:5;font-family:Cinzel, Georgia, serif;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;font-size:clamp(2rem, 6vw, 3.6rem);color:#ff5a3a;text-align:center;animation:kat-word-breathe 4s ease-in-out infinite, kat-word-in 1.4s ease both">Katabasis</div>
+      <div style="position:absolute;z-index:5;bottom:16vh;left:0;right:0;text-align:center;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;font-style:italic;color:#8f8780;letter-spacing:0.08em;font-size:1.08rem;padding:0 8vw;text-wrap:pretty;animation:kat-sub-in 2s ease 0.5s both">You lie still upon the altar; the soul slips and goes through the worn path.</div>
+      <button type="button" style="position:absolute;z-index:5;bottom:6vh;left:0;right:0;width:100%;text-align:center;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;letter-spacing:0.22em;text-transform:uppercase;font-size:0.7rem;color:#6a635c;background:none;border:0;cursor:pointer;animation:kat-sub-in 2s ease 1.4s both">Click anywhere to continue</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showLedger }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Status Quo" class="ledger-scroll" style="position:fixed;inset:0;z-index:80;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;color:#c9c4bc;-webkit-font-smoothing:antialiased;background:radial-gradient(ellipse 60% 40% at 50% -8%, rgba(40,24,30,0.6), transparent 60%), radial-gradient(ellipse 80% 50% at 50% 118%, rgba(150,26,20,0.28), transparent 60%), #07050a;animation:kat-ov-in .3s ease both">
+      <div style="position:relative;max-width:1120px;margin:0 auto;padding:56px 40px 80px">
+        <button type="button" onClick="{{ closeLedger }}" style="display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:0;cursor:pointer;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;letter-spacing:0.16em;text-transform:uppercase;font-size:0.76rem;color:#6a635c;transition:color .2s;margin-bottom:30px" style-hover="color:#d6cfc6"><span aria-hidden="true" style="font-size:1rem;line-height:1">←</span> Return to the altar</button>
+
+        <div style="text-align:center;margin-bottom:14px">
+          <div style="font-family:'IM Fell English SC','IM Fell English',Georgia,serif;letter-spacing:0.42em;text-transform:uppercase;font-size:0.78rem;color:#6a635c;padding-left:0.42em">Status Quo</div>
+          <h1 style="margin:0.5rem 0 0;font-family:Cinzel, Georgia, serif;font-weight:700;font-size:clamp(2.1rem, 5vw, 3.1rem);letter-spacing:0.2em;text-transform:uppercase;color:#efe2da;padding-left:0.2em;text-shadow:0 0 40px rgba(140,24,22,0.55), 0 2px 6px #000">The Ledger</h1>
+          <p style="margin:1rem auto 0;max-width:56ch;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;font-style:italic;color:#8f8780;line-height:1.55;font-size:1.05rem;text-wrap:pretty">The disgrace Cardinal Sins now exert, and the effects of every sigil by bound souls.</p>
+        </div>
+
+        <div style="text-align:center;margin:22px auto 6px">
+          <div style="font-family:Cinzel, Georgia, serif;font-weight:700;font-size:3.4rem;line-height:1;color:#e23b2a;text-shadow:0 0 30px rgba(200,40,28,0.55), 0 0 10px rgba(200,40,28,0.4)">12.4K</div>
+          <div style="margin-top:8px;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;letter-spacing:0.4em;text-transform:uppercase;font-size:0.8rem;color:#c0503e">Souls</div>
+        </div>
+
+        <div style="display:flex;justify-content:center;margin:36px auto 52px;border-top:1px solid rgba(160,30,34,0.22);border-bottom:1px solid rgba(160,30,34,0.22);max-width:760px">
+          <div style="flex:1;text-align:center;padding:18px 12px"><div style="font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.7rem;color:#f0d9b0;text-shadow:0 0 20px rgba(217,178,90,0.25)">{{ totalSinLevel }}</div><div style="margin-top:4px;font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.18em;text-transform:uppercase;font-size:0.68rem;color:#6a635c">Total Sin Level</div></div>
+          <div style="flex:1;text-align:center;padding:18px 12px;border-left:1px solid rgba(160,30,34,0.22)"><div style="font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.7rem;color:#f0d9b0;text-shadow:0 0 20px rgba(217,178,90,0.25)">0</div><div style="margin-top:4px;font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.18em;text-transform:uppercase;font-size:0.68rem;color:#6a635c">sigils bound</div></div>
+          <div style="flex:1;text-align:center;padding:18px 12px;border-left:1px solid rgba(160,30,34,0.22)"><div style="font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.7rem;color:#f0d9b0;text-shadow:0 0 20px rgba(217,178,90,0.25)">0</div><div style="margin-top:4px;font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.18em;text-transform:uppercase;font-size:0.68rem;color:#6a635c">sigil-bound souls</div></div>
+        </div>
+        <div style="display:flex;justify-content:center;margin:-34px auto 52px;border-bottom:1px solid rgba(160,30,34,0.22);max-width:760px">
+          <div style="flex:1;text-align:center;padding:18px 12px"><div style="font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.7rem;color:#e0934a;text-shadow:0 0 18px rgba(224,147,74,0.3)">17.5%</div><div style="margin-top:4px;font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.18em;text-transform:uppercase;font-size:0.68rem;color:#6a635c">gold kept on descent</div></div>
+          <div style="flex:1;text-align:center;padding:18px 12px;border-left:1px solid rgba(160,30,34,0.22)"><div style="font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.7rem;color:#e0934a;text-shadow:0 0 18px rgba(224,147,74,0.3)">5.0%</div><div style="margin-top:4px;font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.18em;text-transform:uppercase;font-size:0.68rem;color:#6a635c">reprobates kept</div></div>
+          <div style="flex:1;text-align:center;padding:18px 12px;border-left:1px solid rgba(160,30,34,0.22)"><div style="font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.7rem;color:#e0934a;text-shadow:0 0 18px rgba(224,147,74,0.3)">5.0%</div><div style="margin-top:4px;font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.18em;text-transform:uppercase;font-size:0.68rem;color:#6a635c">maleficia kept (each)</div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:16px;margin:0 0 22px">
+          <h2 style="margin:0;font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.15rem;letter-spacing:0.22em;text-transform:uppercase;color:#e7d6c2;white-space:nowrap">Cardinal Sins</h2>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg, rgba(160,30,34,0.4), transparent)"></div>
+          <div style="font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.12em;font-size:0.8rem;color:#6a635c">levels &amp; effects</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 440px), 1fr));gap:14px;margin-bottom:60px">
+          <sc-for list="{{ sins }}" as="s" hint-placeholder-count="8">
+            <div style="position:relative;padding:18px 20px 18px 22px;background:linear-gradient(rgba(28,16,18,0.5), rgba(14,8,9,0.55));border:1px solid rgba(120,40,40,0.26);border-radius:6px;overflow:hidden">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:{{ s.barBg }};opacity:{{ s.barOpacity }}"></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                <div style="display:flex;align-items:baseline;gap:10px">
+                  <span style="font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.25rem;color:#f0e4d8;letter-spacing:0.04em">{{ s.latin }}</span>
+                  <span style="font-family:'IM Fell English SC',Georgia,serif;font-style:italic;font-size:0.92rem;color:#8f8780">{{ s.english }}</span>
+                </div>
+                <span style="letter-spacing:0.28em;white-space:nowrap"><span style="color:#ff5a3a;text-shadow:0 0 12px rgba(255,70,40,0.6)">{{ s.pipsOn }}</span><span style="color:#4a2420">{{ s.pipsOff }}</span></span>
+              </div>
+              <div style="margin-top:3px;font-family:'IM Fell English SC',Georgia,serif;font-size:0.82rem;color:#6a635c;letter-spacing:0.04em">{{ s.prince }} · <span style="color:#ff7a4a">{{ s.devotion }} devoted souls</span> · {{ s.toNext }} to next level</div>
+              <div style="margin-top:13px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:baseline">
+                  <span style="font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.12em;text-transform:uppercase;font-size:0.64rem;color:#ff7a4a;padding-top:2px">Skill</span>
+                  <span style="font-size:0.95rem;color:#c9c4bc;line-height:1.4"><span style="color:#f0e4d8">{{ s.skill }}</span>: {{ s.skillEffect }} <b style="font-family:'IM Fell English SC',Georgia,serif;font-weight:400;letter-spacing:0.03em;color:#d9b25a;white-space:nowrap">{{ s.skillValue }}</b></span>
+                </div>
+                <div style="display:grid;grid-template-columns:92px 1fr;gap:12px;align-items:baseline">
+                  <span style="font-family:'IM Fell English SC',Georgia,serif;letter-spacing:0.12em;text-transform:uppercase;font-size:0.64rem;color:{{ s.lvlTagColor }};padding-top:2px">{{ s.lvlTag }}</span>
+                  <span style="font-size:0.95rem;color:{{ s.lvlTxtColor }};font-style:{{ s.lvlTxtStyle }};line-height:1.4">{{ s.levelEffect }} <b style="font-family:'IM Fell English SC',Georgia,serif;font-weight:400;font-style:normal;letter-spacing:0.03em;color:#d9b25a;white-space:nowrap">{{ s.levelValue }}</b></span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:16px;margin:0 0 22px">
+          <h2 style="margin:0;font-family:Cinzel, Georgia, serif;font-weight:600;font-size:1.15rem;letter-spacing:0.22em;text-transform:uppercase;color:#e7d6c2;white-space:nowrap">Bound Sigils</h2>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg, rgba(160,30,34,0.4), transparent)"></div>
+        </div>
+        <p style="font-family:'IM Fell English SC',Georgia,serif;font-style:italic;color:#6a635c;font-size:0.95rem">No seals burn yet. Bind souls to the Goetia and their effects will surface here.</p>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;idleSeconds&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:4,&quot;min&quot;:2,&quot;max&quot;:10,&quot;step&quot;:0.5,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;dimRoom&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const SINS = [
+  { key: 'gula', prince: 'Beelzebub', latin: 'Gula', english: 'Gluttony', skill: 'Insatiability', skillEffect: 'Multiplies your action efficiency by 1 + intensity.', levelEffect: 'Each level removes 20% of the Bad, Terrible and Apocalyptic outcome weight; at level 4, a fifth of it remains.', level: 1, devotion: '1.2K', toNext: '3.8K', intensity: 0.084, lv: '−20%' },
+  { key: 'luxuria', prince: 'Asmodeus', latin: 'Luxuria', english: 'Lust', skill: 'Seduction', skillEffect: 'Multiplies the reprobate generation rate by 1 + intensity.', levelEffect: 'Each level doubles (×2) your Suasio action efficiency.', level: 2, devotion: '6.1K', toNext: '18.9K', intensity: 0.142, lv: '×4' },
+  { key: 'avaritia', prince: 'Mammon', latin: 'Avaritia', english: 'Greed', skill: 'Golden Hand', skillEffect: 'Multiplies the gold gain rate by 1 + intensity.', levelEffect: 'Each level adds +12.5% to the gold kept on descent (base 5%).', level: 1, devotion: '1.0K', toNext: '4.0K', intensity: 0.079, lv: '+12.5%' },
+  { key: 'tristitia', prince: 'Leviathan', latin: 'Tristitia', english: 'Sorrow', skill: 'Resignation', skillEffect: 'Multiplies Suasio success and acolyte efficiency by 1 + intensity.', levelEffect: 'Each level adds +12.5% to the reprobates kept on descent (base 5%).', level: 0, devotion: '0', toNext: '1.0K', intensity: 0, lv: '' },
+  { key: 'ira', prince: 'Satan', latin: 'Ira', english: 'Wrath', skill: 'Retribution', skillEffect: 'Multiplies Decimatio success and invocation efficiency by 1 + intensity.', levelEffect: 'Each level doubles (×2) your Decimatio action efficiency.', level: 1, devotion: '2.3K', toNext: '2.7K', intensity: 0.101, lv: '×2' },
+  { key: 'acedia', prince: 'Belphegor', latin: 'Acedia', english: 'Sloth', skill: 'Procrastination', skillEffect: 'Multiplies the Desidia time-speed by 1 + intensity.', levelEffect: 'Each level doubles your maximum Desidia (base 120).', level: 0, devotion: '240', toNext: '760', intensity: 0.031, lv: '' },
+  { key: 'vanagloria', prince: 'Rosier', latin: 'Vanagloria', english: 'Vainglory', skill: 'Acclaim', skillEffect: 'Multiplies maximum influence by 1 + intensity.', levelEffect: 'Each level multiplies your influence gain rate by ×1.33.', level: 0, devotion: '0', toNext: '1.0K', intensity: 0, lv: '' },
+  { key: 'superbia', prince: 'Lucifer', latin: 'Superbia', english: 'Pride', skill: 'Morning Star', skillEffect: 'Multiplies the Stellar outcome chance by 1 + intensity.', levelEffect: 'Each level adds +12.5% to the chance each maleficium survives descent (base 5%).', level: 0, devotion: '0', toNext: '1.0K', intensity: 0, lv: '' },
+];
+const ROMAN = ['0', 'I', 'II', 'III', 'IV'];
+const HOTSPOTS = [
+  { id: 'altar', label: 'The Altar', rect: { x: 37, y: 48, w: 26, h: 35 }, door: false },
+  { id: 'door-left', label: 'To the Invocation Room', rect: { x: 0, y: 26, w: 9, h: 58 }, door: true, glyph: '←' },
+  { id: 'door-right', label: 'To the Studio', rect: { x: 91, y: 26, w: 9, h: 58 }, door: true, glyph: '→' },
+];
+
+class Component extends DCLogic {
+  // phase: off | shown | armed | fading | descending | ledger
+  state = { phase: 'off', fadingArmed: false, hover: null };
+
+  componentWillUnmount() { this.clear(); }
+  clear() { clearTimeout(this.idleT); clearTimeout(this.fadeT); clearTimeout(this.descT); }
+  idleMs() { return Math.max(1, this.props.idleSeconds ?? 4) * 1000; }
+  armIdle() {
+    clearTimeout(this.idleT); clearTimeout(this.fadeT);
+    this.idleT = setTimeout(() => {
+      this.setState(s => ({ phase: 'fading', fadingArmed: s.phase === 'armed' }));
+      this.fadeT = setTimeout(() => this.setState({ phase: 'off' }), 500);
+    }, this.idleMs());
+  }
+  clickAltar = () => {
+    const p = this.state.phase;
+    if (p === 'armed') { this.armIdle(); return; }
+    this.setState({ phase: 'shown' });
+    this.armIdle();
+  };
+  pressSigil = () => {
+    const p = this.state.phase;
+    if (p === 'shown') { this.setState({ phase: 'armed' }); this.armIdle(); }
+    else if (p === 'armed') {
+      this.clear();
+      this.setState({ phase: 'descending' });
+      this.descT = setTimeout(this.endDescent, 4200);
+    }
+  };
+  endDescent = () => { this.clear(); this.setState({ phase: 'off' }); };
+  openStatusQuo = () => { this.clear(); this.setState({ phase: 'ledger' }); };
+  closeLedger = () => this.setState({ phase: 'off' });
+  door = () => { this.clear(); this.setState({ phase: 'off' }); };
+
+  renderVals() {
+    const { phase, fadingArmed, hover } = this.state;
+    const hotspots = HOTSPOTS.map(h => {
+      const on = hover === h.id;
+      return {
+        label: h.label, isDoor: h.door, glyph: h.glyph || '',
+        left: h.rect.x + '%', top: h.rect.y + '%', width: h.rect.w + '%', height: h.rect.h + '%',
+        align: h.door ? 'center' : 'flex-end',
+        labelMb: h.door ? '0' : '0.5rem',
+        labelOpacity: on ? 1 : 0,
+        labelTransform: on ? 'translateY(0)' : 'translateY(4px)',
+        glyphColor: on ? 'rgba(230,196,120,0.92)' : 'rgba(216,182,88,0)',
+        glyphShadow: on ? '0 0 16px rgba(230,162,60,0.7)' : '0 0 0 transparent',
+        onClick: h.door ? this.door : this.clickAltar,
+        onEnter: () => this.setState({ hover: h.id }),
+        onLeave: () => this.setState(s => (s.hover === h.id ? { hover: null } : null)),
+      };
+    });
+    const sins = SINS.map(s => {
+      const dormant = s.level === 0;
+      return {
+        ...s,
+        pipsOn: '◆'.repeat(s.level), pipsOff: '◇'.repeat(4 - s.level),
+        skillValue: '+' + (s.intensity * 100).toFixed(1) + '%',
+        levelValue: s.lv,
+        lvlTag: 'Level ' + ROMAN[s.level],
+        barBg: dormant ? '#6a635c' : 'linear-gradient(180deg, #ff5a3a, #a01e22)',
+        barOpacity: dormant ? 0.18 : 0.55,
+        lvlTagColor: dormant ? '#6a635c' : '#d9b25a',
+        lvlTxtColor: dormant ? '#6a635c' : '#c9c4bc',
+        lvlTxtStyle: dormant ? 'italic' : 'normal',
+      };
+    });
+    const overlayOn = phase === 'shown' || phase === 'armed' || phase === 'fading';
+    return {
+      hotspots, sins,
+      totalSinLevel: SINS.reduce((a, s) => a + s.level, 0),
+      overlayOn,
+      overlayAnim: phase === 'fading' ? 'kat-ov-out 0.5s ease both' : 'kat-ov-in 0.35s ease both',
+      showIdle: phase === 'shown' || (phase === 'fading' && !fadingArmed),
+      showArmed: phase === 'armed' || (phase === 'fading' && fadingArmed),
+      showDescent: phase === 'descending',
+      showLedger: phase === 'ledger',
+      dimRoom: this.props.dimRoom ?? false,
+      pressSigil: this.pressSigil, openStatusQuo: this.openStatusQuo,
+      endDescent: this.endDescent, closeLedger: this.closeLedger,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useGameLoop } from './game/useGameLoop.js';
 import { useIncomingCall } from './game/useIncomingCall.js';
+import { useAltarSigil } from './game/useAltarSigil.js';
 import { buildCallInView, eligibleCallIds } from './game/callIn.js';
 import { ROOMS } from './menus/menus.data.js';
 import { RoomView } from './menus/RoomView.js';
@@ -55,6 +56,7 @@ export function App(): ReactElement {
   const [answeredCall, setAnsweredCall] = useState<string | null>(null);
   const katabasisPhase = useGameStore((s) => s.katabasisPhase);
   const openKatabasis = useGameStore((s) => s.openKatabasis);
+  const beginKatabasis = useGameStore((s) => s.beginKatabasis);
   const titleOpen = useGameStore((s) => s.titleOpen);
   const ready = useGameStore((s) => s.ready);
 
@@ -117,10 +119,28 @@ export function App(): ReactElement {
     }
   }, [room, doppelgaengerBound, doppelgaengerSeen]);
 
-  // The descent takes the full screen; close any grimoire panel when it opens.
+  // The altar sigil (Claude Design "Altar sigil" handoff): clicking the altar raises the Katabasis
+  // sigil over the room with STATUS QUO beneath it. The second press on the sigil commits the
+  // descent (the teardown + freeze, then the Abyss transition into the flow); STATUS QUO opens the
+  // read-only Ledger. Untouched for 4 s, it fades away.
+  const altarSigil = useAltarSigil({
+    onDescend: () => {
+      beginKatabasis();
+      audio.play('katabasis');
+    },
+    onStatusQuo: () => {
+      openKatabasis();
+      audio.play('panel-open');
+    },
+  });
+  const dismissAltarSigil = altarSigil.dismiss;
+
+  // The descent takes the full screen; close any grimoire panel (and put the sigil away) when it opens.
   useEffect(() => {
-    if (katabasisPhase !== null) setPanel(null);
-  }, [katabasisPhase]);
+    if (katabasisPhase === null) return;
+    setPanel(null);
+    dismissAltarSigil();
+  }, [katabasisPhase, dismissAltarSigil]);
 
   // A call may ring during eligible active play in the Studio: live session, not in the title or a
   // descent, no call already answered, no jumpscare (06-smartphone-content.md §2: active play only,
@@ -169,12 +189,14 @@ export function App(): ReactElement {
       return;
     }
     if (action.type === 'door') {
+      // Leaving puts the altar sigil away at once (no fade).
+      altarSigil.dismiss();
       setRoom(action.to);
       audio.play('room-change');
     } else if (action.type === 'altar') {
-      // The Altar opens the full-screen gate straight away (no ledger step); the gate is where the
-      // player commits to the descent or turns back. Nothing is torn down until they commit there.
-      openKatabasis();
+      // The altar raises its sigil over the room (clicked again, the sigil's timer restarts).
+      // Nothing is torn down until the sigil's second press.
+      altarSigil.showAltar();
       audio.play('panel-open');
     } else if (action.panel === 'phone' && ringing !== null) {
       // A call is ringing on the desk: answering the incoming call takes priority over opening the
@@ -196,8 +218,8 @@ export function App(): ReactElement {
 
   // The persistent Influence/Gold HUD rides over the Invocation and Studio rooms and over the
   // Loculi, the Ars Goetia book and the Suasio scroll — but not in the Altar room, not over
-  // the PC desk or the Altar gate, not during a descent (the Altar gate + an ongoing Katabasis both
-  // hold `katabasisPhase !== null`), and not behind the launch title menu. It mounts at the app
+  // the PC desk or the Status Quo Ledger, not during a descent (the Ledger + an ongoing Katabasis
+  // both hold `katabasisPhase !== null`), and not behind the launch title menu. It mounts at the app
   // level (below) so it layers over those menu overlays rather than under them.
   const hudVisible =
     katabasisPhase === null &&
@@ -221,6 +243,13 @@ export function App(): ReactElement {
           desidiaActive={desidiaActive}
           reducedMotion={reducedMotion}
           ringing={ringing !== null}
+          altarSigil={
+            altarSigil.phase === 'off'
+              ? null
+              : { armed: altarSigil.armed, fading: altarSigil.phase === 'fading' }
+          }
+          onSigilPress={altarSigil.press}
+          onStatusQuo={altarSigil.statusQuo}
           onAction={handleAction}
         />
       </main>
