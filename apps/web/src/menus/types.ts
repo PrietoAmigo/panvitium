@@ -61,6 +61,11 @@ export interface Maleficium {
   desc: string;
   effect: string;
   /**
+   * The relic's own invoking power (the sim catalog's, per copy; 0 for the relics that grant none).
+   * Set by the view-model for owned or obtained relics; absent on the design-only art/copy entries.
+   */
+  invokingPower?: number;
+  /**
    * Present only for single-use consumables (Hand of Glory, Defixio); drives the cabinet's "Use"
    * control. Absent for ordinary maleficia, which have no activation affordance.
    */

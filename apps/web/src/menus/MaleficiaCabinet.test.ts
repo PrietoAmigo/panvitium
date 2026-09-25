@@ -216,6 +216,13 @@ describe('Loculi — the effect and the rite', () => {
     expect(text).toContain('Indagatio time');
   });
 
+  it("states the relic's invoking power, zero included", () => {
+    render({ items: [relic({ id: 'codex_gigas', name: 'Codex Gigas', invokingPower: 4 })] });
+    expect(container!.textContent).toContain(`${strings.maleficia.invokingPower} \u00B7 4`);
+    rerender({ items: [relic({ id: 'mark_of_cain', name: 'Mark of Cain', invokingPower: 0 })] });
+    expect(container!.textContent).toContain(`${strings.maleficia.invokingPower} \u00B7 0`);
+  });
+
   it('labels a consumable single-use and fires its rite', () => {
     let used: string | null = null;
     render({

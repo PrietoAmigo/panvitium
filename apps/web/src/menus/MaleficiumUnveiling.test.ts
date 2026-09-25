@@ -41,6 +41,7 @@ const CODEX: Maleficium = {
   img: '/assets/panvitium/maleficia/codex_gigas.png',
   desc: 'One scribe. One night.',
   effect: '+25% influence gain rate.',
+  invokingPower: 4,
 };
 
 function render(onDone: () => void, item: Maleficium = CODEX): void {
@@ -69,6 +70,7 @@ describe('the Unveiling — copy', () => {
     expect(text).toContain('One scribe. One night.');
     expect(text).toContain('+25%');
     expect(text).toContain('influence gain rate');
+    expect(text).toContain(`${strings.maleficia.invokingPower} \u00B7 4`);
     expect(overlay().getAttribute('role')).toBe('status');
   });
 

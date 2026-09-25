@@ -418,4 +418,19 @@ describe('IndagatioEmptioProgram — live wiring', () => {
     );
     expect(container!.querySelector('.orbis-cast-btn')).not.toBeNull();
   });
+
+  it("states every listed relic's invoking power, zero included", () => {
+    const s = store().state!;
+    useGameStore.setState({
+      state: {
+        ...s,
+        lifetime: { ...s.lifetime, emptioList: ['spear_of_longinus', 'codex_gigas'] },
+      },
+    });
+    mount(createElement(IndagatioEmptioProgram));
+    const lines = Array.from(container!.querySelectorAll('.orbis-row-effect')).map(
+      (e) => e.textContent,
+    );
+    expect(lines).toEqual(['0 invoking power', '+4 invoking power']);
+  });
 });

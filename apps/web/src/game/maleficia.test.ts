@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState, MALEFICIA } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import { parseEffect } from '../menus/relics.js';
-import { buildCabinet, maleficiumView, splitDescription } from './maleficia.js';
+import { buildCabinet, invokingPowerText, maleficiumView, splitDescription } from './maleficia.js';
 
 function owning(ids: string[]) {
   const s = createInitialState('cabinet-test', 0);
@@ -167,5 +167,26 @@ describe('maleficiumView — one relic by id (the Unveiling)', () => {
       desc: 'A book of staves bound in hide, each page a small undoing.',
       effect: '+12.5% murder rate.',
     });
+  });
+});
+
+describe('invoking power — every relic states it', () => {
+  it("carries each relic's catalog invoking power, zero included", () => {
+    for (const id of Object.keys(MALEFICIA)) {
+      expect(maleficiumView(id)?.invokingPower, id).toBe(MALEFICIA[id]!.invokingPower);
+    }
+    expect(maleficiumView('codex_gigas')?.invokingPower).toBe(4);
+    expect(maleficiumView('spear_of_longinus')?.invokingPower).toBe(0);
+  });
+
+  it('reaches the cabinet items (per copy, beside the stack count)', () => {
+    const items = buildCabinet(owning(['obsidian_mirror', 'black_candles', 'black_candles']));
+    expect(items.find((i) => i.id === 'obsidian_mirror')?.invokingPower).toBe(8);
+    expect(items.find((i) => i.id === 'black_candles')?.invokingPower).toBe(0);
+  });
+
+  it('reads as a signed line, and as a plain zero for the relics that grant none', () => {
+    expect(invokingPowerText(4)).toBe(`+4 ${strings.maleficia.invokingPower}`);
+    expect(invokingPowerText(0)).toBe(`0 ${strings.maleficia.invokingPower}`);
   });
 });

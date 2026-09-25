@@ -64,7 +64,20 @@ export function maleficiumView(id: string): Maleficium | undefined {
   if (!def) return undefined;
   const art = DESIGN_BY_ID[id];
   const copy = art ? { desc: art.desc, effect: art.effect } : splitDescription(def.description);
-  return { id, name: def.name, rarity: def.rarity as Rarity, img: art?.img ?? '', ...copy };
+  return {
+    id,
+    name: def.name,
+    rarity: def.rarity as Rarity,
+    img: art?.img ?? '',
+    ...copy,
+    invokingPower: def.invokingPower,
+  };
+}
+
+/** A relic's invoking power as a line of copy, shown for every relic (zero included): "+4 invoking
+ *  power", "0 invoking power". */
+export function invokingPowerText(invokingPower: number): string {
+  return `${invokingPower > 0 ? '+' : ''}${invokingPower} ${strings.maleficia.invokingPower}`;
 }
 
 /** Build the cabinet's presentation items from the player's owned maleficia. */

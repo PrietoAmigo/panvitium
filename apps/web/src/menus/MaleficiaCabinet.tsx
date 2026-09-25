@@ -493,7 +493,8 @@ export function MaleficiaCabinet({
         </p>
       </div>
 
-      {/* Right: the effect as a headline number, then the rite for a consumable. */}
+      {/* Right: the effect as a headline number, the relic's invoking power, then the rite for a
+          consumable. */}
       <div
         style={{
           position: 'absolute',
@@ -545,6 +546,23 @@ export function MaleficiaCabinet({
               {fx.remainder}
             </div>
           </>
+        )}
+        {m.invokingPower !== undefined && (
+          <div
+            style={{
+              marginTop: px(8),
+              fontFamily: CINZEL,
+              fontSize: px(11),
+              letterSpacing: '.4em',
+              textTransform: 'uppercase',
+              color: LABEL,
+            }}
+          >
+            {S.invokingPower} {'\u00B7'}{' '}
+            <span style={{ color: m.invokingPower > 0 ? '#cfc6de' : LABEL }}>
+              {m.invokingPower}
+            </span>
+          </div>
         )}
         {m.use && (
           <div
