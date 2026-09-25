@@ -118,6 +118,10 @@ unified `maleficiaBuffs` map, drop the old Defixio cull curse, strip the removed
 - `menus/` — the diegetic room/panel UI (the integrated design handoff): `RoomView`, `PanelShell`,
   the PC window, Katabasis, Ars Goetia, etc. Backdrops render through a framework-free degradation
   canvas engine (`DegradePass`, the "cursed CD-ROM" look — ADR-021).
+- `art/` — source for baked art, not imported by the app: the Ars Goetia invocation plates' brush
+  and gesture tables. `pnpm --filter @panvitium/web bake:plates` (`scripts/`) rasterizes them to
+  the PNGs the grimoire loads; re-bake after any edit (a digest test catches a stale bake), and
+  never reorder the plate table (a plate's position seeds its strokes). See `DEVELOPMENT.md`.
 - Persistence is local-first (`localStorage`) with optional cloud sync (magic-link auth, automatic
   push on persist, ADR-010 conflict chooser). The web app runs fully offline as a first-class case.
 

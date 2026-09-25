@@ -1,9 +1,8 @@
 // View-model adapter: maps the authoritative `packages/sim` invocation catalog + live game state
 // onto the presentation `Invocation` shape the designed Ars Goetia grimoire consumes. The dynamic
 // fields (name, gate, upkeep cost, unlocked, bound count, invoking power) are all real; the design's
-// art / lore / rank are reused where the handoff illustrated an entry, with a graceful fallback
-// (the Ars Goetia plate + a computed rank, and an omitted effect/lore line) for the rest. No flavour
-// is fabricated — un-illustrated entries simply show their real gate, cost and name.
+// lore is reused where the handoff wrote one (the line is omitted otherwise), the rank numeral is the
+// entry's place in the index, and every entry carries its painted plate. No flavour is fabricated.
 import {
   INVOCATION_IDS,
   invocationById,
@@ -125,8 +124,9 @@ export function buildGoetia(state: GameState): GoetiaView {
       ...(bound ? { bound } : {}),
       ...(effect ? { effect } : {}),
       ...(lore ? { lore } : {}),
-      // Book drawings (not the photorealistic creature art) live in their own folder, keyed by id.
-      // A seal without a drawing yet 404s and the book shows a text plate (handled in the component).
+      // The painted plate (Claude Design, "Invocation Plates"), not the photorealistic creature
+      // art: one baked PNG per invocation in its own folder, keyed by id (src/art holds the source
+      // and scripts/bake-invocation-plates.ts bakes it). A plate that fails to load is hidden.
       illus: `${ASSET_BASE}/invocations-ars-goetia/${id}.png`,
     });
   });

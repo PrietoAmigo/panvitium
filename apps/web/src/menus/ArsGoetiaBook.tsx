@@ -6,9 +6,10 @@
 
    Presentational + prop-driven: `entries` and `invokingPower` come from the sim
    (merged with design flavour by id); Summon/Dispel are callbacks. Local state is
-   which entry leaf is open and which illustrations 404'd (so a seal with no drawing yet falls back
-   to a text plate). The index is a single leaf: the title block at the top, the whole roster in two
-   columns below. */
+   which entry leaf is open and which plates failed to load (hidden, leaving the leaf bare). The index
+   is a single leaf: the title block at the top, the whole roster in two columns below. An entry's
+   leaf sets its stats on the left page and its painted plate (Claude Design, "Invocation Plates") on
+   the right. */
 
 import { useState } from 'react';
 import type { ArsGoetiaBookProps } from './ars-goetia.types.js';
@@ -136,18 +137,20 @@ export function ArsGoetiaBook({
               </div>
             </div>
             <div className="gb-page gb-page--right gb-illus-page">
+              {/* The plate is decorative: the name already heads the left page. */}
               {entry.illus && !broken[entry.id] ? (
                 <img
+                  key={entry.id}
                   className="gb-illus-img"
                   src={entry.illus}
-                  alt={entry.name}
+                  alt=""
+                  aria-hidden="true"
+                  width={600}
+                  height={800}
+                  decoding="async"
                   onError={() => setBroken((b) => ({ ...b, [entry.id]: true }))}
                 />
-              ) : (
-                <p className="gb-lore" style={{ textAlign: 'center' }}>
-                  No plate has been drawn for this seal.
-                </p>
-              )}
+              ) : null}
             </div>
           </>
         )}

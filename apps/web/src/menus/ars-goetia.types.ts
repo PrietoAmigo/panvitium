@@ -1,7 +1,7 @@
 /* Ars Goetia — presentation types. Self-contained: this menu no longer depends
    on the degradation-layer types.ts, so it can be integrated on its own.
 
-   One GoetiaEntry is design FLAVOUR (rank numeral, lore, illustration) merged
+   One GoetiaEntry is design FLAVOUR (rank numeral, lore, painted plate) merged
    with sim MECHANICS (name, cost, gate, effect, unlocked) by invocation id.
    All numeric/gated values arrive PRE-FORMATTED as strings — never format raw
    bignums in the component (DESIGNING_FOR_PANVITIUM §5). */
@@ -25,7 +25,8 @@ export interface GoetiaEntry {
   effect?: string;
   /** Lore prose. FLAVOUR. */
   lore?: string;
-  /** Illustration url. Omit → the book falls back to a text plate gracefully. */
+  /** The painted plate's url (a 600×800 PNG), shown on the right-hand page. Omit, or a plate that
+   *  fails to load, → the right-hand page stays bare. FLAVOUR. */
   illus?: string;
   /** Whether the entry passes its gate (invoking power + Sin level). REAL. */
   unlocked: boolean;
