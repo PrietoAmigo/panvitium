@@ -74,6 +74,11 @@ describe('the Unveiling — copy', () => {
     expect(overlay().getAttribute('role')).toBe('status');
   });
 
+  it('shows no invoking-power line for a relic that grants none', () => {
+    render(() => {}, { ...CODEX, id: 'mark_of_cain', name: 'Mark of Cain', invokingPower: 0 });
+    expect(overlay().textContent).not.toContain(strings.maleficia.invokingPower);
+  });
+
   it('names a relic with no art in the relic box', () => {
     render(() => {}, { ...CODEX, id: 'the_dadu', name: 'The Dadu', img: '' });
     const labels = Array.from(overlay().querySelectorAll('span')).filter(

@@ -147,6 +147,24 @@ function OracleReveal({ reveal }: { reveal: OracleGroup[] }): ReactElement {
   );
 }
 
+/** A secondary stat under the effect, in the label style ("INVOKING POWER · 4"). */
+function StatLine({ label, value }: { label: string; value: number }): ReactElement {
+  return (
+    <div
+      style={{
+        marginTop: px(8),
+        fontFamily: CINZEL,
+        fontSize: px(11),
+        letterSpacing: '.4em',
+        textTransform: 'uppercase',
+        color: LABEL,
+      }}
+    >
+      {label} {'\u00B7'} <span style={{ color: '#cfc6de' }}>{value}</span>
+    </div>
+  );
+}
+
 /** A relic with no art yet: its name as a label, the "current text label treatment". */
 function RelicLabel({
   item,
@@ -493,8 +511,8 @@ export function MaleficiaCabinet({
         </p>
       </div>
 
-      {/* Right: the effect as a headline number, the relic's invoking power, then the rite for a
-          consumable. */}
+      {/* Right: the effect as a headline number, the relic's invoking power (when it grants any),
+          then, for a consumable, its remaining uses and its rite. */}
       <div
         style={{
           position: 'absolute',
@@ -547,23 +565,10 @@ export function MaleficiaCabinet({
             </div>
           </>
         )}
-        {m.invokingPower !== undefined && (
-          <div
-            style={{
-              marginTop: px(8),
-              fontFamily: CINZEL,
-              fontSize: px(11),
-              letterSpacing: '.4em',
-              textTransform: 'uppercase',
-              color: LABEL,
-            }}
-          >
-            {S.invokingPower} {'\u00B7'}{' '}
-            <span style={{ color: m.invokingPower > 0 ? '#cfc6de' : LABEL }}>
-              {m.invokingPower}
-            </span>
-          </div>
+        {m.invokingPower !== undefined && m.invokingPower > 0 && (
+          <StatLine label={S.invokingPower} value={m.invokingPower} />
         )}
+        {m.use && <StatLine label={S.usesRemaining} value={m.use.remaining} />}
         {m.use && (
           <div
             style={{

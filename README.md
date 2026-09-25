@@ -103,15 +103,18 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1021** (sim 595 · shared 75 · api 20 · web 331).
+**Current test count: 1024** (sim 595 · shared 75 · api 20 · web 334).
 
-> **Latest change — every maleficium states its invoking power.** The Emptio market printed a
-> relic's invoking power only when it was at least 1, so the fourteen relics that grant none (the
-> anathema relics, the consumables, the pure multipliers) showed nothing, and the Loculi showed it
-> for no relic at all. Every Emptio row and its detail now read "+N invoking power" or "0 invoking
-> power", and the Loculi and the Unveiling carry an "Invoking power · N" line under the effect. The
-> value is the sim catalog's per-copy figure, carried by the `maleficiumView` view-model. No sim,
-> save or RNG change. Net **+5 tests** (web 326 → 331).
+> **Latest change — the Loculi shows invoking power and a consumable's remaining uses.** The
+> Loculi showed no relic's invoking power; it (and the Unveiling) now carries an "Invoking power ·
+> N" line under the effect for every relic that grants some, and none for the fourteen that grant
+> none (the anathema relics, the consumables, the pure multipliers), which is how the Emptio market
+> already treated them (its line now comes from the same `invokingPowerText` formatter). On stage in
+> the Loculi, each stackable consumable (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt)
+> also shows "Uses remaining · N", the copies owned, above its rite; Black Candles stack but are
+> passive, so they keep only the ×N on the name. The value is the sim catalog's per-copy figure,
+> carried by the `maleficiumView` view-model. No sim, save or RNG change. Net **+8 tests** (web 326
+> → 334).
 >
 > **Earlier change — UI: the Loculi "Reliquary" + the Unveiling (Claude Design).** The Loculi is
 > rebuilt from the delivered "Loculi Reliquary" handoff (option 2a; archived in `docs/frontend/`).

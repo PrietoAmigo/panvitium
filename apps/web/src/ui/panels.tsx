@@ -743,8 +743,7 @@ export function IndagatioEmptioProgram(): ReactElement {
         id,
         name: count > 1 ? `${def.name} ×${count}` : def.name,
         rarity: def.rarity,
-        // Every relic states its invoking power, the ones that grant none included ("0 invoking
-        // power"), so the market always shows what a purchase adds toward the Ars Goetia gates.
+        // The invoking-power line ("+4 invoking power"); a relic that grants none shows no line.
         effect: invokingPowerText(def.invokingPower),
         desc: def.description,
         costLabel: `${price} g`,

@@ -9,7 +9,7 @@ import type { Maleficium } from './types.js';
 // The Unveiling (Claude Design, "Loculi Reliquary" handoff, screen 2): the moment Emptio brings a
 // maleficium home. The screen darkens under pixel light shafts in the rarity's colour; the relic
 // resolves out of coarse pixels into full resolution (70 ms a step), flashes white (350 ms), and
-// holds with its name, flavour, effect and invoking power for 1.5 s, then fades (0.3 s). A click
+// holds with its name, flavour, effect and any invoking power for 1.5 s, then fades (0.3 s). A click
 // anywhere dismisses it early; a click during the fade does nothing. prefers-reduced-motion keeps
 // the hold and the fade but shows the relic at full resolution at once, under still rays. Purely
 // presentational: `onDone` fires once the fade has finished, and the caller unmounts it (see
@@ -255,7 +255,7 @@ export function MaleficiumUnveiling({
               </span>
             </div>
           )}
-          {item.invokingPower !== undefined && (
+          {item.invokingPower !== undefined && item.invokingPower > 0 && (
             <div
               style={{
                 marginTop: px(14),
@@ -267,9 +267,7 @@ export function MaleficiumUnveiling({
               }}
             >
               {S.invokingPower} {'\u00B7'}{' '}
-              <span style={{ color: item.invokingPower > 0 ? '#cfc6de' : '#6a637a' }}>
-                {item.invokingPower}
-              </span>
+              <span style={{ color: '#cfc6de' }}>{item.invokingPower}</span>
             </div>
           )}
         </div>

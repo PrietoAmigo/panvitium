@@ -170,7 +170,7 @@ describe('maleficiumView — one relic by id (the Unveiling)', () => {
   });
 });
 
-describe('invoking power — every relic states it', () => {
+describe('invoking power and remaining uses', () => {
   it("carries each relic's catalog invoking power, zero included", () => {
     for (const id of Object.keys(MALEFICIA)) {
       expect(maleficiumView(id)?.invokingPower, id).toBe(MALEFICIA[id]!.invokingPower);
@@ -185,8 +185,18 @@ describe('invoking power — every relic states it', () => {
     expect(items.find((i) => i.id === 'black_candles')?.invokingPower).toBe(0);
   });
 
-  it('reads as a signed line, and as a plain zero for the relics that grant none', () => {
+  it('reads as a signed line, and as nothing for a relic that grants none', () => {
     expect(invokingPowerText(4)).toBe(`+4 ${strings.maleficia.invokingPower}`);
-    expect(invokingPowerText(0)).toBe(`0 ${strings.maleficia.invokingPower}`);
+    expect(invokingPowerText(0)).toBe('');
+  });
+
+  it("counts a consumable's remaining uses as the copies owned", () => {
+    const items = buildCabinet(
+      owning(['hand_of_glory', 'defixio', 'hand_of_glory', 'hand_of_glory', 'black_candles']),
+    );
+    expect(items.find((i) => i.id === 'hand_of_glory')?.use?.remaining).toBe(3);
+    expect(items.find((i) => i.id === 'defixio')?.use?.remaining).toBe(1);
+    // Black Candles stack but are passive: no rite, so no uses to count.
+    expect(items.find((i) => i.id === 'black_candles')?.use).toBeUndefined();
   });
 });

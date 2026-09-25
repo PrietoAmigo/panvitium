@@ -61,8 +61,9 @@ export interface Maleficium {
   desc: string;
   effect: string;
   /**
-   * The relic's own invoking power (the sim catalog's, per copy; 0 for the relics that grant none).
-   * Set by the view-model for owned or obtained relics; absent on the design-only art/copy entries.
+   * The relic's own invoking power (the sim catalog's, per copy; 0 for the relics that grant none,
+   * which show no invoking-power line). Set by the view-model for owned or obtained relics; absent on
+   * the design-only art/copy entries.
    */
   invokingPower?: number;
   /**
@@ -115,6 +116,8 @@ export interface MaleficiumUse {
   enabled: boolean;
   /** A line describing the current effect status (remaining buff time, the cursed subtype), if any. */
   status?: string;
+  /** Uses left: the copies owned (each use consumes one). */
+  remaining: number;
 }
 
 // ── Degradation layer (degradation-pass handoff) ────────────────────────────

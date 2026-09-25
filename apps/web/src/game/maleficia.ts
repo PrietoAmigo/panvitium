@@ -26,19 +26,19 @@ const DESIGN_BY_ID: Record<string, Maleficium> = Object.fromEntries(DESIGN.map((
 /** Derive the Use affordance for the single-use consumables; `undefined` for ordinary maleficia. */
 function makeAffordance(state: GameState): (id: string) => MaleficiumUse | undefined {
   const S = strings.maleficia;
+  const owned = state.lifetime.maleficia;
   const buffs = state.lifetime.maleficiaBuffs;
   const single = new Set(SINGLE_USE_MALEFICIA);
   return (id) => {
     if (!single.has(id)) return undefined;
     // A single-use maleficium is always usable (a fresh use extends its one-hour timer); when the
-    // buff is live, surface the remaining time as a status line.
-    const remaining = buffs[id] ?? 0;
+    // buff is live, surface the time left as a status line. Each use spends one owned copy.
+    const buffLeft = buffs[id] ?? 0;
     return {
       label: S.use,
       enabled: true,
-      ...(remaining > 0
-        ? { status: `${formatDuration(remaining * 1000)} ${S.buffRemaining}` }
-        : {}),
+      remaining: countCopies(owned, id),
+      ...(buffLeft > 0 ? { status: `${formatDuration(buffLeft * 1000)} ${S.buffRemaining}` } : {}),
     };
   };
 }
@@ -74,10 +74,10 @@ export function maleficiumView(id: string): Maleficium | undefined {
   };
 }
 
-/** A relic's invoking power as a line of copy, shown for every relic (zero included): "+4 invoking
- *  power", "0 invoking power". */
+/** A relic's invoking power as a line of copy ("+4 invoking power"), or '' for a relic that grants
+ *  none, which shows no line at all. */
 export function invokingPowerText(invokingPower: number): string {
-  return `${invokingPower > 0 ? '+' : ''}${invokingPower} ${strings.maleficia.invokingPower}`;
+  return invokingPower > 0 ? `+${invokingPower} ${strings.maleficia.invokingPower}` : '';
 }
 
 /** Build the cabinet's presentation items from the player's owned maleficia. */

@@ -216,11 +216,26 @@ describe('Loculi — the effect and the rite', () => {
     expect(text).toContain('Indagatio time');
   });
 
-  it("states the relic's invoking power, zero included", () => {
+  it("states the relic's invoking power, and shows no line for a relic that grants none", () => {
     render({ items: [relic({ id: 'codex_gigas', name: 'Codex Gigas', invokingPower: 4 })] });
     expect(container!.textContent).toContain(`${strings.maleficia.invokingPower} \u00B7 4`);
     rerender({ items: [relic({ id: 'mark_of_cain', name: 'Mark of Cain', invokingPower: 0 })] });
-    expect(container!.textContent).toContain(`${strings.maleficia.invokingPower} \u00B7 0`);
+    expect(container!.textContent).not.toContain(strings.maleficia.invokingPower);
+  });
+
+  it('shows remaining uses only for a consumable', () => {
+    render({ items: [relic({ id: 'codex_gigas', name: 'Codex Gigas' })] });
+    expect(container!.textContent).not.toContain(strings.maleficia.usesRemaining);
+    rerender({
+      items: [
+        relic({
+          id: 'black_salt_pouch',
+          name: 'Black Salt Pouch ×3',
+          use: { label: 'Use', enabled: true, remaining: 3 },
+        }),
+      ],
+    });
+    expect(container!.textContent).toContain(`${strings.maleficia.usesRemaining} \u00B7 3`);
   });
 
   it('labels a consumable single-use and fires its rite', () => {
@@ -232,7 +247,7 @@ describe('Loculi — the effect and the rite', () => {
           name: 'Hand of Glory',
           rarity: 'rare',
           effect: 'Single-use: +33% reprobate generation for an hour.',
-          use: { label: 'Use', enabled: true, status: '12m 3s remaining' },
+          use: { label: 'Use', enabled: true, status: '12m 3s remaining', remaining: 2 },
         }),
       ],
       onUse: (id) => {
@@ -243,6 +258,7 @@ describe('Loculi — the effect and the rite', () => {
     expect(text).toContain(strings.maleficia.singleUseEffect);
     expect(text).toContain('+33%');
     expect(text).toContain('12m 3s remaining');
+    expect(text).toContain(`${strings.maleficia.usesRemaining} \u00B7 2`);
     const useBtn = buttonByText('Use');
     expect(useBtn!.disabled).toBe(false);
     click(useBtn);
@@ -251,7 +267,13 @@ describe('Loculi — the effect and the rite', () => {
 
   it('renders a disabled rite when the consumable cannot be used right now', () => {
     render({
-      items: [relic({ id: 'defixio', name: 'Defixio', use: { label: 'Use', enabled: false } })],
+      items: [
+        relic({
+          id: 'defixio',
+          name: 'Defixio',
+          use: { label: 'Use', enabled: false, remaining: 1 },
+        }),
+      ],
     });
     expect(buttonByText('Use')!.disabled).toBe(true);
   });
