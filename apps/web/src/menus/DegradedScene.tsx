@@ -1,6 +1,7 @@
-/* DegradedScene — the room backdrop + summoned creatures, rendered through the
-   uniform degradation pass onto a <canvas>. Drop it where the CSS `.scene`
-   background used to be; the integrator layers hotspots over it (see RoomView).
+/* DegradedScene — the room backdrop + summoned creatures (+ the altar sigil),
+   rendered through the uniform degradation pass onto a <canvas>. Drop it where
+   the CSS `.scene` background used to be; the integrator layers hotspots over
+   it (see RoomView).
 
    Archetype: ROOM VIEW layer (not a PanelShell panel; not a full-screen overlay).
    Presentational + prop-driven: it holds no game state. A `roomId` change plays
@@ -9,7 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DegradePass, DEFAULT_DEGRADE } from './degrade.js';
 import type { EngineScene, EngineSprite } from './degrade.js';
-import type { BoundInvocationVisual, DegradedSceneProps } from './types.js';
+import type { BoundInvocationVisual, DegradedSceneProps, SceneSprite } from './types.js';
 
 // The composited stage is 16:9 (matches the engine's VW×VH buffer). A bound figure's `height` is a
 // fraction of stage height, but the engine sizes sprites by `w` (fraction of stage width) and derives
@@ -92,6 +93,12 @@ function useImages(urls: string[]): Record<string, HTMLImageElement> {
     let alive = true;
     for (const u of urls) {
       if (!u || cache[u]) continue;
+      // Already decoded elsewhere (e.g. preloaded): take it now rather than waiting on a reload.
+      const decoded = DECODED_IMAGES.get(u);
+      if (decoded) {
+        setCache((prev) => (prev[u] ? prev : { ...prev, [u]: decoded }));
+        continue;
+      }
       const im = new Image();
       im.onload = (): void => {
         DECODED_IMAGES.set(u, im);
@@ -108,11 +115,16 @@ function useImages(urls: string[]): Record<string, HTMLImageElement> {
   return cache;
 }
 
+// Stable empties, so an omitted list doesn't read as a new scene on every render.
+const NO_SPRITES: SceneSprite[] = [];
+const NO_FIGURES: BoundInvocationVisual[] = [];
+
 export function DegradedScene({
   roomId,
   backdrop,
-  sprites = [],
-  figures = [],
+  sprites = NO_SPRITES,
+  figures = NO_FIGURES,
+  sigil = null,
   signature = false,
   settings,
   className,
@@ -121,9 +133,15 @@ export function DegradedScene({
   const passRef = useRef<DegradePass | null>(null);
   const prevRoom = useRef<string | null>(null);
 
+  const sigilSrc = sigil?.src ?? null;
   const urls = useMemo(
-    () => [backdrop, ...sprites.map((s) => s.src), ...figures.map((f) => f.src)],
-    [backdrop, sprites, figures],
+    () => [
+      backdrop,
+      ...sprites.map((s) => s.src),
+      ...figures.map((f) => f.src),
+      ...(sigilSrc ? [sigilSrc] : []),
+    ],
+    [backdrop, sprites, figures, sigilSrc],
   );
   const images = useImages(urls);
 
@@ -177,6 +195,30 @@ export function DegradedScene({
     prevRoom.current = roomId;
     pass.setScene(scene, animate);
   }, [roomId, backdrop, sprites, figures, signature, images]);
+
+  // The altar sigil lives outside the scene: it is not part of the room-change curtain (a door
+  // cancels it at once) and the engine animates it between these targets. It joins the pass once
+  // its art has decoded, fading in from that frame.
+  useEffect(() => {
+    const pass = passRef.current;
+    if (!pass) return;
+    const img = sigil ? images[sigil.src] : undefined;
+    if (!sigil || !img) {
+      pass.setSigil(null);
+      return;
+    }
+    pass.setSigil({
+      img,
+      x: sigil.x,
+      y: sigil.y,
+      glyphPx: sigil.glyphPx,
+      stagePx: sigil.stagePx,
+      look: sigil.look,
+      shown: sigil.shown,
+      hover: sigil.hover,
+      press: sigil.press,
+    });
+  }, [sigil, images]);
 
   return (
     <canvas

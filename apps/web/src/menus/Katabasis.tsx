@@ -504,115 +504,6 @@ function Transition({
   );
 }
 
-// ── The full-screen Altar commit gate (screen 0 of the flow) ─────────────────────────────────────
-const EMBER_SEEDS = Array.from({ length: 22 }, () => ({
-  left: Math.random() * 100,
-  delay: Math.random() * 9,
-  dur: 7 + Math.random() * 7,
-  size: 1.5 + Math.random() * 2.5,
-  drift: (Math.random() * 2 - 1) * 40,
-}));
-
-function AmbientEmbers(): ReactElement {
-  return (
-    <div className="ambient-embers" aria-hidden="true">
-      {EMBER_SEEDS.map((e, i) => (
-        <span
-          key={i}
-          className="amb-ember"
-          style={
-            {
-              left: `${e.left}%`,
-              width: e.size,
-              height: e.size,
-              '--drift': `${e.drift}px`,
-              animation: `kat-amb-rise ${e.dur}s ease-in ${e.delay}s infinite`,
-            } as CSSProperties
-          }
-        />
-      ))}
-    </div>
-  );
-}
-
-// ── The Altar commit gate (screen 0): the lone vibrating sigil ───────────────────────────────────
-// A redesign of the prior ritual seal circle (Claude Design handoff). The elaborate seal apparatus —
-// counter-rotating rings, 48 radial ticks, and the ring of repeating Latin script — is stripped
-// away: the centre now holds ONLY the Goetic sigil, which constantly pulsates and vibrates. The
-// two-press safeguard from the prior gate is preserved: the first press arms it (the sigil scales up
-// dramatically and shakes much harder), the second commits the (irreversible) descent; it
-// auto-disarms after a few seconds. "Unfocus" routes back to the real Altar Room (the room layer)
-// via the store's close action — the prototype's in-screen altar-room overlay is intentionally not
-// ported. "Status quo" opens the Ledger (below). The screen is three vertically-anchored zones:
-// title (top) · sigil (centred in the viewport) · the two action gates (bottom).
-const SEAL_SRC = `${ASSET}/seal-panvitium.png`;
-
-function AltarGate({
-  onDescend,
-  onTurnAway,
-  onStatusQuo,
-}: {
-  onDescend: () => void;
-  onTurnAway: () => void;
-  onStatusQuo: () => void;
-}): ReactElement {
-  // Two-press commit safeguard: the first press arms the seal, the second descends. Auto-disarms.
-  const [armed, setArmed] = useState(false);
-
-  useEffect(() => {
-    if (!armed) return;
-    const t = setTimeout(() => setArmed(false), 4000);
-    return () => clearTimeout(t);
-  }, [armed]);
-
-  const press = (): void => {
-    if (armed) {
-      setArmed(false);
-      onDescend();
-    } else {
-      setArmed(true);
-    }
-  };
-
-  return (
-    <div className="scene altar-gate">
-      <div className="altar-fog" aria-hidden="true" />
-      <AmbientEmbers />
-
-      <div className="altar-top">
-        <h1 className="altar-title">Katabasis</h1>
-      </div>
-
-      {/* The sigil is the only thing in the centre: it breathes and vibrates idly, and on the first
-          press (armed) it scales up dramatically and shakes much harder. The scale lives on the
-          wrapping span so it composes cleanly with the glyph's own translate/rotate jitter. */}
-      <div className={`kat-seal-wrap${armed ? ' is-armed' : ''}`}>
-        <button
-          type="button"
-          className="kat-seal-btn"
-          onClick={press}
-          aria-label={
-            armed ? 'Confirm the descent — there is no return' : 'Press the sigil to descend'
-          }
-        >
-          <span className="kat-seal-scale">
-            <img className="kat-seal-glyph" src={SEAL_SRC} alt="" draggable={false} />
-          </span>
-        </button>
-      </div>
-
-      <div className="altar-actions">
-        <button type="button" className="altar-action" onClick={onTurnAway}>
-          <span className="altar-action-label">Unfocus</span>
-        </button>
-        <button type="button" className="altar-action" onClick={onStatusQuo}>
-          <span className="altar-action-label">Status quo</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /**
  * Strip a boon string's direction arrows (↑/↓); the ledger shows each leg's live signed
  * magnitude in their place. A single-effect seal ends in one arrow; a composite seal (Raum #40)
@@ -729,7 +620,8 @@ function SinLedgerCard({ sinKey, state }: { sinKey: Sin; state: GameState }): Re
 }
 
 /**
- * The Ledger ("Status Quo") — the player's current standing, reached from the Altar gate. Read-only:
+ * The Ledger ("Status Quo") — the player's current standing, reached from STATUS QUO beneath the
+ * in-room altar sigil (pre-commit: the lifetime keeps ticking). Read-only:
  * each Cardinal Sin's rank + skill/level effects, then every BOUND sigil's effect (effects only — no
  * seal names, no art, per the design). All wired to live state: Sin levels via `sinLevel`, the
  * eight Princes' lore from `strings.sins`, bound sigils from `state.sigilBindings` (visible + souls
@@ -747,8 +639,8 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
   // What a descent right now would KEEP — the three carry-over fractions the commit rolls against,
   // inclusive of the Avaritia/Tristitia/Superbia levels AND the bound carry-over sigils (Purson,
   // Camio, Cimejes; scaled by the relics and Semet). Same inputs `commitKatabasis` uses, so the Ledger
-  // previews the real stakes:
-  // the Altar gate shows nothing, but here the player sees exactly how much survives the plunge.
+  // previews the real stakes: the altar sigil shows nothing, but here the player sees exactly how
+  // much survives the plunge.
   const carryover = useMemo(() => {
     const mul = sigilStrengthMul(state);
     return {
@@ -987,27 +879,28 @@ function HellFloor({
   );
 }
 
-type Screen = 'altar' | 'ledger' | 'descending' | 'statues' | 'sigils' | 'ascending';
+type Screen = 'ledger' | 'descending' | 'statues' | 'sigils' | 'ascending';
 
 /**
  * Katabasis — the cinematic demonic descent (02 §6/§10), rebuilt from the Claude Design handoff and
- * wired to the real live model. The internal screen (`altar → descending → statues ⇄ sigils →
- * ascending`) is local; offering pours Devotion through the store immediately, binding moves souls to
- * the seals (recoverable until you rise), and the ascent transition commits the lifetime via
- * `confirmKatabasis`. Rendered for the `menu` phase; the recap + Eternal-Sin reveal are their own views.
+ * wired to the real live model. It opens from the Altar Room's sigil ("Altar sigil" handoff): on the
+ * Ledger (STATUS QUO, pre-commit), or already committed on the descent. The internal screen
+ * (`descending → statues ⇄ sigils → ascending`) is local; offering pours Devotion through the store
+ * immediately, binding moves souls to the seals (recoverable until you rise), and the ascent
+ * transition commits the lifetime via `confirmKatabasis`. Rendered for the `menu` phase; the recap +
+ * Eternal-Sin reveal are their own views.
  */
 export function Katabasis(): ReactElement {
   const state = useGameStore((s) => s.state);
+  const entry = useGameStore((s) => s.katabasisEntry);
   const confirm = useGameStore((s) => s.confirmKatabasis);
-  const begin = useGameStore((s) => s.beginKatabasis);
   const close = useGameStore((s) => s.closeKatabasis);
 
-  // A descent already in progress (a save written mid-Katabasis, reopened) resumes on the Princes —
-  // the player was down in Hell, not at the commit gate. A fresh open from the room has
-  // `inKatabasis === false` and starts at the Altar seal. Lazy init: mount-time state only, so the
-  // later `begin()` flow (altar → descending → statues) is unaffected.
+  // Before the commit (`inKatabasis === false`) the only screen is the Ledger. Once committed, the
+  // altar sigil's descent plays the Abyss transition first; a save written mid-Katabasis and
+  // reopened resumes on the Princes, where the player was. Lazy init: mount-time state only.
   const [screen, setScreen] = useState<Screen>(() =>
-    state?.inKatabasis === true ? 'statues' : 'altar',
+    state?.inKatabasis !== true ? 'ledger' : entry === 'descent' ? 'descending' : 'statues',
   );
   const [caption, setCaption] = useState(false);
   const [riseArmed, setRiseArmed] = useState(false);
@@ -1113,17 +1006,7 @@ export function Katabasis(): ReactElement {
         </filter>
       </svg>
 
-      {screen === 'altar' && (
-        <AltarGate
-          onDescend={() => {
-            begin(); // commit: tear down the lifetime + freeze, then fall
-            setScreen('descending');
-          }}
-          onTurnAway={() => close()}
-          onStatusQuo={() => setScreen('ledger')}
-        />
-      )}
-      {screen === 'ledger' && <Ledger state={state} onBack={() => setScreen('altar')} />}
+      {screen === 'ledger' && <Ledger state={state} onBack={() => close()} />}
       {screen === 'descending' && <Transition kind="descending" onDone={arrive} />}
       {screen === 'ascending' && <Transition kind="ascending" onDone={() => confirm()} />}
 

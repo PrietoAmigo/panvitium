@@ -255,6 +255,132 @@ body {
   transform: translateY(0);
 }
 
+/* ---------- The altar sigil (Claude Design "Altar sigil" handoff) ----------
+   Clicking the altar raises the Katabasis sigil over the room, with STATUS QUO
+   beneath it; the room is not dimmed or replaced. The seal itself is painted by
+   the degradation pass (DegradedScene's `sigil`), so it pixelates with the
+   plate. This layer is only the crisp chrome: an invisible hit target sized and
+   scaled like the design's seal button, and the STATUS QUO label. Only those two
+   take pointer events, so the hotspots keep working around them. */
+.altar-sigil {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  animation: kat-ov-in 0.35s ease both;
+}
+.altar-sigil.is-fading {
+  animation: kat-ov-out 0.5s ease both;
+}
+.altar-sigil-wrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(360px, 46vh);
+  height: min(360px, 46vh);
+  display: grid;
+  place-items: center;
+}
+.altar-sigil-btn {
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.altar-sigil-btn:hover {
+  transform: scale(1.06);
+}
+.altar-sigil-btn:active {
+  transform: scale(0.95);
+}
+/* The painted seal shows keyboard focus itself (it lifts, as on hover). */
+.altar-sigil-btn:focus-visible {
+  outline: none;
+}
+/* The glyph's box: the design's image width, at the seal art's aspect (495 × 561). */
+.altar-sigil-glyph {
+  display: block;
+  width: clamp(150px, 30vw, 240px);
+  aspect-ratio: 495 / 561;
+}
+/* Armed, the painted seal pulses between 1.55× and 1.78×; the hit area holds the middle. */
+.altar-sigil-btn.is-armed .altar-sigil-glyph {
+  transform: scale(1.665);
+}
+.altar-sq-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2.4rem;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.altar-sq {
+  pointer-events: auto;
+  background: none;
+  border: 0;
+  padding: 0.6rem 1.2rem;
+  /* the trailing tracking after the last letter would pull the word left of centre */
+  padding-left: calc(1.2rem + 0.22em);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #ffd9cf;
+  text-shadow:
+    0 0 18px rgba(140, 24, 22, 0.9),
+    0 2px 6px #000;
+  animation: kat-sq-in 0.7s ease both;
+  transition:
+    color 0.18s,
+    text-shadow 0.18s;
+}
+.altar-sq:hover,
+.altar-sq:focus-visible {
+  outline: none;
+  color: #fff1ea;
+  text-shadow:
+    0 0 22px rgba(255, 90, 60, 0.85),
+    0 0 8px rgba(255, 90, 60, 0.5),
+    0 2px 6px #000;
+}
+@keyframes kat-ov-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes kat-ov-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes kat-sq-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.36em;
+  }
+  to {
+    opacity: 1;
+    letter-spacing: 0.22em;
+  }
+}
+
 /* Always-on diegetic props overlaid on a clean plate (book, PC, scroll). */
 .scene-prop {
   position: absolute;
@@ -1797,309 +1923,8 @@ body {
   }
 }
 
-/* ── SCREEN · Altar gate ──────────────────────────────────────────────────── */
-/* ── SCREEN 0 · Altar commit gate — the lone vibrating sigil ────────────────────
-   Redesign of the prior slab-with-candles drop target (Claude Design handoff).
-   The central Goetic sigil IS the descend button — it breathes and vibrates
-   idly, and grows + shakes much harder once armed; "Unfocus" routes to the real
-   Altar Room, "Status quo" opens
-   the Ledger. The blood-glow / vignette background and ember atmosphere match
-   the prior gate so the rest of the flow reads continuously. */
-.katabasis-flow .altar-gate {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse at 50% 70%, rgba(150, 22, 18, 0.34), transparent 46%),
-    radial-gradient(ellipse at 50% 125%, rgba(170, 26, 20, 0.4), transparent 58%),
-    radial-gradient(ellipse at 50% 0%, rgba(40, 24, 30, 0.5), transparent 50%), #07050a;
-}
-.katabasis-flow .altar-top {
-  position: absolute;
-  top: 2.2rem;
-  left: 0;
-  right: 0;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 32px;
-}
-.katabasis-flow .altar-fog {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  background:
-    radial-gradient(ellipse 60% 40% at 50% 92%, rgba(180, 40, 28, 0.22), transparent 70%),
-    radial-gradient(ellipse 40% 30% at 28% 80%, rgba(120, 30, 40, 0.12), transparent 70%),
-    radial-gradient(ellipse 40% 30% at 74% 84%, rgba(120, 30, 40, 0.12), transparent 70%);
-  animation: kat-torch-flicker 5s ease-in-out infinite;
-}
-.katabasis-flow .ambient-embers {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  overflow: hidden;
-}
-.katabasis-flow .amb-ember {
-  position: absolute;
-  bottom: -2%;
-  border-radius: 50%;
-  background: var(--ember);
-  box-shadow: 0 0 8px 1px rgba(255, 90, 50, 0.7);
-  opacity: 0;
-}
-@keyframes kat-amb-rise {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0;
-  }
-  12% {
-    opacity: 0.9;
-  }
-  85% {
-    opacity: 0.55;
-  }
-  100% {
-    transform: translate(var(--drift), -102vh) scale(0.3);
-    opacity: 0;
-  }
-}
-.katabasis-flow .altar-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(1.7rem, 4vw, 2.8rem);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  margin: 0;
-  color: #efe2da;
-  padding-left: 0.22em;
-  text-shadow:
-    0 0 40px rgba(140, 24, 22, 0.7),
-    0 0 12px rgba(255, 90, 60, 0.3),
-    0 2px 6px #000;
-}
-
-/* ── the lone vibrating sigil (the descend button) ─────────────────────────────────── */
-.katabasis-flow .kat-seal-wrap {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(360px, 46vh);
-  height: min(360px, 46vh);
-  z-index: 3;
-  display: grid;
-  place-items: center;
-}
-.katabasis-flow .kat-seal-btn {
-  display: grid;
-  place-items: center;
-  background: none;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.3, 1);
-}
-.katabasis-flow .kat-seal-btn:hover {
-  transform: scale(1.06);
-}
-.katabasis-flow .kat-seal-btn:active {
-  transform: scale(0.95);
-}
-/* The wrapping span carries the scale/pulse so it composes cleanly with the glyph's own jitter. */
-.katabasis-flow .kat-seal-scale {
-  display: grid;
-  place-items: center;
-  animation: kat-seal-pulse 3.4s ease-in-out infinite;
-}
-.katabasis-flow .kat-seal-glyph {
-  display: block;
-  width: clamp(150px, 30vw, 240px);
-  will-change: transform, filter;
-  animation:
-    kat-seal-vibe 0.12s linear infinite,
-    kat-seal-breathe 3.4s ease-in-out infinite;
-}
-@keyframes kat-seal-breathe {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 12px rgba(255, 90, 45, 0.8))
-      drop-shadow(0 0 28px rgba(255, 65, 32, 0.4));
-  }
-  50% {
-    filter: drop-shadow(0 0 24px rgba(255, 120, 70, 1))
-      drop-shadow(0 0 50px rgba(255, 85, 45, 0.75));
-  }
-}
-@keyframes kat-seal-pulse {
-  0%,
-  100% {
-    transform: scale(0.97);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
-/* heavy idle vibration: translate jitter up to ~4px, rotate up to ~1.6deg */
-@keyframes kat-seal-vibe {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  10% {
-    transform: translate(-3px, 2px) rotate(-1.4deg);
-  }
-  20% {
-    transform: translate(3px, -2px) rotate(1.2deg);
-  }
-  30% {
-    transform: translate(-4px, -1px) rotate(-0.8deg);
-  }
-  40% {
-    transform: translate(4px, 3px) rotate(1.6deg);
-  }
-  50% {
-    transform: translate(-2px, 3px) rotate(-1.2deg);
-  }
-  60% {
-    transform: translate(3px, -3px) rotate(1deg);
-  }
-  70% {
-    transform: translate(-4px, 1px) rotate(-1.6deg);
-  }
-  80% {
-    transform: translate(2px, 2px) rotate(0.8deg);
-  }
-  90% {
-    transform: translate(-3px, -2px) rotate(-1deg);
-  }
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-}
-/* armed (first press of the two-press commit safeguard): the sigil grows + vibrates much harder */
-.katabasis-flow .kat-seal-wrap.is-armed .kat-seal-scale {
-  animation: kat-seal-pulse-armed 1s ease-in-out infinite;
-}
-.katabasis-flow .kat-seal-wrap.is-armed .kat-seal-glyph {
-  animation:
-    kat-seal-vibe-strong 0.07s linear infinite,
-    kat-seal-breathe-armed 1s ease-in-out infinite;
-}
-@keyframes kat-seal-pulse-armed {
-  0%,
-  100% {
-    transform: scale(1.55);
-  }
-  50% {
-    transform: scale(1.78);
-  }
-}
-@keyframes kat-seal-breathe-armed {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 28px rgba(255, 120, 70, 1)) drop-shadow(0 0 64px rgba(255, 70, 40, 0.9));
-  }
-  50% {
-    filter: drop-shadow(0 0 46px rgba(255, 150, 90, 1))
-      drop-shadow(0 0 110px rgba(255, 90, 50, 0.95));
-  }
-}
-@keyframes kat-seal-vibe-strong {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  8% {
-    transform: translate(-9px, 5px) rotate(-3.6deg);
-  }
-  16% {
-    transform: translate(10px, -6px) rotate(3.2deg);
-  }
-  24% {
-    transform: translate(-11px, -3px) rotate(-2.4deg);
-  }
-  32% {
-    transform: translate(11px, 7px) rotate(4deg);
-  }
-  40% {
-    transform: translate(-6px, 8px) rotate(-3.2deg);
-  }
-  50% {
-    transform: translate(9px, -8px) rotate(2.8deg);
-  }
-  60% {
-    transform: translate(-12px, 3px) rotate(-4deg);
-  }
-  70% {
-    transform: translate(8px, 6px) rotate(2.2deg);
-  }
-  80% {
-    transform: translate(-8px, -6px) rotate(-2.8deg);
-  }
-  90% {
-    transform: translate(7px, 4px) rotate(3deg);
-  }
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-}
-
-/* ── the two inscribed action gates (Unfocus · Status quo) ──────────────── */
-.katabasis-flow .altar-actions {
-  position: absolute;
-  left: 50%;
-  bottom: 2.4rem;
-  transform: translateX(-50%);
-  z-index: 4;
-  display: flex;
-  gap: 14px;
-  align-items: stretch;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.katabasis-flow .altar-action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  background: linear-gradient(rgba(40, 18, 16, 0.4), rgba(18, 8, 8, 0.5));
-  border: 1px solid rgba(160, 30, 34, 0.35);
-  border-radius: 5px;
-  padding: 0.85rem 1.8rem;
-  min-width: 220px;
-  transition:
-    background 0.18s,
-    border-color 0.18s,
-    box-shadow 0.18s,
-    transform 0.1s;
-}
-.katabasis-flow .altar-action:hover {
-  background: linear-gradient(rgba(70, 16, 18, 0.6), rgba(34, 8, 9, 0.6));
-  border-color: var(--blood);
-  box-shadow: 0 0 26px rgba(160, 30, 34, 0.32);
-}
-.katabasis-flow .altar-action:active {
-  transform: scale(0.985);
-}
-.katabasis-flow .altar-action-label {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #ffd9cf;
-}
-
 /* ── SCREEN · The Ledger ("Status Quo") — current standing, read-only ─────────
-   Reached from the gate's "Status quo" action. A scrolling document (the only
+   Reached from STATUS QUO beneath the in-room altar sigil. A scrolling document (the only
    scrolling screen in the flow): masthead → summary strip → Cardinal Sins grid
    → Bound Sigils (effects only). Scrollbar chrome hidden; scrolling still works. */
 .katabasis-flow .ledger {
@@ -2467,15 +2292,11 @@ body {
   font-size: 0.95rem;
 }
 
-/* ── gate + ledger responsiveness ─────────────────────────────────────────── */
+/* ── ledger responsiveness ────────────────────────────────────────────────── */
 @media (max-width: 720px) {
   .katabasis-flow .ledger-sins,
   .katabasis-flow .ledger-sigils {
     grid-template-columns: 1fr;
-  }
-  .katabasis-flow .altar-action {
-    min-width: 0;
-    flex: 1 1 200px;
   }
 }
 
@@ -3657,19 +3478,12 @@ body {
   .katabasis-flow .sigil-cell--bound .sigil-cell-glow,
   .katabasis-flow .slab-molten,
   .katabasis-flow .cavern-glow,
-  .katabasis-flow .amb-ember,
-  .katabasis-flow .altar-fog,
-  .katabasis-flow .kat-seal-scale,
-  .katabasis-flow .kat-seal-glyph,
   .katabasis-flow .goetia-count .flame-dot,
   .katabasis-flow .floor-rise.is-armed {
     animation: none !important;
   }
   .katabasis-flow .bg-silhouette {
     opacity: 0.5;
-  }
-  .katabasis-flow .amb-ember {
-    display: none;
   }
 }
 

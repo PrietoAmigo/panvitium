@@ -125,7 +125,8 @@ export interface MaleficiumUse {
 // DegradeSettings/Engine* come from the engine. (The Ars Goetia book's types live
 // in ./ars-goetia.types.ts — decoupled from this layer.)
 import type { DegradeSettings } from './degrade.js';
-export type { DegradeSettings, EngineSprite, EngineScene } from './degrade.js';
+import type { AltarSigilLook } from './altarSigil.js';
+export type { DegradeSettings, EngineSprite, EngineScene, EngineSigil } from './degrade.js';
 
 /** A diegetic sprite laid into the room scene; positions are stage fractions 0..1. */
 export interface SceneSprite {
@@ -183,6 +184,27 @@ export interface BoundInvocationVisual {
   };
 }
 
+/** The in-room altar sigil as the room layer presents it ("Altar sigil" handoff): the Katabasis
+ *  seal over the Altar Room, composited THROUGH the degradation pass so it pixelates with the
+ *  plate. Presentation only: the altar's UI phase decides it; no sim state. */
+export interface SceneSigil {
+  /** Seal art. */
+  src: string;
+  /** Centre, stage fractions 0..1 (where the DOM hit target sits). */
+  x: number;
+  y: number;
+  /** The glyph's and the stage's rendered CSS widths, in px (the design's sizes are CSS px). */
+  glyphPx: number;
+  stagePx: number;
+  /** Idle (shown) or armed (after the first press). */
+  look: AltarSigilLook;
+  /** False while it fades out on the idle timeout. */
+  shown: boolean;
+  /** The hit target's pointer state (the design's :hover / :active scale). */
+  hover: boolean;
+  press: boolean;
+}
+
 /** Props for the room scene layer (degraded backdrop + sprites + bound invocation figures). */
 export interface DegradedSceneProps {
   roomId: RoomId;
@@ -190,6 +212,8 @@ export interface DegradedSceneProps {
   sprites?: SceneSprite[];
   /** Bound invocation figures to composite into the scene THROUGH the degradation pass. */
   figures?: BoundInvocationVisual[];
+  /** The altar sigil, composited over the figures THROUGH the degradation pass; null = none. */
+  sigil?: SceneSigil | null;
   signature?: boolean;
   settings?: Partial<DegradeSettings>;
   className?: string;

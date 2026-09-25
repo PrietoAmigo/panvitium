@@ -81,6 +81,14 @@ const LOG_CAP = 100;
 export type KatabasisPhase = 'menu' | 'recap' | null;
 
 /**
+ * How the Katabasis flow was entered from the Altar Room, read once as the flow mounts: the altar
+ * sigil's STATUS QUO opens the Ledger (pre-commit); its second press commits and falls into the
+ * descent. The store holds null when the flow was not opened from the room, so a save reloaded
+ * mid-descent resumes among the Princes.
+ */
+export type KatabasisEntry = 'ledger' | 'descent';
+
+/**
  * A maleficium Emptio just brought home. `seq` is unique per acquisition (a transient counter, not
  * saved), so a second copy of the same relic still plays its own Unveiling.
  */
@@ -124,6 +132,8 @@ interface GameStore {
   notice: string | null;
   /** Which Katabasis screen is open (null = none). */
   katabasisPhase: KatabasisPhase;
+  /** How the open flow was entered from the Altar Room (transient; null = not from the room). */
+  katabasisEntry: KatabasisEntry | null;
   /**
    * True on launch — the title menu is showing and the sim is frozen behind it until the player
    * picks Continue (or starts a New Game). Set false by `dismissTitle`; never re-shown in-session.
@@ -209,17 +219,17 @@ interface GameStore {
    */
   markDoppelgaengerSeen: () => void;
   /**
-   * Open the full-screen Altar gate without committing — no teardown and no freeze: the lifetime
-   * keeps ticking behind the gate (and its Ledger), since the soul is not yet under. The in-room
-   * Altar routes here; from the gate the player either commits (`beginKatabasis`) or turns back
-   * (`closeKatabasis`). Safe to cancel: nothing in the lifetime has been torn down yet.
+   * Open the Status Quo Ledger without committing — no teardown and no freeze: the lifetime keeps
+   * ticking behind it, since the soul is not yet under. The altar sigil's STATUS QUO routes here;
+   * the Ledger's way back (`closeKatabasis`) returns to the Altar Room. Safe to cancel: nothing in
+   * the lifetime has been torn down.
    */
   openKatabasis: () => void;
   /**
-   * Commit to the descent from the Altar gate: tear down the lifetime's productive systems
-   * (Mercatūs, toggles, actions, invocations — 02 §6) and freeze ticking while the player
-   * allocates. Sigil bindings persist; the carry-over roll + lifetime reset happen on the rise
-   * (`confirmKatabasis`).
+   * Commit to the descent (the altar sigil's second press): tear down the lifetime's productive
+   * systems (Mercatūs, toggles, actions, invocations — 02 §6), open the flow on the descent
+   * transition, and freeze ticking while the player allocates. Sigil bindings persist; the
+   * carry-over roll + lifetime reset happen on the rise (`confirmKatabasis`).
    */
   beginKatabasis: () => void;
   /** Offer Devotion souls to a Prince — permanent (02 §6). Any amount; clamped to the pool. */
@@ -335,6 +345,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   notice: null,
   achievementToast: null,
   katabasisPhase: null,
+  katabasisEntry: null,
   titleOpen: true,
   settingsOpen: false,
   recap: null,
@@ -352,14 +363,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // A save written mid-descent (inKatabasis) reloads frozen; resume the allocation menu so the
     // player picks up where they left off rather than landing in a torn-down lifetime.
     const phasePatch = loaded.state.inKatabasis === true ? { katabasisPhase: 'menu' as const } : {};
-    set({ ...loaded, ...phasePatch, ready: true });
+    set({ ...loaded, ...phasePatch, katabasisEntry: null, ready: true });
   },
 
   advance: (deltaSeconds) => {
     const current = get().state;
     if (!current) return;
-    // Screens that suspend the LIVE tick. The Altar gate / Ledger (pre-commit, inKatabasis === false)
-    // is NOT suspended: the soul is not yet under, so the lifetime ticks on online behind the gate.
+    // Screens that suspend the LIVE tick. The Status Quo Ledger (pre-commit, inKatabasis === false)
+    // is NOT suspended: the soul is not yet under, so the lifetime ticks on online behind it.
     // The committed descent (inKatabasis === true), the launch title menu, and the "You Rise" recap
     // all suspend the tick — nothing accrues while they are open (the world does not advance offline
     // either, so lingering costs the player nothing and gains nothing). We skip the sim so nothing
@@ -541,6 +552,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       state: enterKatabasis(current),
       katabasisPhase: 'menu',
+      katabasisEntry: 'descent',
       notice: null,
     });
   },
@@ -612,6 +624,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       state,
       recap,
       katabasisPhase: 'recap',
+      katabasisEntry: null,
       log: [],
       ...NO_OBTAINED,
       notice: null,
@@ -619,8 +632,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().persist();
   },
 
-  openKatabasis: () => set({ katabasisPhase: 'menu', notice: null }),
-  closeKatabasis: () => set({ katabasisPhase: null, notice: null }),
+  openKatabasis: () => set({ katabasisPhase: 'menu', katabasisEntry: 'ledger', notice: null }),
+  closeKatabasis: () => set({ katabasisPhase: null, katabasisEntry: null, notice: null }),
   // The recap suspends the live tick and the world is frozen while it is open: `resumeGame` only
   // reconciles `lastTickAt` to now (no progression), so the time spent reading "You Rise" is lost,
   // not paid out.
@@ -662,6 +675,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...NO_OBTAINED,
       notice: null,
       katabasisPhase: null,
+      katabasisEntry: null,
       recap: null,
       settingsOpen: false,
     });
@@ -734,6 +748,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       notice: null,
       recap: null,
       katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
+      katabasisEntry: null,
     });
     return true;
   },
@@ -805,6 +820,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ...NO_OBTAINED,
         notice: null,
         katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
+        katabasisEntry: null,
         syncStatus: 'ok',
         lastSyncedAt: loaded.state.lastTickAt,
       });

@@ -103,9 +103,30 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1061** (sim 595 · shared 75 · api 20 · web 371).
+**Current test count: 1089** (sim 595 · shared 75 · api 20 · web 399).
 
-> **Latest change — UI: the Ars Goetia's painted plates (Claude Design).** Every invocation's leaf
+> **Latest change — UI: the altar sigil rises in the Altar Room (Claude Design).** From the
+> delivered "Altar sigil" handoff (archived in `docs/frontend/`): clicking the altar no longer swaps
+> the room for the full-screen Altar gate. The Katabasis sigil rises over the room itself (no dim, no
+> scrim), vibrating, with **Status Quo** beneath it. The first press arms it (it swells and shakes
+> harder, and Status Quo withdraws); the second commits the descent (`beginKatabasis`: the teardown
+> and freeze) and falls straight into the Abyss transition and the Princes. **Status Quo** opens the
+> read-only Ledger, whose "Return to the altar" now leads back to the room. Left untouched for 4 s,
+> shown or armed, the sigil fades away (0.5 s); a door puts it away at once. The seal is painted
+> **through the degradation pass**, so the pixelation (and the grade, dither and grain) reaches it
+> like every other diegetic element: `DegradePass` gains an animated sigil layer, drawn last into the
+> low-resolution buffer, which samples the design's keyframes each frame (the vibration, the pulse,
+> the handoff's darker red glow; `menus/altarSigil.ts`) and chains the glow's two drop-shadows as CSS
+> does. An invisible DOM hit target, sized and scaled like the design's button, takes the clicks and
+> feeds its hover and press back to the painted seal. Reduced motion stills the vibration and the
+> pulse and keeps a static glow. The state machine (`game/useAltarSigil.ts`) is local UI state; the
+> store gains a transient `katabasisEntry`, so the flow opens on the Ledger or on the descent while a
+> mid-descent reload still resumes among the Princes. The full-screen `AltarGate`, its Unfocus action,
+> title, fog and embers retire with their styles. A room-change curtain can no longer be cut short by
+> a re-render mid-fade. No sim, save or RNG change. Net **+28 tests** (web 371 → 399), plus an altar
+> e2e spec.
+>
+> **Earlier change — UI: the Ars Goetia's painted plates (Claude Design).** Every invocation's leaf
 > in the Ars Goetia now carries its plate on the right-hand page, from the delivered "Invocation
 > Plates" handoff (archived in `docs/frontend/`): one painted concept per invocation rather than a
 > figure (Aurevora a maw of gold, Astiwihad a noose, Morpheus a closed eye over two sleepers), a
@@ -1552,8 +1573,9 @@ helper to reach the required state, a small task of its own).
 ### 5.1b — Katabasis visual rework (Claude Design)
 
 _A faithful rebuild of the Katabasis surface from a dedicated Claude Design handoff — the descent as
-a cinematic sequence rather than a flat menu. Delivered in two gate-green slices, **both shipped**:
-K1 (the descent) and K2 (the in-room altar → gate reconciliation)._
+a cinematic sequence rather than a flat menu. Delivered in three gate-green slices, **all shipped**:
+K1 (the descent), K2 (the in-room altar → gate reconciliation) and K3 (the gate folded into the room
+as the altar sigil)._
 
 - **K1 — the cinematic descent** _(✓ shipped)_. The `menu` phase is now a full-screen flow: a commit
   **Altar gate** → an Abyss descent transition → the **Court of Spires** (the eight Princes under
@@ -1581,8 +1603,17 @@ K1 (the descent) and K2 (the in-room altar → gate reconciliation)._
   readout, turn-away returns to the room, commit enters Katabasis + descends); the full altar → gate →
   descend / turn-away flow was verified through the real UI via Playwright.
 
-**Done** — both slices have shipped gate-green; what remains for the descent is the audio asset (5.3)
-and an e2e step on a browser-capable machine.
+- **K3 — the altar sigil in the room** _(✓ shipped)_. The "Altar sigil" handoff retires the
+  full-screen gate: clicking the in-room altar raises the Katabasis sigil over the Altar Room,
+  painted through the degradation pass so it pixelates with the plate, with **Status Quo** beneath
+  it. Two presses commit (`beginKatabasis`) and fall into the descent; Status Quo opens the Ledger
+  (`openKatabasis`), whose way back returns to the room; 4 s untouched, the sigil fades. Pinned by the
+  `altarSigil` motion and `useAltarSigil` state-machine suites, App-level render tests in
+  `Katabasis.test.ts`, and `e2e/altar.spec.ts`.
+
+**Done** — all three slices have shipped gate-green; what remains for the descent is the audio asset
+(5.3). The altar → descent entry has e2e coverage (`e2e/altar.spec.ts`); the rest of the descent
+(offering, binding, the rise) still wants an e2e step.
 
 ### 5.2 — New diegetic features (Claude Design + a small sim hook)
 

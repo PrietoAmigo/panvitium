@@ -8,8 +8,8 @@
    pass and stays crisp.
 
    The recipe, in order, runs inside `render()`:
-     1. Composite the live scene (backdrop + animated sprites) into a small
-        low-resolution buffer  ........................  PIXELATION (block size)
+     1. Composite the live scene (backdrop + animated sprites + the altar sigil)
+        into a small low-resolution buffer  ...........  PIXELATION (block size)
      2. Tone curve — crush blacks, lift floor, add contrast  ......  THE GRADE
      3. Quantise each channel to N steps (optional Bayer dither)  .  COLOUR CRUSH
      4. Blend toward the candle/blood/gold grimoire palette  ......  THE GRADE
@@ -23,6 +23,23 @@
    This module is pure TypeScript with no framework dependency — it manipulates a
    <canvas> directly. The React `DegradedScene` wrapper owns its lifecycle.
    ========================================================================== */
+
+import {
+  EASE,
+  SIGIL_FADE_IN_S,
+  SIGIL_FADE_OUT_S,
+  SIGIL_HOVER_SCALE,
+  SIGIL_POINTER_EASE,
+  SIGIL_POINTER_S,
+  SIGIL_PRESS_SCALE,
+  glowColor,
+  retarget,
+  sampleAltarSigil,
+  settled,
+  tweenAt,
+  type AltarSigilLook,
+  type Tween,
+} from './altarSigil.js';
 
 /** The full degradation recipe. Every knob the pass exposes. */
 export interface DegradeSettings {
@@ -154,6 +171,31 @@ export interface EngineSprite {
   };
 }
 
+/**
+ * The in-room altar sigil, the Katabasis trigger ("Altar sigil" handoff). Composited LAST in the
+ * scene buffer, over the figures, so the pass pixelates / crushes / grains it with the room. The
+ * engine animates it (the design's vibration, pulse and glow, sampled from `altarSigil.ts`) and
+ * eases its fade and pointer feedback; the caller only sets targets. Its sizes are the design's CSS
+ * px, turned into buffer px each frame through `stagePx`.
+ */
+export interface EngineSigil {
+  img: HTMLImageElement;
+  /** Centre, stage fractions 0..1. */
+  x: number;
+  y: number;
+  /** The glyph's rendered CSS width in px (the design's clamp(150px, 30vw, 240px)). */
+  glyphPx: number;
+  /** The stage's rendered CSS width in px: converts the design's CSS px into frame px. */
+  stagePx: number;
+  /** Idle or armed. A change restarts the look's animations, as a CSS class swap does. */
+  look: AltarSigilLook;
+  /** Fade target: true fades in (0.35 s), false fades out (0.5 s). */
+  shown: boolean;
+  /** The DOM hit target's pointer state: the design's :hover / :active scale. */
+  hover: boolean;
+  press: boolean;
+}
+
 /** A composed scene: one backdrop plate + any sprites + the studio ritual glow. */
 export interface EngineScene {
   bg: HTMLImageElement | null;
@@ -240,6 +282,11 @@ export class DegradePass {
   private readonly noise: HTMLCanvasElement;
   private readonly nctx: CanvasRenderingContext2D;
   private readonly _noiseData: ImageData;
+  // Scratch layer for the altar sigil: the glyph plus its inner drop-shadow, baked each frame so
+  // the outer drop-shadow can be cast from that composite (CSS chains stacked drop-shadows so).
+  // Grows to the largest glyph + glow drawn; never shrinks.
+  private readonly sig: HTMLCanvasElement;
+  private readonly sgctx: CanvasRenderingContext2D;
 
   private s: DegradeSettings = { ...DEFAULT_DEGRADE };
   private scene: EngineScene = { bg: null, sprites: [], signature: false };
@@ -262,6 +309,13 @@ export class DegradePass {
   // Eased fast-forward intensity 0..1 — animation state, NOT a setting. Ramps toward `s.ffw` each
   // rendered frame (same ~0.7s cadence as `_curse`) so the Desidia VHS layer fades in/out.
   private _ffw = 0;
+
+  // The altar sigil (null = none) and its animation state, on the render clock (s since `_t0`):
+  // when its current look began (its keyframes run from there), its fade, its pointer scale.
+  private _sigil: EngineSigil | null = null;
+  private _sigilT0 = 0;
+  private _sigilFade: Tween = settled(0);
+  private _sigilPointer: Tween = settled(1);
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -294,6 +348,11 @@ export class DegradePass {
     this.noise.height = Math.round(VH / 5);
     this.nctx = this.noise.getContext('2d')!;
     this._noiseData = this.nctx.createImageData(this.noise.width, this.noise.height);
+
+    this.sig = document.createElement('canvas');
+    this.sig.width = 2;
+    this.sig.height = 2;
+    this.sgctx = this.sig.getContext('2d')!;
   }
 
   /** Merge a partial recipe and repaint a frame immediately. */
@@ -311,12 +370,45 @@ export class DegradePass {
     if (animate && this.scene.bg) {
       this._pending = scene;
       this._phase = 'out';
+    } else if (this._phase === 'out') {
+      // A curtain is closing: refresh what it will reveal instead of cutting it short (a re-render
+      // mid-fade re-sends the same room without `animate`).
+      this._pending = scene;
     } else {
+      // Idle, or a curtain already opening on this room: show it now; the opening keeps fading.
       this.scene = scene;
-      this._fade = 0;
-      this._phase = 'idle';
-      this._pending = null;
     }
+    this.renderSafe();
+  }
+
+  /**
+   * Show, update or remove the altar sigil. Only targets come in; the engine eases between them:
+   * appearing fades in from nothing, `shown: false` fades out, and a changed look restarts the
+   * look's keyframes. `null` removes it at once (a door click cancels the overlay immediately).
+   * Idempotent: re-sending an unchanged sigil changes nothing.
+   */
+  setSigil(next: EngineSigil | null): void {
+    const now = (performance.now() - this._t0) / 1000;
+    const prev = this._sigil;
+    if (next) {
+      if (!prev) {
+        this._sigilFade = settled(0);
+        this._sigilPointer = settled(1);
+      }
+      if (!prev || prev.look !== next.look) this._sigilT0 = now;
+      this._sigilFade = next.shown
+        ? retarget(this._sigilFade, 1, now, SIGIL_FADE_IN_S, EASE)
+        : retarget(this._sigilFade, 0, now, SIGIL_FADE_OUT_S, EASE);
+      const pointer = next.press ? SIGIL_PRESS_SCALE : next.hover ? SIGIL_HOVER_SCALE : 1;
+      this._sigilPointer = retarget(
+        this._sigilPointer,
+        pointer,
+        now,
+        SIGIL_POINTER_S,
+        SIGIL_POINTER_EASE,
+      );
+    }
+    this._sigil = next;
     this.renderSafe();
   }
 
@@ -542,6 +634,63 @@ export class DegradePass {
       ctx.drawImage(img, dx, dy, dw, dh);
       ctx.restore();
     }
+    // The altar sigil rides over everything else in the room, inside the same buffer.
+    this._drawSigil(ctx, w, h, t);
+  }
+
+  /**
+   * The altar sigil, painted the way the design's CSS renders it: the glyph and its stacked
+   * drop-shadow glow (the outer shadow cast from the glyph + inner shadow), then the vibration's
+   * translate/rotate, all inside the pulse × pointer scale, which scales the glow's blur too.
+   * The design's sizes are CSS px; `k` turns them into this buffer's px.
+   */
+  private _drawSigil(ctx: CanvasRenderingContext2D, w: number, h: number, t: number): void {
+    const sg = this._sigil;
+    if (!sg || sg.stagePx <= 0 || sg.glyphPx <= 0) return;
+    const img = sg.img;
+    if (!img.complete || !img.naturalWidth) return;
+    const alpha = tweenAt(this._sigilFade, t);
+    if (alpha <= 0.001) return;
+
+    const pose = sampleAltarSigil(sg.look, t - this._sigilT0, this.s.reducedMotion);
+    const scale = pose.scale * tweenAt(this._sigilPointer, t);
+    const k = (w / sg.stagePx) * scale;
+    const gw = sg.glyphPx * k;
+    const gh = gw * (img.naturalHeight / img.naturalWidth);
+    const [inner, outer] = pose.glow;
+    const innerBlur = inner.blur * k;
+
+    // 1. The glyph + its inner glow, unrotated (the filter sits in the element's own space).
+    //    A shadowBlur of b is a Gaussian of σ = b/2, the same as a CSS drop-shadow of radius b,
+    //    so ~1.5b of margin holds the glow. High-quality smoothing keeps the thin strokes whole
+    //    through the steep downscale; the pass pixelates the result afterwards.
+    const m = Math.ceil(innerBlur * 1.5) + 2;
+    const lw = Math.ceil(gw) + m * 2;
+    const lh = Math.ceil(gh) + m * 2;
+    if (lw > this.sig.width || lh > this.sig.height) {
+      this.sig.width = Math.max(lw, this.sig.width);
+      this.sig.height = Math.max(lh, this.sig.height);
+    }
+    const sctx = this.sgctx;
+    sctx.clearRect(0, 0, lw, lh);
+    sctx.save();
+    sctx.imageSmoothingEnabled = true;
+    sctx.imageSmoothingQuality = 'high';
+    sctx.shadowColor = glowColor(inner);
+    sctx.shadowBlur = innerBlur;
+    sctx.drawImage(img, m, m, gw, gh);
+    sctx.restore();
+
+    // 2. That composite, shaken and faded, casting the outer glow into the scene. Shadows ignore
+    //    the transform, and both glows are centred (no offset), so rotating after baking is exact.
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(sg.x * w + pose.dx * k, sg.y * h + pose.dy * k);
+    ctx.rotate(pose.rot);
+    ctx.shadowColor = glowColor(outer);
+    ctx.shadowBlur = outer.blur * k;
+    ctx.drawImage(this.sig, 0, 0, lw, lh, -(m + gw / 2), -(m + gh / 2), lw, lh);
+    ctx.restore();
   }
 
   render(now?: number): void {
@@ -584,10 +733,9 @@ export class DegradePass {
       }
     }
 
-    // crisp full-res composite (used when the pass is disabled)
-    this._drawScene(this.cctx, VW, VH, this.scene, t, true);
-
     if (!s.enabled) {
+      // crisp full-res composite (only this un-degraded branch shows it)
+      this._drawScene(this.cctx, VW, VH, this.scene, t, true);
       ctx.clearRect(0, 0, VW, VH);
       ctx.drawImage(this.crisp, 0, 0);
       this._postChrome(ctx, t, false);
