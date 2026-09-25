@@ -36,7 +36,6 @@ beforeEach(() => {
     deviceId: '',
     ready: false,
     log: [],
-    signature: null,
     unveilQueue: [],
     lastObtained: null,
     notice: null,

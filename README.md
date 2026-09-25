@@ -103,9 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1024** (sim 595 · shared 75 · api 20 · web 334).
+**Current test count: 1026** (sim 595 · shared 75 · api 20 · web 336).
 
-> **Latest change — the Loculi shows invoking power and a consumable's remaining uses.** The
+> **Latest change — UI: no outcome banner, no room name, a quieter Loculi.** A Stellar or
+> Apocalyptic outcome no longer raises a banner at the top centre of the screen; the outcome still
+> reaches the PC's Logs as before. The `SignaturePopup` retires with its store channel (`signature`
+> / `dismissSignature`) and the sim's `isSignatureTier`, which only fed it. The room's name no
+> longer sits at the bottom centre of the stage; the scene still carries it as its accessible
+> label, which the smoke e2e now navigates by. In the Loculi, the "Loculi" title no longer shows at
+> the top of the screen (the dialog keeps it as its accessible name), and a consumable holding
+> several copies (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt) no longer repeats its
+> count as a ×N on its name: the copies show only on its "Uses remaining · N" line. Black Candles, a
+> passive stack with no uses line, keep their ×N. No save or RNG change. Net **+2 tests** (web 334
+> → 336).
+>
+> **Earlier change — the Loculi shows invoking power and a consumable's remaining uses.** The
 > Loculi showed no relic's invoking power; it (and the Unveiling) now carries an "Invoking power ·
 > N" line under the effect for every relic that grants some, and none for the fourteen that grant
 > none (the anathema relics, the consumables, the pure multipliers), which is how the Emptio market

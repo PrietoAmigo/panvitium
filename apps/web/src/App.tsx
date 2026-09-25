@@ -13,7 +13,6 @@ import { Loculi, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
 import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { DesidiaHud } from './ui/DesidiaHud.js';
 import { usePrefersReducedMotion } from './ui/usePrefersReducedMotion.js';
-import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
 import { Unveiling } from './ui/Unveiling.js';
 import { KatabasisModal } from './ui/KatabasisModal.js';
@@ -224,9 +223,7 @@ export function App(): ReactElement {
           ringing={ringing !== null}
           onAction={handleAction}
         />
-        <div className="room-name">{ROOMS[room].title}</div>
       </main>
-      <SignaturePopup />
       <AchievementToast />
       <KatabasisModal />
       <SyncPanel />

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialState, MALEFICIA } from '@panvitium/sim';
+import { createInitialState, MALEFICIA, SINGLE_USE_MALEFICIA } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import { parseEffect } from '../menus/relics.js';
 import { buildCabinet, invokingPowerText, maleficiumView, splitDescription } from './maleficia.js';
@@ -198,5 +198,16 @@ describe('invoking power and remaining uses', () => {
     expect(items.find((i) => i.id === 'defixio')?.use?.remaining).toBe(1);
     // Black Candles stack but are passive: no rite, so no uses to count.
     expect(items.find((i) => i.id === 'black_candles')?.use).toBeUndefined();
+  });
+
+  it("keeps a consumable's name bare: its copies show only as uses remaining", () => {
+    for (const id of SINGLE_USE_MALEFICIA) {
+      const [item] = buildCabinet(owning([id, id, id]));
+      expect(item?.name, id).toBe(MALEFICIA[id]!.name);
+      expect(item?.use?.remaining, id).toBe(3);
+    }
+    // A passive stack has no uses line, so its name still carries the count.
+    const [candles] = buildCabinet(owning(['black_candles', 'black_candles']));
+    expect(candles?.name).toBe('Black Candles ×2');
   });
 });

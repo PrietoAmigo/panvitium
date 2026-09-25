@@ -1,14 +1,15 @@
 // View-model adapter for the designed Maleficia cabinet: the player's *owned* maleficia (collapsing
-// duplicate stackables into a ×N on the name), each merged from the authoritative sim catalog (name,
-// rarity, description) with the design's specimen art + split flavour/effect where the handoff
-// illustrated it. Items without bespoke art carry an empty `img`; the cabinet renders a text label.
-// Items without design copy split the sim description into flavour + effect, so the Loculi can set
-// every item's effect as its headline number.
+// duplicate stackables into one item: a ×N on the name, except for a consumable, whose copies read
+// as its remaining uses instead), each merged from the authoritative sim catalog (name, rarity,
+// description) with the design's specimen art + split flavour/effect where the handoff illustrated
+// it. Items without bespoke art carry an empty `img`; the cabinet renders a text label. Items
+// without design copy split the sim description into flavour + effect, so the Loculi can set every
+// item's effect as its headline number.
 //
-// For the two single-use consumables (Hand of Glory, Defixio) it also derives the `use` affordance —
-// the button-enabled state and the current-effect status line — from existing lifetime state
-// (`handOfGloryRemaining`, `defixio`). No new sim: this only surfaces what `activateMaleficium` and
-// the tick already maintain.
+// For the single-use consumables (`SINGLE_USE_MALEFICIA`) it also derives the `use` affordance (the
+// button-enabled state, the uses remaining, and the live buff's status line) from existing lifetime
+// state (`maleficia`, `maleficiaBuffs`). No new sim: this only surfaces what `activateMaleficium`
+// and the tick already maintain.
 import {
   MALEFICIA as CATALOG,
   countCopies,
@@ -101,7 +102,9 @@ export function buildCabinet(state: GameState): Maleficium[] {
     const reveal = buildOracle(state, id);
     items.push({
       ...view,
-      name: count > 1 ? `${view.name} ×${count}` : view.name,
+      // A consumable's copies are its uses, shown on its "Uses remaining" line, so its name stays
+      // bare; a passive stack (Black Candles) carries the count on its name.
+      name: count > 1 && !use ? `${view.name} ×${count}` : view.name,
       ...(use ? { use } : {}),
       ...(reveal ? { reveal } : {}),
     });

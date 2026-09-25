@@ -1,12 +1,13 @@
 /**
  * Render tests for the Loculi "Reliquary" (Claude Design, "Loculi Reliquary" handoff, option 2a).
- * These pin the wiring the visual swap relies on: the overlay is a labelled dialog with a Close (and
- * Esc) route out; the procession holds one relic per item ordered anathema → common; the rarest is on
- * stage by default, or the relic the Unveiling last showed; the procession, the ‹ › arrows and the
- * ← → keys browse (wrapping); the effect is set as a headline number; a consumable's rite fires
- * `onUse`; a relic that vanishes hands the stage to its neighbour; and the empty Loculi keeps its
- * "Mundane." line. The pixel canvases have no jsdom surface (getContext is stubbed to null); the
- * pixel rules are pinned in pixelArt.test.ts, and the adapter in game/maleficia.test.ts.
+ * These pin the wiring the visual swap relies on: the overlay is a labelled dialog (its name shown
+ * to assistive tech only, no title on screen) with a Close (and Esc) route out; the procession
+ * holds one relic per item ordered anathema → common; the rarest is on stage by default, or the
+ * relic the Unveiling last showed; the procession, the ‹ › arrows and the ← → keys browse
+ * (wrapping); the effect is set as a headline number; a consumable's rite fires `onUse`; a relic
+ * that vanishes hands the stage to its neighbour; and the empty Loculi keeps its "Mundane." line.
+ * The pixel canvases have no jsdom surface (getContext is stubbed to null); the pixel rules are
+ * pinned in pixelArt.test.ts, and the adapter in game/maleficia.test.ts.
  */
 import { describe, it, expect, afterEach, beforeAll, afterAll } from 'vitest';
 import { act, createElement } from 'react';
@@ -116,6 +117,16 @@ describe('Loculi — the reliquary overlay', () => {
     expect(closed).toBe(1);
     press('Escape');
     expect(closed).toBe(2);
+  });
+
+  it('shows no title on screen, stocked or empty (the name is the dialog label only)', () => {
+    render({ items: THREE });
+    expect(container!.textContent).not.toContain(strings.maleficia.title);
+    rerender({ items: [] });
+    expect(container!.textContent).not.toContain(strings.maleficia.title);
+    expect(container!.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(
+      strings.maleficia.title,
+    );
   });
 
   it('keeps the "Mundane." line when nothing is owned', () => {
@@ -230,7 +241,7 @@ describe('Loculi — the effect and the rite', () => {
       items: [
         relic({
           id: 'black_salt_pouch',
-          name: 'Black Salt Pouch ×3',
+          name: 'Black Salt Pouch',
           use: { label: 'Use', enabled: true, remaining: 3 },
         }),
       ],

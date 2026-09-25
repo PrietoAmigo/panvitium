@@ -320,25 +320,6 @@ export function MaleficiaCabinet({
     }
   }, [idx, n]);
 
-  const title = (
-    <div
-      style={{
-        position: 'absolute',
-        top: px(34),
-        left: 0,
-        right: 0,
-        textAlign: 'center',
-        fontFamily: CINZEL,
-        fontSize: px(11),
-        letterSpacing: '.5em',
-        textTransform: 'uppercase',
-        color: LABEL,
-      }}
-    >
-      {S.title}
-    </div>
-  );
-
   const shell = (children: ReactElement): ReactElement => (
     <div
       className="reliquary"
@@ -365,26 +346,23 @@ export function MaleficiaCabinet({
 
   if (!m) {
     return shell(
-      <>
-        {title}
-        <p
-          className="pc-empty"
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: 0,
-            right: 0,
-            margin: 0,
-            transform: 'translateY(-50%)',
-            textAlign: 'center',
-            fontFamily: FELL,
-            fontSize: px(18),
-            color: '#a39bb4',
-          }}
-        >
-          {S.empty}
-        </p>
-      </>,
+      <p
+        className="pc-empty"
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: 0,
+          right: 0,
+          margin: 0,
+          transform: 'translateY(-50%)',
+          textAlign: 'center',
+          fontFamily: FELL,
+          fontSize: px(18),
+          color: '#a39bb4',
+        }}
+      >
+        {S.empty}
+      </p>,
     );
   }
 
@@ -457,9 +435,7 @@ export function MaleficiaCabinet({
         <RelicArt item={m} longSide={HERO_LONG_SIDE} bob still={reducedMotion} size="hero" />
       </div>
 
-      {title}
-
-      {/* Left: rarity, name (with its ×N), flavour. */}
+      {/* Left: rarity, name (a passive stack's with its ×N), flavour. */}
       <div
         style={{
           position: 'absolute',
