@@ -103,9 +103,31 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 967** (sim 595 · shared 75 · api 20 · web 277).
+**Current test count: 1016** (sim 595 · shared 75 · api 20 · web 326).
 
-> **Latest change — every modifier reaches everything it claims (ADR-036).** Follow-up rulings on
+> **Latest change — UI: the Loculi "Reliquary" + the Unveiling (Claude Design).** The Loculi is
+> rebuilt from the delivered "Loculi Reliquary" handoff (option 2a; archived in `docs/frontend/`).
+> The boxed niche grid gives way to a frameless **reliquary**: the Invocation Room darkens, the
+> selected maleficium floats alone as pixel art in its rarity's dithered light, its effect set as a
+> **headline number**, and every other owned relic stands in a **procession** along the floor
+> (anathema → common; click, the ‹ › arrows or ← → to browse, wrapping; Esc closes; a crowded
+> procession scrolls). Each relic is pixelated on the Influence vessel's principle at a fixed 3 px art
+> pixel (downscaled, alpha-hardened, colour-crushed, ringed in a one-pixel rarity outline). It is now
+> a full-surface overlay mounted by `App` like Ars Goetia and the Suasio scroll, laid out on the
+> design's 1280×720 stage in a fitted 16:9 frame; the framed-panel path (`PANELS`, the `niche`
+> `PanelShell` variant) retires with it. A new **Unveiling** pop-up plays when an Emptio purchase
+> brings a maleficium home: pixel light shafts in the rarity colour, the relic resolving out of coarse
+> pixels and flashing white, then its name, flavour and effect for 1.5 s (a click dismisses; several
+> arrivals play in turn; the Loculi then opens on the newest relic). It is fed by a transient store
+> queue filled only from live `maleficiaAcquired` outcomes, so a load or a Katabasis carry-over never
+> plays one, and it waits out a descent, an answered call or the jumpscare. `prefers-reduced-motion`
+> stills the reveal, flash, rays, float and pulse. The 13 relics without design copy now split their
+> sim description into flavour + effect, so every relic has a headline. One deliberate deviation from
+> the handoff: the Desidia vessel steps aside while the Loculi is open, since it sat on the ‹ arrow
+> and the first relics of a full procession and swallowed their clicks. No sim, save or RNG change.
+> Net **+49 tests** (web 277 → 326), plus a Loculi e2e spec.
+>
+> **Earlier change — every modifier reaches everything it claims (ADR-036).** Follow-up rulings on
 > the dead-modifier audit. **Semet #32** now scales every other seal in every channel (it reached
 > only 41 of 70): one `sigilStrengthMul` (the sigil-effect relics, Gaap-boosted, × Semet) feeds the
 > modifier bundle, per-category tiers, cost reductions, invoking power, Katabasis carry-over and the

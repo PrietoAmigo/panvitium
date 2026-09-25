@@ -1,4 +1,4 @@
-import { useState, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   bn,
@@ -39,7 +39,6 @@ import {
   type OutcomeEvent,
   type Tier,
 } from '@panvitium/sim';
-import { type PanelId } from '../menus/types.js';
 import { SmartphoneDialer, type DialResult } from '../menus/SmartphoneDialer.js';
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
 import { SuasioPanel as DesignedSuasio, type SuasioActionView } from '../menus/SuasioPanel.js';
@@ -57,6 +56,7 @@ import { formatBigNum } from '../game/format.js';
 import { OrbisTenebrarum, type OrbisFind } from '../menus/orbis-tenebrarum/index.js';
 import { useGameStore } from '../store/gameStore.js';
 import { actionName } from '../game/labels.js';
+import { usePrefersReducedMotion } from './usePrefersReducedMotion.js';
 
 interface PanelProps {
   title: string;
@@ -811,15 +811,29 @@ export function IndagatioEmptioProgram(): ReactElement {
   );
 }
 
-/** Loculi (the Maleficia niches): groups owned items by id; stackables show their count. */
-function Loculi(): ReactElement {
+/**
+ * The Loculi reliquary (Invocation Room): a self-framed, full-surface overlay (mounted by App like
+ * Ars Goetia / the Suasio scroll, NOT via PanelShell). Owned items grouped by id, stackables showing
+ * their count; the single-use rites wired to `activateMaleficium`. It opens on the relic the
+ * Unveiling last showed (else the rarest), and forgets that focus when it closes.
+ */
+export function Loculi({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
   const activate = useGameStore((s) => s.activateMaleficium);
+  const focus = useGameStore((s) => s.lastObtained);
+  const clearFocus = useGameStore((s) => s.clearLastObtained);
+  const reducedMotion = usePrefersReducedMotion();
+  useEffect(() => clearFocus, [clearFocus]);
   const items = state ? buildCabinet(state) : [];
-  if (items.length === 0) {
-    return <p className="pc-empty">{strings.maleficia.empty}</p>;
-  }
-  return <DesignedCabinet items={items} onUse={activate} />;
+  return (
+    <DesignedCabinet
+      items={items}
+      onUse={activate}
+      onClose={onClose}
+      focus={focus}
+      reducedMotion={reducedMotion}
+    />
+  );
 }
 
 /** Format a duration in seconds as HH:MM:SS or MMm SS, etc. */
@@ -1053,20 +1067,3 @@ export function PhoneDialer({ onClose }: { onClose: () => void }): ReactElement 
   };
   return <SmartphoneDialer onClose={onClose} onDial={onDial} />;
 }
-
-interface PanelContent {
-  title: string;
-  body: ReactNode;
-}
-
-/**
- * The framed-panel map. Only the Loculi (the Maleficia niches) is a framed Panel; Ars Goetia, the PC
- * and the Suasio scroll are self-framed full-surface overlays (see `GoetiaBook`, `PcDesk`,
- * `SuasioScroll`) mounted directly by App rather than through this map.
- */
-export const PANELS: Partial<Record<PanelId, PanelContent>> = {
-  maleficia: {
-    title: 'Loculi',
-    body: <Loculi />,
-  },
-};

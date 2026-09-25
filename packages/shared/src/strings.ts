@@ -521,6 +521,15 @@ export const strings = {
     use: 'Use',
     buffRemaining: 'remaining',
     oracleCaption: 'The odds of each outcome, as the omens already weigh them, should you act now:',
+    // The Loculi reliquary (the selected relic on stage, the rest in procession) and the Unveiling
+    // pop-up that plays when Emptio brings a maleficium home. "Loculi" stays Latin (ADR-020).
+    title: 'Loculi',
+    close: 'Close',
+    previous: 'Previous relic',
+    next: 'Next relic',
+    effect: 'Effect',
+    singleUseEffect: 'Single-use · effect',
+    obtained: 'Maleficium obtained',
   },
   analytics: {
     title: 'Analytics',

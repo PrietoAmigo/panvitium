@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#141217;color:#e7d8b4;font-family:'EB Garamond',Georgia,serif;}
+*{box-sizing:border-box;}
+a{color:#caa85f;} a:hover{color:#e6c98a;}
+</style>
+</helmet>
+<section style="padding:80px 80px 0;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#6a637a">Turn 2 · Loculi</div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:500;font-size:40px;margin:0;color:#e6e0f0;letter-spacing:.03em">Reliquary with the obtain moment</h1>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:80px;align-items:flex-start">
+    <!-- 2a — Reliquary + obtain pop-up -->
+    <div id="2a" style="display:flex;flex-direction:column;gap:18px;width:1280px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;background:#7c1417;color:#e6e0f0;padding:5px 11px;border-radius:3px">2a</span>
+        <span style="font-family:'Cinzel',serif;font-size:20px;color:#e6e0f0">Reliquary, refined · finer hero relic + obtain pop-up</span>
+      </div>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#050403;font-size:18px">
+        <div style="position:absolute;inset:0">{{ room }}</div>
+        <div style="position:absolute;inset:0;background:rgba(4,3,3,.88)"></div>
+        <div style="position:absolute;left:290px;top:-40px;width:700px;height:680px">{{ e.glow }}</div>
+        <div style="position:absolute;left:470px;top:458px;width:340px;height:48px">{{ e.floor }}</div>
+        <div style="position:absolute;left:430px;top:100px;width:420px;height:360px">{{ e.sprite }}</div>
+        <div style="position:absolute;top:34px;left:0;right:0;text-align:center;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:#6a637a">Loculi</div>
+        <button style="position:absolute;top:15.2px;right:20.8px;background:none;border:none;cursor:pointer;z-index:3;font-size:17.6px;line-height:1;color:#b3acc4;opacity:.72">✕</button>
+        <div style="position:absolute;left:88px;top:258px;width:310px;display:flex;flex-direction:column;gap:12px">
+          <div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.45em;text-transform:uppercase;color:{{ e.ember }}">{{ e.rarityLabel }}</div>
+          <h2 style="font-family:'Cinzel',serif;font-weight:500;font-size:40px;line-height:1.08;letter-spacing:.02em;color:#efe9f7;margin:0;text-wrap:balance">{{ e.name }}</h2>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:18px;line-height:1.5;color:#a39bb4;margin:4px 0 0;text-wrap:pretty">{{ e.desc }}</p>
+        </div>
+        <div style="position:absolute;left:900px;top:258px;width:300px;display:flex;flex-direction:column;gap:6px">
+          <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:#6a637a">{{ e.effectLabel }}</div>
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:68px;line-height:1;color:{{ e.ember }};text-shadow:0 0 28px {{ e.wash }}">{{ e.big }}</div>
+          <div style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.04em;line-height:1.4;color:#cfc6de;text-wrap:pretty">{{ e.rest }}</div>
+          <sc-if value="{{ e.use }}" hint-placeholder-val="{{ false }}">
+            <button style="align-self:flex-start;margin-top:14px;font-family:'Cinzel',serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#e6e0f0;background:rgba(124,20,23,.18);border:1px solid #7c1417;border-radius:3px;padding:10px 20px;cursor:pointer">Use</button>
+          </sc-if>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:136px;text-align:center;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.35em;color:#6a637a">{{ e.counter }}</div>
+        <div style="position:absolute;left:130px;right:130px;bottom:40px;height:1px;background:rgba(255,255,255,.07)"></div>
+        <button onClick="{{ ePrev }}" style="position:absolute;left:70px;bottom:60px;background:none;border:none;cursor:pointer;font-family:'Cinzel',serif;font-size:26px;color:#6a637a" style-hover="color:#e6e0f0">‹</button>
+        <button onClick="{{ eNext }}" style="position:absolute;right:70px;bottom:60px;background:none;border:none;cursor:pointer;font-family:'Cinzel',serif;font-size:26px;color:#6a637a" style-hover="color:#e6e0f0">›</button>
+        <div style="position:absolute;left:130px;right:130px;bottom:41px;display:flex;justify-content:center;align-items:flex-end;gap:18px">
+          <sc-for list="{{ eItems }}" as="it" hint-placeholder-count="13">
+            <button onClick="{{ it.select }}" title="{{ it.name }}" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:{{ it.op }};transition:opacity .2s ease" style-hover="opacity:1">
+              <div style="width:58px;height:58px;transform:translateY({{ it.lift }});transition:transform .2s ease">{{ it.sprite }}</div>
+              <div style="width:24px;height:4px;background:{{ it.ember }};opacity:{{ it.mark }}"></div>
+            </button>
+          </sc-for>
+        </div>
+        <div style="position:absolute;top:0;left:0;z-index:85;padding:17.6px 19.2px 17.6px 0;display:flex;align-items:flex-start;gap:5.6px;pointer-events:none">
+          <div style="position:relative;width:210px;margin-left:-14.4px;filter:drop-shadow(0 6px 13px rgba(0,0,0,.6))"><div style="position:relative;width:100%;aspect-ratio:1/1">{{ vessel }}</div></div>
+          <div style="display:flex;flex-direction:column;gap:11.2px;margin-top:9.6px">
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-48px">
+              <span style="font-family:'Cinzel',serif;font-size:9.92px;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.9);color:#7fa0d8">Influence</span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:20.48px;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;color:#c4d4f2;text-shadow:0 0 12px rgba(70,120,230,.25), 0 2px 6px rgba(0,0,0,.9)">62M / 100M</span>
+            </div>
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-27.2px">
+              <span style="font-family:'Cinzel',serif;font-size:9.92px;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.9);color:#c9822f">Gold</span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:20.48px;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;color:#e7d8b4;text-shadow:0 0 12px rgba(201,162,39,.3), 0 2px 6px rgba(0,0,0,.9)">1.45M</span>
+            </div>
+          </div>
+        </div>
+      <sc-if value="{{ oOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ dismiss }}" style="position:absolute;inset:0;z-index:95;cursor:pointer;background:rgba(3,2,4,.94);opacity:{{ oOpacity }};transition:opacity .3s ease">
+            <div style="position:absolute;inset:0">{{ o.rays }}</div>
+            <div style="position:absolute;left:315px;top:-60px;width:650px;height:620px">{{ o.glow }}</div>
+            <div style="position:absolute;left:410px;top:56px;width:460px;height:340px">{{ o.sprite }}</div>
+            <div style="position:absolute;top:30px;left:0;right:0;text-align:center;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:#6a637a">Maleficium obtained</div>
+            <div style="position:absolute;left:0;right:0;top:420px;display:flex;flex-direction:column;align-items:center;text-align:center">
+              <div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.5em;text-transform:uppercase;color:{{ o.ember }}">◆ {{ o.rarityLabel }} ◆</div>
+              <h2 style="font-family:'Cinzel',serif;font-weight:500;font-size:52px;letter-spacing:.03em;line-height:1.05;color:#efe9f7;margin:12px 0 0">{{ o.name }}</h2>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:19px;line-height:1.5;color:#a39bb4;margin:12px 0 0;width:640px;text-wrap:pretty">{{ o.desc }}</p>
+              <div style="display:flex;align-items:baseline;gap:14px;margin-top:18px">
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:38px;color:{{ o.ember }};text-shadow:0 0 22px {{ o.wash }}">{{ o.big }}</span>
+                <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.04em;color:#cfc6de;white-space:nowrap">{{ o.rest }}</span>
+              </div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.05)"><div style="height:100%;width:{{ oProgress }};background:{{ o.ember }};transition:width 1.5s linear"></div></div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <button onClick="{{ obtain }}" style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#e6e0f0;background:rgba(124,20,23,.18);border:1px solid #7c1417;border-radius:3px;padding:9px 16px;cursor:pointer">Simulate obtaining a maleficium</button>
+        <p style="font-size:16px;color:#6a637a;margin:0;max-width:820px">Built on <a href="#1b">1b</a>. The stage relic now uses finer pixels than the procession (Tweaks: hero pixel size). On obtain, the unveiling pops over the room for 1.5 s, then fades; clicking anywhere dismisses it early. The new relic is then the one on stage.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<section style="padding:80px;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#6a637a">Turn 1 · Loculi</div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:500;font-size:40px;margin:0;color:#e6e0f0;letter-spacing:.03em">Giving the maleficia weight</h1>
+    <p style="font-size:19px;line-height:1.5;color:#a39bb4;margin:0;text-wrap:pretty">1a is the current Loculi, rebuilt from MaleficiaCabinet.tsx. 1b–1d drop the boxes: every relic is rendered as pixel art on the same principle as the Influence vessel (downsampled, then upscaled nearest-neighbour), with a one-pixel rarity outline, crushed colour and dithered pixel light. Use the Tweaks panel to change the pixel size.</p>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:80px;align-items:flex-start">
+
+    <!-- 1a — current -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:18px;width:1280px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;background:#3a3544;color:#e6e0f0;padding:5px 11px;border-radius:3px">1a</span>
+        <span style="font-family:'Cinzel',serif;font-size:20px;color:#e6e0f0">Current · niche grid and close-up</span>
+      </div>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#050403;font-size:18px">
+        <div style="position:absolute;inset:0">{{ room }}</div>
+        <div style="position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(4,3,3,.72)">
+          <div style="position:relative;width:880px;max-height:590px;overflow:hidden;padding:0;color:#e7d8b4;background:#060507;border:1px solid #120b06;box-shadow:0 0 0 6px rgba(10,8,7,.62), 0 24px 60px rgba(0,0,0,.78)">
+            <button style="position:absolute;top:15.2px;right:20.8px;background:none;border:none;cursor:pointer;z-index:3;font-size:17.6px;line-height:1;color:#b3acc4;opacity:.72;text-shadow:0 1px 3px rgba(0,0,0,.85)">✕</button>
+            <div style="position:relative;display:flex;flex-direction:column;min-height:360px;max-height:576px;border-radius:6px;overflow:hidden;background:radial-gradient(140% 90% at 50% 0%, #131119 0%, #09080c 60%, #040305 100%);padding:22px 24px 28px;font-family:'EB Garamond',Georgia,serif">
+              <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start;scrollbar-width:none">
+                <sc-for list="{{ aItems }}" as="it" hint-placeholder-count="13">
+                  <button onClick="{{ it.open }}" title="{{ it.name }}" style="position:relative;border:1px solid rgba(0,0,0,.7);border-radius:5px;padding:0;cursor:pointer;height:138px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;background:linear-gradient(180deg,#0c0b10 0%,#070609 100%);box-shadow:{{ it.shadow }};transition:box-shadow .15s ease, border-color .15s ease" style-hover="box-shadow:{{ it.hoverShadow }};border-color:{{ it.ring }}">
+                    <div style="position:relative;flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding-top:8px">
+                      <img src="{{ it.img }}" alt="{{ it.name }}" style="max-width:74px;max-height:84px;object-fit:contain;filter:{{ it.imgFilter }};opacity:.9">
+                      <sc-if value="{{ it.use }}" hint-placeholder-val="{{ false }}">
+                        <span title="Single-use" style="position:absolute;top:5px;left:6px;width:7px;height:7px;border-radius:50%;background:#c2403f;box-shadow:0 0 6px #c2403f"></span>
+                      </sc-if>
+                    </div>
+                    <div style="position:relative;width:100%;padding:5px 4px 7px;border-top:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.35);display:flex;flex-direction:column;align-items:center;gap:2px">
+                      <span style="font-family:'IM Fell English',serif;font-size:10.5px;color:#b3acc4;text-align:center;line-height:1.1">{{ it.name }}</span>
+                      <span style="display:flex;align-items:center;gap:4px">
+                        <span style="width:6px;height:6px;border-radius:50%;background:{{ it.ember }}"></span>
+                        <span style="font-family:'Cinzel',serif;font-size:7.5px;letter-spacing:.14em;text-transform:uppercase;color:#6a637a">{{ it.rarityLabel }}</span>
+                      </span>
+                    </div>
+                  </button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ aOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;inset:0;background:radial-gradient(circle at 36% 45%, rgba(10,8,14,.86), rgba(3,2,4,.97));display:flex;overflow-y:auto;padding:30px 46px">
+                  <div style="width:100%;max-width:720px;margin:auto;display:flex;gap:76px;align-items:center">
+                    <div style="flex:0 0 196px;position:relative;height:280px;display:flex;align-items:center;justify-content:center">
+                      <span style="position:absolute;width:228px;height:228px;border-radius:50%;background:{{ aSel.washGrad }}"></span>
+                      <span style="position:absolute;width:248px;height:248px;border-radius:50%;border:1px solid {{ aSel.ring }}"></span>
+                      <img src="{{ aSel.img }}" alt="{{ aSel.name }}" style="position:relative;max-width:168px;max-height:248px;object-fit:contain;filter:{{ aSel.bigFilter }}">
+                    </div>
+                    <div style="flex:1;min-width:0">
+                      <button onClick="{{ aClose }}" style="background:none;border:none;cursor:pointer;font-family:'Cinzel',serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#6a637a;padding:0;margin-bottom:14px">‹ back to the niches</button>
+                      <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:{{ aSel.ember }}">{{ aSel.rarityLabel }}</div>
+                      <h3 style="font-family:'Cinzel',serif;font-weight:500;font-size:25px;letter-spacing:.04em;color:#e6e0f0;margin:8px 0 2px;line-height:1.1">{{ aSel.name }}</h3>
+                      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:15.5px;color:#a39bb4;line-height:1.55;margin:13px 0 0">{{ aSel.desc }}</p>
+                      <p style="font-family:'Cinzel',serif;font-size:13.5px;letter-spacing:.03em;color:{{ aSel.ember }};margin:14px 0 0;padding-top:11px;border-top:1px solid rgba(255,255,255,.08)">{{ aSel.effect }}</p>
+                      <sc-if value="{{ aSel.use }}" hint-placeholder-val="{{ false }}">
+                        <div style="margin-top:16px">
+                          <button style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#e6e0f0;background:rgba(124,20,23,.18);border:1px solid #7c1417;border-radius:3px;padding:10px 20px;cursor:pointer">Use</button>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;top:0;left:0;z-index:85;padding:17.6px 19.2px 17.6px 0;display:flex;align-items:flex-start;gap:5.6px;pointer-events:none">
+          <div style="position:relative;width:210px;margin-left:-14.4px;filter:drop-shadow(0 6px 13px rgba(0,0,0,.6))"><div style="position:relative;width:100%;aspect-ratio:1/1">{{ vessel }}</div></div>
+          <div style="display:flex;flex-direction:column;gap:11.2px;margin-top:9.6px">
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-48px">
+              <span style="font-family:'Cinzel',serif;font-size:9.92px;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.9);color:#7fa0d8">Influence</span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:20.48px;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;color:#c4d4f2;text-shadow:0 0 12px rgba(70,120,230,.25), 0 2px 6px rgba(0,0,0,.9)">62M / 100M</span>
+            </div>
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-27.2px">
+              <span style="font-family:'Cinzel',serif;font-size:9.92px;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.9);color:#c9822f">Gold</span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:20.48px;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;color:#e7d8b4;text-shadow:0 0 12px rgba(201,162,39,.3), 0 2px 6px rgba(0,0,0,.9)">1.45M</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:16px;color:#6a637a;margin:0">Click a niche to open the close-up. The room plate is approximated (pixelated only; the game's full degradation pass also grades and adds grain). The Desidia vessel is omitted.</p>
+    </div>
+
+    <!-- 1b — Reliquary -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:18px;width:1280px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;background:#7c1417;color:#e6e0f0;padding:5px 11px;border-radius:3px">1b</span>
+        <span style="font-family:'Cinzel',serif;font-size:20px;color:#e6e0f0">Reliquary · one relic on stage, the rest in procession</span>
+      </div>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#050403;font-size:18px">
+        <div style="position:absolute;inset:0">{{ room }}</div>
+        <div style="position:absolute;inset:0;background:rgba(4,3,3,.88)"></div>
+        <div style="position:absolute;left:290px;top:-40px;width:700px;height:680px">{{ b.glow }}</div>
+        <div style="position:absolute;left:470px;top:458px;width:340px;height:48px">{{ b.floor }}</div>
+        <div style="position:absolute;left:430px;top:100px;width:420px;height:360px">{{ b.sprite }}</div>
+        <div style="position:absolute;top:34px;left:0;right:0;text-align:center;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:#6a637a">Loculi</div>
+        <button style="position:absolute;top:15.2px;right:20.8px;background:none;border:none;cursor:pointer;z-index:3;font-size:17.6px;line-height:1;color:#b3acc4;opacity:.72">✕</button>
+        <div style="position:absolute;left:88px;top:258px;width:310px;display:flex;flex-direction:column;gap:12px">
+          <div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.45em;text-transform:uppercase;color:{{ b.ember }}">{{ b.rarityLabel }}</div>
+          <h2 style="font-family:'Cinzel',serif;font-weight:500;font-size:40px;line-height:1.08;letter-spacing:.02em;color:#efe9f7;margin:0;text-wrap:balance">{{ b.name }}</h2>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:18px;line-height:1.5;color:#a39bb4;margin:4px 0 0;text-wrap:pretty">{{ b.desc }}</p>
+        </div>
+        <div style="position:absolute;left:900px;top:258px;width:300px;display:flex;flex-direction:column;gap:6px">
+          <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:#6a637a">{{ b.effectLabel }}</div>
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:68px;line-height:1;color:{{ b.ember }};text-shadow:0 0 28px {{ b.wash }}">{{ b.big }}</div>
+          <div style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.04em;line-height:1.4;color:#cfc6de;text-wrap:pretty">{{ b.rest }}</div>
+          <sc-if value="{{ b.use }}" hint-placeholder-val="{{ false }}">
+            <button style="align-self:flex-start;margin-top:14px;font-family:'Cinzel',serif;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#e6e0f0;background:rgba(124,20,23,.18);border:1px solid #7c1417;border-radius:3px;padding:10px 20px;cursor:pointer">Use</button>
+          </sc-if>
+        </div>
+        <div style="position:absolute;left:0;right:0;bottom:136px;text-align:center;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.35em;color:#6a637a">{{ b.counter }}</div>
+        <div style="position:absolute;left:130px;right:130px;bottom:40px;height:1px;background:rgba(255,255,255,.07)"></div>
+        <button onClick="{{ bPrev }}" style="position:absolute;left:70px;bottom:60px;background:none;border:none;cursor:pointer;font-family:'Cinzel',serif;font-size:26px;color:#6a637a" style-hover="color:#e6e0f0">‹</button>
+        <button onClick="{{ bNext }}" style="position:absolute;right:70px;bottom:60px;background:none;border:none;cursor:pointer;font-family:'Cinzel',serif;font-size:26px;color:#6a637a" style-hover="color:#e6e0f0">›</button>
+        <div style="position:absolute;left:130px;right:130px;bottom:41px;display:flex;justify-content:center;align-items:flex-end;gap:18px">
+          <sc-for list="{{ bItems }}" as="it" hint-placeholder-count="13">
+            <button onClick="{{ it.select }}" title="{{ it.name }}" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:{{ it.op }};transition:opacity .2s ease" style-hover="opacity:1">
+              <div style="width:58px;height:58px;transform:translateY({{ it.lift }});transition:transform .2s ease">{{ it.sprite }}</div>
+              <div style="width:24px;height:4px;background:{{ it.ember }};opacity:{{ it.mark }}"></div>
+            </button>
+          </sc-for>
+        </div>
+        <div style="position:absolute;top:0;left:0;z-index:85;padding:17.6px 19.2px 17.6px 0;display:flex;align-items:flex-start;gap:5.6px;pointer-events:none">
+          <div style="position:relative;width:210px;margin-left:-14.4px;filter:drop-shadow(0 6px 13px rgba(0,0,0,.6))"><div style="position:relative;width:100%;aspect-ratio:1/1">{{ vessel }}</div></div>
+          <div style="display:flex;flex-direction:column;gap:11.2px;margin-top:9.6px">
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-48px">
+              <span style="font-family:'Cinzel',serif;font-size:9.92px;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.9);color:#7fa0d8">Influence</span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:20.48px;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;color:#c4d4f2;text-shadow:0 0 12px rgba(70,120,230,.25), 0 2px 6px rgba(0,0,0,.9)">62M / 100M</span>
+            </div>
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-27.2px">
+              <span style="font-family:'Cinzel',serif;font-size:9.92px;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.9);color:#c9822f">Gold</span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:20.48px;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;color:#e7d8b4;text-shadow:0 0 12px rgba(201,162,39,.3), 0 2px 6px rgba(0,0,0,.9)">1.45M</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:16px;color:#6a637a;margin:0;max-width:1000px">No panel. The room is darkened and the selected relic floats alone in its own rarity light; the effect is set as a headline number. Everything else waits in a procession along the floor (click, or the arrows). Browse and detail become one screen.</p>
+    </div>
+
+    <!-- 1c — Unveiling -->
+    <div id="1c" style="display:flex;flex-direction:column;gap:18px;width:1280px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;background:#7c1417;color:#e6e0f0;padding:5px 11px;border-radius:3px">1c</span>
+        <span style="font-family:'Cinzel',serif;font-size:20px;color:#e6e0f0">Unveiling · the moment a maleficium is obtained</span>
+      </div>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#030204;font-size:18px">
+        <div style="position:absolute;inset:0">{{ c.rays }}</div>
+        <div style="position:absolute;left:315px;top:-60px;width:650px;height:620px">{{ c.glow }}</div>
+        <div style="position:absolute;left:410px;top:56px;width:460px;height:340px">{{ c.sprite }}</div>
+        <div style="position:absolute;left:0;right:0;top:420px;display:flex;flex-direction:column;align-items:center;text-align:center">
+          <div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.5em;text-transform:uppercase;color:{{ c.ember }}">◆ {{ c.rarityLabel }} ◆</div>
+          <h2 style="font-family:'Cinzel',serif;font-weight:500;font-size:52px;letter-spacing:.03em;line-height:1.05;color:#efe9f7;margin:12px 0 0">{{ c.name }}</h2>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:19px;line-height:1.5;color:#a39bb4;margin:12px 0 0;width:640px;text-wrap:pretty">{{ c.desc }}</p>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-top:18px">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:38px;color:{{ c.ember }};text-shadow:0 0 22px {{ c.wash }}">{{ c.big }}</span>
+            <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.04em;color:#cfc6de;white-space:nowrap">{{ c.rest }}</span>
+          </div>
+        </div>
+        <div style="position:absolute;top:30px;left:0;right:0;text-align:center;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:#6a637a">Maleficium obtained</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+        <button onClick="{{ cReplay }}" style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#e6e0f0;background:rgba(124,20,23,.18);border:1px solid #7c1417;border-radius:3px;padding:9px 16px;cursor:pointer">↻ Replay</button>
+        <sc-for list="{{ cChips }}" as="ch" hint-placeholder-count="13">
+          <button onClick="{{ ch.pick }}" style="font-family:'IM Fell English',serif;font-size:14px;color:{{ ch.color }};background:none;border:1px solid {{ ch.border }};border-radius:3px;padding:6px 10px;cursor:pointer">{{ ch.name }}</button>
+        </sc-for>
+      </div>
+      <p style="font-size:16px;color:#6a637a;margin:0;max-width:1000px">Plays when Emptio completes (and when a relic is opened from 1d). The relic resolves out of coarse pixels into full resolution, flashes, then settles under pixel light shafts tinted by rarity. The bigger the rarity, the longer the build-up could run.</p>
+    </div>
+
+    <!-- 1d — Tiered hoard -->
+    <div id="1d" style="display:flex;flex-direction:column;gap:18px;width:1280px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;background:#7c1417;color:#e6e0f0;padding:5px 11px;border-radius:3px">1d</span>
+        <span style="font-family:'Cinzel',serif;font-size:20px;color:#e6e0f0">Tiered hoard · the whole collection at once, sized by rarity</span>
+      </div>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#050403;font-size:18px">
+        <div style="position:absolute;inset:0">{{ room }}</div>
+        <div style="position:absolute;inset:0;background:rgba(4,3,3,.84)"></div>
+        <div style="position:absolute;left:240px;top:260px;width:800px;height:520px">{{ d.glow }}</div>
+        <div style="position:absolute;top:34px;left:0;right:0;text-align:center;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.5em;text-transform:uppercase;color:#6a637a">Loculi</div>
+        <button style="position:absolute;top:15.2px;right:20.8px;background:none;border:none;cursor:pointer;z-index:3;font-size:17.6px;line-height:1;color:#b3acc4;opacity:.72">✕</button>
+        <div style="position:absolute;left:0;right:0;bottom:34px;display:flex;flex-direction:column;align-items:center;gap:22px">
+          <sc-for list="{{ dTiers }}" as="tier" hint-placeholder-count="4">
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:{{ tier.gap }}">
+              <sc-for list="{{ tier.items }}" as="it" hint-placeholder-count="3">
+                <button onClick="{{ it.open }}" title="{{ it.name }}" style="background:none;border:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:transform .15s ease" style-hover="transform:translateY(-4px)">
+                  <div style="width:{{ tier.px }};height:{{ tier.px }}">{{ it.sprite }}</div>
+                  <span style="font-family:'IM Fell English',serif;font-size:{{ tier.font }};color:#b3acc4;white-space:nowrap">{{ it.name }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="position:absolute;top:0;left:0;z-index:85;padding:17.6px 19.2px 17.6px 0;display:flex;align-items:flex-start;gap:5.6px;pointer-events:none">
+          <div style="position:relative;width:210px;margin-left:-14.4px;filter:drop-shadow(0 6px 13px rgba(0,0,0,.6))"><div style="position:relative;width:100%;aspect-ratio:1/1">{{ vessel }}</div></div>
+          <div style="display:flex;flex-direction:column;gap:11.2px;margin-top:9.6px">
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-48px">
+              <span style="font-family:'Cinzel',serif;font-size:9.92px;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.9);color:#7fa0d8">Influence</span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:20.48px;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;color:#c4d4f2;text-shadow:0 0 12px rgba(70,120,230,.25), 0 2px 6px rgba(0,0,0,.9)">62M / 100M</span>
+            </div>
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-27.2px">
+              <span style="font-family:'Cinzel',serif;font-size:9.92px;letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.9);color:#c9822f">Gold</span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:20.48px;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums;color:#e7d8b4;text-shadow:0 0 12px rgba(201,162,39,.3), 0 2px 6px rgba(0,0,0,.9)">1.45M</span>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ dOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;z-index:90;background:#030204">
+            <div style="position:absolute;inset:0">{{ d.rays }}</div>
+            <div style="position:absolute;left:315px;top:-60px;width:650px;height:620px">{{ d.selGlow }}</div>
+            <div style="position:absolute;left:410px;top:56px;width:460px;height:340px">{{ d.sprite }}</div>
+            <button onClick="{{ dClose }}" style="position:absolute;top:30px;left:40px;background:none;border:none;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#6a637a" style-hover="color:#e6e0f0">‹ back to the Loculi</button>
+            <div style="position:absolute;left:0;right:0;top:420px;display:flex;flex-direction:column;align-items:center;text-align:center">
+              <div style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.5em;text-transform:uppercase;color:{{ d.ember }}">◆ {{ d.rarityLabel }} ◆</div>
+              <h2 style="font-family:'Cinzel',serif;font-weight:500;font-size:52px;letter-spacing:.03em;line-height:1.05;color:#efe9f7;margin:12px 0 0">{{ d.name }}</h2>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:19px;line-height:1.5;color:#a39bb4;margin:12px 0 0;width:640px;text-wrap:pretty">{{ d.desc }}</p>
+              <div style="display:flex;align-items:baseline;gap:14px;margin-top:18px">
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:38px;color:{{ d.ember }};text-shadow:0 0 22px {{ d.wash }}">{{ d.big }}</span>
+                <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.04em;color:#cfc6de;white-space:nowrap">{{ d.rest }}</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      <p style="font-size:16px;color:#6a637a;margin:0;max-width:1000px">The collection reads as a hoard: anathema relics stand largest in front, commons smallest at the back, so rarity is felt by scale before any label. Click any relic to open it with the 1c unveiling.</p>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;heroPixelSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:8,&quot;step&quot;:1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Pixel art&quot;},&quot;pixelSize&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:4,&quot;min&quot;:2,&quot;max&quot;:8,&quot;step&quot;:1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Pixel art&quot;},&quot;rarityOutline&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Pixel art&quot;},&quot;crushColours&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Pixel art&quot;}}">
+const ASSET = './apps/web/public/assets/panvitium';
+const RARITY = {
+  common: { ember: '#caa85f', wash: 'rgba(202,168,95,.22)', ring: 'rgba(202,168,95,.30)' },
+  rare: { ember: '#54b39b', wash: 'rgba(84,179,155,.22)', ring: 'rgba(84,179,155,.32)' },
+  profane: { ember: '#9a6fe0', wash: 'rgba(154,111,224,.26)', ring: 'rgba(154,111,224,.34)' },
+  anathema: { ember: '#c2403f', wash: 'rgba(194,64,63,.26)', ring: 'rgba(194,64,63,.34)' },
+};
+const RANK = { anathema: 4, profane: 3, rare: 2, common: 1 };
+const RLABEL = { common: 'Common', rare: 'Rare', profane: 'Profane', anathema: 'Anathema' };
+const m = (id, name, rarity, file, desc, effect, extra) => Object.assign({ id, name, rarity, img: `${ASSET}/maleficia/${file}.png`, desc, effect }, extra || {});
+const OWNED = [
+  m('codex_gigas', 'Codex Gigas', 'profane', 'codex_gigas', 'One scribe. One night. One signature in the margin no Pope has ever erased.', '+25% influence gain rate.'),
+  m('witch_bottle', 'Witch Bottle', 'common', 'witch_bottle', 'Urine, pins, and rosemary, corked against the dark \u2014 and aimed back at it.', '+0.8 reprobates per second.'),
+  m('spear_of_longinus', 'Spear of Longinus', 'anathema', 'longinus', 'Just the tip.', '+200% influence gain rate.'),
+  m('ars_serpens', 'Ars Serpens', 'rare', 'ars_serpens', "The serpent's counsel, transcribed \u2014 every word a smoother lie.", '+33% Suasio efficiency.'),
+  m('obsidian_mirror', 'Obsidian Mirror', 'profane', 'obsidian_mirror', 'It shows what the future is already weighing.', '-33% Indagatio time.'),
+  m('thirty_pieces_of_silver', 'Thirty Pieces of Silver', 'anathema', '30_pieces', 'Counted out, refused, returned, refused again \u2014 coinage that always finds its way back into a hand.', '+200% suicide rate.'),
+  m('black_candles', 'Black Candles \u00D73', 'rare', 'black_candle', 'Each flame a small renunciation of the light.', '+3% invocation effect per candle, up to +15%.'),
+  m('mandrake_root', 'Mandrake Root', 'common', 'mandrake_root', 'It screamed when it was pulled. You kept it anyway.', '+0.05 suicides per second.'),
+  m('defixio', 'Defixio', 'profane', 'defixio', 'A name, a nail, a curse folded into lead and buried.', 'Single-use: +50% suicide rate for an hour.', { use: true }),
+  m('mark_of_cain', 'Mark of Cain', 'anathema', 'mark_of_cain', 'The sevenfold vengeance was never a curse. It was a guarantee.', '+100% murder rate.'),
+  m('blood_chalk', 'Blood Chalk', 'rare', 'blood_chalk', 'Drawn in a circle no priest will step inside.', '+2 influence per second.'),
+  m('crow_feather', 'Crow Feather', 'common', 'crow_feather', 'The bird that counts the dead leaves you one.', '-10% Indagatio time.'),
+  m('black_salt_pouch', 'Black Salt Pouch', 'common', 'black_salt_pouch', 'Drawn from ash, charcoal, and graveyard earth.', 'Single-use: +10% reprobate generation for an hour.', { use: true }),
+];
+const ORDERED = [...OWNED].sort((a, b) => RANK[b.rarity] - RANK[a.rarity]);
+
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function roman(n) { const t = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]; let s = ''; for (const [v, r] of t) while (n >= v) { s += r; n -= v; } return s; }
+function parseEffect(e) {
+  let s = e.replace(/\.$/, ''); let single = false;
+  if (/^Single-use:\s*/.test(s)) { single = true; s = s.replace(/^Single-use:\s*/, ''); }
+  const mm = s.match(/^([+\-]?[\d.,]+%?)\s+(.*)$/);
+  const out = mm ? { big: mm[1].replace('-', '\u2212'), rest: mm[2] } : { big: '', rest: s };
+  out.single = single; out.effectLabel = single ? 'Single-use \u00B7 effect' : 'Effect';
+  return out;
+}
+
+const _img = {};
+function loadImg(src) {
+  if (!_img[src]) _img[src] = new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  return _img[src];
+}
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+
+function pixelCanvas(img, grid, o) {
+  const iw = img.naturalWidth || 1, ih = img.naturalHeight || 1;
+  if (!(grid >= 1)) grid = 8;
+  const s = grid / Math.max(iw, ih);
+  const w = Math.max(1, Math.round(iw * s)), h = Math.max(1, Math.round(ih * s));
+  const pad = o.outline ? 1 : 0;
+  let src = img, sw = iw, sh = ih;
+  while (sw / 2 > w * 1.5) {
+    const t = document.createElement('canvas'); t.width = Math.max(1, Math.round(sw / 2)); t.height = Math.max(1, Math.round(sh / 2));
+    const tx = t.getContext('2d'); tx.imageSmoothingQuality = 'high'; tx.drawImage(src, 0, 0, t.width, t.height);
+    src = t; sw = t.width; sh = t.height;
+  }
+  const c = document.createElement('canvas'); c.width = w + pad * 2; c.height = h + pad * 2;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  x.drawImage(src, pad, pad, w, h);
+  const W = c.width, H = c.height, id = x.getImageData(0, 0, W, H), d = id.data;
+  const step = o.crush ? 26 : 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 110) { d[i + 3] = 0; continue; }
+    d[i + 3] = 255;
+    if (step) for (let k = 0; k < 3; k++) d[i + k] = Math.min(255, Math.round(d[i + k] / step) * step);
+  }
+  if (o.outline) {
+    const op = new Uint8Array(W * H);
+    for (let p = 0; p < W * H; p++) op[p] = d[p * 4 + 3] ? 1 : 0;
+    const [r, g, b] = o.rgb;
+    for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) {
+      const p = yy * W + xx; if (op[p]) continue;
+      if ((xx > 0 && op[p - 1]) || (xx < W - 1 && op[p + 1]) || (yy > 0 && op[p - W]) || (yy < H - 1 && op[p + W])) {
+        d[p * 4] = r; d[p * 4 + 1] = g; d[p * 4 + 2] = b; d[p * 4 + 3] = 210;
+      }
+    }
+  }
+  x.putImageData(id, 0, 0);
+  return c;
+}
+
+function PixelSprite(p) {
+  const ref = React.useRef(null);
+  const rgbKey = p.rgb.join(',');
+  React.useEffect(() => {
+    let dead = false, raf = 0;
+    loadImg(p.src).then((img) => {
+      const cv = ref.current; if (dead || !img || !cv) return;
+      const ctx = cv.getContext('2d');
+      const full = Math.max(8, Math.round(p.size / p.ps));
+      const cache = {};
+      const get = (g) => cache[g] || (cache[g] = pixelCanvas(img, g, { outline: p.outline, rgb: p.rgb, crush: p.crush }));
+      const steps = [3, 5, 8, 12, 18, 26, 38, 54, 76].filter((g) => g < full).concat([full]);
+      const STEP = p.step || 0.12, FLASH = p.flash || 0.7, t0 = performance.now();
+      const frame = (now) => {
+        if (dead) return;
+        const el = Math.max(0, (now - t0) / 1000);
+        let g = full, flash = 0, more = !!p.bob;
+        if (p.reveal) {
+          const i = Math.floor(el / STEP);
+          if (i < steps.length - 1) { g = steps[i]; more = true; }
+          else { flash = Math.max(0, 1 - (el - (steps.length - 1) * STEP) / FLASH); if (flash > 0) more = true; }
+        }
+        const pc = get(g);
+        if (cv.width !== pc.width || cv.height !== pc.height) { cv.width = pc.width; cv.height = pc.height; }
+        ctx.clearRect(0, 0, cv.width, cv.height); ctx.drawImage(pc, 0, 0);
+        if (flash > 0) { ctx.save(); ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(255,240,225,${flash * 0.95})`; ctx.fillRect(0, 0, cv.width, cv.height); ctx.restore(); }
+        if (p.bob) cv.style.transform = `translateY(${Math.round(Math.sin(el * 1.4) * 2.5) * p.ps}px)`;
+        if (more) raf = requestAnimationFrame(frame);
+      };
+      raf = requestAnimationFrame(frame);
+    });
+    return () => { dead = true; cancelAnimationFrame(raf); };
+  }, [p.src, p.size, p.ps, p.outline, p.crush, rgbKey, p.reveal, p.revealKey, p.bob]);
+  return React.createElement('canvas', { ref, width: 1, height: 1, style: { display: 'block', width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated', filter: `drop-shadow(0 ${p.ps * 2}px 0 rgba(0,0,0,.55))` } });
+}
+
+function PixelGlow(p) {
+  const ref = React.useRef(null);
+  const rgbKey = p.rgb.join(',');
+  React.useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const blk = p.ps * 2;
+    const W = Math.max(4, Math.round(p.w / blk)), H = Math.max(2, Math.round(p.h / blk));
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d'), im = ctx.createImageData(W, H), d = im.data;
+    const [r, g, b] = p.rgb, L = 5;
+    let raf = 0, dead = false; const t0 = performance.now();
+    const draw = (now) => {
+      if (dead) return;
+      const t = (now - t0) / 1000, amp = p.pulse ? 1 + 0.12 * Math.sin(t * 1.7) : 1;
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const dx = ((x + 0.5) / W) * 2 - 1, dy = ((y + 0.5) / H) * 2 - 1;
+        let a = Math.max(0, 1 - Math.sqrt(dx * dx + dy * dy));
+        a = Math.pow(a, p.power || 1.6) * amp;
+        const lv = Math.min(L, Math.floor(a * L + BAYER[(y & 3) * 4 + (x & 3)] / 16)) / L;
+        const i = (y * W + x) * 4; d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = lv * p.maxA * 255;
+      }
+      ctx.putImageData(im, 0, 0);
+      if (p.pulse) raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => { dead = true; cancelAnimationFrame(raf); };
+  }, [p.w, p.h, p.ps, rgbKey, p.maxA, p.pulse, p.power]);
+  return React.createElement('canvas', { ref, style: { display: 'block', width: '100%', height: '100%', imageRendering: 'pixelated' } });
+}
+
+function PixelRays(p) {
+  const ref = React.useRef(null);
+  const rgbKey = p.rgb.join(',');
+  React.useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const blk = p.ps * 2, W = Math.round(1280 / blk), H = Math.round(720 / blk);
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d'), im = ctx.createImageData(W, H), d = im.data;
+    const [r, g, b] = p.rgb, L = 6;
+    const motes = Array.from({ length: 46 }, () => ({ x: Math.random() * W, y: Math.random() * H, v: 0.08 + Math.random() * 0.25, a: 0.3 + Math.random() * 0.6 }));
+    let raf = 0, dead = false; const t0 = performance.now();
+    const draw = (now) => {
+      if (dead) return;
+      const t = (now - t0) / 1000, ox = W / 2, oy = -H * 0.28;
+      const swell = Math.min(1, t / 1.2);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const dx = x - ox, dy = y - oy, ang = Math.atan2(dx, dy), rr = Math.sqrt(dx * dx + dy * dy) / H;
+        const ray = Math.pow(Math.max(0, Math.sin(ang * 11 + t * 0.22)), 6) * 0.6 + Math.pow(Math.max(0, Math.sin(ang * 6 - t * 0.15 + 1.3)), 10) * 0.5;
+        const cone = Math.max(0, 1 - Math.abs(ang) / 0.75), fall = Math.max(0, 1 - rr / 1.35);
+        const core = Math.pow(Math.max(0, 1 - Math.sqrt((x - ox) ** 2 + ((y - H * 0.34) * 1.5) ** 2) / (H * 0.55)), 2) * 0.35;
+        const a = (ray * cone * fall * 0.55 + core) * swell;
+        const lv = Math.min(L, Math.floor(a * L + BAYER[(y & 3) * 4 + (x & 3)] / 16)) / L;
+        const i = (y * W + x) * 4; d[i] = r; d[i + 1] = g; d[i + 2] = b; d[i + 3] = lv * 0.55 * 255;
+      }
+      for (const mo of motes) {
+        mo.y -= mo.v; mo.x += Math.sin(t + mo.y * 0.1) * 0.05;
+        if (mo.y < 0) { mo.y = H; mo.x = Math.random() * W; }
+        const i = ((mo.y | 0) * W + (mo.x | 0)) * 4;
+        if (i >= 0 && i < d.length) { d[i] = Math.min(255, r + 60); d[i + 1] = Math.min(255, g + 60); d[i + 2] = Math.min(255, b + 60); d[i + 3] = mo.a * 255 * swell; }
+      }
+      ctx.putImageData(im, 0, 0);
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+    return () => { dead = true; cancelAnimationFrame(raf); };
+  }, [p.ps, rgbKey, p.revealKey]);
+  return React.createElement('canvas', { ref, style: { display: 'block', width: '100%', height: '100%', imageRendering: 'pixelated' } });
+}
+
+function RoomPlate() {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    loadImg(`${ASSET}/backgrounds/invocation_complete.png`).then((img) => {
+      const cv = ref.current; if (!cv || !img) return;
+      cv.width = 320; cv.height = 180;
+      const x = cv.getContext('2d'); x.imageSmoothingQuality = 'high';
+      x.drawImage(img, 0, 0, 320, 180);
+    });
+  }, []);
+  return React.createElement('canvas', { ref, style: { display: 'block', width: '100%', height: '100%', imageRendering: 'pixelated' } });
+}
+
+function Vessel() {
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    loadImg(`${ASSET}/hud/influence-vessel-frame.png`).then((img) => {
+      const cv = ref.current; if (!cv) return;
+      const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, f = 0.62;
+      const ecx = 0.483 * W, ecy = 0.515 * H, erx = 0.252 * W, ery = 0.272 * H;
+      ctx.save(); ctx.beginPath(); ctx.ellipse(ecx, ecy, erx, ery, 0, 0, Math.PI * 2); ctx.clip();
+      const top = ecy + ery - f * (2 * ery);
+      const grad = ctx.createLinearGradient(0, top, 0, ecy + ery);
+      grad.addColorStop(0, '#e985dd'); grad.addColorStop(0.16, '#c451c4'); grad.addColorStop(0.42, '#9c30b0'); grad.addColorStop(0.7, '#6c2098'); grad.addColorStop(1, '#3c1170');
+      ctx.fillStyle = grad; ctx.fillRect(0, top, W, ecy + ery - top);
+      ctx.fillStyle = 'rgba(255,205,248,0.85)'; ctx.fillRect(0, top, W, Math.max(1, H * 0.02));
+      const sh = ctx.createRadialGradient(ecx, ecy, erx * 0.55, ecx, ecy, erx);
+      sh.addColorStop(0, 'rgba(20,6,42,0)'); sh.addColorStop(1, 'rgba(20,6,42,0.5)');
+      ctx.fillStyle = sh; ctx.fillRect(ecx - erx, top, erx * 2, ecy + ery - top);
+      ctx.restore();
+      if (img) ctx.drawImage(img, 0, 0, W, H);
+    });
+  }, []);
+  return React.createElement('canvas', { ref, width: 96, height: 96, style: { position: 'absolute', inset: 0, width: '100%', height: '100%', imageRendering: 'pixelated', pointerEvents: 'none' } });
+}
+
+class Component extends DCLogic {
+  state = { a: null, b: 0, c: 0, cKey: 0, d: null, dKey: 0, e: 0, oId: null, oKey: 0, oFade: false, oRun: false, oNext: 0 };
+  componentWillUnmount() { clearTimeout(this._t1); clearTimeout(this._t2); }
+  obtain() {
+    clearTimeout(this._t1); clearTimeout(this._t2);
+    const i = this.state.oNext % ORDERED.length;
+    this.setState((st) => ({ oId: ORDERED[i].id, oKey: st.oKey + 1, oFade: false, oRun: false, oNext: i + 1, e: i }));
+    requestAnimationFrame(() => requestAnimationFrame(() => this.setState({ oRun: true })));
+    this._t1 = setTimeout(() => this.dismiss(), 1500);
+  }
+  dismiss() {
+    if (!this.state.oId || this.state.oFade) return;
+    clearTimeout(this._t1);
+    this.setState({ oFade: true });
+    this._t2 = setTimeout(() => this.setState({ oId: null, oFade: false }), 300);
+  }
+  room = React.createElement(RoomPlate);
+  vessel = React.createElement(Vessel);
+
+  hero(it, opts) {
+    const R = RARITY[it.rarity], rgb = hexRgb(R.ember), fx = parseEffect(it.effect);
+    return Object.assign({}, it, fx, { ember: R.ember, wash: R.wash, ring: R.ring, rgb, rarityLabel: RLABEL[it.rarity] }, opts);
+  }
+
+  renderVals() {
+    const ps = this.props.pixelSize ?? 4;
+    const outline = this.props.rarityOutline ?? true;
+    const crush = this.props.crushColours ?? true;
+    const s = this.state;
+    const sprite = (it, size, extra) => React.createElement(PixelSprite, Object.assign({ src: it.img, size, ps, outline, crush, rgb: hexRgb(RARITY[it.rarity].ember) }, extra || {}));
+    const glow = (it, w, h, maxA, pulse, power) => React.createElement(PixelGlow, { w, h, ps, rgb: hexRgb(RARITY[it.rarity].ember), maxA, pulse, power });
+
+    // 1a
+    const aItems = ORDERED.map((it) => {
+      const R = RARITY[it.rarity];
+      return {
+        ...it, ember: R.ember, ring: R.ring, rarityLabel: RLABEL[it.rarity],
+        shadow: `inset 0 9px 20px rgba(0,0,0,.95), inset 0 -22px 26px ${R.wash}, inset 0 1px 0 rgba(255,255,255,.04)`,
+        hoverShadow: `inset 0 9px 20px rgba(0,0,0,.9), inset 0 -30px 34px ${R.wash}, 0 0 18px ${R.wash}`,
+        imgFilter: `drop-shadow(0 4px 8px rgba(0,0,0,.8)) drop-shadow(0 0 6px ${R.ember})`,
+        open: () => this.setState({ a: it.id }),
+      };
+    });
+    const aIt = ORDERED.find((x) => x.id === s.a);
+    const aSel = aIt ? (() => { const R = RARITY[aIt.rarity]; return { ...aIt, ember: R.ember, ring: R.ring, rarityLabel: RLABEL[aIt.rarity], washGrad: `radial-gradient(circle, ${R.wash}, transparent 66%)`, bigFilter: `drop-shadow(0 0 18px ${R.ember}) drop-shadow(0 10px 20px rgba(0,0,0,.8))` }; })() : {};
+
+    // 1b
+    const bIt = ORDERED[s.b];
+    const b = this.hero(bIt, {
+      sprite: sprite(bIt, 380, { bob: true }),
+      glow: glow(bIt, 700, 680, 0.5, true, 1.7),
+      floor: glow(bIt, 340, 48, 0.7, false, 1.2),
+      counter: `${roman(s.b + 1)}  \u00B7  ${roman(ORDERED.length)}`,
+    });
+    const n = ORDERED.length;
+    const bItems = ORDERED.map((it, i) => ({
+      name: it.name, ember: RARITY[it.rarity].ember,
+      sprite: sprite(it, 58),
+      select: () => this.setState({ b: i }),
+      op: i === s.b ? 1 : 0.42, lift: i === s.b ? '-10px' : '0px', mark: i === s.b ? 1 : 0,
+    }));
+
+    // 1c
+    const cIt = ORDERED[s.c];
+    const c = this.hero(cIt, {
+      sprite: sprite(cIt, 400, { reveal: true, revealKey: `c${s.cKey}-${cIt.id}` }),
+      glow: glow(cIt, 650, 620, 0.55, true, 1.8),
+      rays: React.createElement(PixelRays, { ps, rgb: hexRgb(RARITY[cIt.rarity].ember), revealKey: `c${s.cKey}-${cIt.id}` }),
+    });
+    const cChips = ORDERED.map((it, i) => ({
+      name: it.name, color: i === s.c ? '#e6e0f0' : '#8a8298', border: i === s.c ? RARITY[it.rarity].ember : 'rgba(255,255,255,.1)',
+      pick: () => this.setState((st) => ({ c: i, cKey: st.cKey + 1 })),
+    }));
+
+    // 1d
+    const TIERS = [
+      { r: 'common', size: 50, font: '12px', gap: '44px' },
+      { r: 'rare', size: 68, font: '13px', gap: '56px' },
+      { r: 'profane', size: 92, font: '14px', gap: '72px' },
+      { r: 'anathema', size: 128, font: '16px', gap: '88px' },
+    ];
+    const dTiers = TIERS.map((t) => ({
+      px: `${t.size}px`, font: t.font, gap: t.gap,
+      items: ORDERED.filter((it) => it.rarity === t.r).map((it) => ({
+        name: it.name, sprite: sprite(it, t.size),
+        open: () => this.setState((st) => ({ d: it.id, dKey: st.dKey + 1 })),
+      })),
+    }));
+    const dIt = ORDERED.find((x) => x.id === s.d);
+    const d = dIt
+      ? this.hero(dIt, {
+          sprite: sprite(dIt, 400, { reveal: true, revealKey: `d${s.dKey}` }),
+          selGlow: glow(dIt, 650, 620, 0.55, true, 1.8),
+          rays: React.createElement(PixelRays, { ps, rgb: hexRgb(RARITY[dIt.rarity].ember), revealKey: `d${s.dKey}` }),
+          glow: null,
+        })
+      : {};
+    d.glow = React.createElement(PixelGlow, { w: 800, h: 520, ps, rgb: [194, 64, 63], maxA: 0.28, pulse: true, power: 1.6 });
+
+    // 2a
+    const hps = this.props.heroPixelSize ?? 3;
+    const eIt = ORDERED[s.e];
+    const e = this.hero(eIt, {
+      sprite: React.createElement(PixelSprite, { src: eIt.img, size: 380, ps: hps, outline, crush, rgb: hexRgb(RARITY[eIt.rarity].ember), bob: true }),
+      glow: glow(eIt, 700, 680, 0.5, true, 1.7),
+      floor: glow(eIt, 340, 48, 0.7, false, 1.2),
+      counter: `${roman(s.e + 1)}  \u00B7  ${roman(n)}`,
+    });
+    const eItems = ORDERED.map((it, i) => ({
+      name: it.name, ember: RARITY[it.rarity].ember,
+      sprite: sprite(it, 58),
+      select: () => this.setState({ e: i }),
+      op: i === s.e ? 1 : 0.42, lift: i === s.e ? '-10px' : '0px', mark: i === s.e ? 1 : 0,
+    }));
+    const oIt = ORDERED.find((x) => x.id === s.oId);
+    const o = oIt
+      ? this.hero(oIt, {
+          sprite: React.createElement(PixelSprite, { src: oIt.img, size: 400, ps: hps, outline, crush, rgb: hexRgb(RARITY[oIt.rarity].ember), reveal: true, revealKey: `o${s.oKey}`, step: 0.07, flash: 0.35 }),
+          glow: glow(oIt, 650, 620, 0.55, true, 1.8),
+          rays: React.createElement(PixelRays, { ps, rgb: hexRgb(RARITY[oIt.rarity].ember), revealKey: `o${s.oKey}` }),
+        })
+      : {};
+
+    return {
+      e, eItems,
+      ePrev: () => this.setState((st) => ({ e: (st.e - 1 + n) % n })),
+      eNext: () => this.setState((st) => ({ e: (st.e + 1) % n })),
+      o, oOpen: !!oIt, oOpacity: s.oFade ? 0 : 1, oProgress: s.oRun ? '100%' : '0%',
+      obtain: () => this.obtain(), dismiss: () => this.dismiss(),
+      room: this.room, vessel: this.vessel,
+      aItems, aOpen: !!aIt, aSel, aClose: () => this.setState({ a: null }),
+      b, bItems,
+      bPrev: () => this.setState((st) => ({ b: (st.b - 1 + n) % n })),
+      bNext: () => this.setState((st) => ({ b: (st.b + 1) % n })),
+      c, cChips, cReplay: () => this.setState((st) => ({ cKey: st.cKey + 1 })),
+      dTiers, d, dOpen: !!dIt, dClose: () => this.setState({ d: null }),
+    };
+  }
+}
+</script>
+</body>
+</html>

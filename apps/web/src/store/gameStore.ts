@@ -4,9 +4,10 @@
  * helpers and the sim's `tick` / `startAction`. UI-only state (current room, open panel) lives in
  * components, not here.
  *
- * It also keeps two transient, NON-persisted channels surfaced from the sim each tick: a rolling
- * outcome `log` (the PC's game log, 02 §10) and the latest `signature` outcome — a Stellar or
- * Apocalyptic result that earns a pop-up (02 §2). Neither is part of the save.
+ * It also keeps transient, NON-persisted channels surfaced from the sim each tick: a rolling
+ * outcome `log` (the PC's game log, 02 §10), the latest `signature` outcome — a Stellar or
+ * Apocalyptic result that earns a pop-up (02 §2) — and the maleficia Emptio has just brought home,
+ * queued for their Unveiling. None of them is part of the save.
  */
 import { create } from 'zustand';
 import {
@@ -81,6 +82,30 @@ const LOG_CAP = 100;
 /** Which Katabasis screen is showing: the allocation menu, the recap, or neither. */
 export type KatabasisPhase = 'menu' | 'recap' | null;
 
+/**
+ * A maleficium Emptio just brought home. `seq` is unique per acquisition (a transient counter, not
+ * saved), so a second copy of the same relic still plays its own Unveiling.
+ */
+export interface ObtainedRelic {
+  readonly id: string;
+  readonly seq: number;
+}
+
+let nextObtainedSeq = 1;
+
+/** Queue each newly acquired maleficium for its Unveiling; the last becomes the Loculi's focus. */
+function obtainedPatch(
+  queue: readonly ObtainedRelic[],
+  ids: readonly string[],
+): { unveilQueue: ObtainedRelic[]; lastObtained: ObtainedRelic } | Record<string, never> {
+  if (ids.length === 0) return {};
+  const fresh = ids.map((id) => ({ id, seq: nextObtainedSeq++ }));
+  return { unveilQueue: [...queue, ...fresh], lastObtained: fresh[fresh.length - 1]! };
+}
+
+/** The transient obtain channels, cleared whenever another game (or lifetime) takes the screen. */
+const NO_OBTAINED = { unveilQueue: [] as ObtainedRelic[], lastObtained: null };
+
 interface GameStore {
   state: GameState | null;
   saveVersion: number;
@@ -92,6 +117,13 @@ interface GameStore {
   /** The id of the most recently unlocked achievement (03 §7), for a toast; null when dismissed. */
   achievementToast: string | null;
   signature: OutcomeEvent | null;
+  /**
+   * Maleficia Emptio has brought home, awaiting their Unveiling pop-up, oldest first (transient).
+   * Filled only from live tick outcomes, so a load or a Katabasis carry-over never plays one.
+   */
+  unveilQueue: ObtainedRelic[];
+  /** The latest of them: the Loculi opens on it, then forgets it on close (transient). */
+  lastObtained: ObtainedRelic | null;
   /** A transient message for a refused action (e.g. "not enough gold"), or null. */
   notice: string | null;
   /** Which Katabasis screen is open (null = none). */
@@ -226,6 +258,10 @@ interface GameStore {
   persist: () => void;
   /** Dismiss the active signature pop-up. */
   dismissSignature: () => void;
+  /** Retire the Unveiling that has finished (a no-op unless `seq` is the one at the head). */
+  dismissUnveiling: (seq: number) => void;
+  /** Forget the last-obtained focus (the Loculi has closed). */
+  clearLastObtained: () => void;
   /** Clear the achievement toast. */
   dismissAchievementToast: () => void;
   /** Clear the active notice. */
@@ -302,6 +338,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ready: false,
   log: [],
   signature: null,
+  ...NO_OBTAINED,
   notice: null,
   achievementToast: null,
   katabasisPhase: null,
@@ -368,7 +405,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
           : s.log;
       let signature = s.signature;
       for (const e of events) if (isSignatureTier(e.tier)) signature = e;
-      return { state, log, signature, ...noticePatch, ...achievementPatch };
+      // An Emptio purchase that completed brings its maleficium home: queue its Unveiling.
+      const acquired = events.flatMap((e) => e.maleficiaAcquired ?? []);
+      return {
+        state,
+        log,
+        signature,
+        ...obtainedPatch(s.unveilQueue, acquired),
+        ...noticePatch,
+        ...achievementPatch,
+      };
     });
   },
 
@@ -572,7 +618,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // is also frozen (`closeRecap` only reconciles the clock), so its time neither accrues nor
     // counts against the player.
     const { state, recap } = commitKatabasis(current, Date.now());
-    set({ state, recap, katabasisPhase: 'recap', log: [], signature: null, notice: null });
+    set({
+      state,
+      recap,
+      katabasisPhase: 'recap',
+      log: [],
+      signature: null,
+      ...NO_OBTAINED,
+      notice: null,
+    });
     get().persist();
   },
 
@@ -604,6 +658,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   dismissSignature: () => set({ signature: null }),
+  dismissUnveiling: (seq) =>
+    set((s) => (s.unveilQueue[0]?.seq === seq ? { unveilQueue: s.unveilQueue.slice(1) } : s)),
+  clearLastObtained: () => set({ lastObtained: null }),
   dismissAchievementToast: () => set({ achievementToast: null }),
   dismissNotice: () => set({ notice: null }),
 
@@ -615,6 +672,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ready: true,
       log: [],
       signature: null,
+      ...NO_OBTAINED,
       notice: null,
       katabasisPhase: null,
       recap: null,
@@ -686,6 +744,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ready: true,
       log: [],
       signature: null,
+      ...NO_OBTAINED,
       notice: null,
       recap: null,
       katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
@@ -758,6 +817,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         pendingConflict: null,
         log: [],
         signature: null,
+        ...NO_OBTAINED,
         notice: null,
         katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
         syncStatus: 'ok',

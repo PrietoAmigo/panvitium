@@ -37,6 +37,8 @@ beforeEach(() => {
     ready: false,
     log: [],
     signature: null,
+    unveilQueue: [],
+    lastObtained: null,
     notice: null,
     katabasisPhase: null,
     recap: null,
@@ -99,6 +101,94 @@ describe('gameStore — maleficia activation (5.1)', () => {
     store().activateMaleficium('hand_of_glory');
     expect(store().state?.lifetime.maleficia.length ?? 0).toBe(before);
     expect(store().notice).toBeTruthy();
+  });
+});
+
+describe('gameStore — the Unveiling queue (maleficia brought home)', () => {
+  /**
+   * Buy one Witch Bottle through a real Emptio (60 s) from a fixed RNG seed, then return whether it
+   * came home. The tier draw is seeded, so each seed's outcome is deterministic.
+   */
+  function purchase(seed: number): boolean {
+    const s = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s,
+        rngState: seed,
+        lifetime: {
+          ...s.lifetime,
+          gold: bn(10_000),
+          emptioList: ['witch_bottle'],
+          maleficiaPrices: {},
+        },
+      },
+    });
+    const owned = (store().state as GameState).lifetime.maleficia.length;
+    store().act('emptio', 'witch_bottle');
+    expect(store().notice).toBeNull();
+    store().advance(60);
+    expect(store().state?.lifetime.actionQueue).toHaveLength(0);
+    return (store().state as GameState).lifetime.maleficia.length > owned;
+  }
+
+  it('queues each relic an Emptio brings home, and nothing for a failed purchase', () => {
+    let homes = 0;
+    let failures = 0;
+    for (let seed = 1; seed <= 60 && (homes < 2 || failures < 1); seed += 1) {
+      const before = store().unveilQueue.length;
+      if (purchase(seed)) {
+        homes += 1;
+        expect(store().unveilQueue).toHaveLength(before + 1);
+        expect(store().log[0]?.maleficiaAcquired).toEqual(['witch_bottle']);
+      } else {
+        failures += 1;
+        expect(store().unveilQueue).toHaveLength(before);
+      }
+    }
+    expect(homes).toBeGreaterThanOrEqual(2);
+    expect(failures).toBeGreaterThanOrEqual(1);
+    const queue = store().unveilQueue;
+    expect(queue).toHaveLength(homes);
+    expect(queue.every((r) => r.id === 'witch_bottle')).toBe(true);
+    // Every copy of the same relic plays its own Unveiling.
+    expect(new Set(queue.map((r) => r.seq)).size).toBe(queue.length);
+    expect(store().lastObtained).toEqual(queue[queue.length - 1]);
+  });
+
+  it('retires only the Unveiling at the head of the queue', () => {
+    useGameStore.setState({
+      unveilQueue: [
+        { id: 'codex_gigas', seq: 101 },
+        { id: 'witch_bottle', seq: 102 },
+      ],
+    });
+    store().dismissUnveiling(102); // not the head: a stale dismissal changes nothing
+    expect(store().unveilQueue.map((r) => r.seq)).toEqual([101, 102]);
+    store().dismissUnveiling(101);
+    expect(store().unveilQueue.map((r) => r.seq)).toEqual([102]);
+  });
+
+  it('forgets the Loculi focus on request', () => {
+    useGameStore.setState({ lastObtained: { id: 'codex_gigas', seq: 7 } });
+    store().clearLastObtained();
+    expect(store().lastObtained).toBeNull();
+  });
+
+  it('never plays a relic across a new game or a rise from Katabasis', () => {
+    const pending = {
+      unveilQueue: [{ id: 'codex_gigas', seq: 9 }],
+      lastObtained: { id: 'codex_gigas', seq: 9 },
+    };
+    useGameStore.setState(pending);
+    store().hardReset();
+    expect(store().unveilQueue).toHaveLength(0);
+    expect(store().lastObtained).toBeNull();
+
+    useGameStore.setState(pending);
+    store().beginKatabasis();
+    store().confirmKatabasis();
+    expect(store().unveilQueue).toHaveLength(0);
+    expect(store().lastObtained).toBeNull();
   });
 });
 

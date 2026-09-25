@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialState } from '@panvitium/sim';
+import { createInitialState, MALEFICIA } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
-import { buildCabinet } from './maleficia.js';
+import { parseEffect } from '../menus/relics.js';
+import { buildCabinet, maleficiumView, splitDescription } from './maleficia.js';
 
 function owning(ids: string[]) {
   const s = createInitialState('cabinet-test', 0);
@@ -90,5 +91,81 @@ describe('buildCabinet — single-use affordance (5.1)', () => {
     expect(item!.use!.enabled).toBe(true);
     expect(item!.use!.status).toContain('2m');
     expect(item!.use!.status).toContain(strings.maleficia.buffRemaining);
+  });
+});
+
+describe('splitDescription — flavour and effect from the sim copy', () => {
+  it('splits the trailing effect clause off the flavour', () => {
+    expect(splitDescription('Something agreed to stay inside. For now. +10% gold gain.')).toEqual({
+      desc: 'Something agreed to stay inside. For now.',
+      effect: '+10% gold gain.',
+    });
+  });
+
+  it('keeps the "Single-use:" marker with the effect', () => {
+    expect(
+      splitDescription(
+        'Cut from a hanged man at the crossroads; it opens what should stay shut. Single-use: +33% reprobate generation for an hour.',
+      ),
+    ).toEqual({
+      desc: 'Cut from a hanged man at the crossroads; it opens what should stay shut.',
+      effect: 'Single-use: +33% reprobate generation for an hour.',
+    });
+  });
+
+  it('takes a negative magnitude as the effect', () => {
+    expect(splitDescription('The basin he washed his hands in. -50% Desidia drain rate.')).toEqual({
+      desc: 'The basin he washed his hands in.',
+      effect: '-50% Desidia drain rate.',
+    });
+  });
+
+  it('leaves a description with no signed effect clause as all flavour', () => {
+    expect(splitDescription('Seventy-two kings, and a ring. 72 of them.')).toEqual({
+      desc: 'Seventy-two kings, and a ring. 72 of them.',
+      effect: '',
+    });
+  });
+});
+
+describe('maleficiumView — one relic by id (the Unveiling)', () => {
+  it('carries the design art and copy for an illustrated relic, with no stack count or rite', () => {
+    const view = maleficiumView('defixio');
+    expect(view).toMatchObject({ id: 'defixio', name: 'Defixio', rarity: 'profane' });
+    expect(view!.img).toContain('defixio.png');
+    expect(view!.effect).toBe('Single-use: +50% suicide rate for an hour.');
+    expect(view!.use).toBeUndefined();
+  });
+
+  it('splits the sim description for a relic the design did not illustrate', () => {
+    const view = maleficiumView('dybbuk_box');
+    expect(view).toMatchObject({
+      name: 'Dybbuk Box',
+      img: '',
+      desc: 'Something agreed to stay inside. For now.',
+      effect: '+10% gold gain.',
+    });
+  });
+
+  it('is undefined for an id absent from the catalog', () => {
+    expect(maleficiumView('not_a_real_maleficium')).toBeUndefined();
+  });
+
+  it('gives every catalog relic an effect line that leads with a headline number', () => {
+    for (const id of Object.keys(MALEFICIA)) {
+      const view = maleficiumView(id);
+      expect(view?.effect, id).toBeTruthy();
+      expect(parseEffect(view!.effect).headline, id).not.toBe('');
+      expect(view!.desc, id).not.toContain(view!.effect);
+    }
+  });
+
+  it('feeds the cabinet the same split copy (with the stack count on the name)', () => {
+    const [item] = buildCabinet(owning(['galdrabok', 'galdrabok']));
+    expect(item).toMatchObject({
+      name: 'Galdrabók ×2',
+      desc: 'A book of staves bound in hide, each page a small undoing.',
+      effect: '+12.5% murder rate.',
+    });
   });
 });

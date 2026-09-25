@@ -54,3 +54,34 @@ export function formatDuration(ms: number): string {
   parts.push(`${seconds}s`);
   return parts.join(' ');
 }
+
+const ROMAN_UNITS: readonly [number, string][] = [
+  [1000, 'M'],
+  [900, 'CM'],
+  [500, 'D'],
+  [400, 'CD'],
+  [100, 'C'],
+  [90, 'XC'],
+  [50, 'L'],
+  [40, 'XL'],
+  [10, 'X'],
+  [9, 'IX'],
+  [5, 'V'],
+  [4, 'IV'],
+  [1, 'I'],
+];
+/** Integer → Roman numeral (1..3999). Used for the Sin-level gate, the Ars Goetia index numerals (so
+ *  every seal reads as a numeral; the old lookup table stopped at XVIII and fell back to Arabic) and
+ *  the Loculi's relic counter. Anything that is not a positive integer falls back to Arabic. */
+export function roman(n: number): string {
+  if (!Number.isInteger(n) || n < 1) return String(n);
+  let out = '';
+  let rem = n;
+  for (const [value, sym] of ROMAN_UNITS) {
+    while (rem >= value) {
+      out += sym;
+      rem -= value;
+    }
+  }
+  return out;
+}
