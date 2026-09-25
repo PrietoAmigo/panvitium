@@ -103,9 +103,31 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1089** (sim 595 · shared 75 · api 20 · web 399).
+**Current test count: 1160** (sim 595 · shared 75 · api 20 · web 470).
 
-> **Latest change — UI: the altar sigil rises in the Altar Room (Claude Design).** From the
+> **Latest change — UI: a Calculator on the desk PC.** The PC's file manager gains a **Calculator**
+> program (last in the grid; its tile a 2 × 2 of + − × =), a full-bleed dark take on the Ubuntu
+> desktop's own GNOME Calculator: GNOME's basic keypad (7 8 9 ÷ ⌫ C · 4 5 6 × ( ) · 1 2 3 − x² √ ·
+> 0 . % + =) under a row for the memory register (MC MR M+ M−), ± and EXP, with the history tape
+> beside it. It is a working calculator: **exact decimal arithmetic** on BigInt (0.1 + 0.2 is 0.3,
+> 1 ÷ 3 × 3 is 1; 40 significant digits kept, 16 shown, then "e" notation like the game's own
+> readouts, and exponents up to ±10¹⁵, so late-game numbers fit), the usual precedence with
+> parentheses (any left open are drawn faintly and closed at "="), postfix x² and %, prefix √ and
+> unary minus, an implied "×" between operands ("2(3 + 4)"), and "a ± b%" read as b% of a. The
+> display shows the expression as typed with its running result beneath; after "=", the answer
+> (with its calculation above it) carries on under an operator and yields to a digit. Errors
+> (division by zero, a negative root, overflow, a malformed expression) read in GNOME's words and
+> keep the expression to fix. The keyboard drives it too (digits, operators, parentheses, Enter,
+> Backspace, Esc, and Windows Calculator's @ / Q / F9 for √ / x² / ±); Ctrl+C copies the answer
+> (or the expression being typed) and Ctrl+V pastes one (digit-group commas and "1e+21" forms read; text it cannot read in
+> full pastes nothing). A click on a tape entry brings that calculation back, or inserts its answer
+> mid-expression. The sum in progress, the memory and the tape survive stepping back to Files or
+> leaving the desk, for as long as the page lives. The engine is framework-free
+> (`menus/calculatorEngine.ts`), the component (`menus/Calculator.tsx`) controlled, and the copy in
+> `strings.calculator`. No sim, save or RNG change. Net **+71 tests** (web 399 → 470), plus a
+> Calculator e2e spec.
+>
+> **Earlier change — UI: the altar sigil rises in the Altar Room (Claude Design).** From the
 > delivered "Altar sigil" handoff (archived in `docs/frontend/`): clicking the altar no longer swaps
 > the room for the full-screen Altar gate. The Katabasis sigil rises over the room itself (no dim, no
 > scrim), vibrating, with **Status Quo** beneath it. The first press arms it (it swells and shakes
