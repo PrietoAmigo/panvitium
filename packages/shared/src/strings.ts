@@ -519,6 +519,7 @@ export const strings = {
     },
     invokingPower: 'invoking power',
     use: 'Use',
+    usesRemaining: 'uses remaining',
     buffRemaining: 'remaining',
     oracleCaption: 'The odds of each outcome, as the omens already weigh them, should you act now:',
     // The Loculi reliquary (the selected relic on stage, the rest in procession) and the Unveiling

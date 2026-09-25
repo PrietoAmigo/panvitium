@@ -103,9 +103,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1016** (sim 595 · shared 75 · api 20 · web 326).
+**Current test count: 1024** (sim 595 · shared 75 · api 20 · web 334).
 
-> **Latest change — UI: the Loculi "Reliquary" + the Unveiling (Claude Design).** The Loculi is
+> **Latest change — the Loculi shows invoking power and a consumable's remaining uses.** The
+> Loculi showed no relic's invoking power; it (and the Unveiling) now carries an "Invoking power ·
+> N" line under the effect for every relic that grants some, and none for the fourteen that grant
+> none (the anathema relics, the consumables, the pure multipliers), which is how the Emptio market
+> already treated them (its line now comes from the same `invokingPowerText` formatter). On stage in
+> the Loculi, each stackable consumable (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt)
+> also shows "Uses remaining · N", the copies owned, above its rite; Black Candles stack but are
+> passive, so they keep only the ×N on the name. The value is the sim catalog's per-copy figure,
+> carried by the `maleficiumView` view-model. No sim, save or RNG change. Net **+8 tests** (web 326
+> → 334).
+>
+> **Earlier change — UI: the Loculi "Reliquary" + the Unveiling (Claude Design).** The Loculi is
 > rebuilt from the delivered "Loculi Reliquary" handoff (option 2a; archived in `docs/frontend/`).
 > The boxed niche grid gives way to a frameless **reliquary**: the Invocation Room darkens, the
 > selected maleficium floats alone as pixel art in its rarity's dithered light, its effect set as a

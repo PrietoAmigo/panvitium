@@ -418,4 +418,20 @@ describe('IndagatioEmptioProgram — live wiring', () => {
     );
     expect(container!.querySelector('.orbis-cast-btn')).not.toBeNull();
   });
+
+  it("states a listed relic's invoking power, and no line for one that grants none", () => {
+    const s = store().state!;
+    useGameStore.setState({
+      state: {
+        ...s,
+        lifetime: { ...s.lifetime, emptioList: ['spear_of_longinus', 'codex_gigas'] },
+      },
+    });
+    mount(createElement(IndagatioEmptioProgram));
+    const lines = Array.from(container!.querySelectorAll('.orbis-row-effect')).map(
+      (e) => e.textContent,
+    );
+    // The Spear of Longinus grants none: its row carries no line; the Codex Gigas grants 4.
+    expect(lines).toEqual(['+4 invoking power']);
+  });
 });

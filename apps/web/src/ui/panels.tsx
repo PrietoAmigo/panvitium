@@ -51,7 +51,7 @@ import {
 } from '../menus/DepraedatioAccount.js';
 import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
-import { buildCabinet } from '../game/maleficia.js';
+import { buildCabinet, invokingPowerText } from '../game/maleficia.js';
 import { formatBigNum } from '../game/format.js';
 import { OrbisTenebrarum, type OrbisFind } from '../menus/orbis-tenebrarum/index.js';
 import { useGameStore } from '../store/gameStore.js';
@@ -743,8 +743,8 @@ export function IndagatioEmptioProgram(): ReactElement {
         id,
         name: count > 1 ? `${def.name} ×${count}` : def.name,
         rarity: def.rarity,
-        // Only surface the invoking-power line for relics that actually grant >= 1 (some are flavour).
-        effect: def.invokingPower >= 1 ? `+${def.invokingPower} invoking power` : '',
+        // The invoking-power line ("+4 invoking power"); a relic that grants none shows no line.
+        effect: invokingPowerText(def.invokingPower),
         desc: def.description,
         costLabel: `${price} g`,
         acquired,
