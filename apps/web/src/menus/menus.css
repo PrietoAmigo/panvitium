@@ -4751,47 +4751,98 @@ body {
 }
 
 /* ============================================================================
-   Loculi — "Niches" rework (Claude Design).
-   The carved-alcove shelf paints its own dark background (and renders its own
-   close-up overlay + internal grid scroll), so it wears a near-frameless dark
-   shell rather than the old wooden display-case. The component is inline-styled;
-   these rules only supply the panel frame + hide the internal grid scrollbar.
+   Loculi — the "Reliquary" (Claude Design, "Loculi Reliquary" handoff).
+   A frameless full-surface overlay: the selected relic on stage, the rest in a
+   procession along the floor, plus the Unveiling pop-up when Emptio brings a
+   maleficium home. Both components are inline-styled and lay out on a fitted
+   1280×720 frame; these rules supply only what inline styles cannot: hover and
+   focus states, the hidden scrollbars, and the Unveiling's countdown keyframes.
    ============================================================================ */
 
-.panel--niche {
-  width: min(880px, 94vw);
-  max-height: 82vh;
-  overflow: hidden;
+.reliquary-close {
+  position: absolute;
+  top: 0.95rem;
+  right: 1.3rem;
+  z-index: 3;
   padding: 0;
-  color: #e7d8b4;
-  background: #060507;
-  border: 1px solid #120b06;
-  box-shadow:
-    0 0 0 6px rgba(10, 8, 7, 0.62),
-    0 24px 60px rgba(0, 0, 0, 0.78);
-}
-.panel--niche .panel-body {
-  padding: 0;
-  overflow: hidden;
-}
-.panel--niche .panel-close--float {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
   color: #b3acc4;
   opacity: 0.72;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  transition: opacity 0.2s ease;
 }
-.panel--niche .panel-close--float:hover {
+.reliquary-close:hover {
   opacity: 1;
 }
 
-/* The niche grid scrolls internally when the shelf is full; hide its bar ("no scrollbars"). */
-.niche-grid-scroll {
+.reliquary-arrow {
+  position: absolute;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  line-height: 1;
+  color: #6a637a;
+  transition: color 0.2s ease;
+}
+.reliquary-arrow:hover {
+  color: #e6e0f0;
+}
+
+/* One relic in the procession: dimmed until hovered or selected. */
+.reliquary-proc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.42;
+  transition: opacity 0.2s ease;
+}
+.reliquary-proc:hover,
+.reliquary-proc.is-selected {
+  opacity: 1;
+}
+
+.reliquary-close:focus-visible,
+.reliquary-arrow:focus-visible,
+.reliquary-proc:focus-visible {
+  outline: 1px solid rgba(230, 224, 240, 0.55);
+  outline-offset: 4px;
+}
+
+/* A crowded procession (or a long oracle readout) scrolls without a visible bar. */
+.reliquary-procession,
+.reliquary-scroll {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-.niche-grid-scroll::-webkit-scrollbar {
+.reliquary-procession::-webkit-scrollbar,
+.reliquary-scroll::-webkit-scrollbar {
   width: 0;
   height: 0;
   display: none;
+}
+
+/* The Unveiling's hold, running out along the bottom edge (duration set inline). */
+.unveiling-countdown {
+  transform-origin: left center;
+  animation: unveiling-countdown 1.5s linear both;
+}
+@keyframes unveiling-countdown {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 /* ============================================================================

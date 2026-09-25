@@ -20,36 +20,7 @@ import { strings } from '@panvitium/shared';
 import type { GoetiaEntry } from '../menus/ars-goetia.types.js';
 import { INVOCATION_BY_ID, ASSET_BASE } from '../menus/menus.data.js';
 import { aurevoraDrainText, invocationEffectText } from './invocationEffect.js';
-
-/** Integer → Roman numeral (1..3999). Used for the Sin-level gate and the Ars Goetia index numerals,
- *  so every seal reads as a numeral (the old lookup table stopped at XVIII and fell back to Arabic). */
-const ROMAN_UNITS: readonly [number, string][] = [
-  [1000, 'M'],
-  [900, 'CM'],
-  [500, 'D'],
-  [400, 'CD'],
-  [100, 'C'],
-  [90, 'XC'],
-  [50, 'L'],
-  [40, 'XL'],
-  [10, 'X'],
-  [9, 'IX'],
-  [5, 'V'],
-  [4, 'IV'],
-  [1, 'I'],
-];
-function roman(n: number): string {
-  if (!Number.isInteger(n) || n < 1) return String(n);
-  let out = '';
-  let rem = n;
-  for (const [value, sym] of ROMAN_UNITS) {
-    while (rem >= value) {
-      out += sym;
-      rem -= value;
-    }
-  }
-  return out;
-}
+import { roman } from './format.js';
 
 /** The invoking-power (+ optional Sin level) requirement, shown as the "Seal" on a locked leaf. */
 function gateLabel(def: InvocationDef): string {

@@ -9,13 +9,13 @@ import { CALL_PLATE_ANSWERING } from './menus/calls-in.data.js';
 import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
-import { PANELS, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
+import { Loculi, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
 import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { DesidiaHud } from './ui/DesidiaHud.js';
 import { usePrefersReducedMotion } from './ui/usePrefersReducedMotion.js';
-import { PanelShell, type PanelVariant } from './menus/PanelShell.js';
 import { SignaturePopup } from './ui/SignaturePopup.js';
 import { AchievementToast } from './ui/AchievementToast.js';
+import { Unveiling } from './ui/Unveiling.js';
 import { KatabasisModal } from './ui/KatabasisModal.js';
 import { SyncPanel } from './ui/SyncPanel.js';
 import { ConflictModal } from './ui/ConflictModal.js';
@@ -25,16 +25,6 @@ import { Jumpscare, JUMPSCARE_IMG } from './ui/Jumpscare.js';
 import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
-
-/**
- * The themed shell each framed panel wears. The Loculi (the Maleficia niches) wears the dark "niche" frame (the
- * carved-alcove rework paints its own background, so it gets a near-frameless dark shell with a
- * float close rather than the old wooden case). Ars Goetia, the PC, the Suasio scroll and Katabasis
- * are their own full-surface overlays and don't appear here.
- */
-const PANEL_SHELL: Partial<Record<PanelId, { variant: PanelVariant; hideHeader?: boolean }>> = {
-  maleficia: { variant: 'niche', hideHeader: true },
-};
 
 /**
  * The full-screen Ars Goetia grimoire, wired to real state. Kept as its own subscriber so its
@@ -205,14 +195,6 @@ export function App(): ReactElement {
     audio.play('panel-close');
   };
 
-  // Ars Goetia, the PC, the Suasio scroll and the smartphone dialer are their own full-surface
-  // overlays (designed grimoire / desk / parchment / phone), not framed Panels.
-  const activePanel =
-    panel && panel !== 'ars-goetia' && panel !== 'pc' && panel !== 'suasio' && panel !== 'phone'
-      ? PANELS[panel]
-      : null;
-  const shell = panel ? PANEL_SHELL[panel] : undefined;
-
   // The persistent Influence/Gold HUD rides over the Invocation and Studio rooms and over the
   // Loculi, the Ars Goetia book and the Suasio scroll — but not in the Altar room, not over
   // the PC desk or the Altar gate, not during a descent (the Altar gate + an ongoing Katabasis both
@@ -224,6 +206,8 @@ export function App(): ReactElement {
     panel !== 'pc' &&
     answeredCall === null &&
     !titleOpen;
+  const unveilingVisible =
+    katabasisPhase === null && answeredCall === null && !jumpscare && !titleOpen;
 
   return (
     <div className="app">
@@ -249,6 +233,9 @@ export function App(): ReactElement {
       <ConflictModal />
       <SettingsPanel />
       <TitleSequence />
+      {/* Every menu is its own full-surface overlay (designed reliquary / grimoire / desk /
+          parchment / phone); none wears a framed panel. */}
+      {panel === 'maleficia' && <Loculi onClose={closePanel} />}
       {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
       {panel === 'suasio' && <SuasioScroll onClose={closePanel} />}
@@ -267,22 +254,18 @@ export function App(): ReactElement {
           onDone={() => setAnsweredCall(null)}
         />
       )}
-      {activePanel && shell && (
-        <PanelShell
-          title={activePanel.title}
-          variant={shell.variant}
-          onClose={closePanel}
-          {...(shell.hideHeader ? { hideHeader: true } : {})}
-        >
-          {activePanel.body}
-        </PanelShell>
-      )}
       {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars
           Goetia / Suasio surfaces, pinned to the viewport's top-left edge. */}
       {hudVisible && <InfluenceGoldHud />}
       {/* Desidia (ADR-033), pinned to the viewport's bottom-left edge; same visibility
-          as the Influence & Gold HUD. Clicking the vessel toggles Desidia (no separate button). */}
-      {hudVisible && <DesidiaHud />}
+          as the Influence & Gold HUD, except over the Loculi: there its vessel would sit on the
+          reliquary's ‹ arrow and the first relics of a full procession, and swallow their clicks as
+          Desidia toggles. Clicking the vessel toggles Desidia (no separate button). */}
+      {hudVisible && panel !== 'maleficia' && <DesidiaHud />}
+      {/* The Unveiling (z 88): a maleficium Emptio just brought home, over the room and every menu
+          overlay and HUD, under the system modals. It waits (the queue holds in the store) while a
+          descent, an answered call or the jumpscare has the screen. */}
+      {unveilingVisible && <Unveiling />}
       {/* The one-time Doppelgänger scare covers EVERYTHING (highest layer), blocks all input, and
           clears itself after 2s — see Jumpscare. */}
       {jumpscare && <Jumpscare onDone={() => setJumpscare(false)} />}
