@@ -16,11 +16,19 @@ const EXECUTABLES = [
   { id: 'Achievements', color: '#c79a2b', glyph: '★' },
   { id: 'Emails', color: '#9e6b4a', glyph: '\u2709' },
   { id: 'Logs', color: '#3a3a3e', glyph: '>_' },
+  // A calculator's face: its signs in a 2 × 2 grid (decorative; the tile reads as its name).
+  { id: 'Calculator', color: '#5a6170', glyph: '+\u2212\u00D7=', grid: true },
 ] as const;
 
 // Programs that render their own full window surface (e.g. the Emails mail client) rather than sitting
 // in the dark titled card. They fill the desk area directly; the PC titlebar already names them.
-const FULLBLEED = new Set<string>(['Emails', 'Depraedatio', 'Decimatio', 'Indagatio']);
+const FULLBLEED = new Set<string>([
+  'Emails',
+  'Depraedatio',
+  'Decimatio',
+  'Indagatio',
+  'Calculator',
+]);
 
 // The Studio desk PC — an Ubuntu-style file manager whose "files" are ritual programs. Full-screen
 // shell (does not use PanelShell). The chrome is the design; each launched program's body is the real
@@ -71,7 +79,15 @@ export function PcWindow({ renderProgram, onClose, badges }: PcWindowProps): Rea
                       onClick={() => setRunning(e.id)}
                     >
                       <span className="pc-file-icon" style={{ background: e.color }}>
-                        {e.glyph}
+                        {'grid' in e ? (
+                          <span className="pc-file-glyph-grid" aria-hidden="true">
+                            {[...e.glyph].map((c) => (
+                              <span key={c}>{c}</span>
+                            ))}
+                          </span>
+                        ) : (
+                          e.glyph
+                        )}
                         {badge > 0 && (
                           <span className="pc-file-badge" aria-label={`${badge} unread`}>
                             {badge}

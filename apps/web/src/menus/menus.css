@@ -1412,6 +1412,14 @@ body {
   text-align: center;
   line-height: 1.2;
 }
+/* The Calculator tile's face: its four signs in a 2 × 2 grid instead of one glyph. */
+.pc-file-glyph-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px 9px;
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
 
 /* Program window (an executable running over the desktop) */
 .pc-titlebar--app {
@@ -1642,6 +1650,321 @@ body {
 }
 .pc-log-line.tier-excellent {
   color: var(--candle);
+}
+
+/* ---------- The PC — Calculator (a full-bleed program, `Calculator.tsx`) ----------
+   The Ubuntu desktop's own calculator (GNOME Calculator, basic mode) in a dark theme: the display
+   over a six-column keypad, the tape of past calculations beside them. The "=" key takes the
+   Ubuntu orange, as the desktop's suggested action does. */
+.calc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(220px, 27%, 330px);
+  height: 100%;
+  background: #252329;
+  color: #f2f0f4;
+  font-family:
+    'Ubuntu',
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+.calc:focus {
+  outline: none;
+}
+.calc-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.calc-display {
+  /* The main line's type shrinks to the display's width (`cqw`) before it scrolls. */
+  container-type: inline-size;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 9.25rem;
+  padding: 14px 26px 12px;
+  background: linear-gradient(180deg, #1c1b20 0%, #18171b 100%);
+  border-bottom: 1px solid #111014;
+}
+.calc-display-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 1.4rem;
+  font-size: 0.95rem;
+  color: #a19ca8;
+}
+.calc-mem {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #e95420;
+  cursor: default;
+}
+.calc-context {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.calc-line {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  white-space: nowrap;
+  font-size: 3rem;
+  font-size: clamp(1.5rem, calc(100cqw / (var(--calc-len, 1) * 0.62)), 3rem);
+  font-weight: 300;
+  line-height: 1.25;
+  color: #f7f5f9;
+  font-variant-numeric: tabular-nums;
+}
+.calc-line::-webkit-scrollbar {
+  display: none;
+}
+/* The auto margin right-aligns a short line and yields to a long one, so it scrolls, not clips. */
+.calc-line-text {
+  margin-left: auto;
+  padding-left: 4px;
+}
+.calc-ghost {
+  color: #6c6773;
+}
+.calc-sub {
+  min-height: 1.6rem;
+  font-size: 1.2rem;
+  color: #a19ca8;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.calc-sub--error {
+  font-size: 1rem;
+  line-height: 1.6rem;
+  color: #ff8b6e;
+}
+
+.calc-keys {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  padding: 14px 16px 16px;
+}
+.calc-key {
+  --key-bg: #34313a;
+  --key-hover: #3e3b45;
+  --key-press: #29272e;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 9px;
+  background: var(--key-bg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.4);
+  color: #f2f0f4;
+  font: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.12s ease,
+    transform 0.06s ease;
+}
+.calc-key:hover {
+  background: var(--key-hover);
+}
+.calc-key:active,
+.calc-key.is-lit {
+  background: var(--key-press);
+  transform: translateY(1px);
+}
+.calc-key:focus-visible {
+  outline: 2px solid #e95420;
+  outline-offset: 1px;
+}
+.calc-key:disabled {
+  background: var(--key-bg);
+  box-shadow: none;
+  color: #6c6773;
+  cursor: default;
+  transform: none;
+}
+.calc-key svg {
+  display: block;
+  width: 1.45rem;
+  height: 1.45rem;
+}
+.calc-key--digit {
+  --key-bg: #46434d;
+  --key-hover: #514e58;
+  --key-press: #3a3740;
+  font-size: 1.5rem;
+}
+.calc-key--op {
+  --key-bg: #3a3342;
+  --key-hover: #463e50;
+  --key-press: #2f2936;
+  color: #ffc9ae;
+  font-size: 1.65rem;
+}
+.calc-key--mem {
+  --key-bg: #2b2930;
+  --key-hover: #35323b;
+  --key-press: #232126;
+  color: #c9c4cf;
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+}
+.calc-key--equals {
+  --key-bg: #e95420;
+  --key-hover: #f2682f;
+  --key-press: #c7431a;
+  grid-column: span 2;
+  color: #fff;
+  font-size: 1.7rem;
+}
+
+.calc-tape {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: #201e24;
+  border-left: 1px solid #141217;
+}
+.calc-tape-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 10px 8px 18px;
+}
+.calc-tape-title {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #948f9a;
+}
+.calc-tape-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #a19ca8;
+  cursor: pointer;
+}
+.calc-tape-clear:hover:not(:disabled) {
+  background: #312e36;
+  color: #f2f0f4;
+}
+.calc-tape-clear:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.calc-tape-clear svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+.calc-tape-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 2px 8px 12px;
+}
+.calc-tape-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+.calc-tape-item:hover {
+  background: #2e2b33;
+}
+.calc-tape-item:focus-visible {
+  outline: 2px solid #e95420;
+  outline-offset: -2px;
+}
+.calc-tape-expr {
+  font-size: 0.8rem;
+  color: #948f9a;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.calc-tape-value {
+  font-size: 1.15rem;
+  color: #f2f0f4;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.calc-tape-empty {
+  margin: 0;
+  padding: 14px 18px;
+  font-size: 0.88rem;
+  color: #7c7783;
+}
+
+/* A narrow PC window drops the tape (the answer and the display stay); a short one tightens. */
+@media (max-width: 860px) {
+  .calc {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .calc-tape {
+    display: none;
+  }
+}
+@media (max-height: 640px) {
+  .calc-display {
+    min-height: 7.25rem;
+    padding: 8px 20px 8px;
+  }
+  .calc-keys {
+    gap: 5px;
+    padding: 10px 12px 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .calc-key {
+    transition: none;
+  }
+  .calc-key:active,
+  .calc-key.is-lit {
+    transform: none;
+  }
 }
 
 /* ============================================================================

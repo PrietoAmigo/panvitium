@@ -43,6 +43,7 @@ import { SmartphoneDialer, type DialResult } from '../menus/SmartphoneDialer.js'
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
 import { SuasioPanel as DesignedSuasio, type SuasioActionView } from '../menus/SuasioPanel.js';
 import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
+import { CalculatorProgram } from '../menus/Calculator.js';
 import {
   DepraedatioAccount,
   type DepBranchView,
@@ -695,7 +696,8 @@ type PcGroupId =
   | 'analytics'
   | 'achievements'
   | 'emails'
-  | 'logs';
+  | 'logs'
+  | 'calculator';
 
 /**
  * Indagatio × Emptio (03 §2.5–2.6), merged into one surface — the "Orbis Tenebrarum" globe (Claude
@@ -1025,6 +1027,7 @@ function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
   if (group === 'emails') return <EmailsGroup />;
   if (group === 'achievements') return <AchievementsGroup />;
   if (group === 'logs') return <OutcomeLog />;
+  if (group === 'calculator') return <CalculatorProgram />;
   return <p className="pc-empty">{strings.opera.notYet}.</p>;
 }
 
