@@ -56,6 +56,10 @@ const callBuffSchema = z.object({
   field: z.string(),
   factor: z.number().positive(),
   remainingSeconds: z.number().nonnegative(),
+  // The answered call it came from and its full length (the buffs HUD's name and ring).
+  // Additive-optional (ADR-023): absent on buffs granted before sources were recorded.
+  sourceId: z.string().optional(),
+  durationSec: z.number().positive().optional(),
 });
 
 const inboxEntrySchema = z.object({
@@ -259,6 +263,8 @@ export function serializeGameState(state: GameState): SerializedGameState {
               field: b.field,
               factor: b.factor,
               remainingSeconds: b.remainingSeconds,
+              ...(b.sourceId !== undefined ? { sourceId: b.sourceId } : {}),
+              ...(b.durationSec !== undefined ? { durationSec: b.durationSec } : {}),
             })),
           }
         : {}),
@@ -379,7 +385,15 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       // `field` isn't a known target (a newer save's field), so it can't feed an unknown modifier.
       callBuffs: (s.lifetime.callBuffs ?? []).flatMap((b) =>
         isCallBuffField(b.field)
-          ? [{ field: b.field, factor: b.factor, remainingSeconds: b.remainingSeconds }]
+          ? [
+              {
+                field: b.field,
+                factor: b.factor,
+                remainingSeconds: b.remainingSeconds,
+                ...(b.sourceId !== undefined ? { sourceId: b.sourceId } : {}),
+                ...(b.durationSec !== undefined ? { durationSec: b.durationSec } : {}),
+              },
+            ]
           : [],
       ),
       inbox: (s.lifetime.inbox ?? []).map((e) => ({

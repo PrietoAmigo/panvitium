@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=EB+Garamond:ital,wght@0,400;0,500;1,400&amp;display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#050403;}
+*{box-sizing:border-box;}
+a{color:#d8b658;}
+a:hover{color:#e6a23c;}
+</style>
+</helmet>
+<section style="padding:64px;display:flex;flex-direction:column;gap:32px;font-family:'EB Garamond',Georgia,serif;color:#e7d8b4;">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px;">
+    <div style="font-family:'Cinzel',Georgia,serif;font-size:13px;letter-spacing:0.3em;text-transform:uppercase;color:#c9822f;">Temporary buffs · 2a is the chosen direction (1b, in columns)</div>
+    <div style="font-size:20px;line-height:1.45;text-wrap:pretty;">A readout for the timed effects in play (the four consumable maleficia in <code>maleficiaBuffs</code> and the call-in buffs in <code>lifetime.callBuffs</code>), set in the left column between the Influence vessel and the Desidia vessel. Sample state: three consumables used and two calls answered. Timers tick live.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start;">
+    <sc-for list="{{ boards }}" as="b" hint-placeholder-count="5">
+      <div id="{{ b.id }}" style="display:flex;flex-direction:column;gap:14px;width:1280px;">
+        <div style="display:flex;align-items:baseline;gap:14px;">
+          <span style="font-family:'Cinzel',Georgia,serif;font-weight:700;font-size:15px;letter-spacing:0.08em;color:#0a0807;background:#d8b658;padding:3px 10px;">{{ b.badge }}</span>
+          <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:22px;letter-spacing:0.06em;color:#e7d8b4;">{{ b.title }}</span>
+          <span style="font-size:18px;color:#c9b489;">{{ b.note }}</span>
+        </div>
+        <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:radial-gradient(circle at 50% 30%, #120d0a 0%, #0a0807 70%, #050403 100%);">
+          <img src="apps/web/public/assets/panvitium/backgrounds/studio_complete.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">
+          <div style="position:absolute;inset:0;box-shadow:inset 0 0 240px 40px rgba(0,0,0,0.85);pointer-events:none;"></div>
+
+          <div style="position:absolute;top:0;left:0;z-index:85;padding:17.6px 19.2px 17.6px 0;display:flex;flex-direction:row;align-items:flex-start;gap:5.6px;pointer-events:none;">
+            <div style="position:relative;width:210px;margin-left:-14.4px;filter:drop-shadow(0 6px 13px rgba(0,0,0,0.6));">
+              <div style="position:relative;width:100%;aspect-ratio:1 / 1;">
+                <div style="position:absolute;inset:0;background-image:{{ influenceBg }};background-size:100% 100%;image-rendering:pixelated;"></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:11.2px;margin-top:9.6px;">
+              <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-48px;">
+                <span style="font-family:'Cinzel',Georgia,serif;font-size:9.92px;letter-spacing:0.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,0.9);color:#7fa0d8;">Influence</span>
+                <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:20.48px;line-height:1.1;font-variant-numeric:tabular-nums;color:#c4d4f2;text-shadow:0 0 12px rgba(70,120,230,0.25), 0 2px 6px rgba(0,0,0,0.9);">184 / 300</span>
+              </div>
+              <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:-27.2px;">
+                <span style="font-family:'Cinzel',Georgia,serif;font-size:9.92px;letter-spacing:0.3em;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,0.9);color:#c9822f;">Gold</span>
+                <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:20.48px;line-height:1.1;font-variant-numeric:tabular-nums;color:#e7d8b4;text-shadow:0 0 12px rgba(201,162,39,0.3), 0 2px 6px rgba(0,0,0,0.9);">12,480</span>
+              </div>
+            </div>
+          </div>
+
+          <sc-if value="{{ b.isB2 }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:45px;top:246px;z-index:85;height:326px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:10px 14px;">
+              <sc-for list="{{ tilesB2 }}" as="t" hint-placeholder-count="5">
+                <div onMouseEnter="{{ t.onEnter }}" onMouseLeave="{{ t.onLeave }}" style="position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;width:44px;cursor:default;">
+                  <div style="position:relative;width:44px;height:44px;border-radius:50%;background:{{ t.ring }};filter:drop-shadow(0 4px 8px rgba(0,0,0,0.7));">
+                    <div style="position:absolute;inset:2px;border-radius:50%;background:rgba(10,8,7,0.86);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                      <sc-if value="{{ t.hasImg }}" hint-placeholder-val="{{ false }}">
+                        <div style="width:30px;height:30px;background-image:{{ t.imgBg }};background-size:contain;background-position:center;background-repeat:no-repeat;image-rendering:pixelated;"></div>
+                      </sc-if>
+                      <sc-if value="{{ t.noImg }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-family:'Cinzel',Georgia,serif;font-weight:700;font-size:14px;color:{{ t.glyphColor }};">{{ t.glyph }}</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                  <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:10.5px;font-variant-numeric:tabular-nums;color:#e7d8b4;text-shadow:0 1px 4px rgba(0,0,0,0.95);white-space:nowrap;">{{ t.shortTime }}</span>
+                  <sc-if value="{{ t.showTip }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;left:56px;top:0;z-index:3;width:230px;padding:10px 12px 11px;display:flex;flex-direction:column;gap:4px;background:rgba(10,8,7,0.9);border:1px solid rgba(216,182,88,0.3);box-shadow:0 10px 24px rgba(0,0,0,0.6);pointer-events:none;">
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                        <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:{{ t.nameColor }};">{{ t.name }}</span>
+                        <span style="font-family:'Cinzel',Georgia,serif;font-size:9.92px;letter-spacing:0.2em;text-transform:uppercase;color:#c9b489;white-space:nowrap;">{{ t.kind }}</span>
+                      </div>
+                      <sc-for list="{{ t.effects }}" as="e" hint-placeholder-count="1">
+                        <span style="font-size:15px;line-height:1.2;color:{{ e.color }};">{{ e.text }}</span>
+                      </sc-for>
+                      <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:12px;font-variant-numeric:tabular-nums;color:#e7d8b4;">{{ t.time }} remaining</span>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isA }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:0;top:240px;z-index:85;padding-left:24px;width:262px;max-height:332px;overflow:hidden;display:flex;flex-direction:column;gap:12px;pointer-events:none;">
+              <sc-for list="{{ groupsA }}" as="g" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:8px;margin-left:21.12px;">
+                  <sc-if value="{{ g.hasTitle }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="font-family:'Cinzel',Georgia,serif;font-size:9.92px;letter-spacing:0.3em;text-transform:uppercase;color:#c9b489;text-shadow:0 1px 4px rgba(0,0,0,0.9);">{{ g.title }}</span>
+                      <span style="flex:1;height:1px;background:rgba(216,182,88,0.28);"></span>
+                    </div>
+                  </sc-if>
+                  <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="2">
+                    <div style="display:flex;flex-direction:column;gap:2px;">
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                        <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:{{ r.nameColor }};text-shadow:0 1px 4px rgba(0,0,0,0.9);">{{ r.name }}</span>
+                        <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:12px;font-variant-numeric:tabular-nums;color:#e7d8b4;text-shadow:0 2px 6px rgba(0,0,0,0.9);white-space:nowrap;">{{ r.time }}</span>
+                      </div>
+                      <sc-for list="{{ r.effects }}" as="e" hint-placeholder-count="1">
+                        <span style="font-size:15px;line-height:1.2;color:{{ e.color }};text-shadow:0 1px 4px rgba(0,0,0,0.95);">{{ e.text }}</span>
+                      </sc-for>
+                      <sc-if value="{{ showBars }}" hint-placeholder-val="{{ true }}">
+                        <div style="margin-top:3px;height:2px;background:rgba(231,216,180,0.14);">
+                          <div style="height:100%;width:{{ r.pct }};background:{{ r.barColor }};box-shadow:0 0 6px {{ r.barColor }};"></div>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <sc-if value="{{ hasMoreA }}" hint-placeholder-val="{{ false }}">
+                <span style="margin-left:21.12px;font-family:'Cinzel',Georgia,serif;font-size:9.92px;letter-spacing:0.3em;text-transform:uppercase;color:#c9b489;text-shadow:0 1px 4px rgba(0,0,0,0.9);">+{{ moreA }} more</span>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isB }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:45px;top:256px;z-index:85;display:flex;align-items:flex-start;gap:14px;">
+            <div style="width:212px;display:flex;flex-wrap:wrap;gap:12px 12px;">
+              <sc-for list="{{ tilesB }}" as="t" hint-placeholder-count="5">
+                <div onMouseEnter="{{ t.onEnter }}" style="display:flex;flex-direction:column;align-items:center;gap:5px;width:44px;cursor:default;">
+                  <div style="position:relative;width:44px;height:44px;border-radius:50%;background:{{ t.ring }};filter:drop-shadow(0 4px 8px rgba(0,0,0,0.7));">
+                    <div style="position:absolute;inset:2px;border-radius:50%;background:rgba(10,8,7,0.86);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                      <sc-if value="{{ t.hasImg }}" hint-placeholder-val="{{ false }}">
+                        <div style="width:30px;height:30px;background-image:{{ t.imgBg }};background-size:contain;background-position:center;background-repeat:no-repeat;image-rendering:pixelated;"></div>
+                      </sc-if>
+                      <sc-if value="{{ t.noImg }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-family:'Cinzel',Georgia,serif;font-weight:700;font-size:14px;color:{{ t.glyphColor }};">{{ t.glyph }}</span>
+                      </sc-if>
+                    </div>
+                  </div>
+                  <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:10.5px;font-variant-numeric:tabular-nums;color:#e7d8b4;text-shadow:0 1px 4px rgba(0,0,0,0.95);white-space:nowrap;">{{ t.shortTime }}</span>
+                  
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ hasTip }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:230px;padding:10px 12px 11px;display:flex;flex-direction:column;gap:4px;background:rgba(10,8,7,0.9);border:1px solid rgba(216,182,88,0.3);box-shadow:0 10px 24px rgba(0,0,0,0.6);pointer-events:none;">
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                        <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:{{ tip.nameColor }};">{{ tip.name }}</span>
+                        <span style="font-family:'Cinzel',Georgia,serif;font-size:9.92px;letter-spacing:0.2em;text-transform:uppercase;color:#c9b489;white-space:nowrap;">{{ tip.kind }}</span>
+                      </div>
+                      <sc-for list="{{ tip.effects }}" as="e" hint-placeholder-count="1">
+                        <span style="font-size:15px;line-height:1.2;color:{{ e.color }};">{{ e.text }}</span>
+                      </sc-for>
+                      <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:12px;font-variant-numeric:tabular-nums;color:#e7d8b4;">{{ tip.time }} remaining</span>
+                    </div>
+                  </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ b.isC }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:0;top:246px;z-index:85;padding-left:24px;width:262px;display:flex;flex-direction:column;gap:14px;pointer-events:none;">
+              <sc-for list="{{ fieldsC }}" as="f" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:2px;margin-left:21.12px;">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                    <span style="font-family:'Cinzel',Georgia,serif;font-size:9.92px;letter-spacing:0.3em;text-transform:uppercase;color:#c9822f;text-shadow:0 1px 4px rgba(0,0,0,0.9);">{{ f.label }}</span>
+                    <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:17px;line-height:1.1;font-variant-numeric:tabular-nums;color:{{ f.netColor }};text-shadow:0 0 12px rgba(201,162,39,0.3), 0 2px 6px rgba(0,0,0,0.9);">{{ f.net }}</span>
+                  </div>
+                  <sc-for list="{{ f.sources }}" as="s" hint-placeholder-count="1">
+                    <div style="display:grid;grid-template-columns:minmax(0,1fr) auto 58px;gap:8px;align-items:baseline;font-size:14px;line-height:1.25;text-shadow:0 1px 4px rgba(0,0,0,0.95);">
+                      <span style="color:{{ s.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.name }}</span>
+                      <span style="color:{{ s.color }};font-variant-numeric:tabular-nums;">{{ s.value }}</span>
+                      <span style="font-family:'Cinzel',Georgia,serif;font-size:11px;font-weight:600;color:#e7d8b4;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;">{{ s.shortTime }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <div style="position:absolute;bottom:0;left:0;z-index:85;padding:0 19.2px 51.2px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;pointer-events:none;">
+            <div style="display:flex;flex-direction:column;line-height:1.12;margin-left:21.12px;">
+              <span style="font-family:'Cinzel',Georgia,serif;font-size:9.92px;letter-spacing:0.3em;text-transform:uppercase;color:#8fbf84;text-shadow:0 1px 4px rgba(0,0,0,0.9);">Desidia</span>
+              <span style="font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:20.48px;line-height:1.1;font-variant-numeric:tabular-nums;color:#d8e6cf;text-shadow:0 0 12px rgba(90,190,110,0.25), 0 2px 6px rgba(0,0,0,0.9);">64 / 120</span>
+            </div>
+            <div style="margin:0 0 0 -7.2px;display:block;width:186px;line-height:0;pointer-events:auto;cursor:pointer;">
+              <div style="position:relative;display:block;width:100%;aspect-ratio:1927 / 430;filter:drop-shadow(0 6px 13px rgba(0,0,0,0.6));">
+                <div style="position:absolute;inset:0;background-image:{{ desidiaBg }};background-size:100% 100%;image-rendering:pixelated;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px;font-size:17px;line-height:1.45;color:#c9b489;">
+    <div><a href="#1a">1a</a> lists each source with its effect lines (from the catalog copy and <code>describeCallInEffects</code>) and a draining bar. <a href="#1b">1b</a> is the compact option: one ring per source, detail on hover. <a href="#1c">1c</a> groups by the modifier field so stacked sources read as one net figure.</div>
+    <div>Hand of Glory has no specimen art, so in <a href="#1b">1b</a> it would fall back to a text glyph like the call rings. The room plate is shown without the degradation pass.</div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;sortBy&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;source&quot;,&quot;time left&quot;],&quot;default&quot;:&quot;source&quot;,&quot;tsType&quot;:&quot;'source' | 'time left'&quot;},&quot;showBars&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const MAL = 'maleficium', CALL = 'call';
+const GOLD = '#d8b658', ROSE = 'oklch(0.74 0.09 20)', BUFF = '#e7d8b4', DEBUFF = 'oklch(0.7 0.14 25)';
+const IMG = 'apps/web/public/assets/panvitium/maleficia/';
+const START = [
+  { id: 'black_salt_pouch', kind: MAL, name: 'Black Salt Pouch', img: IMG + 'black_salt_pouch.png', dur: 3600, left: 2537,
+    effects: [{ field: 'Reprobate generation', text: '+10% reprobate generation', value: '+10%', mul: 1.1 }] },
+  { id: 'defixio', kind: MAL, name: 'Defixio', img: IMG + 'defixio.png', dur: 3600, left: 1084,
+    effects: [{ field: 'Suicide rate', text: '+50% suicide rate', value: '+50%', mul: 1.5 }] },
+  { id: 'crossroads_dirt', kind: MAL, name: 'Crossroads Dirt', img: IMG + 'crossroads_dirt.png', dur: 3600, left: 411,
+    effects: [{ field: 'Indagatio time', text: '−15% Indagatio time', value: '−15%', mul: 0.85, lowerIsBetter: true }] },
+  { id: 'the-shipment', kind: CALL, name: 'The Shipment', caller: 'an acolyte', glyph: '×2', dur: 3600, left: 2232,
+    effects: [{ field: 'Reprobate generation', text: 'Reprobate generation doubles', value: '+100%', mul: 2 }] },
+  { id: 'social-platform', kind: CALL, name: 'Social Platform', caller: 'Mai', glyph: '×2', dur: 3600, left: 3100,
+    effects: [
+      { field: 'Influence regeneration', text: 'Influence regeneration doubles', value: '+100%', mul: 2 },
+      { field: 'Reprobate generation', text: 'Reprobate generation halves', value: '−50%', mul: 0.5, debuff: true }] },
+];
+
+function fmt(sec) {
+  const t = Math.max(0, Math.floor(sec)), h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+  const p = [];
+  if (h > 0) p.push(h + 'h');
+  if (m > 0 || h > 0) p.push(m + 'm');
+  p.push(s + 's');
+  return p.join(' ');
+}
+function shortFmt(sec) {
+  const t = Math.max(0, Math.floor(sec));
+  if (t >= 3600) return Math.floor(t / 3600) + 'h ' + Math.floor((t % 3600) / 60) + 'm';
+  if (t >= 60) return Math.floor(t / 60) + 'm';
+  return t + 's';
+}
+function pctText(mul, lowerIsBetter) {
+  const p = Math.round((mul - 1) * 100);
+  return (p >= 0 ? '+' : '−') + Math.abs(p) + '%';
+}
+
+function drawInfluence(img, frac) {
+  const cv = document.createElement('canvas'); cv.width = 96; cv.height = 96;
+  const ctx = cv.getContext('2d'), W = 96, H = 96;
+  const G = { cx: 0.483, cy: 0.515, rx: 0.252, ry: 0.272 };
+  const ecx = G.cx * W, ecy = G.cy * H, erx = G.rx * W, ery = G.ry * H;
+  ctx.save(); ctx.beginPath(); ctx.ellipse(ecx, ecy, erx, ery, 0, 0, Math.PI * 2); ctx.clip();
+  const top = ecy + ery - frac * (2 * ery);
+  const grad = ctx.createLinearGradient(0, top, 0, ecy + ery);
+  grad.addColorStop(0, '#e985dd'); grad.addColorStop(0.16, '#c451c4'); grad.addColorStop(0.42, '#9c30b0');
+  grad.addColorStop(0.7, '#6c2098'); grad.addColorStop(1, '#3c1170');
+  ctx.fillStyle = grad; ctx.fillRect(0, top, W, ecy + ery - top);
+  ctx.fillStyle = 'rgba(255,205,248,0.85)'; ctx.fillRect(0, top, W, Math.max(1, H * 0.02));
+  const sh = ctx.createRadialGradient(ecx, ecy, erx * 0.55, ecx, ecy, erx);
+  sh.addColorStop(0, 'rgba(20,6,42,0)'); sh.addColorStop(1, 'rgba(20,6,42,0.5)');
+  ctx.fillStyle = sh; ctx.fillRect(ecx - erx, top, erx * 2, ecy + ery - top);
+  ctx.restore();
+  ctx.drawImage(img, 0, 0, W, H);
+  return cv.toDataURL();
+}
+function drawDesidia(img, f) {
+  const cv = document.createElement('canvas'); cv.width = 85; cv.height = 19;
+  const ctx = cv.getContext('2d'), W = 85, H = 19;
+  const T = { x0: 0.163, x1: 0.878, y0: 0.283, y1: 0.722 };
+  const gx0 = T.x0 * W, gx1 = T.x1 * W, gy0 = T.y0 * H, gy1 = T.y1 * H, gw = gx1 - gx0, gh = gy1 - gy0;
+  ctx.save();
+  const r = gh * 0.42;
+  ctx.beginPath(); ctx.moveTo(gx0 + r, gy0); ctx.lineTo(gx1 - r, gy0); ctx.quadraticCurveTo(gx1, gy0, gx1, gy0 + r);
+  ctx.lineTo(gx1, gy1 - r); ctx.quadraticCurveTo(gx1, gy1, gx1 - r, gy1); ctx.lineTo(gx0 + r, gy1);
+  ctx.quadraticCurveTo(gx0, gy1, gx0, gy1 - r); ctx.lineTo(gx0, gy0 + r); ctx.quadraticCurveTo(gx0, gy0, gx0 + r, gy0);
+  ctx.closePath(); ctx.clip();
+  const level = gx0 + f * gw, amp = gw * 0.006;
+  ctx.beginPath(); ctx.moveTo(gx0 - 2, gy0 - 2); ctx.lineTo(level, gy0 - 2); ctx.lineTo(level, gy1 + 2); ctx.lineTo(gx0 - 2, gy1 + 2); ctx.closePath();
+  const grad = ctx.createLinearGradient(gx0, 0, level + amp, 0);
+  grad.addColorStop(0, '#092e1d'); grad.addColorStop(0.3, '#185c2f'); grad.addColorStop(0.58, '#2b8437');
+  grad.addColorStop(0.84, '#57ad48'); grad.addColorStop(1, '#8fd05f');
+  ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(level, gy0 - 2); ctx.lineTo(level, gy1 + 2);
+  ctx.lineWidth = Math.max(1, W * 0.006); ctx.strokeStyle = 'rgba(214,255,190,0.85)'; ctx.stroke();
+  const sh = ctx.createLinearGradient(0, gy0, 0, gy1);
+  sh.addColorStop(0, 'rgba(6,22,12,0.4)'); sh.addColorStop(0.42, 'rgba(6,22,12,0)'); sh.addColorStop(1, 'rgba(6,22,12,0.45)');
+  ctx.fillStyle = sh; ctx.fillRect(gx0 - 2, gy0 - 2, gw + 4, gh + 4);
+  ctx.restore();
+  ctx.drawImage(img, 0, 0, W, H);
+  return cv.toDataURL();
+}
+function load(src) {
+  return new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.src = src; });
+}
+
+class Component extends DCLogic {
+  state = { elapsed: 0, hover: 'defixio', hover2: null, influenceSrc: '', desidiaSrc: '' };
+
+  componentDidMount() {
+    this.timer = setInterval(() => this.setState((s) => ({ elapsed: s.elapsed + 1 })), 1000);
+    load('apps/web/public/assets/panvitium/hud/influence-vessel-frame.png').then((i) => this.setState({ influenceSrc: drawInfluence(i, 184 / 300) }));
+    load('apps/web/public/assets/panvitium/hud/desidia-vessel-frame.png').then((i) => this.setState({ desidiaSrc: drawDesidia(i, 64 / 120) }));
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+
+  renderVals() {
+    const sortBy = this.props.sortBy ?? 'source';
+    const showBars = this.props.showBars ?? true;
+    const el = this.state.elapsed;
+    const buffs = START.map((b) => ({ ...b, rem: Math.max(0, b.left - el) })).filter((b) => b.rem > 0);
+    const byTime = (a, b) => a.rem - b.rem;
+
+    const row = (b) => ({
+      name: b.name,
+      nameColor: b.kind === MAL ? GOLD : ROSE,
+      time: fmt(b.rem),
+      pct: ((b.rem / b.dur) * 100).toFixed(2) + '%',
+      barColor: b.kind === MAL ? '#c9822f' : ROSE,
+      effects: b.effects.map((e) => ({ text: e.text, color: e.debuff ? DEBUFF : BUFF })),
+    });
+    let groupsA = sortBy === 'time left'
+      ? [{ hasTitle: false, title: '', rows: buffs.slice().sort(byTime).map(row) }]
+      : [
+          { hasTitle: true, title: 'Maleficia', rows: buffs.filter((b) => b.kind === MAL).sort(byTime).map(row) },
+          { hasTitle: true, title: 'Calls', rows: buffs.filter((b) => b.kind === CALL).sort(byTime).map(row) },
+        ].filter((g) => g.rows.length > 0);
+
+    const ordered = sortBy === 'time left' ? buffs.slice().sort(byTime)
+      : [...buffs.filter((b) => b.kind === MAL).sort(byTime), ...buffs.filter((b) => b.kind === CALL).sort(byTime)];
+    const tilesB = ordered.map((b) => {
+      const p = (b.rem / b.dur) * 100;
+      const c = b.kind === MAL ? GOLD : ROSE;
+      return {
+        ...row(b),
+        kind: b.kind === MAL ? 'Maleficium' : 'Call · ' + b.caller,
+        hasImg: !!b.img, noImg: !b.img, imgBg: b.img ? 'url("' + b.img + '")' : 'none', glyph: b.glyph || '', glyphColor: c,
+        ring: `conic-gradient(${c} 0 ${p}%, rgba(231,216,180,0.14) ${p}% 100%)`,
+        shortTime: shortFmt(b.rem),
+        showTip: this.state.hover === b.id,
+        onEnter: () => this.setState({ hover: b.id }),
+      };
+    });
+
+    const tilesB2 = ordered.map((b) => {
+      const p = (b.rem / b.dur) * 100;
+      const c = b.kind === MAL ? GOLD : ROSE;
+      return {
+        ...row(b),
+        kind: b.kind === MAL ? 'Maleficium' : 'Call · ' + b.caller,
+        hasImg: !!b.img, noImg: !b.img, imgBg: b.img ? 'url("' + b.img + '")' : 'none', glyph: b.glyph || '', glyphColor: c,
+        ring: `conic-gradient(${c} 0 ${p}%, rgba(231,216,180,0.14) ${p}% 100%)`,
+        shortTime: shortFmt(b.rem),
+        showTip: this.state.hover2 === b.id,
+        onEnter: () => this.setState({ hover2: b.id }),
+        onLeave: () => this.setState((s) => (s.hover2 === b.id ? { hover2: null } : null)),
+      };
+    });
+    const tip = tilesB.find((t) => t.showTip);
+    const moreA = 0;
+    const fields = {};
+    buffs.forEach((b) => b.effects.forEach((e) => {
+      (fields[e.field] = fields[e.field] || { label: e.field, mul: 1, lowerIsBetter: !!e.lowerIsBetter, sources: [], soon: Infinity });
+      const f = fields[e.field];
+      f.mul *= e.mul; f.soon = Math.min(f.soon, b.rem);
+      f.sources.push({ name: b.name, nameColor: b.kind === MAL ? GOLD : ROSE, value: e.value, color: e.debuff ? DEBUFF : BUFF, shortTime: shortFmt(b.rem), rem: b.rem });
+    }));
+    const fieldsC = Object.values(fields).map((f) => {
+      const good = f.lowerIsBetter ? f.mul <= 1 : f.mul >= 1;
+      return { label: f.label, net: pctText(f.mul), netColor: good ? BUFF : DEBUFF, sources: f.sources.sort((a, b) => a.rem - b.rem), soon: f.soon };
+    }).sort((a, b) => sortBy === 'time left' ? a.soon - b.soon : 0);
+
+    return {
+      boards: [
+        { id: '2a', badge: '2a', title: 'Rings in columns', note: 'Hover a ring for its details', isA: false, isB: false, isC: false, isB2: true },
+        { id: 'current', badge: 'Now', title: 'Current HUD', note: 'No buff readout', isA: false, isB: false, isC: false },
+        { id: '1a', badge: '1a', title: 'Litany', note: 'Rows per source, effect lines and a draining bar', isA: true, isB: false, isC: false },
+        { id: '1b', badge: '1b', title: 'Rings', note: 'One ring per source, detail on hover', isA: false, isB: true, isC: false },
+        { id: '1c', badge: '1c', title: 'By effect', note: 'Net change per modifier, sources beneath', isA: false, isB: false, isC: true },
+      ],
+      groupsA, tilesB, tilesB2, fieldsC, showBars, hasMoreA: moreA > 0, moreA,
+      hasTip: !!tip, tip: tip || { effects: [] },
+      influenceBg: this.state.influenceSrc ? 'url("' + this.state.influenceSrc + '")' : 'none',
+      desidiaBg: this.state.desidiaSrc ? 'url("' + this.state.desidiaSrc + '")' : 'none',
+      influenceSrc: this.state.influenceSrc, desidiaSrc: this.state.desidiaSrc,
+    };
+  }
+}
+</script>
+</body>
+</html>

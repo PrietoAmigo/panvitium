@@ -13,6 +13,7 @@ import { buildGoetia } from './game/invocations.js';
 import { Loculi, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
 import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { DesidiaHud } from './ui/DesidiaHud.js';
+import { BuffsHud } from './ui/BuffsHud.js';
 import { usePrefersReducedMotion } from './ui/usePrefersReducedMotion.js';
 import { AchievementToast } from './ui/AchievementToast.js';
 import { Unveiling } from './ui/Unveiling.js';
@@ -288,6 +289,10 @@ export function App(): ReactElement {
           reliquary's ‹ arrow and the first relics of a full procession, and swallow their clicks as
           Desidia toggles. Clicking the vessel toggles Desidia (no separate button). */}
       {hudVisible && panel !== 'maleficia' && <DesidiaHud />}
+      {/* The temporary buffs: a countdown ring per live consumable or answered call, in the left
+          column between the two vessels. It shares Desidia's column, so it shares its rule and
+          steps aside over the Loculi too. Renders nothing while no buff runs. */}
+      {hudVisible && panel !== 'maleficia' && <BuffsHud />}
       {/* The Unveiling (z 88): a maleficium Emptio just brought home, over the room and every menu
           overlay and HUD, under the system modals. It waits (the queue holds in the store) while a
           descent, an answered call or the jumpscare has the screen. */}

@@ -103,9 +103,36 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1174** (sim 595 · shared 75 · api 20 · web 484).
+**Current test count: 1215** (sim 597 · shared 76 · api 20 · web 522).
 
-> **Latest change — UI: the Unveiling lingers twice as long, and Settings can turn it off.** The
+> **Latest change — UI: the temporary buffs, as rings between the vessels (Claude Design).** From
+> the delivered "Temporary buffs HUD" handoff (board 2a, "Rings in columns"; archived in
+> `docs/frontend/`): the timed effects in play get a readout of their own in the left HUD column,
+> between the Influence vessel and the Desidia vessel. Each live source is one 44 px **countdown
+> ring**: a single-use maleficium in `maleficiaBuffs` (Hand of Glory, Black Salt Pouch, Defixio,
+> Crossroads Dirt; in gold leaf) or one answered call's timed buffs (in a muted rose). The ring
+> empties clockwise as its timer runs down and carries the relic in the Loculi's pixel art (rarity
+> outline and all, in whole 2 px art pixels) or, where there is no art, its dominant magnitude
+> (`+33%` for Hand of Glory, `×2` or `×1.33` for a call), with a short countdown beneath (`1h 12m`,
+> `42m`, `37s`). The rings stack top to bottom, maleficia first and each group soonest to expire
+> first, and wrap into a further column when the band is full; the band follows the viewport, since
+> both vessels pin to its edges (326 px on a 720 px screen, as designed). Hovering or focusing a ring
+> (each a button named "source, effects, time remaining") opens a card to its right with the source,
+> its kind ("Maleficium", "Call · Mai"), one line per effect (a call's cut in red) and the exact time
+> left; leaving closes it at once. A call answered twice shows as two rings, and a stacked relic (a
+> second use adds an hour) holds a full ring until it drains back under the hour. The column shares
+> the Desidia vessel's rule, stepping aside over the Loculi, and renders nothing while no buff runs.
+> Every effect line carries its number: a relic's is its catalog clause ("+10% reprobate
+> generation"); a call's uses the call-in generator's vocabulary (`describeCallBuff`: "Reprobate
+> generation doubles", and "Gold gain increases by 33%" where the verb does not name the magnitude).
+> To name a call's ring, the sim now tags each call buff with its call and full duration
+> (`CallBuff.sourceId` / `durationSec`, set by `applyCallEffects` and kept by the decay),
+> additive-optional under ADR-023 (no schema bump; a buff from an older save reads as an unnamed
+> call, "The line"), and each call gains a `title` in `strings.phone.callIn.calls`. The view-model is
+> `game/buffs.ts`, the component `ui/BuffsHud.tsx` with `buffs-hud.css`. No RNG or modifier change.
+> Net **+41 tests** (sim 595 → 597, shared 75 → 76, web 484 → 522), plus a buffs-HUD e2e spec.
+>
+> **Earlier change — UI: the Unveiling lingers twice as long, and Settings can turn it off.** The
 > pop-up that plays when an Emptio purchase brings a maleficium home now **holds for 3 s** before
 > its 0.3 s fade (it was 1.5 s, the handoff's figure: a deliberate deviation, so the relic stays up
 > long enough to read); the countdown bar along its bottom edge runs over the same 3 s, and a click

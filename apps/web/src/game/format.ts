@@ -13,7 +13,7 @@ const MILLION = 1_000_000;
 const SUFFIXES = ['M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
 
 /** Two decimals with trailing zeros (and a bare dot) trimmed: 1.50→"1.5", 150.00→"150". */
-function trimDecimals(n: number): string {
+export function trimDecimals(n: number): string {
   return n.toFixed(2).replace(/\.?0+$/, '');
 }
 
@@ -53,6 +53,20 @@ export function formatDuration(ms: number): string {
   if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes}m`);
   parts.push(`${seconds}s`);
   return parts.join(' ');
+}
+
+/**
+ * The compact countdown under a buffs-HUD ring: the two leading units at most, so it fits under a
+ * 44px ring. "1h 12m" from an hour up, "42m" from a minute up, else "37s". Floored like
+ * `formatDuration`, which the hover card uses for the full figure.
+ */
+export function formatShortDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  if (totalSeconds >= 3_600) {
+    return `${Math.floor(totalSeconds / 3_600)}h ${Math.floor((totalSeconds % 3_600) / 60)}m`;
+  }
+  if (totalSeconds >= 60) return `${Math.floor(totalSeconds / 60)}m`;
+  return `${totalSeconds}s`;
 }
 
 const ROMAN_UNITS: readonly [number, string][] = [

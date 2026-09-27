@@ -86,6 +86,19 @@ function isGain(e: CallInEffect): boolean {
   return e.kind === 'permanentMul' || (e.kind === 'timedMul' && e.factor > 1);
 }
 
+/**
+ * One live timed effect as a standalone clause, for the buffs HUD ("Reprobate generation doubles"):
+ * the option sub-label's vocabulary without the duration, which the HUD counts down itself. Where the
+ * verb does not name the magnitude (×1.33, ÷1.5) the percentage follows it, so the line always
+ * carries its number ("Gold gain increases by 33%", "Influence regeneration drops by 33%").
+ */
+export function describeCallBuff(field: string, factor: number): string {
+  const verb = mulVerb(factor);
+  const named = verb !== 'increases' && verb !== 'drops';
+  const by = named ? '' : ` by ${Math.round(Math.abs(factor - 1) * 100)}%`;
+  return capitalize(`${fieldName(field)} ${verb}${by}`);
+}
+
 /** Clause for a gain effect (the main sentence). */
 function gainClause(e: CallInEffect): string {
   if (e.kind === 'timedMul') {
@@ -145,6 +158,16 @@ function callerName(tag: string): string {
   const shown = displayTag(tag);
   const parts = shown.split(' · ');
   return parts[parts.length - 1] ?? shown;
+}
+
+/**
+ * A call's name and caller for surfaces outside the call stage (the buffs HUD's hover card): the
+ * catalogue `title` and the big caller name (e.g. "Mai", "an acolyte"). `null` for an unknown id.
+ */
+export function callInSource(id: string): { title: string; caller: string } | null {
+  const copy = CATALOG[id];
+  if (!copy) return null;
+  return { title: copy.title, caller: callerName(copy.tag) };
 }
 
 /**

@@ -104,6 +104,33 @@ describe('gameStore — maleficia activation (5.1)', () => {
   });
 });
 
+describe('gameStore — answering an incoming call', () => {
+  it("applies the chosen option's timed buffs, tagged with the call they came from", () => {
+    store().answerCall('social-platform', 0); // influence regeneration ×2, reprobate generation ×0.5
+    expect(store().state?.lifetime.callBuffs).toEqual([
+      {
+        field: 'influenceRegenRate',
+        factor: 2,
+        remainingSeconds: 3600,
+        durationSec: 3600,
+        sourceId: 'social-platform',
+      },
+      {
+        field: 'reprobateGenMul',
+        factor: 0.5,
+        remainingSeconds: 3600,
+        durationSec: 3600,
+        sourceId: 'social-platform',
+      },
+    ]);
+  });
+
+  it('adds nothing for a decline', () => {
+    store().answerCall('social-platform', 2); // "Let it go"
+    expect(store().state?.lifetime.callBuffs).toEqual([]);
+  });
+});
+
 describe('gameStore — the Unveiling queue (maleficia brought home)', () => {
   /**
    * Buy one Witch Bottle through a real Emptio (60 s) from a fixed RNG seed, then return whether it

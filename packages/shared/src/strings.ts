@@ -51,6 +51,19 @@ export const strings = {
     label: 'Desidia',
     desidiaHint: 'Spend Desidia to make time run faster.',
   },
+  // The temporary-buffs HUD: a countdown ring per live single-use maleficium or answered call, in
+  // the left column between the Influence and Desidia vessels. The effect lines are not authored
+  // here; they come from the maleficia catalog copy and the call-in effect generator, numbers and
+  // all. `kind` labels the source on the hover card ("Call · Mai").
+  buffs: {
+    label: 'Temporary buffs',
+    kind: {
+      maleficium: 'Maleficium',
+      call: 'Call',
+    },
+    // A call buff kept from a save made before calls were named on their buffs.
+    unknownCall: 'The line',
+  },
   rooms: {
     studio: 'Studio',
     altar: 'Altar',
@@ -1244,7 +1257,8 @@ export const strings = {
     // English a player reads. `tag` is the caller line shown over the answered plate (the big name is
     // its last `·` segment); `line` is the spoken text and is present only for a future typed
     // (fileless) call; every catalogued call today plays its mp3. Latin choice labels are left
-    // untranslated (ADR-020). Canonical content: docs/PANVITIUM-CALLS-IN.md.
+    // untranslated (ADR-020). Canonical content: docs/PANVITIUM-CALLS-IN.md. `title` names the call
+    // outside the call stage (the buffs HUD rings).
     callIn: {
       // Top-left corner mark on the call stage, and the hint under a playing recording.
       kicker: 'Panvitium · the line',
@@ -1266,6 +1280,7 @@ export const strings = {
       calls: {
         // ── Positive buffs ──
         'the-cycle-turns': {
+          title: 'The Cycle Turns',
           tag: 'the line · Gideon Reyes',
           choices: [
             { label: 'Press the advantage' },
@@ -1274,6 +1289,7 @@ export const strings = {
           ],
         },
         'eager-hands': {
+          title: 'Eager Hands',
           tag: 'the line · an acolyte',
           choices: [
             { label: 'Take the hungry ones' },
@@ -1282,6 +1298,7 @@ export const strings = {
           ],
         },
         'a-good-find': {
+          title: 'A Good Find',
           tag: 'the line · an acolyte',
           choices: [
             { label: 'Keep digging' },
@@ -1290,6 +1307,7 @@ export const strings = {
           ],
         },
         'the-discipline-swells': {
+          title: 'The Discipline Swells',
           tag: 'the line · Gideon Reyes',
           choices: [
             { label: 'There could be something there…' },
@@ -1298,27 +1316,33 @@ export const strings = {
           ],
         },
         'doing-nothing': {
+          title: 'Doing Nothing',
           tag: 'the line · Mai',
           choices: [{ label: 'I will join them' }, { label: 'Kill them' }, { label: 'Let it go' }],
         },
         // ── Tradeoff buffs ──
         'the-looting': {
+          title: 'The Looting',
           tag: 'the line · Gideon Reyes',
           choices: [{ label: 'Make an example' }, { label: 'Let it go' }],
         },
         'blood-in-the-cage': {
+          title: 'Blood in the Cage',
           tag: 'the line · an acolyte',
           choices: [{ label: 'Show me the money' }, { label: 'Let it go' }],
         },
         'the-shipment': {
+          title: 'The Shipment',
           tag: 'the line · an acolyte',
           choices: [{ label: 'Flood a place' }, { label: 'Let it go' }],
         },
         'a-name-to-burn': {
+          title: 'A Name to Burn',
           tag: 'the line · an acolyte',
           choices: [{ label: 'Always, with everything' }, { label: 'Let it go' }],
         },
         parish: {
+          title: 'Parish',
           tag: 'the line · an acolyte',
           choices: [
             { label: 'Work behind the light' },
@@ -1327,6 +1351,7 @@ export const strings = {
           ],
         },
         ministry: {
+          title: 'Ministry',
           tag: 'the line · Mai',
           choices: [
             { label: "Let's push it" },
@@ -1335,6 +1360,7 @@ export const strings = {
           ],
         },
         'social-platform': {
+          title: 'Social Platform',
           tag: 'the line · Mai',
           choices: [
             { label: 'Keep these retards hooked' },
@@ -1344,10 +1370,12 @@ export const strings = {
         },
         // ── Lore ──
         'the-ward': {
+          title: 'The Ward',
           tag: 'the line · Fr. Emil Stahl',
           choices: [{ label: 'Listen to the end' }, { label: 'Hang up' }],
         },
         'the-journalist': {
+          title: 'The Journalist',
           tag: 'the line · Marina Zhao',
           choices: [
             { label: 'Literally FUCK YOUR OWN FACE' },
@@ -1361,10 +1389,12 @@ export const strings = {
           ],
         },
         succubus: {
+          title: 'Succubus',
           tag: 'unknown caller',
           choices: [{ label: 'No, thanks.' }, { label: 'Expello te, succube.' }],
         },
         astiwihad: {
+          title: 'Astiwihad',
           tag: 'unknown caller',
           choices: [
             { label: 'No, thanks.' },
@@ -1373,16 +1403,23 @@ export const strings = {
         },
         // ── Easter eggs ──
         'tormented-soul': {
+          title: 'Tormented Soul',
           tag: 'unknown caller',
           choices: [{ label: 'Hang up' }],
         },
         'ISP-change': {
+          title: 'ISP Change',
           tag: 'unknown caller',
           choices: [{ label: 'Mmm... how much cheaper?' }],
         },
       } as Record<
         string,
-        { tag: string; line?: string; choices: ReadonlyArray<{ label: string }> }
+        {
+          title: string;
+          tag: string;
+          line?: string;
+          choices: ReadonlyArray<{ label: string }>;
+        }
       >,
     },
   },

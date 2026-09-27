@@ -759,7 +759,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const effects = CALL_IN_BY_ID[callId]?.choices[choiceIndex]?.effects;
     // Unknown call/choice, or a decline / lore / easter-egg option (no effects) — nothing to apply.
     if (!effects || effects.length === 0) return;
-    set({ state: applyCallEffects(current, effects), notice: null });
+    // Tag the timed buffs with this call, so the buffs HUD can name their source.
+    set({ state: applyCallEffects(current, effects, callId), notice: null });
   },
 
   exportSave: () => {

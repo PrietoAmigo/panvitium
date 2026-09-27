@@ -77,6 +77,14 @@ export interface CallBuff {
   readonly factor: number;
   /** Seconds of buff left; the tick decays it by `simDelta` and drops it at 0 (Hand of Glory rule). */
   remainingSeconds: number;
+  /**
+   * The call whose answer granted it (its catalogue id), so the buffs HUD can name the source and
+   * read one answer's effects as a single ring. Presentation only: the modifier engine ignores it.
+   * Absent on a buff granted before sources were recorded (additive-optional, ADR-023).
+   */
+  readonly sourceId?: string;
+  /** The buff's full length in seconds, the HUD ring's denominator. Absent on the same older buffs. */
+  readonly durationSec?: number;
 }
 
 /** The per-modifier-field product of the active call buffs — folded into `computeModifiers`. */
@@ -128,13 +136,19 @@ export function callBuffMultipliers(state: GameState): CallBuffMultipliers {
   return out;
 }
 
-/** Apply one effect to the state (pure). */
-function applyEffect(state: GameState, e: CallInEffect): GameState {
+/** Apply one effect to the state (pure). `sourceId` tags a timed buff with the call it came from. */
+function applyEffect(state: GameState, e: CallInEffect, sourceId: string | undefined): GameState {
   switch (e.kind) {
     case 'timedMul': {
       // An inert factor or non-positive duration adds nothing — never store a dead buff.
       if (e.factor === 1 || e.durationSec <= 0) return state;
-      const buff: CallBuff = { field: e.field, factor: e.factor, remainingSeconds: e.durationSec };
+      const buff: CallBuff = {
+        field: e.field,
+        factor: e.factor,
+        remainingSeconds: e.durationSec,
+        durationSec: e.durationSec,
+        ...(sourceId !== undefined ? { sourceId } : {}),
+      };
       return {
         ...state,
         lifetime: { ...state.lifetime, callBuffs: [...state.lifetime.callBuffs, buff] },
@@ -165,12 +179,18 @@ function applyEffect(state: GameState, e: CallInEffect): GameState {
 
 /**
  * Apply a chosen call option's effects to the state, in order (pure). One-shot effects mutate the
- * state immediately; `timedMul` effects append a buff to `lifetime.callBuffs`. Called by the store
- * when the player picks an option on an answered incoming call.
+ * state immediately; `timedMul` effects append a buff to `lifetime.callBuffs`, each tagged with the
+ * answered call's id (`sourceId`) and its full duration, so one answer's buffs sit together in the
+ * list and the HUD can read them as one source. Called by the store when the player picks an option
+ * on an answered incoming call.
  */
-export function applyCallEffects(state: GameState, effects: readonly CallInEffect[]): GameState {
+export function applyCallEffects(
+  state: GameState,
+  effects: readonly CallInEffect[],
+  sourceId?: string,
+): GameState {
   let working = state;
-  for (const e of effects) working = applyEffect(working, e);
+  for (const e of effects) working = applyEffect(working, e, sourceId);
   return working;
 }
 
@@ -186,7 +206,8 @@ export function advanceCallBuffs(state: GameState, deltaSeconds: number): GameSt
   const next: CallBuff[] = [];
   for (const b of buffs) {
     const remaining = b.remainingSeconds - deltaSeconds;
-    if (remaining > 0) next.push({ field: b.field, factor: b.factor, remainingSeconds: remaining });
+    // Spread so the source tag and duration ride along with the decayed timer.
+    if (remaining > 0) next.push({ ...b, remainingSeconds: remaining });
   }
   return { ...state, lifetime: { ...state.lifetime, callBuffs: next } };
 }
