@@ -7,9 +7,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildCallInView,
+  callInSource,
   pickIncomingCall,
   isCallEligible,
   eligibleCallIds,
+  describeCallBuff,
   describeCallInEffects,
   type CallEligibilityContext,
 } from './callIn.js';
@@ -123,6 +125,39 @@ describe('describeCallInEffects', () => {
 
   it('returns an empty string when there are no effects', () => {
     expect(describeCallInEffects([])).toBe('');
+  });
+});
+
+describe('describeCallBuff (the buffs HUD effect line)', () => {
+  it('names the round multipliers by their verb, with no duration', () => {
+    expect(describeCallBuff('reprobateGenMul', 2)).toBe('Reprobate generation doubles');
+    expect(describeCallBuff('desidiaGainMul', 3)).toBe('Desidia generation triples');
+    expect(describeCallBuff('reprobateGenMul', 0.5)).toBe('Reprobate generation halves');
+  });
+
+  it('carries the percentage where the verb does not name it', () => {
+    expect(describeCallBuff('goldGainMul', 1.33)).toBe('Gold gain increases by 33%');
+    expect(describeCallBuff('goldGainMul', 1.25)).toBe('Gold gain increases by 25%');
+    expect(describeCallBuff('influenceRegenRate', 1 / 1.5)).toBe(
+      'Influence regeneration drops by 33%',
+    );
+  });
+});
+
+describe('callInSource', () => {
+  it("gives a call's title and big caller name", () => {
+    expect(callInSource('social-platform')).toEqual({ title: 'Social Platform', caller: 'Mai' });
+    expect(callInSource('the-shipment')).toEqual({ title: 'The Shipment', caller: 'an acolyte' });
+  });
+
+  it('is null for an unknown id', () => {
+    expect(callInSource('no-such-call')).toBeNull();
+  });
+
+  it('every catalogue call has a title', () => {
+    for (const data of CALLS_IN) {
+      expect(callInSource(data.id)?.title, `title for ${data.id}`).toBeTruthy();
+    }
   });
 });
 

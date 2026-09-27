@@ -72,8 +72,37 @@ describe('applyCallEffects — timed buffs', () => {
       { kind: 'timedMul', field: 'reprobateGenMul', factor: 1.33, durationSec: 3600 },
     ]);
     expect(s.lifetime.callBuffs).toEqual([
-      { field: 'reprobateGenMul', factor: 1.33, remainingSeconds: 3600 },
+      { field: 'reprobateGenMul', factor: 1.33, remainingSeconds: 3600, durationSec: 3600 },
     ]);
+  });
+
+  it('tags every timed buff of one answer with the call it came from', () => {
+    const s = applyCallEffects(
+      stateWith(),
+      [
+        { kind: 'timedMul', field: 'influenceRegenRate', factor: 2, durationSec: 3600 },
+        { kind: 'timedMul', field: 'reprobateGenMul', factor: 0.5, durationSec: 3600 },
+        { kind: 'spendGoldPct', pct: 50 },
+      ],
+      'social-platform',
+    );
+    expect(s.lifetime.callBuffs).toEqual([
+      {
+        field: 'influenceRegenRate',
+        factor: 2,
+        remainingSeconds: 3600,
+        durationSec: 3600,
+        sourceId: 'social-platform',
+      },
+      {
+        field: 'reprobateGenMul',
+        factor: 0.5,
+        remainingSeconds: 3600,
+        durationSec: 3600,
+        sourceId: 'social-platform',
+      },
+    ]);
+    expect(s.lifetime.gold.toNumber()).toBeCloseTo(500, 6); // the one-shot cost still applies
   });
 
   it('never stores a dead buff (inert factor or non-positive duration)', () => {
@@ -129,6 +158,29 @@ describe('advanceCallBuffs', () => {
     const after = advanceCallBuffs(s, 5).lifetime.callBuffs;
     expect(after).toHaveLength(1);
     expect(after[0]!.field).toBe('reprobateGenMul');
+  });
+
+  it('keeps the source tag and full duration as the timer decays', () => {
+    const s = stateWith({
+      callBuffs: [
+        {
+          field: 'reprobateGenMul',
+          factor: 2,
+          remainingSeconds: 100,
+          durationSec: 3600,
+          sourceId: 'the-shipment',
+        },
+      ],
+    });
+    expect(advanceCallBuffs(s, 25).lifetime.callBuffs).toEqual([
+      {
+        field: 'reprobateGenMul',
+        factor: 2,
+        remainingSeconds: 75,
+        durationSec: 3600,
+        sourceId: 'the-shipment',
+      },
+    ]);
   });
 });
 

@@ -177,6 +177,36 @@ describe('call buffs (calls-in) — ADR-023 additive-optional round-trip', () =>
     ]);
   });
 
+  it('the source tag and full duration round-trip; a buff without them stays without', () => {
+    const fresh = createInitialState('seed', 0);
+    const withBuffs: GameState = {
+      ...fresh,
+      lifetime: {
+        ...fresh.lifetime,
+        callBuffs: [
+          {
+            field: 'reprobateGenMul',
+            factor: 2,
+            remainingSeconds: 1800,
+            durationSec: 3600,
+            sourceId: 'the-shipment',
+          },
+          { field: 'goldGainMul', factor: 1.33, remainingSeconds: 600 },
+        ],
+      },
+    };
+    const serialized = serializeGameState(withBuffs);
+    // An untagged (pre-source) buff carries no sourceId/durationSec keys on the wire.
+    expect(serialized.lifetime.callBuffs?.[1]).toEqual({
+      field: 'goldGainMul',
+      factor: 1.33,
+      remainingSeconds: 600,
+    });
+    expect(deserializeGameState(serialized).lifetime.callBuffs).toEqual(
+      withBuffs.lifetime.callBuffs,
+    );
+  });
+
   it('drops a buff whose field a newer save introduced (unknown target)', () => {
     const serialized = serializeGameState(createInitialState('seed', 0));
     const withUnknown = {
