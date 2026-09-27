@@ -3,9 +3,10 @@ import { strings } from '@panvitium/shared';
 import { useGameStore } from '../store/gameStore.js';
 
 /**
- * Settings — a fixed gear in the top-right opening an overlay with the local-first save tools:
- * export (back up / move a game), import (replace the current game from a pasted save), and a
- * guarded hard reset. Audio and the `DegradePass` knobs are deferred to the 5.3 art/audio track.
+ * Settings — a fixed gear in the top-right opening an overlay with this device's pop-up switch (the
+ * Unveiling, on by default) and the local-first save tools: export (back up / move a game), import
+ * (replace the current game from a pasted save), and a guarded hard reset. Audio and the
+ * `DegradePass` knobs are deferred to the 5.3 art/audio track.
  */
 export function SettingsPanel(): ReactElement {
   const open = useGameStore((s) => s.settingsOpen);
@@ -39,6 +40,8 @@ function SettingsOverlay({ onClose }: { onClose: () => void }): ReactElement {
   const exportSave = useGameStore((s) => s.exportSave);
   const importSave = useGameStore((s) => s.importSave);
   const hardReset = useGameStore((s) => s.hardReset);
+  const showUnveiling = useGameStore((s) => s.preferences.showUnveiling);
+  const setShowUnveiling = useGameStore((s) => s.setShowUnveiling);
 
   const [exported, setExported] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -76,6 +79,19 @@ function SettingsOverlay({ onClose }: { onClose: () => void }): ReactElement {
     <div className="settings-modal" role="dialog" aria-label={s.title}>
       <div className="settings-inner">
         <h2 className="settings-title">{s.title}</h2>
+
+        <section className="settings-section">
+          <h3 className="settings-section-title">{s.popupsTitle}</h3>
+          <p className="settings-hint">{s.unveilingHint}</p>
+          <label className="settings-toggle">
+            <input
+              type="checkbox"
+              checked={showUnveiling}
+              onChange={(e) => setShowUnveiling(e.currentTarget.checked)}
+            />
+            {s.showUnveiling}
+          </label>
+        </section>
 
         <section className="settings-section">
           <h3 className="settings-section-title">{s.exportTitle}</h3>

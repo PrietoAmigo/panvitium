@@ -2059,6 +2059,21 @@ body {
   opacity: 0.8;
   line-height: 1.4;
 }
+.settings-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.settings-toggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  color-scheme: dark;
+  accent-color: var(--candle);
+  cursor: pointer;
+}
 .settings-blob {
   width: 100%;
   box-sizing: border-box;

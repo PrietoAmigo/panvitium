@@ -891,6 +891,10 @@ export const strings = {
   },
   settings: {
     title: 'Settings',
+    popupsTitle: 'Pop-ups',
+    unveilingHint:
+      'The Unveiling shows each maleficium Emptio brings home. Turned off, new relics arrive quietly in the Loculi.',
+    showUnveiling: 'Show the Unveiling',
     exportTitle: 'Export save',
     exportHint: 'Copy this text somewhere safe to back up your game or move it to another device.',
     export: 'Generate export',

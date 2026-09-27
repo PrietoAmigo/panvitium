@@ -9,6 +9,7 @@ import {
   type GameState,
 } from '@panvitium/sim';
 import { useGameStore } from './gameStore.js';
+import { DEFAULT_PREFERENCES } from './preferences.js';
 
 const store = (): ReturnType<typeof useGameStore.getState> => useGameStore.getState();
 
@@ -171,6 +172,59 @@ describe('gameStore — the Unveiling queue (maleficia brought home)', () => {
     useGameStore.setState({ lastObtained: { id: 'codex_gigas', seq: 7 } });
     store().clearLastObtained();
     expect(store().lastObtained).toBeNull();
+  });
+
+  it('plays the Unveiling by default', () => {
+    expect(store().preferences.showUnveiling).toBe(true);
+  });
+
+  it('queues nothing while the Unveiling is off, yet the Loculi still opens on the newest relic', () => {
+    /** Buy through seeds from `from` until a Witch Bottle comes home; the seed after it. */
+    const bringHome = (from: number): number => {
+      for (let seed = from; seed < from + 60; seed += 1) if (purchase(seed)) return seed + 1;
+      throw new Error('no purchase came home');
+    };
+    store().setShowUnveiling(false);
+    const next = bringHome(1);
+    expect(store().unveilQueue).toHaveLength(0);
+    expect(store().lastObtained?.id).toBe('witch_bottle');
+
+    // Back on, the next relic plays again.
+    store().setShowUnveiling(true);
+    bringHome(next);
+    expect(store().unveilQueue).toHaveLength(1);
+    expect(store().unveilQueue[0]).toEqual(store().lastObtained);
+  });
+
+  it('drops the Unveilings still waiting when turned off, and replays none when turned back on', () => {
+    useGameStore.setState({
+      unveilQueue: [
+        { id: 'codex_gigas', seq: 201 },
+        { id: 'witch_bottle', seq: 202 },
+      ],
+      lastObtained: { id: 'witch_bottle', seq: 202 },
+    });
+    store().setShowUnveiling(false);
+    expect(store().preferences.showUnveiling).toBe(false);
+    expect(store().unveilQueue).toHaveLength(0);
+    // The Loculi's focus is no pop-up: it stays.
+    expect(store().lastObtained).toEqual({ id: 'witch_bottle', seq: 202 });
+
+    store().setShowUnveiling(true);
+    expect(store().preferences.showUnveiling).toBe(true);
+    expect(store().unveilQueue).toHaveLength(0);
+  });
+
+  it('remembers the choice on this device, apart from the save', () => {
+    store().setShowUnveiling(false);
+    // A reload reads it back...
+    useGameStore.setState({ ready: false, preferences: DEFAULT_PREFERENCES });
+    store().init();
+    expect(store().preferences.showUnveiling).toBe(false);
+    // ...but it is no game state: the save does not carry it, and a hard reset leaves it be.
+    expect(store().exportSave()).not.toContain('showUnveiling');
+    store().hardReset();
+    expect(store().preferences.showUnveiling).toBe(false);
   });
 
   it('never plays a relic across a new game or a rise from Katabasis', () => {

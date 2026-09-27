@@ -1,12 +1,14 @@
 /**
  * The Unveiling host: it plays the store's queue (the maleficia Emptio just brought home) one relic
  * at a time, retiring each once its fade is done so the next mounts fresh, renders nothing for an
- * empty queue, and skips an id the catalog does not know.
+ * empty queue, skips an id the catalog does not know, and gives way at once when the player turns
+ * the pop-up off in Settings.
  */
 import { describe, it, expect, afterEach, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useGameStore } from '../store/gameStore.js';
+import { DEFAULT_PREFERENCES } from '../store/preferences.js';
 import { UNVEIL_FADE_MS, UNVEIL_HOLD_MS } from '../menus/MaleficiumUnveiling.js';
 import { Unveiling } from './Unveiling.js';
 
@@ -23,7 +25,7 @@ afterAll(() => {
 });
 beforeEach(() => {
   vi.useFakeTimers();
-  useGameStore.setState({ unveilQueue: [], lastObtained: null });
+  useGameStore.setState({ unveilQueue: [], lastObtained: null, preferences: DEFAULT_PREFERENCES });
 });
 afterEach(() => {
   if (root) act(() => root!.unmount());
@@ -31,7 +33,8 @@ afterEach(() => {
   root = null;
   container = null;
   vi.useRealTimers();
-  useGameStore.setState({ unveilQueue: [], lastObtained: null });
+  useGameStore.setState({ unveilQueue: [], lastObtained: null, preferences: DEFAULT_PREFERENCES });
+  localStorage.clear();
 });
 
 function render(): void {
@@ -79,6 +82,21 @@ describe('Unveiling host', () => {
     playThrough();
     expect(container!.querySelector('.unveiling')).toBeNull();
     expect(useGameStore.getState().unveilQueue).toHaveLength(0);
+  });
+
+  it('takes down the relic on screen, and those waiting, when the pop-up is turned off', () => {
+    useGameStore.setState({
+      unveilQueue: [
+        { id: 'codex_gigas', seq: 1 },
+        { id: 'witch_bottle', seq: 2 },
+      ],
+    });
+    render();
+    expect(shown()).toBe('Codex Gigas');
+    act(() => useGameStore.getState().setShowUnveiling(false));
+    expect(container!.querySelector('.unveiling')).toBeNull();
+    playThrough();
+    expect(container!.querySelector('.unveiling')).toBeNull();
   });
 
   it('skips a relic the catalog does not know', () => {

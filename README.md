@@ -103,9 +103,24 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1160** (sim 595 · shared 75 · api 20 · web 470).
+**Current test count: 1174** (sim 595 · shared 75 · api 20 · web 484).
 
-> **Latest change — UI: a Calculator on the desk PC.** The PC's file manager gains a **Calculator**
+> **Latest change — UI: the Unveiling lingers twice as long, and Settings can turn it off.** The
+> pop-up that plays when an Emptio purchase brings a maleficium home now **holds for 3 s** before
+> its 0.3 s fade (it was 1.5 s, the handoff's figure: a deliberate deviation, so the relic stays up
+> long enough to read); the countdown bar along its bottom edge runs over the same 3 s, and a click
+> still dismisses it early. The Settings overlay (the gear, or the title menu's Settings entry) opens
+> on a new **Pop-ups** section with a **Show the Unveiling** checkbox, **on by default**. Unticked,
+> the store queues no Unveiling for new relics, and turning it off also drops any still waiting (or
+> on screen), so none plays later; the Loculi still opens on the newest relic either way. The choice
+> is a **device-local preference**, kept apart from the save under its own `localStorage` key
+> (`panvitium:prefs`, read in `store/preferences.ts`, where anything unreadable falls back to its
+> default): it rides no cloud sync, export or import, and a hard reset leaves it be. The store gains
+> `preferences` (loaded on `init`) and `setShowUnveiling`; the copy lives in `strings.settings`. No
+> sim, save or RNG change. Net **+14 tests** (web 470 → 484), plus an Unveiling e2e spec (the
+> pop-up's stay, timed in the browser, and the switch surviving a reload).
+>
+> **Earlier change — UI: a Calculator on the desk PC.** The PC's file manager gains a **Calculator**
 > program (last in the grid; its tile a 2 × 2 of + − × =), a full-bleed dark take on the Ubuntu
 > desktop's own GNOME Calculator: GNOME's basic keypad (7 8 9 ÷ ⌫ C · 4 5 6 × ( ) · 1 2 3 − x² √ ·
 > 0 . % + =) under a row for the memory register (MC MR M+ M−), ± and EXP, with the history tape
@@ -1742,8 +1757,10 @@ it is the UX an idle game needs to keep a cold-start player past the first minut
   `serializeSaveBlob`), **import** (replace the game from a pasted save, validated through `parseSaveBlob`
   → `migrateSave`, written and re-loaded like the conflict chooser's adopt path), and a **guarded hard
   reset** (two-step confirm). Backed by `exportSave` / `importSave` store actions and round-trip +
-  rejection tests. **Still to do in this panel:** audio controls (wait on the 5.3 art/audio track) and
-  the `DegradePass` knobs (the engine already exposes them).
+  rejection tests. Also shipped: a **Pop-ups** section whose **Show the Unveiling** checkbox (on by
+  default) turns the Emptio pop-up off, a device-local preference kept apart from the save
+  (`store/preferences.ts`). **Still to do in this panel:** audio controls (wait on the 5.3 art/audio
+  track) and the `DegradePass` knobs (the engine already exposes them).
 - **Return-from-away recap** _(✓ shipped)_. A welcome-back screen on resume showing the time away and
   the net souls / gold / influence / reprobates that accrued, replacing the old silent catch-up. Driven
   by a pure `offlineRecap(saved, resumed, now)` diff (separate from `resumeGame`, so its tests stay

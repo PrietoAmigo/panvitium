@@ -816,8 +816,9 @@ export function IndagatioEmptioProgram(): ReactElement {
 /**
  * The Loculi reliquary (Invocation Room): a self-framed, full-surface overlay (mounted by App like
  * Ars Goetia / the Suasio scroll, NOT via PanelShell). Owned items grouped by id, stackables showing
- * their count; the single-use rites wired to `activateMaleficium`. It opens on the relic the
- * Unveiling last showed (else the rarest), and forgets that focus when it closes.
+ * their count; the single-use rites wired to `activateMaleficium`. It opens on the newest relic
+ * Emptio brought home (else the rarest), whether or not its Unveiling played, and forgets that
+ * focus when it closes.
  */
 export function Loculi({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
