@@ -2,8 +2,9 @@
  * Render tests for the Unveiling (Claude Design, "Loculi Reliquary" handoff, screen 2), the pop-up
  * that plays when Emptio brings a maleficium home: its copy (the "Maleficium obtained" kicker, the
  * rarity between diamonds, name, flavour, and the effect as a headline number), and its timing (a
- * 1.5 s hold, then a 0.3 s fade before `onDone`; a click dismisses early; a click during the fade
- * does nothing; unmounting clears its timers). The canvases have no jsdom surface.
+ * 3 s hold, twice the handoff's 1.5 s, with the countdown bar running over it, then a 0.3 s fade
+ * before `onDone`; a click dismisses early; a click during the fade does nothing; unmounting clears
+ * its timers). The canvases have no jsdom surface.
  */
 import { describe, it, expect, afterEach, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { act, createElement } from 'react';
@@ -89,17 +90,25 @@ describe('the Unveiling — copy', () => {
 });
 
 describe('the Unveiling — timing', () => {
-  it('holds for 1.5 s, then fades for 0.3 s before it is done', () => {
+  it('holds for 3 s, then fades for 0.3 s before it is done', () => {
     const onDone = vi.fn();
     render(onDone);
     expect(overlay().style.opacity).toBe('1');
-    advance(UNVEIL_HOLD_MS - 1);
+    advance(2999);
     expect(overlay().style.opacity).toBe('1');
     advance(1);
     expect(overlay().style.opacity).toBe('0');
     expect(onDone).not.toHaveBeenCalled();
-    advance(UNVEIL_FADE_MS);
+    advance(299);
+    expect(onDone).not.toHaveBeenCalled();
+    advance(1);
     expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs its countdown bar over the whole hold', () => {
+    render(() => {});
+    const bar = overlay().querySelector<HTMLElement>('.unveiling-countdown');
+    expect(bar?.style.animationDuration).toBe(`${UNVEIL_HOLD_MS / 1000}s`);
   });
 
   it('dismisses early on a click; a click during the fade does nothing', () => {

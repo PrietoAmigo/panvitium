@@ -6,7 +6,8 @@
  *
  * It also keeps transient, NON-persisted channels surfaced from the sim each tick: a rolling
  * outcome `log` (the PC's game log, 02 §10) and the maleficia Emptio has just brought home, queued
- * for their Unveiling. None of them is part of the save.
+ * for their Unveiling. None of them is part of the save; nor are the device-local `preferences`
+ * (the Settings switches), which live under their own localStorage key (see preferences.ts).
  */
 import { create } from 'zustand';
 import {
@@ -58,6 +59,12 @@ import {
   serializeSaveBlob,
   parseSaveBlob,
 } from './persistence.js';
+import {
+  DEFAULT_PREFERENCES,
+  loadPreferences,
+  savePreferences,
+  type Preferences,
+} from './preferences.js';
 import { resumeGame } from '../game/session.js';
 import { CALL_IN_BY_ID } from '../menus/calls-in.data.js';
 import {
@@ -99,14 +106,19 @@ export interface ObtainedRelic {
 
 let nextObtainedSeq = 1;
 
-/** Queue each newly acquired maleficium for its Unveiling; the last becomes the Loculi's focus. */
+/**
+ * Queue each newly acquired maleficium for its Unveiling (unless the player has turned the pop-up
+ * off in Settings); the last becomes the Loculi's focus either way.
+ */
 function obtainedPatch(
   queue: readonly ObtainedRelic[],
   ids: readonly string[],
-): { unveilQueue: ObtainedRelic[]; lastObtained: ObtainedRelic } | Record<string, never> {
+  unveil: boolean,
+): { unveilQueue?: ObtainedRelic[]; lastObtained?: ObtainedRelic } {
   if (ids.length === 0) return {};
   const fresh = ids.map((id) => ({ id, seq: nextObtainedSeq++ }));
-  return { unveilQueue: [...queue, ...fresh], lastObtained: fresh[fresh.length - 1]! };
+  const lastObtained = fresh[fresh.length - 1]!;
+  return unveil ? { unveilQueue: [...queue, ...fresh], lastObtained } : { lastObtained };
 }
 
 /** The transient obtain channels, cleared whenever another game (or lifetime) takes the screen. */
@@ -123,10 +135,14 @@ interface GameStore {
   achievementToast: string | null;
   /**
    * Maleficia Emptio has brought home, awaiting their Unveiling pop-up, oldest first (transient).
-   * Filled only from live tick outcomes, so a load or a Katabasis carry-over never plays one.
+   * Filled only from live tick outcomes, so a load or a Katabasis carry-over never plays one, and
+   * only while the pop-up is on (`preferences.showUnveiling`).
    */
   unveilQueue: ObtainedRelic[];
-  /** The latest of them: the Loculi opens on it, then forgets it on close (transient). */
+  /**
+   * The newest maleficium Emptio brought home, pop-up or not: the Loculi opens on it, then forgets
+   * it on close (transient).
+   */
   lastObtained: ObtainedRelic | null;
   /** A transient message for a refused action (e.g. "not enough gold"), or null. */
   notice: string | null;
@@ -141,6 +157,11 @@ interface GameStore {
   titleOpen: boolean;
   /** True when the Settings overlay is open (gear button or the title menu's Settings entry). */
   settingsOpen: boolean;
+  /**
+   * This device's Settings switches, read from localStorage on `init` (not part of the save, so a
+   * hard reset, an import or a cloud save leaves them alone).
+   */
+  preferences: Preferences;
   /** The recap produced by the last descent, shown on the recap screen. */
   recap: KatabasisRecap | null;
   /**
@@ -278,6 +299,12 @@ interface GameStore {
   openSettings: () => void;
   /** Close the Settings overlay. */
   closeSettings: () => void;
+  /**
+   * Turn the Unveiling pop-up on or off, remembered on this device. Turning it off also drops any
+   * Unveiling still waiting (or playing), so none surfaces later; the Loculi still opens on the
+   * newest relic either way.
+   */
+  setShowUnveiling: (on: boolean) => void;
   /** Mark one inbox email read (Phase 5.2). Relies on the debounced autosave. */
   markEmailRead: (id: string) => void;
   /** Mark every unread inbox email read. */
@@ -348,6 +375,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   katabasisEntry: null,
   titleOpen: true,
   settingsOpen: false,
+  preferences: DEFAULT_PREFERENCES,
   recap: null,
   eternalReveal: false,
   user: null,
@@ -363,7 +391,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // A save written mid-descent (inKatabasis) reloads frozen; resume the allocation menu so the
     // player picks up where they left off rather than landing in a torn-down lifetime.
     const phasePatch = loaded.state.inKatabasis === true ? { katabasisPhase: 'menu' as const } : {};
-    set({ ...loaded, ...phasePatch, katabasisEntry: null, ready: true });
+    set({
+      ...loaded,
+      ...phasePatch,
+      katabasisEntry: null,
+      preferences: loadPreferences(),
+      ready: true,
+    });
   },
 
   advance: (deltaSeconds) => {
@@ -407,12 +441,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
         playerEvents.length > 0
           ? [...playerEvents].reverse().concat(s.log).slice(0, LOG_CAP)
           : s.log;
-      // An Emptio purchase that completed brings its maleficium home: queue its Unveiling.
+      // An Emptio purchase that completed brings its maleficium home: queue its Unveiling (if on).
       const acquired = events.flatMap((e) => e.maleficiaAcquired ?? []);
       return {
         state,
         log,
-        ...obtainedPatch(s.unveilQueue, acquired),
+        ...obtainedPatch(s.unveilQueue, acquired, s.preferences.showUnveiling),
         ...noticePatch,
         ...achievementPatch,
       };
@@ -693,6 +727,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
   openSettings: () => set({ settingsOpen: true }),
   closeSettings: () => set({ settingsOpen: false }),
+  setShowUnveiling: (on) => {
+    const preferences = { ...get().preferences, showUnveiling: on };
+    savePreferences(preferences);
+    set(on ? { preferences } : { preferences, unveilQueue: [] });
+  },
 
   markEmailRead: (id) => {
     const s = get().state;

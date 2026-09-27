@@ -4958,7 +4958,7 @@ body {
 /* The Unveiling's hold, running out along the bottom edge (duration set inline). */
 .unveiling-countdown {
   transform-origin: left center;
-  animation: unveiling-countdown 1.5s linear both;
+  animation: unveiling-countdown 3s linear both;
 }
 @keyframes unveiling-countdown {
   from {

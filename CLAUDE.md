@@ -112,7 +112,10 @@ unified `maleficiaBuffs` map, drop the old Defixio cull curse, strip the removed
   metadata and delegates _all_ logic to the sim's `tick`/`startAction`/etc. UI-only state (current
   room, open panel) lives in components, not the store. It also surfaces two transient,
   non-persisted channels from each tick: the rolling outcome `log` and the `unveilQueue` of
-  maleficia Emptio has just brought home.
+  maleficia Emptio has just brought home. Device-local player preferences (the Settings switches,
+  e.g. the Unveiling on/off) are not game state: they live in `store/preferences.ts` under their
+  own `localStorage` key, never in `GameState` or the save, and the store holds them as
+  `preferences`.
 - `game/` — thin **view-model adapters** (`buildGoetia`, `buildAltar`, `buildCabinet`, …) that map
   the sim catalogs + live state onto presentation shapes, plus formatting/labels. No game logic.
 - `menus/` — the diegetic room/panel UI (the integrated design handoff): `RoomView`, `PanelShell`,
