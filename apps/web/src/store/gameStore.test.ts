@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
+  ACTIONS,
   bn,
   floor,
   sinLevel,
@@ -133,7 +134,7 @@ describe('gameStore — answering an incoming call', () => {
 
 describe('gameStore — the Unveiling queue (maleficia brought home)', () => {
   /**
-   * Buy one Witch Bottle through a real Emptio (60 s) from a fixed RNG seed, then return whether it
+   * Buy one Witch Bottle through a real Emptio (its base time) from a fixed RNG seed, then return whether it
    * came home. The tier draw is seeded, so each seed's outcome is deterministic.
    */
   function purchase(seed: number): boolean {
@@ -153,7 +154,7 @@ describe('gameStore — the Unveiling queue (maleficia brought home)', () => {
     const owned = (store().state as GameState).lifetime.maleficia.length;
     store().act('emptio', 'witch_bottle');
     expect(store().notice).toBeNull();
-    store().advance(60);
+    store().advance(ACTIONS.emptio!.baseTimeSeconds);
     expect(store().state?.lifetime.actionQueue).toHaveLength(0);
     return (store().state as GameState).lifetime.maleficia.length > owned;
   }

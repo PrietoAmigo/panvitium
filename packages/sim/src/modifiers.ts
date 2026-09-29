@@ -281,7 +281,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const vanagloriaLvl = sinLevel(state.devotion.vanagloria);
   const iraLvl = sinLevel(state.devotion.ira);
 
-  // Sin skill intensities (continuous; intensity = ln(devotion)² / SKILL_INTENSITY_DIVISOR).
+  // Sin skill intensities (continuous; intensity = ln(devotion)² / 65.37 / 1.317, progression.ts).
   const avaritiaIntensity = skillIntensity(state.devotion.avaritia);
   const vanagloriaIntensity = skillIntensity(state.devotion.vanagloria);
   const tristitiaIntensity = skillIntensity(state.devotion.tristitia);
@@ -331,8 +331,8 @@ export function computeModifiers(state: GameState): Modifiers {
   const impCount = inv.imp ?? 0; // each: +1 murder/s (× invEff)
   const bansheeCount = inv.banshee ?? 0; // each: +1 suicide/s (× invEff)
   const empusaCount = inv.empusa ?? 0; // each: +1 reprobate/s (× invEff)
-  const lamiaCount = inv.lamia ?? 0; // each: +50 reprobates/s (× invEff)
-  const koboldCount = inv.kobold ?? 0; // each: +100 gold gain/s (× invEff)
+  const lamiaCount = inv.lamia ?? 0; // each: +50/3 reprobates/s (× invEff)
+  const koboldCount = inv.kobold ?? 0; // each: +10 gold gain/s (× invEff)
   const arachneCount = inv.arachne ?? 0; // each: +1 influence/s (× invEff)
   const blobCount = inv.blob ?? 0; // each: +0.00625 desidia/s (× invEff)
   const morpheusCount = inv.morpheus ?? 0; // each: +0.001 desidia per cost-consumed reprobate (× invEff)
@@ -381,9 +381,9 @@ export function computeModifiers(state: GameState): Modifiers {
   const IMP_MURDERS_PER_SECOND = 1; // each Imp: +1 murder/s
   const BANSHEE_SUICIDES_PER_SECOND = 1; // each Banshee: +1 suicide/s
   const EMPUSA_GENERATION_PER_SECOND = 1; // each Empusa: +1 reprobate/s
-  const LAMIA_GENERATION_PER_SECOND = 50; // each Lamia: +50 reprobates/s
+  const LAMIA_GENERATION_PER_SECOND = 50 / 3; // each Lamia: +50/3 (≈16.67) reprobates/s (player tuning: ÷3)
   const SUCCUBUS_GENERATION_PER_SECOND = 10000; // Succubus: +10000 reprobates/s
-  const KOBOLD_GOLD_PER_SECOND = 100; // each Kobold: +100 gold gain/s
+  const KOBOLD_GOLD_PER_SECOND = 10; // each Kobold: +10 gold gain/s (player tuning: ÷10)
   const ARACHNE_INFLUENCE_PER_SECOND = 0.25; // each Arachne: +0.25 influence/s
   const BLOB_DESIDIA_PER_SECOND = 0.00625; // each Blob: +0.00625 desidia/s
   const MORPHEUS_REPROBATE_FRACTION = 0.05; // Morpheus consumes 5% of the pool/s (mirrors its upkeep)
@@ -513,7 +513,7 @@ export function computeModifiers(state: GameState): Modifiers {
       flat('blood_chalk', 2) +
       flat('blackthorn_wand', 2) +
       flat('sulfur_censer', 0.6),
-    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + each Kobold (+100/s × invEff).
+    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + each Kobold (+10/s × invEff).
     flatGoldPerSecond: flatGen.gold + KOBOLD_GOLD_PER_SECOND * invEffFor('avaritia') * koboldCount,
     // Additive increase to the base per-capita reprobate suicide rate (added to the base in
     // `dynamics`). Each Nightmare contributes +0.005/s × invEff.
@@ -524,7 +524,7 @@ export function computeModifiers(state: GameState): Modifiers {
     flatBaseMurderRatePerSecond:
       flatGen.murderRate + HARPY_MURDER_FACTOR * invEffFor('ira') * harpyCount,
     // Flat absolute births/s (before the generation multiplier): Ose #57 + the Luxuria reprobate
-    // invocations — each Empusa (+1/s), each Lamia (+50/s), Succubus (+10000/s), all × invEff.
+    // invocations — each Empusa (+1/s), each Lamia (+50/3/s), Succubus (+10000/s), all × invEff.
     flatGenerationPerSecond:
       flatGen.generation +
       (EMPUSA_GENERATION_PER_SECOND * empusaCount +

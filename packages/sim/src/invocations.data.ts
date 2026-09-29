@@ -62,15 +62,15 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 1,
     maxActive: 20,
     upkeep: { influence: 1 }, // 1 influence/s
-    // Effect (modifiers.ts → flatGoldPerSecond): +100 gold gain/s per copy, scaled by invocation
-    // efficiency.
+    // Effect (modifiers.ts → flatGoldPerSecond): +10 gold gain/s per copy, scaled by invocation
+    // efficiency. (Player tuning: a tenth of the former +100/s.)
   },
   imp: {
     id: 'imp',
     sin: 'ira',
     invokingPower: 3,
     sinLevel: 1,
-    maxActive: 20,
+    maxActive: 10, // player tuning: cap halved from 20
     upkeep: { gold: 10, goldGainFraction: 0.01 }, // 10 gold/s + 1% of gold gain/s
     // Effect (modifiers.ts → flatMurdersPerSecond): +1 murder/s per copy, scaled by invocation
     // efficiency. Each murder mints a soul (a death, unlike the reprobate-cost drains).
@@ -122,8 +122,8 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 4,
     sinLevel: 2,
     upkeep: { influence: 5 }, // 5 influence/s
-    // Stackable. Effect (modifiers.ts → flatGenerationPerSecond): +50 reprobates/s per copy, scaled
-    // by invocation efficiency.
+    // Stackable. Effect (modifiers.ts → flatGenerationPerSecond): +50/3 (≈16.67) reprobates/s per
+    // copy, scaled by invocation efficiency. (Player tuning: a third of the former +50/s.)
   },
   behemoth: {
     id: 'behemoth',

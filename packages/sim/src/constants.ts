@@ -9,8 +9,8 @@
  * economy" for the full map.
  */
 
-/** Base passive gold gain per second (Globals: 2 gold/s). */
-export const BASE_GOLD_PER_SECOND = 2;
+/** Base passive gold gain per second (Globals: 2 gold/s; player tuning: raised 50% to 3). */
+export const BASE_GOLD_PER_SECOND = 3;
 
 /**
  * Base passive influence gain, as a fraction of maxInfluence per second (Globals: 0.005, unit
@@ -67,6 +67,13 @@ export const MAX_SIN_LEVEL = 4;
  * (The sheet's formula-text "/0.6537" is a typo; the sampled values are authoritative.)
  */
 export const SKILL_INTENSITY_DIVISOR = 65.37;
+
+/**
+ * Player tuning on top of the sheet's intensity curve: every Cardinal Sin skill's effect is divided
+ * by 1.317. Applied inside `skillIntensity`, so each skill (the "by 1 + intensity" couplings in
+ * `modifiers.ts`, the per-category success shifts, and the displayed skill value) weakens alike.
+ */
+export const SKILL_EFFECT_DIVISOR = 1.317;
 
 /**
  * Katabasis carry-over base fractions (Globals). Each is raised additively by a Sin's per-level

@@ -98,7 +98,7 @@ describe('Invocation catalog', () => {
       // id, sin, invokingPower, sinLevel, maxActive
       ['familiar', null, 1, undefined, 1],
       ['wendigo', 'gula', 2, 1, 10],
-      ['imp', 'ira', 3, 1, 20],
+      ['imp', 'ira', 3, 1, 10],
       ['narcissus', 'superbia', 3, 1, 10],
       ['upir', 'gula', 4, 2, undefined], // stackable
       ['behemoth', 'superbia', 4, 2, 10],
@@ -213,9 +213,9 @@ describe('Invocation upkeep (per-second, Invocatio sheet)', () => {
   it('dispels a flat-gold-drain invocation the pool can’t sustain', () => {
     let s = withSin(withPower(fresh(), 3), 'ira', 1);
     s = { ...s, lifetime: { ...s.lifetime, gold: bn(3), invocations: { imp: 1 } } };
-    const r = tick(s, 1); // 3 + 2 income − 10 flat < 0 → Imp dispels; only the tiny fraction is paid
+    const r = tick(s, 1); // 3 + 3 income − 10 flat < 0 → Imp dispels; only the tiny fraction is paid
     expect(r.state.lifetime.invocations.imp ?? 0).toBe(0);
-    expect(r.state.lifetime.gold.toNumber()).toBeCloseTo(4.98, 2); // 5 − 1% of the 2 gained; flat unpaid
+    expect(r.state.lifetime.gold.toNumber()).toBeCloseTo(5.97, 2); // 6 − 1% of the 3 gained; flat unpaid
     expect(r.notices.some((n) => n.includes('imp'))).toBe(true);
   });
 
@@ -326,14 +326,14 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     ).toBeCloseTo(2, 6);
     expect(
       computeModifiers(withInvocation(fresh(), 'lamia', 2)).flatGenerationPerSecond,
-    ).toBeCloseTo(100, 6); // 2 × 50
+    ).toBeCloseTo(100 / 3, 6); // 2 × 50/3
     expect(
       computeModifiers(withInvocation(fresh(), 'succubus', 1)).flatGenerationPerSecond,
     ).toBeCloseTo(10000, 6);
     expect(computeModifiers(withInvocation(fresh(), 'kobold', 3)).flatGoldPerSecond).toBeCloseTo(
-      300,
+      30,
       6,
-    );
+    ); // 3 × 10
     expect(
       computeModifiers(withInvocation(fresh(), 'arachne', 2)).flatInfluencePerSecond,
     ).toBeCloseTo(0.5, 6); // 2 × 0.25

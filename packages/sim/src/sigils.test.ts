@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  BASE_GOLD_PER_SECOND,
   bindingMagnitude,
   bindSigil,
   bn,
@@ -725,12 +726,12 @@ describe('Account output sigil (S14)', () => {
       tick(s, 1).state.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
     const base = goldGain(withReserve(fresh()));
     const vapula = goldGain(withReserve(bound(60, 100_000_000))); // ×(1 + strength) on the term
-    // Interest 50/s; Vapula scales that term by (1 + strength) and leaves the 2/s base alone.
+    // Interest 50/s; Vapula scales that term by (1 + strength) and leaves the base gold/s alone.
     // Everything rides goldRateMul (the Avaritia-180 Golden Hand intensity is in play).
     const rateMul = computeModifiers(withReserve(fresh())).goldRateMul;
     const vapulaMul = 1 + sigilStrength(sigilById(60)!, bn(100_000_000));
-    expect(base).toBeCloseTo((2 + 50) * rateMul, 4);
-    expect(vapula).toBeCloseTo((2 + 50 * vapulaMul) * rateMul, 4);
+    expect(base).toBeCloseTo((BASE_GOLD_PER_SECOND + 50) * rateMul, 4);
+    expect(vapula).toBeCloseTo((BASE_GOLD_PER_SECOND + 50 * vapulaMul) * rateMul, 4);
     const genOf = (s: GameState): number =>
       reprobateRates(s, computeModifiers(s)).generationPerSecond;
     expect(genOf(withReserve(bound(60, 100_000_000)))).toBeCloseTo(genOf(withReserve(fresh())), 9);

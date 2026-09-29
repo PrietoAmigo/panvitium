@@ -24,9 +24,10 @@ describe('computeModifiers — Sin level effects', () => {
   });
 
   it("Gula's Insatiability SKILL scales player efficiency by (1 + intensity) — levels do not", () => {
-    // Sheet rev 2026-06-12: the old ×2-per-level ladder is retired; intensity(180) ≈ 0.41253.
+    // Sheet rev 2026-06-12: the old ×2-per-level ladder is retired; intensity(180) ≈ 0.41253 / 1.317
+    // ≈ 0.31323 (the player-tuning skill-effect divisor).
     expect(playerEfficiency(withDevotion({ gula: bn(0) }))).toBe(1);
-    expect(playerEfficiency(withDevotion({ gula: bn(180) }))).toBeCloseTo(1.4125, 3);
+    expect(playerEfficiency(withDevotion({ gula: bn(180) }))).toBeCloseTo(1.3132, 3);
     expect(playerEfficiency(withDevotion({ gula: bn(32400) }))).toBeCloseTo(
       1 + skillIntensity(bn(32400)),
       6,
@@ -48,22 +49,22 @@ describe('computeModifiers — Sin level effects', () => {
 
 describe('computeModifiers — Sin skill effects (continuous)', () => {
   it('Avaritia (Golden Hand) bumps goldRateMul by 1 + intensity', () => {
-    // skillIntensity(180) = ln(180)² / 65.37 ≈ 0.41253 → goldRateMul ≈ 1.4125.
+    // skillIntensity(180) = ln(180)² / 65.37 / 1.317 ≈ 0.31323 → goldRateMul ≈ 1.3132.
     expect(computeModifiers(withDevotion({ avaritia: bn(180) })).goldRateMul).toBeCloseTo(
-      1.4125,
+      1.3132,
       3,
     );
   });
 
   it('Vanagloria (Acclaim) bumps maxInfluenceMul by 1 + intensity', () => {
     expect(computeModifiers(withDevotion({ vanagloria: bn(180) })).maxInfluenceMul).toBeCloseTo(
-      1.4125,
+      1.3132,
       3,
     );
   });
 
   it('skill bonus is continuous below the first level (a single Devotion still nudges intensity)', () => {
-    // skillIntensity(1) = ln(1)² / 65.37 = 0 → bonus = 1; but skillIntensity(2) > 0.
+    // skillIntensity(1) = ln(1)² / 65.37 / 1.317 = 0 → bonus = 1; but skillIntensity(2) > 0.
     expect(computeModifiers(withDevotion({ avaritia: bn(1) })).goldRateMul).toBe(1);
     expect(computeModifiers(withDevotion({ avaritia: bn(2) })).goldRateMul).toBeGreaterThan(1);
   });
@@ -83,11 +84,11 @@ describe('computeModifiers — per-category efficiency', () => {
   });
 
   it('categoryEfficiency stacks player × category multiplicatively', () => {
-    // Gula 180 → player ≈ 1.4125 (skill); Luxuria L1 → Suasio mul 2. Total Suasio eff ≈ 2.825.
+    // Gula 180 → player ≈ 1.3132 (skill); Luxuria L1 → Suasio mul 2. Total Suasio eff ≈ 2.6265.
     // Decimatio receives no category boost → just the player skill.
     const s = withDevotion({ gula: bn(180), luxuria: bn(180) });
-    expect(categoryEfficiency(s, 'suasio')).toBeCloseTo(1.4125 * 2, 2);
-    expect(categoryEfficiency(s, 'decimatio')).toBeCloseTo(1.4125, 3);
+    expect(categoryEfficiency(s, 'suasio')).toBeCloseTo(1.3132 * 2, 2);
+    expect(categoryEfficiency(s, 'decimatio')).toBeCloseTo(1.3132, 3);
   });
 });
 
@@ -106,7 +107,7 @@ describe('computeModifiers — tier weight shifts', () => {
 
   it('Lucifer (Morning Star) lifts the Stellar tier weight by 1 + intensity', () => {
     const mul = computeModifiers(withDevotion({ superbia: bn(180) })).tierWeightMul;
-    expect(mul.stellar).toBeCloseTo(1.4125, 3);
+    expect(mul.stellar).toBeCloseTo(1.3132, 3);
     expect(mul.terrible).toBeUndefined();
   });
 

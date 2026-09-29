@@ -12,6 +12,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  BASE_GOLD_PER_SECOND,
   BASE_SURRENDER_CHARGE,
   bn,
   computeModifiers,
@@ -53,7 +54,7 @@ const hoardOf = (s: GameState): number => s.lifetime.hoard.toNumber();
 describe('the loan book is retired', () => {
   it('a populous lifetime with an empty reserve earns only the base gold', () => {
     const s: GameState = { ...fresh(), lifetime: { ...fresh().lifetime, reprobates: 100_000 } };
-    expect(perSecondRates(s).gold).toBeCloseTo(2, 9); // BASE_GOLD_PER_SECOND, no per-capita take
+    expect(perSecondRates(s).gold).toBeCloseTo(BASE_GOLD_PER_SECOND, 9); // no per-capita take
   });
 });
 
@@ -128,7 +129,7 @@ describe('Thesaurus — Fenus interest', () => {
     expect(thesaurusInterestPerSecond(s, mods)).toBeCloseTo(FENUS_RATE * 10_000, 9);
     const after = tick(s, 1).state;
     expect(hoardOf(after)).toBe(10_000);
-    expect(goldOf(after)).toBeCloseTo(2 + FENUS_RATE * 10_000, 6); // base 2 + interest 5
+    expect(goldOf(after)).toBeCloseTo(BASE_GOLD_PER_SECOND + FENUS_RATE * 10_000, 6); // base + interest 5
   });
 
   it('accrues fractionally: one big tick equals the sum of small ticks', () => {
@@ -177,15 +178,21 @@ describe('Compounding (Tier II) — the 1% reinvest', () => {
     const interest = FENUS_RATE * 10_000; // 5/s, goldRateMul 1 here
     const after = tick(s, 1).state;
     expect(hoardOf(after)).toBeCloseTo(10_000 + interest * 0.01, 9);
-    expect(goldOf(after)).toBeCloseTo(2 + interest * 0.99, 9);
+    expect(goldOf(after)).toBeCloseTo(BASE_GOLD_PER_SECOND + interest * 0.99, 9);
     // The realised-income tally counts the whole payment, the reinvested share included.
     expect(after.lifetime.accountIncome?.toNumber()).toBeCloseTo(interest, 9);
   });
 
   it('the HUD gold/s shows the liquid remainder only', () => {
     const interest = FENUS_RATE * 10_000;
-    expect(perSecondRates(withHoard(fresh(), 10_000)).gold).toBeCloseTo(2 + interest, 9);
-    expect(perSecondRates(contracted()).gold).toBeCloseTo(2 + interest * 0.99, 9);
+    expect(perSecondRates(withHoard(fresh(), 10_000)).gold).toBeCloseTo(
+      BASE_GOLD_PER_SECOND + interest,
+      9,
+    );
+    expect(perSecondRates(contracted()).gold).toBeCloseTo(
+      BASE_GOLD_PER_SECOND + interest * 0.99,
+      9,
+    );
   });
 
   it('raises the surrender charge by 50% (0.15 → 0.225)', () => {
@@ -208,8 +215,8 @@ describe('Vesting (Tier II) — the drawdown to cash', () => {
     expect(paid).toBeCloseTo(1_000_000 * (1 - Math.exp(-0.01)), 6);
     const after = tick(s, 1).state;
     expect(hoardOf(after)).toBeCloseTo(1_000_000 - paid, 6);
-    // base 2 + the interest on the reserve at the start of the second + the vested principal
-    expect(goldOf(after)).toBeCloseTo(2 + FENUS_RATE * 1_000_000 + paid, 6);
+    // base gold + the interest on the reserve at the start of the second + the vested principal
+    expect(goldOf(after)).toBeCloseTo(BASE_GOLD_PER_SECOND + FENUS_RATE * 1_000_000 + paid, 6);
     expect(vestingPerSecond(s)).toBeCloseTo(10_000, 9);
   });
 
@@ -246,7 +253,10 @@ describe('Vesting (Tier II) — the drawdown to cash', () => {
     const paid = vestingPayout(s, 1).toNumber();
     expect(after.lifetime.accountIncome?.toNumber()).toBeCloseTo(FENUS_RATE * 1_000_000 + paid, 6);
     const flows = resourceFlows(s);
-    expect(flows.gold.generation).toBeCloseTo(2 + FENUS_RATE * 1_000_000 + 10_000, 6);
+    expect(flows.gold.generation).toBeCloseTo(
+      BASE_GOLD_PER_SECOND + FENUS_RATE * 1_000_000 + 10_000,
+      6,
+    );
   });
 });
 

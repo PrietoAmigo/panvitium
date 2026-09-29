@@ -86,7 +86,7 @@ describe('advanceRunnerCycles — time-mode (Indagatio)', () => {
   it('delta 0 lazily starts the first cycle without resolving it', () => {
     const r = advanceRunnerCycles(fresh(), 'indagatio', 1, null, 0, makeRng(7));
     expect(r.events).toHaveLength(0);
-    expect(r.remaining).toBe(300); // baseTime / eff(1)
+    expect(r.remaining).toBe(150); // baseTime / eff(1)
     expect(r.completed).toBe(false);
   });
 });
