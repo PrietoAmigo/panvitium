@@ -102,8 +102,9 @@ const EMPTIO_WEIGHTS: TierWeights = {
 
 /**
  * The actions implemented so far. Numbers are from the economy spreadsheet (Suasio / Decimatio /
- * Indagatio / Emptio). Indagatio is 300 s baseline (sheet rev 2026-06-12) and
- * Emptio is 60 s — both efficiency-mode `time`, so player efficiency divides the duration.
+ * Indagatio / Emptio). Indagatio is 150 s baseline (player tuning: half the sheet's 300 s, rev
+ * 2026-06-12) and Emptio is 120 s (player tuning: double the former 60 s); both efficiency-mode
+ * `time`, so player efficiency divides the duration.
  */
 export const ACTIONS: Record<string, ActionDef> = {
   suggestion: {
@@ -174,7 +175,7 @@ export const ACTIONS: Record<string, ActionDef> = {
   indagatio: {
     id: 'indagatio',
     category: 'indagatio',
-    baseTimeSeconds: 300,
+    baseTimeSeconds: 150, // player tuning: halved from the sheet's 300 s
     cost: {},
     weights: INDAGATIO_WEIGHTS,
     efficiencyMode: 'time',
@@ -182,7 +183,7 @@ export const ACTIONS: Record<string, ActionDef> = {
   emptio: {
     id: 'emptio',
     category: 'emptio',
-    baseTimeSeconds: 60,
+    baseTimeSeconds: 120, // player tuning: doubled from 60 s
     cost: {}, // per-target — startEmptio reads the maleficium's cost dynamically.
     weights: EMPTIO_WEIGHTS,
     efficiencyMode: 'time',

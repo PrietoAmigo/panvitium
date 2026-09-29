@@ -105,7 +105,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 1244** (sim 614 · shared 79 · api 20 · web 531).
 
-> **Latest change — Depraedatio reworked: the loan book out, contracts laddered on the relationship
+> **Latest change — Economy retune: invocations, Sin skills, Indagatio/Emptio timers, base gold.**
+> Player tuning, numbers only. **Lamia** generation is a third of before (+50/3 ≈ 16.67 reprobates/s
+> per copy, was +50); **Kobold** gold is a tenth (+10 gold/s per copy, was +100); the **Imp** cap
+> halves to **10** copies (was 20; a save already holding more keeps them until they dispel or the
+> Katabasis clears them, but cannot invoke another). Every **Cardinal Sin skill** is divided by
+> **1.317**: a new `SKILL_EFFECT_DIVISOR` is applied inside `skillIntensity`, on top of the sheet's
+> 65.37 curve, so all eight skills (the "by 1 + intensity" couplings, the Resignation/Retribution
+> success shifts, and the skill value the altar shows) weaken alike (devotion 180: +41.3% → +31.3%).
+> **Indagatio**'s base time is halved to **150 s** (was 300 s) and **Emptio**'s doubled to **120 s**
+> (was 60 s). **Base gold gain** rises 50% to **3 gold/s** (was 2). Copy follows (the Kobold and
+> Lamia effect lines). No save-schema, RNG or modifier-shape change. Test count unchanged; the pins
+> on the old numbers are updated (several now read `BASE_GOLD_PER_SECOND` / `baseTimeSeconds`
+> rather than a literal), and the Morning Star wiring test samples 200 seeds (was 50) since the
+> weaker skill shifts fewer draws.
+>
+> **Earlier change — Depraedatio reworked: the loan book out, contracts laddered on the relationship
 > tier (ADR-037).** The account's **loan book** (Mutuum, the per-reprobate gold take) is removed with
 > its KPIs, card and **Escheat** death duties, and the old twelve-node Avaritia contract tree
 > (Yield / Origination / Custody branches, Anatocismus, the liquidation bonus, Peculium) is replaced.

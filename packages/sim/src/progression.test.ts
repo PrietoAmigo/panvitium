@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { bn, eq } from './bignum.js';
+import { SKILL_EFFECT_DIVISOR } from './constants.js';
 import { devotionForLevel, sinLevel, sinLevelProgress, skillIntensity } from './progression.js';
 
 describe('devotionForLevel', () => {
@@ -32,12 +33,14 @@ describe('sinLevel', () => {
 });
 
 describe('skillIntensity', () => {
-  it('is 0 for no Devotion and matches the spreadsheet sample table (ln(x)^2 / 65.37)', () => {
+  it('is 0 for no Devotion and matches the spreadsheet sample table (ln(x)^2 / 65.37) ÷ 1.317', () => {
+    // The sheet's sampled intensities, each divided by the player-tuning skill-effect divisor.
+    expect(SKILL_EFFECT_DIVISOR).toBe(1.317);
     expect(skillIntensity(bn(0))).toBe(0);
     expect(skillIntensity(bn(1))).toBe(0); // ln(1) = 0
-    expect(skillIntensity(bn(10))).toBeCloseTo(0.08111, 4);
-    expect(skillIntensity(bn(180))).toBeCloseTo(0.41253, 4);
-    expect(skillIntensity(bn(1049760000))).toBeCloseTo(6.6004, 3);
+    expect(skillIntensity(bn(10))).toBeCloseTo(0.08111 / 1.317, 4); // ≈ 0.06158
+    expect(skillIntensity(bn(180))).toBeCloseTo(0.41253 / 1.317, 4); // ≈ 0.31323
+    expect(skillIntensity(bn(1049760000))).toBeCloseTo(6.6004 / 1.317, 3); // ≈ 5.0117
   });
 
   it('increases monotonically with Devotion', () => {

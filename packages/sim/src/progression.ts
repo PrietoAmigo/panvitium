@@ -5,7 +5,12 @@
  * Devotion is floored before comparison — the documented bignum gotcha.
  */
 import { type BigNum, floor, pow, gte, lte, ONE, ZERO } from './bignum.js';
-import { DEVOTION_LEVEL_BASE, MAX_SIN_LEVEL, SKILL_INTENSITY_DIVISOR } from './constants.js';
+import {
+  DEVOTION_LEVEL_BASE,
+  MAX_SIN_LEVEL,
+  SKILL_EFFECT_DIVISOR,
+  SKILL_INTENSITY_DIVISOR,
+} from './constants.js';
 
 /**
  * Cumulative Devotion needed to reach a Sin level (02 §4): DEVOTION_LEVEL_BASE^level for levels
@@ -29,16 +34,17 @@ export function sinLevel(devotion: BigNum): number {
 
 /**
  * Skill intensity for a Sin from its total Devotion x (Sins & Devotion sheet):
- *   intensity = ln(x)² / SKILL_INTENSITY_DIVISOR  (divisor = 65.37; see constants.ts)
- * Verified against the sheet's sampled table (x=180 → 0.4125, x=1e9 → 6.60). The sheet's
- * formula-text "/0.6537" is a typo; the sampled values are authoritative (constants.ts).
+ *   intensity = ln(x)² / SKILL_INTENSITY_DIVISOR / SKILL_EFFECT_DIVISOR
+ * The sheet's curve (divisor 65.37) is verified against its sampled table (x=180 → 0.4125,
+ * x=1e9 → 6.60; the formula-text "/0.6537" is a typo, the sampled values are authoritative); the
+ * player-tuning SKILL_EFFECT_DIVISOR (1.317) then weakens every skill alike (constants.ts).
  * x ≤ 1 grants no skill (ln(1) = 0; a fresh Sin has 0 Devotion). Per-Sin scaling arrives later.
  */
 export function skillIntensity(devotion: BigNum): number {
   const x = floor(devotion);
   if (lte(x, ONE)) return 0;
   const ln = x.ln();
-  return (ln * ln) / SKILL_INTENSITY_DIVISOR;
+  return (ln * ln) / SKILL_INTENSITY_DIVISOR / SKILL_EFFECT_DIVISOR;
 }
 
 /**

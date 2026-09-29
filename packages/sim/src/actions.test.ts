@@ -351,10 +351,11 @@ describe('modifier integration — per-category efficiency', () => {
 
 describe('modifier integration — tier weight shifts reach resolveAction', () => {
   it('Lucifer (Morning Star) at L4 reliably shifts Caedes tier choices on shared RNG seeds', () => {
-    // At Lucifer L4 (intensity ≈ 66), Stellar weight goes from 0.01 → ≈ 0.67 (pre-normalization);
-    // normalized Stellar share is ≈ 40 %. Across many identical seeds, the same draw lands on a
-    // different tier ~40 % of the time. The bar here is non-zero: prove the wiring is real.
-    const trials = 50;
+    // At Lucifer L4 (intensity ≈ 6.60 / 1.317 ≈ 5.01), Stellar weight goes from 0.01 → ≈ 0.06
+    // (pre-normalization); normalized Stellar share is ≈ 6 %. Across many identical seeds the same
+    // draw lands on a different tier a few percent of the time (18 of these 200). The bar here is
+    // non-zero: prove the wiring is real.
+    const trials = 200;
     let differing = 0;
     for (let i = 0; i < trials; i++) {
       const s0 = createInitialState(`tier-${i}`, 0);
