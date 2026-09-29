@@ -8,11 +8,14 @@
 //
 // For the single-use consumables (`SINGLE_USE_MALEFICIA`) it also derives the `use` affordance (the
 // button-enabled state, the uses remaining, and the live buff's status line) from existing lifetime
-// state (`maleficia`, `maleficiaBuffs`). No new sim: this only surfaces what `activateMaleficium`
-// and the tick already maintain.
+// state (`maleficia`, `maleficiaBuffs`). While the Depraedatio private item safe is open (Custody
+// VIP), every relic also carries the `safe` toggle, `stored` on the one the safe holds. No new sim:
+// this only surfaces what `activateMaleficium`, `toggleSafeItem` and the tick already maintain.
 import {
   MALEFICIA as CATALOG,
   countCopies,
+  privateSafeOpen,
+  safeItem,
   SINGLE_USE_MALEFICIA,
   type GameState,
 } from '@panvitium/sim';
@@ -93,6 +96,8 @@ export function buildCabinet(state: GameState): Maleficium[] {
     }
   }
   const affordanceFor = makeAffordance(state);
+  const safeOpen = privateSafeOpen(state);
+  const stored = safeItem(state);
   const items: Maleficium[] = [];
   for (const id of order) {
     const view = maleficiumView(id);
@@ -107,6 +112,7 @@ export function buildCabinet(state: GameState): Maleficium[] {
       name: count > 1 && !use ? `${view.name} ×${count}` : view.name,
       ...(use ? { use } : {}),
       ...(reveal ? { reveal } : {}),
+      ...(safeOpen ? { safe: { stored: stored === id } } : {}),
     });
   }
   return items;

@@ -13,12 +13,19 @@
  * Returns the new state plus the outcome events generated this tick (02 §2) — transient, not
  * persisted; the caller surfaces them in the log / pop-ups.
  */
-import { add, bn, lt, max, min, mul, sub, ZERO, type BigNum } from './bignum.js';
+import { add, bn, gt, lt, max, min, mul, sub, ZERO, type BigNum } from './bignum.js';
 import { ensureAutoRepeatStarted, resolveAction } from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { invocationUpkeep } from './invocations.js';
 import { applyInvocationTickEffects, aurevoraDrainNow } from './apex.js';
-import { anatocismusDepositPerSecond, faeneratioGoldPerSecond } from './faeneratio.js';
+import {
+  faeneratioGoldPerSecond,
+  realisedInterestPerSecond,
+  reinvestPerSecond,
+  vestingPayout,
+  vestingPerSecond,
+} from './faeneratio.js';
+import { assetTracingInterval } from './syngraphae.js';
 import { advanceToggles, panvitiumRate } from './compositum.js';
 import { advanceCallBuffs } from './callBuffs.js';
 import { DESIDIA_BASE_COST_PER_SECOND, DESIDIA_BASE_SPEED, desidiaMax } from './desidia.js';
@@ -74,12 +81,12 @@ export function perSecondRates(state: GameState): PerSecondRates {
     return { gold: 0, influence: ZERO };
   }
   const mods = computeModifiers(state);
-  // Anatocismus (usura-4): the auto-deposited half of the interest never reaches liquid gold, so
-  // the HUD's gold/s shows the liquid half only (spec §6); the Thesaurus tab shows the deposit rate.
+  // Compounding: the reinvested share of the interest never reaches liquid gold, so the HUD's
+  // gold/s shows the liquid remainder only; the Depraedatio account shows the full interest.
   const grossGold =
     (BASE_GOLD_PER_SECOND + faeneratioGoldPerSecond(state, mods) + mods.flatGoldPerSecond) *
       mods.goldRateMul -
-    anatocismusDepositPerSecond(state, mods);
+    reinvestPerSecond(state, mods);
   const effMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const grossInfluence = bn(
     effMax.toNumber() * BASE_INFLUENCE_RATE * mods.influenceRateMul +
@@ -89,9 +96,14 @@ export function perSecondRates(state: GameState): PerSecondRates {
   // an absolute amount — mirroring the tick's step 1a, so the readout matches realised net income.
   const up = invocationUpkeep(state);
   // Aurevora (apex Gula) drains gold at an exponentially-rising rate while active (apex.ts); the
-  // HUD's gold/s must net it out or it reads positive while the vault visibly empties.
+  // HUD's gold/s must net it out or it reads positive while the vault visibly empties. The Vesting
+  // drawdown returns principal as interest after the upkeep step (never taxed as a gain), so it
+  // joins the net line untaxed.
   const gold =
-    grossGold * (1 - up.goldGainFraction) - up.flatGoldPerSecond - aurevoraDrainNow(state);
+    grossGold * (1 - up.goldGainFraction) -
+    up.flatGoldPerSecond -
+    aurevoraDrainNow(state) +
+    vestingPerSecond(state);
   const influence = max(
     ZERO,
     sub(mul(grossInfluence, 1 - up.influenceGainFraction), bn(up.flatInfluencePerSecond)),
@@ -128,17 +140,19 @@ export function resourceFlows(state: GameState): ResourceFlows {
     return { gold: zero, influence: zero };
   }
   const mods = computeModifiers(state);
-  const grossGold =
+  const taxedGold =
     (BASE_GOLD_PER_SECOND + faeneratioGoldPerSecond(state, mods) + mods.flatGoldPerSecond) *
       mods.goldRateMul -
-    anatocismusDepositPerSecond(state, mods);
+    reinvestPerSecond(state, mods);
   const effMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
   const grossInfluence =
     effMax.toNumber() * BASE_INFLUENCE_RATE * mods.influenceRateMul +
     mods.flatInfluencePerSecond * mods.influenceRateMul;
   const up = invocationUpkeep(state);
+  // The %-of-gain upkeep bites the taxed income only; the Vesting drawdown joins generation untaxed.
+  const grossGold = taxedGold + vestingPerSecond(state);
   const goldUpkeep =
-    grossGold * up.goldGainFraction + up.flatGoldPerSecond + aurevoraDrainNow(state);
+    taxedGold * up.goldGainFraction + up.flatGoldPerSecond + aurevoraDrainNow(state);
   const inflUpkeep = grossInfluence * up.influenceGainFraction + up.flatInfluencePerSecond;
   return {
     gold: { generation: grossGold, upkeep: goldUpkeep, net: grossGold - goldUpkeep },
@@ -228,22 +242,24 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   const mods = computeModifiers(state);
 
   // 1. Passive generation (02 §1) with modifier bundle applied.
-  //    Gold/s = (base + (Mutuum + Thesaurus interest) × faenerationOutputMul + flat) × goldRateMul.
+  //    Gold/s = (base + reserve interest × faenerationOutputMul + flat) × goldRateMul.
   //    Influence gain = (proportional base + flat sources) × influenceRateMul, capped at
-  //    effectiveMax = base × maxInfluenceMul. Faeneratio income obeys the same multipliers as base
-  //    so Avaritia / Silver / Acclaim scale it too. The ceremony income and percentage-VC terms
+  //    effectiveMax = base × maxInfluenceMul. The account's interest obeys the same multipliers as
+  //    base so Avaritia / Silver / Acclaim scale it too. The ceremony income and percentage-VC terms
   //    retired with the lesser ceremonies (ADR-031 — Panvitium yields souls, not gold or influence).
   //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
   //    only at display/spend/comparison boundary.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
-  // Anatocismus (usura-4): half of each interest payment auto-deposits into the hoard instead of
-  // paying out — split AFTER all multipliers (spec §6), so the liquid line is simply the full
-  // composition minus the deposit rate, and the hoard gains the deposit.
-  const anatocismusPerSecond = anatocismusDepositPerSecond(state, mods);
+  // Compounding: 1% of each interest payment auto-deposits into the reserve instead of paying out,
+  // split AFTER all multipliers, so the liquid line is simply the full composition minus the
+  // reinvest rate, and the reserve gains the reinvest. The realised interest (the whole payment,
+  // reinvested share included) accrues on the account's income tally.
+  const reinvestRate = reinvestPerSecond(state, mods);
+  const interestRate = realisedInterestPerSecond(state, mods);
   const goldPerSecond =
     (BASE_GOLD_PER_SECOND + faeneratioGoldPerSecond(state, mods) + mods.flatGoldPerSecond) *
       mods.goldRateMul -
-    anatocismusPerSecond;
+    reinvestRate;
   const proportionalInfluence = mul(
     effectiveMax,
     BASE_INFLUENCE_RATE * mods.influenceRateMul * simDelta,
@@ -254,12 +270,15 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   const lifetime = {
     ...state.lifetime,
     gold: add(state.lifetime.gold, mul(goldPerSecond, simDelta)),
-    // The Anatocismus auto-deposit accrues on the hoard (compound interest by contract). Accrues
-    // fractionally on the BigNum like gold; floored only at display/spend (ADR-005).
+    // The Compounding reinvest accrues on the reserve. Accrues fractionally on the BigNum like
+    // gold; floored only at display/spend (ADR-005).
     hoard:
-      anatocismusPerSecond > 0
-        ? add(state.lifetime.hoard, mul(anatocismusPerSecond, simDelta))
+      reinvestRate > 0
+        ? add(state.lifetime.hoard, mul(reinvestRate, simDelta))
         : state.lifetime.hoard,
+    ...(interestRate > 0
+      ? { accountIncome: add(state.lifetime.accountIncome ?? ZERO, mul(interestRate, simDelta)) }
+      : {}),
     influence: min(
       add(add(state.lifetime.influence, proportionalInfluence), flatInfluence),
       effectiveMax,
@@ -349,6 +368,24 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     for (const n of apex.notices) notices.push(n);
   }
 
+  // 1b'. Vesting: the reserve vests to liquid gold as interest, with no surrender charge and no
+  //      %-of-gain upkeep (it is principal coming home, applied after step 1a). Exact over any span
+  //      (`vestingPayout` integrates the exponential drawdown). A no-op without Vesting.
+  {
+    const vested = vestingPayout(working, simDelta);
+    if (gt(vested, ZERO)) {
+      working = {
+        ...working,
+        lifetime: {
+          ...working.lifetime,
+          hoard: sub(working.lifetime.hoard, vested),
+          gold: add(working.lifetime.gold, vested),
+          accountIncome: add(working.lifetime.accountIncome ?? ZERO, vested),
+        },
+      };
+    }
+  }
+
   // 1c. Invocation desidia generation (Blob's flat yield + Morpheus's per-consumed-reprobate
   //     yield, both efficiency-scaled — `mods.flatDesidiaPerSecond`). Added to the top-level
   //     desidia pool over `simDelta`, clamped to the current cap; never reduces a pool already at
@@ -390,6 +427,25 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
       });
       working = resolved.state;
       if (resolved.event) events.push(resolved.event);
+    }
+  }
+
+  // 2a. PI's automatic asset tracing: once the contract is chosen, a free Indagatio resolves every
+  //     `assetTracingInterval` seconds of GAME time. No efficiency or Indagatio effect shortens the
+  //     interval; only Desidia, by running game time faster (`simDelta`). It rolls like a hand cast
+  //     and is tagged `tracing`. The RNG is drawn only when a trace fires, so an account without PI
+  //     leaves the stream byte-identical (ADR-011).
+  {
+    const interval = assetTracingInterval(working);
+    if (interval > 0) {
+      let elapsed = (working.lifetime.assetTracingElapsed ?? 0) + simDelta;
+      while (elapsed >= interval) {
+        elapsed -= interval;
+        const traced = resolveAction(working, 'indagatio', rng);
+        working = traced.state;
+        if (traced.event) events.push({ ...traced.event, source: 'tracing' });
+      }
+      working = { ...working, lifetime: { ...working.lifetime, assetTracingElapsed: elapsed } };
     }
   }
 
@@ -455,8 +511,14 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   //    this tick is reflected.
   // `lastTickAt` advances by the REAL delta, not `simDelta`: Desidia accelerates the sim but not the
   // wall clock, so the offline anchor (`now - lastTickAt`) and the runtime score stay honest (ADR-033).
+  // The account's age advances in GAME time (`simDelta`) once the account is open (the first
+  // deposit), so Desidia ages it faster and a freeze holds it (Long-term investing reads it).
+  const accountAge = working.lifetime.accountAge;
   const finalState: GameState = {
     ...working,
+    ...(accountAge !== undefined
+      ? { lifetime: { ...working.lifetime, accountAge: accountAge + simDelta } }
+      : {}),
     lastTickAt: state.lastTickAt + Math.round(deltaSeconds * 1000),
     rngState: rng.state,
   };

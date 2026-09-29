@@ -6,7 +6,7 @@
  *   - manual deactivation forbidden for Panvitium
  *   - advanceToggles deducts the per-second cost; auto-deactivates when upkeep can't be paid,
  *     with no partial deduction; retired ceremony ids from old saves drop unbilled
- *   - the eᵗ cost ramp; the Foedus discount reaches the ramped cost
+ *   - the eᵗ cost ramp; no reserve-based discount (the Foedus rebate is retired)
  *   - the tick surfaces a notice on auto-deactivation
  *   - the churn multipliers, the soul harvest, and the Katabasis duration reset
  */
@@ -192,8 +192,8 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     expect(lateCost).toBeGreaterThan(firstCost * 50);
   });
 
-  it('the Foedus discount reaches the ramped cost (hoard tier 4 → half price)', () => {
-    // Two states differing only in hoard tier; the first-second gold cost halves at tier 4.
+  it('pays full upkeep whatever the reserve holds (the Foedus rebate is retired)', () => {
+    // Two states differing only in the reserve; the first-second gold cost is identical.
     const base = (hoard: number): GameState => {
       let s = unlockPanvitium(withGold(withInfluence(fresh(), 1e9), 1e9));
       s = { ...s, lifetime: { ...s.lifetime, hoard: bn(hoard) } };
@@ -204,9 +204,9 @@ describe('Panvitium — the endgame ritual (03 §2.3)', () => {
     const costOf = (s: GameState): number =>
       s.lifetime.gold.toNumber() - advanceToggles(s, 1).state.lifetime.gold.toNumber();
     const full = costOf(base(0));
-    const discounted = costOf(base(10_000_000)); // tier 4 → ×0.5
+    const fatReserve = costOf(base(10_000_000)); // once Foedus tier 4 (×0.5); now full price
     expect(full).toBeCloseTo(100, 6);
-    expect(discounted).toBeCloseTo(50, 6);
+    expect(fatReserve).toBeCloseTo(100, 6);
   });
 
   it('auto-deactivates once upkeep outgrows reserves; duration clears', () => {

@@ -415,3 +415,34 @@ describe('v8 → v9 migration (the retired invocation-runner channel)', () => {
     expect(migrated.state.lifetime).toEqual(lifetime);
   });
 });
+
+describe('v9 → v10 migration (the Depraedatio relationship-tier rework)', () => {
+  /** A v9-shaped raw blob with the given lifetime overrides. */
+  function v9Blob(extra: Record<string, unknown>): Record<string, unknown> {
+    const base = currentBlob();
+    const state = base.state as Record<string, unknown>;
+    const lifetime = state.lifetime as Record<string, unknown>;
+    return { ...base, schemaVersion: 9, state: { ...state, lifetime: { ...lifetime, ...extra } } };
+  }
+
+  it('strips the retired contract ids and refunds their burned signing fees to gold', () => {
+    const migrated = migrateSave(
+      v9Blob({ gold: '1000', syngraphae: ['usura-1', 'usura-2', 'custodia-1', 'faeneratio-4'] }),
+    );
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect('syngraphae' in migrated.state.lifetime).toBe(false);
+    // 1000 + 500 + 5,000 + 500 + 500,000
+    expect(migrated.state.lifetime.gold).toBe('507000');
+  });
+
+  it('drops the Peculium base stamped mid-descent', () => {
+    const migrated = migrateSave(v9Blob({ hoardAtDescent: '7.25e12' }));
+    expect('hoardAtDescent' in migrated.state.lifetime).toBe(false);
+  });
+
+  it('keeps the reserve and is a no-op for a v9 save without contracts', () => {
+    const blob = v9Blob({ hoard: '12345' });
+    const migrated = migrateSave(blob);
+    expect(migrated.state.lifetime).toEqual((blob.state as Record<string, unknown>).lifetime);
+  });
+});

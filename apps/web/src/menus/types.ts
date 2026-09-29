@@ -76,6 +76,11 @@ export interface Maleficium {
    * Crow Feather); the live Opera tier-distribution readout they reveal.
    */
   reveal?: OracleGroup[];
+  /**
+   * Present only while the Depraedatio private item safe is open (the Custody VIP contract): drives
+   * the Loculi's "Store in safe" toggle. `stored` is true for the one relic the safe holds.
+   */
+  safe?: { stored: boolean };
 }
 
 /** One revealed Opera category's distributions (e.g. Suasio), for the oracular readout. */

@@ -406,10 +406,10 @@ export function sigilInvocationEffectContributions(
 }
 
 /**
- * Multiplier on the Thesaurus withdrawal-recovery fraction from bound `shutdownRefund` sigils
- * (Vine #45, Furcas #50 — the same "recovery" niche they held for the Mercatus divest). Composed
- * `(1 + strength)`; 1× when none are bound. Folded into `thesaurusRecoveryMul` by
- * `computeModifiers`; the effective fraction is capped (0.9) at the withdraw site.
+ * The reserve-surrender softening from bound `shutdownRefund` sigils (Vine #45, Furcas #50; the
+ * "recovery" niche they held for the Mercatus divest). Composed `(1 + strength)`; 1× when none are
+ * bound. `computeModifiers` DIVIDES `surrenderChargeMul` by it (the asymptotic cut), so the
+ * charge softens toward zero but never inverts.
  */
 export function sigilShutdownRefundMul(state: GameState, effectMul = 1): number {
   let mul = 1;
@@ -490,7 +490,7 @@ export function sigilMurderTriggersSuicideChance(state: GameState, effectMul = 1
  * The sigil-effect stack (ADR-036): the two global scalers every sigil and maleficium reads.
  *   - `sigilMul` multiplies EVERY sigil's strength in EVERY channel (the passive modifier bundle,
  *     per-category tiers, cost reductions, invoking power, duplicate-output and double-find chances,
- *     Thesaurus recovery, Katabasis carry-over). Semet #32 alone is excluded: it cannot scale itself.
+ *     reserve surrender charge, Katabasis carry-over). Semet #32 alone is excluded: it cannot scale itself.
  *   - `maleficiaBoost` (1 + Gaap #33's strength) multiplies EVERY maleficium's effect magnitude
  *     (rates, flats, the single-use buffs, Black Vessel's cost cut and the sigil-effect relics' own
  *     bonus). Consumers apply it through `boostMaleficiumFactor`, so a boosted cut never inverts.

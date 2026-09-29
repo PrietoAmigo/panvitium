@@ -484,14 +484,14 @@ describe('gameStore — Depraedatio (deposit / withdraw / sign)', () => {
     expect(store().notice).toBeNull();
   });
 
-  it('withdraws the full amount from the hoard for the recovery fraction of it in gold', () => {
+  it('withdraws the full amount from the reserve for the post-charge remainder in gold', () => {
     patchGold(2000);
     store().depositThesaurus(1000);
     const goldBefore = floor((store().state as GameState).lifetime.gold).toNumber();
     store().withdrawThesaurus(100);
     const after = store().state as GameState;
-    expect(after.lifetime.hoard.toNumber()).toBe(900); // the full 100 left the vault
-    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 25); // floor(100 × 0.25)
+    expect(after.lifetime.hoard.toNumber()).toBe(900); // the full 100 left the reserve
+    expect(floor(after.lifetime.gold).toNumber()).toBe(goldBefore + 85); // floor(100 × 0.85)
   });
 
   it('refuses a withdrawal beyond the hoard', () => {
@@ -499,15 +499,39 @@ describe('gameStore — Depraedatio (deposit / withdraw / sign)', () => {
     expect(store().notice).toBeTruthy();
   });
 
-  it('signs a Syngrapha, burning the fee; refuses out-of-order or gated signings', () => {
+  it('chooses a contract for free once the reserve holds its tier; one per tier', () => {
     patchGold(2000);
-    store().signSyngrapha('usura-2'); // branch order: usura-1 first (and Avaritia I besides)
+    store().signSyngrapha('interest-rate'); // the reserve is empty: Tier I not held
     expect(store().notice).toBeTruthy();
-    store().signSyngrapha('usura-1'); // ungated since the rebalance
+    store().depositThesaurus(100); // Tier I
+    store().signSyngrapha('interest-rate');
     const s = store().state as GameState;
-    expect(s.lifetime.syngraphae).toEqual(['usura-1']);
-    expect(floor(s.lifetime.gold).toNumber()).toBe(1500); // the 500 fee is burned
+    expect(s.lifetime.syngraphae).toEqual(['interest-rate']);
+    expect(floor(s.lifetime.gold).toNumber()).toBe(1900); // only the deposit left the purse
     expect(store().notice).toBeNull();
+    store().signSyngrapha('long-term'); // Tier I already has its contract
+    expect(store().notice).toMatch(/already chosen/);
+  });
+
+  it('stores a maleficium in the private safe (Custody VIP) and swaps it for another', () => {
+    const s0 = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s0,
+        lifetime: {
+          ...s0.lifetime,
+          hoard: bn(1_000_000),
+          syngraphae: ['custody-vip'],
+          maleficia: ['codex_gigas', 'dybbuk_box'],
+        },
+      },
+    });
+    store().toggleSafeItem('codex_gigas');
+    expect(store().state?.lifetime.safeItem).toBe('codex_gigas');
+    store().toggleSafeItem('dybbuk_box');
+    expect(store().state?.lifetime.safeItem).toBe('dybbuk_box');
+    store().toggleSafeItem('spear_of_longinus'); // not owned
+    expect(store().notice).toBeTruthy();
   });
 });
 

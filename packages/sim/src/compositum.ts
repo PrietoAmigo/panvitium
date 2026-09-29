@@ -4,14 +4,14 @@
  * (ADR-027) went with them, and old saves carrying a retired id self-heal on the first tick
  * (`advanceToggles`' unknown-id path drops it, unbilled). What remains is the shape Panvitium
  * needs: a Sin-gated toggle with a per-second cost, an exponential cost ramp tracked in
- * `toggleDurations`, the Foedus upkeep discount, and auto-deactivation the moment the full cost
- * cannot be paid (02 §3) — there is no refund and no partial application.
+ * `toggleDurations`, and auto-deactivation the moment the full cost cannot be paid (02 §3); there
+ * is no refund and no partial application. (The Foedus upkeep rebate from the Depraedatio reserve
+ * retired with the relationship-tier rework: every ceremony pays its full upkeep.)
  *
  * Active toggles are tracked by membership in `LifetimeState.activeToggles`. A toggle is either
  * on or off — no per-toggle payload. Panvitium's duration is tracked in `toggleDurations`.
  */
 import { floor, gte, sub } from './bignum.js';
-import { foedusTier, foedusUpkeepMul } from './faeneratio.js';
 import { sinLevel } from './progression.js';
 import { type GameState, type Sin } from './state.js';
 // The ceremony catalog lives in `compositum.data.ts` (the editable economy knobs); imported for the
@@ -45,12 +45,6 @@ export interface CompositumDef {
    * none (no Panvitium rate).
    */
   readonly panvitiumRateBase?: number;
-  /**
-   * Foedus opt-out: when true, this ceremony forms NO Foedus with the hoard — no upkeep discount
-   * (the revenue side retired with the Mercatūs; Depraedatio gold rework §4.4). A per-VC tuning
-   * flag mirrored from the spreadsheet; default absent (all-on).
-   */
-  readonly foedusOptOut?: boolean;
 }
 
 /** All wired Vitium Compositum ids in stable order. */
@@ -161,9 +155,8 @@ export function advanceToggles(
     }
     const dur = durations[vcId] ?? 0;
     const growth = def.costGrowthPerSecond ? Math.pow(def.costGrowthPerSecond, dur) : 1;
-    const foedusMul = compositumFoedusUpkeepMul(state, def);
-    const goldCost = (def.costPerSecond.gold ?? 0) * growth * foedusMul * deltaSeconds;
-    const inflCost = (def.costPerSecond.influence ?? 0) * growth * foedusMul * deltaSeconds;
+    const goldCost = (def.costPerSecond.gold ?? 0) * growth * deltaSeconds;
+    const inflCost = (def.costPerSecond.influence ?? 0) * growth * deltaSeconds;
     const canPay =
       Number.isFinite(goldCost) &&
       Number.isFinite(inflCost) &&
@@ -203,20 +196,6 @@ export function advanceToggles(
     },
     deactivated,
   };
-}
-
-/**
- * Foedus upkeep discount (Depraedatio gold rework §4.4): the pact between the hoard and the
- * rituals multiplies a ceremony's per-second cost by `1 − 0.125 × tier` (tier 4 → ×0.5) — one
- * GLOBAL tier for all ceremonies, stepped per decade of hoard above T0 (the per-Sin member
- * dependency retired with the Mercatūs). Applied to the COMPUTED per-second cost in
- * `advanceToggles`, so ramped upkeeps (Panvitium's eᵗ) take the same multiplier — the intended
- * late-game payoff is that a fat vault discounts the exponential ramp itself. An opted-out
- * ceremony (`foedusOptOut`) always pays full price.
- */
-export function compositumFoedusUpkeepMul(state: GameState, def: CompositumDef): number {
-  if (def.foedusOptOut === true) return 1;
-  return foedusUpkeepMul(foedusTier(state));
 }
 
 /**

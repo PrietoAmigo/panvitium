@@ -319,3 +319,41 @@ describe('Loculi — the effect and the rite', () => {
     expect(bar?.getAttribute('aria-label')).toContain('Suggestion');
   });
 });
+
+describe('Loculi — the private item safe (Depraedatio Custody VIP)', () => {
+  it('offers no safe control while the safe is closed', () => {
+    render({ items: [relic({ id: 'a', name: 'Anathema Relic', rarity: 'anathema' })] });
+    expect(buttonByText(strings.maleficia.storeInSafe)).toBeUndefined();
+  });
+
+  it('shows "Store in safe" on an unsafed relic and fires the toggle', () => {
+    let toggled: string | null = null;
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => {
+      root!.render(
+        createElement(MaleficiaCabinet, {
+          items: [relic({ id: 'a', name: 'Anathema Relic', safe: { stored: false } })],
+          onClose: () => {},
+          onSafe: (id: string) => {
+            toggled = id;
+          },
+        }),
+      );
+    });
+    const btn = buttonByText(strings.maleficia.storeInSafe);
+    expect(btn).toBeDefined();
+    expect(btn!.getAttribute('aria-pressed')).toBe('false');
+    click(btn);
+    expect(toggled).toBe('a');
+  });
+
+  it('reads "Stored in safe" (pressed) on the relic the safe holds', () => {
+    render({ items: [relic({ id: 'a', name: 'Anathema Relic', safe: { stored: true } })] });
+    const btn = buttonByText(strings.maleficia.storedInSafe);
+    expect(btn).toBeDefined();
+    expect(btn!.getAttribute('aria-pressed')).toBe('true');
+    expect(btn!.getAttribute('aria-label')).toBe(strings.maleficia.takeFromSafe);
+  });
+});

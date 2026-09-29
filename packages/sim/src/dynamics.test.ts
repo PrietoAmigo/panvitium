@@ -193,10 +193,10 @@ describe('reprobate dynamics — murder pool (per-capita cull)', () => {
 });
 
 describe('reprobate dynamics — the Mercatus generation channel is retired (Depraedatio rework)', () => {
-  it('Plutus (a Faeneratio output source) contributes nothing to generation', () => {
+  it('Plutus (an account output source) contributes nothing to generation', () => {
     // The trades' `genPerDepth × d` breeding channel died with the Mercatūs; nothing in the
-    // Faeneratio loop replaces it by default (population-proportional growth is Bacchanal's
-    // exclusive niche). Plutus scales gold output only, at the tick's income line.
+    // Depraedatio account replaces it (population-proportional growth is Bacchanal's exclusive
+    // niche). Plutus scales the reserve's interest only, at the tick's income line.
     const noBiz = createInitialState('vm-empty', 0);
     const withPlutus: GameState = {
       ...noBiz,
@@ -204,46 +204,5 @@ describe('reprobate dynamics — the Mercatus generation channel is retired (Dep
     };
     expect(computeModifiers(withPlutus).faenerationOutputMul).toBeGreaterThan(1);
     expect(reprobateRates(withPlutus, computeModifiers(withPlutus)).generationPerSecond).toBe(0);
-  });
-});
-
-describe('reprobate dynamics — Escheat (faeneratio-2) death duties', () => {
-  /** A populated state with the Escheat contract signed and deaths queued in the pools. */
-  function withEscheat(pools: { suicide?: number; murder?: number }): GameState {
-    const s = createInitialState('escheat', 0);
-    return {
-      ...s,
-      lifetime: {
-        ...s.lifetime,
-        reprobates: 1000,
-        syngraphae: ['faeneratio-1', 'faeneratio-2'],
-        suicidePool: pools.suicide ?? 0,
-        murderPool: pools.murder ?? 0,
-      },
-    };
-  }
-
-  it('mints +1 gold per applied murder and +0.5 per applied suicide', () => {
-    const s = withEscheat({ suicide: 4, murder: 3 });
-    const mods = computeModifiers(s);
-    expect(mods.escheatGoldPerMurder).toBe(1);
-    expect(mods.escheatGoldPerSuicide).toBe(0.5);
-    const next = applyReprobateDynamics(s, 1e-9); // δ→0: only the queued pools drain
-    // 3 murders × 1 + 4 suicides × 0.5 = 5 gold escheats to the unseen creditor.
-    expect(next.lifetime.gold.toNumber()).toBeCloseTo(s.lifetime.gold.toNumber() + 5, 6);
-  });
-
-  it('mints nothing while the contract is unsigned', () => {
-    const s = withEscheat({ suicide: 4, murder: 3 });
-    const unsigned: GameState = { ...s, lifetime: { ...s.lifetime, syngraphae: [] } };
-    const next = applyReprobateDynamics(unsigned, 1e-9);
-    expect(next.lifetime.gold.toNumber()).toBeCloseTo(s.lifetime.gold.toNumber(), 6);
-  });
-
-  it('death duties are bounded by the living population (no gold for unapplied pool)', () => {
-    const s = withEscheat({ murder: 10 });
-    const few: GameState = { ...s, lifetime: { ...s.lifetime, reprobates: 2 } };
-    const next = applyReprobateDynamics(few, 1e-9);
-    expect(next.lifetime.gold.toNumber()).toBeCloseTo(s.lifetime.gold.toNumber() + 2, 6);
   });
 });

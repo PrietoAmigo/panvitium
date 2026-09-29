@@ -18,6 +18,7 @@ import {
   investIndagatio as investIndagatioSim,
   divestIndagatio as divestIndagatioSim,
   signSyngrapha as signSyngraphaSim,
+  toggleSafeItem as toggleSafeItemSim,
   computeModifiers,
   activateToggle,
   deactivateToggle,
@@ -197,20 +198,27 @@ interface GameStore {
   investIndagatio: () => void;
   divestIndagatio: () => void;
   /**
-   * Place liquid gold with the counting house (Depraedatio gold rework §4.2) — instant, floored
-   * at the spend boundary. Sets a notice on failure (below Avaritia I, not enough gold, Morpheus).
+   * Place liquid gold with the counting house (the Depraedatio reserve), instant and floored at the
+   * spend boundary; the first deposit opens the account. Sets a notice on failure (not enough gold,
+   * the Astiwihad freeze).
    */
   depositThesaurus: (amount: BigNum | number) => void;
   /**
-   * Reclaim from the hoard: the full amount leaves the vault, only the recovery fraction returns
-   * to liquid gold. The UI states the forfeit before confirming; this just executes it.
+   * Reclaim from the reserve: the full amount leaves the reserve, only the post-charge remainder
+   * returns to liquid gold. The UI states the forfeit before confirming; this just executes it.
+   * Sets a notice on failure (an Annuity bars it, too little in reserve, the freeze).
    */
   withdrawThesaurus: (amount: BigNum | number) => void;
   /**
-   * Sign a Syngrapha (the Avaritia contract tree): burns the fee, records the node. Sets a notice
-   * on failure (gate unmet, prior term unsigned, not enough gold, Morpheus freeze).
+   * Choose a Depraedatio contract (free; one per relationship tier; final for the lifetime). Sets a
+   * notice on failure (tier not held, the tier already has a contract, the Astiwihad freeze).
    */
   signSyngrapha: (id: string) => void;
+  /**
+   * Store a maleficium in the private item safe (Custody VIP), or take it back out; storing another
+   * replaces the first. Sets a notice on failure (safe not open, item not owned).
+   */
+  toggleSafeItem: (id: string) => void;
   /**
    * Assign one idle acolyte to a delegatable action (02 §10). Notice on failure (e.g. all
    * acolytes busy, or the action is not delegatable yet — Indagatio only in this slice).
@@ -408,7 +416,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // The committed descent (inKatabasis === true), the launch title menu, and the "You Rise" recap
     // all suspend the tick — nothing accrues while they are open (the world does not advance offline
     // either, so lingering costs the player nothing and gains nothing). We skip the sim so nothing
-    // accrues (no suicides, no Mutuum gold, no soul minting); the RAF accumulator drains harmlessly
+    // accrues (no suicides, no interest, no soul minting); the RAF accumulator drains harmlessly
     // through these no-op calls, so there is no catch-up burst when the screen closes.
     const phase = get().katabasisPhase;
     const suspended =
@@ -433,10 +441,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
     set((s) => {
-      // The PC Logs program is the player's own action log: acolyte- and invocation-runner outcomes
-      // are tagged with a source and excluded here (they have their own surfaces — the Analytics
-      // Acolytes/Invocations tabs).
-      const playerEvents = events.filter((e) => e.source === undefined || e.source === 'player');
+      // The PC Logs program is the player's own action log: acolyte outcomes are tagged with a
+      // source and excluded here (they have their own surface, the Analytics Actions tab). PI's
+      // automatic asset tracing is the player's own account at work, so its Indagatio shows.
+      const playerEvents = events.filter(
+        (e) => e.source === undefined || e.source === 'player' || e.source === 'tracing',
+      );
       const log =
         playerEvents.length > 0
           ? [...playerEvents].reverse().concat(s.log).slice(0, LOG_CAP)
@@ -509,6 +519,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     const result = signSyngraphaSim(current, id);
+    if (result.ok) set({ state: result.state, notice: null });
+    else set({ notice: result.reason });
+  },
+
+  toggleSafeItem: (id) => {
+    const current = get().state;
+    if (!current) return;
+    const result = toggleSafeItemSim(current, id);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },

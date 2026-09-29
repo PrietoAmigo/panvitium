@@ -13,16 +13,20 @@ import {
   countCopies,
   MALEFICIA,
   computeModifiers,
-  foedusTier,
-  FOEDUS_T0,
-  MAX_FOEDUS_TIER,
-  mutuumGoldPerSecond,
-  sinLevel,
-  SYNGRAPHA_BRANCHES,
-  syngraphaBranch,
-  syngraphaSigned,
-  thesaurusInterestPerSecond,
+  FENUS_RATE,
+  MAX_RELATIONSHIP_TIER,
+  accountAgeHours,
+  chosenSyngraphaOfTier,
+  realisedInterestPerSecond,
+  relationshipTier,
+  relationshipTierThreshold,
+  surrenderBarred,
+  surrenderCharge,
+  syngraphaChosen,
+  syngraphaeInForce,
+  syngraphaeOfTier,
   thesaurusRecoveryFraction,
+  vestingPerSecond,
   compositumById,
   compositumUnlocked,
   isToggleActive,
@@ -46,9 +50,8 @@ import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { CalculatorProgram } from '../menus/Calculator.js';
 import {
   DepraedatioAccount,
-  type DepBranchView,
-  type DepNodeView,
-  type DepNodeState,
+  type DepContractState,
+  type DepTierView,
 } from '../menus/DepraedatioAccount.js';
 import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
@@ -816,13 +819,15 @@ export function IndagatioEmptioProgram(): ReactElement {
 /**
  * The Loculi reliquary (Invocation Room): a self-framed, full-surface overlay (mounted by App like
  * Ars Goetia / the Suasio scroll, NOT via PanelShell). Owned items grouped by id, stackables showing
- * their count; the single-use rites wired to `activateMaleficium`. It opens on the newest relic
+ * their count; the single-use rites wired to `activateMaleficium`, and (while the Depraedatio private
+ * item safe is open) every relic's "Store in safe" toggle wired to `toggleSafeItem`. It opens on the newest relic
  * Emptio brought home (else the rarest), whether or not its Unveiling played, and forgets that
  * focus when it closes.
  */
 export function Loculi({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
   const activate = useGameStore((s) => s.activateMaleficium);
+  const toggleSafe = useGameStore((s) => s.toggleSafeItem);
   const focus = useGameStore((s) => s.lastObtained);
   const clearFocus = useGameStore((s) => s.clearLastObtained);
   const reducedMotion = usePrefersReducedMotion();
@@ -832,6 +837,7 @@ export function Loculi({ onClose }: { onClose: () => void }): ReactElement {
     <DesignedCabinet
       items={items}
       onUse={activate}
+      onSafe={toggleSafe}
       onClose={onClose}
       focus={focus}
       reducedMotion={reducedMotion}
@@ -859,14 +865,13 @@ function formatTierPct(p: number): string {
 }
 
 /**
- * Depraedatio: the Faeneratio loop presented as the "Counting House" private-bank dashboard (Claude
- * Design redesign). This wrapper reads the store, composes every figure from the sim (the realised
- * Mutuum take + Thesaurus interest, the global Foedus tier and its progress, the withdrawal recovery
- * fraction, the effective yield multiplier, and the twelve-node Syngraphae contract tree), then
- * feeds the presentational `DepraedatioAccount` surface and wires its deposit / withdraw / sign
- * controls to the real store actions. The mundane banking copy lives in `strings.faeneratio`; the
- * sim ids (thesaurus/mutuum/foedus/usura/faeneratio/custodia) are unchanged. The old grimoire-styled
- * Thesaurus / Syngraphae tabs are retired.
+ * Depraedatio: the account presented as the "Counting House" private-bank dashboard (Claude Design
+ * redesign). This wrapper reads the store, composes every figure from the sim (the realised interest
+ * and Vesting drawdown, the realised income since account inception, the relationship tier and its
+ * progress, the surrender charge, the effective interest multiplier, and the nine tiered contracts),
+ * then feeds the presentational `DepraedatioAccount` surface and wires its deposit / withdraw /
+ * choose controls to the real store actions. The mundane banking copy lives in `strings.faeneratio`;
+ * the sim ids (thesaurus/syngraphae) are unchanged. The loan book is retired.
  */
 
 /**
@@ -876,18 +881,34 @@ function formatTierPct(p: number): string {
 const CH_ACCENT = '#1E4638';
 const CH_SHOW_SPARKLINE = true;
 
-/** Roman numerals for the Foedus tier badge and the Avaritia gates. */
+/** Roman numerals for the relationship-tier badge. */
 const DEP_ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'] as const;
 
 /**
  * A gold-rate readout: two decimals under 100, grouped/suffixed integers above (the game's own
- * `formatBigNum`), so an early fractional interest (hoard * 0.0005) still reads rather than rounding
- * to zero, while a fat realised rate stays legible.
+ * `formatBigNum`), so an early fractional interest (reserve * 0.0005) still reads rather than
+ * rounding to zero, while a fat realised rate stays legible.
  */
 function formatRateStr(n: number): string {
   if (!Number.isFinite(n)) return '∞';
   if (Math.abs(n) < 100) return (Math.round(n * 100) / 100).toString();
   return formatBigNum(bn(Math.floor(n)));
+}
+
+/** A fraction as a compact percentage: "15%", "10.05%", "0.0665%" (up to 4 significant digits). */
+function formatPct(fraction: number): string {
+  const pct = fraction * 100;
+  if (!Number.isFinite(pct)) return '∞';
+  return `${Number(pct.toPrecision(4)).toString()}%`;
+}
+
+/** The account's age as "Xh Ym" (or "Ym", "Xs" when short). */
+function formatAccountAge(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${Math.floor(seconds)}s`;
 }
 
 export function DepraedatioGroup(): ReactElement {
@@ -903,78 +924,87 @@ export function DepraedatioGroup(): ReactElement {
   const mods = computeModifiers(state);
   const gold = floor(state.lifetime.gold).toNumber();
   const balance = floor(state.lifetime.hoard).toNumber();
-  // Realised rates: the raw terms x faenerationOutputMul x goldRateMul, matching the tick's gold line.
-  const outMul = mods.faenerationOutputMul * mods.goldRateMul;
-  const interestRate = thesaurusInterestPerSecond(state, mods) * outMul;
-  const mutuumRate = mutuumGoldPerSecond(state, mods) * outMul;
-  const income = interestRate + mutuumRate;
-  const tier = foedusTier(state);
+  // Realised rates: the interest x faenerationOutputMul x goldRateMul (the tick's gold line), plus
+  // the Vesting drawdown while it is in force.
+  const interestRate = realisedInterestPerSecond(state, mods);
+  const vesting = vestingPerSecond(state);
+  const income = interestRate + vesting;
+  const tier = relationshipTier(state);
+  const charge = surrenderCharge(mods);
   const recovery = thesaurusRecoveryFraction(mods);
-  const avaritiaLevel = sinLevel(state.devotion.avaritia);
+  const inForce = syngraphaeInForce(state);
 
-  // Foedus tier progress: position within the current decade of hoard toward the next threshold.
+  // Tier progress: position between the current tier's threshold and the next.
   let progressPct = 100;
-  let nextTierRoman: string = DEP_ROMAN[MAX_FOEDUS_TIER] ?? 'IV';
+  let nextTierRoman: string = DEP_ROMAN[MAX_RELATIONSHIP_TIER] ?? 'III';
   let nextThresholdStr: string = F.maxTier;
-  if (tier < MAX_FOEDUS_TIER) {
-    const prev = tier >= 1 ? FOEDUS_T0 * Math.pow(10, tier - 1) : 0;
-    const next = FOEDUS_T0 * Math.pow(10, tier);
+  if (tier < MAX_RELATIONSHIP_TIER) {
+    const prev = relationshipTierThreshold(tier);
+    const next = relationshipTierThreshold(tier + 1);
     progressPct = Math.max(0, Math.min(100, ((balance - prev) / (next - prev)) * 100));
-    nextTierRoman = DEP_ROMAN[tier + 1] ?? 'IV';
+    nextTierRoman = DEP_ROMAN[tier + 1] ?? String(tier + 1);
     nextThresholdStr = `${formatBigNum(bn(next))} ${goldUnit}`;
   }
 
-  // The twelve-node contract tree, one linear chain per branch. State per node: signed, available
-  // (prior signed + Avaritia gate met + not yet signed), prior-blocked, or Avaritia-gated. The
-  // 'available' reconstruction matches `syngraphaSignable` exactly, but keeps the prior-vs-gate
-  // distinction the card meta needs.
-  const branches: DepBranchView[] = SYNGRAPHA_BRANCHES.map((branch) => {
-    const chain = syngraphaBranch(branch);
-    const branchName = F.branches[branch] ?? branch;
-    const nodes: DepNodeView[] = chain.map((node, idx) => {
-      const signed = syngraphaSigned(state, node.id);
-      const prev = idx > 0 ? chain[idx - 1] : undefined;
-      const priorSigned = prev ? syngraphaSigned(state, prev.id) : true;
-      const eligible = avaritiaLevel >= node.gate;
-      let nodeState: DepNodeState;
-      if (signed) nodeState = 'signed';
-      else if (!priorSigned) nodeState = 'prior';
-      else if (!eligible) nodeState = 'locked';
-      else nodeState = 'available';
+  // The three tier rows of three contracts. Per card: active (chosen: it holds for the lifetime,
+  // whatever the reserve does), available (tier held, nothing chosen in the tier), locked (tier not
+  // held, nothing chosen), or foreclosed (another contract holds the tier). Mirrors
+  // `syngraphaSignable`.
+  const tiers: DepTierView[] = [];
+  for (let t = 1; t <= MAX_RELATIONSHIP_TIER; t++) {
+    const held = tier >= t;
+    const chosen = chosenSyngraphaOfTier(state, t);
+    const contracts = syngraphaeOfTier(t).map((def) => {
+      let cState: DepContractState;
+      if (syngraphaChosen(state, def.id)) cState = 'active';
+      else if (chosen) cState = 'foreclosed';
+      else cState = held ? 'available' : 'locked';
+      // Long-term investing's magnitude scales live: surface the current multiplier alongside the
+      // baked "+10% per hour" line (hard copy rule 1).
+      const live =
+        def.effect.kind === 'fenusRatePerHour'
+          ? `${F.liveNow} ×${(1 + def.effect.perHour * accountAgeHours(state)).toFixed(2)}`
+          : undefined;
       return {
-        id: node.id,
-        title: F.nodeNames[node.id] ?? `${branchName} ${DEP_ROMAN[idx + 1] ?? ''}`,
-        effect: F.nodeEffects[node.id] ?? '',
-        state: nodeState,
-        fee: node.cost,
-        feeStr: node.cost.toLocaleString('en-US'),
-        affordable: gold >= node.cost,
-        priorTitle: prev ? (F.nodeNames[prev.id] ?? `${branchName} ${DEP_ROMAN[idx] ?? ''}`) : '',
-        gate: node.gate,
+        id: def.id,
+        title: F.contractNames[def.id] ?? def.id,
+        effect: F.contractEffects[def.id] ?? '',
+        state: cState,
+        ...(live !== undefined ? { live } : {}),
       };
     });
-    return { id: branch, nodes };
-  });
+    tiers.push({
+      tier: t,
+      thresholdStr: relationshipTierThreshold(t).toLocaleString('en-US'),
+      held,
+      contracts,
+    });
+  }
 
+  const age = state.lifetime.accountAge;
   return (
     <DepraedatioAccount
       balanceStr={formatBigNum(floor(state.lifetime.hoard))}
       cashStr={formatBigNum(floor(state.lifetime.gold))}
       interestStr={formatRateStr(interestRate)}
-      loanBookStr={formatRateStr(mutuumRate)}
+      vestingStr={inForce.some((d) => d.effect.kind === 'vesting') ? formatRateStr(vesting) : null}
       incomeStr={formatRateStr(income)}
-      debtorsStr={totalReprobates(state).toLocaleString('en-US')}
-      recoveryPct={`${Math.round(recovery * 100)}%`}
+      realisedStr={formatBigNum(floor(state.lifetime.accountIncome ?? bn(0)))}
+      interestRateStr={formatPct(FENUS_RATE * mods.fenusRateMul)}
+      surrenderChargeStr={formatPct(charge)}
+      recoveryPct={formatPct(recovery)}
       nextThresholdStr={nextThresholdStr}
+      accountAgeStr={age === undefined ? null : formatAccountAge(age)}
       cash={gold}
       balance={balance}
       recovery={recovery}
-      incomePerSecond={income}
+      surrenderBarred={surrenderBarred(state)}
       tier={tier}
       nextTierRoman={nextTierRoman}
       progressPct={progressPct}
       yieldMul={mods.fenusRateMul}
-      branches={branches}
+      contractsInForce={inForce.length}
+      tiers={tiers}
       onDeposit={deposit}
       onWithdraw={withdraw}
       onSign={sign}

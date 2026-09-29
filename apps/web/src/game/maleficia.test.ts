@@ -211,3 +211,22 @@ describe('invoking power and remaining uses', () => {
     expect(candles?.name).toBe('Black Candles ×2');
   });
 });
+
+describe('buildCabinet — the private item safe (Depraedatio Custody VIP)', () => {
+  it('carries no safe toggle while Custody VIP is not chosen', () => {
+    for (const item of buildCabinet(owning(['ars_serpens', 'codex_gigas']))) {
+      expect(item.safe).toBeUndefined();
+    }
+  });
+
+  it('carries the toggle on every relic once chosen, stored on the one the safe holds', () => {
+    const s = owning(['ars_serpens', 'codex_gigas']);
+    const vault = {
+      ...s,
+      lifetime: { ...s.lifetime, syngraphae: ['custody-vip'], safeItem: 'codex_gigas' },
+    };
+    const byId = Object.fromEntries(buildCabinet(vault).map((m) => [m.id, m]));
+    expect(byId.codex_gigas?.safe).toEqual({ stored: true });
+    expect(byId.ars_serpens?.safe).toEqual({ stored: false });
+  });
+});

@@ -17,7 +17,6 @@
  * birth adds one reprobate, every suicide/murder removes one, and each death mints exactly 1 soul
  * (1 person, 1 soul — never changes).
  */
-import { add, mul } from './bignum.js';
 import {
   BASE_REPROBATE_GENERATION_PER_SECOND,
   BASE_SUICIDE_RATE_PER_SECOND,
@@ -112,9 +111,6 @@ export function applyReprobateDynamics(state: GameState, deltaSeconds: number): 
 
   // 2. Suicides. Each whole unit kills one reprobate; every death yields 1 soul (03 §3). Bounded
   //    by the living population; the unspent remainder stays pooled so progress isn't lost.
-  //    Escheat (faeneratio-2): each applied death also mints its death-duty gold — the estates of
-  //    the dead escheat to creditors unseen. The bundle fields are additive, so any future
-  //    death-gold source composes on this same line.
   {
     const deaths = Math.min(Math.floor(working.lifetime.suicidePool), totalReprobates(working));
     if (deaths >= 1) {
@@ -125,10 +121,6 @@ export function applyReprobateDynamics(state: GameState, deltaSeconds: number): 
         lifetime: {
           ...withSouls.lifetime,
           suicidePool: working.lifetime.suicidePool - r.removed,
-          gold:
-            mods.escheatGoldPerSuicide > 0
-              ? add(withSouls.lifetime.gold, mul(mods.escheatGoldPerSuicide, r.removed))
-              : withSouls.lifetime.gold,
         },
       };
     }
@@ -136,8 +128,7 @@ export function applyReprobateDynamics(state: GameState, deltaSeconds: number): 
 
   // 3. Murders. Each whole unit kills one reprobate; each kill yields 1 soul. If no reprobates
   //    remain, the pool is left intact so progress isn't lost. (Leraie #14's murder→suicide
-  //    coupling is rate-level, in `reprobateRates`.) Escheat mints its per-murder death duty here,
-  //    per applied death, exactly like the suicide line above.
+  //    coupling is rate-level, in `reprobateRates`.)
   {
     const deaths = Math.min(Math.floor(working.lifetime.murderPool), totalReprobates(working));
     if (deaths >= 1) {
@@ -148,10 +139,6 @@ export function applyReprobateDynamics(state: GameState, deltaSeconds: number): 
         lifetime: {
           ...withSouls.lifetime,
           murderPool: working.lifetime.murderPool - r.removed,
-          gold:
-            mods.escheatGoldPerMurder > 0
-              ? add(withSouls.lifetime.gold, mul(mods.escheatGoldPerMurder, r.removed))
-              : withSouls.lifetime.gold,
         },
       };
     }
