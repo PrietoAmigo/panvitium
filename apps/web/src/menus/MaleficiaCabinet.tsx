@@ -237,6 +237,11 @@ interface MaleficiaCabinetProps {
   items: Maleficium[];
   /** Activate a single-use consumable by id (Hand of Glory, Black Salt Pouch, Defixio, …). */
   onUse?: (id: string) => void;
+  /**
+   * Store a relic in the Depraedatio private item safe, or take it back out (the safe holds one;
+   * storing another replaces it). Only offered on relics whose view carries `safe`.
+   */
+  onSafe?: (id: string) => void;
   /** Close the Loculi (the ✕, and Esc). */
   onClose: () => void;
   /**
@@ -258,6 +263,7 @@ interface Selection {
 export function MaleficiaCabinet({
   items,
   onUse,
+  onSafe,
   onClose,
   focus = null,
   reducedMotion = false,
@@ -590,6 +596,50 @@ export function MaleficiaCabinet({
             </button>
           </div>
         )}
+        {m.safe && (
+          <div
+            style={{
+              marginTop: px(14),
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: px(8),
+            }}
+          >
+            <button
+              type="button"
+              className="reliquary-safe"
+              aria-pressed={m.safe.stored}
+              aria-label={m.safe.stored ? S.takeFromSafe : S.storeInSafe}
+              onClick={() => onSafe?.(m.id)}
+              style={{
+                fontFamily: CINZEL,
+                fontSize: px(12),
+                letterSpacing: '.18em',
+                textTransform: 'uppercase',
+                color: m.safe.stored ? '#17130a' : '#e8c75a',
+                background: m.safe.stored ? '#c9a94a' : 'rgba(232,199,90,.08)',
+                border: '1px solid #c9a94a',
+                borderRadius: 3,
+                padding: `${px(10)} ${px(20)}`,
+                cursor: 'pointer',
+              }}
+            >
+              {m.safe.stored ? S.storedInSafe : S.storeInSafe}
+            </button>
+            <p
+              style={{
+                fontFamily: FELL,
+                fontStyle: 'italic',
+                fontSize: px(13),
+                color: '#9a8d6a',
+                margin: 0,
+              }}
+            >
+              {S.safeHint}
+            </p>
+          </div>
+        )}
         {m.reveal && (
           <div className="reliquary-scroll" style={{ maxHeight: px(200), overflowY: 'auto' }}>
             <OracleReveal reveal={m.reveal} />
@@ -657,7 +707,7 @@ export function MaleficiaCabinet({
               type="button"
               className={'reliquary-proc' + (on ? ' is-selected' : '')}
               onClick={() => select(i)}
-              title={it.name}
+              title={it.safe?.stored ? `${it.name} · ${S.storedInSafe}` : it.name}
               aria-label={it.name}
               aria-pressed={on}
               style={{
@@ -693,6 +743,18 @@ export function MaleficiaCabinet({
                   opacity: on ? 1 : 0,
                 }}
               />
+              {/* The relic in the private safe carries a small gold seal under its step. */}
+              {it.safe?.stored && (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: px(6),
+                    height: px(6),
+                    transform: 'rotate(45deg)',
+                    background: '#c9a94a',
+                  }}
+                />
+              )}
             </button>
           );
         })}

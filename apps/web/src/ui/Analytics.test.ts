@@ -158,3 +158,47 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     expect(idx('Harpy')).toBeLessThan(idx('Imp'));
   });
 });
+
+describe('AnalyticsGroup — Risk tab (the Depraedatio Risk algos contract)', () => {
+  it('stays hidden until Risk algos is chosen', () => {
+    seedLifetime({});
+    render();
+    const tabs = Array.from(container!.querySelectorAll('button')).map((b) => b.textContent);
+    expect(tabs).toEqual(['Main', 'Actions']);
+  });
+
+  it('lists every action with the odds of all seven outcomes, in aligned columns', () => {
+    seedLifetime({ syngraphae: ['risk-algos'] });
+    render();
+    clickTab('Risk');
+    const table = container!.querySelector('.analytics-risk-table');
+    expect(table).not.toBeNull();
+    const text = table!.textContent ?? '';
+    for (const name of ['Suggestion', 'Logismoi', 'Imperium', 'Caedes', 'Pogrom', 'Purgatio']) {
+      expect(text).toContain(name);
+    }
+    expect(text).toContain('Indagatio');
+    expect(text).toContain('Emptio');
+    for (const tier of [
+      'Stellar',
+      'Excellent',
+      'Good',
+      'Neutral',
+      'Bad',
+      'Terrible',
+      'Apocalyptic',
+    ]) {
+      expect(text).toContain(tier);
+    }
+    // One header row + eight action rows, each with a cell per tier (7) plus its label.
+    expect(container!.querySelectorAll('.analytics-risk-cell').length).toBe(7 * 9);
+    // Indagatio's base odds read through: Neutral 50%, Apocalyptic 0.1%.
+    const indagatio = Array.from(table!.querySelectorAll('.analytics-risk-row')).find(
+      (r) => r.querySelector('.analytics-risk-label')?.textContent === 'Indagatio',
+    );
+    const cells = Array.from(indagatio!.querySelectorAll('.analytics-risk-cell')).map(
+      (c) => c.textContent,
+    );
+    expect(cells).toEqual(['0.1%', '4.9%', '25.0%', '50.0%', '15.0%', '4.9%', '0.1%']);
+  });
+});

@@ -2,6 +2,9 @@ import { useState, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   ACTIONS,
+  TIERS,
+  actionTierDistribution,
+  riskAnalyticsOpen,
   INVOCATION_IDS,
   activeInvocationCount,
   invocationById,
@@ -21,7 +24,7 @@ import { actionProgress } from '../game/progress.js';
 import { actionName } from '../game/labels.js';
 import { invocationEffectText } from '../game/invocationEffect.js';
 
-type AnalyticsTab = 'main' | 'actions';
+type AnalyticsTab = 'main' | 'actions' | 'risk';
 
 /** An efficiency multiplier as a compact "N×" label (whole numbers bare, fractions to 2 decimals). */
 function effLabel(eff: number): string {
@@ -189,12 +192,16 @@ function MainTab(): ReactElement {
  * The PC's Analytics program (5.4): the live numeric readouts pulled out of the always-on HUD into
  * an on-demand panel. Two tabs: Main (resources + the reprobate population + dynamics rates) and
  * Actions (the unified work board: the player's efficiency + in-flight rite, then each acolyte, then
- * each bound invocation, every one with its efficiency, current action, and progress bar).
+ * each bound invocation, every one with its efficiency, current action, and progress bar). A third,
+ * Risk (every action's live outcome odds), opens once the Depraedatio Risk algos contract is chosen.
  */
 export function AnalyticsGroup(): ReactElement {
-  const [tab, setTab] = useState<AnalyticsTab>('main');
+  const [picked, setTab] = useState<AnalyticsTab>('main');
   const present = useGameStore((s) => s.state !== null);
+  const riskOpen = useGameStore((s) => (s.state ? riskAnalyticsOpen(s.state) : false));
   if (!present) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+  // A Risk tab left selected falls back to Main if the contract lapses (the account closed).
+  const tab: AnalyticsTab = picked === 'risk' && !riskOpen ? 'main' : picked;
 
   const tabBtn = (id: AnalyticsTab, label: string): ReactElement => (
     <button
@@ -213,9 +220,11 @@ export function AnalyticsGroup(): ReactElement {
       <div className="kat-pager" role="tablist">
         {tabBtn('main', strings.analytics.main)}
         {tabBtn('actions', strings.analytics.actions)}
+        {riskOpen && tabBtn('risk', strings.analytics.risk)}
       </div>
       {tab === 'main' && <MainTab />}
       {tab === 'actions' && <ActionsTab />}
+      {tab === 'risk' && <RiskTab />}
     </>
   );
 }
@@ -358,6 +367,80 @@ function ActionsTab(): ReactElement {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+/** The Opera categories in reading order, for the Risk tab's grouping. */
+const RISK_CATEGORIES = ['suasio', 'decimatio', 'indagatio', 'emptio'] as const;
+
+/** An outcome probability (0..1) as a fixed-width percentage: "0%", "<0.1%", "12.5%". */
+function riskPct(p: number): string {
+  const pct = Math.max(0, p) * 100;
+  if (pct === 0) return '0%';
+  if (pct < 0.05) return '<0.1%';
+  return `${pct.toFixed(1)}%`;
+}
+
+/**
+ * The Risk tab (the Depraedatio Risk algos contract): every action's live outcome distribution, one
+ * row per action grouped by category, one column per outcome tier (Stellar → Apocalyptic). Reads
+ * `actionTierDistribution`, the exact weights `resolveAction` draws from, so the odds shown are the
+ * odds a cast would roll right now.
+ */
+function RiskTab(): ReactElement {
+  const state = useGameStore((s) => s.state);
+  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+  const a = strings.analytics;
+  return (
+    <div className="analytics-risk">
+      <p className="analytics-offline-note">{a.riskIntro}</p>
+      <div className="analytics-risk-table" role="table" aria-label={a.risk}>
+        <div className="analytics-risk-row analytics-risk-head" role="row">
+          <span className="analytics-risk-label" role="columnheader">
+            {a.riskAction}
+          </span>
+          {TIERS.map((t) => (
+            <span
+              key={t}
+              className={`analytics-risk-cell analytics-risk-tier--${t}`}
+              role="columnheader"
+            >
+              {strings.tiers[t]}
+            </span>
+          ))}
+        </div>
+        {RISK_CATEGORIES.map((cat) => {
+          const actions = Object.values(ACTIONS).filter((d) => d.category === cat);
+          if (actions.length === 0) return null;
+          return [
+            <div className="analytics-risk-row analytics-risk-group" role="row" key={cat}>
+              <span className="analytics-risk-category" role="rowheader">
+                {strings.opera[cat]}
+              </span>
+            </div>,
+            ...actions.map((def) => {
+              const dist = actionTierDistribution(state, def.id);
+              return (
+                <div className="analytics-risk-row" role="row" key={def.id}>
+                  <span className="analytics-risk-label" role="rowheader">
+                    {actionName(def.id)}
+                  </span>
+                  {TIERS.map((t) => (
+                    <span
+                      key={t}
+                      className={`analytics-risk-cell analytics-risk-tier--${t}`}
+                      role="cell"
+                    >
+                      {riskPct(dist[t] ?? 0)}
+                    </span>
+                  ))}
+                </div>
+              );
+            }),
+          ];
+        })}
+      </div>
     </div>
   );
 }

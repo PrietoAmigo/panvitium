@@ -136,9 +136,9 @@ describe('Semet #32 reaches every seal (ADR-036)', () => {
     expect(find(withSemet({ 49: SOULS }))).toBe(2);
   });
 
-  it('scales the Thesaurus recovery seals (Vine #45)', () => {
-    expect(computeModifiers(withSemet({ 45: SOULS })).thesaurusRecoveryMul).toBeCloseTo(
-      1 + str(45) * (1 + semet),
+  it('scales the surrender-charge seals (Vine #45)', () => {
+    expect(computeModifiers(withSemet({ 45: SOULS })).surrenderChargeMul).toBeCloseTo(
+      1 / (1 + str(45) * (1 + semet)),
       9,
     );
   });

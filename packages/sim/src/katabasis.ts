@@ -10,9 +10,9 @@
  *
  * This module is the pure core; the menu UI and store orchestrate it. All randomness comes from the injected save RNG (ADR-011).
  */
-import { add, clamp, floor, gt, isZero, max, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
+import { add, clamp, floor, gt, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
 import { liquidateThesaurus } from './faeneratio.js';
-import { peculiumFloorFraction } from './syngraphae.js';
+import { privateSafeOpen, safeItem } from './syngraphae.js';
 import { sigilKatabasisBonus, sigilStrengthMul } from './sigils.js';
 import {
   BASE_MAX_INFLUENCE,
@@ -112,22 +112,23 @@ export function bindSigil(
 
 /**
  * Begin the descent (02 §6): the moment the player commits to Katabasis, the lifetime's *productive*
- * systems are torn down — NOT later when they rise. The Thesaurus hoard liquidates in full into
- * gold (the descent voids the contracts; the faeneratio-4 bonus applies — so the estate rides the
- * later carry-over roll), toggles stop, the action queue clears, invocations are dispelled, and
- * acolytes drop their assignments. What the commit will roll
+ * systems are torn down — NOT later when they rise. The Depraedatio account closes: the reserve
+ * liquidates in full into gold with no surrender charge (so the estate rides the later carry-over
+ * roll), and the private item safe is judged here (a safe that is not open at the descent keeps
+ * nothing). Toggles stop, the action queue clears,
+ * invocations are dispelled, and acolytes drop their assignments. What the commit will roll
  * for carry-over (gold, reprobates, maleficia) is left intact and frozen; the store suspends
  * ticking while the menu is open, so nothing accrues during allocation. `commitKatabasis` finishes
  * the descent (the carry-over rolls + lifetime reset) when the player confirms.
  */
 export function enterKatabasis(state: GameState): GameState {
-  // Stamp the hoard's value at descent BEFORE liquidation — the base for the custodia-4 Peculium
-  // floor at commit. Additive-optional on the lifetime (ADR-023), so it survives a mid-descent
-  // reload; cleared with the lifetime reset at commit.
-  const hoardAtDescent = state.lifetime.hoard;
-  // Thesaurus liquidation (spec §7): the hoard pays out in full (× faeneratio-4), BEFORE the
-  // remaining-gold roll at commit — so Avaritia levels judge the whole estate, preserving the
-  // carry-over interplay the Mercatus auto-divest had (the hoard is real capital subject to the
+  // The private item safe (Custody VIP) is judged at the descent: the designation survives into the
+  // frozen menu only if the safe is open (Custody VIP chosen) and the item is still owned; otherwise
+  // it is dropped and the commit keeps nothing.
+  const safeHeld = privateSafeOpen(state) ? safeItem(state) : undefined;
+  // Reserve liquidation (the account close): the reserve pays out in full, BEFORE the
+  // remaining-gold roll at commit, so Avaritia levels judge the whole estate, preserving the
+  // carry-over interplay the Mercatus auto-divest had (the reserve is real capital subject to the
   // same loss as cash on hand at descent).
   const liquidated = liquidateThesaurus(state);
   const acolytes = liquidated.lifetime.acolytes.map((a) => ({
@@ -135,12 +136,14 @@ export function enterKatabasis(state: GameState): GameState {
     assignedAction: null,
     remainingSeconds: null,
   }));
+  const { safeItem: _safe, ...rest } = liquidated.lifetime;
   return {
     ...liquidated,
     inKatabasis: true, // freeze the lifetime in `tick` until commit
     desidiaActive: false, // a torn-down lifetime cannot be accelerated (ADR-033); desidia persists
     lifetime: {
-      ...liquidated.lifetime,
+      ...rest,
+      ...(safeHeld !== undefined ? { safeItem: safeHeld } : {}),
       activeToggles: [], // toggles stop
       toggleDurations: {},
       actionQueue: [], // uncompleted player actions fizzle
@@ -148,9 +151,8 @@ export function enterKatabasis(state: GameState): GameState {
       invocations: {}, // all invocations dispelled (02 §7)
       invocationDurations: {}, // …and any apex duration counters (Aurevora) clear
       acolytes, // followers drop their tasks (the list itself clears at commit)
-      // The signed Syngraphae stay readable through the frozen menu (commit needs custodia-4 for
-      // the Peculium floor); the terms lapse with the lifetime reset at commit.
-      ...(gt(hoardAtDescent, ZERO) ? { hoardAtDescent } : {}),
+      // The chosen contracts stay listed through the frozen menu; the terms lapse with the
+      // lifetime reset at commit.
       // The default Indagatio investment (03 §2.5) is gold set aside: fold it back into the estate
       // BEFORE the remaining-gold roll so it shares the same carry-over as liquid gold, rather than
       // being lost outright. Zeroed here; the new lifetime starts with no stake.
@@ -174,9 +176,10 @@ export interface KatabasisRecap {
 /**
  * Commit the Katabasis: reset the lifetime, keeping a fraction of gold and reprobates
  * and rolling each maleficium against its remaining chance. Souls (the leftover pool), Devotion,
- * and current sigil bindings carry through untouched. Invocations are dispelled, the hoard /
- * Syngraphae / Emptio cleared, influence reset to 0. Returns the resumed state and the recap of
- * what was kept.
+ * and current sigil bindings carry through untouched. Invocations are dispelled, the reserve /
+ * contracts / Emptio cleared, influence reset to 0. A maleficium in the private item safe (judged
+ * at `enterKatabasis`) is kept for certain. Returns the resumed state and the recap of what was
+ * kept.
  *
  * Call AFTER the player has finished allocating (offer/bind). `now` defaults to the current clock.
  */
@@ -193,10 +196,9 @@ export function commitKatabasis(
   const pendingErinyes = state.lifetime.pendingErinyes === true;
   const pendingAstiwihad = !pendingErinyes && state.lifetime.pendingAstiwihad === true;
 
-  // Thesaurus liquidation (spec §7): the hoard pays out in full BEFORE the carry-over roll, so
-  // the estate participates in the remaining-gold % and not at face value — the hoard is real
-  // capital subject to the same loss as cash on hand at descent. `enterKatabasis` already
-  // liquidated (and stamped `hoardAtDescent`); this defensive repeat is a no-op when the hoard is 0.
+  // Reserve liquidation (the account close): the reserve pays out in full BEFORE the carry-over
+  // roll, so the estate participates in the remaining-gold % and not at face value.
+  // `enterKatabasis` already liquidated; this defensive repeat is a no-op on an empty reserve.
   state = liquidateThesaurus(state);
   // Defensively fold any remaining Indagatio investment into liquid gold before the roll (a no-op
   // after `enterKatabasis` already folded it) so the stake shares the estate's remaining-gold %.
@@ -212,8 +214,8 @@ export function commitKatabasis(
   }
   const goldAtDescent = state.lifetime.gold;
 
-  // Remaining gold: a fraction of the gold held at this Katabasis (02 §6) — now inclusive of the
-  // hoard liquidation folded in above. Purson #20 lifts the fraction; Erinyes/Astiwihad override it
+  // Remaining gold: a fraction of the gold held at this Katabasis (02 §6), inclusive of the
+  // reserve liquidation folded in above. Purson #20 lifts the fraction; Erinyes/Astiwihad override it
   // outright. The shared sigil-strength multiplier (the sigil-effect relics, Gaap #33, Semet #32)
   // scales every carry-over seal, like every other sigil channel (ADR-036).
   const sigilEffectMul = sigilStrengthMul(state);
@@ -222,14 +224,7 @@ export function commitKatabasis(
     : pendingAstiwihad
       ? 1
       : remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold', sigilEffectMul));
-  const rolledGold = floor(mul(floor(goldAtDescent), goldFraction));
-  // Peculium (custodia-4): the kept-gold result is floored at 10% of the hoard's value at descent
-  // — a guaranteed remnant beneath the Avaritia roll. Erinyes zeroes gold outright and WINS over
-  // Peculium (the commit-side mutex is unchanged; pinned in katabasis.test).
-  const peculium = pendingErinyes ? 0 : peculiumFloorFraction(state);
-  const peculiumFloor =
-    peculium > 0 ? floor(mul(state.lifetime.hoardAtDescent ?? ZERO, peculium)) : ZERO;
-  const goldKept = pendingErinyes ? rolledGold : max(rolledGold, peculiumFloor);
+  const goldKept = floor(mul(floor(goldAtDescent), goldFraction));
 
   // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8). Cimejes
   // #66 lifts the chance; Erinyes zeros it, Astiwihad maxes it.
@@ -238,10 +233,18 @@ export function commitKatabasis(
     : pendingAstiwihad
       ? 1
       : remainingMaleficiaChance(state, sigilKatabasisBonus(state, 'maleficia', sigilEffectMul));
+  // The private item safe (Custody VIP) keeps ONE copy of its maleficium for certain, with no
+  // draw, so a descent without a safe item leaves the RNG stream byte-identical (ADR-011). It was
+  // judged at `enterKatabasis` (open safe, owned item). Erinyes zeroes the carry-over outright and
+  // wins over the safe, as the commit-side mutex does for every other carry-over.
+  let safe = pendingErinyes ? undefined : state.lifetime.safeItem;
   const maleficiaKept: string[] = [];
   const maleficiaLost: string[] = [];
   for (const m of state.lifetime.maleficia) {
-    if (rng.chance(chance)) maleficiaKept.push(m);
+    if (safe !== undefined && m === safe) {
+      maleficiaKept.push(m);
+      safe = undefined; // one copy only
+    } else if (rng.chance(chance)) maleficiaKept.push(m);
     else maleficiaLost.push(m);
   }
 
@@ -272,8 +275,9 @@ export function commitKatabasis(
     actionQueue: [], // uncompleted actions fizzle
     autoRepeat: [], // and nothing carries an auto-repeat into the new lifetime
     hoard: ZERO, // liquidated at descent (the payout folded into goldAtDescent)
-    syngraphae: [], // the terms lapse at the descent; the tree is re-signed each lifetime
-    // hoardAtDescent is intentionally omitted — the Peculium base clears with the commit.
+    syngraphae: [], // the terms lapse at the account close; contracts are chosen anew each lifetime
+    // accountAge / accountIncome / safeItem / assetTracingElapsed are intentionally omitted: the
+    // account reopens at the next lifetime's first deposit.
     generationPool: 0, // pools reset with the fresh lifetime
     suicidePool: 0,
     murderPool: 0,

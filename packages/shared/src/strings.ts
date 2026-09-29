@@ -207,12 +207,12 @@ export const strings = {
   /**
    * The Depraedatio "Counting House" account (Claude Design redesign of the Faeneratio loop). The
    * panel is presented as a mundane private-bank / wealth-management dashboard: the Latin surfaces
-   * (Thesaurus the hoard, Mutuum the loan book, Fenus the interest, Foedus the tier, Syngraphae the
-   * contracts) are relabelled in plain money terms (Reserve, Loan Book, Interest, Tier, Contracts;
-   * the Usura/Faeneratio/Custodia branches read Yield/Origination/Custody). The underlying sim ids
-   * are unchanged (ADR-020 keeps the Latin as internal identifiers); only the player-facing copy is
-   * banking. LOAD-BEARING register: the damned never pay the player tribute and never know the
-   * player exists; the vocabulary is loans, interest, capital, ledgers, counting houses, escheat.
+   * (Thesaurus the reserve, Fenus the interest, Syngraphae the contracts) are relabelled in plain
+   * money terms (Reserve, Interest, Relationship tier, Contracts). The loan book is retired; the
+   * contracts are laddered on the relationship tier, which the reserve balance sets. The underlying
+   * sim ids are unchanged (ADR-020 keeps the Latin as internal identifiers); only the player-facing
+   * copy is banking. LOAD-BEARING register: the damned never pay the player tribute and never know
+   * the player exists; the vocabulary is interest, capital, ledgers, counting houses, custody.
    * Numbers stay baked into every effect line (hard copy rule 1). No em/en dashes (hard copy rule 2).
    */
   faeneratio: {
@@ -249,36 +249,38 @@ export const strings = {
     trailing12: 'trailing 12 months',
     availableCash: 'Available cash',
     availableCashCaption: 'gold, unplaced',
-    totalIncome: 'Total income',
+    income: 'Income',
     perSecond: 'gold / second',
-    interest: 'Interest',
-    loanBookStat: 'Loan book',
-    /** "Realised income, {trailing} gold over {period}." */
+    /** The effective interest rate, e.g. "0.0665%". */
+    interestRate: 'Interest rate',
+    interestRateCaption: 'of the reserve, per second',
+    surrenderChargeStat: 'Surrender charge',
+    surrenderChargeCaption: 'on manual withdrawals',
+    /** Shown in place of the charge while an Annuity bars manual surrender. */
+    surrenderBarred: 'Barred',
+    surrenderBarredCaption: 'annuity in force',
+    /** "Realised income, {n} gold since account inception." */
     realisedIncome: 'Realised income,',
-    over: 'over',
-    period: 'Period',
-    period24h: '24 hours',
-    period7d: '7 days',
-    period30d: '30 days',
-    period24hLong: 'the last 24 hours',
-    period7dLong: 'the last 7 days',
-    period30dLong: 'the last 30 days',
+    sinceInception: 'since account inception.',
 
-    // Reserve Account card (the hoard)
+    // Reserve Account card (the reserve)
     reserveAccount: 'Reserve Account',
     reserveSubtitle: 'Interest-bearing principal held with the counting house',
-    /** Rendered "Yield \u00d7{mult}" from the signed Yield contracts. */
+    /** Rendered "Yield \u00d7{mult}" from the contracts in force. */
     yieldPill: 'Yield',
     balance: 'Balance',
     interestPerS: 'Interest / s',
+    vestingPerS: 'Vesting / s',
     depositToReserve: 'Deposit to reserve',
     available: 'Available',
     allCash: 'All cash',
     deposit: 'Deposit',
     withdrawFromReserve: 'Withdraw from reserve',
-    /** "Surrender charge \u00b7 {pct} returned". */
+    /** "Surrender charge {charge} \u00b7 {pct} returned". */
     surrenderCharge: 'Surrender charge',
     returned: 'returned',
+    /** Replaces the charge line while an Annuity is in force. */
+    surrenderBarredNote: 'Manual surrender barred by the annuity',
     withdraw: 'Withdraw',
     /** The confirm line: "Returns {n} gold to cash; {n} forfeited to the counting house." */
     withdrawReturns: 'Returns',
@@ -287,27 +289,22 @@ export const strings = {
     cancel: 'Cancel',
     confirmWithdrawal: 'Confirm withdrawal',
 
-    // Loan Book card
-    loanBook: 'Loan Book',
-    loanBookSubtitle: 'Short-term consumer credit',
-    performing: 'Performing',
-    takePerS: 'Take / s',
-    activeDebtors: 'Active debtors',
-    /** The loan book's living collateral: "1,234 debtors". */
-    debtors: 'debtors',
-    loanBookBody:
-      'Small sums originated through broker partners and repaid by the head. The book is unsecured and self-renewing; no borrower is contacted directly.',
-
-    // Account status (Foedus tier) card
+    // Account status (relationship tier) card
     accountStatus: 'Account status',
     tier: 'Tier',
-    /** "{n}% management-fee rebate" (n = tier x 12.5). */
-    rebateSuffix: 'management-fee rebate',
+    /** The tier label below Tier I. */
+    noTier: 'No tier',
+    /** "{n} of 3 contracts in force". */
+    of: 'of',
+    contractsInForce: 'contracts in force',
     /** "{pct} to Tier {next}". */
     toTier: 'to Tier',
     maxTier: 'max tier',
+    accountAge: 'Account age',
+    /** Shown in place of the account age before the first deposit. */
+    notOpened: 'opens with the first deposit',
     tierBody:
-      'Tier advances one step per decade of balance above 10,000 gold, to a maximum of Tier IV. Each tier deepens the management-fee rebate.',
+      'The relationship tier follows the reserve balance: Tier I at 100 gold, Tier II at 10,000 gold, Tier III at 1,000,000 gold. Each tier opens one contract; once chosen, it holds until the account closes, whatever the balance does.',
 
     // Recent activity (a session-local ledger of the player's own moves)
     recentActivity: 'Recent activity',
@@ -316,67 +313,59 @@ export const strings = {
     ledgerDepositSub: 'from available cash',
     ledgerWithdrawal: 'Withdrawal',
     ledgerWithdrawalSub: 'surrender charge applied',
-    ledgerContractFee: 'Contract fee',
-    /** "{name} signed". */
-    ledgerSignedSuffix: 'signed',
+    ledgerContract: 'Contract chosen',
+    /** "{name} \u00b7 no fee". */
+    ledgerContractSub: 'no fee',
 
     // Contracts screen
     contractsIntro:
-      'Standing contracts with the counting house. A one-time fee is charged from available cash; the terms then hold for the life of the account.',
+      'Standing terms with the counting house. Each relationship tier opens one contract, chosen once at no charge and held for the life of the account, even if the reserve later falls below its tier.',
+    reserveBalance: 'Reserve balance',
+    /** "Relationship Tier {N}". */
+    tierHeading: 'Relationship Tier',
+    /** "{threshold} gold in reserve". */
+    inReserve: 'gold in reserve',
+    tierHeld: 'Held',
+    tierNotHeld: 'Not reached',
     active: 'Active',
-    /** "Signed \u00b7 {fee} paid". */
-    signedMeta: 'Signed',
-    paid: 'paid',
-    /** "{fee} \u00b7 eligible". */
-    eligible: 'eligible',
-    /** "Sign \u00b7 {fee}". */
-    sign: 'Sign',
-    insufficientCash: 'Insufficient cash',
-    /** "Sign {prior} first". */
-    signFirst: 'first',
-    /**
-     * "Requires Avaritia {N}". The sim gates each contract on the player's Avaritia level (not the
-     * hoard-based relationship Tier shown in the sidebar). The design's mundane theme relabels the
-     * gate generically as "Tier N", but that would contradict the relationship-tier card, so the
-     * gate keeps its true Avaritia axis (a first-class player term elsewhere in the game).
-     */
-    requiresAvaritia: 'Requires Avaritia',
-    /** "Confirm \u00b7 {fee}". */
+    choose: 'Choose',
+    /** "Confirm \u00b7 no fee". */
     confirm: 'Confirm',
+    noFee: 'no fee',
+    /** The meta line under an available contract. */
+    finalNote: 'One per tier, final for the life of the account.',
+    /** "Requires Tier {N} \u00b7 {threshold} gold in reserve". */
+    requiresTier: 'Requires Tier',
+    otherChosen: 'Another contract holds this tier.',
+    inForce: 'In force for the life of the account.',
+    /** The live multiplier readout for Long-term investing: "Now \u00d7{mult}". */
+    liveNow: 'Now',
 
-    /** The three branch column headings (banking display names, keyed by internal branch id). */
-    branches: {
-      usura: 'Yield',
-      faeneratio: 'Origination',
-      custodia: 'Custody',
+    /** Contract display names, keyed by sim id. */
+    contractNames: {
+      'interest-rate': 'Interest rate',
+      'long-term': 'Long-term investing',
+      'active-management': 'Active management',
+      compounding: 'Compounding',
+      vesting: 'Vesting',
+      annuity: 'Annuity',
+      pi: 'PI',
+      'custody-vip': 'Custody VIP',
+      'risk-algos': 'Risk algos',
     } as Record<string, string>,
-    /** The sub label beneath each branch heading. */
-    branchSubs: {
-      usura: 'Interest terms',
-      faeneratio: 'Loan-book terms',
-      custodia: 'Retention terms',
-    } as Record<string, string>,
-    /** Unnamed nodes go by their branch name + numeral (Yield II); named contracts carry a title. */
-    nodeNames: {
-      'usura-4': 'Compounding',
-      'faeneratio-2': 'Escheat',
-      'custodia-4': 'Retained Floor',
-    } as Record<string, string>,
-    /** One line per node, shown on its card. Numbers first, so the gain is never a riddle. */
-    nodeEffects: {
-      'usura-1': 'Interest rate \u00d71.5.',
-      'usura-2': 'Interest rate \u00d71.5 (stacks to \u00d72.25).',
-      'usura-3': 'Interest rate \u00d72 (stacks to \u00d74.5).',
-      'usura-4': '50% of each interest payment auto-reinvests into the reserve.',
-      'faeneratio-1': 'Loan-book take \u00d71.5 per debtor.',
-      'faeneratio-2':
-        'Estate recovery: +1 gold per account closed by murder, +0.5 per account closed by suicide.',
-      'faeneratio-3': 'Loan-book take \u00d72 (stacks to \u00d73).',
-      'faeneratio-4': 'Portfolio liquidation pays \u00d71.25 when the account closes.',
-      'custodia-1': 'Withdrawal recovery \u00d71.6 (25% becomes 40%).',
-      'custodia-2': '+2% gold gain per decade of reserve above 1,000, capped at +20%.',
-      'custodia-3': 'Withdrawal recovery \u00d71.5 (stacks to 60%).',
-      'custodia-4': 'When the account closes, kept gold is floored at 10% of the reserve.',
+    /** One line per contract, shown on its card. Numbers first, so the gain is never a riddle. */
+    contractEffects: {
+      'interest-rate': 'Interest rate \u00d71.33.',
+      'long-term': 'Interest rate +10% per hour since account inception.',
+      'active-management': 'Surrender charge reduced by 33%.',
+      compounding: 'Surrender charge increased by 50%. 1% of interest is reinvested automatically.',
+      vesting: '1% of the reserve vests to cash each second as interest, free of surrender charge.',
+      annuity: 'Interest rate \u00d71.1666. Manual surrender is barred.',
+      pi: 'Automatic asset tracing: a free Indagatio every 2.5 minutes. Only Desidia hastens it.',
+      'custody-vip':
+        'Private item safe: one maleficium, stored from the Loculi, passes the next Katabasis with 100% chance.',
+      'risk-algos':
+        'Risk analytics: the odds of every outcome of every action, in a new Analytics tab.',
     } as Record<string, string>,
   },
   acolytes: {
@@ -462,7 +451,7 @@ export const strings = {
     effectLabels: {
       influence: 'influence gain',
       decimatioEff: 'Decimatio efficiency',
-      faeneratioOutput: 'loan and interest income',
+      faeneratioOutput: 'interest income',
       stellar: 'Stellar chance',
       baseSuicide: 'base suicide rate',
       baseMurder: 'base murder rate',
@@ -503,7 +492,7 @@ export const strings = {
       fama: '+7.5% influence gain per copy, scaled by invocation efficiency.',
       nightmare: '+0.005/s base reprobate suicide rate per copy, scaled by invocation efficiency.',
       behemoth: '+0.025% Stellar chance per copy, scaled by invocation efficiency.',
-      plutus: '+15% loan and interest income per copy, scaled by invocation efficiency.',
+      plutus: '+15% interest income per copy, scaled by invocation efficiency.',
       lemure:
         'Reduces Desidia drain by 6.25% (×0.9375) per copy (up to 4), scaled by invocation efficiency; upkeep takes 25% of influence gain each.',
       midas: '×10 gold gain, but ×10 the Apocalyptic chance.',
@@ -544,6 +533,12 @@ export const strings = {
     effect: 'Effect',
     singleUseEffect: 'Single-use · effect',
     obtained: 'Maleficium obtained',
+    // The private item safe (the Depraedatio Custody VIP contract): one relic, kept for certain.
+    storeInSafe: 'Store in safe',
+    storedInSafe: 'Stored in safe',
+    safeHint: 'Passes the next Katabasis with 100% chance. Store another to replace it.',
+    /** Accessible label while stored: pressing takes it back out. */
+    takeFromSafe: 'Take out of the safe',
   },
   analytics: {
     title: 'Analytics',
@@ -565,6 +560,10 @@ export const strings = {
     // (generation minus upkeep), per second.
     upkeep: 'Upkeep',
     net: 'Net',
+    // The Risk tab (the Depraedatio Risk algos contract): every action's live outcome odds.
+    risk: 'Risk',
+    riskIntro: 'The odds of every outcome of every action, as they stand right now.',
+    riskAction: 'Action',
   },
   emails: {
     title: 'Emails',
@@ -1125,12 +1124,12 @@ export const strings = {
       42: 'Ira invocation effect \u2191',
       43: 'Suicide rate \u2191 (flat)',
       44: 'Avaritia invocation effect \u2191',
-      45: 'Reserve withdrawal recovery \u2191',
+      45: 'Reserve surrender charge \u2193',
       46: 'Indagatio efficiency \u2191',
       47: 'Suasio Stellar chance \u2191',
       48: 'Flat gold generation \u2191',
       49: 'Indagatio double-find chance \u2191',
-      50: 'Reserve withdrawal recovery \u2191',
+      50: 'Reserve surrender charge \u2193',
       51: 'All Opera negative outcomes \u2193',
       52: 'Acedia invocation effect \u2191',
       53: 'Reprobates kept on descent \u2191',

@@ -1,10 +1,11 @@
 /**
- * Render smoke tests for the redesigned Depraedatio menu, the "Counting House" private-bank account
- * (Claude Design). The old grimoire Thesaurus / Syngraphae tabs are retired: the panel is now a
- * sidebar nav (Portfolio + Contracts) over the mundane banking surfaces. These pin the wiring, the
- * nav switching the main view and the per-screen surfaces mounting against live store state (the
- * Reserve Account + Loan Book on Portfolio, the twelve-node contract tree on Contracts). The
- * Faeneratio / Syngraphae math and the store mutators are covered by their own suites.
+ * Render smoke tests for the Depraedatio menu, the "Counting House" private-bank account (Claude
+ * Design). The panel is a sidebar nav (Portfolio + Contracts) over the mundane banking surfaces.
+ * These pin the wiring, the nav switching the main view and the per-screen surfaces mounting against
+ * live store state (the four KPIs, the realised-income line since inception, the Reserve Account and
+ * Account status on Portfolio; the three relationship-tier rows of contracts on Contracts), and that
+ * the retired loan book and the period selector are gone. The reserve / contract math and the store
+ * mutators are covered by their own suites.
  */
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { act, createElement } from 'react';
@@ -62,23 +63,41 @@ describe('DepraedatioGroup — Counting House account', () => {
     expect(text).toContain(F.brand); // "COUNTING HOUSE"
     expect(text).toContain(F.accountName); // "Depraedatio"
     expect(text).toContain(F.reserveAccount); // "Reserve Account"
-    expect(text).toContain(F.loanBook); // "Loan Book"
+    expect(text).toContain(F.accountStatus);
+    // The loan book and its KPIs are retired.
+    expect(text).not.toContain('Loan Book');
+    expect(text).not.toContain('Active debtors');
+    expect(container!.querySelector('.ch-loanbook')).toBeNull();
   });
 
-  it('shows the reserve balance, take readouts and deposit/withdraw controls', () => {
+  it('shows four aligned KPIs and the realised income since account inception (no period select)', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
         ...s0,
-        lifetime: { ...s0.lifetime, gold: bn(1000), hoard: bn(250), reprobates: 10 },
+        lifetime: { ...s0.lifetime, gold: bn(1000), hoard: bn(250), accountIncome: bn(1234) },
       },
     });
     render();
     const F = strings.faeneratio;
-    const text = container!.textContent ?? '';
-    expect(text).toContain(F.reserveAccount);
-    expect(text).toContain(F.loanBook);
-    expect(text).toContain(F.activeDebtors); // the loan book's debtor figure label
+    const labels = Array.from(container!.querySelectorAll('.ch-stat-label')).map(
+      (l) => l.textContent,
+    );
+    expect(labels.slice(0, 4)).toEqual([
+      F.availableCash,
+      F.income,
+      F.interestRate,
+      F.surrenderChargeStat,
+    ]);
+    expect(container!.querySelectorAll('.ch-stats .ch-stat')).toHaveLength(4);
+    const realised = container!.querySelector('.ch-realised')?.textContent ?? '';
+    expect(realised).toContain(F.realisedIncome);
+    expect(realised).toContain('1,234');
+    expect(realised).toContain(F.sinceInception);
+    expect(container!.querySelector('select')).toBeNull(); // the period dropdown is gone
+    // The base surrender charge is 15%, 85% returned.
+    expect(container!.textContent).toContain('15%');
+    expect(container!.textContent).toContain('85%');
 
     const deposit = container!.querySelector<HTMLButtonElement>(
       `button[aria-label="${F.deposit}"]`,
@@ -90,24 +109,51 @@ describe('DepraedatioGroup — Counting House account', () => {
     expect(withdraw).not.toBeNull();
   });
 
-  it('switches to Contracts and shows the twelve contracts in three branch columns', () => {
+  it('switches to Contracts and shows three tiers of three contracts, one choice per tier', () => {
+    const s0 = store().state as GameState;
+    // Tier II held (10,000 in reserve); Interest rate already chosen at Tier I.
+    useGameStore.setState({
+      state: {
+        ...s0,
+        lifetime: { ...s0.lifetime, hoard: bn(10_000), syngraphae: ['interest-rate'] },
+      },
+    });
     render();
     const F = strings.faeneratio;
     clickNav(F.contracts);
+    expect(container!.querySelectorAll('.ch-tier')).toHaveLength(3);
+    expect(container!.querySelectorAll('.ch-term')).toHaveLength(9);
     const text = container!.textContent ?? '';
-    // Branch display names (Yield / Origination / Custody).
-    expect(text).toContain(F.branches.usura);
-    expect(text).toContain(F.branches.faeneratio);
-    expect(text).toContain(F.branches.custodia);
-    // The three named contracts (Compounding / Escheat / Retained Floor).
-    expect(text).toContain(F.nodeNames['usura-4']);
-    expect(text).toContain(F.nodeNames['faeneratio-2']);
-    expect(text).toContain(F.nodeNames['custodia-4']);
-    // The gating rebalance opens each branch's first node (gate 0) from the start: three signable
-    // nodes (their buttons disabled while unaffordable), the rest gated on Avaritia levels.
-    const signButtons = Array.from(container!.querySelectorAll<HTMLButtonElement>('button')).filter(
-      (b) => (b.getAttribute('aria-label') ?? '').startsWith(F.sign),
+    for (const name of Object.values(F.contractNames)) expect(text).toContain(name);
+    // Tier I: one active, two foreclosed. Tier II: three available. Tier III: three locked.
+    expect(container!.querySelectorAll('.ch-term--active')).toHaveLength(1);
+    expect(container!.querySelectorAll('.ch-term--foreclosed')).toHaveLength(2);
+    expect(container!.querySelectorAll('.ch-term--available')).toHaveLength(3);
+    expect(container!.querySelectorAll('.ch-term--locked')).toHaveLength(3);
+    const chooseButtons = Array.from(
+      container!.querySelectorAll<HTMLButtonElement>('button'),
+    ).filter((b) => (b.getAttribute('aria-label') ?? '').startsWith(F.choose));
+    expect(chooseButtons).toHaveLength(3);
+  });
+
+  it('choosing is a two-step confirm and costs nothing', () => {
+    const s0 = store().state as GameState;
+    useGameStore.setState({
+      state: { ...s0, lifetime: { ...s0.lifetime, gold: bn(0), hoard: bn(100) } },
+    });
+    render();
+    const F = strings.faeneratio;
+    clickNav(F.contracts);
+    const choose = container!.querySelector<HTMLButtonElement>(
+      `button[aria-label="${F.choose} ${F.contractNames['long-term']}"]`,
     );
-    expect(signButtons).toHaveLength(3);
+    act(() => choose!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const confirm = container!.querySelector<HTMLButtonElement>(
+      `button[aria-label="${F.confirm} ${F.contractNames['long-term']}"]`,
+    );
+    act(() => confirm!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const after = store().state as GameState;
+    expect(after.lifetime.syngraphae).toEqual(['long-term']);
+    expect(after.lifetime.gold.toNumber()).toBe(0);
   });
 });

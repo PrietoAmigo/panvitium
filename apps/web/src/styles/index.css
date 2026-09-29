@@ -2204,6 +2204,57 @@ body {
 .analytics-flow-net {
   font-weight: 600;
 }
+/* The Risk tab (Depraedatio Risk algos): an action x outcome-tier odds table. An 8-column grid (the
+   action, then Stellar → Apocalyptic); rows are `display: contents` so every cell lands on the same
+   tracks and the percentages align in columns. A category row spans the full width. */
+.analytics-risk-table {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 1fr) repeat(7, auto);
+  column-gap: 0.8rem;
+  row-gap: 0.3rem;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  overflow-x: auto;
+}
+.analytics-risk-row {
+  display: contents;
+}
+.analytics-risk-label {
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.analytics-risk-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+.analytics-risk-head .analytics-risk-label,
+.analytics-risk-head .analytics-risk-cell {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+.analytics-risk-category {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.analytics-risk-tier--stellar,
+.analytics-risk-tier--excellent,
+.analytics-risk-tier--good {
+  color: var(--candle);
+}
+.analytics-risk-tier--terrible,
+.analytics-risk-tier--apocalyptic {
+  /* A lifted blood red: --blood-bright is too dark to read on the Analytics card. */
+  color: #d9584f;
+}
 .analytics-offline-windows {
   display: flex;
   gap: 0.4rem;
@@ -3021,59 +3072,27 @@ body {
   color: #9a9486;
   margin-top: 3px;
 }
-.ch-balance-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-top: 18px;
-  flex-wrap: wrap;
-}
 .ch-realised {
   font-size: 0.74rem;
   color: #8a8578;
+  margin: 18px 0 0;
 }
 .ch-realised b {
   color: #3a362c;
   font-weight: 600;
 }
-.ch-period {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.ch-period .ch-eyebrow {
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
-  color: #9a9486;
-}
-.ch-select {
-  font-family: var(--ch-mono);
-  font-size: 0.76rem;
-  color: #3a362c;
-  background: #fff;
-  border: 1px solid #ddd7c8;
-  border-radius: 8px;
-  padding: 7px 10px;
-  cursor: pointer;
-}
 
-/* ── Two-column holdings layout ── */
+/* ── Two-column holdings layout: the Reserve Account beside the Account status card, stretched to
+   one height so neither column leaves a gap under it. ── */
 .ch-columns {
   display: grid;
   grid-template-columns: 1.55fr 1fr;
   gap: 22px;
-  align-items: start;
+  align-items: stretch;
 }
-.ch-col {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  min-width: 0;
-}
-.ch-reserve,
-.ch-loanbook {
+.ch-reserve {
   padding: 26px 28px;
+  min-width: 0;
 }
 .ch-card-head {
   display: flex;
@@ -3103,15 +3122,6 @@ body {
   color: var(--ch-accent);
   background: var(--ch-accent-soft);
   border: 1px solid var(--ch-accent-border);
-}
-.ch-pill--performing {
-  font-family: var(--ch-sans);
-  font-size: 0.62rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #2f6b4e;
-  background: #eef5ef;
-  border: 1px solid #d3e4d6;
 }
 .ch-figures {
   display: flex;
@@ -3190,6 +3200,10 @@ body {
 }
 .ch-input::placeholder {
   color: #a8a396;
+}
+.ch-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .ch-ghost {
   font-family: var(--ch-sans);
@@ -3291,6 +3305,9 @@ body {
 
 /* ── Account status (dark) + recent activity ── */
 .ch-status {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   background: linear-gradient(168deg, #1b271f, #141d18);
   border: 1px solid #26332b;
   border-radius: 16px;
@@ -3338,11 +3355,27 @@ body {
   background: var(--ch-accent-light);
   border-radius: 4px;
 }
+.ch-status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #26332b;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: #8b9088;
+}
+.ch-status-row .ch-mono {
+  color: #d9d3c4;
+}
+/* Pinned to the card's foot, so a stretched status card carries its slack above the body text. */
 .ch-status-body {
   font-size: 0.72rem;
   line-height: 1.55;
   color: #9aa098;
-  margin: 18px 0 0;
+  margin: auto 0 0;
+  padding-top: 18px;
 }
 .ch-activity {
   padding: 22px 24px;
@@ -3418,65 +3451,91 @@ body {
   font-size: 1.02rem;
   color: #3a362c;
 }
-.ch-branches {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  align-items: start;
-}
-.ch-branch {
+/* One row per relationship tier: a heading line, then three equal-height contract cards. */
+.ch-tier {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-width: 0;
 }
-.ch-branch-head {
-  text-align: center;
-  padding-bottom: 6px;
+.ch-tier-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
   border-bottom: 2px solid var(--ch-accent-border);
 }
-.ch-branch-name {
+.ch-tier-titles {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.ch-tier-name {
   font-family: var(--ch-serif);
   font-size: 1.14rem;
   color: #20291f;
 }
-.ch-branch-sub {
-  font-size: 0.6rem;
-  letter-spacing: 0.22em;
+.ch-tier-sub {
+  font-family: var(--ch-mono);
+  font-size: 0.68rem;
+  color: #a29c8e;
+}
+.ch-tier-pill {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #a29c8e;
-  margin-top: 2px;
+  background: #faf8f2;
+  border: 1px solid #e6e1d3;
+  border-radius: 20px;
+  padding: 4px 10px;
+  white-space: nowrap;
 }
-.ch-node {
+.ch-tier-pill--held {
+  color: var(--ch-accent);
+  background: var(--ch-accent-soft);
+  border-color: var(--ch-accent-border);
+}
+.ch-terms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+.ch-term {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   padding: 15px 16px;
   border-radius: 12px;
   border: 1px solid #e6e1d3;
   background: #fff;
 }
-.ch-node--signed {
+.ch-term--active {
   border-color: var(--ch-accent-border);
   background: var(--ch-accent-soft);
 }
-.ch-node--prior,
-.ch-node--locked {
+.ch-term--locked,
+.ch-term--foreclosed {
   border-style: dashed;
   background: #faf8f2;
   opacity: 0.72;
 }
-.ch-node-head {
+.ch-term-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-height: 22px;
 }
-.ch-node-title {
+.ch-term-title {
   font-family: var(--ch-serif);
   font-size: 1rem;
   color: #20291f;
 }
-.ch-node-badge {
+.ch-term-badge {
   font-size: 0.56rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -3487,31 +3546,42 @@ body {
   padding: 3px 9px;
   white-space: nowrap;
 }
-.ch-node-effect {
+.ch-term-effect {
   font-size: 0.74rem;
   line-height: 1.5;
   color: #6f6a5d;
   margin: 9px 0 0;
 }
-.ch-node-meta {
+.ch-term-live {
   font-family: var(--ch-mono);
-  font-size: 0.68rem;
-  color: #a29c8e;
-  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--ch-accent);
+  margin-top: 6px;
 }
-.ch-node-actions {
+/* The meta line + action sit at the card's foot, so a row's cards align whatever their copy length. */
+.ch-term-foot {
+  margin-top: auto;
+  padding-top: 12px;
+}
+.ch-term-meta {
+  font-family: var(--ch-mono);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  color: #a29c8e;
+}
+.ch-term-actions {
   display: flex;
   gap: 7px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
-.ch-node-actions .ch-ghost {
+.ch-term-actions .ch-ghost {
   padding: 8px 12px;
 }
 .ch-sign {
   font-family: var(--ch-sans);
   font-size: 0.74rem;
   letter-spacing: 0.02em;
-  margin-top: 12px;
+  margin-top: 10px;
   color: #f4f1ea;
   background: var(--ch-accent);
   border: 1px solid var(--ch-accent);
@@ -3522,12 +3592,6 @@ body {
 }
 .ch-sign:hover:not(:disabled) {
   filter: brightness(1.12);
-}
-.ch-sign--disabled {
-  color: #a29c8e;
-  background: #efeade;
-  border-color: #e0dacb;
-  cursor: not-allowed;
 }
 .ch-sign--confirm {
   margin-top: 0;
@@ -3543,7 +3607,7 @@ body {
   .ch-columns {
     grid-template-columns: 1fr;
   }
-  .ch-branches {
+  .ch-terms {
     grid-template-columns: 1fr;
   }
 }

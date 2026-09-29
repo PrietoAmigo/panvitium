@@ -1,29 +1,33 @@
 /**
- * Syngraphae tests (Depraedatio gold rework spec §4.3 / §13). Pins:
- *   - the catalog: twelve nodes, three linear branches of four, gates 0..3 (the gating rebalance
- *     moved every gate one level down — the first node of each branch is open from the start),
- *     costs 500 → 500,000
- *   - signing: the Avaritia level gate, the branch-order prerequisite, affordability, the burn
- *     (paid, never hoarded, never refunded), the Morpheus freeze refusal
- *   - reset at Katabasis (the commit-side lapse; also pinned in katabasis.test.ts)
- *   - the custodia-2 hoard-milestone bonus in computeModifiers (steps, cap, absent below 1,000)
- *   - the modifier folds: Usura → fenusRateMul, Faeneratio → mutuumPerCapitaMul,
- *     Custodia → thesaurusRecoveryMul, Escheat → the two flat coefficients
+ * Syngraphae tests (the Depraedatio relationship-tier contracts). Pins:
+ *   - the relationship tier from the reserve balance (100 / 10,000 / 1,000,000; floored)
+ *   - the catalog: three contracts per tier, three tiers
+ *   - choosing: free, one per tier, final for the lifetime, gated on the tier, refused under the
+ *     Astiwihad freeze
+ *   - no suspension: the tier gates only the choice; a chosen contract holds for the lifetime
+ *   - the folds: Interest rate / Long-term investing / Annuity → fenusRateMul, Active management /
+ *     Compounding → surrenderChargeMul
+ *   - PI's asset tracing: a free Indagatio every 150 s of game time, the RNG untouched without it
+ *   - the private item safe (toggle, one item) and the risk-analytics gate
  */
 import { describe, expect, it } from 'vitest';
 import {
   bn,
-  commitKatabasis,
   computeModifiers,
   createInitialState,
-  enterKatabasis,
+  privateSafeOpen,
+  relationshipTier,
+  riskAnalyticsOpen,
+  safeItem,
   signSyngrapha,
+  surrenderCharge,
   SYNGRAPHAE,
-  SYNGRAPHA_BRANCHES,
-  syngraphaBranch,
+  syngraphaeOfTier,
+  syngraphaInForce,
   syngraphaSignable,
-  syngraphaSigned,
-  hoardMilestoneBonus,
+  syngraphaById,
+  tick,
+  toggleSafeItem,
   type GameState,
 } from './index.js';
 
@@ -31,137 +35,217 @@ function fresh(seed = 'syngraphae', t = 0): GameState {
   return createInitialState(seed, t);
 }
 
-/** Avaritia at the given level (180^level cumulative Devotion), with a full purse. */
-function ready(level: number, gold = 10_000_000): GameState {
+/** A lifetime whose reserve holds `hoard` gold, with the given contracts already chosen. */
+function account(hoard: number, ...chosen: string[]): GameState {
   const s = fresh();
-  return {
-    ...s,
-    devotion: { ...s.devotion, avaritia: bn(180 ** level) },
-    lifetime: { ...s.lifetime, gold: bn(gold) },
-  };
+  return { ...s, lifetime: { ...s.lifetime, hoard: bn(hoard), syngraphae: chosen } };
 }
 
-const goldOf = (s: GameState): number => s.lifetime.gold.toNumber();
+describe('the relationship tier', () => {
+  it('steps at 100, 10,000 and 1,000,000 gold in reserve (tier 0 below 100)', () => {
+    const at = (hoard: number): number => relationshipTier(account(hoard));
+    expect(at(0)).toBe(0);
+    expect(at(99)).toBe(0);
+    expect(at(100)).toBe(1);
+    expect(at(9_999)).toBe(1);
+    expect(at(10_000)).toBe(2);
+    expect(at(999_999)).toBe(2);
+    expect(at(1_000_000)).toBe(3);
+    expect(at(1e12)).toBe(3);
+  });
+
+  it('judges the floored balance (99.99 is still Tier 0)', () => {
+    expect(relationshipTier(account(99.99))).toBe(0);
+  });
+});
 
 describe('the catalog', () => {
-  it('carries twelve nodes in three linear branches of four, gates 1..4', () => {
-    expect(SYNGRAPHAE).toHaveLength(12);
-    for (const branch of SYNGRAPHA_BRANCHES) {
-      const chain = syngraphaBranch(branch);
-      expect(chain).toHaveLength(4);
-      expect(chain.map((n) => n.gate)).toEqual([0, 1, 2, 3]);
-      expect(chain.map((n) => n.cost)).toEqual([500, 5_000, 50_000, 500_000]);
-    }
+  it('offers three contracts at each of the three tiers', () => {
+    expect(SYNGRAPHAE).toHaveLength(9);
+    expect(syngraphaeOfTier(1).map((n) => n.id)).toEqual([
+      'interest-rate',
+      'long-term',
+      'active-management',
+    ]);
+    expect(syngraphaeOfTier(2).map((n) => n.id)).toEqual(['compounding', 'vesting', 'annuity']);
+    expect(syngraphaeOfTier(3).map((n) => n.id)).toEqual(['pi', 'custody-vip', 'risk-algos']);
   });
 
-  it('names the three contract nodes (Anatocismus, Escheat, Peculium)', () => {
-    const named = SYNGRAPHAE.filter((n) => n.name !== undefined).map((n) => n.name);
-    expect(named).toEqual(['Anatocismus', 'Escheat', 'Peculium']);
+  it('retired contract ids read as nothing', () => {
+    expect(syngraphaById('usura-1')).toBeUndefined();
+    expect(syngraphaById('faeneratio-2')).toBeUndefined();
+    const legacy = account(1_000_000, 'usura-1', 'custodia-4');
+    expect(computeModifiers(legacy).fenusRateMul).toBe(1);
+    expect(syngraphaSignable(legacy, syngraphaById('interest-rate')!).signable).toBe(true);
   });
 });
 
-describe('signSyngrapha — gates, order, burn', () => {
-  it('signs an available node and BURNS the fee (gold down by exactly the cost)', () => {
-    const s = ready(0); // the first node of a branch carries no Avaritia gate at all
-    const r = signSyngrapha(s, 'usura-1');
+describe('signSyngrapha — free, one per tier, final', () => {
+  it('chooses a contract for free once the reserve holds its tier', () => {
+    const s = { ...account(100), lifetime: { ...account(100).lifetime, gold: bn(0) } };
+    const r = signSyngrapha(s, 'interest-rate');
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(goldOf(r.state)).toBe(10_000_000 - 500);
-    expect(r.state.lifetime.hoard.toNumber()).toBe(0); // the fee is never hoarded
-    expect(syngraphaSigned(r.state, 'usura-1')).toBe(true);
+    expect(r.state.lifetime.syngraphae).toEqual(['interest-rate']);
+    expect(r.state.lifetime.gold.toNumber()).toBe(0); // no fee
   });
 
-  it('enforces the Avaritia level gate (usura-1 is ungated; usura-2 gates on level 1)', () => {
-    expect(signSyngrapha(ready(0), 'usura-1').ok).toBe(true);
-    const s = ready(0);
-    const first = signSyngrapha(s, 'usura-1');
-    if (!first.ok) throw new Error('sign failed');
-    // usura-2 gates on Avaritia 1, even with usura-1 signed and gold in hand.
-    expect(signSyngrapha(first.state, 'usura-2').ok).toBe(false);
-    const levelled = signSyngrapha(
-      { ...first.state, devotion: { ...first.state.devotion, avaritia: bn(180) } },
-      'usura-2',
-    );
-    expect(levelled.ok).toBe(true);
+  it('refuses a contract whose tier the reserve does not hold', () => {
+    const r = signSyngrapha(account(9_999), 'vesting');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toMatch(/tier 2/);
   });
 
-  it('enforces the branch-order prerequisite (linear chains)', () => {
-    const s = ready(3); // the deepest gate is now level 3
-    expect(signSyngrapha(s, 'usura-2').ok).toBe(false); // usura-1 unsigned
-    const gate = syngraphaSignable(s, SYNGRAPHAE.find((n) => n.id === 'usura-2')!);
-    expect(gate.signable).toBe(false);
-    // The branches are independent: custodia-1 needs no usura node.
-    expect(signSyngrapha(s, 'custodia-1').ok).toBe(true);
+  it('allows only ONE contract per tier, and the choice is final', () => {
+    const r = signSyngrapha(account(100, 'long-term'), 'interest-rate');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toMatch(/already chosen/);
+    expect(signSyngrapha(account(100, 'long-term'), 'long-term').ok).toBe(false);
   });
 
-  it('refuses when unaffordable, already signed, or unknown', () => {
-    expect(signSyngrapha(ready(0, 100), 'usura-1').ok).toBe(false);
-    const s = ready(0);
-    const first = signSyngrapha(s, 'usura-1');
-    if (!first.ok) throw new Error('sign failed');
-    expect(signSyngrapha(first.state, 'usura-1').ok).toBe(false);
-    expect(signSyngrapha(s, 'no-such-contract').ok).toBe(false);
+  it('tiers are independent: one choice at each tier', () => {
+    let s = account(1_000_000);
+    for (const id of ['active-management', 'annuity', 'risk-algos']) {
+      const r = signSyngrapha(s, id);
+      if (!r.ok) throw new Error(r.reason);
+      s = r.state;
+    }
+    expect(s.lifetime.syngraphae).toEqual(['active-management', 'annuity', 'risk-algos']);
   });
 
-  it('there is no refund path: the catalog exposes no unsign, and Katabasis burns the terms', () => {
-    const s = ready(0);
-    const signed = signSyngrapha(s, 'faeneratio-1');
-    if (!signed.ok) throw new Error('sign failed');
-    const { state } = commitKatabasis(enterKatabasis(signed.state));
-    expect(state.lifetime.syngraphae).toHaveLength(0); // the terms lapse at the descent
-    // The fee stayed burned: kept gold is a fraction of what remained, never cost-restored.
-    expect(goldOf(state)).toBeLessThan(goldOf(signed.state));
+  it('refuses unknown ids and the Astiwihad freeze', () => {
+    expect(signSyngrapha(account(1_000_000), 'usura-1').ok).toBe(false);
+    const frozen = account(1_000_000);
+    const asleep = { ...frozen, lifetime: { ...frozen.lifetime, invocations: { astiwihad: 1 } } };
+    const r = signSyngrapha(asleep, 'pi');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toMatch(/stillness/i);
   });
 });
 
-describe('the modifier folds (ADR-022)', () => {
-  function signedByFiat(ids: string[], hoard = 0): GameState {
-    const s = fresh();
-    return {
-      ...s,
-      lifetime: { ...s.lifetime, syngraphae: ids, hoard: bn(hoard) },
-    };
+describe('no suspension: the tier gates only the choice', () => {
+  it('a chosen contract stays in force after the reserve falls below its tier', () => {
+    expect(syngraphaInForce(account(10_000, 'annuity'), 'annuity')).toBe(true);
+    expect(syngraphaInForce(account(0, 'annuity'), 'annuity')).toBe(true);
+    expect(computeModifiers(account(0, 'annuity')).fenusRateMul).toBeCloseTo(1.1666, 12);
+    expect(syngraphaInForce(account(0), 'annuity')).toBe(false); // not chosen
+  });
+});
+
+describe('the folds (ADR-022)', () => {
+  it('Interest rate: interest ×1.33', () => {
+    expect(computeModifiers(account(100, 'interest-rate')).fenusRateMul).toBeCloseTo(1.33, 12);
+  });
+
+  it('Long-term investing: interest +10% per hour of account age', () => {
+    const s = account(100, 'long-term');
+    expect(computeModifiers(s).fenusRateMul).toBe(1); // no inception yet
+    const aged = { ...s, lifetime: { ...s.lifetime, accountAge: 2.5 * 3600 } };
+    expect(computeModifiers(aged).fenusRateMul).toBeCloseTo(1.25, 12);
+  });
+
+  it('Active management: surrender charge −33% (0.15 → 0.1005)', () => {
+    expect(surrenderCharge(computeModifiers(account(100, 'active-management')))).toBeCloseTo(
+      0.1005,
+      12,
+    );
+  });
+
+  it('the tier folds compose multiplicatively across tiers', () => {
+    const s = account(10_000, 'interest-rate', 'annuity');
+    expect(computeModifiers(s).fenusRateMul).toBeCloseTo(1.33 * 1.1666, 12);
+    const t = account(10_000, 'active-management', 'compounding');
+    expect(surrenderCharge(computeModifiers(t))).toBeCloseTo(0.15 * 0.67 * 1.5, 12);
+  });
+});
+
+describe('PI (Tier III) — automatic asset tracing', () => {
+  /** A PI account with a full purse so a failure tier's gold bite is visible but harmless. */
+  function traced(hoard = 1_000_000): GameState {
+    const s = account(hoard, 'pi');
+    return { ...s, lifetime: { ...s.lifetime, gold: bn(1_000) } };
   }
 
-  it('Usura nodes multiply fenusRateMul (1.5 × 1.5 × 2 = 4.5)', () => {
-    expect(computeModifiers(signedByFiat(['usura-1'])).fenusRateMul).toBeCloseTo(1.5, 9);
-    expect(
-      computeModifiers(signedByFiat(['usura-1', 'usura-2', 'usura-3'])).fenusRateMul,
-    ).toBeCloseTo(4.5, 9);
+  it('resolves one free Indagatio every 150 s of game time, tagged `tracing`', () => {
+    const r1 = tick(traced(), 149);
+    expect(r1.events.filter((e) => e.source === 'tracing')).toHaveLength(0);
+    expect(r1.state.lifetime.assetTracingElapsed).toBeCloseTo(149, 9);
+    const r2 = tick(r1.state, 1);
+    const traces = r2.events.filter((e) => e.source === 'tracing');
+    expect(traces).toHaveLength(1);
+    expect(traces[0]!.actionId).toBe('indagatio');
+    expect(r2.state.lifetime.assetTracingElapsed).toBeCloseTo(0, 9);
   });
 
-  it('Faeneratio nodes multiply mutuumPerCapitaMul (1.5 × 2 = 3)', () => {
-    expect(
-      computeModifiers(signedByFiat(['faeneratio-1', 'faeneratio-3'])).mutuumPerCapitaMul,
-    ).toBeCloseTo(3, 9);
+  it('a long span fires every trace it covers (one big tick ≡ the small ones)', () => {
+    const r = tick(traced(), 600);
+    expect(r.events.filter((e) => e.source === 'tracing')).toHaveLength(4);
   });
 
-  it('Custodia nodes multiply thesaurusRecoveryMul (1.6 × 1.5 stacks 0.25 to 0.6)', () => {
-    const m = computeModifiers(signedByFiat(['custodia-1', 'custodia-3']));
-    expect(m.thesaurusRecoveryMul).toBeCloseTo(2.4, 9);
-    expect(0.25 * m.thesaurusRecoveryMul).toBeCloseTo(0.6, 9);
+  it('ignores Indagatio efficiency: the interval is fixed at 150 s', () => {
+    const s = traced();
+    const fast = { ...s, lifetime: { ...s.lifetime, maleficia: ['obsidian_mirror'] } };
+    expect(computeModifiers(fast).indagatioEfficiencyMul).toBeGreaterThan(1);
+    expect(tick(fast, 149).events.filter((e) => e.source === 'tracing')).toHaveLength(0);
   });
 
-  it('Escheat sets the two flat death-duty coefficients', () => {
-    const m = computeModifiers(signedByFiat(['faeneratio-2']));
-    expect(m.escheatGoldPerMurder).toBe(1);
-    expect(m.escheatGoldPerSuicide).toBe(0.5);
-    const none = computeModifiers(signedByFiat([]));
-    expect(none.escheatGoldPerMurder).toBe(0);
-    expect(none.escheatGoldPerSuicide).toBe(0);
+  it('keeps tracing after the reserve falls below Tier III', () => {
+    const r = tick(traced(0), 150);
+    expect(r.events.filter((e) => e.source === 'tracing')).toHaveLength(1);
   });
 
-  it('custodia-2 folds the hoard-milestone bonus into goldRateMul: steps, cap, absent below 1,000', () => {
-    const at = (hoard: number): number => hoardMilestoneBonus(signedByFiat(['custodia-2'], hoard));
-    expect(at(999)).toBe(0); // absent below the threshold
-    expect(at(1_000)).toBeCloseTo(0.02, 9); // 1 step
-    expect(at(9_999)).toBeCloseTo(0.02, 9);
-    expect(at(10_000)).toBeCloseTo(0.04, 9); // 2 steps
-    expect(at(1e12)).toBeCloseTo(0.2, 9); // 10 steps → the +20% cap
-    expect(at(1e15)).toBeCloseTo(0.2, 9); // still capped
-    // Unsigned: no bonus whatever the hoard.
-    expect(hoardMilestoneBonus(signedByFiat([], 1e12))).toBe(0);
-    // And it lands on goldRateMul itself.
-    expect(computeModifiers(signedByFiat(['custodia-2'], 10_000)).goldRateMul).toBeCloseTo(1.04, 9);
+  it('draws no RNG without PI (the stream stays byte-identical, ADR-011)', () => {
+    const plain = { ...fresh(), lifetime: { ...fresh().lifetime, hoard: bn(1_000_000) } };
+    expect(tick(plain, 600).state.rngState).toBe(plain.rngState);
+  });
+});
+
+describe('Custody VIP (Tier III) — the private item safe', () => {
+  function vault(hoard = 1_000_000): GameState {
+    const s = account(hoard, 'custody-vip');
+    return { ...s, lifetime: { ...s.lifetime, maleficia: ['codex_gigas', 'dybbuk_box'] } };
+  }
+
+  it('is open once Custody VIP is chosen, even after the reserve falls below Tier III', () => {
+    expect(privateSafeOpen(vault())).toBe(true);
+    expect(privateSafeOpen(vault(0))).toBe(true);
+    expect(privateSafeOpen(account(1_000_000))).toBe(false);
+  });
+
+  it('holds one maleficium: storing another replaces the first; storing it again empties it', () => {
+    const a = toggleSafeItem(vault(), 'codex_gigas');
+    if (!a.ok) throw new Error(a.reason);
+    expect(safeItem(a.state)).toBe('codex_gigas');
+    const b = toggleSafeItem(a.state, 'dybbuk_box');
+    if (!b.ok) throw new Error(b.reason);
+    expect(safeItem(b.state)).toBe('dybbuk_box');
+    const c = toggleSafeItem(b.state, 'dybbuk_box');
+    if (!c.ok) throw new Error(c.reason);
+    expect(safeItem(c.state)).toBeUndefined();
+    expect(c.state.lifetime.safeItem).toBeUndefined();
+  });
+
+  it('refuses an unowned item and a closed safe', () => {
+    expect(toggleSafeItem(vault(), 'spear_of_longinus').ok).toBe(false);
+    const closed = {
+      ...account(1_000_000),
+      lifetime: { ...account(1_000_000).lifetime, maleficia: ['codex_gigas'] },
+    };
+    expect(toggleSafeItem(closed, 'codex_gigas').ok).toBe(false);
+  });
+
+  it('a stored item the player no longer owns reads as an empty safe', () => {
+    const a = toggleSafeItem(vault(), 'codex_gigas');
+    if (!a.ok) throw new Error(a.reason);
+    const spent = { ...a.state, lifetime: { ...a.state.lifetime, maleficia: ['dybbuk_box'] } };
+    expect(safeItem(spent)).toBeUndefined();
+  });
+});
+
+describe('Risk algos (Tier III) — the risk analytics gate', () => {
+  it('opens the risk analytics tab once chosen', () => {
+    expect(riskAnalyticsOpen(account(1_000_000, 'risk-algos'))).toBe(true);
+    expect(riskAnalyticsOpen(account(0, 'risk-algos'))).toBe(true);
+    expect(riskAnalyticsOpen(account(1_000_000))).toBe(false);
   });
 });

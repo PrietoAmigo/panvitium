@@ -14,8 +14,9 @@ export interface OutcomeEvent {
   readonly goldDelta: number;
   /**
    * Who produced this outcome. Absent ⇒ the player's own action (the default). Acolyte delegations
-   * tag their outcomes so a consumer can separate them — the PC Logs program shows player outcomes
-   * only. Transient (events are not persisted).
+   * tag their outcomes so a consumer can separate them; PI's automatic asset tracing (the account's
+   * free Indagatio) tags `tracing`. The PC Logs program shows player and tracing outcomes.
+   * Transient (events are not persisted).
    */
   readonly source?: EventSource;
   /** Maleficium ids surfaced into the Emptio list this outcome (Indagatio). */
@@ -27,4 +28,4 @@ export interface OutcomeEvent {
 }
 
 /** The origin of an outcome event. */
-export type EventSource = 'player' | 'acolyte';
+export type EventSource = 'player' | 'acolyte' | 'tracing';

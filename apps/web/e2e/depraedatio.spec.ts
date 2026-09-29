@@ -1,11 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
 
 /**
- * E2E coverage for the redesigned Depraedatio panel, the "Counting House" private-bank account
- * (Claude Design): the Portfolio screen's Reserve Account deposit + two-step withdraw, signing a
- * contract on the Contracts screen, and Panvitium as the Suasio scroll's sealed fourth rite
- * (ADR-031). A seeded save (a purse of gold) is written to localStorage before load; since the
- * gating rebalance none of the Faeneratio flows needs Avaritia.
+ * E2E coverage for the Depraedatio panel, the "Counting House" private-bank account (Claude
+ * Design): the Portfolio screen's Reserve Account deposit + two-step withdraw (the 15% surrender
+ * charge), choosing a relationship-tier contract on the Contracts screen, and Panvitium as the Suasio
+ * scroll's sealed fourth rite (ADR-031). A seeded save (a purse of gold) is written to localStorage
+ * before load (an old v5 save, so the load also exercises the migration chain); none of the
+ * Depraedatio flows needs Avaritia.
  */
 
 /** A minimal valid v5 save with 10,000 gold, stamped to "now". */
@@ -70,40 +71,47 @@ async function openDepraedatio(page: Page): Promise<void> {
 test('deposits into the reserve and withdraws with the two-step confirm', async ({ page }) => {
   await openDepraedatio(page);
 
-  // Portfolio is the default view: the account surfaces mount with the loan book's debtor figure.
+  // Portfolio is the default view: the four KPIs and the realised-income line mount; the loan book
+  // and the period selector are gone.
   await expect(page.locator('.ch-navbtn--active')).toContainText('Portfolio');
-  await expect(page.locator('.ch-loanbook')).toContainText('Active debtors');
+  await expect(page.locator('.ch-stats .ch-stat')).toHaveCount(4);
+  await expect(page.locator('.ch-realised')).toContainText('since account inception');
+  await expect(page.locator('.ch-loanbook')).toHaveCount(0);
+  await expect(page.locator('.ch-root select')).toHaveCount(0);
 
   // Deposit 500: the reserve balance readout picks it up.
   await page.getByLabel('Deposit to reserve').fill('500');
   await page.getByRole('button', { name: 'Deposit', exact: true }).click();
   await expect(page.locator('.ch-balance-value')).toContainText('500');
 
-  // Withdraw 100: the confirm panel states the recovery + forfeit before executing.
+  // Withdraw 100: the confirm panel states the return + forfeit (15% charge) before executing.
   await page.getByLabel('Withdraw from reserve').fill('100');
   await page.getByRole('button', { name: 'Withdraw', exact: true }).click();
-  await expect(page.locator('.ch-confirm')).toContainText('forfeited to the counting house');
+  await expect(page.locator('.ch-confirm')).toContainText('Returns 85 gold to cash; 15 forfeited');
   await page.getByRole('button', { name: 'Confirm withdrawal' }).click();
-  // The full 100 left the reserve (500 -> 400); only the recovery fraction returned to cash.
+  // The full 100 left the reserve (500 -> 400); only the post-charge 85 returned to cash.
   await expect(page.locator('.ch-balance-value')).toContainText('400');
 });
 
-test('signs a contract with the two-step confirm (the fee is burned)', async ({ page }) => {
+test('chooses a Tier I contract with the two-step confirm (free, one per tier)', async ({
+  page,
+}) => {
   await openDepraedatio(page);
+  // Reach Relationship Tier I: 100 gold in reserve.
+  await page.getByLabel('Deposit to reserve').fill('100');
+  await page.getByRole('button', { name: 'Deposit', exact: true }).click();
   await page.getByRole('button', { name: 'Contracts' }).click();
 
-  // The three branch columns render with the banking names + the named contracts.
-  const branches = page.locator('.ch-branches');
-  await expect(branches).toContainText('Yield');
-  await expect(branches).toContainText('Custody');
-  await expect(branches).toContainText('Compounding');
-  await expect(branches).toContainText('Retained Floor');
+  // Three relationship-tier rows of three contracts each.
+  await expect(page.locator('.ch-tier')).toHaveCount(3);
+  await expect(page.locator('.ch-term')).toHaveCount(9);
+  await expect(page.locator('.ch-term--available')).toHaveCount(3);
 
-  // Sign Yield I (ungated since the rebalance, fee 500, affordable with 10,000 gold): two-step
-  // confirm, then the node reads Signed.
-  await page.getByRole('button', { name: 'Sign Yield I' }).click();
-  await page.getByRole('button', { name: 'Confirm Yield I' }).click();
-  await expect(branches).toContainText('Signed');
+  // Choose Interest rate: two-step confirm, then it reads Active and the other two foreclose.
+  await page.getByRole('button', { name: 'Choose Interest rate' }).click();
+  await page.getByRole('button', { name: 'Confirm Interest rate' }).click();
+  await expect(page.locator('.ch-term--active')).toContainText('Interest rate');
+  await expect(page.locator('.ch-term--foreclosed')).toHaveCount(2);
 });
 
 test('the Suasio scroll carries Panvitium as its sealed fourth rite', async ({ page }) => {

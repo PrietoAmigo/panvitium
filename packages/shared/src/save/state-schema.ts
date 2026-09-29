@@ -104,17 +104,24 @@ const lifetimeSchema = z.object({
   // Invocation reprobate-cost accrual pool (Arachne / Morpheus upkeep). Additive-optional (ADR-023):
   // absent → 0 at runtime; omitted from the wire when 0.
   reprobateCostPool: z.number().nonnegative().optional(),
-  // The Thesaurus hoard (Depraedatio gold rework): gold placed with the counting house. Optional;
+  // The Thesaurus reserve (the Depraedatio account): gold placed with the counting house. Optional;
   // absent ≡ zero, omitted when zero so a fresh game's wire form stays minimal. (The Mercatus
   // `mercatusDepths` field was REMOVED in schema v5; v4 saves are migrated by `v4-to-v5.ts` —
   // divest-value gold credit + drop.)
   hoard: bigNumString.optional(),
-  // Signed Syngraphae (the Avaritia contract tree): purchased node ids in signing order.
-  // Additive-optional (ADR-023): absent ≡ none; omitted when empty.
+  // The account's chosen contracts (one per relationship tier), in choosing order.
+  // Additive-optional (ADR-023): absent ≡ none; omitted when empty. (The retired Avaritia tree's
+  // ids and the Peculium base `hoardAtDescent` were REMOVED in schema v10; `v9-to-v10.ts` strips
+  // them, refunding the burned fees.)
   syngraphae: z.array(z.string()).optional(),
-  // The hoard's value at descent (the custodia-4 Peculium base), stamped by enterKatabasis and
-  // cleared at commit. Additive-optional (ADR-023) so it survives a mid-descent reload.
-  hoardAtDescent: bigNumString.optional(),
+  // Seconds of game time since the account's inception (the first deposit); absent until then.
+  accountAge: z.number().nonnegative().optional(),
+  // Realised account income since inception (interest + vesting). Absent ≡ zero; omitted when zero.
+  accountIncome: bigNumString.optional(),
+  // The maleficium held in the private item safe (Custody VIP). Absent ≡ empty.
+  safeItem: z.string().optional(),
+  // PI's asset-tracing clock (seconds toward the next automatic Indagatio). Absent ≡ 0.
+  assetTracingElapsed: z.number().nonnegative().optional(),
   // Single-use maleficia buffs (Maleficia sheet): id -> seconds of buff remaining. Additive-optional
   // (ADR-023): absent -> {} at runtime; omitted from the wire when empty.
   maleficiaBuffs: z.record(z.string(), z.number().nonnegative()).optional(),
@@ -293,14 +300,19 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.apexInvoked !== undefined
         ? { apexInvoked: state.lifetime.apexInvoked }
         : {}),
-      // The hoard / Syngraphae / Peculium base: omit when zero/empty/absent so fresh games keep a
-      // minimal wire form (ADR-023).
+      // The reserve / contracts / account clock, income, safe and tracing clock: omit when
+      // zero/empty/absent so fresh games keep a minimal wire form (ADR-023).
       ...(state.lifetime.hoard.gt(0) ? { hoard: serializeBigNum(state.lifetime.hoard) } : {}),
       ...(state.lifetime.syngraphae.length > 0
         ? { syngraphae: [...state.lifetime.syngraphae] }
         : {}),
-      ...(state.lifetime.hoardAtDescent !== undefined && state.lifetime.hoardAtDescent.gt(0)
-        ? { hoardAtDescent: serializeBigNum(state.lifetime.hoardAtDescent) }
+      ...(state.lifetime.accountAge !== undefined ? { accountAge: state.lifetime.accountAge } : {}),
+      ...(state.lifetime.accountIncome !== undefined && state.lifetime.accountIncome.gt(0)
+        ? { accountIncome: serializeBigNum(state.lifetime.accountIncome) }
+        : {}),
+      ...(state.lifetime.safeItem !== undefined ? { safeItem: state.lifetime.safeItem } : {}),
+      ...(state.lifetime.assetTracingElapsed !== undefined && state.lifetime.assetTracingElapsed > 0
+        ? { assetTracingElapsed: state.lifetime.assetTracingElapsed }
         : {}),
     },
     rngState: state.rngState,
@@ -413,12 +425,18 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       ...(s.lifetime.pendingErinyes === true ? { pendingErinyes: true } : {}),
       ...(s.lifetime.pendingAstiwihad === true ? { pendingAstiwihad: true } : {}),
       ...(s.lifetime.apexInvoked !== undefined ? { apexInvoked: s.lifetime.apexInvoked } : {}),
-      // The hoard / Syngraphae: absent → zero / none (additive-optional, ADR-023). The Peculium
-      // base rides along only when present so a mid-descent save reloads it.
+      // The reserve / contracts: absent → zero / none (additive-optional, ADR-023). The account
+      // clock, income, safe and tracing clock ride along only when present (conditional spreads
+      // keep them optional under exactOptionalPropertyTypes).
       hoard: s.lifetime.hoard ? deserializeBigNum(s.lifetime.hoard) : deserializeBigNum('0'),
       syngraphae: [...(s.lifetime.syngraphae ?? [])],
-      ...(s.lifetime.hoardAtDescent
-        ? { hoardAtDescent: deserializeBigNum(s.lifetime.hoardAtDescent) }
+      ...(s.lifetime.accountAge !== undefined ? { accountAge: s.lifetime.accountAge } : {}),
+      ...(s.lifetime.accountIncome
+        ? { accountIncome: deserializeBigNum(s.lifetime.accountIncome) }
+        : {}),
+      ...(s.lifetime.safeItem !== undefined ? { safeItem: s.lifetime.safeItem } : {}),
+      ...(s.lifetime.assetTracingElapsed !== undefined
+        ? { assetTracingElapsed: s.lifetime.assetTracingElapsed }
         : {}),
     },
     rngState: s.rngState,

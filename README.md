@@ -103,9 +103,37 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1215** (sim 597 · shared 76 · api 20 · web 522).
+**Current test count: 1244** (sim 614 · shared 79 · api 20 · web 531).
 
-> **Latest change — UI: the temporary buffs, as rings between the vessels (Claude Design).** From
+> **Latest change — Depraedatio reworked: the loan book out, contracts laddered on the relationship
+> tier (ADR-037).** The account's **loan book** (Mutuum, the per-reprobate gold take) is removed with
+> its KPIs, card and **Escheat** death duties, and the old twelve-node Avaritia contract tree
+> (Yield / Origination / Custody branches, Anatocismus, the liquidation bonus, Peculium) is replaced.
+> The **relationship tier** now follows the reserve balance (**Tier I at 100 gold, II at 10,000, III
+> at 1,000,000**) and gates a choice of **one free contract per tier**, final for the lifetime and
+> lapsing at Katabasis; once chosen it holds even if the reserve later falls below its tier. Tier I:
+> _Interest rate_ (×1.33), _Long-term investing_ (+10% interest per hour since account inception),
+> _Active management_ (surrender charge −33%). Tier II: _Compounding_ (charge +50%, 1% of interest
+> reinvested), _Vesting_ (1% of the reserve vests to cash per second as interest, no charge; exact
+> exponential drawdown), _Annuity_ (×1.1666 interest, manual withdrawal barred). Tier III: _PI_ (a
+> free Indagatio every 2.5 minutes of game time, hastened only by Desidia; tagged `tracing` and shown
+> in the Logs), _Custody VIP_ (the **private item safe**: a new "Store in safe" toggle on each relic in
+> the Loculi; one relic, kept for certain at the next Katabasis; Erinyes still wins), _Risk algos_ (a
+> new **Risk** tab in Analytics listing every action's live outcome odds). The **base surrender charge
+> is a fifth of before: 15%** (85% returned; the 0.9 recovery cap is dropped), now a first-class
+> `surrenderChargeMul` (Vine #45 / Furcas #50 cut it). The **Foedus ceremony-upkeep rebate is
+> removed** (Panvitium pays full upkeep). The Counting House UI is re-laid out: four aligned KPI tiles
+> (cash, income, interest rate, surrender charge), the fixed line "Realised income, N gold since
+> account inception" (the period dropdown is gone; inception is the first deposit and the income is a
+> real tally, `accountIncome`), the Reserve and Account status cards at equal height, recent activity
+> across the width, and the Contracts screen as three tier rows of three equal-height cards. Save
+> schema **v9 → v10**: `v9-to-v10.ts` strips the retired contract ids (refunding their burned fees)
+> and drops `hoardAtDescent`; `accountAge`, `accountIncome`, `safeItem`, `assetTracingElapsed` are
+> additive-optional. RNG: PI draws only when a trace fires and the safe copy skips its roll, so
+> existing streams are unchanged. Net **+29 tests** (sim 597 → 614, shared 76 → 79, web 522 → 531).
+> Follow-ups opened by the loan removal are listed under _Remaining_.
+>
+> **Earlier change — UI: the temporary buffs, as rings between the vessels (Claude Design).** From
 > the delivered "Temporary buffs HUD" handoff (board 2a, "Rings in columns"; archived in
 > `docs/frontend/`): the timed effects in play get a readout of their own in the left HUD column,
 > between the Influence vessel and the Desidia vessel. Each live source is one 44 px **countdown
@@ -1514,6 +1542,29 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
     stay flavour.
 
 ### Remaining
+
+**Gaps opened by the loan-book removal (ADR-037)** — each needs a design or sheet decision:
+
+- **Plutus** (Avaritia invocation, "+15% interest income per copy"): it scaled the loan book and the
+  interest; it now reaches the reserve interest only, so it does nothing without a reserve.
+- **Vapula #60** (sigil, `faenerationOutputMul`, "Account income ↑"): same narrowing, interest only.
+- **Early gold pacing**: the loan book was the population-coupled income floor (0.05 gold/s per
+  reprobate). Without it, passive gold before a reserve is the 2/s base plus Haagenti #48, Kobold and
+  maleficia; the gold prices (Pogrom 1,000, Purgatio 1,000,000, Emptio, the Indagatio stake, the
+  100-gold Tier I deposit) need re-checking on the sheet.
+- **Culling has no economic cost**: every reprobate used to be a debtor, so Decimatio traded income
+  for souls (03 §1). That tension is gone.
+- **Escheat removed**: murders and suicides no longer mint gold (no other death-gold source exists).
+- **Katabasis gold carry-over**: the Peculium floor and the ×1.25 liquidation bonus are gone; gold
+  carries over only by the Avaritia level and Purson #20.
+- **Panvitium upkeep**: the Foedus rebate (up to −50%) is gone, so the burn is shorter at full price.
+- **Vine #45 / Furcas #50**: re-pinned from withdrawal recovery to cutting the surrender charge; with
+  the base now 15% (and Active management at 10.05%) their value is small, so they are candidates to
+  re-home.
+- **Design docs**: `02-systems-and-mechanics.md` and `03-content-catalog.md` (§1 population tension,
+  §2.3 Faeneratio loop, Foedus, the Syngraphae table, Plutus and Vapula entries) still describe the
+  loan book; ADR-037 governs until they are synced. `docs/frontend/Depraedatio_-_merged_proposal`
+  is the archived handoff and shows the old layout.
 
 Economy-parity tracks still to reconcile against the spreadsheet:
 

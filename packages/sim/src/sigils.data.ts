@@ -382,8 +382,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 45,
     name: 'Vine',
     coefficient: 1,
-    // Re-pinned (Depraedatio gold rework): +Thesaurus withdrawal recovery — the same "recovery"
-    // niche it held for the Mercatus divest, unchanged in magnitude.
+    // Re-pinned (Depraedatio relationship-tier rework): −reserve surrender charge, in the asymptotic
+    // ×1/(1 + strength) form (formerly +withdrawal recovery; the Mercatus divest before that).
     effect: { kind: 'shutdownRefund' },
   },
   46: {
@@ -419,7 +419,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 50,
     name: 'Furcas',
     coefficient: 1,
-    // Re-pinned (Depraedatio gold rework): +Thesaurus withdrawal recovery (composes with Vine).
+    // Re-pinned (Depraedatio relationship-tier rework): −reserve surrender charge (composes with Vine).
     effect: { kind: 'shutdownRefund' },
   },
   51: {
@@ -501,8 +501,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 60,
     name: 'Vapula',
     coefficient: 1,
-    // Re-pinned (Depraedatio gold rework): +Faeneratio gold output (Mutuum + Thesaurus interest),
-    // unchanged in magnitude — the renamed `vitiumMercaturaOutputMul` field.
+    // Re-pinned (Depraedatio gold rework): +account output (the reserve's interest; the loan book it
+    // also lifted is retired), unchanged in magnitude: the renamed `vitiumMercaturaOutputMul` field.
     effect: { kind: 'modifier', field: 'faenerationOutputMul', direction: 'increase' },
   },
   61: {

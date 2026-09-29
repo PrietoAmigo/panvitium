@@ -1,7 +1,7 @@
 /**
  * Modifier engine — the single place where derived multipliers are aggregated from every source
  * (Sin levels, Sin skill intensities, sigil bindings, maleficia, invocations, call buffs,
- * Syngraphae) and consumed by tick / actions / probability resolution. Pure; no I/O; reads only
+ * the Depraedatio contracts) and consumed by tick / actions / probability resolution. Pure; no I/O; reads only
  * `GameState`.
  *
  * Sources wired so far:
@@ -57,7 +57,7 @@ import { SINS, totalReprobates, type GameState, type Sin } from './state.js';
 import { sinLevel, skillIntensity } from './progression.js';
 import { type TierModifiers, type Tier } from './probability.js';
 import { boostMaleficiumFactor, countCopies, maleficiaBuffMultipliers } from './maleficia.js';
-import { SYNGRAPHAE, hoardMilestoneBonus, syngraphaSigned } from './syngraphae.js';
+import { syngraphaFenusRateMul, syngraphaSurrenderChargeMul } from './syngraphae.js';
 import { aurevoraEfficiencyMul } from './apex.js';
 import { indagatioInvestmentEfficiencyMul } from './indagatio.js';
 import { callBuffMultipliers } from './callBuffs.js';
@@ -180,35 +180,22 @@ export interface Modifiers {
    */
   readonly murderRateMul: number;
   /**
-   * Multiplier on the Faeneratio output — the SUM of Mutuum income and Thesaurus interest, scaled
-   * at the tick's gold line. Sources: Plutus invocation (flat factor on the lending enterprises),
-   * Vapula #60 sigil. The renamed `vitiumMercaturaOutputMul` (Depraedatio gold rework), unchanged
-   * in magnitude.
+   * Multiplier on the Depraedatio account's output: the reserve's interest, scaled at the tick's
+   * gold line. Sources: Plutus invocation, Vapula #60 sigil. (It also scaled the loan book until
+   * that retired; the interest is now its only target.)
    */
   readonly faenerationOutputMul: number;
   /**
-   * Multiplier on the Fenus rate (the hoard's interest). Sources: the Usura Syngraphae
-   * (usura-1/2/3); future sigils. Default 1×.
+   * Multiplier on the Fenus rate (the reserve's interest). Sources: the contracts in force
+   * (Interest rate ×1.33, Long-term investing +10%/hour of account age, Annuity ×1.1666). Default 1×.
    */
   readonly fenusRateMul: number;
   /**
-   * Multiplier on the Mutuum per-capita take (the loan book). Sources: the Faeneratio Syngraphae
-   * (faeneratio-1/3); future sigils. Default 1×.
+   * Multiplier on the reserve's surrender charge (base 0.15, clamped to [0, 1] effective). Sources:
+   * the contracts in force (Active management ×0.67, Compounding ×1.5) and Vine #45 / Furcas #50,
+   * which soften it in the asymptotic "decrease" form ×1/(1 + strength). Default 1×.
    */
-  readonly mutuumPerCapitaMul: number;
-  /**
-   * Multiplier on the Thesaurus withdrawal recovery fraction (base 0.25, capped at 0.9 effective).
-   * Sources: the Custodia Syngraphae (custodia-1/3); Vine #45 / Furcas #50 re-pin here — the same
-   * "recovery" niche they held for the Mercatus divest. Default 1×.
-   */
-  readonly thesaurusRecoveryMul: number;
-  /**
-   * Escheat (faeneratio-2): flat gold minted per applied murder / suicide at the dynamics step —
-   * the estates of the dead escheat to creditors unseen. Additive fields so any future murder-gold
-   * source (a revived Leraie line) composes on the same mint. Default 0.
-   */
-  readonly escheatGoldPerMurder: number;
-  readonly escheatGoldPerSuicide: number;
+  readonly surrenderChargeMul: number;
   /**
    * Per-acolyte action efficiency (02 §10). Default 0.33: an acolyte runs an action at one-third
    * of the player's own efficiency. Future sources fold in multiplicatively: Bathin #18, Satan
@@ -274,10 +261,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   murderRateMul: 1,
   faenerationOutputMul: 1,
   fenusRateMul: 1,
-  mutuumPerCapitaMul: 1,
-  thesaurusRecoveryMul: 1,
-  escheatGoldPerMurder: 0,
-  escheatGoldPerSuicide: 0,
+  surrenderChargeMul: 1,
   acolyteEfficiencyMul: 0.33,
   invocationEfficiencyMul: 1,
   desidiaSpeedMul: 1,
@@ -386,7 +370,7 @@ export function computeModifiers(state: GameState): Modifiers {
   // (the player-efficiency coupling was removed; the demonic court now scales only with invocation
   // efficiency). The `narcissus`/`wendigo` factors are flat (no efficiency scaling), per the catalog.
   const FAMA_INFLUENCE_FACTOR = 0.075; // each Fama: +7.5% influence gain
-  const PLUTUS_FAENERATIO_FACTOR = 0.15; // each Plutus: +15% Faeneratio output (Mutuum + interest)
+  const PLUTUS_FAENERATIO_FACTOR = 0.15; // each Plutus: +15% account output (the reserve's interest)
   const BLACK_CANDLES_INVOCATION_BONUS = 0.03; // each Black Candle: +3% invocation effect (cap 5 → +15%)
   const NIGHTMARE_SUICIDE_FACTOR = 0.005; // each Nightmare: +0.005/s base reprobate suicide rate
   const HARPY_MURDER_FACTOR = 0.005; // each Harpy: +0.005/s base reprobate murder rate
@@ -498,36 +482,13 @@ export function computeModifiers(state: GameState): Modifiers {
 
   const maxInfluenceMulV = skillBonus(vanagloriaIntensity) * sc('maxInfluenceMul');
 
-  // Signed Syngraphae (the Avaritia contract tree, spec §4.3/§5): the modifier-fold nodes compose
-  // multiplicatively per ADR-022 (the mechanism nodes — Anatocismus, the liquidation bonus,
-  // Peculium — are wired at their own sites); Escheat's two coefficients are flat additive fields.
-  let fenusRateMulV = 1;
-  let mutuumPerCapitaMulV = 1;
-  let thesaurusRecoveryMulV = 1;
-  let escheatGoldPerMurderV = 0;
-  let escheatGoldPerSuicideV = 0;
-  for (const node of SYNGRAPHAE) {
-    if (!syngraphaSigned(state, node.id)) continue;
-    const eff = node.effect;
-    if (eff.kind === 'fenusRateMul') fenusRateMulV *= eff.mul;
-    else if (eff.kind === 'mutuumPerCapitaMul') mutuumPerCapitaMulV *= eff.mul;
-    else if (eff.kind === 'thesaurusRecoveryMul') thesaurusRecoveryMulV *= eff.mul;
-    else if (eff.kind === 'escheat') {
-      escheatGoldPerMurderV += eff.goldPerMurder;
-      escheatGoldPerSuicideV += eff.goldPerSuicide;
-    }
-  }
-
   return {
     // Succubus' "99% gold gain" cost is now per-second upkeep (tick.ts 1a), not a rate cut here.
-    // The custodia-2 hoard-milestone bonus (+2%/decade of hoard ≥ 1,000, capped +20%) folds here
-    // directly — a derived multiplier like any other; the bundle stays derived, never persisted.
     goldRateMul:
       skillBonus(avaritiaIntensity) *
       (hasMidas ? 10 : 1) * // Midas (apex Avaritia): ×10 gold gain
       more('dybbuk_box', 0.1) * // Dybbuk Box: +10% gold gain
       more('achans_wedge', 2) * // Achan's Wedge: +200% gold gain
-      (1 + hoardMilestoneBonus(state)) *
       sc('goldRateMul') *
       cb.goldRateMul * // the-cycle-turns / a-good-find / blood-in-the-cage call buffs
       faustoCurseMul,
@@ -646,21 +607,17 @@ export function computeModifiers(state: GameState): Modifiers {
       more('ritual_dagger', 0.1) * // Ritual Dagger: +10% murder rate
       more('galdrabok', 0.125) * // Galdrabók: +12.5% murder rate
       sc('murderRateMul'),
-    // Faeneratio output (Mutuum + Thesaurus interest): each Plutus lifts it (flat factor),
-    // Vapula #60 sigil composes; applied to the summed term at the tick's gold-income line.
+    // Account output (the reserve's interest): each Plutus lifts it (flat factor), Vapula #60
+    // composes; applied to the interest term at the tick's gold-income line.
     faenerationOutputMul:
       (1 + PLUTUS_FAENERATIO_FACTOR * invEffFor('avaritia') * plutusCount) * // each Plutus: +15% (× invEff)
       sc('faenerationOutputMul'),
-    // The Fenus rate (hoard interest): the Usura Syngraphae.
-    fenusRateMul: fenusRateMulV,
-    // The Mutuum per-capita take (the loan book): the Faeneratio Syngraphae.
-    mutuumPerCapitaMul: mutuumPerCapitaMulV,
-    // Thesaurus withdrawal recovery: the Custodia Syngraphae × the recovery sigils (Vine #45,
-    // Furcas #50 — re-pinned from the Mercatus divest fraction to the same niche here).
-    thesaurusRecoveryMul: thesaurusRecoveryMulV * sigilShutdownRefundMul(state, sigMul),
-    // Escheat (faeneratio-2): flat gold per applied murder / suicide, minted in `dynamics`.
-    escheatGoldPerMurder: escheatGoldPerMurderV,
-    escheatGoldPerSuicide: escheatGoldPerSuicideV,
+    // The Fenus rate (the reserve's interest): the contracts in force (Interest rate, Long-term
+    // investing, Annuity), each only while the reserve holds its relationship tier.
+    fenusRateMul: syngraphaFenusRateMul(state),
+    // The surrender charge: the contracts in force (Active management, Compounding) × the
+    // recovery sigils (Vine #45, Furcas #50), which cut the charge in the asymptotic ×1/mul form.
+    surrenderChargeMul: syngraphaSurrenderChargeMul(state) / sigilShutdownRefundMul(state, sigMul),
     // Acolyte efficiency: 0.33 baseline (02 §10); Tristitia's Resignation SKILL lifts it
     // continuously (sheet rev 2026-06-12); Bathin #18 sigil composes on top.
     acolyteEfficiencyMul:

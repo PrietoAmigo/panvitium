@@ -21,6 +21,7 @@
  */
 import { gte, bn } from './bignum.js';
 import { sinLevel } from './progression.js';
+import { relationshipTier } from './syngraphae.js';
 import { mintSouls } from './population.js';
 import { SINS, type GameState, type ReceivedEmail } from './state.js';
 
@@ -114,7 +115,7 @@ const REUBEN_SIN_GATE = { one: 5, two: 13, three: 21, four: 28 } as const;
  * re-keyed with the Depraedatio gold rework: the per-Sin Mercatus depth gates (tier N ≈ depth N)
  * retired with the trades, so the sin-flavoured beats now key to the SIN LEVEL that gated the old
  * depth (a depth-2/3 trade implied its Sin at level ≥ 1), and the finance beat (markets) to the
- * hoard's first Foedus decade — the new surface the spec suggests.
+ * Depraedatio reserve reaching Relationship Tier II (10,000 gold).
  */
 export const EMAIL_DEFS: readonly EmailDef[] = [
   // ── Household — Gideon Reyes, the steward ──
@@ -134,9 +135,9 @@ export const EMAIL_DEFS: readonly EmailDef[] = [
 
   // ── The world / commerce — random, once per run; the gates land them as consequences ──
   {
-    // The finance press notices the capital at work: the hoard's first Foedus decade (T0).
+    // The finance press notices the capital at work: the reserve reaches Relationship Tier II.
     id: 'newsletter-markets',
-    eligible: (s) => gte(s.lifetime.hoard, 10_000),
+    eligible: (s) => relationshipTier(s) >= 2,
     randomWindow: NEWSLETTER_WINDOW,
   },
   {

@@ -206,27 +206,12 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
     };
   }
 
-  it('liquidates the hoard IN FULL into gold (no recovery penalty) and zeroes it', () => {
+  it('liquidates the reserve IN FULL into gold (no surrender charge) and zeroes it', () => {
     const before = loaded();
     const after = enterKatabasis(before);
-    // The descent voids the contracts: the full 400 pays out, not 0.25 × 400.
+    // The account close pays the full 400 out, not the post-charge 0.85 × 400.
     expect(after.lifetime.gold.toNumber()).toBe(1400);
     expect(after.lifetime.hoard.toNumber()).toBe(0);
-    // The Peculium base is stamped before the liquidation zeroed the hoard.
-    expect(after.lifetime.hoardAtDescent?.toNumber()).toBe(400);
-  });
-
-  it('pays the faeneratio-4 liquidation bonus (×1.25) when that contract is signed', () => {
-    const before = loaded();
-    const signed: GameState = {
-      ...before,
-      lifetime: {
-        ...before.lifetime,
-        syngraphae: ['faeneratio-1', 'faeneratio-2', 'faeneratio-3', 'faeneratio-4'],
-      },
-    };
-    const after = enterKatabasis(signed);
-    expect(after.lifetime.gold.toNumber()).toBe(1000 + 400 * 1.25);
   });
 
   it('stops toggles, fizzles the action queue, and dispels invocations', () => {
@@ -255,62 +240,102 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
     expect(recap.goldKept.toNumber()).toBeLessThanOrEqual(1400);
   });
 
-  it('commit resets the hoard, the Syngraphae, and the Peculium base with the lifetime', () => {
+  it('commit closes the account: reserve, contracts, age, income and safe reset with the lifetime', () => {
     const before = loaded();
     const signed: GameState = {
       ...before,
-      lifetime: { ...before.lifetime, syngraphae: ['usura-1', 'faeneratio-1'] },
+      lifetime: {
+        ...before.lifetime,
+        syngraphae: ['interest-rate'],
+        accountAge: 3600,
+        accountIncome: bn(250),
+        assetTracingElapsed: 42,
+      },
     };
     const { state } = commitKatabasis(enterKatabasis(signed));
     expect(state.lifetime.hoard.toNumber()).toBe(0);
     expect(state.lifetime.syngraphae).toHaveLength(0);
-    expect(state.lifetime.hoardAtDescent).toBeUndefined();
+    expect(state.lifetime.accountAge).toBeUndefined();
+    expect(state.lifetime.accountIncome).toBeUndefined();
+    expect(state.lifetime.assetTracingElapsed).toBeUndefined();
+    expect(state.lifetime.safeItem).toBeUndefined();
   });
 });
 
-describe('Peculium (custodia-4) — the kept-gold floor at commit', () => {
-  /** A descent-ready state: `hoard` in the vault, `gold` liquid, custodia-4 optionally signed. */
-  function estate(opts: { hoard: number; gold?: number; signed?: boolean }): GameState {
-    const base = createInitialState('peculium', 0);
+describe('the private item safe (Custody VIP) at the account close', () => {
+  /**
+   * A descent-ready estate owning a few maleficia, with Custody VIP chosen and `item` stored in the
+   * safe. `hoard` sets the relationship tier (Tier III at 1,000,000). The Superbia chance is the
+   * bare base, so most relics are lost on the roll.
+   */
+  function estate(opts: { hoard: number; item?: string; chosen?: boolean }): GameState {
+    const base = createInitialState('safe', 0);
     return {
       ...base,
       lifetime: {
         ...base.lifetime,
-        gold: bn(opts.gold ?? 0),
         hoard: bn(opts.hoard),
-        ...(opts.signed === false
-          ? {}
-          : { syngraphae: ['custodia-1', 'custodia-2', 'custodia-3', 'custodia-4'] }),
+        maleficia: ['dybbuk_box', 'codex_gigas', 'black_candles', 'black_candles'],
+        ...(opts.chosen === false ? {} : { syngraphae: ['custody-vip'] }),
+        ...(opts.item !== undefined ? { safeItem: opts.item } : {}),
       },
     };
   }
 
-  it('floors the kept gold at 10% of the hoard value at descent', () => {
-    // Estate: 10,000 hoard + 0 liquid → 10,000 at descent; base roll keeps 5% = 500.
-    const { recap } = commitKatabasis(enterKatabasis(estate({ hoard: 10_000 })));
-    // Peculium guarantees floor(0.10 × 10,000) = 1,000 — above the 500 the roll kept.
-    expect(recap.goldKept.toNumber()).toBe(1000);
+  it('keeps the stored maleficium for certain (repeatable over many seeds)', () => {
+    for (let seed = 0; seed < 25; seed++) {
+      const s = { ...estate({ hoard: 1_000_000, item: 'codex_gigas' }), rngState: seed * 7919 };
+      const { recap } = commitKatabasis(enterKatabasis(s));
+      expect(recap.maleficiaKept).toContain('codex_gigas');
+    }
   });
 
-  it('does not lower a roll that already beats the floor', () => {
-    // A large liquid estate: the 5% roll on (100,000 + 10,000) = 5,500 beats the 1,000 floor.
-    const { recap } = commitKatabasis(enterKatabasis(estate({ hoard: 10_000, gold: 100_000 })));
-    expect(recap.goldKept.toNumber()).toBe(5500);
+  it('keeps ONE copy of a stackable; the other copies still roll', () => {
+    for (let seed = 0; seed < 25; seed++) {
+      const s = { ...estate({ hoard: 1_000_000, item: 'black_candles' }), rngState: seed * 104729 };
+      const { recap } = commitKatabasis(enterKatabasis(s));
+      expect(recap.maleficiaKept).toContain('black_candles');
+      expect(recap.maleficiaKept.length + recap.maleficiaLost.length).toBe(4);
+    }
   });
 
-  it('does nothing while unsigned', () => {
-    const { recap } = commitKatabasis(enterKatabasis(estate({ hoard: 10_000, signed: false })));
-    expect(recap.goldKept.toNumber()).toBe(500); // the bare 5% roll
+  it('keeps the item even when the reserve fell below Tier III before the descent', () => {
+    const entered = enterKatabasis(estate({ hoard: 0, item: 'codex_gigas' }));
+    expect(entered.lifetime.safeItem).toBe('codex_gigas');
+    expect(commitKatabasis(entered).recap.maleficiaKept).toContain('codex_gigas');
   });
 
-  it('survives a mid-descent save/reload: the floor reads the persisted hoard-at-descent', () => {
-    const entered = enterKatabasis(estate({ hoard: 10_000 }));
-    // The stamp is on the lifetime (the wire round-trip is pinned in @panvitium/shared's save
-    // tests); commit reads it rather than the already-zeroed hoard.
-    expect(entered.lifetime.hoardAtDescent?.toNumber()).toBe(10_000);
-    expect(entered.lifetime.hoard.toNumber()).toBe(0);
-    const { recap } = commitKatabasis(entered);
-    expect(recap.goldKept.toNumber()).toBe(1000);
+  it('keeps nothing when Custody VIP was never chosen', () => {
+    const entered = enterKatabasis(
+      estate({ hoard: 1_000_000, item: 'codex_gigas', chosen: false }),
+    );
+    expect(entered.lifetime.safeItem).toBeUndefined();
+  });
+
+  it('survives a mid-descent save/reload: the designation sits on the frozen lifetime', () => {
+    const entered = enterKatabasis(estate({ hoard: 1_000_000, item: 'codex_gigas' }));
+    expect(entered.lifetime.hoard.toNumber()).toBe(0); // the reserve is liquidated
+    expect(entered.lifetime.safeItem).toBe('codex_gigas');
+    expect(commitKatabasis(entered).recap.maleficiaKept).toContain('codex_gigas');
+  });
+
+  it('draws no RNG for the safe copy (ADR-011): the relics before it roll exactly as without it', () => {
+    // The safe copy is third in the list: the first two relics see the same draws either way, and
+    // the safe descent ends one draw short of the plain one.
+    const plain = commitKatabasis(enterKatabasis(estate({ hoard: 1_000_000 })));
+    const safe = commitKatabasis(
+      enterKatabasis(estate({ hoard: 1_000_000, item: 'black_candles' })),
+    );
+    for (const id of ['dybbuk_box', 'codex_gigas']) {
+      expect(safe.recap.maleficiaKept.includes(id)).toBe(plain.recap.maleficiaKept.includes(id));
+    }
+    expect(safe.state.rngState).not.toBe(plain.state.rngState);
+  });
+
+  it('Erinyes wins over the safe (the commit-side mutex zeroes every carry-over)', () => {
+    const s = estate({ hoard: 1_000_000, item: 'codex_gigas' });
+    const entered = enterKatabasis({ ...s, lifetime: { ...s.lifetime, pendingErinyes: true } });
+    expect(commitKatabasis(entered).recap.maleficiaKept).toEqual([]);
   });
 });
 

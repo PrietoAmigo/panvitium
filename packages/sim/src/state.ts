@@ -142,26 +142,42 @@ export interface LifetimeState {
    */
   autoRepeat: string[];
   /**
-   * The Thesaurus hoard (Depraedatio gold rework): gold placed with Mammon's counting house.
-   * Pays interest into liquid gold at the Fenus rate; withdrawal is punitive; Katabasis liquidates
-   * it in full (the descent voids the contracts). BigNum; additive-optional on the wire (ADR-023,
-   * absent means zero). Reset to ZERO with the lifetime.
+   * The Thesaurus reserve (the Depraedatio account): gold placed with the counting house. Pays
+   * interest into liquid gold at the Fenus rate; its balance sets the relationship tier; a manual
+   * withdrawal forfeits the surrender charge; Katabasis (the account close) liquidates it in full.
+   * BigNum; additive-optional on the wire (ADR-023, absent means zero). Reset with the lifetime.
    */
   hoard: BigNum;
   /**
-   * Signed Syngraphae (the Avaritia contract tree) — purchased node ids in signing order.
-   * Additive-optional on the wire (ADR-023, absent means none). The terms lapse at the descent:
-   * reset with the lifetime at commit (kept through the frozen menu so the commit-side effects —
-   * the Peculium floor — can still read them).
+   * The account's chosen contracts (Syngraphae), one per relationship tier, in choosing order.
+   * Additive-optional on the wire (ADR-023, absent means none). The terms lapse at the account close:
+   * reset with the lifetime at commit.
    */
   syngraphae: string[];
   /**
-   * The hoard's value at the moment of descent (set by `enterKatabasis` alongside the pending
-   * flags, before the liquidation zeroes `hoard`) — the base for the custodia-4 Peculium floor at
-   * commit. Additive-optional on the wire (ADR-023) so it survives a mid-descent reload; cleared
-   * at commit with the lifetime reset.
+   * Seconds of game time since the account's inception (the first deposit this lifetime); absent
+   * until then. Advances by the tick's `simDelta`, so Desidia speeds it and a freeze holds it. Read
+   * by Long-term investing. Additive-optional (ADR-023); cleared with the lifetime reset.
    */
-  hoardAtDescent?: BigNum;
+  accountAge?: number;
+  /**
+   * The account's realised income since inception: every gold coin of interest it has earned
+   * (after all multipliers, the Compounding reinvest included) plus the Vesting payouts. BigNum;
+   * additive-optional (ADR-023, absent means zero); cleared with the lifetime reset.
+   */
+  accountIncome?: BigNum;
+  /**
+   * The maleficium id held in the private item safe (Custody VIP): it passes the next Katabasis for
+   * certain. Honoured only if the safe is open at the descent and the item is still owned.
+   * Additive-optional (ADR-023); cleared with the lifetime reset.
+   */
+  safeItem?: string;
+  /**
+   * PI's asset-tracing clock: seconds of game time accrued toward the next automatic Indagatio
+   * (every 150 s once the contract is chosen). Additive-optional (ADR-023, absent means 0);
+   * cleared with the lifetime reset.
+   */
+  assetTracingElapsed?: number;
   /**
    * Reprobate-dynamics accrual pools (02 §9). Each tick the per-second rate × deltaSeconds is
    * added to the matching pool; while the pool ≥ 1 it is decremented and an integer event applied

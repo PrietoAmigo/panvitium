@@ -1,78 +1,48 @@
 /**
- * The Faeneratio loop (Depraedatio gold rework spec) — the Avaritia-centric gold economy that
- * replaced the eight per-Sin Mercatūs (ADR-025 superseded). Three parts:
+ * The Depraedatio account — the Avaritia-centric gold loop that replaced the eight per-Sin
+ * Mercatūs (ADR-025 superseded). Two parts:
  *
- *   - MUTUUM (the loan book): passive gold income proportional to the reprobate population —
- *     small sums seeded among the masses through brokers, repaid up a ledger whose unnamed head is
- *     the player. `mutuumGoldPerSecond = MUTUUM_PER_CAPITA × mods.mutuumPerCapitaMul × reprobates`.
- *     No principal, no decision: this is the income floor and the population coupling (the ADR-025
- *     design point that the economy rides the population curve survives here).
- *   - THESAURUS (the hoard): a vault (`lifetime.hoard`, BigNum) the player deposits liquid gold
- *     into; the hoard pays interest into LIQUID gold at the Fenus rate
- *     (`FENUS_RATE × mods.fenusRateMul × hoard`). Withdrawal is punitive (the recovery fraction);
- *     Katabasis liquidates the hoard in full — the descent voids the contracts, so no recovery
- *     penalty applies there.
- *   - SYNGRAPHAE (the contracts): the Avaritia-gated skill tree — see `syngraphae.ts`.
+ *   - THESAURUS (the reserve): a vault (`lifetime.hoard`, BigNum) the player deposits liquid gold
+ *     into; it pays interest into LIQUID gold at the Fenus rate (`FENUS_RATE × mods.fenusRateMul ×
+ *     hoard`). A manual withdrawal (the surrender) forfeits the surrender charge; Katabasis (the
+ *     account close) liquidates the reserve in full, with no charge.
+ *   - SYNGRAPHAE (the contracts): one per relationship tier, the tier set by the reserve balance;
+ *     see `syngraphae.ts`.
  *
- * The FOEDUS survives on its upkeep side only, re-anchored from Mercatus depths to the hoard: one
- * GLOBAL tier for all ceremonies, stepped per decade of hoard above `FOEDUS_T0`. The revenue side
- * (per-Sin trade bonuses) retired with the trades.
+ * The loan book (Mutuum, the per-reprobate take) and the Foedus ceremony-upkeep rebate are retired:
+ * the account's only income is the reserve's interest (plus the Vesting drawdown, which returns
+ * principal as interest).
  *
- * Both income terms are composed at the tick's gold line, scaled by `mods.faenerationOutputMul`
- * (Plutus, Vapula #60 — the renamed `vitiumMercaturaOutputMul`) and `goldRateMul` like all income.
- * Fully deterministic: no RNG, no timers.
+ * The interest is composed at the tick's gold line, scaled by `mods.faenerationOutputMul` (Plutus,
+ * Vapula #60) and `goldRateMul` like all income. Fully deterministic: no RNG.
  */
 import { add, bn, floor, gte, isZero, lte, mul, sub, ZERO, type BigNum } from './bignum.js';
 import { type GameState } from './state.js';
 import { type Modifiers } from './modifiers.js';
-import { ANATOCISMUS_SPLIT, katabasisLiquidationMul, syngraphaSigned } from './syngraphae.js';
+import { reinvestFraction, surrenderBarred, vestingFractionPerSecond } from './syngraphae.js';
 
-// ── Constants (Vitium Mercatura sheet → Faeneratio block; spec §12) ──────────
-// Placeholder values from the approved spec, pending reconciliation on the sheet (the sheet is
-// authoritative once its Faeneratio block is settled; a settled sheet value wins over these).
+// ── Constants (placeholders pending the sheet's Faeneratio block; a settled sheet value wins) ──
 
-/** Mutuum take: gold/s per living reprobate (spec §4.1 placeholder). */
-export const MUTUUM_PER_CAPITA = 0.05;
 /**
- * Fenus: interest paid into liquid gold, as a fraction of the hoard per second (spec §4.2
- * placeholder — 0.05%/s; full-recycle doubling time ln 2 / rate ≈ 23 minutes).
+ * Fenus: interest paid into liquid gold, as a fraction of the reserve per second (0.05%/s; the
+ * full-recycle doubling time ln 2 / rate ≈ 23 minutes).
  */
 export const FENUS_RATE = 0.0005;
+
 /**
- * Base fraction of a withdrawal returned to liquid gold — the Globals shutdown-recovery constant
- * (0.25), the same niche it held for the Mercatus divest. Lifted by `mods.thesaurusRecoveryMul`
- * (Custodia nodes, Vine #45 / Furcas #50), capped at `THESAURUS_RECOVERY_CAP`.
+ * The base surrender charge: the fraction of a manual withdrawal the counting house keeps (0.15, a
+ * fifth of the old 0.75 charge, i.e. 85% returned). Scaled by `mods.surrenderChargeMul` (Active
+ * management ×0.67, Compounding ×1.5, Vine #45 / Furcas #50 soften it), clamped to [0, 1].
  */
-export const THESAURUS_RECOVERY = 0.25;
-/** Hard cap on the effective withdrawal recovery after all multipliers (spec §4.2). */
-export const THESAURUS_RECOVERY_CAP = 0.9;
+export const BASE_SURRENDER_CHARGE = 0.15;
 
-/** Foedus threshold: the hoard size at which the global tier steps to 1 (spec §4.4 placeholder). */
-export const FOEDUS_T0 = 10_000;
-export const MAX_FOEDUS_TIER = 4;
-/** VC upkeep multiplier = 1 − discount × tier (tier 4 → ×0.5). Unchanged in shape from ADR-025. */
-export const FOEDUS_UPKEEP_DISCOUNT_PER_TIER = 0.125;
-
-// ── Mutuum (the loan book) ───────────────────────────────────────────────────
+// ── Thesaurus (the reserve) ──────────────────────────────────────────────────
 
 /**
- * The loan book's raw take: `MUTUUM_PER_CAPITA × mods.mutuumPerCapitaMul × reprobates`. Open from
- * the start — the gating rebalance moved every Faeneratio gate one level down, so the old
- * Avaritia-I unlock became no gate at all. RAW — the tick composes
- * `× faenerationOutputMul × goldRateMul` on top, like all income.
- */
-export function mutuumGoldPerSecond(state: GameState, mods: Modifiers): number {
-  return MUTUUM_PER_CAPITA * mods.mutuumPerCapitaMul * state.lifetime.reprobates;
-}
-
-// ── Thesaurus (the hoard) ────────────────────────────────────────────────────
-
-/**
- * The hoard's raw interest/s (Fenus): `FENUS_RATE × mods.fenusRateMul × hoard`, paid into LIQUID
- * gold. RAW — the tick composes `× faenerationOutputMul × goldRateMul` on top; the Anatocismus
- * split (usura-4) is likewise the tick's concern, applied AFTER all
- * multipliers. Collapses the hoard to a number like the other income terms (the pipeline is
- * number-based; BigNum matters only past ~1e308).
+ * The reserve's raw interest/s (Fenus): `FENUS_RATE × mods.fenusRateMul × hoard`, paid into LIQUID
+ * gold. RAW: the tick composes `× faenerationOutputMul × goldRateMul` on top; the Compounding split
+ * is likewise the tick's concern, applied AFTER all multipliers. Collapses the reserve to a number
+ * like the other income terms (the pipeline is number-based; BigNum matters only past ~1e308).
  */
 export function thesaurusInterestPerSecond(state: GameState, mods: Modifiers): number {
   if (isZero(state.lifetime.hoard)) return 0;
@@ -80,39 +50,63 @@ export function thesaurusInterestPerSecond(state: GameState, mods: Modifiers): n
 }
 
 /**
- * The Faeneratio income term at the tick's gold line (spec §6): the SUM of the Mutuum take and
- * the Thesaurus interest, scaled by `mods.faenerationOutputMul` (Plutus, Vapula #60). Sits exactly
- * where Mercatus revenue sat; `goldRateMul` composes on top at the tick.
+ * The account's income term at the tick's gold line: the reserve's interest scaled by
+ * `mods.faenerationOutputMul` (Plutus, Vapula #60). `goldRateMul` composes on top at the tick.
  */
 export function faeneratioGoldPerSecond(state: GameState, mods: Modifiers): number {
-  return (
-    (mutuumGoldPerSecond(state, mods) + thesaurusInterestPerSecond(state, mods)) *
-    mods.faenerationOutputMul
-  );
+  return thesaurusInterestPerSecond(state, mods) * mods.faenerationOutputMul;
 }
 
 /**
- * Anatocismus (usura-4, "interest upon interest, by contract"): the gold/s auto-depositing into
- * the hoard — half of each interest payment AFTER all multipliers (`faenerationOutputMul` and
- * `goldRateMul`). 0 while the contract is unsigned.
- * The HUD's gold/s shows the liquid half only; the Thesaurus tab shows this rate.
+ * The account's realised interest/s after every multiplier (`faenerationOutputMul`, `goldRateMul`),
+ * before the Compounding split: what the reserve earns, whether it pays out or reinvests.
  */
-export function anatocismusDepositPerSecond(state: GameState, mods: Modifiers): number {
-  if (!syngraphaSigned(state, 'usura-4')) return 0;
-  return (
-    thesaurusInterestPerSecond(state, mods) *
-    mods.faenerationOutputMul *
-    mods.goldRateMul *
-    ANATOCISMUS_SPLIT
-  );
+export function realisedInterestPerSecond(state: GameState, mods: Modifiers): number {
+  return faeneratioGoldPerSecond(state, mods) * mods.goldRateMul;
 }
 
 /**
- * The effective withdrawal recovery fraction: `THESAURUS_RECOVERY × mods.thesaurusRecoveryMul`,
- * capped at 0.9 after all multipliers (spec §4.2).
+ * Compounding: the gold/s auto-depositing into the reserve, `reinvestFraction` of each interest
+ * payment AFTER all multipliers. 0 while the contract is not in force. The HUD's gold/s shows the
+ * liquid remainder only.
  */
+export function reinvestPerSecond(state: GameState, mods: Modifiers): number {
+  const fraction = reinvestFraction(state);
+  if (fraction <= 0) return 0;
+  return realisedInterestPerSecond(state, mods) * fraction;
+}
+
+/**
+ * Vesting: the reserve vests to liquid gold at `fractionPerSecond` of the balance per second (an
+ * exponential drawdown), paid as interest with no surrender charge. Exact over any span (ADR-004):
+ * over `seconds` the reserve pays `hoard × (1 − e^(−k·seconds))`, so one big tick equals the sum of
+ * small ones. Returns the gold that vests over the span (0 when not in force or the reserve is empty).
+ */
+export function vestingPayout(state: GameState, seconds: number): BigNum {
+  const k = vestingFractionPerSecond(state);
+  const hoard = state.lifetime.hoard;
+  if (k <= 0 || seconds <= 0 || lte(hoard, ZERO)) return ZERO;
+  return mul(hoard, -Math.expm1(-k * seconds));
+}
+
+/** Vesting's instantaneous rate (gold/s), for the readouts: `k × reserve` (0 when not in force). */
+export function vestingPerSecond(state: GameState): number {
+  const k = vestingFractionPerSecond(state);
+  if (k <= 0 || lte(state.lifetime.hoard, ZERO)) return 0;
+  return k * state.lifetime.hoard.toNumber();
+}
+
+/**
+ * The effective surrender charge: `BASE_SURRENDER_CHARGE × mods.surrenderChargeMul`, clamped to
+ * [0, 1]. The fraction of a manual withdrawal forfeited to the counting house.
+ */
+export function surrenderCharge(mods: Modifiers): number {
+  return Math.min(1, Math.max(0, BASE_SURRENDER_CHARGE * mods.surrenderChargeMul));
+}
+
+/** The fraction of a manual withdrawal returned to liquid gold: `1 − surrenderCharge`. */
 export function thesaurusRecoveryFraction(mods: Modifiers): number {
-  return Math.min(THESAURUS_RECOVERY_CAP, THESAURUS_RECOVERY * mods.thesaurusRecoveryMul);
+  return 1 - surrenderCharge(mods);
 }
 
 export type ThesaurusResult =
@@ -120,9 +114,11 @@ export type ThesaurusResult =
   | { readonly ok: false; readonly reason: string };
 
 /**
- * Deposit liquid gold into the hoard — instant, any amount up to liquid gold. The amount is
+ * Deposit liquid gold into the reserve — instant, any amount up to liquid gold. The amount is
  * floored at the spend boundary (ADR-005; gold accrues fractionally but is spent in whole coins).
- * Refused under the Astiwihad freeze, like every other initiation of work (03 §2.4).
+ * The first deposit of a lifetime is the account's INCEPTION: it starts the account-age clock
+ * (`lifetime.accountAge`) that Long-term investing and the realised-income line read. Refused under
+ * the Astiwihad freeze, like every other initiation of work (03 §2.4).
  */
 export function depositThesaurus(state: GameState, amount: BigNum | number): ThesaurusResult {
   if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
@@ -139,15 +135,16 @@ export function depositThesaurus(state: GameState, amount: BigNum | number): The
         ...state.lifetime,
         gold: sub(state.lifetime.gold, give),
         hoard: add(state.lifetime.hoard, give),
+        accountAge: state.lifetime.accountAge ?? 0,
       },
     },
   };
 }
 
 /**
- * Withdraw from the hoard: the FULL `amount` leaves the hoard, but only
- * `floor(amount × recovery)` returns to liquid gold — the counting house releases little of what
- * it has tasted. Floored per ADR-005 on both sides of the move. The UI must state the loss before
+ * Withdraw from the reserve (the surrender): the FULL `amount` leaves the reserve, but only
+ * `floor(amount × (1 − surrenderCharge))` returns to liquid gold. Floored per ADR-005 on both sides
+ * of the move. Barred outright while an Annuity is in force. The UI states the charge before
  * confirming.
  */
 export function withdrawThesaurus(
@@ -158,10 +155,11 @@ export function withdrawThesaurus(
   if ((state.lifetime.invocations.astiwihad ?? 0) > 0) {
     return { ok: false, reason: 'The world is held in Astiwihad’s stillness.' };
   }
+  if (surrenderBarred(state)) return { ok: false, reason: 'the annuity bars manual surrender' };
   const take = floor(bn(amount));
   if (lte(take, ZERO)) return { ok: false, reason: 'nothing to reclaim' };
   if (!gte(floor(state.lifetime.hoard), take)) {
-    return { ok: false, reason: 'the hoard holds less than that' };
+    return { ok: false, reason: 'the reserve holds less than that' };
   }
   const recovered = floor(mul(take, thesaurusRecoveryFraction(mods)));
   return {
@@ -178,11 +176,10 @@ export function withdrawThesaurus(
 }
 
 /**
- * Katabasis liquidation (spec §4.2/§7): the hoard liquidates IN FULL into liquid gold — no
- * recovery penalty; the descent voids the contracts — × the faeneratio-4 bonus (×1.25) when that
- * contract is signed. Runs at `enterKatabasis`, BEFORE the remaining-gold roll, so Avaritia levels
- * judge the whole estate; idempotent (no-op at hoard 0), so the defensive repeat at commit costs
- * nothing. The caller stamps `hoardAtDescent` (the Peculium base) before calling.
+ * Katabasis liquidation (the account close): the reserve liquidates IN FULL into liquid gold, with
+ * no surrender charge. Runs at `enterKatabasis`, BEFORE the remaining-gold roll, so Avaritia levels
+ * judge the whole estate; idempotent (no-op at an empty reserve), so the defensive repeat at commit
+ * costs nothing.
  */
 export function liquidateThesaurus(state: GameState): GameState {
   if (isZero(state.lifetime.hoard)) return state;
@@ -190,31 +187,8 @@ export function liquidateThesaurus(state: GameState): GameState {
     ...state,
     lifetime: {
       ...state.lifetime,
-      gold: add(state.lifetime.gold, mul(state.lifetime.hoard, katabasisLiquidationMul(state))),
+      gold: add(state.lifetime.gold, state.lifetime.hoard),
       hoard: ZERO,
     },
   };
-}
-
-// ── Foedus tier (re-anchored to the hoard — spec §4.4) ───────────────────────
-
-/**
- * The GLOBAL Foedus tier: a pact between the hoard and the rituals — a fat vault greases the
- * ceremonies. `tier = 0` while `hoard < T0`, else `min(floor(log10(hoard / T0)) + 1, 4)` (tiers
- * step at 1e4, 1e5, 1e6, 1e7). One tier for all ceremonies; the per-Sin member dependency retired
- * with the Mercatūs. Pure hoard math — whether a ceremony pays upkeep (and whether it opted out)
- * is the caller's concern (`compositumFoedusUpkeepMul`).
- */
-export function foedusTier(state: GameState): number {
-  const hoard = state.lifetime.hoard;
-  if (!gte(hoard, FOEDUS_T0)) return 0;
-  // log-difference form (exact at the decade boundaries, where break_infinity's mantissa is 1);
-  // the epsilon guards the same IEEE hair-low family as the old refund flooring.
-  const decades = hoard.log10() - Math.log10(FOEDUS_T0);
-  return Math.min(Math.floor(decades + 1e-9) + 1, MAX_FOEDUS_TIER);
-}
-
-/** VC upkeep multiplier for a Foedus tier: 1 − 0.125 × tier (tier 4 → ×0.5). */
-export function foedusUpkeepMul(tier: number): number {
-  return 1 - FOEDUS_UPKEEP_DISCOUNT_PER_TIER * tier;
 }

@@ -150,7 +150,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     invokingPower: 5,
     sinLevel: 2,
     upkeep: { influence: 3 }, // 3 influence/s
-    // Stackable. Effect (modifiers.ts → faenerationOutputMul): +15% Faeneratio output per copy, scaled
+    // Stackable. Effect (modifiers.ts → faenerationOutputMul): +15% account interest per copy, scaled
     // by invocation efficiency.
   },
   nightmare: {

@@ -29,6 +29,7 @@ import {
   reprobateRates,
   resolveAction,
   resolveIndagatio,
+  surrenderCharge,
   thesaurusRecoveryFraction,
   sigilById,
   sigilCategoryTierContributions,
@@ -712,27 +713,27 @@ describe('Composite (multi-effect) seals (S17 — ADR-035)', () => {
   });
 });
 
-describe('Faeneratio output sigil (S14)', () => {
-  it('Vapula #60 scales the Faeneratio gold output, never generation', () => {
-    const withBook = (s: GameState): GameState => ({
+describe('Account output sigil (S14)', () => {
+  it('Vapula #60 scales the reserve interest, never generation', () => {
+    const withReserve = (s: GameState): GameState => ({
       ...s,
-      // Avaritia level 1 opens the loan book; a populated world gives it a take.
       devotion: { ...s.devotion, avaritia: bn(180) },
-      lifetime: { ...s.lifetime, reprobates: 1000 },
+      // 100,000 gold in reserve pays FENUS_RATE × 100,000 = 50 gold/s of interest.
+      lifetime: { ...s.lifetime, reprobates: 1000, hoard: bn(100_000) },
     });
     const goldGain = (s: GameState): number =>
       tick(s, 1).state.lifetime.gold.toNumber() - s.lifetime.gold.toNumber();
-    const base = goldGain(withBook(fresh()));
-    const vapula = goldGain(withBook(bound(60, 100_000_000))); // ×(1 + strength) on the term
-    // Mutuum take 0.05 × 1000 = 50/s; Vapula scales that term by (1 + strength) and leaves the 2/s
-    // base alone. Everything rides goldRateMul (the Avaritia-180 Golden Hand intensity is in play).
-    const rateMul = computeModifiers(withBook(fresh())).goldRateMul;
+    const base = goldGain(withReserve(fresh()));
+    const vapula = goldGain(withReserve(bound(60, 100_000_000))); // ×(1 + strength) on the term
+    // Interest 50/s; Vapula scales that term by (1 + strength) and leaves the 2/s base alone.
+    // Everything rides goldRateMul (the Avaritia-180 Golden Hand intensity is in play).
+    const rateMul = computeModifiers(withReserve(fresh())).goldRateMul;
     const vapulaMul = 1 + sigilStrength(sigilById(60)!, bn(100_000_000));
     expect(base).toBeCloseTo((2 + 50) * rateMul, 4);
     expect(vapula).toBeCloseTo((2 + 50 * vapulaMul) * rateMul, 4);
     const genOf = (s: GameState): number =>
       reprobateRates(s, computeModifiers(s)).generationPerSecond;
-    expect(genOf(withBook(bound(60, 100_000_000)))).toBeCloseTo(genOf(withBook(fresh())), 9);
+    expect(genOf(withReserve(bound(60, 100_000_000)))).toBeCloseTo(genOf(withReserve(fresh())), 9);
   });
 });
 
@@ -798,26 +799,32 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
     );
   });
 
-  it('Vine #45 raises the Thesaurus recovery, capped at 0.9 effective; Furcas composes', () => {
-    // Re-pinned from the Mercatus divest fraction to `thesaurusRecoveryMul` — the same "recovery"
-    // niche, unchanged in magnitude (Depraedatio rework §9).
+  it('Vine #45 softens the reserve surrender charge (asymptotic cut); Furcas composes', () => {
+    // Re-pinned from the withdrawal recovery to the surrender charge (the relationship-tier rework):
+    // the charge divides by 1 + Vine's pct strength, so it softens toward zero but never inverts.
     expect(sigilById(45)!.effect).toEqual({ kind: 'shutdownRefund' });
-    // Recovery multiplier is 1 + Vine's pct strength; the base recovery fraction is 0.25.
     const vineMul = 1 + sigilStrength(sigilById(45)!, bn(100_000_000));
     expect(sigilShutdownRefundMul(bound(45, 100_000_000))).toBeCloseTo(vineMul, 6);
-    expect(thesaurusRecoveryFraction(computeModifiers(fresh()))).toBeCloseTo(0.25, 6);
-    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 100_000_000)))).toBeCloseTo(
-      0.25 * vineMul,
+    expect(surrenderCharge(computeModifiers(fresh()))).toBeCloseTo(0.15, 9);
+    expect(surrenderCharge(computeModifiers(bound(45, 100_000_000)))).toBeCloseTo(
+      0.15 / vineMul,
       6,
     );
-    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 1e50)))).toBe(0.9); // the cap
+    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 100_000_000)))).toBeCloseTo(
+      1 - 0.15 / vineMul,
+      6,
+    );
+    // A vast binding drives the charge toward zero, never below it.
+    const huge = surrenderCharge(computeModifiers(bound(45, 1e50)));
+    expect(huge).toBeGreaterThan(0);
+    expect(huge).toBeLessThan(0.15);
     // Vine + Furcas on the same channel compose multiplicatively (same strength at the same souls).
     let both = fresh();
     both = { ...both, souls: bn(200_000_000) };
     both = bindSigil(both, 45, 100_000_000);
     both = bindSigil(both, 50, 100_000_000);
     expect(sigilShutdownRefundMul(both)).toBeCloseTo(vineMul * vineMul, 6);
-    expect(computeModifiers(both).thesaurusRecoveryMul).toBeCloseTo(vineMul * vineMul, 6);
+    expect(computeModifiers(both).surrenderChargeMul).toBeCloseTo(1 / (vineMul * vineMul), 6);
   });
 
   it('Semet #32 scales the other sigils; Gaap #33 inflates the maleficia enhancer stack', () => {
@@ -930,17 +937,20 @@ describe('Sigil-effect maleficia reach every sigil channel', () => {
     ).toHaveLength(2);
   });
 
-  it('the ring lifts the Vine #45 / Furcas #50 Thesaurus recovery', () => {
+  it('the ring lifts the Vine #45 / Furcas #50 surrender-charge cut', () => {
     const strength = sigilStrength(sigilById(45)!, bn(SOULS));
     for (const id of [45, 50]) {
-      expect(computeModifiers(bound(id, SOULS)).thesaurusRecoveryMul).toBeCloseTo(1 + strength, 6);
-      expect(computeModifiers(ring(bound(id, SOULS))).thesaurusRecoveryMul).toBeCloseTo(
-        1 + 1.66 * strength,
+      expect(computeModifiers(bound(id, SOULS)).surrenderChargeMul).toBeCloseTo(
+        1 / (1 + strength),
+        6,
+      );
+      expect(computeModifiers(ring(bound(id, SOULS))).surrenderChargeMul).toBeCloseTo(
+        1 / (1 + 1.66 * strength),
         6,
       );
     }
-    expect(thesaurusRecoveryFraction(computeModifiers(ring(bound(45, SOULS))))).toBeCloseTo(
-      0.25 * (1 + 1.66 * strength),
+    expect(surrenderCharge(computeModifiers(ring(bound(45, SOULS))))).toBeCloseTo(
+      0.15 / (1 + 1.66 * strength),
       6,
     );
   });

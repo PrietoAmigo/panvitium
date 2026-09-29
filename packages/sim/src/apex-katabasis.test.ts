@@ -159,7 +159,7 @@ describe('Astiwihad freeze halts runners and blocks initiations', () => {
     const d = depositThesaurus(frozen, 100);
     expect(d.ok).toBe(false);
     if (!d.ok) expect(d.reason).toMatch(/stillness/i);
-    const g = signSyngrapha(frozen, 'usura-1');
+    const g = signSyngrapha(frozen, 'interest-rate');
     expect(g.ok).toBe(false);
   });
 });

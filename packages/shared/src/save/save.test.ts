@@ -146,8 +146,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v9 (the invocation-runner removal bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(9);
+  it('schemaVersion is v10 (the Depraedatio relationship-tier rework bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(10);
   });
 });
 
@@ -290,8 +290,8 @@ describe('desidia + desidiaActive — ADR-033 additive-optional round-trip', () 
   });
 });
 
-describe('the hoard + Syngraphae — ADR-023 additive-optional (a/b/c round-trip)', () => {
-  it('(a) a save without hoard/syngraphae loads with a zero hoard and no contracts', () => {
+describe('the reserve + contracts + account fields — ADR-023 additive-optional (a/b/c round-trip)', () => {
+  it('(a) a save without the account fields loads with an empty, unopened account', () => {
     const fresh = createInitialState('seed', 0);
     const serialized = serializeGameState(fresh);
     // Strip the optional fields entirely — simulates an older minimal save.
@@ -309,14 +309,21 @@ describe('the hoard + Syngraphae — ADR-023 additive-optional (a/b/c round-trip
     const back = deserializeGameState(parsed.data);
     expect(back.lifetime.hoard.toNumber()).toBe(0);
     expect(back.lifetime.syngraphae).toEqual([]);
-    expect(back.lifetime.hoardAtDescent).toBeUndefined();
+    expect(back.lifetime.accountAge).toBeUndefined();
+    expect(back.lifetime.accountIncome).toBeUndefined();
+    expect(back.lifetime.safeItem).toBeUndefined();
+    expect(back.lifetime.assetTracingElapsed).toBeUndefined();
     expect(back.lifetime.reprobates).toBe(0);
   });
 
-  it('(b) a fresh save omits the zero hoard and empty syngraphae from the wire', () => {
+  it('(b) a fresh save omits the empty reserve, contracts and account fields from the wire', () => {
     const serialized = serializeGameState(createInitialState('seed', 0));
     expect('hoard' in serialized.lifetime).toBe(false);
     expect('syngraphae' in serialized.lifetime).toBe(false);
+    expect('accountAge' in serialized.lifetime).toBe(false);
+    expect('accountIncome' in serialized.lifetime).toBe(false);
+    expect('safeItem' in serialized.lifetime).toBe(false);
+    expect('assetTracingElapsed' in serialized.lifetime).toBe(false);
     expect('hoardAtDescent' in serialized.lifetime).toBe(false);
     expect('maleficiaPrices' in serialized.lifetime).toBe(false);
     expect('handOfGloryRemaining' in serialized.lifetime).toBe(false);
@@ -337,23 +344,29 @@ describe('the hoard + Syngraphae — ADR-023 additive-optional (a/b/c round-trip
     expect(deserializeGameState(wire).lifetime.maleficiaPrices).toEqual({});
   });
 
-  it('(c) a populated hoard, contracts, and a mid-descent Peculium base round-trip exactly', () => {
+  it('(c) a populated reserve, contracts, account clock, income, safe and tracing clock round-trip', () => {
     const fresh = createInitialState('seed', 0);
     const withVault: GameState = {
       ...fresh,
       lifetime: {
         ...fresh.lifetime,
         hoard: bn('1.5e42'),
-        syngraphae: ['usura-1', 'faeneratio-1', 'faeneratio-2'],
-        hoardAtDescent: bn('7.25e12'),
+        syngraphae: ['long-term', 'vesting', 'custody-vip'],
+        accountAge: 5432.1,
+        accountIncome: bn('7.25e12'),
+        safeItem: 'codex_gigas',
+        assetTracingElapsed: 77.5,
         maleficiaBuffs: { hand_of_glory: 1234, defixio: 42 },
       },
     };
     const wire = serializeGameState(withVault);
     const back = deserializeGameState(wire);
     expect(eq(back.lifetime.hoard, bn('1.5e42'))).toBe(true);
-    expect(back.lifetime.syngraphae).toEqual(['usura-1', 'faeneratio-1', 'faeneratio-2']);
-    expect(eq(back.lifetime.hoardAtDescent!, bn('7.25e12'))).toBe(true);
+    expect(back.lifetime.syngraphae).toEqual(['long-term', 'vesting', 'custody-vip']);
+    expect(back.lifetime.accountAge).toBe(5432.1);
+    expect(eq(back.lifetime.accountIncome!, bn('7.25e12'))).toBe(true);
+    expect(back.lifetime.safeItem).toBe('codex_gigas');
+    expect(back.lifetime.assetTracingElapsed).toBe(77.5);
     expect(back.lifetime.maleficiaBuffs).toEqual({ hand_of_glory: 1234, defixio: 42 });
   });
 });

@@ -829,7 +829,9 @@ Semet (fixed-point) — rejected as numerically fragile for no design gain.
 
 **Status.** Accepted [2026-07-03]. Implements the approved *Depraedatio gold rework* spec;
 supersedes ADR-025 as the gold-obtaining half of *Depraedatio* (the overarching system and panel
-name remain **Depraedatio**; only the internals change).
+name remain **Depraedatio**; only the internals change). *Partly superseded by ADR-037
+[2026-09-29]: the Mutuum loan book, the Syngraphae tree, the Peculium / liquidation bonus and the
+Foedus are retired; the Thesaurus survives.*
 
 **Context.** The eight per-Sin Mercatūs (ADR-025) delivered the population coupling but at the
 price of eight parallel depth curves, eight signature clauses reaching into four unrelated
@@ -1231,6 +1233,58 @@ channel had no user since the roster rework, yet still ran every tick and persis
   number is unchanged.
 - Determinism (ADR-011): no new RNG draw; the dup / double-find draws stay gated on a bound seal.
 - Amy #58's description arrow is corrected to ↑, matching its (player-tuned) efficiency increase.
+
+---
+
+## ADR-037: Depraedatio reworked — the loan book and the Foedus retired; contracts laddered on the relationship tier
+
+**Status.** Accepted [2026-09-29]. Supersedes ADR-030's *Mutuum*, *Syngraphae* tree and Foedus
+upkeep coupling; ADR-030's *Thesaurus* (the reserve) survives with a lower surrender charge.
+
+**Context.** The Faeneratio loop's loan book paid gold per living reprobate with no decision
+attached, and the twelve-node Avaritia tree was a linear fee ladder. The account needed choices
+instead: a few mutually exclusive terms keyed to how much the player has committed to the reserve.
+
+**Decision.**
+
+- **The loan book is removed.** `MUTUUM_PER_CAPITA`, `mutuumGoldPerSecond`, the
+  `mutuumPerCapitaMul` bundle field and the Escheat death duties (`escheatGoldPerMurder` /
+  `escheatGoldPerSuicide`) go. The account's only income is the reserve's interest.
+- **The Foedus is removed.** The ceremony-upkeep rebate (12.5% per hoard decade, up to 50%) and
+  `CompositumDef.foedusOptOut` go; Panvitium pays full upkeep.
+- **The surrender charge is a first-class quantity.** A manual withdrawal forfeits
+  `BASE_SURRENDER_CHARGE (0.15) × surrenderChargeMul`, clamped to [0, 1] (a fifth of the old 0.75
+  implied by the 0.25 recovery). `surrenderChargeMul` replaces `thesaurusRecoveryMul`; Vine #45 /
+  Furcas #50 divide it (asymptotic ×1/(1 + strength)). The 0.9 recovery cap is dropped.
+- **The relationship tier** is set by the floored reserve: Tier I at 100 gold, II at 10,000, III at
+  1,000,000. It gates only the choice of contracts.
+- **Contracts (Syngraphae)**: three per tier, ONE chosen per tier, free, final for the lifetime,
+  lapsing at Katabasis. A chosen contract stays in force even if the reserve later falls below its
+  tier.
+  - Tier I: *Interest rate* (interest ×1.33); *Long-term investing* (interest ×(1 + 0.1 × hours
+    since account inception)); *Active management* (surrender charge ×0.67).
+  - Tier II: *Compounding* (charge ×1.5; 1% of each interest payment reinvested after all
+    multipliers); *Vesting* (1% of the reserve per second vests to cash as interest, with no charge
+    and no %-of-gain upkeep, integrated exactly as `hoard × (1 − e^(−0.01·t))`); *Annuity* (interest
+    ×1.1666; manual withdrawal barred).
+  - Tier III: *PI* (a free, hand-cast-equivalent Indagatio every 150 s of game time; only Desidia's
+    faster game time shortens it); *Custody VIP* (the private item safe: one owned maleficium is
+    kept at the next Katabasis with no roll; judged at `enterKatabasis`; Erinyes still wins);
+    *Risk algos* (the Analytics Risk tab: every action's live outcome odds).
+- **Account inception** is the first deposit of a lifetime; `lifetime.accountAge` then advances in
+  game time (`simDelta`). `lifetime.accountIncome` tallies the realised interest (reinvested share
+  included) plus the Vesting payouts, for the "Realised income since account inception" line.
+
+**Consequences.**
+
+- Save schema **v9 → v10** (ADR-023): `migrations/v9-to-v10.ts` strips the retired contract ids
+  (refunding their burned fees to gold) and drops `hoardAtDescent` (the Peculium base). The new
+  fields (`accountAge`, `accountIncome`, `safeItem`, `assetTracingElapsed`) are additive-optional.
+- Determinism (ADR-011): PI draws the RNG only when a trace fires, and the safe's copy skips its
+  carry-over draw, so an account without them leaves every stream byte-identical.
+- Balance: early gold loses its population-coupled floor (the loan book), and every loan-book
+  modifier source (Plutus, Vapula #60) now scales interest alone. See the README's Remaining list for
+  the follow-ups this opens.
 
 ---
 
