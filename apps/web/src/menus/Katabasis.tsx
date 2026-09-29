@@ -475,6 +475,13 @@ function StatuesPlace({
 }
 
 // ── The descent / ascent interstitial (Abyss style — the locked production transition) ───────────
+/** How long each interstitial holds, both directions ("Katabasis transitions" handoff). */
+export const TRANSIT_HOLD_MS = 5000;
+
+/**
+ * Katabasis on the way down, Anabasis on the way up, each with its Latin line beneath. Neither can
+ * be skipped: no click, button or key ends it early; it holds for exactly `TRANSIT_HOLD_MS`.
+ */
 function Transition({
   kind,
   onDone,
@@ -483,23 +490,25 @@ function Transition({
   onDone: () => void;
 }): ReactElement {
   const down = kind === 'descending';
+  // With no way to skip, the timer is the only exit: a re-render handing in a fresh `onDone` must
+  // not restart it, so it is armed once per mount and reads the latest callback through a ref.
+  const done = useRef(onDone);
   useEffect(() => {
-    const t = setTimeout(onDone, down ? 4200 : 3600);
+    done.current = onDone;
+  });
+  useEffect(() => {
+    const t = setTimeout(() => done.current(), TRANSIT_HOLD_MS);
     return () => clearTimeout(t);
-  }, [down, onDone]);
+  }, []);
   return (
-    <div className="scene transit transit--abyss" data-dir={down ? 'down' : 'up'} onClick={onDone}>
+    <div className="scene transit transit--abyss" data-dir={down ? 'down' : 'up'}>
       <div className="tr-abyss" aria-hidden="true" />
       <div className="transit-vignette" aria-hidden="true" />
-      <div className="transit-word">{down ? 'Katabasis' : 'Ascensus'}</div>
-      <div className="transit-sub">
-        {down
-          ? 'You lie still upon the altar; the soul slips and goes through the worn path.'
-          : 'You fall upwards, toward the light you betrayed.'}
+      <div className="transit-stack">
+        <div className="transit-word">{down ? 'Katabasis' : 'Anabasis'}</div>
+        <div className="transit-rule" aria-hidden="true" />
+        <div className="transit-sub">{down ? 'exspes in ima' : 'Auctus ex imis'}</div>
       </div>
-      <button type="button" className="transit-skip" onClick={onDone}>
-        Click anywhere to continue
-      </button>
     </div>
   );
 }

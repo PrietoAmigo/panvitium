@@ -2642,12 +2642,23 @@ body {
     #000 86%
   );
 }
-.katabasis-flow .transit-word {
+/* The title, a short ember rule and the Latin line, centred as one column over the abyss. */
+.katabasis-flow .transit-stack {
   position: relative;
   z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+.katabasis-flow .transit-word {
+  position: relative;
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.3em;
+  /* Balances the trailing letter-spacing so the word stays optically centred. */
+  padding-left: 0.3em;
+  line-height: 1;
   text-transform: uppercase;
   font-size: clamp(2rem, 6vw, 3.6rem);
   color: var(--ember);
@@ -2656,7 +2667,6 @@ body {
     0 0 12px rgba(255, 110, 60, 0.9);
   text-align: center;
   opacity: 1;
-  animation: kat-word-breathe 4s ease-in-out infinite;
 }
 @keyframes kat-word-breathe {
   0%,
@@ -2691,47 +2701,40 @@ body {
     transform: none;
   }
 }
+.katabasis-flow .transit-rule {
+  width: 64px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 90, 58, 0.6), transparent);
+}
+@keyframes kat-rule-in {
+  from {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
 .katabasis-flow .transit-sub {
-  position: absolute;
-  z-index: 5;
-  bottom: 16vh;
-  left: 0;
-  right: 0;
-  text-align: center;
   font-family: var(--font-inscribe);
-  font-style: italic;
-  color: var(--dim);
-  letter-spacing: 0.08em;
-  font-size: 1.08rem;
-  padding: 0 8vw;
-  text-wrap: pretty;
+  font-size: 1.375rem;
+  letter-spacing: 0.42em;
+  padding-left: 0.42em;
+  color: #b3aaa2;
+  text-shadow: 0 0 18px rgba(255, 50, 28, 0.35);
+  text-align: center;
   opacity: 1;
 }
 @keyframes kat-sub-in {
   from {
     opacity: 0;
+    letter-spacing: 0.9em;
   }
   to {
     opacity: 1;
+    letter-spacing: 0.42em;
   }
-}
-.katabasis-flow .transit-skip {
-  position: absolute;
-  z-index: 5;
-  bottom: 6vh;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-family: var(--font-inscribe);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  color: var(--faint);
-  background: none;
-  border: 0;
-  width: 100%;
-  cursor: pointer;
-  opacity: 1;
 }
 @media (prefers-reduced-motion: no-preference) {
   .katabasis-flow .transit-word {
@@ -2744,11 +2747,17 @@ body {
       kat-word-breathe 4s ease-in-out infinite,
       kat-word-in-up 1.4s ease both;
   }
-  .katabasis-flow .transit-sub {
-    animation: kat-sub-in 2s ease 0.5s both;
+  .katabasis-flow .transit-rule {
+    animation: kat-rule-in 1.2s ease 0.7s both;
   }
-  .katabasis-flow .transit-skip {
-    animation: kat-sub-in 2s ease 1.4s both;
+  .katabasis-flow .transit-sub {
+    animation: kat-sub-in 1.8s cubic-bezier(0.2, 0.6, 0.2, 1) 0.9s both;
+  }
+  .katabasis-flow .transit--abyss[data-dir='down'] .tr-abyss {
+    animation: kat-abyss-down 5s cubic-bezier(0.5, 0.05, 0.4, 1) both;
+  }
+  .katabasis-flow .transit--abyss[data-dir='up'] .tr-abyss {
+    animation: kat-abyss-up 5s cubic-bezier(0.3, 0.1, 0.3, 1) both;
   }
 }
 .katabasis-flow .tr-abyss {
@@ -2762,12 +2771,6 @@ body {
     rgba(8, 2, 3, 0.9) 64%,
     #050204 80%
   );
-}
-.katabasis-flow .transit--abyss[data-dir='down'] .tr-abyss {
-  animation: kat-abyss-down 4s cubic-bezier(0.5, 0.05, 0.4, 1) both;
-}
-.katabasis-flow .transit--abyss[data-dir='up'] .tr-abyss {
-  animation: kat-abyss-up 3.4s cubic-bezier(0.3, 0.1, 0.3, 1) both;
 }
 @keyframes kat-abyss-down {
   0% {

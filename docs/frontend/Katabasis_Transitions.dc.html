@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=EB+Garamond:ital,wght@0,400;0,500;1,400&amp;family=IM+Fell+English:ital@0;1&amp;family=IM+Fell+English+SC&amp;display=swap">
+<style>
+body{margin:0;background:#141112;color:#c9c4bc;font-family:'EB Garamond',Georgia,serif}
+a{color:#ff7a4a}a:hover{color:#ff5a3a}
+@keyframes kat-word-breathe{0%,100%{text-shadow:0 0 34px rgba(255,50,28,.7),0 0 12px rgba(255,110,60,.85)}50%{text-shadow:0 0 56px rgba(255,50,28,1),0 0 20px rgba(255,130,70,1)}}
+@keyframes kat-word-in{from{letter-spacing:.62em;transform:translateY(16px)}to{letter-spacing:.3em;transform:none}}
+@keyframes kat-word-in-up{from{letter-spacing:.62em;transform:translateY(-16px)}to{letter-spacing:.3em;transform:none}}
+@keyframes kat-sub-in{from{opacity:0;letter-spacing:.9em}to{opacity:1;letter-spacing:.42em}}
+@keyframes kat-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes kat-rule-in{from{transform:scaleX(0);opacity:0}to{transform:scaleX(1);opacity:1}}
+@keyframes kat-abyss-down{0%{transform:scale(2.4);opacity:.2}45%{opacity:1}100%{transform:scale(.55);opacity:.9}}
+@keyframes kat-abyss-up{0%{transform:scale(.4);opacity:.9}100%{transform:scale(2.6);opacity:.15}}
+</style>
+</helmet>
+
+<section style="padding:64px 64px 32px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;align-items:baseline;gap:20px;flex-wrap:wrap">
+    <h2 style="margin:0;font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:22px;letter-spacing:.18em;text-transform:uppercase;color:#d6cfc6">Turn 1 · Reworked</h2>
+    <button onClick="{{ replay }}" style="font-family:'IM Fell English SC',Georgia,serif;font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:#d6cfc6;background:#1e1718;border:1px solid #4a3a36;padding:8px 16px;cursor:pointer" style-hover="background:#2a2021">Replay both</button>
+  </div>
+  <div style="display:flex;gap:40px;flex-wrap:wrap">
+    <div id="1a" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;background:#a01e22;color:#fff;padding:3px 8px">1a</span><span style="font-family:'IM Fell English SC',serif;letter-spacing:.14em;color:#8f8780">Descent · 5 s, unskippable</span></div>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#050204;color:#c9c4bc">{{ downStage }}</div>
+    </div>
+    <div id="1b" style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:10px;align-items:center"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:13px;background:#a01e22;color:#fff;padding:3px 8px">1b</span><span style="font-family:'IM Fell English SC',serif;letter-spacing:.14em;color:#8f8780">Ascent · 5 s, unskippable</span></div>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#050204;color:#c9c4bc">{{ upStage }}</div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:32px 64px 64px;display:flex;flex-direction:column;gap:28px">
+  <h2 style="margin:0;font-family:'Cinzel',Georgia,serif;font-weight:600;font-size:22px;letter-spacing:.18em;text-transform:uppercase;color:#8f8780">Current (in the game today)</h2>
+  <div style="display:flex;gap:40px;flex-wrap:wrap">
+    <div id="0a" style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-family:'IM Fell English SC',serif;letter-spacing:.14em;color:#6a635c">Descending</span>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#050204;display:flex;align-items:center;justify-content:center">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 50%, rgba(190,30,18,.55), rgba(90,10,8,.35) 30%, rgba(8,2,3,.9) 64%, #050204 80%);transform:scale(.55);opacity:.9"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%, transparent 0%, rgba(120,14,14,.18) 45%, #000 86%)"></div>
+        <div style="position:relative;font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.3em;text-transform:uppercase;font-size:57.6px;color:#ff5a3a;text-shadow:0 0 40px rgba(255,50,28,.8), 0 0 12px rgba(255,110,60,.9);text-align:center">Katabasis</div>
+        <div style="position:absolute;bottom:115px;left:0;right:0;text-align:center;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;font-style:italic;color:#8f8780;letter-spacing:.08em;font-size:17.3px;padding:0 102px;text-wrap:pretty">You lie still upon the altar; the soul slips and goes through the worn path.</div>
+        <div style="position:absolute;bottom:43px;left:0;right:0;text-align:center;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;letter-spacing:.22em;text-transform:uppercase;font-size:11.2px;color:#6a635c">Click anywhere to continue</div>
+      </div>
+    </div>
+    <div id="0b" style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-family:'IM Fell English SC',serif;letter-spacing:.14em;color:#6a635c">Ascending</span>
+      <div style="position:relative;width:1280px;height:720px;overflow:hidden;background:#050204;display:flex;align-items:center;justify-content:center">
+        <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 50%, rgba(190,30,18,.55), rgba(90,10,8,.35) 30%, rgba(8,2,3,.9) 64%, #050204 80%);transform:scale(2.6);opacity:.15"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%, transparent 0%, rgba(120,14,14,.18) 45%, #000 86%)"></div>
+        <div style="position:relative;font-family:'Cinzel',Georgia,serif;font-weight:700;letter-spacing:.3em;text-transform:uppercase;font-size:57.6px;color:#ff5a3a;text-shadow:0 0 40px rgba(255,50,28,.8), 0 0 12px rgba(255,110,60,.9);text-align:center">Ascensus</div>
+        <div style="position:absolute;bottom:115px;left:0;right:0;text-align:center;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;font-style:italic;color:#8f8780;letter-spacing:.08em;font-size:17.3px;padding:0 102px;text-wrap:pretty">You fall upwards, toward the light you betrayed.</div>
+        <div style="position:absolute;bottom:43px;left:0;right:0;text-align:center;font-family:'IM Fell English SC','IM Fell English',Georgia,serif;letter-spacing:.22em;text-transform:uppercase;font-size:11.2px;color:#6a635c">Click anywhere to continue</div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;descentWord&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Katabasis&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Descent&quot;},&quot;descentSub&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;exspes in ima&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Descent&quot;},&quot;ascentWord&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Anabasis&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ascent&quot;},&quot;ascentSub&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Auctus ex imis&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ascent&quot;}}">
+class Component extends DCLogic {
+  state = { run: 0 };
+  stage(down, word, sub) {
+    const h = React.createElement;
+    const k = this.state.run;
+    const inscribe = "'IM Fell English SC','IM Fell English',Georgia,serif";
+    return h('div', { key: (down ? 'd' : 'u') + k, style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+      h('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(circle at 50% 50%, rgba(190,30,18,.55), rgba(90,10,8,.35) 30%, rgba(8,2,3,.9) 64%, #050204 80%)',
+        animation: down ? 'kat-abyss-down 5s cubic-bezier(.5,.05,.4,1) both' : 'kat-abyss-up 5s cubic-bezier(.3,.1,.3,1) both' } }),
+      h('div', { style: { position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 0%, rgba(120,14,14,.18) 45%, #000 86%)' } }),
+      h('div', { style: { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 26 } },
+        h('div', { style: { fontFamily: "'Cinzel',Georgia,serif", fontWeight: 700, letterSpacing: '.3em', paddingLeft: '.3em', textTransform: 'uppercase',
+          fontSize: 57.6, lineHeight: 1, color: '#ff5a3a', textAlign: 'center',
+          animation: `kat-word-breathe 4s ease-in-out infinite, ${down ? 'kat-word-in' : 'kat-word-in-up'} 1.4s ease both` } }, word),
+        h('div', { style: { width: 64, height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,90,58,.6), transparent)',
+          animation: 'kat-rule-in 1.2s ease .7s both' } }),
+        h('div', { style: { fontFamily: inscribe, fontSize: 22, letterSpacing: '.42em', paddingLeft: '.42em', color: '#b3aaa2', textAlign: 'center',
+          textShadow: '0 0 18px rgba(255,50,28,.35)', animation: 'kat-sub-in 1.8s cubic-bezier(.2,.6,.2,1) .9s both' } }, sub)
+      )
+    );
+  }
+  renderVals() {
+    const p = this.props;
+    return {
+      replay: () => this.setState(s => ({ run: s.run + 1 })),
+      downStage: this.stage(true, p.descentWord ?? 'Katabasis', p.descentSub ?? 'exspes in ima'),
+      upStage: this.stage(false, p.ascentWord ?? 'Anabasis', p.ascentSub ?? 'Auctus ex imis'),
+    };
+  }
+}
+</script>
+</body>
+</html>

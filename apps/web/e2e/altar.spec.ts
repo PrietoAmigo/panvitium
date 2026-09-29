@@ -62,6 +62,10 @@ test('arms on the first press, then falls into the descent among the Princes', a
   await expect(page.getByRole('button', { name: 'Status Quo' })).toHaveCount(0);
   await page.getByRole('button', { name: /Confirm the descent/ }).click();
   await expect(page.locator('.transit-word')).toHaveText('Katabasis');
+  await expect(page.locator('.transit-sub')).toHaveText('exspes in ima');
+  // The descent holds 5 s and cannot be skipped: a click on it changes nothing.
+  await page.locator('.transit').click();
+  await expect(page.locator('.transit')).toBeVisible();
   await expect(page.locator('.statue')).toHaveCount(8, { timeout: 10_000 });
 });
 

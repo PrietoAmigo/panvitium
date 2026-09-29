@@ -15,7 +15,7 @@ import { bn, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { KatabasisModal } from '../ui/KatabasisModal.js';
 import { App } from '../App.js';
-import { splitBoon } from './Katabasis.js';
+import { splitBoon, TRANSIT_HOLD_MS } from './Katabasis.js';
 import type { DegradedSceneProps } from './types.js';
 
 // The room's canvas pass needs a real 2D context (none under jsdom): stub it, keeping the props the
@@ -151,6 +151,81 @@ describe('Katabasis flow — orchestrator', () => {
     expect(container!.querySelector('.transit')?.getAttribute('data-dir')).toBe('down');
     expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
     expect(container!.querySelector('.ledger')).toBeNull();
+  });
+
+  it('the descent reads Katabasis over "exspes in ima": no closing sentence, nothing to skip', () => {
+    act(() => store().beginKatabasis());
+    render();
+    const transit = container!.querySelector('.transit')!;
+    expect(transit.querySelector('.transit-stack .transit-word')?.textContent).toBe('Katabasis');
+    expect(transit.querySelector('.transit-stack .transit-rule')).not.toBeNull();
+    expect(transit.querySelector('.transit-stack .transit-sub')?.textContent).toBe('exspes in ima');
+    // The long italic line and "Click anywhere to continue" are gone; no control of any kind.
+    expect(transit.textContent).not.toMatch(/altar|continue/i);
+    expect(transit.querySelector('.transit-skip')).toBeNull();
+    expect(transit.querySelectorAll('button').length).toBe(0);
+  });
+
+  it('holds the descent for exactly 5 s; a click or a re-render neither skips nor restarts it', () => {
+    vi.useFakeTimers();
+    try {
+      act(() => store().beginKatabasis());
+      render();
+      const transit = (): HTMLElement | null => container!.querySelector('.transit');
+      act(() => transit()!.click());
+      act(() => (container!.querySelector('.transit-word') as HTMLElement).click());
+      expect(transit()).not.toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      // A fresh state object re-renders the flow (a new `onDone`): the hold keeps its place.
+      act(() => patch({}));
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS - 3000 - 1);
+      });
+      expect(transit()?.getAttribute('data-dir')).toBe('down');
+      expect(container!.querySelector('.statue-field')).toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(transit()).toBeNull();
+      expect(container!.querySelector('.statue-field')).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rises through Anabasis over "Auctus ex imis", committing after exactly 5 s, unskippable', () => {
+    vi.useFakeTimers();
+    try {
+      act(() => store().beginKatabasis());
+      render();
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS);
+      });
+      click(/^Fall upwards/);
+      click(/^Let go your grip/);
+      const transit = (): HTMLElement | null => container!.querySelector('.transit');
+      expect(transit()?.getAttribute('data-dir')).toBe('up');
+      expect(container!.querySelector('.transit-word')?.textContent).toBe('Anabasis');
+      expect(container!.querySelector('.transit-sub')?.textContent).toBe('Auctus ex imis');
+      expect(transit()!.textContent).not.toMatch(/Ascensus|light you betrayed|continue/i);
+      expect(transit()!.querySelectorAll('button').length).toBe(0);
+      act(() => transit()!.click());
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS - 1);
+      });
+      // Still on the way up: the lifetime is not yet committed.
+      expect(store().katabasisPhase).toBe('menu');
+      expect((store().state as GameState).inKatabasis).toBe(true);
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect(store().katabasisPhase).toBe('recap');
+      expect((store().state as GameState).inKatabasis).not.toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('lists the eight Princes on the Ledger (fresh = none seated)', () => {
@@ -312,7 +387,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
       click('Press the sigil');
       click(/there is no return/);
       act(() => {
-        vi.advanceTimersByTime(4200);
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS);
       });
       expect(container!.querySelector('.statue-field')).not.toBeNull();
       expect(container!.querySelectorAll('.statue').length).toBe(8);

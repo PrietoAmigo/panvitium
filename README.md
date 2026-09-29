@@ -103,9 +103,24 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1244** (sim 614 · shared 79 · api 20 · web 531).
+**Current test count: 1247** (sim 614 · shared 79 · api 20 · web 534).
 
-> **Latest change — Economy retune: invocations, Sin skills, Indagatio/Emptio timers, base gold.**
+> **Latest change — UI: the Katabasis and Anabasis transitions (Claude Design).** From the delivered
+> "Katabasis transitions" handoff (archived in `docs/frontend/`): the descent and ascent
+> interstitials are reworked. The descent reads **Katabasis** with **exspes in ima** beneath it; the
+> ascent is renamed **Anabasis** (was "Ascensus") over **Auctus ex imis**. Title, a short 64 px ember
+> rule and the Latin line now sit as one centred column (`.transit-stack`); the line is set in IM
+> Fell English SC, upright, widely tracked, and settles in from a wider spacing. The long italic
+> sentence at the bottom and "Click anywhere to continue" are gone: both screens hold for exactly
+> **5 s** (`TRANSIT_HOLD_MS`; was 4.2 s down and 3.6 s up) and **cannot be skipped** (no click,
+> button or key). With the skip gone the timer is the only exit, so it is armed once per mount and
+> reads its callback through a ref: a re-render mid-hold can no longer restart it. The abyss zoom
+> runs over the full 5 s both ways, and every transition animation (the zoom included, which used to
+> play regardless) now sits behind `prefers-reduced-motion: no-preference`, so reduced motion shows
+> the screens still, holding the same 5 s. No sim, save or RNG change. Net **+3 tests** (web 531 →
+> 534), and the altar e2e now checks the descent's Latin line and that a click does not skip it.
+>
+> **Earlier change — Economy retune: invocations, Sin skills, Indagatio/Emptio timers, base gold.**
 > Player tuning, numbers only. **Lamia** generation is a third of before (+50/3 ≈ 16.67 reprobates/s
 > per copy, was +50); **Kobold** gold is a tenth (+10 gold/s per copy, was +100); the **Imp** cap
 > halves to **10** copies (was 20; a save already holding more keeps them until they dispel or the
