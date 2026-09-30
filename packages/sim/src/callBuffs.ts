@@ -195,6 +195,18 @@ export function applyCallEffects(
 }
 
 /**
+ * Record that the player answered (picked up) the incoming call `callId` (pure). Appends the id to the
+ * permanent `callsAnswered` list, which the web app's call draw reads to keep an answered once-only
+ * call (lore, easter egg) from ever ringing again. Idempotent: an already-recorded id returns the
+ * input state unchanged. Draws no RNG (ADR-011).
+ */
+export function markCallAnswered(state: GameState, callId: string): GameState {
+  const answered = state.callsAnswered ?? [];
+  if (answered.includes(callId)) return state;
+  return { ...state, callsAnswered: [...answered, callId] };
+}
+
+/**
  * Decay the active call buffs by `deltaSeconds` and drop any that have expired (pure). Called by the
  * tick after income/dynamics have consumed this tick's buffs, mirroring the Hand of Glory decay: a
  * buff active at the tick's start lifts the whole tick, then falls to expiry. Decays by `simDelta`

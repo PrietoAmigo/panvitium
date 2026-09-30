@@ -496,7 +496,7 @@ export const strings = {
       lemure:
         'Reduces Desidia drain by 6.25% (×0.9375) per copy (up to 4), scaled by invocation efficiency; upkeep takes 25% of influence gain each.',
       midas: '×10 gold gain, but ×10 the Apocalyptic chance.',
-      succubus: '+10000 reprobates/s, scaled by invocation efficiency.',
+      succubus: '+1000 reprobates/s, scaled by invocation efficiency.',
       doppelgaenger: '+100% player efficiency (upkeep: 50% of your influence gain).',
       specunitas: '×3 influence gain.',
       astiwihad:

@@ -220,6 +220,20 @@ describe('pickIncomingCall', () => {
     }
   });
 
+  it('never rings the Succubus again once answered, even when it is the only lore call left', () => {
+    // Friendly Fausto branch with his first letter in: the Succubus is eligible and is the only lore
+    // call, so it owns the whole 50% lore bucket. Answered (in the saved `callsAnswered`), it is gone.
+    const eligible = eligibleCallIds(freshCtx({ receivedEmailIds: new Set(['fausto-1']) }));
+    expect(eligible.has('succubus')).toBe(true);
+    // roll → the lore bucket (0.5*100 = 50, past the 49 of buffs), its only call.
+    expect(pickIncomingCall(seq([0.5, 0]), new Set(), eligible)).toBe('succubus');
+    const answered = new Set(['succubus']);
+    for (let i = 0; i < 200; i++) {
+      const drawn = pickIncomingCall(seq([Math.random(), Math.random()]), answered, eligible);
+      expect(drawn).not.toBe('succubus');
+    }
+  });
+
   it('restricts the draw to the eligible set (gated calls never ring)', () => {
     const eligible = eligibleCallIds(freshCtx()); // fresh: friendly, no descents, no mail
     expect(eligible.has('succubus')).toBe(false); // Fausto's first letter has not arrived yet

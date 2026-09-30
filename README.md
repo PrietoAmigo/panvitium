@@ -103,9 +103,24 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1256** (sim 614 · shared 79 · api 20 · web 543).
+**Current test count: 1266** (sim 620 · shared 81 · api 20 · web 545).
 
-> **Latest change — UI: the Ars Goetia page describes one invocation.** An invocation's page in
+> **Latest change — Retune (Imperium, Lamia, Succubus) and the once-only calls made permanent.**
+> Player tuning: **Imperium** costs **40 influence** (was 100, cut 2.5×); **Lamia** is capped at
+> **10** copies (was uncapped; a save already holding more keeps them until they dispel or the
+> Katabasis clears them, but cannot invoke another); the **Succubus** effect is a tenth of before
+> (**+1000 reprobates/s**, was +10000). Copy follows (the Succubus effect line). Bug fix: an answered
+> once-only call (lore, easter egg; the Succubus call on the friendly Fausto branch was the visible
+> case) rang again after every reload, because the "already answered" set lived only in a React ref
+> that reset each session; on the friendly branch the Succubus is often the only eligible lore call,
+> so it took the whole 50% lore bucket each time. Picking up now appends the call to a new permanent
+> top-level **`callsAnswered`** list (ADR-023 additive-optional, no schema bump; omitted from the
+> wire when empty, carried across Katabasis) through the sim's pure `markCallAnswered`, and the store
+> persists it at once; the draw reads the saved list, so an answered once-only call never rings
+> again across reloads, devices or lifetimes. A miss still records nothing. No RNG change. Net
+> **+10 tests** (sim 614 → 620, shared 79 → 81, web 543 → 545).
+>
+> **Earlier change — UI: the Ars Goetia page describes one invocation.** An invocation's page in
 > the grimoire now reads a **single copy's** effect, whatever the bound count: three Famas show one
 > Fama's +7.5% influence gain, not the stack's +22.5%. `invocationEffectText` takes a scope
 > (`'total'`, the default, or `'perCopy'`); the grimoire asks for `'perCopy'` (a diff of one copy

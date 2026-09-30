@@ -107,6 +107,11 @@ export function App(): ReactElement {
   const markDoppelgaengerSeen = useGameStore((s) => s.markDoppelgaengerSeen);
   // Applies a chosen incoming-call option's effects to the game state (docs/PANVITIUM-CALLS-IN.md).
   const answerCall = useGameStore((s) => s.answerCall);
+  // Records a picked-up call in the save, so an answered once-only call (lore, easter egg) never
+  // rings again, even after a reload.
+  const markCallAnswered = useGameStore((s) => s.markCallAnswered);
+  // The answered calls, as a stable primitive join (changes only when a call is picked up).
+  const answeredKey = useGameStore((s) => (s.state?.callsAnswered ?? []).join('|'));
   const [jumpscareArmed, setJumpscareArmed] = useState(false);
   const [jumpscare, setJumpscare] = useState(false);
   const doppelgaengerBound = summoned.includes('doppelgaenger');
@@ -166,7 +171,11 @@ export function App(): ReactElement {
       }),
     [katabasisCount, fcFriendly, inboxKey],
   );
-  const { ringing, answer } = useIncomingCall(callInEnabled, eligibleIds);
+  const answeredIds = useMemo(
+    () => new Set(answeredKey ? answeredKey.split('|') : []),
+    [answeredKey],
+  );
+  const { ringing, answer } = useIncomingCall(callInEnabled, eligibleIds, answeredIds);
   const callInView = answeredCall ? buildCallInView(answeredCall) : null;
   // Defensive: an answered id that has no view (would never happen for catalogue ids) must not strand
   // the line — clear it so a new call can ring.
@@ -203,8 +212,10 @@ export function App(): ReactElement {
       // A call is ringing on the desk: answering the incoming call takes priority over opening the
       // dial-out pad. Tapping the phone IS the answer gesture — raise the full-screen call-in stage.
       const id = answer();
-      if (id) setAnsweredCall(id);
-      else setPanel('phone');
+      if (id) {
+        markCallAnswered(id); // picked up: a once-only call never rings again (persisted)
+        setAnsweredCall(id);
+      } else setPanel('phone');
       audio.play('panel-open');
     } else {
       setPanel(action.panel);

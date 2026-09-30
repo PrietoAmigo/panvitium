@@ -32,7 +32,8 @@ const RECENT_WINDOW = 4;
 export interface IncomingCallController {
   /** The id of the call currently ringing, or null when the line is quiet. */
   ringing: string | null;
-  /** Answer the ringing call: stops the ring and returns its id (null if nothing was ringing). */
+  /** Answer the ringing call: stops the ring and returns its id (null if nothing was ringing). The
+   *  caller must record the id as answered (the store's `markCallAnswered`). */
   answer: () => string | null;
   /** Let the ringing call go without answering (decline / explicit hang-up before pickup). */
   dismiss: () => void;
@@ -44,10 +45,14 @@ export interface IncomingCallController {
  *   arrives and any live ring is released.
  * @param eligibleIds The ids whose per-call requirements are currently met (see `eligibleCallIds`).
  *   The draw is restricted to these, so a call only rings when the game state allows it.
+ * @param answeredIds The ids of every call the player has ever answered (the saved `callsAnswered`).
+ *   A once-only call (lore, easter egg) in this set is never drawn again. The caller records the
+ *   answer (the store's `markCallAnswered`) when `answer()` hands back the id.
  */
 export function useIncomingCall(
   enabled: boolean,
   eligibleIds: ReadonlySet<string>,
+  answeredIds: ReadonlySet<string>,
 ): IncomingCallController {
   const [ringing, setRinging] = useState<string | null>(null);
   const ringingRef = useRef<string | null>(null);
@@ -55,9 +60,10 @@ export function useIncomingCall(
   const eligibleRef = useRef(eligibleIds);
   eligibleRef.current = eligibleIds;
   // Once-only calls (lore, easter eggs) are consumed on ANSWER so they cannot be received twice; a
-  // missed one may still ring again later. Session-scoped (no save change — additive-optional under
-  // ADR-023 would persist this once the engine lands).
-  const seen = useRef<Set<string>>(new Set());
+  // missed one may still ring again later. The record lives in the save (`callsAnswered`), so it
+  // holds across reloads, devices and lifetimes; this is its latest value, read by the arrival roll.
+  const answeredRef = useRef(answeredIds);
+  answeredRef.current = answeredIds;
   // The ids of the most recent calls that have RUNG (answered or missed), newest first, capped at
   // RECENT_WINDOW — the recency cooldown so the same call never repeats within 5 calls.
   const recent = useRef<string[]>([]);
@@ -135,7 +141,7 @@ export function useIncomingCall(
       if (Math.random() >= ARRIVAL_CHANCE_PER_CHECK) return; // no call this tick
       const id = pickIncomingCall(
         Math.random,
-        seen.current,
+        answeredRef.current,
         eligibleRef.current,
         new Set(recent.current),
       );
@@ -163,8 +169,7 @@ export function useIncomingCall(
   const answer = useCallback((): string | null => {
     const id = ringingRef.current;
     if (!id) return null;
-    seen.current.add(id); // received → a once-only call won't ring again
-    endRing();
+    endRing(); // the caller records the answer (`markCallAnswered`), so a once-only call won't ring again
     return id;
   }, [endRing]);
 

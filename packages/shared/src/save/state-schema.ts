@@ -173,6 +173,9 @@ export const serializedGameStateSchema = z.object({
   // One-time Doppelgänger jumpscare seen-flag (presentation bookkeeping). Permanent; carried across
   // lifetimes so the scare never replays. Additive-optional (ADR-023): absent ≡ false.
   flagDoppelgaengerSeen: z.boolean().optional(),
+  // Answered incoming-call ids (presentation bookkeeping): an answered once-only call never rings
+  // again. Permanent; carried across lifetimes. Additive-optional (ADR-023): absent ≡ empty.
+  callsAnswered: z.array(z.string()).optional(),
   // Permanent ×2-per-stack player-efficiency multiplier from past Erinyes commits (03 §2.4).
   // Additive-optional (ADR-023); old saves default to 0.
   erinyesEfficiencyStacks: z.number().int().nonnegative().optional(),
@@ -325,6 +328,10 @@ export function serializeGameState(state: GameState): SerializedGameState {
     ...(state.flagFatherMad === true ? { flagFatherMad: true } : {}),
     ...(state.flagReubenDead === true ? { flagReubenDead: true } : {}),
     ...(state.flagDoppelgaengerSeen === true ? { flagDoppelgaengerSeen: true } : {}),
+    // Answered calls: omit when empty so fresh and pre-feature saves keep the prior wire form.
+    ...(state.callsAnswered && state.callsAnswered.length > 0
+      ? { callsAnswered: [...state.callsAnswered] }
+      : {}),
     ...(typeof state.erinyesEfficiencyStacks === 'number' && state.erinyesEfficiencyStacks > 0
       ? { erinyesEfficiencyStacks: state.erinyesEfficiencyStacks }
       : {}),
@@ -450,6 +457,10 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     ...(s.flagFatherMad === true ? { flagFatherMad: true } : {}),
     ...(s.flagReubenDead === true ? { flagReubenDead: true } : {}),
     ...(s.flagDoppelgaengerSeen === true ? { flagDoppelgaengerSeen: true } : {}),
+    // Answered calls: absent ≡ empty (conditional spread keeps the field optional under EOPT).
+    ...(s.callsAnswered && s.callsAnswered.length > 0
+      ? { callsAnswered: [...s.callsAnswered] }
+      : {}),
     ...(typeof s.erinyesEfficiencyStacks === 'number' && s.erinyesEfficiencyStacks > 0
       ? { erinyesEfficiencyStacks: s.erinyesEfficiencyStacks }
       : {}),

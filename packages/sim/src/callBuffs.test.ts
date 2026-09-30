@@ -9,8 +9,10 @@ import {
   applyCallEffects,
   advanceCallBuffs,
   callBuffMultipliers,
+  commitKatabasis,
   computeModifiers,
   grantDesidiaForOffline,
+  markCallAnswered,
   DESIDIA_PER_SECOND,
   tick,
   createInitialState,
@@ -231,5 +233,31 @@ describe('offline Desidia (re-homed doing-nothing buff, ADR-034)', () => {
     );
     expect(plain.desidia).toBeCloseTo(DESIDIA_PER_SECOND * 600, 9);
     expect(buffed.desidia).toBeCloseTo(DESIDIA_PER_SECOND * 600 * 3, 9);
+  });
+});
+
+describe('markCallAnswered — the permanent answered-calls record', () => {
+  it('appends the id in answer order, leaving the input untouched (pure)', () => {
+    const base = createInitialState('seed', 0);
+    expect(base.callsAnswered).toBeUndefined();
+    const one = markCallAnswered(base, 'succubus');
+    expect(one.callsAnswered).toEqual(['succubus']);
+    expect(base.callsAnswered).toBeUndefined();
+    expect(markCallAnswered(one, 'the-ward').callsAnswered).toEqual(['succubus', 'the-ward']);
+  });
+
+  it('is idempotent: an already-answered call returns the same state', () => {
+    const once = markCallAnswered(createInitialState('seed', 0), 'succubus');
+    expect(markCallAnswered(once, 'succubus')).toBe(once);
+  });
+
+  it('draws no RNG (the seeded stream is untouched)', () => {
+    const base = createInitialState('seed', 0);
+    expect(markCallAnswered(base, 'succubus').rngState).toBe(base.rngState);
+  });
+
+  it('survives Katabasis (an answered once-only call never rings in a later lifetime)', () => {
+    const answered = markCallAnswered(createInitialState('seed', 0), 'succubus');
+    expect(commitKatabasis(answered).state.callsAnswered).toEqual(['succubus']);
   });
 });

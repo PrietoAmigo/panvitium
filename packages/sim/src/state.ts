@@ -358,6 +358,15 @@ export interface GameState {
    */
   flagDoppelgaengerSeen?: boolean;
   /**
+   * Ids of the incoming calls the player has answered (picked up), deduped, in answer order. The
+   * once-only calls (lore + easter eggs, docs/PANVITIUM-CALLS-IN.md "Once-only") are drawn only while
+   * absent from this list, so an answered one never rings again: not after a reload, not on another
+   * device, not in a later lifetime. Presentation bookkeeping owned by the web app, recorded through
+   * `markCallAnswered`. Permanent (carried across Katabasis), additive-optional on the wire (ADR-023);
+   * absent ≡ empty.
+   */
+  callsAnswered?: string[];
+  /**
    * True while the player is mid-descent — the Katabasis menu is open and allocation is underway
    * (02 §6). The lifetime is frozen: `tick` runs no simulation when this is set, so nothing accrues
    * (a reload mid-descent resumes the menu rather than fast-forwarding a torn-down lifetime). Set by

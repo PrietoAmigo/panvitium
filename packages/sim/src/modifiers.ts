@@ -336,7 +336,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const arachneCount = inv.arachne ?? 0; // each: +1 influence/s (× invEff)
   const blobCount = inv.blob ?? 0; // each: +0.00625 desidia/s (× invEff)
   const morpheusCount = inv.morpheus ?? 0; // each: +0.001 desidia per cost-consumed reprobate (× invEff)
-  const hasSuccubus = (inv.succubus ?? 0) > 0; // apex Luxuria: +10000 reprobates/s (× invEff)
+  const hasSuccubus = (inv.succubus ?? 0) > 0; // apex Luxuria: +1000 reprobates/s (× invEff)
   const hasMidas = (inv.midas ?? 0) > 0; // ×10 gold, ×10 Apocalyptic
   const plutusCount = inv.plutus ?? 0; // each: +15% Faeneratio output (× invEff)
   const lemureCount = inv.lemure ?? 0; // each: ×0.9375 Desidia drain (× invEff, ADR-033)
@@ -382,7 +382,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const BANSHEE_SUICIDES_PER_SECOND = 1; // each Banshee: +1 suicide/s
   const EMPUSA_GENERATION_PER_SECOND = 1; // each Empusa: +1 reprobate/s
   const LAMIA_GENERATION_PER_SECOND = 50 / 3; // each Lamia: +50/3 (≈16.67) reprobates/s (player tuning: ÷3)
-  const SUCCUBUS_GENERATION_PER_SECOND = 10000; // Succubus: +10000 reprobates/s
+  const SUCCUBUS_GENERATION_PER_SECOND = 1000; // Succubus: +1000 reprobates/s (player tuning: ÷10)
   const KOBOLD_GOLD_PER_SECOND = 10; // each Kobold: +10 gold gain/s (player tuning: ÷10)
   const ARACHNE_INFLUENCE_PER_SECOND = 0.25; // each Arachne: +0.25 influence/s
   const BLOB_DESIDIA_PER_SECOND = 0.00625; // each Blob: +0.00625 desidia/s
@@ -524,7 +524,7 @@ export function computeModifiers(state: GameState): Modifiers {
     flatBaseMurderRatePerSecond:
       flatGen.murderRate + HARPY_MURDER_FACTOR * invEffFor('ira') * harpyCount,
     // Flat absolute births/s (before the generation multiplier): Ose #57 + the Luxuria reprobate
-    // invocations — each Empusa (+1/s), each Lamia (+50/3/s), Succubus (+10000/s), all × invEff.
+    // invocations — each Empusa (+1/s), each Lamia (+50/3/s), Succubus (+1000/s), all × invEff.
     flatGenerationPerSecond:
       flatGen.generation +
       (EMPUSA_GENERATION_PER_SECOND * empusaCount +
