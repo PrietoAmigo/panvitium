@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState, currentInvokingPower, MALEFICIA } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import { buildGoetia } from './invocations.js';
+import { invocationEffectText } from './invocationEffect.js';
 
 // Equip the full maleficia catalog so every invocation clears its visibility threshold, letting the
 // adapter's mapping be exercised across the whole roster (locked + unlocked, illustrated + not).
@@ -120,5 +121,44 @@ describe('buildGoetia cost line (every invocation cost is cut, ADR-035/036)', ()
   it("shows Aurevora's starting drain cut by Black Vessel (100 to 93 gold/s)", () => {
     expect(cost(withRelics([]), 'aurevora')).toContain('drains 100 gold/s');
     expect(cost(withRelics(['black_vessel']), 'aurevora')).toContain('drains 93 gold/s');
+  });
+});
+
+describe('buildGoetia describes ONE invocation, never the bound stack', () => {
+  // Bind several copies of the stackables straight on state; the page must read the same as a
+  // single copy (the unbound preview), while the Analytics total still sums the stack.
+  const stacked = (invocations: Record<string, number>) => {
+    const base = richState();
+    return { ...base, lifetime: { ...base.lifetime, invocations } };
+  };
+  const entry = (state: ReturnType<typeof richState>, id: string) =>
+    buildGoetia(state).entries.find((e) => e.id === id)!;
+
+  it.each(['fama', 'kobold', 'imp', 'lamia', 'lemure', 'upir', 'narcissus', 'wendigo'])(
+    '%s: effect and cost are per copy, whatever the bound count',
+    (id) => {
+      const one = entry(richState(), id);
+      const three = entry(stacked({ [id]: 3 }), id);
+      expect(three.active).toBe(3);
+      expect(three.effect).toBe(one.effect);
+      expect(three.cost).toBe(one.cost);
+    },
+  );
+
+  it("Fama reads one copy's +7.5% influence gain on the page, the stack's total elsewhere", () => {
+    // No invocation-efficiency relic here (richState's Black Candles would lift the 7.5%): Obsidian
+    // Mirror (8) + Witch Bottle (2) = 10 invoking power reveals Fama at its catalog magnitude.
+    const base = createInitialState('goetia-per-copy', 0);
+    const s = {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        maleficia: ['obsidian_mirror', 'witch_bottle'],
+        invocations: { fama: 3 },
+      },
+    };
+    expect(entry(s, 'fama').effect).toBe('+7.5% influence gain');
+    // The Analytics line keeps the three-copy total (+22.5%, shown rounded as +23%).
+    expect(invocationEffectText(s, 'fama')).toBe('+23% influence gain');
   });
 });

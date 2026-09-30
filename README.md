@@ -103,9 +103,17 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1247** (sim 614 · shared 79 · api 20 · web 534).
+**Current test count: 1256** (sim 614 · shared 79 · api 20 · web 543).
 
-> **Latest change — UI: the Katabasis and Anabasis transitions (Claude Design).** From the delivered
+> **Latest change — UI: the Ars Goetia page describes one invocation.** An invocation's page in
+> the grimoire now reads a **single copy's** effect, whatever the bound count: three Famas show one
+> Fama's +7.5% influence gain, not the stack's +22.5%. `invocationEffectText` takes a scope
+> (`'total'`, the default, or `'perCopy'`); the grimoire asks for `'perCopy'` (a diff of one copy
+> against none, every other invocation left bound), while the Analytics Actions tab keeps the live
+> total of every bound copy. The cost line was already one copy's upkeep; it is now pinned alongside
+> the effect. No sim, save or RNG change. Net **+9 tests** (web 534 → 543).
+>
+> **Earlier change — UI: the Katabasis and Anabasis transitions (Claude Design).** From the delivered
 > "Katabasis transitions" handoff (archived in `docs/frontend/`): the descent and ascent
 > interstitials are reworked. The descent reads **Katabasis** with **exspes in ima** beneath it; the
 > ascent is renamed **Anabasis** (was "Ascensus") over **Auctus ex imis**. Title, a short 64 px ember

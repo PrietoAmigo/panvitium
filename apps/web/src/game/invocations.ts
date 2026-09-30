@@ -36,7 +36,8 @@ export interface GoetiaView {
 }
 
 /**
- * The grimoire's cost line, showing the REAL CURRENT per-copy upkeep — every amount is softened by
+ * The grimoire's cost line, showing the REAL CURRENT per-copy upkeep (one invocation's cost, never
+ * multiplied by the bound count, matching the per-copy effect line) — every amount is softened by
  * the live invocation cost cuts (`invocationCostMul`: the Orobas #55 / Zepar #16 / Andrealphus #65
  * channel and Black Vessel), exactly as `invocationUpkeep` charges it, so what the grimoire shows is
  * what a copy actually costs now. Aurevora's cost is its exponential gold drain (apex.ts), softened
@@ -101,7 +102,9 @@ export function buildGoetia(state: GameState): GoetiaView {
     const flavour = INVOCATION_BY_ID[id]; // design art/lore for the illustrated entries
     // Effect is a MECHANIC, so it comes from the authoritative sim (same source as the Analytics
     // Invocations tab) — never the static menus.data.ts copy, which went stale. Lore/art stay flavour.
-    const effect = invocationEffectText(state, id);
+    // The page describes ONE invocation, like its cost line: a single copy's effect, never the
+    // summed stack (that total is the Analytics tab's line).
+    const effect = invocationEffectText(state, id, 'perCopy');
     const lore = flavour?.lore ?? '';
     entries.push({
       id,
