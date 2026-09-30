@@ -3,8 +3,10 @@
 // two can never drift. Each line is the LIVE quantified magnitude, computed by diffing
 // `computeModifiers` with and without the invocation, so it reflects the REAL CURRENT effect after
 // every invocation-efficiency increase/decrease (Ira's Retribution, Black Candles, the per-Sin
-// sigils). Effects that are not modifier-bundle magnitudes (Astiwihad's world-still carry-over,
-// Erinyes's kill-all) fall back to the static, number-baked catalog string.
+// sigils). The Analytics tab reads the TOTAL of every bound copy; the grimoire reads ONE copy's
+// effect (player request: its page describes a single invocation, not the whole bound stack).
+// Effects that are not modifier-bundle magnitudes (Astiwihad's world-still carry-over, Erinyes's
+// kill-all) fall back to the static, number-baked catalog string.
 import { strings } from '@panvitium/shared';
 import {
   AUREVORA_BASE_GOLD_DRAIN_PER_SECOND,
@@ -27,15 +29,22 @@ export function aurevoraDrainText(state: GameState): string {
 }
 
 /**
- * The live quantified effect line for a passive/modifier invocation, by diffing `computeModifiers`
- * with `max(1, boundCount)` copies against 0 copies — for a bound invocation this is its full current
- * contribution; for an unbound one it is what a single copy would add now (so the grimoire shows a
- * real magnitude before you summon it). Structural apexes (astiwihad/erinyes) fall through to the
- * static catalog string.
+ * Whose effect a line quantifies: `'total'` — every bound copy together (at least one, so an unbound
+ * entry still reads a real magnitude); `'perCopy'` — a single copy, whatever the bound count.
  */
-function passiveEffectText(state: GameState, id: string): string {
+export type InvocationEffectScope = 'total' | 'perCopy';
+
+/**
+ * The live quantified effect line for a passive/modifier invocation, by diffing `computeModifiers`
+ * with `n` copies against 0 copies, every OTHER invocation left as bound. For `'total'`, `n` is
+ * `max(1, boundCount)`: a bound invocation's full current contribution, or what a single copy would
+ * add now when none is bound. For `'perCopy'`, `n` is 1: what one copy contributes, so a stack of
+ * three Famas still reads one Fama's +7.5%. Structural apexes (astiwihad/erinyes) fall through to
+ * the static catalog string.
+ */
+function passiveEffectText(state: GameState, id: string, scope: InvocationEffectScope): string {
   const L = strings.invocations.effectLabels;
-  const n = Math.max(1, activeInvocationCount(state, id));
+  const n = scope === 'perCopy' ? 1 : Math.max(1, activeInvocationCount(state, id));
   const w = computeModifiers({
     ...state,
     lifetime: { ...state.lifetime, invocations: { ...state.lifetime.invocations, [id]: n } },
@@ -138,11 +147,16 @@ function passiveEffectText(state: GameState, id: string): string {
 }
 
 /**
- * The authoritative effect line for an invocation, by id. Returns '' for an unknown id or an effect
- * with no measurable magnitude.
+ * The authoritative effect line for an invocation, by id: the total of every bound copy by default,
+ * or a single copy's effect with `scope: 'perCopy'`. Returns '' for an unknown id or an effect with
+ * no measurable magnitude.
  */
-export function invocationEffectText(state: GameState, id: string): string {
+export function invocationEffectText(
+  state: GameState,
+  id: string,
+  scope: InvocationEffectScope = 'total',
+): string {
   const def = invocationById(id);
   if (!def) return '';
-  return passiveEffectText(state, id);
+  return passiveEffectText(state, id, scope);
 }

@@ -13,7 +13,7 @@ export interface GoetiaEntry {
   name: string;
   /** Rank numeral. FLAVOUR. */
   rank: string;
-  /** Pre-formatted soul/power cost, e.g. '12 Souls'. REAL. */
+  /** Pre-formatted per-second upkeep of ONE copy, e.g. '10 Gold/s'. REAL. */
   cost: string;
   /** Pre-formatted max-active cap, e.g. '1', '4', or 'Unlimited'. REAL. */
   cap: string;
@@ -21,7 +21,7 @@ export interface GoetiaEntry {
   isApex: boolean;
   /** Pre-formatted gate label, e.g. 'Gula III'. REAL. Omit if ungated. */
   gate?: string;
-  /** Effect copy. REAL string where one exists, else omit. */
+  /** Effect of ONE copy (never the bound stack's total). REAL string where one exists, else omit. */
   effect?: string;
   /** Lore prose. FLAVOUR. */
   lore?: string;
