@@ -264,6 +264,26 @@ describe('flagDoppelgaengerSeen — ADR-023 additive-optional round-trip', () =>
   });
 });
 
+describe('callsAnswered — ADR-023 additive-optional round-trip', () => {
+  it('(a/b) a fresh save omits it from the wire, and absent ≡ empty at load', () => {
+    const fresh = createInitialState('seed', 0);
+    expect('callsAnswered' in serializeGameState(fresh)).toBe(false);
+    expect(deserializeGameState(serializeGameState(fresh)).callsAnswered).toBeUndefined();
+    // An explicit empty list is written as absent too (the minimal wire form).
+    expect('callsAnswered' in serializeGameState({ ...fresh, callsAnswered: [] })).toBe(false);
+  });
+
+  it('(c) a populated list round-trips exactly, in order', () => {
+    const answered: GameState = {
+      ...createInitialState('seed', 0),
+      callsAnswered: ['succubus', 'the-cycle-turns'],
+    };
+    const wire = serializeGameState(answered);
+    expect(wire.callsAnswered).toEqual(['succubus', 'the-cycle-turns']);
+    expect(deserializeGameState(wire).callsAnswered).toEqual(['succubus', 'the-cycle-turns']);
+  });
+});
+
 describe('desidia + desidiaActive — ADR-033 additive-optional round-trip', () => {
   it('(a/b) a fresh save omits both from the wire (absent ≡ 0 / false)', () => {
     const fresh = createInitialState('seed', 0);

@@ -26,6 +26,7 @@ import {
   invoke,
   dispel,
   markDoppelgaengerSeen as markDoppelgaengerSeenSim,
+  markCallAnswered as markCallAnsweredSim,
   assignAcolyteToAction,
   unassignAcolyteFromAction,
   setAutoRepeat,
@@ -332,6 +333,13 @@ interface GameStore {
    * debounced autosave (ADR-006), like `act` / `summon`.
    */
   answerCall: (callId: string, choiceIndex: number) => void;
+  /**
+   * Record that the player picked up the incoming call `callId` (docs/PANVITIUM-CALLS-IN.md
+   * "Once-only"). Appends it to the permanent `callsAnswered` list, so an answered once-only call
+   * (lore, easter egg) never rings again, and persists at once so a reload cannot replay it.
+   * Idempotent.
+   */
+  markCallAnswered: (callId: string) => void;
   /** Serialize the current game to a portable save string, or null if no game is loaded. */
   exportSave: () => string | null;
   /** Replace the current game with a pasted save string. Returns false if it isn't a valid save. */
@@ -779,6 +787,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!effects || effects.length === 0) return;
     // Tag the timed buffs with this call, so the buffs HUD can name their source.
     set({ state: applyCallEffects(current, effects, callId), notice: null });
+  },
+
+  markCallAnswered: (callId) => {
+    const current = get().state;
+    if (!current) return;
+    const next = markCallAnsweredSim(current, callId);
+    if (next === current) return; // already recorded
+    set({ state: next });
+    // Persist immediately (like the Doppelgänger flag): the record is what keeps an answered once-only
+    // call from ringing again, so it must not wait on the debounced autosave and be lost to a reload.
+    get().persist();
   },
 
   exportSave: () => {

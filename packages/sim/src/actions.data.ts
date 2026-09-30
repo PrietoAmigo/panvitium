@@ -135,7 +135,7 @@ export const ACTIONS: Record<string, ActionDef> = {
     // flock) — a short cast for its big influence price.
     baseTimeSeconds: 10,
     category: 'suasio',
-    cost: { influence: 100 },
+    cost: { influence: 40 }, // sheet 100; cut 2.5× (player tuning request)
     weights: IMPERIUM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: 3, // opens at max Sin level III

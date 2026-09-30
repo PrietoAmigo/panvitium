@@ -691,6 +691,19 @@ describe('gameStore — invocations', () => {
   });
 });
 
+describe('gameStore — answered incoming calls', () => {
+  it('markCallAnswered records the call (idempotent) and it survives a reload', () => {
+    expect(store().state?.callsAnswered).toBeUndefined();
+    store().markCallAnswered('succubus');
+    store().markCallAnswered('succubus'); // idempotent: recorded once
+    expect(store().state?.callsAnswered).toEqual(['succubus']);
+    // Persisted at once (no autosave wait): a reload re-reads it, so the call can never ring again.
+    useGameStore.setState({ ready: false });
+    store().init();
+    expect(store().state?.callsAnswered).toEqual(['succubus']);
+  });
+});
+
 describe('gameStore — Panvitium', () => {
   function unlockAllSins(): void {
     const s = store().state as GameState;

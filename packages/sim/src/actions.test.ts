@@ -147,6 +147,10 @@ describe('resolveImperium', () => {
     expect(ACTIONS.imperium!.baseTimeSeconds).toBe(10);
   });
 
+  it('costs 40 influence (player tuning: the sheet 100, cut 2.5×)', () => {
+    expect(ACTIONS.imperium!.cost).toEqual({ influence: 40 });
+  });
+
   it('good adds 100–1000 reprobates (the fixed player-controlled outcome is retired)', () => {
     const n = resolveImperium(fresh(), 'good', rng()).lifetime.reprobates;
     expect(n).toBeGreaterThanOrEqual(100);

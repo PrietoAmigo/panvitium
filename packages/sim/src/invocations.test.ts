@@ -101,6 +101,7 @@ describe('Invocation catalog', () => {
       ['imp', 'ira', 3, 1, 10],
       ['narcissus', 'superbia', 3, 1, 10],
       ['upir', 'gula', 4, 2, undefined], // stackable
+      ['lamia', 'luxuria', 4, 2, 10], // player tuning: capped at 10 (was uncapped)
       ['behemoth', 'superbia', 4, 2, 10],
       ['lemure', 'acedia', 6, 2, 4],
       ['midas', 'avaritia', 7, 3, 1],
@@ -256,6 +257,16 @@ describe('invoke / dispel', () => {
     expect(activeInvocationCount(r2.state, 'plutus')).toBe(2);
   });
 
+  it('refuses an eleventh Lamia (capped at 10)', () => {
+    const s = withSin(withPower(fresh(), 4), 'luxuria', 2);
+    const r9 = invoke(withInvocation(s, 'lamia', 9), 'lamia');
+    if (!r9.ok) throw new Error('the tenth Lamia should bind');
+    expect(activeInvocationCount(r9.state, 'lamia')).toBe(10);
+    const r10 = invoke(r9.state, 'lamia');
+    expect(r10.ok).toBe(false);
+    if (!r10.ok) expect(r10.reason).toMatch(/limit/);
+  });
+
   it('enforces the maxActive cap on apex entities', () => {
     const s = withSin(withPower(fresh(), 12), 'superbia', 3);
     const r1 = invoke(s, 'doppelgaenger'); // free, max 1
@@ -329,7 +340,7 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     ).toBeCloseTo(100 / 3, 6); // 2 × 50/3
     expect(
       computeModifiers(withInvocation(fresh(), 'succubus', 1)).flatGenerationPerSecond,
-    ).toBeCloseTo(10000, 6);
+    ).toBeCloseTo(1000, 6);
     expect(computeModifiers(withInvocation(fresh(), 'kobold', 3)).flatGoldPerSecond).toBeCloseTo(
       30,
       6,

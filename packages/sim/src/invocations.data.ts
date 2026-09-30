@@ -121,9 +121,10 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sin: 'luxuria',
     invokingPower: 4,
     sinLevel: 2,
+    maxActive: 10, // player tuning: capped at 10 (was uncapped)
     upkeep: { influence: 5 }, // 5 influence/s
-    // Stackable. Effect (modifiers.ts → flatGenerationPerSecond): +50/3 (≈16.67) reprobates/s per
-    // copy, scaled by invocation efficiency. (Player tuning: a third of the former +50/s.)
+    // Effect (modifiers.ts → flatGenerationPerSecond): +50/3 (≈16.67) reprobates/s per copy, scaled
+    // by invocation efficiency. (Player tuning: a third of the former +50/s.)
   },
   behemoth: {
     id: 'behemoth',
@@ -218,7 +219,8 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 3,
     maxActive: 1,
     upkeep: { goldGainFraction: 0.99 }, // 99% of gold gain/s
-    // Effect (modifiers.ts → flatGenerationPerSecond): +10000 reprobates/s, scaled by invocation efficiency.
+    // Effect (modifiers.ts → flatGenerationPerSecond): +1000 reprobates/s, scaled by invocation
+    // efficiency. (Player tuning: a tenth of the former +10000/s.)
   },
   specunitas: {
     id: 'specunitas',
