@@ -147,12 +147,12 @@ describe('Astiwihad freeze halts runners and blocks initiations', () => {
       lifetime: {
         ...s.lifetime,
         invocations: { astiwihad: 1 },
-        acolytes: [{ id: 1, assignedAction: 'caedes', remainingSeconds: 10 }],
+        acolytes: [{ id: 1, assignedAction: 'suggestion', remainingSeconds: 10 }],
       },
     };
     const r = tick(frozen, 3600);
     expect(r.events).toEqual([]);
-    expect(totalReprobates(r.state)).toBe(1000); // no culls
+    expect(totalReprobates(r.state)).toBe(1000); // no resolutions
     expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(10); // timer untouched
 
     expect(startAction(frozen, 'suggestion').ok).toBe(false);

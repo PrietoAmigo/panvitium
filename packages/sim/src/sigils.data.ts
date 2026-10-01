@@ -107,13 +107,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 13,
     name: 'Beleth',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +Decimatio positive outcome chance.
-    effect: {
-      kind: 'categoryTier',
-      category: 'decimatio',
-      tiers: ['stellar', 'excellent', 'good'],
-      direction: 'increase',
-    },
+    // ADR-038: dormant. It lifted Decimatio positive outcome chance (Sigils sheet rev 2026-06-12);
+    // that category is retired, so the seal awaits a re-home.
+    effect: { kind: 'inert' },
   },
   14: {
     id: 14,
@@ -175,20 +171,17 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 21,
     name: 'Marax',
     coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
-    // ADR-034: +Decimatio action efficiency (composes with Raum #40).
-    effect: { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'increase' },
+    // ADR-038: dormant. It lifted Decimatio action efficiency (ADR-034); that category is retired,
+    // so the seal awaits a re-home.
+    effect: { kind: 'inert' },
   },
   22: {
     id: 22,
     name: 'Ipos',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): −Decimatio negative outcome chance.
-    effect: {
-      kind: 'categoryTier',
-      category: 'decimatio',
-      tiers: ['bad', 'terrible', 'apocalyptic'],
-      direction: 'decrease',
-    },
+    // ADR-038: dormant. It softened Decimatio negative outcome chance (Sigils sheet rev
+    // 2026-06-12); that category is retired, so the seal awaits a re-home.
+    effect: { kind: 'inert' },
   },
   23: {
     id: 23,
@@ -339,22 +332,18 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 40,
     name: 'Raum',
     coefficient: 1,
-    // ADR-035: a tradeoff seal, the mirror of Dantalion #71: lifts Decimatio efficiency while it
-    // dampens Suasio efficiency, both at the seal's single strength.
-    effect: {
-      kind: 'composite',
-      effects: [
-        { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'increase' },
-        { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'decrease' },
-      ],
-    },
+    // ADR-038: dormant. It was a tradeoff seal (ADR-035): +Decimatio efficiency for −Suasio
+    // efficiency. With Decimatio retired only the Suasio penalty would remain, a pure curse, so the
+    // whole seal sleeps until it is re-homed.
+    effect: { kind: 'inert' },
   },
   41: {
     id: 41,
     name: 'Focalor',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +chance to duplicate the output of Decimatio.
-    effect: { kind: 'duplicateOutput', category: 'decimatio' },
+    // ADR-038: dormant. It duplicated Decimatio output (Sigils sheet rev 2026-06-12); that category
+    // is retired, so the seal awaits a re-home.
+    effect: { kind: 'inert' },
   },
   42: {
     id: 42,
@@ -535,13 +524,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 64,
     name: 'Haures',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +Stellar chance for Decimatio.
-    effect: {
-      kind: 'categoryTier',
-      category: 'decimatio',
-      tiers: ['stellar'],
-      direction: 'increase',
-    },
+    // ADR-038: dormant. It lifted Decimatio Stellar chance (Sigils sheet rev 2026-06-12); that
+    // category is retired, so the seal awaits a re-home.
+    effect: { kind: 'inert' },
   },
   65: {
     id: 65,
@@ -599,15 +584,10 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 71,
     name: 'Dantalion',
     coefficient: 1,
-    // ADR-035: a tradeoff seal, the mirror of Raum #40: lifts Suasio efficiency while it dampens
-    // Decimatio efficiency, both at the seal's single strength.
-    effect: {
-      kind: 'composite',
-      effects: [
-        { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'increase' },
-        { kind: 'modifier', field: 'decimatioEfficiencyMul', direction: 'decrease' },
-      ],
-    },
+    // ADR-035 made it a tradeoff seal (+Suasio efficiency for −Decimatio efficiency, Raum #40's
+    // mirror). ADR-038 retired Decimatio, so only the Suasio lift remains: the seal has lost its
+    // cost and awaits a rebalance.
+    effect: { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'increase' },
   },
   72: {
     id: 72,

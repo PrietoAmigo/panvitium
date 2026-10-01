@@ -29,7 +29,7 @@ Each Prince is a school of vice with its own temper, pacing, and economy
 | **Asmodeus** | *Luxuria* | Lust | Seduction | Increases the reprobate generation rate. | Multiplies overall *Suasio* efficiency per level; unlocks the *Suasio* actions and their toggles. |
 | **Mammon** | *Avaritia* | Greed | Golden Hand | Increases the gold gain rate. | Increases the Katabasis remaining-gold percentage per level. |
 | **Leviathan** | *Tristitia* | Sorrow | Resignation | Increases acolyte efficiency. | Increases the Katabasis remaining-reprobate percentage per level. |
-| **Satan** | *Ira* | Wrath | Retribution | Increases invocation efficiency. | Multiplies overall *Decimatio* efficiency per level; unlocks the *Decimatio* actions and their toggles. |
+| **Satan** | *Ira* | Wrath | Retribution | Increases invocation efficiency. | **None** (an empty slot since ADR-038 retired *Decimatio*, whose efficiency it multiplied). Its levels still count toward the max-Sin-level gates. |
 | **Belphegor** | *Acedia* | Sloth | Procrastination | Increases offline player efficiency. | Each level applies a compounding multiplier to offline gains, growing with both the offline stretch and the level (curve in the spreadsheet; its time input saturates per ADR-004's amendment). |
 | **Rosier** | *Vanagloria* | Vainglory | Acclaim | Increases maximum influence. | Multiplies the influence gain rate per level. |
 | **Lucifer** | *Superbia* | Pride | Morning Star | Increases overall Stellar outcome probability. | Increases the Katabasis remaining-maleficia chance per level. |
@@ -58,21 +58,13 @@ Per-action probabilities, outcomes, costs, and durations are in the `Suasio` she
 and toggle gates are keyed to the player's highest Sin level (player tuning), not the sheet's
 *Luxuria* levels.
 
-### 2.2 *Decimatio* — Culling
+### 2.2 *Decimatio* — Culling *(retired, ADR-038)*
 
-Three actions: *Caedes*, *Pogrom*, and *Purgatio*, gated and toggle-gated by the player's highest
-Sin level across all Sins (player tuning: the max Sin level, not *Ira* specifically).
-Efficiency mode is **`cost-outcome`** (`02 §3`, per the sheet): it modifies *Decimatio* costs and
-positive outcomes by the same percentage and does not affect action time.
-
-- **Caedes** — the early soul source; single kills with occasional sprees.
-- **Pogrom** — the mass cull; percentage-of-population kills, heavier mishaps.
-- **Purgatio** — soul farming at scale; enormous yields against ruinous Terrible/Apocalyptic
-  outcomes (total gold loss, total loss).
-
-Every kill mints one soul (`02 §9`). Per-action tables are in the `Decimatio` sheet. Note the
-tension the economy creates: every reprobate culled is a debtor the *Mutuum* loan book no longer
-earns from (§2.3) — unless Escheat has been signed, in which case the estate pays once.
+**Removed from the game.** Its three rites (*Caedes*, the early soul source; *Pogrom*, the mass
+cull; *Purgatio*, soul farming at scale) are gone, along with the PC's *Decimatio* program, the
+`decimatioEfficiencyMul` lever, Ira's per-level effect and the Decimatio half of Retribution. The
+seals that served only *Decimatio* are dormant (§5). Souls now come only from deaths by suicide
+and murder (`02 §9`). The `Decimatio` sheet is no longer read by the game.
 
 ### 2.3 *Depraedatio* — Exploiting
 
@@ -183,10 +175,10 @@ on Katabasis. Numbers live in the `Invocatio` sheet; the catalog:
 | **Morpheus** | *Acedia* | Apex | Full freeze; the next Katabasis keeps 100% of gold and maleficia and the *Emptio* list. Floats over the Altar, overrides other silhouettes. |
 | **Plutus** | *Avaritia* | Normal | Its efficiency sets the lending enterprises to work — increases the Faeneratio output (Mutuum + Thesaurus interest). Sometimes in the Studio. |
 | **Midas** | *Avaritia* | Apex | Multiplies gold gain; massively multiplies Apocalyptic chance. Sends profane advisory email (`00-lore-bible.md` §11). |
-| **Upir** | *Gula* | Normal | Its efficiency applies to *Caedes*. Sometimes in the Invocation Room. |
+| **Upir** | *Gula* | Normal | −1% to every negative outcome weight per copy (× invocation efficiency). Sometimes in the Invocation Room. |
 | **Aurevora** | *Gula* | Apex | Devours gold on an exponential ramp; a share of the ramp returns as player efficiency; self-dispels at 0 gold. |
-| **Imp** | *Ira* | Normal | Its efficiency applies to *Caedes*. |
-| **Harpy** | *Ira* | Normal | Its efficiency applies to *Pogrom*. Sometimes at the Studio window. |
+| **Imp** | *Ira* | Normal | +1 murder/s per copy (× invocation efficiency). |
+| **Harpy** | *Ira* | Normal | +0.005/s to the base murder rate per copy (× invocation efficiency). Sometimes at the Studio window. |
 | **Erinyes** | *Ira* | Apex | Kills every reprobate at invoke; the next Katabasis keeps 0% gold and maleficia; permanently doubles overall action efficiency. Altar room, overrides. |
 | **Lamia** | *Luxuria* | Normal | Its efficiency applies to *Logismoi*. At most one shown. |
 | **Succubus** | *Luxuria* | Apex | Its efficiency applies to *Imperium*, at a steep percentage-of-income cost. |
@@ -209,7 +201,8 @@ What remains is the population's role as the economy's centre of mass (`02 §9`)
 
 - **Born** of *Suasio* and of ceremonies and sigils that raise generation.
 - **Repaying** while alive — the *Mutuum* loan book earns per living head.
-- **Dying** by cull (*Decimatio*), suicide, and murder — every death mints exactly one soul.
+- **Dying** by suicide and murder — every death mints exactly one soul. (The *Decimatio* culls are
+  retired, ADR-038.)
 - **Scattering** at Katabasis: a small identified fraction carries over (`02 §6`).
 
 Base suicide and murder rates are population-wide per-second rates in `Globals`; their modifier
@@ -238,7 +231,7 @@ The catalog (invoking power, stack caps, prices, and exact magnitudes in the `Ma
 | **Galdrabók** | Enhancer | Profane | Multiplies the murder rate. |
 | **Codex Gigas** | Enhancer | Profane | Multiplies influence gain rate by 1.33. |
 | **Ars Serpens** | Enhancer, power source | Rare | Multiplies *Suasio* efficiency; grants power. |
-| **Ritual Dagger** | Enhancer, power source | Rare | Multiplies *Decimatio* efficiency; grants power. |
+| **Ritual Dagger** | Enhancer, power source | Rare | Multiplies the murder rate (+10%); grants power. |
 | **Blood Chalk** | Power source | Rare | Grants invoking power. |
 | **Blackthorn Wand** | Power source | Rare | Grants invoking power. |
 | **Hand of Glory** | Targeted, stackable | Rare | Single-use: doubles the reprobate generation rate for one hour. |
@@ -246,7 +239,7 @@ The catalog (invoking power, stack caps, prices, and exact magnitudes in the `Ma
 | **Black Robe** | Power source | Common | Grants invoking power. |
 | **Sulfur Censer** | Power source | Common | Grants invoking power. |
 | **Black Candles** | Enhancer, stackable | Common | Increases invocation effect per candle. |
-| **The Dadu** | Oracular, power source | Common | Reveals the *Decimatio* distribution; grants power. |
+| **The Dadu** | Enhancer, power source | Common | +5% player efficiency; grants power. |
 | **Hollow Effigy** | Oracular, power source | Common | Reveals the *Suasio* distribution; grants power. |
 | **Black Salt Pouch** | Power source, stackable | Common | Grants invoking power per copy, uncapped. |
 | **Iron Nails** | Power source, stackable | Common | Each copy increases sigil effects and grants power. |
@@ -289,7 +282,7 @@ coefficients are in the `Sigils` sheet.
 | 10 | **Buer** | Good familiars | Increases Familiar effectiveness. |
 | 11 | **Gusion** | Reconciles enemies | Reduces the player's own influence generation rate (a cursed seal). |
 | 12 | **Sitri** | Love | Increases the offline Desidia gain rate. |
-| 13 | **Beleth** | Attended by trumpets | Increases *Decimatio* positive outcome chance. |
+| 13 | **Beleth** | Attended by trumpets | **Dormant** (ADR-038; was: increases *Decimatio* positive outcome chance). |
 | 14 | **Leraie** | Putrefies wounds | Chance a murder triggers a suicide. |
 | 15 | **Eligos** | Favour of important people | Reduces Emptio purchase costs. |
 | 16 | **Zepar** | Makes barren | Reduces overall invocation costs (a third of the standard strength). |
@@ -297,8 +290,8 @@ coefficients are in the `Sigils` sheet.
 | 18 | **Bathin** | Transport | Increases acolyte action efficiency. |
 | 19 | **Sallos** | Peace, idleness | Reduces the Desidia drain rate (composes with Lemure). |
 | 20 | **Purson** | Hidden treasures | Increases the Katabasis remaining-gold % (flat). [log] |
-| 21 | **Marax** | Stops, delays | Increases Decimatio action efficiency (a third of the standard strength). |
-| 22 | **Ipos** | Valiant, tactical | Reduces *Decimatio* negative outcome chance. |
+| 21 | **Marax** | Stops, delays | **Dormant** (ADR-038; was: increases *Decimatio* action efficiency at a third of the standard strength). |
+| 22 | **Ipos** | Valiant, tactical | **Dormant** (ADR-038; was: reduces *Decimatio* negative outcome chance). |
 | 23 | **Aim** | Sets fire | Increases the murder rate. |
 | 24 | **Naberius** | Arts and rhetoric | Reduces Indagatio time (a time-mode efficiency lift). |
 | 25 | **Glasya-Labolas** | Manslaughter | Increases the murder rate (flat). [log] |
@@ -316,8 +309,8 @@ coefficients are in the `Sigils` sheet.
 | 37 | **Phenex** | Phoenix; sings | Reduces *Emptio* negative outcome chance. |
 | 38 | **Halphas** | Builds towers, arms | Reduces the chance of Common and Rare finds. |
 | 39 | **Malphas** | Builds, demolishes; deceives | Chance to duplicate the output of *Suasio*. |
-| 40 | **Raum** | Steals; destroys cities | Increases *Decimatio* efficiency, dampens *Suasio* efficiency (a tradeoff seal). |
-| 41 | **Focalor** | Kills by drowning | Chance to duplicate the output of *Decimatio*. |
+| 40 | **Raum** | Steals; destroys cities | **Dormant** (ADR-038; was a tradeoff seal: increases *Decimatio* efficiency, dampens *Suasio* efficiency. The Suasio penalty alone would be a pure curse, so the whole seal sleeps). |
+| 41 | **Focalor** | Kills by drowning | **Dormant** (ADR-038; was: chance to duplicate the output of *Decimatio*). |
 | 42 | **Vepar** | Putrefying wounds | Increases *Ira* invocation effectiveness. |
 | 43 | **Sabnock** | Wounds and sores | Increases the suicide rate (flat). [log] |
 | 44 | **Shax** | Deafness; takes money | Increases *Avaritia* invocation effectiveness. |
@@ -340,14 +333,14 @@ coefficients are in the `Sigils` sheet.
 | 61 | **Zagan** | Fools wise | Increases Suasio action efficiency (a third of the standard strength). |
 | 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
 | 63 | **Andras** | Sows discord | Increases *Emptio* Stellar chance. |
-| 64 | **Haures** | Destroys enemies | Increases *Decimatio* Stellar chance. |
+| 64 | **Haures** | Destroys enemies | **Dormant** (ADR-038; was: increases *Decimatio* Stellar chance). |
 | 65 | **Andrealphus** | Mensuration | Reduces all invocation costs and quickens Desidia (a dual seal). |
 | 66 | **Cimejes** | Lost things; treasures | Increases the Katabasis remaining-maleficia chance. [log] |
 | 67 | **Amdusias** | Harsh music | Increases positive outcome chance across the Opera. |
 | 68 | **Belial** | Favour; preferments | Increases the influence gain rate. |
 | 69 | **Decarabia** | Stones and herbs | Generates influence per second (flat). [log] |
 | 70 | **Seere** | Brings things suddenly | Increases *Emptio* action efficiency. |
-| 71 | **Dantalion** | All human thoughts | Increases *Suasio* efficiency, dampens *Decimatio* efficiency (Raum's mirror). |
+| 71 | **Dantalion** | All human thoughts | Increases *Suasio* efficiency. (Its *Decimatio* penalty, the tradeoff's cost, went with ADR-038; pending a rebalance.) |
 | 72 | **Andromalius** | Returns stolen; reveals plots | Increases *Emptio* positive outcome chance. |
 
 Sigil #58 (*Amy*) is authored in the sheet with a sign worth confirming at implementation time
@@ -425,7 +418,11 @@ None of these block the current build; all should be tracked.
   Gusion #11, Naberius #24, Orias #59 and Zagan #61 from the ceremony / Depraedatio retirements,
   plus Eligos #15, Zepar #16, Sallos #19, Marax #21 and Foras #31 from the ADR-032 offline
   freeze) are all wired onto the Desidia levers and the live economy. The catalog
-  is now the full Goetia 1..72: every seal named and effective.
+  is the full Goetia 1..72, every seal named.
+- **Decimatio gaps** (opened by ADR-038): six seals are dormant (Beleth #13, Marax #21, Ipos #22,
+  Raum #40, Focalor #41, Haures #64), Dantalion #71 lost its cost, Ira has no per-level effect,
+  Retribution lost its success half, and the early soul economy has no player-driven cull. Each
+  needs a design or sheet decision; the README's Remaining list tracks them.
 - **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
 - **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)
   has its channels in the Studio (`02 §12`) but its message catalog is unwritten; the Katabasis

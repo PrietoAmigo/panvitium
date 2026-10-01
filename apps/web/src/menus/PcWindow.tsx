@@ -10,7 +10,6 @@ interface PcWindowProps {
 
 const EXECUTABLES = [
   { id: 'Depraedatio', color: '#E95420', glyph: '$' },
-  { id: 'Decimatio', color: '#772953', glyph: 'X' },
   { id: 'Indagatio', color: '#2c7bbe', glyph: '?' },
   { id: 'Analytics', color: '#1f9e8f', glyph: '\u03A3' },
   { id: 'Achievements', color: '#c79a2b', glyph: '★' },
@@ -22,13 +21,7 @@ const EXECUTABLES = [
 
 // Programs that render their own full window surface (e.g. the Emails mail client) rather than sitting
 // in the dark titled card. They fill the desk area directly; the PC titlebar already names them.
-const FULLBLEED = new Set<string>([
-  'Emails',
-  'Depraedatio',
-  'Decimatio',
-  'Indagatio',
-  'Calculator',
-]);
+const FULLBLEED = new Set<string>(['Emails', 'Depraedatio', 'Indagatio', 'Calculator']);
 
 // The Studio desk PC — an Ubuntu-style file manager whose "files" are ritual programs. Full-screen
 // shell (does not use PanelShell). The chrome is the design; each launched program's body is the real

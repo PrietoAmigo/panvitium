@@ -39,7 +39,6 @@ import {
   isUnlocked,
   unreadCount,
   dialCode,
-  totalReprobates,
   type OutcomeEvent,
   type Tier,
 } from '@panvitium/sim';
@@ -85,7 +84,7 @@ export function Panel({ title, onClose, children }: PanelProps): ReactElement {
   );
 }
 
-/** A single outcome rendered as a terminal log line: "Caedes · Good — +1 Souls, -1 Reprobates". */
+/** A single outcome rendered as a terminal log line: "Suggestion · Good — +1 Reprobates". */
 function describeOutcome(e: OutcomeEvent): string {
   const name = actionName(e.actionId);
   const parts: string[] = [];
@@ -223,15 +222,6 @@ function RiteControls({ actionId }: { actionId: string }): ReactElement {
   );
 }
 
-/** True while a player-driven rite (Suasio/Decimatio) holds the slot (02 §3: one at a time). The
- * background channels Indagatio and Emptio do NOT count, so a rite stays available while a scry or a
- * purchase runs (and neither of those disables a rite). */
-function useUnderway(): boolean {
-  return useGameStore((s) =>
-    s.state ? s.state.lifetime.actionQueue.some((t) => occupiesPlayerSlot(t.actionId)) : false,
-  );
-}
-
 /** The three temptations in scroll order, with their alchemical sigils (☿ Mercury, ✴ the eight
  * voices, ☉ the crowned Sun) and Roman numerals. Suasio always presents exactly these three. */
 const SUASIO_ORDER = ['suggestion', 'logismoi', 'imperium'] as const;
@@ -243,7 +233,7 @@ const SUASIO_GLYPHS: Record<string, string> = {
 const SUASIO_NUMERALS = ['I', 'II', 'III'] as const;
 
 /** Per-tier colour for the Suasio ledger's outcome chip — the scroll's candle-gold palette fading to
- *  ash, mirroring how Decimatio tints its Index Opervm rows. Keyed by the real OutcomeEvent tier. */
+ *  ash. Keyed by the real OutcomeEvent tier. */
 const SUASIO_TIER_COLOR: Record<Tier, string> = {
   stellar: '#e6c04a',
   excellent: '#d2a63f',
@@ -385,8 +375,8 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
     });
   }
 
-  // The scroll's foot mirrors Decimatio's Index Opervm: the resolved temptations (this program's
-  // rites only), newest first, each an outcome tier chip beside its net resource deltas.
+  // The scroll's foot is its ledger: the resolved temptations (this program's rites only), newest
+  // first, each an outcome tier chip beside its net resource deltas.
   const ledgerRows = log.filter((e) => (SUASIO_ORDER as readonly string[]).includes(e.actionId));
   const ledger = (
     <div className="suasio-ledger">
@@ -426,275 +416,8 @@ function OutcomeLog(): ReactElement {
   );
 }
 
-/**
- * Decimatio — "The Breathing Dark" (Claude Design). Per-tier outcome colour for the Index Opervm
- * ledger row, keyed by the real `OutcomeEvent.tier`.
- */
-const DECIMATIO_TIER_COLOR: Record<Tier, string> = {
-  stellar: '#e8c46a',
-  excellent: '#c98a36',
-  good: '#b5772e',
-  neutral: '#8a7a5e',
-  bad: '#a85a2a',
-  terrible: '#9e3a22',
-  apocalyptic: '#cf3018',
-};
-
-/** The decimatio rites, in liturgical order, with their card chrome (numeral + accent class). */
-const DECIMATIO_RITES = [
-  { id: 'caedes', numeral: 'I', cardClass: 'i' },
-  { id: 'pogrom', numeral: 'II', cardClass: 'ii' },
-  { id: 'purgatio', numeral: 'III', cardClass: 'iii' },
-] as const;
-
-/** A rite's base duration as the design renders it ("1s", "60s", "6 min"). */
-function decimatioTime(seconds: number): string {
-  return seconds >= 120 ? `${seconds / 60} min` : `${seconds}s`;
-}
-
-/**
- * Re-skin one real Decimatio outcome into the ledger's second column. Souls minted always equal the
- * reprobates culled (1 soul per death), so a productive roll reads as one magnitude `X`; a net-loss
- * roll (the Church/Higher-Power tails take gold and/or the flock) reads as the rite backfiring; a
- * roll that changed nothing reads as tribute spent for no yield.
- */
-function decimatioLedgerText(e: OutcomeEvent): string {
-  const name = actionName(e.actionId);
-  if (e.soulsDelta > 0) {
-    return `${name} · ${e.soulsDelta.toLocaleString('en-US')} ${strings.opera.decimatioYield}`;
-  }
-  const losses: string[] = [];
-  if (e.goldDelta < 0) {
-    losses.push(`−${Math.abs(e.goldDelta).toLocaleString('en-US')} ${strings.resources.gold}`);
-  }
-  if (e.reprobateDelta < 0) {
-    losses.push(`−${Math.abs(e.reprobateDelta).toLocaleString('en-US')} ${strings.reprobates}`);
-  }
-  if (losses.length > 0) {
-    return `${name} · ${losses.join(' · ')} · ${strings.opera.decimatioBackfired}`;
-  }
-  return `${name} · ${strings.opera.decimatioNoYield}`;
-}
-
-/**
- * One rite card. Self-contained: it reads its delegation/auto-repeat state from the store and wires
- * the stepper / toggle / commission button to the real actions, matching the live `AcolyteControls`
- * and `AutoRepeatToggle` gating. The stepper only appears once the rite is delegatable and at least
- * one acolyte exists; the auto toggle only once the rite is auto-repeatable.
- */
-function DecimatioRite({
-  id,
-  numeral,
-  cardClass,
-  cost,
-  time,
-  disabled,
-}: {
-  id: string;
-  numeral: string;
-  cardClass: 'i' | 'ii' | 'iii';
-  cost: string;
-  time: string;
-  disabled: boolean;
-}): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const act = useGameStore((s) => s.act);
-  const assignAcolyte = useGameStore((s) => s.assignAcolyte);
-  const unassignAcolyte = useGameStore((s) => s.unassignAcolyte);
-  const toggleAutoRepeat = useGameStore((s) => s.toggleAutoRepeat);
-  if (!state) return <></>;
-
-  const total = state.lifetime.acolytes.length;
-  const delegatable = isDelegatable(state, id);
-  const assigned = assignedCount(state, id);
-  const idle = total - assigned;
-  const stepperLocked = !delegatable || total === 0; // shown but inert until delegatable + acolytes
-  const stepperHint = !delegatable
-    ? `${strings.acolytes.delegateLocked} ${delegateGateLabel(id)}`
-    : total === 0
-      ? strings.acolytes.noAcolytes
-      : strings.acolytes.delegationLabel;
-  const autoAvailable = isAutoRepeatable(state, id);
-  const auto = autoAvailable && isAutoRepeating(state, id);
-
-  return (
-    <div className={`dec-card dec-card--${cardClass}`}>
-      <div className="dec-card-head">
-        <span className="dec-numeral">{numeral}</span>
-        <span className="dec-name">{strings.opera[id as 'caedes' | 'pogrom' | 'purgatio']}</span>
-      </div>
-      <p className="dec-desc">{strings.opera.decimatioDesc[id]}</p>
-      <div className="dec-controls">
-        <span>
-          {strings.opera.decimatioCostLabel} <b>{cost}</b>
-        </span>
-        <span>
-          {strings.opera.decimatioTimeLabel} <b>{time}</b>
-        </span>
-        {/* Delegation stepper — always shown; disabled with a lock hint until the rite is
-            delegatable AND at least one acolyte exists (design handoff). */}
-        <span
-          className={'dec-stepper-wrap' + (stepperLocked ? ' dec-stepper-wrap--locked' : '')}
-          title={stepperHint}
-        >
-          {strings.opera.decimatioAcolytesLabel}
-          <span className="dec-stepper">
-            <button
-              type="button"
-              className="dec-step-btn dec-step-btn--dec"
-              disabled={stepperLocked || assigned === 0}
-              onClick={() => unassignAcolyte(id)}
-              aria-label={strings.acolytes.unassign}
-              title={strings.acolytes.unassign}
-            >
-              −
-            </button>
-            <span className="dec-step-count" title={stepperHint}>
-              {stepperLocked ? '🔒' : assigned}
-            </span>
-            <button
-              type="button"
-              className="dec-step-btn dec-step-btn--inc"
-              disabled={stepperLocked || idle === 0}
-              onClick={() => assignAcolyte(id)}
-              aria-label={strings.acolytes.assign}
-              title={strings.acolytes.assign}
-            >
-              +
-            </button>
-          </span>
-        </span>
-        {/* Auto-repeat toggle — always shown; disabled with its Sin gate until auto-repeatable. */}
-        <button
-          type="button"
-          className={
-            'dec-auto' + (auto ? ' dec-auto--on' : '') + (autoAvailable ? '' : ' dec-auto--locked')
-          }
-          disabled={!autoAvailable}
-          aria-pressed={auto}
-          onClick={() => autoAvailable && toggleAutoRepeat(id, !auto)}
-          title={
-            autoAvailable
-              ? strings.autoRepeat.label
-              : `${strings.autoRepeat.locked} ${delegateGateLabel(id)}`
-          }
-        >
-          {autoAvailable ? strings.opera.decimatioAuto : `🔒 ${strings.opera.decimatioAuto}`}
-        </button>
-        <button
-          type="button"
-          className={'dec-commission' + (cardClass === 'iii' ? ' dec-commission--iii' : '')}
-          disabled={disabled}
-          onClick={() => act(id)}
-        >
-          {strings.opera.decimatioCta[id]}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Decimatio program body — "The Breathing Dark" (Claude Design). Caedes is always open; Pogrom and
- * Purgatio gate on their Ira level, each showing a sealed card (no cost/time/commission) before its
- * gate. The Index Opervm ledger is the real player outcome log filtered to this program's rites,
- * newest first.
- */
-export function DecimatioGroup(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  const notice = useGameStore((s) => s.notice);
-  const log = useGameStore((s) => s.log);
-  const underway = useUnderway();
-  if (!state) return <></>;
-
-  const gold = floor(state.lifetime.gold).toNumber();
-  const eff = categoryEfficiency(state, 'decimatio');
-  // Same pipeline startAction deducts, so the printed cost matches the actual charge.
-  const goldCost = (id: string): number => plannedActionCost(state, id, { efficiency: eff }).gold;
-  const costLabel = (id: string): string =>
-    `${goldCost(id).toLocaleString('en-US')} ${strings.opera.decimatioGoldUnit}`;
-
-  const ledger = log.filter((e) => DECIMATIO_RITES.some((r) => r.id === e.actionId));
-
-  return (
-    <div className="dec-root">
-      <div className="dec-layer dec-glow" aria-hidden="true" />
-      <div className="dec-layer dec-smoke-a" aria-hidden="true" />
-      <div className="dec-layer dec-smoke-b" aria-hidden="true" />
-      <div className="dec-layer dec-vignette" aria-hidden="true" />
-
-      <div className="dec-content">
-        <div className="dec-masthead">
-          <h1 className="dec-title">{strings.opera.decimatio}</h1>
-          <p className="dec-creed">{strings.opera.decimatioCreed}</p>
-          <div className="dec-kpi">
-            <div className="dec-kpi-box">
-              <div className="dec-kpi-value">{totalReprobates(state).toLocaleString('en-US')}</div>
-              <div className="dec-kpi-label">{strings.reprobates}</div>
-            </div>
-            <div className="dec-kpi-box">
-              <div className="dec-kpi-value">{gold.toLocaleString('en-US')}</div>
-              <div className="dec-kpi-label">{strings.resources.gold}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="dec-column">
-          {DECIMATIO_RITES.map((r) => {
-            const def = ACTIONS[r.id];
-            const locked = def ? !actionUnlocked(state, def) : true;
-            // A gated rite (Pogrom, Purgatio) before its Ira gate shows a sealed card — no cost,
-            // time, or commission control, just its name and the lock note.
-            if (locked) {
-              const name = strings.opera[r.id as 'caedes' | 'pogrom' | 'purgatio'];
-              return (
-                <div className="dec-sealed" key={r.id}>
-                  <div className="dec-sealed-title">
-                    {name} {strings.opera.decimatioSealedSuffix}
-                  </div>
-                  <p className="dec-sealed-line">{strings.opera.decimatioLocked[r.id]}</p>
-                </div>
-              );
-            }
-            return (
-              <DecimatioRite
-                key={r.id}
-                id={r.id}
-                numeral={r.numeral}
-                cardClass={r.cardClass}
-                cost={costLabel(r.id)}
-                time={decimatioTime(def?.baseTimeSeconds ?? 0)}
-                disabled={underway || gold < goldCost(r.id)}
-              />
-            );
-          })}
-
-          <div className="dec-ledger-head">{strings.opera.decimatioLedgerHeading}</div>
-          {ledger.length === 0 ? (
-            <p className="dec-ledger-empty">{strings.opera.decimatioEmptyLedger}</p>
-          ) : (
-            <div>
-              {ledger.map((e, i) => (
-                <div className="dec-ledger-row" key={`${i}-${e.actionId}-${e.tier}`}>
-                  <span className="dec-ledger-tier" style={{ color: DECIMATIO_TIER_COLOR[e.tier] }}>
-                    {strings.tiers[e.tier]}
-                  </span>
-                  <span className="dec-ledger-text">{decimatioLedgerText(e)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {notice !== null && <p className="dec-notice">{notice}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 type PcGroupId =
   | 'depraedatio'
-  | 'decimatio'
   | 'indagatio'
   | 'analytics'
   | 'achievements'
@@ -1052,7 +775,6 @@ function AchievementsGroup(): ReactElement {
 /** Body for a selected PC group. */
 function PcGroupBody({ group }: { group: PcGroupId }): ReactElement {
   if (group === 'depraedatio') return <DepraedatioGroup />;
-  if (group === 'decimatio') return <DecimatioGroup />;
   if (group === 'indagatio') return <IndagatioEmptioProgram />;
   if (group === 'analytics') return <AnalyticsGroup />;
   if (group === 'emails') return <EmailsGroup />;

@@ -139,16 +139,17 @@ function fmtFlat(s: number): string {
  * The real per-seal effect at the current binding (pending point #2). `sigilStrength` is the bare
  * strength the sim applies: a fraction for the multiplier / chance / percentage-point sigils (shown
  * as ±X.X% per `effectSign`), a flat per-second amount for the generators (Haagenti, Decarabia, …), or rounded
- * invoking power. The boon *text* already says what the seal does; this is its magnitude.
+ * invoking power. The boon *text* already says what the seal does; this is its magnitude. A dormant
+ * seal (`inert`, ADR-038) has none, so it reads as an em dash however many souls it holds.
  */
 export function effectDisplay(def: SigilDef | undefined, bound: BigNum): string {
-  if (!def) return '\u2014';
+  if (!def || def.effect.kind === 'inert') return '\u2014';
   const s = sigilStrength(def, bound);
   const e = def.effect;
   if (e.kind === 'flatGen') return `+${fmtFlat(s)} ${FLAT_UNIT[e.resource] ?? '/s'}`;
   if (e.kind === 'invokingPower') return `+${Math.round(s)} invoking power`;
-  // A composite seal's parts (Raum #40, Dantalion #71, Andrealphus #65) all scale by the one
-  // strength; show each part's signed percentage, joined — the boon text says which is which.
+  // A composite seal's parts (Andrealphus #65) all scale by the one strength; show each part's
+  // signed percentage, joined — the boon text says which is which.
   if (e.kind === 'composite') {
     return e.effects.map((p) => `${effectSign(p)}${(s * 100).toFixed(1)}%`).join(' / ');
   }

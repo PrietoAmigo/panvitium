@@ -52,7 +52,7 @@ describe('AnalyticsGroup', () => {
 
   it('renders a row per acolyte with its current action on the Actions tab', () => {
     seed([
-      { id: 1, assignedAction: 'caedes', remainingSeconds: 30 },
+      { id: 1, assignedAction: 'suggestion', remainingSeconds: 30 },
       { id: 2, assignedAction: null, remainingSeconds: null },
     ]);
     render();
@@ -174,8 +174,12 @@ describe('AnalyticsGroup — Risk tab (the Depraedatio Risk algos contract)', ()
     const table = container!.querySelector('.analytics-risk-table');
     expect(table).not.toBeNull();
     const text = table!.textContent ?? '';
-    for (const name of ['Suggestion', 'Logismoi', 'Imperium', 'Caedes', 'Pogrom', 'Purgatio']) {
+    for (const name of ['Suggestion', 'Logismoi', 'Imperium']) {
       expect(text).toContain(name);
+    }
+    // The retired Decimatio category and its rites are gone (ADR-038).
+    for (const name of ['Decimatio', 'Caedes', 'Pogrom', 'Purgatio']) {
+      expect(text).not.toContain(name);
     }
     expect(text).toContain('Indagatio');
     expect(text).toContain('Emptio');
@@ -190,8 +194,8 @@ describe('AnalyticsGroup — Risk tab (the Depraedatio Risk algos contract)', ()
     ]) {
       expect(text).toContain(tier);
     }
-    // One header row + eight action rows, each with a cell per tier (7) plus its label.
-    expect(container!.querySelectorAll('.analytics-risk-cell').length).toBe(7 * 9);
+    // One header row + five action rows, each with a cell per tier (7) plus its label.
+    expect(container!.querySelectorAll('.analytics-risk-cell').length).toBe(7 * 6);
     // Indagatio's base odds read through: Neutral 50%, Apocalyptic 0.1%.
     const indagatio = Array.from(table!.querySelectorAll('.analytics-risk-row')).find(
       (r) => r.querySelector('.analytics-risk-label')?.textContent === 'Indagatio',

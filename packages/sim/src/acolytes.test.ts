@@ -10,7 +10,8 @@
  *   - a non-toggle delegated task runs ONCE, then the acolyte retires to idle (no looping)
  *   - acolyte work does NOT occupy the player's actionQueue
  *   - Indagatio at 33% takes ~3× the player duration (1800/0.33 ≈ 5454 s)
- *   - Suasio/Decimatio are delegatable; Emptio is not. Delegated cycles are FREE (no resource cost)
+ *   - Suasio is delegatable; Emptio is not (nor the retired Decimatio rites). Delegated cycles are
+ *     FREE (no resource cost)
  *   - Acolytes reset to empty on Katabasis
  *   - acolyteEfficiencyMul defaults to 0.33
  */
@@ -51,10 +52,10 @@ function recruited(n = 1): GameState {
   return autoRecruitAcolytes(withDevotion(fresh(), 100 ** n));
 }
 
-/** Recruited + the Sin toggle levels (Luxuria 1 / Ira 1) that enable Suasio/Decimatio delegation. */
+/** Recruited + the Sin toggle level (Luxuria 1) that enables Suasio delegation. */
 function delegatable(n = 1): GameState {
   const s = recruited(n);
-  return { ...s, devotion: { ...s.devotion, luxuria: bn(180), ira: bn(180) } };
+  return { ...s, devotion: { ...s.devotion, luxuria: bn(180) } };
 }
 
 /** Set a single Sin to a given level (180^level cumulative Devotion). */
@@ -134,20 +135,25 @@ describe('autoRecruitAcolytes', () => {
 describe('isDelegatable (toggle Sin-level gate)', () => {
   it('Indagatio is always delegatable; the Opera rites gate on the max Sin level (any Sin)', () => {
     expect(isDelegatable(fresh(), 'indagatio')).toBe(true);
-    // Suggestion / Caedes toggle at Luxuria / Ira 1.
+    // Suggestion toggles at level 1.
     expect(isDelegatable(fresh(), 'suggestion')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'luxuria', 1), 'suggestion')).toBe(true);
-    expect(isDelegatable(fresh(), 'caedes')).toBe(false);
-    expect(isDelegatable(setSin(fresh(), 'ira', 1), 'caedes')).toBe(true);
     // Any Sin at the toggle level unlocks delegation, not just the rite's thematic Sin (player tuning):
-    // Caedes via Tristitia I, Logismoi via Gula II.
-    expect(isDelegatable(setSin(fresh(), 'tristitia', 1), 'caedes')).toBe(true);
+    // Suggestion via Tristitia I, Logismoi via Gula II.
+    expect(isDelegatable(setSin(fresh(), 'tristitia', 1), 'suggestion')).toBe(true);
     expect(isDelegatable(setSin(fresh(), 'gula', 2), 'logismoi')).toBe(true);
-    // Logismoi toggles at Luxuria 2 (player tuning; was 3); Purgatio still at Ira 4.
+    // Logismoi toggles at Luxuria 2 (player tuning; was 3); Imperium at 4.
     expect(isDelegatable(setSin(fresh(), 'luxuria', 1), 'logismoi')).toBe(false);
     expect(isDelegatable(setSin(fresh(), 'luxuria', 2), 'logismoi')).toBe(true);
-    expect(isDelegatable(setSin(fresh(), 'ira', 3), 'purgatio')).toBe(false);
-    expect(isDelegatable(setSin(fresh(), 'ira', 4), 'purgatio')).toBe(true);
+    expect(isDelegatable(setSin(fresh(), 'luxuria', 3), 'imperium')).toBe(false);
+    expect(isDelegatable(setSin(fresh(), 'luxuria', 4), 'imperium')).toBe(true);
+  });
+
+  it('the retired Decimatio rites are never delegatable (ADR-038)', () => {
+    for (const id of ['caedes', 'pogrom', 'purgatio']) {
+      expect(isDelegatable(setSin(fresh(), 'ira', 4), id)).toBe(false);
+      expect(assignAcolyteToAction(setSin(recruited(), 'ira', 4), id).ok).toBe(false);
+    }
   });
 
   it('Emptio is NOT delegatable (needs a per-target maleficium)', () => {
@@ -190,9 +196,9 @@ describe('assignAcolyteToAction', () => {
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign failed');
     s = r.state;
-    // Player still able to start their own rite (caedes here just because it costs gold).
-    s = { ...s, lifetime: { ...s.lifetime, gold: bn(500) } };
-    const playerStart = startAction(s, 'caedes');
+    // Player still able to start their own rite.
+    s = { ...s, lifetime: { ...s.lifetime, influence: bn(50) } };
+    const playerStart = startAction(s, 'suggestion');
     expect(playerStart.ok).toBe(true);
     if (!playerStart.ok) return;
     expect(playerStart.state.lifetime.actionQueue).toHaveLength(1);
@@ -362,9 +368,6 @@ describe('thesaurus + acolytes — depositing never touches the player slot', ()
   });
 });
 
-function withGold(s: GameState, v: number): GameState {
-  return { ...s, lifetime: { ...s.lifetime, gold: bn(v) } };
-}
 function withInfluence(s: GameState, v: number): GameState {
   return { ...s, lifetime: { ...s.lifetime, influence: bn(v) } };
 }
@@ -375,20 +378,11 @@ function withReprobates(s: GameState, n: number): GameState {
   };
 }
 
-describe('cost-outcome delegation (Suasio / Decimatio)', () => {
+describe('cost-outcome delegation (Suasio)', () => {
   it('refuses to delegate a rite below its toggle Sin level', () => {
-    // recruited() leaves Ira at 0, so Caedes (toggle Ira 1) cannot be delegated yet.
-    const r = assignAcolyteToAction(withGold(recruited(), 1000), 'caedes');
+    // recruited() leaves every Sin at 0, so Suggestion (toggle level 1) cannot be delegated yet.
+    const r = assignAcolyteToAction(withInfluence(recruited(), 100), 'suggestion');
     expect(r.ok).toBe(false);
-  });
-
-  it('assigning Decimatio starts the first cycle for free (no gold spent)', () => {
-    const s = withGold(delegatable(), 1000);
-    const r = assignAcolyteToAction(s, 'caedes');
-    if (!r.ok) throw new Error('assign caedes failed');
-    expect(r.state.lifetime.gold.toNumber()).toBe(1000); // free — nothing paid at assign
-    expect(r.state.lifetime.acolytes[0]!.assignedAction).toBe('caedes');
-    expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(ACTIONS.caedes!.baseTimeSeconds);
   });
 
   it('assigning Suasio starts the first cycle for free (no influence spent)', () => {
@@ -396,53 +390,53 @@ describe('cost-outcome delegation (Suasio / Decimatio)', () => {
     const r = assignAcolyteToAction(s, 'suggestion');
     if (!r.ok) throw new Error('assign suasio failed');
     expect(r.state.lifetime.influence.toNumber()).toBe(100); // free — nothing paid at assign
+    expect(r.state.lifetime.acolytes[0]!.assignedAction).toBe('suggestion');
     expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(
       ACTIONS.suggestion!.baseTimeSeconds,
     );
   });
 
-  it('a delegated Decimatio resolves a cycle for free and stays assigned to loop', () => {
-    let s = withReprobates(withGold(delegatable(), 1000), 100);
-    const cycle = ACTIONS.caedes!.baseTimeSeconds; // cost-outcome duration is the base time
-    const r = assignAcolyteToAction(s, 'caedes');
+  it('a delegated Suasio rite resolves a cycle for free and stays assigned to loop', () => {
+    let s = withReprobates(withInfluence(delegatable(), 100), 100);
+    const cycle = ACTIONS.suggestion!.baseTimeSeconds; // cost-outcome duration is the base time
+    const r = assignAcolyteToAction(s, 'suggestion');
     if (!r.ok) throw new Error('assign');
     s = r.state;
-    expect(s.lifetime.gold.toNumber()).toBe(1000); // nothing paid at assign
+    expect(s.lifetime.influence.toNumber()).toBe(100); // nothing paid at assign
     // Exactly one cycle's worth of time: resolve once and loop straight into the next.
     const adv = advanceAcolytes(s, cycle, makeRng(11));
     expect(adv.events).toHaveLength(1);
-    expect(adv.events[0]!.actionId).toBe('caedes');
-    expect(adv.state.lifetime.gold.toNumber()).toBe(1000); // free — gold untouched
-    expect(adv.state.lifetime.reprobates).toBeLessThanOrEqual(100); // Caedes never adds
-    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('caedes'); // still delegated — loops
+    expect(adv.events[0]!.actionId).toBe('suggestion');
+    expect(adv.state.lifetime.influence.toNumber()).toBe(100); // free — influence untouched
+    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('suggestion'); // still delegated
     expect(adv.state.lifetime.actionQueue).toHaveLength(0); // delegated channel, not the player slot
 
     // Another full cycle resolves again, still free — the loop continues.
     const adv2 = advanceAcolytes(adv.state, cycle, makeRng(13));
     expect(adv2.events).toHaveLength(1);
-    expect(adv2.state.lifetime.gold.toNumber()).toBe(1000); // still free
-    expect(adv2.state.lifetime.acolytes[0]!.assignedAction).toBe('caedes');
+    expect(adv2.state.lifetime.influence.toNumber()).toBe(100); // still free
+    expect(adv2.state.lifetime.acolytes[0]!.assignedAction).toBe('suggestion');
   });
 
   it('an acolyte assigned while broke still works — delegated actions cost nothing', () => {
-    let s = withReprobates(withGold(delegatable(), 0), 100);
-    const r = assignAcolyteToAction(s, 'caedes');
+    let s = withReprobates(withInfluence(delegatable(), 0), 100);
+    const r = assignAcolyteToAction(s, 'suggestion');
     if (!r.ok) throw new Error('assign should succeed even while broke');
     s = r.state;
-    expect(s.lifetime.acolytes[0]!.assignedAction).toBe('caedes');
-    // The first cycle started immediately — never stalled on the empty treasury.
-    expect(s.lifetime.acolytes[0]!.remainingSeconds).toBe(ACTIONS.caedes!.baseTimeSeconds);
-    expect(s.lifetime.gold.toNumber()).toBe(0);
+    expect(s.lifetime.acolytes[0]!.assignedAction).toBe('suggestion');
+    // The first cycle started immediately — never stalled on the empty purse.
+    expect(s.lifetime.acolytes[0]!.remainingSeconds).toBe(ACTIONS.suggestion!.baseTimeSeconds);
+    expect(s.lifetime.influence.toNumber()).toBe(0);
     // A broke acolyte resolves its cycle for free.
-    const adv = advanceAcolytes(s, ACTIONS.caedes!.baseTimeSeconds, makeRng(12));
+    const adv = advanceAcolytes(s, ACTIONS.suggestion!.baseTimeSeconds, makeRng(12));
     expect(adv.events).toHaveLength(1);
-    expect(adv.state.lifetime.gold.toNumber()).toBe(0); // nothing spent
-    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('caedes'); // still delegated — loops
+    expect(adv.state.lifetime.influence.toNumber()).toBe(0); // nothing spent
+    expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('suggestion'); // still delegated
   });
 
-  it('a broke Decimatio acolyte does not occupy the player action slot', () => {
-    const s = withGold(delegatable(), 0);
-    const r = assignAcolyteToAction(s, 'caedes');
+  it('a broke Suasio acolyte does not occupy the player action slot', () => {
+    const s = withInfluence(delegatable(), 0);
+    const r = assignAcolyteToAction(s, 'suggestion');
     if (!r.ok) throw new Error('assign');
     expect(r.state.lifetime.actionQueue).toHaveLength(0);
   });

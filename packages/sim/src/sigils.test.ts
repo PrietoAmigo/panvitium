@@ -497,7 +497,7 @@ describe('Cost-reduction sigils (S8)', () => {
 });
 
 describe('Murder- and positive-tier sigils (S10)', () => {
-  it('Aim #23 lifts the murder-rate modifier; no sigil is inert anymore (sheet rev)', () => {
+  it('Aim #23 lifts the murder-rate modifier; the subtype-era inerts carry real effects', () => {
     expect(sigilById(23)!.effect).toEqual({
       kind: 'modifier',
       field: 'murderRateMul',
@@ -508,7 +508,7 @@ describe('Murder- and positive-tier sigils (S10)', () => {
     expect(scalar.murderRateMul).toBeCloseTo(1 + sigilStrength(sigilById(23)!, bn(100_000_000)), 6);
     // The old subtype-era inerts all carry real effects now.
     expect(sigilById(25)!.effect.kind).toBe('flatGen'); // Glasya-Labolas → flat murder
-    expect(sigilById(64)!.effect.kind).toBe('categoryTier'); // Haures → Decimatio Stellar
+    // (Haures #64, re-homed onto Decimatio Stellar, went dormant again with Decimatio: ADR-038.)
   });
 
   it('Amdusias #67 lifts the whole positive tier group (all Opera)', () => {
@@ -540,7 +540,7 @@ describe('Indagatio find-quality sigils (S12)', () => {
     expect(v.stellar).toBeGreaterThan(1);
     expect(v.excellent).toBeGreaterThan(1);
     expect(v.good).toBeUndefined();
-    expect(sigilCategoryTierContributions(bound(3, 1_000_000), 'decimatio')).toEqual({});
+    expect(sigilCategoryTierContributions(bound(3, 1_000_000), 'suasio')).toEqual({});
     // Stolas DAMPS the Neutral (Common-find) entry per the sheet rev; Halphas #38 damps
     // Neutral + Good (common & rare) together.
     expect(sigilCategoryTierContributions(bound(36, 1_000_000), 'indagatio').neutral).toBeLessThan(
@@ -574,7 +574,8 @@ describe('Indagatio find-quality sigils (S12)', () => {
 describe('ADR-034: the ten reactivated seals (names + effects)', () => {
   // The offline-gain, lesser-ceremony and Depraedatio channels these seals once fed all retired.
   // ADR-034 re-homes them onto the Desidia system and the live economy, so every one
-  // of the ten now carries a Goetia name and a real effect (no orphaned seals remain).
+  // of the ten carries a Goetia name and a real effect (Marax #21, re-homed onto Decimatio
+  // efficiency, went dormant again with that category: ADR-038).
   it('names: every reactivated seal carries its Goetia name', () => {
     expect(sigilById(11)!.name).toBe('Gusion');
     expect(sigilById(12)!.name).toBe('Sitri');
@@ -616,9 +617,8 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
       1 + sigilStrength(sigilById(16)!, bn(100_000_000)),
       6,
     );
-    // Zepar #16, Marax #21 and Zagan #61 each carry a third of the standard pct strength (ADR-034).
+    // Zepar #16 and Zagan #61 each carry a third of the standard pct strength (ADR-034).
     expect(sigilById(16)!.coefficient).toBeCloseTo(1 / 3, 12);
-    expect(sigilById(21)!.coefficient).toBeCloseTo(1 / 3, 12);
     expect(sigilById(61)!.coefficient).toBeCloseTo(1 / 3, 12);
   });
 
@@ -629,12 +629,6 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
       1 / (1 + strength),
       6,
     );
-  });
-
-  it('Marax #21 lifts Decimatio efficiency at 1/3 strength', () => {
-    const strength = sigilStrength(sigilById(21)!, bn(100_000_000));
-    const { scalar } = sigilModifierContributions(bound(21, 100_000_000));
-    expect(scalar.decimatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
   });
 
   it('Naberius #24 shortens Indagatio (a time-mode lift on indagatioEfficiencyMul)', () => {
@@ -668,29 +662,15 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
 });
 
 describe('Composite (multi-effect) seals (S17 — ADR-035)', () => {
-  it('Raum #40 lifts Decimatio efficiency while it dampens Suasio, at one strength', () => {
-    expect(sigilById(40)!.effect.kind).toBe('composite');
-    const strength = sigilStrength(sigilById(40)!, bn(100_000_000));
-    const { scalar } = sigilModifierContributions(bound(40, 100_000_000));
-    expect(scalar.decimatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
-    expect(scalar.suasioEfficiencyMul).toBeCloseTo(1 / (1 + strength), 6);
-  });
-
-  it('Dantalion #71 mirrors Raum: +Suasio, -Decimatio at one strength', () => {
+  it('Dantalion #71 keeps only its Suasio lift once its Decimatio cost retired (ADR-038)', () => {
+    expect(sigilById(71)!.effect).toEqual({
+      kind: 'modifier',
+      field: 'suasioEfficiencyMul',
+      direction: 'increase',
+    });
     const strength = sigilStrength(sigilById(71)!, bn(100_000_000));
     const { scalar } = sigilModifierContributions(bound(71, 100_000_000));
     expect(scalar.suasioEfficiencyMul).toBeCloseTo(1 + strength, 6);
-    expect(scalar.decimatioEfficiencyMul).toBeCloseTo(1 / (1 + strength), 6);
-  });
-
-  it('Raum #40 and Dantalion #71 cancel to neutral when bound at equal strength', () => {
-    // Same souls, same coefficient/curve: their opposite legs compose to ~1x on both efficiencies.
-    let s = { ...fresh(), souls: bn(2_000_000) };
-    s = bindSigil(s, 40, 1_000_000);
-    s = bindSigil(s, 71, 1_000_000);
-    const { scalar } = sigilModifierContributions(s);
-    expect(scalar.decimatioEfficiencyMul).toBeCloseTo(1, 9);
-    expect(scalar.suasioEfficiencyMul).toBeCloseTo(1, 9);
   });
 
   it('Andrealphus #65 is a dual seal: softens invocation costs AND quickens Desidia', () => {
@@ -708,7 +688,7 @@ describe('Composite (multi-effect) seals (S17 — ADR-035)', () => {
   });
 
   it('effectParts flattens a composite and passes a single effect through unchanged', () => {
-    expect(effectParts(sigilById(40)!.effect)).toHaveLength(2); // Raum: two parts
+    expect(effectParts(sigilById(65)!.effect)).toHaveLength(2); // Andrealphus: two parts
     const valefor = sigilById(6)!; // a plain single-effect seal
     expect(effectParts(valefor.effect)).toEqual([valefor.effect]);
   });
@@ -875,7 +855,7 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
 
   it('without a duplicate-output sigil the dup roll is NOT drawn (RNG stream stays byte-identical)', () => {
     // ADR-011: an un-triggered feature must leave the seeded stream untouched. A Good Suggestion
-    // makes no internal RNG draw, so with no Malphas/Focalor/Agares bound resolveAction must consume
+    // makes no internal RNG draw, so with no Malphas/Agares bound resolveAction must consume
     // zero floats — the dup-chance draw is gated behind chance > 0. (Regression: it used to draw
     // unconditionally, shifting every downstream roll for saves without these sigils.)
     const rng = makeRng(fresh().rngState);
@@ -954,5 +934,51 @@ describe('Sigil-effect maleficia reach every sigil channel', () => {
       0.15 / (1 + 1.66 * strength),
       6,
     );
+  });
+});
+
+describe('Dormant seals (ADR-038: the Decimatio seals)', () => {
+  // Beleth #13, Marax #21, Ipos #22, Raum #40, Focalor #41 and Haures #64 served only the retired
+  // Decimatio category (Raum's other leg, a Suasio penalty, would have left it a pure curse). Their
+  // ids, names and art stay; the effect is `inert` until each is re-homed.
+  const DORMANT: readonly number[] = [13, 21, 22, 40, 41, 64];
+  const NAMES: Readonly<Record<number, string>> = {
+    13: 'Beleth',
+    21: 'Marax',
+    22: 'Ipos',
+    40: 'Raum',
+    41: 'Focalor',
+    64: 'Haures',
+  };
+
+  it('keeps each id and name, with an inert effect', () => {
+    for (const id of DORMANT) {
+      expect(sigilById(id)!.name).toBe(NAMES[id]);
+      expect(sigilById(id)!.effect).toEqual({ kind: 'inert' });
+      expect(effectParts(sigilById(id)!.effect)).toEqual([{ kind: 'inert' }]);
+    }
+  });
+
+  it('a heavily bound dormant seal changes no modifier, tier, cost or chance', () => {
+    let s = { ...fresh(), souls: bn(6e9) };
+    for (const id of DORMANT) s = bindSigil(s, id, 1e9);
+    expect(computeModifiers(s)).toEqual(computeModifiers(fresh()));
+    for (const cat of ['suasio', 'indagatio', 'emptio'] as const) {
+      expect(categoryTierModifiers(s, cat)).toEqual({});
+      expect(categoryEfficiency(s, cat)).toBe(categoryEfficiency(fresh(), cat));
+    }
+    expect(sigilCostReductionByChannel(s)).toEqual(sigilCostReductionByChannel(fresh()));
+    expect(sigilInvokingPower(s)).toBe(0);
+    // No duplicate-output roll is drawn for a dormant seal (ADR-011: the stream stays untouched).
+    const rng = makeRng(fresh().rngState);
+    const before = rng.state;
+    resolveAction(s, 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
+    expect(rng.state).toBe(before);
+  });
+
+  it('only the dormant seals are inert: the other 66 all carry an effect', () => {
+    const inert = SIGIL_IDS.filter((id) => sigilById(id)!.effect.kind === 'inert');
+    expect(inert).toEqual([...DORMANT]);
+    expect(SIGIL_IDS).toHaveLength(72);
   });
 });

@@ -12,13 +12,12 @@ import { strings } from '@panvitium/shared';
 import { actionName } from './labels.js';
 import type { OracleGroup } from '../menus/types.js';
 
-type Category = 'suasio' | 'decimatio' | 'indagatio' | 'emptio';
+type Category = 'suasio' | 'indagatio' | 'emptio';
 
 const ORACLE_CATEGORIES: Record<string, Category[]> = {};
 
 const CATEGORY_LABEL: Record<Category, string> = {
   suasio: strings.opera.suasio,
-  decimatio: strings.opera.decimatio,
   indagatio: strings.opera.indagatio,
   emptio: strings.opera.emptio,
 };

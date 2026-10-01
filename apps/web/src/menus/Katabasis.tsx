@@ -9,7 +9,6 @@ import {
   MAX_SIN_LEVEL,
   GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL,
   LUXURIA_SUASIO_EFF_PER_LEVEL,
-  IRA_DECIMATIO_EFF_PER_LEVEL,
   REMAINING_GOLD_PER_AVARITIA_LEVEL,
   REMAINING_REPROBATE_PER_TRISTITIA_LEVEL,
   REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL,
@@ -515,8 +514,8 @@ function Transition({
 
 /**
  * Strip a boon string's direction arrows (↑/↓); the ledger shows each leg's live signed
- * magnitude in their place. A single-effect seal ends in one arrow; a composite seal (Raum #40)
- * carries one per leg ("Decimatio efficiency ↑, Suasio efficiency ↓"), so strip EVERY arrow,
+ * magnitude in their place. A single-effect seal ends in one arrow; a composite seal (Andrealphus
+ * #65) carries one per leg ("Invocation costs ↓, Desidia speed ↑"), so strip EVERY arrow,
  * not just the trailing one, or a mid-string leg keeps a dangling arrow. `dir` stays the trailing
  * arrow (single-effect seals unchanged); the magnitude column carries each leg's sign.
  */
@@ -543,10 +542,11 @@ const sealSrc = (id: number): string => `${ASSET}/sigils/${String(id).padStart(2
 const VANAGLORIA_INFLUENCE_PER_LEVEL = 1.33;
 
 // The live numeric magnitude of a Sin's per-rank (Level) effect, in its natural unit, matching the
-// modifier engine exactly. Returns '' while the rank contributes nothing (Rank 0). Units differ by
-// Sin: the multiplicative efficiency ladders read '×N', the descent carry-over fractions read the
-// rank's marginal '+X%', Gula strips the negative tiers ('−X%'), and Acedia doubles the Desidia
-// cap each rank ('×N' the base, ADR-033).
+// modifier engine exactly. Returns '' while the rank contributes nothing (Rank 0), and always for
+// Ira, whose levels carry no effect since the Decimatio efficiency they doubled retired (ADR-038).
+// Units differ by Sin: the multiplicative efficiency ladders read '×N', the descent carry-over
+// fractions read the rank's marginal '+X%', Gula strips the negative tiers ('−X%'), and Acedia
+// doubles the Desidia cap each rank ('×N' the base, ADR-033).
 function sinLevelEffectValue(sin: Sin, level: number): string {
   if (level <= 0) return '';
   switch (sin) {
@@ -555,7 +555,7 @@ function sinLevelEffectValue(sin: Sin, level: number): string {
     case 'luxuria':
       return `×${LUXURIA_SUASIO_EFF_PER_LEVEL ** level}`;
     case 'ira':
-      return `×${IRA_DECIMATIO_EFF_PER_LEVEL ** level}`;
+      return '';
     case 'vanagloria':
       return `×${(VANAGLORIA_INFLUENCE_PER_LEVEL ** level).toFixed(2)}`;
     case 'avaritia':

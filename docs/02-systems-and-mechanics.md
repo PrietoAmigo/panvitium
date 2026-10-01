@@ -56,7 +56,7 @@ would lose meaningful progress.
   `03 §2.3`). Base passive gain per second is in the spreadsheet (`Globals`).
 - **Role:** the operating budget. Most everyday Opera actions consume gold; the Thesaurus locks
   it in lumps and the Syngraphae burn it in lumps.
-- **Spending:** *Decimatio* actions, Thesaurus deposits (locked, punitive to reclaim), Syngrapha
+- **Spending:** Thesaurus deposits (locked, punitive to reclaim), Syngrapha
   signing fees (burned), *Panvitium* upkeep, *Indagatio* searches, *Emptio* purchases, some
   invocations.
 - **Reset on Katabasis:** yes. The hoard is liquidated into gold in full first (§6), then a
@@ -143,7 +143,7 @@ The Opera is the action surface of a lifetime: everything the player does betwee
 
 ### Action types
 
-- **One-shot** actions with a duration (e.g. *Suggestion*, *Caedes*, *Indagatio*).
+- **One-shot** actions with a duration (e.g. *Suggestion*, *Logismoi*, *Indagatio*).
 - **Toggles** that consume resources per second while active (*Panvitium* — since ADR-031 the
   only ceremony toggle). A one-shot action also gains an **auto-repeat** toggle once its Sin
   reaches the spreadsheet's toggle level (the same gate that opens delegation): flip it on and the
@@ -174,7 +174,7 @@ Every action declares an **efficiency mode** describing how its effective effici
 resolution. The spreadsheet states each category's mode at the top of its sheet; the sheet wins
 over any older prose.
 
-- **`cost-outcome`** (*Suasio*, *Decimatio*): efficiency scales both the *cost paid* and the
+- **`cost-outcome`** (*Suasio*): efficiency scales both the *cost paid* and the
   *positive outcome units delivered* by the same percentage. Duration is not affected.
 - **`time`** (*Indagatio*, *Emptio*): efficiency divides the *action's duration*. Costs and the
   tier distribution are not affected. (*Emptio* additionally pays the targeted maleficium's gold
@@ -187,7 +187,7 @@ existing modes are stable.
 
 The total efficiency for a specific action is the **product** of the player's global efficiency
 (Gula's Insatiability), the action's category
-efficiency (Luxuria levels for *Suasio*, Ira levels for *Decimatio*, per-category sigils), and
+efficiency (Luxuria levels for *Suasio*, per-category sigils), and
 the **sum** of all runner contributions on that action: the player's own contribution plus each
 assigned acolyte's plus any invocation contribution.
 
@@ -233,7 +233,7 @@ cost outruns the treasury, *Panvitium* ends.
 | Category | Latin meaning | Role |
 |---|---|---|
 | **Suasio** | "Persuasion / temptation" | Corrupt ordinary humans into reprobates. |
-| **Decimatio** | "Culling" | Kill reprobates to harvest souls. |
+| **Decimatio** *(retired, ADR-038)* | "Culling" | Removed. Its rites (*Caedes*, *Pogrom*, *Purgatio*) killed reprobates to harvest souls; souls now come only from deaths by suicide and murder (and the apex effects that cause them). |
 | **Depraedatio** | "Plundering / despoliation" | The vice economy: the Faeneratio loop — the *Mutuum* loan book, the *Thesaurus* hoard, and the *Syngraphae* contract tree. |
 | **Indagatio** | "Searching out" | Hunt for maleficia. |
 | **Emptio** | "Purchase" | Buy maleficia from the discovered market. |
@@ -375,8 +375,9 @@ spreadsheet.
 Per **ADR-024**, reprobates are a **single undifferentiated pool** — one integer population.
 There are no subtypes and no conversion mechanic. The population is the centre of the economy:
 *Suasio* and the generation-raising ceremonies and sigils grow it, the *Mutuum* loan book earns
-per living head, and *Decimatio* plus the ambient death rates spend it for souls. Every death —
-culled, suicide, or murder — mints exactly one soul (and pays its Escheat death duty when that
+per living head, and the ambient death rates (suicide and murder, raised by invocations, maleficia,
+sigils and *Panvitium*) spend it for souls; the *Decimatio* culls are retired (ADR-038). Every
+death — suicide or murder — mints exactly one soul (and pays its Escheat death duty when that
 contract is signed).
 
 ### Per-tick accrual pools
@@ -467,7 +468,9 @@ Current per-save state to track:
 Schema history: v1 → v2 (ADR-024: subtype record collapsed to one integer); v2 → v3 (the Vitium
 Mercatura redesign removes `businesses`/`buildQueue`); v3 → v4 (the `caedis` → `caedes` rite
 rename); v4 → v5 (the Depraedatio gold rework removes `mercatusDepths`, crediting each trade's
-divest value).
+divest value); v5 → v10 (see `packages/shared/src/save/migrate.ts`); v10 → v11 (ADR-038: the
+retired *Decimatio* rite ids are stripped from the auto-repeat list, the action queue, with each
+in-flight rite's base gold price refunded, and acolyte delegations).
 
 ---
 
@@ -506,7 +509,7 @@ The 2015-era seat of the worldly operation: a desk, a PC, a smartphone, a window
 
 - **The PC.** Opens the worldly programs: the **Depraedatio** panel (the Thesaurus tab — the
   Mutuum loan book, the hoard, deposit/withdraw, the global Foedus badge — and the Syngraphae
-  contract tree), the *Decimatio* and *Indagatio* actions, the *Emptio* market, achievements, the
+  contract tree), the *Indagatio* actions, the *Emptio* market, achievements, the
   event log, and the **email** client (the content channel — `00-lore-bible.md` §10).
 - **The smartphone** carries the incoming and outgoing calls.
 - **The Suasio scroll.** The *Suasio* actions and their delegation, plus **Panvitium** as the

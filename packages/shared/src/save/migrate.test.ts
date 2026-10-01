@@ -3,6 +3,7 @@ import { createInitialState } from '@panvitium/sim';
 import { serializeGameState } from './state-schema.js';
 import { CURRENT_SCHEMA_VERSION, newDeviceId, type SaveBlob } from './schema.js';
 import { migrateSave, SaveMigrationError, type SaveMigration } from './migrate.js';
+import { migrateV3ToV4 } from './migrations/v3-to-v4.js';
 
 function currentBlob(): SaveBlob {
   const state = createInitialState('seed', 1000);
@@ -180,17 +181,29 @@ describe('v3 → v4 migration (Decimatio rite caedis → caedes rename)', () => 
   }
 
   it('rewrites caedis → caedes in autoRepeat, the action queue, and acolyte delegations', () => {
-    const migrated = migrateSave(v3Blob());
-    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
-    expect(migrated.state.lifetime.autoRepeat).toEqual(['caedes', 'pogrom']);
-    expect(migrated.state.lifetime.actionQueue.map((t) => t.actionId)).toEqual([
+    // The v3 → v4 step alone (the full chain then retires the rites at v10 → v11, below).
+    const stepped = migrateV3ToV4.migrate(v3Blob());
+    expect(stepped.schemaVersion).toBe(4);
+    const lifetime = (stepped.state as { lifetime: Record<string, unknown> }).lifetime;
+    expect(lifetime.autoRepeat).toEqual(['caedes', 'pogrom']);
+    expect((lifetime.actionQueue as { actionId: string }[]).map((t) => t.actionId)).toEqual([
       'caedes',
       'indagatio',
     ]);
+    expect(
+      (lifetime.acolytes as { assignedAction: string | null }[]).map((a) => a.assignedAction),
+    ).toEqual(['caedes', null, 'pogrom']);
+  });
+
+  it('carried through the whole chain, the retired rites end up stripped (v10 → v11)', () => {
+    const migrated = migrateSave(v3Blob());
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.lifetime.autoRepeat).toEqual([]);
+    expect(migrated.state.lifetime.actionQueue.map((t) => t.actionId)).toEqual(['indagatio']);
     expect(migrated.state.lifetime.acolytes.map((a) => a.assignedAction)).toEqual([
-      'caedes',
       null,
-      'pogrom',
+      null,
+      null,
     ]);
   });
 
@@ -443,6 +456,72 @@ describe('v9 → v10 migration (the Depraedatio relationship-tier rework)', () =
   it('keeps the reserve and is a no-op for a v9 save without contracts', () => {
     const blob = v9Blob({ hoard: '12345' });
     const migrated = migrateSave(blob);
+    expect(migrated.state.lifetime).toEqual((blob.state as Record<string, unknown>).lifetime);
+  });
+});
+
+describe('v10 → v11 migration (the Decimatio category retired, ADR-038)', () => {
+  /** A v10-shaped raw blob with the given lifetime overrides. */
+  function v10Blob(extra: Record<string, unknown>): Record<string, unknown> {
+    const base = currentBlob();
+    const state = base.state as Record<string, unknown>;
+    const lifetime = state.lifetime as Record<string, unknown>;
+    return { ...base, schemaVersion: 10, state: { ...state, lifetime: { ...lifetime, ...extra } } };
+  }
+
+  it('drops the retired rites from the auto-repeat list, keeping any other id', () => {
+    const migrated = migrateSave(v10Blob({ autoRepeat: ['pogrom', 'suggestion', 'caedes'] }));
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.lifetime.autoRepeat).toEqual(['suggestion']);
+  });
+
+  it('drops in-flight retired timers and credits back each one’s base gold price', () => {
+    const migrated = migrateSave(
+      v10Blob({
+        gold: '1000',
+        actionQueue: [
+          { actionId: 'purgatio', remainingSeconds: 200 },
+          { actionId: 'indagatio', remainingSeconds: 90 },
+          { actionId: 'caedes', remainingSeconds: 0.5 },
+          { actionId: 'pogrom', remainingSeconds: 30 },
+        ],
+      }),
+    );
+    expect(migrated.state.lifetime.actionQueue).toEqual([
+      { actionId: 'indagatio', remainingSeconds: 90 },
+    ]);
+    // 1000 + 100,000 (Purgatio) + 10 (Caedes) + 100 (Pogrom)
+    expect(migrated.state.lifetime.gold).toBe('101110');
+  });
+
+  it('returns an acolyte on a retired rite to idle and leaves the others working', () => {
+    const migrated = migrateSave(
+      v10Blob({
+        acolytes: [
+          { id: 1, assignedAction: 'caedes', remainingSeconds: 0.4 },
+          { id: 2, assignedAction: 'suggestion', remainingSeconds: 0.7 },
+          { id: 3, assignedAction: 'purgatio', remainingSeconds: 120 },
+          { id: 4, assignedAction: null },
+        ],
+      }),
+    );
+    expect(migrated.state.lifetime.acolytes).toEqual([
+      { id: 1, assignedAction: null },
+      { id: 2, assignedAction: 'suggestion', remainingSeconds: 0.7 },
+      { id: 3, assignedAction: null },
+      { id: 4, assignedAction: null },
+    ]);
+  });
+
+  it('is a no-op for a v10 save that never worked a Decimatio rite', () => {
+    const blob = v10Blob({
+      gold: '500',
+      autoRepeat: ['suggestion'],
+      actionQueue: [{ actionId: 'suggestion', remainingSeconds: 1 }],
+      acolytes: [{ id: 1, assignedAction: 'indagatio', remainingSeconds: 40 }],
+    });
+    const migrated = migrateSave(blob);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.state.lifetime).toEqual((blob.state as Record<string, unknown>).lifetime);
   });
 });

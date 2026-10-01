@@ -1,9 +1,9 @@
 /**
- * Render smoke tests for the Suasio scroll's outcome ledger (the "logs at the foot" addition, mirroring
- * Decimatio's Index Opervm). The scroll's rites / sigils / dismissal are covered by SuasioPanel.test.ts;
- * this pins the ledger wiring the wrapper introduces: the heading + empty state before anything resolves,
- * and a real Suasio outcome surfacing as a tier chip beside its soul yield, filtered to this program's
- * rites (a Decimatio outcome in the same log must not leak in).
+ * Render smoke tests for the Suasio scroll's outcome ledger (the "logs at the foot" addition). The
+ * scroll's rites / sigils / dismissal are covered by SuasioPanel.test.ts; this pins the ledger wiring
+ * the wrapper introduces: the heading + empty state before anything resolves, and a real Suasio
+ * outcome surfacing as a tier chip beside its soul yield, filtered to this program's rites (another
+ * program's outcome in the same log must not leak in).
  */
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { act, createElement } from 'react';
@@ -52,8 +52,8 @@ describe('SuasioScroll — outcome ledger', () => {
     useGameStore.setState({
       log: [
         { actionId: 'suggestion', tier: 'good', soulsDelta: 5, reprobateDelta: 0, goldDelta: 0 },
-        // A Decimatio rite in the same log must NOT leak into the Suasio ledger.
-        { actionId: 'caedes', tier: 'stellar', soulsDelta: 9, reprobateDelta: -9, goldDelta: 0 },
+        // Another program's outcome in the same log must NOT leak into the Suasio ledger.
+        { actionId: 'indagatio', tier: 'stellar', soulsDelta: 0, reprobateDelta: 0, goldDelta: 0 },
       ],
     });
     render();

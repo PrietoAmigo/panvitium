@@ -97,7 +97,7 @@ describe('commitKatabasis', () => {
         reprobates: 150,
         invocations: { upir: 3 },
         activeToggles: ['panvitium'],
-        actionQueue: [{ actionId: 'caedes', remainingSeconds: 4 }],
+        actionQueue: [{ actionId: 'suggestion', remainingSeconds: 4 }],
         emptioList: ['black-robe'],
       },
     };
@@ -199,9 +199,9 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
         hoard: bn(400),
         activeToggles: ['panvitium'],
         toggleDurations: { panvitium: 12 },
-        actionQueue: [{ actionId: 'caedes', remainingSeconds: 4 }],
+        actionQueue: [{ actionId: 'suggestion', remainingSeconds: 4 }],
         invocations: { imp: 1 },
-        acolytes: [{ id: 1, assignedAction: 'caedes', remainingSeconds: 3 }],
+        acolytes: [{ id: 1, assignedAction: 'suggestion', remainingSeconds: 3 }],
       },
     };
   }

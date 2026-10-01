@@ -1288,6 +1288,56 @@ instead: a few mutually exclusive terms keyed to how much the player has committ
 
 ---
 
+## ADR-038: Decimatio removed — the culling rites, their lever and their seals retired
+
+**Status.** Accepted [2026-10-01]. Supersedes ADR-028's Ira per-level effect (×2 Decimatio
+efficiency) and the Decimatio half of the Retribution skill; supersedes the Decimatio entries of
+ADR-029 / ADR-034 / ADR-035 (Beleth #13, Marax #21, Ipos #22, Raum #40, Focalor #41, Haures #64 and
+Dantalion #71's cost leg).
+
+**Context.** Design decision (player request): *Decimatio*, the culling category, leaves the game
+entirely. Its three gold-priced rites, *Caedes*, *Pogrom* and *Purgatio*, were the only
+player-driven way to turn reprobates into souls; everything else that touched the category (an Ira
+lever, a Retribution success shift, seven seals, a PC program) existed to serve them.
+
+**Decision.**
+
+- **The rites are removed.** `caedes`, `pogrom` and `purgatio` leave `ACTIONS` with their tier
+  weights, resolvers (`resolveCaedes` / `resolvePogrom` / `resolvePurgatio`) and forecast model. The
+  action category union is `'suasio' | 'indagatio' | 'emptio'`. Starting, resolving, auto-repeating
+  or delegating a retired id fails as an unknown action.
+- **The lever is removed.** `decimatioEfficiencyMul` leaves the `Modifiers` bundle, the
+  sigil-targetable fields and `categoryEfficiency`; `IRA_DECIMATIO_EFF_PER_LEVEL` is deleted.
+- **Ira's levels carry no effect** (the slot is empty, pending a re-home). They still count toward
+  the max-Sin-level availability and toggle gates. **Retribution** keeps only its invocation half:
+  `categoryTierModifiers` no longer shifts any category for Ira.
+- **Dormant seals.** A new `SigilEffect` kind, `{ kind: 'inert' }` (ADR-024's holding pattern),
+  keeps a seal's id, name and art while it does nothing; every channel filters by kind, so a dormant
+  seal is skipped everywhere and draws no RNG. Beleth #13, Marax #21, Ipos #22, Focalor #41 and
+  Haures #64 served only Decimatio and go dormant. **Raum #40** goes dormant too: its other leg was a
+  Suasio penalty, and a pure curse is worse than nothing for a player who had bound it. **Dantalion
+  #71** keeps its Suasio lift alone (a plain modifier, no longer composite). The ledger reads a
+  dormant seal's boon as "Dormant" with no magnitude. Bindings are recoverable, so souls already on
+  a dormant seal can be unbound.
+- **The surface is removed.** The PC's *Decimatio* program ("The Breathing Dark"), its strings and
+  CSS, its label/oracle/Risk-tab entries and the unused `effectLabels.decimatioEff` go.
+
+**Consequences.**
+
+- Save schema **v10 → v11** (ADR-023): `migrations/v10-to-v11.ts` strips the retired ids from
+  `lifetime.autoRepeat`, drops in-flight retired timers from `lifetime.actionQueue` (crediting each
+  one's printed base gold price, frozen in the migration: 10 / 100 / 100,000, a floor of what was
+  paid) and returns acolytes delegated to a retired rite to idle. Without it an acolyte would be
+  stuck on an action with no control left to recall it.
+- Determinism (ADR-011): no new RNG draw. A dormant Focalor no longer enters the duplicate-output
+  roll, which only ever drew when a dup seal was bound.
+- Balance: souls now come only from deaths (suicide and murder, their invocation / maleficium /
+  sigil / Panvitium multipliers, Erinyes, Astiwihad). Early soul income is the ambient death rate
+  alone (0.0003 per reprobate per second at base), and gold loses its main early sink. See the
+  README's Remaining list for every gap this opens; each needs a design or sheet decision.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.

@@ -47,7 +47,7 @@ interface SuasioPanelProps {
   closeLabel: string;
   /** The three temptations, in scroll order. */
   actions: readonly SuasioActionView[];
-  /** Resolved-outcome ledger rendered at the foot of the scroll (mirrors Decimatio's Index Opervm). */
+  /** Resolved-outcome ledger rendered at the foot of the scroll. */
   ledger?: ReactNode;
   /** Dismiss the scroll. */
   onClose: () => void;
