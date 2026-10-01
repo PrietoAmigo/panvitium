@@ -7,11 +7,8 @@ import {
   startAction,
   resolveAction,
   resolveSuggestion,
-  resolveCaedes,
   resolveLogismoi,
   resolveImperium,
-  resolvePogrom,
-  resolvePurgatio,
   resolveIndagatio,
   actionUnlocked,
   actionTierDistribution,
@@ -20,8 +17,10 @@ import {
   isAutoRepeating,
   setAutoRepeat,
   ensureAutoRepeatStarted,
+  plannedActionCost,
   ACTIONS,
 } from './actions.js';
+import { categoryEfficiency } from './modifiers.js';
 import { MALEFICIA, MALEFICIUM_PRICE_RANGE } from './maleficia.js';
 import { tick } from './tick.js';
 
@@ -36,6 +35,10 @@ const withGold = (s: GameState, g: number): GameState => ({
 const withLuxuria = (s: GameState, level: number): GameState => ({
   ...s,
   devotion: { ...s.devotion, luxuria: bn(180 ** level) },
+});
+const withInfluence = (s: GameState, n: number): GameState => ({
+  ...s,
+  lifetime: { ...s.lifetime, influence: bn(n) },
 });
 const withIra = (s: GameState, level: number): GameState => ({
   ...s,
@@ -53,18 +56,28 @@ const withReprobates = (s: GameState, n: number): GameState => ({
 const withSouls = (s: GameState, n: number): GameState => ({ ...s, souls: bn(n) });
 
 describe('startAction', () => {
-  it('queues caedes and deducts its gold cost when affordable', () => {
-    const r = startAction(withGold(fresh(), 150), 'caedes');
-    expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(goldOf(r.state)).toBe(140); // 150 - 10
-      expect(r.state.lifetime.actionQueue).toEqual([{ actionId: 'caedes', remainingSeconds: 1 }]);
+  it('refuses suggestion without enough influence and rejects unknown actions', () => {
+    expect(startAction(fresh(), 'suggestion').ok).toBe(false);
+    expect(startAction(fresh(), 'nope').ok).toBe(false);
+  });
+
+  it('the retired Decimatio rites are unknown actions (ADR-038)', () => {
+    const rich = withInfluence(withGold(withIra(fresh(), 4), 10_000_000), 100);
+    for (const id of ['caedes', 'pogrom', 'purgatio']) {
+      expect(ACTIONS[id]).toBeUndefined();
+      const r = startAction(rich, id);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.reason).toBe(`unknown action: ${id}`);
     }
   });
 
-  it('refuses caedes without enough gold and rejects unknown actions', () => {
-    expect(startAction(fresh(), 'caedes').ok).toBe(false);
-    expect(startAction(fresh(), 'nope').ok).toBe(false);
+  it('the action catalog holds only the Suasio rites and the two background channels', () => {
+    expect(Object.keys(ACTIONS).sort()).toEqual(
+      ['emptio', 'imperium', 'indagatio', 'logismoi', 'suggestion'].sort(),
+    );
+    expect(new Set(Object.values(ACTIONS).map((d) => d.category))).toEqual(
+      new Set(['suasio', 'indagatio', 'emptio']),
+    );
   });
 
   it('queues suggestion and deducts influence', () => {
@@ -75,28 +88,24 @@ describe('startAction', () => {
   });
 
   it('refuses a second action while one is already underway, then allows it once resolved', () => {
-    const start = {
-      ...withGold(fresh(), 300),
-      lifetime: { ...withGold(fresh(), 300).lifetime, influence: bn(50) },
-    };
-    const first = startAction(start, 'caedes');
+    const start = withInfluence(fresh(), 50);
+    const first = startAction(start, 'suggestion');
     expect(first.ok).toBe(true);
     if (!first.ok) return;
     const blocked = startAction(first.state, 'suggestion'); // a rite is underway
     expect(blocked.ok).toBe(false);
-    const resolved = tick(first.state, 10).state; // caedes completes, queue empties
+    const resolved = tick(first.state, 10).state; // the suggestion completes, queue empties
     expect(startAction(resolved, 'suggestion').ok).toBe(true);
   });
 });
 
 describe('action unlock gating (max Sin level, not a specific Sin)', () => {
-  it('gates Logismoi/Pogrom at level 1 and Imperium at level 3, satisfied by ANY Sin', () => {
+  it('gates Logismoi at level 1 and Imperium at level 3, satisfied by ANY Sin', () => {
     expect(actionUnlocked(fresh(), ACTIONS.logismoi!)).toBe(false);
     // The gate reads the HIGHEST Sin level across all Sins (player tuning), so a non-Luxuria Sin
-    // opens a Suasio rite and a non-Ira Sin opens a Decimatio rite. Tristitia I unlocks both.
+    // opens a Suasio rite: Tristitia I unlocks Logismoi as well as Luxuria I does.
     expect(actionUnlocked(withSin(fresh(), 'tristitia', 1), ACTIONS.logismoi!)).toBe(true);
     expect(actionUnlocked(withLuxuria(fresh(), 1), ACTIONS.logismoi!)).toBe(true);
-    expect(actionUnlocked(withSin(fresh(), 'tristitia', 1), ACTIONS.pogrom!)).toBe(true);
     // Imperium needs level 3 from any Sin: level 2 is not enough, level 3 is.
     expect(actionUnlocked(withSin(fresh(), 'tristitia', 2), ACTIONS.imperium!)).toBe(false);
     expect(actionUnlocked(withSin(fresh(), 'tristitia', 3), ACTIONS.imperium!)).toBe(true);
@@ -213,40 +222,9 @@ describe('resolveSuggestion', () => {
   });
 });
 
-describe('resolveCaedes', () => {
-  it('good kills one reprobate and mints one soul', () => {
-    const s = resolveCaedes(addReprobates(fresh(), 5), 'good', rng());
-    expect(totalReprobates(s)).toBe(4);
-    expect(soulsOf(s)).toBe(1);
-  });
-
-  it('mints nothing when there are no reprobates to kill', () => {
-    expect(soulsOf(resolveCaedes(fresh(), 'good', rng()))).toBe(0);
-  });
-
-  it('never mints more souls than reprobates killed (population caps the kill)', () => {
-    const s = resolveCaedes(addReprobates(fresh(), 5), 'stellar', rng()); // would kill 15..45
-    expect(totalReprobates(s)).toBe(0);
-    expect(soulsOf(s)).toBe(5);
-  });
-
-  it('bad and terrible lose 5% and 15% of current gold', () => {
-    expect(goldOf(resolveCaedes(withGold(fresh(), 1000), 'bad', rng()))).toBe(950);
-    expect(goldOf(resolveCaedes(withGold(fresh(), 1000), 'terrible', rng()))).toBe(850);
-  });
-
-  it('apocalyptic loses 33% gold and 25% of all reprobates, minting no souls (sheet rev)', () => {
-    const s0 = withGold(addReprobates(fresh(), 100), 1000);
-    const s = resolveCaedes(s0, 'apocalyptic', rng());
-    expect(goldOf(s)).toBe(670); // 1000 → keep 67%
-    expect(totalReprobates(s)).toBe(75); // 100 → lose 25%
-    expect(soulsOf(s)).toBe(0); // taken by the Higher Power, not harvested
-  });
-});
-
 describe('tick — action resolution and events', () => {
   it('resolves a queued action only once its time elapses', () => {
-    const started = startAction(withGold(fresh(), 200), 'caedes');
+    const started = startAction(withInfluence(fresh(), 5), 'suggestion');
     if (!started.ok) throw new Error('should start');
     const half = tick(started.state, 0.5);
     expect(half.state.lifetime.actionQueue).toHaveLength(1);
@@ -255,12 +233,12 @@ describe('tick — action resolution and events', () => {
     const done = tick(half.state, 0.5);
     expect(done.state.lifetime.actionQueue).toHaveLength(0);
     expect(done.events).toHaveLength(1);
-    expect(done.events[0]?.actionId).toBe('caedes');
+    expect(done.events[0]?.actionId).toBe('suggestion');
   });
 
-  it('closes the corruption → cull → soul loop deterministically', () => {
-    const seeded = withGold(addReprobates(fresh(), 10), 500);
-    const started = startAction(seeded, 'caedes');
+  it('resolves the corruption loop deterministically from the saved RNG state', () => {
+    const seeded = withInfluence(addReprobates(fresh(), 10), 50);
+    const started = startAction(seeded, 'suggestion');
     if (!started.ok) throw new Error('should start');
     const after = tick(started.state, 10);
     expect(after.state.lifetime.actionQueue).toHaveLength(0);
@@ -273,17 +251,22 @@ describe('tick — action resolution and events', () => {
 
 describe('resolveAction', () => {
   it('returns an event describing the outcome', () => {
-    const { state, event } = resolveAction(addReprobates(fresh(), 5), 'caedes', rng());
+    const s0 = addReprobates(fresh(), 5);
+    const { state, event } = resolveAction(s0, 'suggestion', rng());
     expect(event).not.toBeNull();
     if (event) {
-      expect(event.actionId).toBe('caedes');
-      expect(event.soulsDelta + event.reprobateDelta).toBe(0); // souls minted == reprobates killed
-      expect(soulsOf(state)).toBe(event.soulsDelta);
+      expect(event.actionId).toBe('suggestion');
+      expect(event.soulsDelta).toBe(0); // a temptation corrupts; it never harvests
+      expect(totalReprobates(state) - totalReprobates(s0)).toBe(event.reprobateDelta);
     }
   });
 
-  it('returns a null event for an unknown action', () => {
+  it('returns a null event for an unknown action, a retired Decimatio rite included', () => {
     expect(resolveAction(fresh(), 'nope', rng()).event).toBeNull();
+    const s0 = addReprobates(fresh(), 5);
+    const r = resolveAction(s0, 'caedes', rng());
+    expect(r.event).toBeNull();
+    expect(r.state).toBe(s0); // untouched: no cull, no soul
   });
 });
 
@@ -317,7 +300,7 @@ describe('modifier integration', () => {
 });
 
 describe('modifier integration — per-category efficiency', () => {
-  it('Luxuria levels scale Suggestion cost but not Caedes (sheet rev 2026-06-12)', () => {
+  it('Luxuria levels scale Suggestion cost but not the time-mode channels (sheet rev 2026-06-12)', () => {
     // Luxuria L1 → suasioEffMul = 2. Suggestion influence cost = ceil(1 × 2) = 2.
     const base = fresh();
     const state: GameState = {
@@ -328,37 +311,29 @@ describe('modifier integration — per-category efficiency', () => {
     const r1 = startAction(state, 'suggestion');
     expect(r1.ok).toBe(true);
     if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(98); // 100 − 2
-
-    // Caedes on the same state pays base 10 gold (no Decimatio boost in play).
-    const r2 = startAction(state, 'caedes');
-    expect(r2.ok).toBe(true);
-    if (r2.ok) expect(floor(r2.state.lifetime.gold).toNumber()).toBe(490); // 500 − 10
+    // The Suasio lift never reaches Indagatio or Emptio.
+    expect(categoryEfficiency(state, 'indagatio')).toBe(1);
+    expect(categoryEfficiency(state, 'emptio')).toBe(1);
   });
 
-  it('Ira levels scale Caedes cost but not Suggestion (sheet rev 2026-06-12)', () => {
-    // Ira L1 → decimatioEffMul = 2. Caedes gold cost = ceil(10 × 2) = 20.
-    const base = fresh();
-    const state: GameState = {
-      ...base,
-      devotion: { ...base.devotion, ira: bn(180) },
-      lifetime: { ...base.lifetime, influence: bn(100), gold: bn(1000) },
-    };
-    const r1 = startAction(state, 'caedes');
-    expect(r1.ok).toBe(true);
-    if (r1.ok) expect(floor(r1.state.lifetime.gold).toNumber()).toBe(980); // 1000 − 20
-
-    const r2 = startAction(state, 'suggestion');
-    expect(r2.ok).toBe(true);
-    if (r2.ok) expect(floor(r2.state.lifetime.influence).toNumber()).toBe(99); // 100 − 1
+  it('Ira levels scale no action cost now that Decimatio is retired (ADR-038)', () => {
+    const base = withInfluence(withGold(fresh(), 1000), 100);
+    const ira = withIra(base, 3);
+    for (const id of Object.keys(ACTIONS)) {
+      expect(plannedActionCost(ira, id)).toEqual(plannedActionCost(base, id));
+    }
+    const r = startAction(withIra(base, 1), 'suggestion');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(99); // 100 − 1
   });
 });
 
 describe('modifier integration — tier weight shifts reach resolveAction', () => {
-  it('Lucifer (Morning Star) at L4 reliably shifts Caedes tier choices on shared RNG seeds', () => {
+  it('Lucifer (Morning Star) at L4 reliably shifts Logismoi tier choices on shared RNG seeds', () => {
     // At Lucifer L4 (intensity ≈ 6.60 / 1.317 ≈ 5.01), Stellar weight goes from 0.01 → ≈ 0.06
     // (pre-normalization); normalized Stellar share is ≈ 6 %. Across many identical seeds the same
-    // draw lands on a different tier a few percent of the time (18 of these 200). The bar here is
-    // non-zero: prove the wiring is real.
+    // draw lands on a different tier a few percent of the time. The bar here is non-zero: prove the
+    // wiring is real.
     const trials = 200;
     let differing = 0;
     for (let i = 0; i < trials; i++) {
@@ -368,15 +343,15 @@ describe('modifier integration — tier weight shifts reach resolveAction', () =
         devotion: { ...s0.devotion, superbia: bn(1049760000) },
       };
       const seed = hashSeed(`wire-${i}`);
-      const t0 = resolveAction(s0, 'caedes', makeRng(seed)).event?.tier;
-      const tL = resolveAction(sL, 'caedes', makeRng(seed)).event?.tier;
+      const t0 = resolveAction(s0, 'logismoi', makeRng(seed)).event?.tier;
+      const tL = resolveAction(sL, 'logismoi', makeRng(seed)).event?.tier;
       if (t0 !== tL) differing++;
     }
     expect(differing).toBeGreaterThan(5);
   });
 });
 
-describe('resolveAction — per-category success shift (Resignation/Retribution, 02 §2)', () => {
+describe('resolveAction — per-category success shift (Resignation, 02 §2)', () => {
   /** Roll `n` outcomes of `actionId` against a fixed seed and count success tiers (Good+). */
   function successesOf(state: GameState, actionId: string, n: number): number {
     const r = makeRng(hashSeed('shift-test'));
@@ -402,98 +377,12 @@ describe('resolveAction — per-category success shift (Resignation/Retribution,
     expect(withResignation).toBeGreaterThan(base);
   });
 
-  it('high Ira yields more Decimatio successes', () => {
-    const baseDec = successesOf(fresh(), 'caedes', 400);
+  it('high Ira shifts no category: Retribution lost its Decimatio half (ADR-038)', () => {
     const ira = { ...fresh(), devotion: { ...fresh().devotion, ira: bn(1_000_000) } };
-    expect(successesOf(ira, 'caedes', 400)).toBeGreaterThan(baseDec);
-    // (That Ira leaves Suasio's tier weights untouched is proven deterministically in
-    // modifiers.test.ts via categoryTierModifiers(ira, 'suasio') === {}.)
-  });
-});
-
-describe('Decimatio gating + Pogrom target', () => {
-  it('gates Pogrom at Ira 1 and Purgatio at Ira 3', () => {
-    expect(actionUnlocked(fresh(), ACTIONS.pogrom!)).toBe(false);
-    expect(actionUnlocked(withIra(fresh(), 1), ACTIONS.pogrom!)).toBe(true);
-    expect(actionUnlocked(withIra(fresh(), 2), ACTIONS.purgatio!)).toBe(false);
-    expect(actionUnlocked(withIra(fresh(), 3), ACTIONS.purgatio!)).toBe(true);
-    expect(actionUnlocked(fresh(), ACTIONS.caedes!)).toBe(true); // ungated
-  });
-
-  it('Pogrom starts without a target now (subtypes removed; it culls the pool)', () => {
-    const ready = withGold(withIra(fresh(), 2), 100_000);
-    const ok = startAction(ready, 'pogrom');
-    expect(ok.ok).toBe(true);
-    if (ok.ok) expect(goldOf(ok.state)).toBeLessThan(100_000); // gold was charged
-  });
-});
-
-describe('resolvePogrom', () => {
-  const seed = (): GameState => withGold(addReprobates(fresh(), 200), 1000);
-  it('Stellar culls 2.5% of the pool and harvests a soul per death (sheet rev)', () => {
-    const s = resolvePogrom(seed(), 'stellar', rng());
-    expect(s.lifetime.reprobates).toBe(195); // 200 - floor(200×0.025)
-    expect(soulsOf(s)).toBe(5);
-  });
-  it('a successful cull always claims at least one soul, even when the % floors to zero', () => {
-    // Good is 0.1%: floor(200×0.001) = 0, which would make the rite a no-op on a small flock. The
-    // floor of 1 keeps a Good Pogrom from silently doing nothing at typical populations.
-    const s = resolvePogrom(seed(), 'good', rng());
-    expect(s.lifetime.reprobates).toBe(199); // 200 - max(1, floor(200×0.001))
-    expect(soulsOf(s)).toBe(1);
-  });
-  it('the cull still scales past one as the flock grows', () => {
-    const big = withGold(addReprobates(fresh(), 5000), 1000);
-    const s = resolvePogrom(big, 'good', rng());
-    expect(s.lifetime.reprobates).toBe(4995); // 5000 - floor(5000×0.001) = 5
-    expect(soulsOf(s)).toBe(5);
-  });
-  it('a positive tier on an empty flock is a harmless no-op (no negative kill)', () => {
-    const empty = withGold(fresh(), 1000);
-    const s = resolvePogrom(empty, 'stellar', rng());
-    expect(totalReprobates(s)).toBe(0);
-    expect(soulsOf(s)).toBe(0);
-  });
-  it('Terrible lets the Church seize 15% (no souls); Apocalyptic burns 66% gold AND half the flock', () => {
-    const terrible = resolvePogrom(seed(), 'terrible', rng());
-    expect(terrible.lifetime.reprobates).toBe(170); // 200 - floor(200×0.15)
-    expect(soulsOf(terrible)).toBe(0);
-    const apoc = resolvePogrom(seed(), 'apocalyptic', rng());
-    expect(goldOf(apoc)).toBe(340); // keep 34%
-    expect(totalReprobates(apoc)).toBe(100); // lose half, unharvested
-    expect(soulsOf(apoc)).toBe(0);
-  });
-  it('Neutral does nothing', () => {
-    const s = resolvePogrom(seed(), 'neutral', rng());
-    expect(totalReprobates(s)).toBe(200);
-    expect(goldOf(s)).toBe(1000);
-  });
-});
-
-describe('resolvePurgatio', () => {
-  const seed = (): GameState => {
-    let s = addReprobates(fresh(), 100);
-    s = addReprobates(s, 100);
-    return withGold(s, 1000);
-  };
-  it('Stellar kills a quarter of the flock and harvests a soul each (sheet rev)', () => {
-    const s = resolvePurgatio(seed(), 'stellar', rng());
-    expect(totalReprobates(s)).toBe(150); // 200 - floor(200×0.25)
-    expect(soulsOf(s)).toBe(50);
-  });
-  it('Good culls 1% of all reprobates (sheet rev)', () => {
-    const s = resolvePurgatio(seed(), 'good', rng());
-    expect(totalReprobates(s)).toBe(198); // 200 - floor(200×0.01)
-    expect(soulsOf(s)).toBe(2);
-  });
-  it('Terrible burns ALL gold; Apocalyptic burns all gold and the whole flock (sheet rev)', () => {
-    const terrible = resolvePurgatio(seed(), 'terrible', rng());
-    expect(goldOf(terrible)).toBe(0);
-    expect(totalReprobates(terrible)).toBe(200); // the flock survives Terrible
-    const apoc = resolvePurgatio(seed(), 'apocalyptic', rng());
-    expect(goldOf(apoc)).toBe(0);
-    expect(totalReprobates(apoc)).toBe(0);
-    expect(soulsOf(apoc)).toBe(0); // none of it harvested
+    // Same seed, same draws: Ira's skill leaves every surviving category's tier weights untouched.
+    for (const id of ['suggestion', 'logismoi', 'indagatio']) {
+      expect(successesOf(ira, id, 400)).toBe(successesOf(fresh(), id, 400));
+    }
   });
 });
 
@@ -506,22 +395,17 @@ describe('delegated (low-efficiency) resolutions scale their LOSSES by efficienc
     expect(n).toBeLessThanOrEqual(target);
   };
 
-  it('Purgatio Terrible at acolyte efficiency 0.33 keeps ~67% of gold (not zero)', () => {
-    const s = withGold(addReprobates(fresh(), 200), 1_000_000);
-    // Player (eff 1) burns all gold; a delegated cull at 0.33 burns only 33% of it.
-    expect(goldOf(resolvePurgatio(s, 'terrible', rng(), 1))).toBe(0);
-    near(goldOf(resolvePurgatio(s, 'terrible', rng(), 0.33)), 670_000); // 1e6 × (1 − 0.33)
+  it('Indagatio Apocalyptic at efficiency 0.5 halves the gold bite', () => {
+    const s = withGold(fresh(), 1_000_000);
+    // Full: −80% gold. At 0.5: −40%.
+    near(goldOf(resolveIndagatio(s, 'apocalyptic', rng(), 1).state), 200_000); // 1e6 × (1 − 0.8)
+    near(goldOf(resolveIndagatio(s, 'apocalyptic', rng(), 0.5).state), 600_000); // 1e6 × (1 − 0.4)
   });
 
-  it('Caedes Apocalyptic at efficiency 0.5 halves both the gold and the reprobate loss', () => {
-    const s = withGold(addReprobates(fresh(), 200), 1000);
-    // Full: −33% gold, −25% flock. At 0.5: −16.5% gold, −12.5% flock.
-    const full = resolveCaedes(s, 'apocalyptic', rng(), 1);
-    near(goldOf(full), 670); // 1000 × (1 − 0.33)
-    expect(totalReprobates(full)).toBe(150); // 200 − floor(200 × 0.25)
-    const half = resolveCaedes(s, 'apocalyptic', rng(), 0.5);
-    near(goldOf(half), 835); // 1000 × (1 − 0.165)
-    expect(totalReprobates(half)).toBe(175); // 200 − floor(200 × 0.125)
+  it('Suggestion Terrible at efficiency 0.5 halves the flock loss', () => {
+    const s = addReprobates(fresh(), 1000);
+    expect(totalReprobates(resolveSuggestion(s, 'terrible', rng(), 1))).toBe(950); // −5%
+    expect(totalReprobates(resolveSuggestion(s, 'terrible', rng(), 0.5))).toBe(975); // −2.5%
   });
 
   it('Suggestion Apocalyptic at invocation-runner efficiency 0.05 barely dents the flock', () => {
@@ -534,7 +418,7 @@ describe('delegated (low-efficiency) resolutions scale their LOSSES by efficienc
   it('a hand cast (efficiency ≥ 1) is unchanged — the clamp keeps losses at full strength', () => {
     const s = withGold(addReprobates(fresh(), 200), 1000);
     // eff 3 (a heavily-built player) still loses the full 15% — never more (the clamp caps at 1).
-    near(goldOf(resolveCaedes(s, 'terrible', rng(), 3)), 850); // 1000 × (1 − 0.15)
+    near(goldOf(resolveIndagatio(s, 'terrible', rng(), 3).state), 850); // 1000 × (1 − 0.15)
   });
 });
 
@@ -581,9 +465,9 @@ describe('actionTierDistribution (oracular reveals, 5.1)', () => {
     expect(dist.apocalyptic).toBeCloseTo(0.05, 10);
   });
 
-  it('reflects the base weights for Caedes (Good is the dominant tier)', () => {
+  it('reflects the base weights for Suggestion (Good is the dominant tier)', () => {
     const s = createInitialState('oracle-test', 0);
-    const dist = actionTierDistribution(s, 'caedes');
+    const dist = actionTierDistribution(s, 'suggestion');
     for (const t of TIERS) if (t !== 'good') expect(dist.good).toBeGreaterThan(dist[t]);
   });
 
@@ -653,15 +537,21 @@ describe('actionOutcomeForecast — expected outcome + variance', () => {
     expect(f.reprobates.sd).toBeGreaterThan(0); // stochastic outcome
   });
 
-  it('is deterministic for forced-Good Caedes: +units souls, −units reprobates, sd 0', () => {
+  it('is deterministic for forced-Good Suggestion: +units reprobates, no souls, sd 0', () => {
     const state = addReprobates(fresh(), 200);
-    const f = actionOutcomeForecast(state, 'caedes', 1, 'good');
-    expect(f.reprobates.mean).toBeCloseTo(-1, 6);
-    expect(f.souls.mean).toBeCloseTo(1, 6);
+    const f = actionOutcomeForecast(state, 'suggestion', 1, 'good');
+    expect(f.reprobates.mean).toBeCloseTo(1, 6);
+    expect(f.souls.mean).toBeCloseTo(0, 6);
     expect(f.reprobates.sd).toBeCloseTo(0, 6);
-    const e = empirical(state, 'caedes', 1, 'good', 2000);
-    expect(e.repMean).toBeCloseTo(-1, 6);
-    expect(e.soulMean).toBeCloseTo(1, 6);
+    const e = empirical(state, 'suggestion', 1, 'good', 2000);
+    expect(e.repMean).toBeCloseTo(1, 6);
+    expect(e.soulMean).toBeCloseTo(0, 6);
+  });
+
+  it('returns a zero forecast for a retired Decimatio rite (ADR-038)', () => {
+    const f = actionOutcomeForecast(addReprobates(fresh(), 200), 'caedes', 1, 'good');
+    expect(f.souls.mean).toBe(0);
+    expect(f.reprobates.mean).toBe(0);
   });
 
   it('forecasts Indagatio as ~one maleficium surfaced per cycle, no soul/reprobate delta', () => {
@@ -684,84 +574,90 @@ describe('actionOutcomeForecast — expected outcome + variance', () => {
 
 describe('auto-repeat (player-slot looping, 02 §3)', () => {
   it('gates on the action’s toggle level (delegateUnlock); never Indagatio/Emptio', () => {
-    // Caedes toggles at Ira 1: sealed at Ira 0, open at Ira 1.
-    expect(isAutoRepeatable(fresh(), 'caedes')).toBe(false);
-    expect(isAutoRepeatable(withIra(fresh(), 1), 'caedes')).toBe(true);
-    // The gate is the max Sin level, not a specific Sin: a non-Ira Sin opens Caedes' auto-repeat too.
-    expect(isAutoRepeatable(withSin(fresh(), 'luxuria', 1), 'caedes')).toBe(true);
-    // Pogrom toggles at Ira 2 (player tuning; was 3) — still sealed at Ira 1.
-    expect(isAutoRepeatable(withIra(fresh(), 1), 'pogrom')).toBe(false);
-    expect(isAutoRepeatable(withIra(fresh(), 2), 'pogrom')).toBe(true);
+    // Suggestion toggles at max Sin level 1: sealed at 0, open at 1 from ANY Sin (Ira included).
+    expect(isAutoRepeatable(fresh(), 'suggestion')).toBe(false);
+    expect(isAutoRepeatable(withIra(fresh(), 1), 'suggestion')).toBe(true);
+    expect(isAutoRepeatable(withSin(fresh(), 'luxuria', 1), 'suggestion')).toBe(true);
+    // Logismoi toggles at level 2 (player tuning; was 3) — still sealed at level 1.
+    expect(isAutoRepeatable(withIra(fresh(), 1), 'logismoi')).toBe(false);
+    expect(isAutoRepeatable(withIra(fresh(), 2), 'logismoi')).toBe(true);
     // No toggle level → never player-auto-repeatable.
     expect(isAutoRepeatable(withIra(fresh(), 3), 'indagatio')).toBe(false);
     expect(isAutoRepeatable(withIra(fresh(), 3), 'emptio')).toBe(false);
+    // A retired Decimatio rite is never auto-repeatable (ADR-038).
+    expect(isAutoRepeatable(withIra(fresh(), 4), 'caedes')).toBe(false);
   });
 
   it('enabling adds the id and starts the first cycle immediately', () => {
-    const s = withIra(withGold(fresh(), 1000), 1);
-    const next = setAutoRepeat(s, 'caedes', true);
-    expect(isAutoRepeating(next, 'caedes')).toBe(true);
-    expect(next.lifetime.autoRepeat).toEqual(['caedes']);
-    // The loop kicked off in the player's slot and paid its first cycle up front (cost is scaled by
-    // the Ira-driven Decimatio efficiency, so just assert it was charged, not the exact amount).
-    expect(next.lifetime.actionQueue).toEqual([{ actionId: 'caedes', remainingSeconds: 1 }]);
-    expect(goldOf(next)).toBeLessThan(1000);
+    // Ira opens the toggle without touching Suasio efficiency, so the cost stays the base 1.
+    const s = withIra(withInfluence(fresh(), 100), 1);
+    const next = setAutoRepeat(s, 'suggestion', true);
+    expect(isAutoRepeating(next, 'suggestion')).toBe(true);
+    expect(next.lifetime.autoRepeat).toEqual(['suggestion']);
+    // The loop kicked off in the player's slot and paid its first cycle up front.
+    expect(next.lifetime.actionQueue).toEqual([{ actionId: 'suggestion', remainingSeconds: 1 }]);
+    expect(floor(next.lifetime.influence).toNumber()).toBe(99);
   });
 
   it('is a no-op when the action is not auto-repeatable yet', () => {
-    const s = withGold(fresh(), 1000); // Ira 0 — caedes not toggle-unlocked
-    const next = setAutoRepeat(s, 'caedes', true);
+    const s = withInfluence(fresh(), 1000); // every Sin at 0 — suggestion not toggle-unlocked
+    const next = setAutoRepeat(s, 'suggestion', true);
     expect(next).toBe(s);
   });
 
+  it('enabling a retired Decimatio rite is a no-op (ADR-038)', () => {
+    const s = withIra(withGold(fresh(), 1_000_000), 4);
+    expect(setAutoRepeat(s, 'caedes', true)).toBe(s);
+  });
+
   it('enabling one player rite is mutually exclusive with another (one slot)', () => {
-    let s = withIra(withGold(fresh(), 5000), 3); // both caedes and pogrom open
-    s = setAutoRepeat(s, 'caedes', true);
-    expect(s.lifetime.autoRepeat).toEqual(['caedes']);
-    s = setAutoRepeat(s, 'pogrom', true);
-    expect(s.lifetime.autoRepeat).toEqual(['pogrom']); // caedes dropped — only one rite loops
+    let s = withIra(withInfluence(fresh(), 5000), 3); // both suggestion and logismoi open
+    s = setAutoRepeat(s, 'suggestion', true);
+    expect(s.lifetime.autoRepeat).toEqual(['suggestion']);
+    s = setAutoRepeat(s, 'logismoi', true);
+    expect(s.lifetime.autoRepeat).toEqual(['logismoi']); // suggestion dropped — only one rite loops
   });
 
   it('disabling drops the id but leaves the in-flight cycle to finish', () => {
-    let s = setAutoRepeat(withIra(withGold(fresh(), 1000), 1), 'caedes', true);
+    let s = setAutoRepeat(withIra(withInfluence(fresh(), 1000), 1), 'suggestion', true);
     expect(s.lifetime.actionQueue).toHaveLength(1);
-    s = setAutoRepeat(s, 'caedes', false);
-    expect(isAutoRepeating(s, 'caedes')).toBe(false);
+    s = setAutoRepeat(s, 'suggestion', false);
+    expect(isAutoRepeating(s, 'suggestion')).toBe(false);
     expect(s.lifetime.actionQueue).toHaveLength(1); // the running cycle is not cancelled
   });
 
   it('the tick re-queues an auto-repeating rite after its cycle resolves', () => {
     const s = setAutoRepeat(
-      withReprobates(withIra(withGold(fresh(), 5000), 1), 100),
-      'caedes',
+      withReprobates(withIra(withInfluence(fresh(), 5000), 1), 100),
+      'suggestion',
       true,
     );
     expect(s.lifetime.actionQueue).toHaveLength(1);
-    // Advance exactly one cycle: the running caedes resolves, then a fresh one is queued.
+    // Advance exactly one cycle: the running suggestion resolves, then a fresh one is queued.
     const after = tick(s, 1).state;
-    const queued = after.lifetime.actionQueue.filter((t) => t.actionId === 'caedes');
+    const queued = after.lifetime.actionQueue.filter((t) => t.actionId === 'suggestion');
     expect(queued).toHaveLength(1);
     expect(queued[0]!.remainingSeconds).toBeCloseTo(1, 3); // a fresh full cycle
   });
 
   it('a stalled auto-repeat rite retries on a later tick once affordable', () => {
-    // Ira 1 (toggle open) but too poor to pay caedes's 20 gold: enabling stalls (no timer).
-    let s = setAutoRepeat(withIra(withGold(fresh(), 10), 1), 'caedes', true);
-    expect(s.lifetime.autoRepeat).toEqual(['caedes']);
+    // Ira 1 (toggle open) but no influence for suggestion's 1: enabling stalls (no timer).
+    let s = setAutoRepeat(withIra(fresh(), 1), 'suggestion', true);
+    expect(s.lifetime.autoRepeat).toEqual(['suggestion']);
     expect(s.lifetime.actionQueue).toHaveLength(0); // couldn't afford the first cycle
-    // A tick while still broke does not start it.
+    // A tick while still broke does not start it (one second regenerates only half an influence).
     s = tick(s, 1).state;
     expect(s.lifetime.actionQueue).toHaveLength(0);
     // Fund it, then the next tick picks the loop back up.
-    s = withGold(s, 1000);
+    s = withInfluence(s, 1000);
     s = tick(s, 1).state;
-    expect(s.lifetime.actionQueue.some((t) => t.actionId === 'caedes')).toBe(true);
+    expect(s.lifetime.actionQueue.some((t) => t.actionId === 'suggestion')).toBe(true);
   });
 
   it('ensureAutoRepeatStarted is idempotent when the rite is already running', () => {
-    const s = setAutoRepeat(withIra(withGold(fresh(), 1000), 1), 'caedes', true);
+    const s = setAutoRepeat(withIra(withInfluence(fresh(), 1000), 1), 'suggestion', true);
     const again = ensureAutoRepeatStarted(s);
     expect(again.lifetime.actionQueue).toHaveLength(1); // not double-queued
-    expect(goldOf(again)).toBe(goldOf(s)); // not double-charged
+    expect(floor(again.lifetime.influence).toNumber()).toBe(floor(s.lifetime.influence).toNumber()); // not double-charged
   });
 });

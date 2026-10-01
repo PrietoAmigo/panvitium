@@ -74,21 +74,26 @@ describe('computeModifiers — per-category efficiency', () => {
   it('Luxuria LEVELS lift suasioEfficiencyMul ×2 per level, and only that (sheet rev)', () => {
     const m = computeModifiers(withDevotion({ luxuria: bn(180) }));
     expect(m.suasioEfficiencyMul).toBeCloseTo(2, 6);
-    expect(m.decimatioEfficiencyMul).toBe(1);
+    expect(m.indagatioEfficiencyMul).toBe(1);
+    expect(m.emptioEfficiencyMul).toBe(1);
   });
 
-  it('Ira LEVELS lift decimatioEfficiencyMul ×2 per level, and only that (sheet rev)', () => {
-    const m = computeModifiers(withDevotion({ ira: bn(32400) })); // L2
-    expect(m.decimatioEfficiencyMul).toBeCloseTo(4, 6);
+  it('Ira LEVELS lift no category efficiency since Decimatio retired (ADR-038)', () => {
+    const s = withDevotion({ ira: bn(32400) }); // L2
+    const m = computeModifiers(s);
     expect(m.suasioEfficiencyMul).toBe(1);
+    expect(m.indagatioEfficiencyMul).toBe(1);
+    expect(m.emptioEfficiencyMul).toBe(1);
+    expect(m.playerEfficiencyMul).toBe(1);
+    expect(Object.keys(m)).not.toContain('decimatioEfficiencyMul');
   });
 
   it('categoryEfficiency stacks player × category multiplicatively', () => {
     // Gula 180 → player ≈ 1.3132 (skill); Luxuria L1 → Suasio mul 2. Total Suasio eff ≈ 2.6265.
-    // Decimatio receives no category boost → just the player skill.
+    // Emptio receives no category boost → just the player skill.
     const s = withDevotion({ gula: bn(180), luxuria: bn(180) });
     expect(categoryEfficiency(s, 'suasio')).toBeCloseTo(1.3132 * 2, 2);
-    expect(categoryEfficiency(s, 'decimatio')).toBeCloseTo(1.3132, 3);
+    expect(categoryEfficiency(s, 'emptio')).toBeCloseTo(1.3132, 3);
   });
 });
 
@@ -223,9 +228,10 @@ describe('categoryTierModifiers — per-category success shift (02 §2)', () => 
     };
   };
 
-  it('is empty with no source (no Tristitia/Ira Devotion, no Lamia)', () => {
+  it('is empty with no source (no Tristitia Devotion, no Lamia)', () => {
     expect(categoryTierModifiers(fresh(), 'suasio')).toEqual({});
-    expect(categoryTierModifiers(fresh(), 'decimatio')).toEqual({});
+    expect(categoryTierModifiers(fresh(), 'indagatio')).toEqual({});
+    expect(categoryTierModifiers(fresh(), 'emptio')).toEqual({});
   });
 
   it('Resignation (Tristitia) lifts Suasio Stellar+Excellent+Good by (1 + intensity), equally', () => {
@@ -238,16 +244,16 @@ describe('categoryTierModifiers — per-category success shift (02 §2)', () => 
     // Failure tiers are untouched (renormalization redistributes against them).
     expect(m.neutral).toBeUndefined();
     expect(m.terrible).toBeUndefined();
-    // Tristitia does NOT shift Decimatio.
-    expect(categoryTierModifiers(s, 'decimatio')).toEqual({});
+    // Tristitia does NOT shift the time-mode categories.
+    expect(categoryTierModifiers(s, 'indagatio')).toEqual({});
+    expect(categoryTierModifiers(s, 'emptio')).toEqual({});
   });
 
-  it('Retribution (Ira) lifts Decimatio success the same way, and not Suasio', () => {
-    const s = withDevotion({ ira: bn(180) });
-    const expected = 1 + skillIntensity(s.devotion.ira);
-    const m = categoryTierModifiers(s, 'decimatio');
-    expect(m.good).toBeCloseTo(expected, 6);
+  it('Retribution (Ira) shifts no category: its Decimatio success half retired (ADR-038)', () => {
+    const s = withDevotion({ ira: bn(1_000_000) });
     expect(categoryTierModifiers(s, 'suasio')).toEqual({});
+    expect(categoryTierModifiers(s, 'indagatio')).toEqual({});
+    expect(categoryTierModifiers(s, 'emptio')).toEqual({});
   });
 
   it('Lamia no longer shifts Suasio success (reclassified as a Suasio runner)', () => {

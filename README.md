@@ -103,9 +103,26 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1266** (sim 620 · shared 81 · api 20 · web 545).
+**Current test count: 1257** (sim 607 · shared 86 · api 20 · web 544).
 
-> **Latest change — Retune (Imperium, Lamia, Succubus) and the once-only calls made permanent.**
+> **Latest change — Decimatio removed (ADR-038).** Design decision: the culling category leaves the
+> game. Its three rites (**Caedes**, **Pogrom**, **Purgatio**) are gone from the action catalog with
+> their tier weights, resolvers and forecast model, and the PC's **Decimatio** program ("The
+> Breathing Dark") is gone with its strings and CSS. The `decimatioEfficiencyMul` lever is removed
+> from the modifier bundle, the sigil fields and `categoryEfficiency`; **Ira's levels** now carry no
+> effect (they still count toward the max-Sin-level gates) and **Retribution** keeps only its
+> invocation-efficiency half. A new **dormant** sigil kind (`inert`) holds the six seals that served
+> only Decimatio (Beleth #13, Marax #21, Ipos #22, Raum #40, Focalor #41, Haures #64; Raum's
+> remaining leg would have been a pure Suasio curse) with ids, names and art kept; the ledger reads
+> them as "Dormant" with no magnitude. **Dantalion #71** keeps only its Suasio lift. Save schema
+> **v10 → v11**: the migration strips the retired ids from auto-repeat, drops in-flight retired
+> timers (refunding each one's base gold price) and idles acolytes delegated to them. Acolyte
+> delegation and auto-repeat now cover Suasio (and Indagatio for acolytes); the generic engine tests
+> (queueing, auto-repeat, runners, loss scaling, forecasts) moved onto Suggestion and Indagatio. No
+> RNG change for any save without a Decimatio rite. Every gap this opens is listed under
+> **Remaining** below. Net **−9 tests** (sim 620 → 607, shared 81 → 86, web 545 → 544).
+>
+> **Earlier change — Retune (Imperium, Lamia, Succubus) and the once-only calls made permanent.**
 > Player tuning: **Imperium** costs **40 influence** (was 100, cut 2.5×); **Lamia** is capped at
 > **10** copies (was uncapped; a save already holding more keeps them until they dispel or the
 > Katabasis clears them, but cannot invoke another); the **Succubus** effect is a tenth of before
@@ -1596,6 +1613,37 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 
 ### Remaining
 
+**Gaps opened by the Decimatio removal (ADR-038)** — each needs a design or sheet decision:
+
+- **Soul economy**: the three rites were the only player-driven reprobate → soul conversion.
+  Souls now come only from deaths: the ambient suicide/murder rates (0.0003 per reprobate per second
+  at base, so ~1 soul per 33 s at 100 reprobates), the death-rate invocations (Imp, Harpy, Banshee,
+  Nightmare), maleficia (Mark of Cain, Ritual Dagger, Galdrabók, Thirty Pieces of Silver, Hollow
+  Effigy, Witch Ladder, Poppet, Mandrake Root, Defixio), the death sigils (Aim #23, Glasya-Labolas
+  #25, Ronove #27, Sabnock #43, Leraie #14), Panvitium, Erinyes and Astiwihad. Early Devotion,
+  sigil and invocation pacing all read souls and need re-checking.
+- **Gold sinks**: Caedes (10 g), Pogrom (100 g) and Purgatio (100,000 g) were the main repeatable
+  gold sinks. Gold now goes to Emptio, the Indagatio stake, the Depraedatio reserve, Panvitium
+  upkeep and Aurevora.
+- **Ira (Satan)**: the **per-level effect is empty** (was ×2 Decimatio efficiency per level); the
+  ledger shows "Its levels carry no effect." The Retribution **skill** lost its Decimatio success
+  shift and now lifts invocation efficiency only.
+- **Dormant seals** (`inert`, no effect, souls still bindable and recoverable): **Beleth #13**
+  (+Decimatio positive outcomes), **Marax #21** (+Decimatio efficiency), **Ipos #22** (−Decimatio
+  negative outcomes), **Raum #40** (+Decimatio / −Suasio efficiency tradeoff), **Focalor #41**
+  (Decimatio double output), **Haures #64** (+Decimatio Stellar).
+- **Dantalion #71**: lost its −Decimatio cost; it is now a plain +Suasio efficiency seal, a free
+  boon that duplicates Zagan #61's lever at full strength.
+- **Acolytes**: delegation covers Suggestion / Logismoi / Imperium and Indagatio only; no gold-cost
+  rite remains to delegate.
+- **Title About copy** (`strings.menu.aboutBody`): "Corrupt the living into reprobates, cull them
+  for their souls" now describes an indirect cull (deaths), not a rite.
+- **Gold-loss tails**: Caedes / Pogrom / Purgatio carried the Opera's heaviest gold-loss outcomes;
+  only Indagatio and Emptio still bite gold.
+- **Design handoffs**: `docs/frontend/INTEGRATION.md` and the archived `.dc.html` handoffs still
+  show the Decimatio program; they are historical and were left as delivered. The economy sheet's
+  `Decimatio` tab is no longer read.
+
 **Gaps opened by the loan-book removal (ADR-037)** — each needs a design or sheet decision:
 
 - **Plutus** (Avaritia invocation, "+15% interest income per copy"): it scaled the loan book and the
@@ -1603,10 +1651,10 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 - **Vapula #60** (sigil, `faenerationOutputMul`, "Account income ↑"): same narrowing, interest only.
 - **Early gold pacing**: the loan book was the population-coupled income floor (0.05 gold/s per
   reprobate). Without it, passive gold before a reserve is the 2/s base plus Haagenti #48, Kobold and
-  maleficia; the gold prices (Pogrom 1,000, Purgatio 1,000,000, Emptio, the Indagatio stake, the
-  100-gold Tier I deposit) need re-checking on the sheet.
-- **Culling has no economic cost**: every reprobate used to be a debtor, so Decimatio traded income
-  for souls (03 §1). That tension is gone.
+  maleficia; the gold prices (Emptio, the Indagatio stake, the 100-gold Tier I deposit) need
+  re-checking on the sheet.
+- **Culling has no economic cost**: every reprobate used to be a debtor, so a death traded income
+  for a soul (03 §1). That tension is gone (and the Decimatio culls themselves retired, ADR-038).
 - **Escheat removed**: murders and suicides no longer mint gold (no other death-gold source exists).
 - **Katabasis gold carry-over**: the Peculium floor and the ×1.25 liquidation bonus are gone; gold
   carries over only by the Avaritia level and Purson #20.
@@ -1622,7 +1670,7 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
 Economy-parity tracks still to reconcile against the spreadsheet:
 
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. The **oracular reveals** (Phase 5 slice) have also shipped: owning Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather surfaces a live Opera tier-distribution readout in that item's cabinet detail (a stacked odds bar per action, via a read-only `actionTierDistribution` sim helper that reuses the exact `resolveAction` composition). With this, Maleficia is complete — roster, gating, and every effect.
-- **Opera actions** — all six are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15). _Suasio_ (Suggestion / Logismoi / Imperium) is surfaced on the scroll, and the PC's _Decimatio_ program is complete: _Caedes_, _Pogrom_, and _Purgatio_, each gated by its Ira level. (Post-ADR-024 note: Pogrom culls the single pool — the old present-subtype picker and its no-delegation caveat retired with the subtypes.) Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). The Pogrom (1000) and Purgatio (1,000,000) gold costs are sheet-pinned.
+- **Opera actions** — the three _Suasio_ rites are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15), surfaced on the scroll. Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). _Decimatio_ (Caedes / Pogrom / Purgatio and the PC program) is **retired** (ADR-038; see the gaps above).
 - **Emails (PC program) — impact-feedback system** _(✓ shipped, content authored — 05)_. An inbox that
   surfaces the in-world consequences of the player's descent as incoming correspondence, so the player
   _feels_ the impact rather than reading it only as numbers. The full authored catalog (`docs/05-email-content.md`)
@@ -1661,8 +1709,8 @@ Economy-parity tracks still to reconcile against the spreadsheet:
 **UI work — to be built with Claude Design.** Designed and built in Claude Design. The two items
 below — Emails and the smartphone code terminal — are new in-world features whose scope is still being
 specified (and may carry a small sim hook of their own). _(The Maleficia "Use" affordance, the PC's
-Decimatio program, and the oracular reveals, formerly listed here, have shipped — see the
-Maleficia-effects and Opera-actions bullets above. That clears all three of the surface-the-built-sim
+Decimatio program (since retired, ADR-038), and the oracular reveals, formerly listed here, have
+shipped — see the Maleficia-effects and Opera-actions bullets above. That clears all three of the surface-the-built-sim
 items; the rest of this list is net-new features.)_
 
 - **Emails (PC program).** _(✓ shipped — see the impact-feedback bullet above.)_ The inbox, sim

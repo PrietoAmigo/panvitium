@@ -514,11 +514,7 @@ describe('splitBoon (ledger label)', () => {
   });
 
   it('strips EVERY arrow of a composite label, leaving no dangling mid-string arrow', () => {
-    // Raum #40: two legs, one arrow each; the magnitude column carries the signs.
-    expect(splitBoon(`Decimatio efficiency ${UP}, Suasio efficiency ${DOWN}`).text).toBe(
-      'Decimatio efficiency, Suasio efficiency',
-    );
-    // Andrealphus #65.
+    // Andrealphus #65: two legs, one arrow each; the magnitude column carries the signs.
     expect(splitBoon(`Invocation costs ${DOWN}, Desidia speed ${UP}`).text).toBe(
       'Invocation costs, Desidia speed',
     );

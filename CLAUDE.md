@@ -97,7 +97,7 @@ and the save **envelope** (`save/schema.ts`: `schemaVersion`, monotonic `saveVer
 **Save migrations (ADR-023, `save/migrations/`).** When the persisted shape changes, bump
 `CURRENT_SCHEMA_VERSION` and add a `vN-to-vN+1.ts` migration — never break old saves. Additive,
 optional fields (`additive-optional`) do not require a bump; structural changes do. Current version
-is **10** (`v1-to-v2`: subtype removal; `v2-to-v3`: Mercatus rework; `v3-to-v4`: Decimatio rite id
+is **11** (`v1-to-v2`: subtype removal; `v2-to-v3`: Mercatus rework; `v3-to-v4`: Decimatio rite id
 `caedis` → `caedes` rewritten in persisted action references; `v4-to-v5`: Mercatus → the
 Faeneratio loop — divest-value gold credit, `mercatusDepths` drop; `v5-to-v6`: invocation roster
 rework — clear active invocations, `pendingMorpheus` → `pendingAstiwihad`, drop `morpheusLockedOut`,
@@ -106,7 +106,8 @@ seed `apexInvoked`; `v6-to-v7`: the Stagnation resource renamed to Desidia, `sta
 unified `maleficiaBuffs` map, drop the old Defixio cull curse, strip the removed Iron Nails id;
 `v8-to-v9`: the retired invocation-runner channel, drop `invocationRunners`; `v9-to-v10`: the
 Depraedatio relationship-tier rework, strip the retired contract ids with a fee refund, drop
-`hoardAtDescent`).
+`hoardAtDescent`; `v10-to-v11`: Decimatio retired (ADR-038), strip `caedes` / `pogrom` / `purgatio`
+from auto-repeat, the action queue (base-price refund) and acolyte delegations).
 
 ### `apps/web` — the React SPA (the game)
 

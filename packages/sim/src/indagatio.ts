@@ -4,7 +4,7 @@
  * The player moves liquid gold into a per-lifetime investment (`lifetime.indagatioInvestment`) and
  * can pull it back out again. The invested gold grants action efficiency to Indagatio ALONE (it is
  * folded into `indagatioEfficiencyMul` in `computeModifiers`, which only
- * `categoryEfficiency('indagatio')` — the player's own Cast — reads; Suasio/Decimatio/Emptio and the
+ * `categoryEfficiency('indagatio')` — the player's own Cast — reads; Suasio/Emptio and the
  * acolyte channels never see it). Because Indagatio is a time-mode action, more
  * efficiency means a shorter search (`startAction` divides the duration by it).
  *

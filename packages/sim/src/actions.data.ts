@@ -2,7 +2,8 @@
  * Opera action TUNING DATA (02 §3, 03 §2) — the per-action numbers and tier-weight distributions,
  * separated from the engine in `actions.ts` so the economy knobs live in one editable place. Pure
  * data: types and behaviour stay in `actions.ts`. Numbers are from the economy spreadsheet (Suasio /
- * Decimatio / Indagatio / Emptio); the inline notes record each sheet reconciliation.
+ * Indagatio / Emptio); the inline notes record each sheet reconciliation. (The Decimatio culling
+ * rites, Caedes / Pogrom / Purgatio, are retired: ADR-038.)
  */
 import { type TierWeights } from './probability.js';
 import { type ActionDef } from './actions.js';
@@ -45,38 +46,6 @@ const IMPERIUM_WEIGHTS: TierWeights = {
   apocalyptic: 0.05,
 };
 
-const CAEDES_WEIGHTS: TierWeights = {
-  stellar: 0.01,
-  excellent: 0.05,
-  good: 0.66,
-  neutral: 0.15,
-  bad: 0.1,
-  terrible: 0.02,
-  apocalyptic: 0.01,
-};
-
-/** Pogrom (Decimatio sheet rev 2026-06-12): a riskier mass cull with fatter tails. */
-const POGROM_WEIGHTS: TierWeights = {
-  stellar: 0.015,
-  excellent: 0.06,
-  good: 0.6,
-  neutral: 0.15,
-  bad: 0.1,
-  terrible: 0.06,
-  apocalyptic: 0.015,
-};
-
-/** Purgatio (Decimatio sheet rev 2026-06-12): soul farming with heavy, gold-eating tails. */
-const PURGATIO_WEIGHTS: TierWeights = {
-  stellar: 0.025,
-  excellent: 0.1,
-  good: 0.3,
-  neutral: 0.3,
-  bad: 0.15,
-  terrible: 0.1,
-  apocalyptic: 0.025,
-};
-
 /** Indagatio (03 §2.5): mostly Good/Neutral; Stellar surfaces a profane+, Excellent a rare. */
 const INDAGATIO_WEIGHTS: TierWeights = {
   stellar: 0.001,
@@ -101,8 +70,8 @@ const EMPTIO_WEIGHTS: TierWeights = {
 };
 
 /**
- * The actions implemented so far. Numbers are from the economy spreadsheet (Suasio / Decimatio /
- * Indagatio / Emptio). Indagatio is 150 s baseline (player tuning: half the sheet's 300 s, rev
+ * The actions implemented so far. Numbers are from the economy spreadsheet (Suasio / Indagatio /
+ * Emptio). Indagatio is 150 s baseline (player tuning: half the sheet's 300 s, rev
  * 2026-06-12) and Emptio is 120 s (player tuning: double the former 60 s); both efficiency-mode
  * `time`, so player efficiency divides the duration.
  */
@@ -137,37 +106,6 @@ export const ACTIONS: Record<string, ActionDef> = {
     category: 'suasio',
     cost: { influence: 40 }, // sheet 100; cut 2.5× (player tuning request)
     weights: IMPERIUM_WEIGHTS,
-    efficiencyMode: 'cost-outcome',
-    unlock: 3, // opens at max Sin level III
-    delegateUnlock: 4, // auto/delegate at max Sin level IV
-  },
-  caedes: {
-    id: 'caedes',
-    category: 'decimatio',
-    // Tuning override (player request): the entry cull is a 1 s cast so the opening Decimatio loop
-    // reads as briskly as Suggestion. Overrides the Decimatio sheet's 10 s baseline.
-    baseTimeSeconds: 1,
-    cost: { gold: 10 }, // sheet 100; cut to 1/10 (player tuning request)
-    weights: CAEDES_WEIGHTS,
-    efficiencyMode: 'cost-outcome',
-    delegateUnlock: 1, // auto/delegate unlocks at max Sin level I
-  },
-  pogrom: {
-    id: 'pogrom',
-    category: 'decimatio',
-    baseTimeSeconds: 60, // sheet: "~60s"
-    cost: { gold: 100 }, // sheet 1,000; cut to 1/10 (player tuning request)
-    weights: POGROM_WEIGHTS,
-    efficiencyMode: 'cost-outcome',
-    unlock: 1, // 2nd Decimatio rite opens at max Sin level I (player tuning; was Ira II)
-    delegateUnlock: 2, // auto/delegate at max Sin level II (player tuning; was Ira III)
-  },
-  purgatio: {
-    id: 'purgatio',
-    category: 'decimatio',
-    baseTimeSeconds: 360, // sheet: "~360s" (rev 2026-06-12)
-    cost: { gold: 100_000 }, // sheet 1,000,000; cut to 1/10 (player tuning request)
-    weights: PURGATIO_WEIGHTS,
     efficiencyMode: 'cost-outcome',
     unlock: 3, // opens at max Sin level III
     delegateUnlock: 4, // auto/delegate at max Sin level IV

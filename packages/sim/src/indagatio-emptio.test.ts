@@ -348,18 +348,21 @@ describe('startAction — Indagatio / Emptio', () => {
 
   it('Indagatio scries in the background — it neither blocks nor is blocked by a player action', () => {
     const base = fresh();
-    const funded: GameState = { ...base, lifetime: { ...base.lifetime, gold: bn(5000) } };
+    const funded: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, gold: bn(5000), influence: bn(50) },
+    };
 
     // A player rite holds the slot, yet Indagatio still starts alongside it.
-    const player = startAction(funded, 'caedes');
+    const player = startAction(funded, 'suggestion');
     expect(player.ok).toBe(true);
     if (player.ok) {
       const plusInd = startAction(player.state, 'indagatio');
       expect(plusInd.ok).toBe(true);
       if (plusInd.ok) {
         expect([...plusInd.state.lifetime.actionQueue].map((t) => t.actionId).sort()).toEqual([
-          'caedes',
           'indagatio',
+          'suggestion',
         ]);
       }
     }
@@ -368,7 +371,7 @@ describe('startAction — Indagatio / Emptio', () => {
     const ind = startAction(funded, 'indagatio');
     expect(ind.ok).toBe(true);
     if (ind.ok) {
-      expect(startAction(ind.state, 'caedes').ok).toBe(true);
+      expect(startAction(ind.state, 'suggestion').ok).toBe(true);
       const secondInd = startAction(ind.state, 'indagatio');
       expect(secondInd.ok).toBe(false);
       if (!secondInd.ok) expect(secondInd.reason).toContain('scrying');
@@ -382,20 +385,21 @@ describe('startAction — Indagatio / Emptio', () => {
       lifetime: {
         ...base.lifetime,
         gold: bn(100_000),
+        influence: bn(50),
         emptioList: ['black_robe', 'hand_of_glory'],
       },
     };
 
     // A player rite holds the slot, yet an Emptio still starts alongside it.
-    const player = startAction(funded, 'caedes');
+    const player = startAction(funded, 'suggestion');
     expect(player.ok).toBe(true);
     if (player.ok) {
       const plusEmptio = startAction(player.state, 'emptio', { target: 'black_robe' });
       expect(plusEmptio.ok).toBe(true);
       if (plusEmptio.ok) {
         expect([...plusEmptio.state.lifetime.actionQueue].map((t) => t.actionId).sort()).toEqual([
-          'caedes',
           'emptio',
+          'suggestion',
         ]);
       }
     }
@@ -405,7 +409,7 @@ describe('startAction — Indagatio / Emptio', () => {
     const emptio = startAction(funded, 'emptio', { target: 'black_robe' });
     expect(emptio.ok).toBe(true);
     if (emptio.ok) {
-      expect(startAction(emptio.state, 'caedes').ok).toBe(true);
+      expect(startAction(emptio.state, 'suggestion').ok).toBe(true);
       expect(startAction(emptio.state, 'indagatio').ok).toBe(true);
       const secondEmptio = startAction(emptio.state, 'emptio', { target: 'hand_of_glory' });
       expect(secondEmptio.ok).toBe(false);

@@ -49,10 +49,13 @@ describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
     expect(and.startsWith('−')).toBe(true);
     expect(and).toContain(' / +');
     expect(and.endsWith('%')).toBe(true);
-    // Raum #40: the +Decimatio leg reads '+', the −Suasio leg reads '−'.
-    const raum = effectDisplay(sigilById(40), bn(100_000_000));
-    expect(raum.startsWith('+')).toBe(true);
-    expect(raum).toContain(' / −');
+  });
+
+  it('shows no magnitude for a dormant seal, however many souls it holds (ADR-038)', () => {
+    // Beleth, Marax, Ipos, Raum, Focalor and Haures served only Decimatio and now sleep.
+    for (const id of [13, 21, 22, 40, 41, 64]) {
+      expect(effectDisplay(sigilById(id), bn(100_000_000))).toBe('\u2014');
+    }
   });
 
   it('is zero-safe and tolerates an unknown seal', () => {

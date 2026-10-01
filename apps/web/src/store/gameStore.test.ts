@@ -19,6 +19,11 @@ function patchGold(g: number): void {
   useGameStore.setState({ state: { ...s, lifetime: { ...s.lifetime, gold: bn(g) } } });
 }
 
+function patchInfluence(v: number): void {
+  const s = store().state as GameState;
+  useGameStore.setState({ state: { ...s, lifetime: { ...s.lifetime, influence: bn(v) } } });
+}
+
 function patchSouls(v: number): void {
   const s = store().state as GameState;
   useGameStore.setState({ state: { ...s, souls: bn(v) } });
@@ -56,29 +61,36 @@ describe('gameStore — action wiring', () => {
   });
 
   it('queues an affordable action and clears any notice', () => {
-    patchGold(200);
-    store().act('caedes');
+    patchInfluence(50);
+    store().act('suggestion');
     expect(store().state?.lifetime.actionQueue).toHaveLength(1);
     expect(store().notice).toBeNull();
   });
 
   it('refuses a second action while one is underway (one player action at a time)', () => {
-    patchGold(300);
-    store().act('caedes');
+    patchInfluence(50);
+    store().act('suggestion');
     expect(store().state?.lifetime.actionQueue).toHaveLength(1);
-    store().act('caedes'); // a rite is already underway
+    store().act('suggestion'); // a rite is already underway
     expect(store().state?.lifetime.actionQueue).toHaveLength(1);
     expect(store().notice).toBeTruthy();
   });
 
   it('refuses an unaffordable action with a notice and no queue', () => {
-    store().act('caedes'); // fresh game has no gold
+    store().act('suggestion'); // fresh game has no influence
     expect(store().state?.lifetime.actionQueue ?? []).toHaveLength(0);
     expect(store().notice).toBeTruthy();
   });
 
-  it('dismisses a notice', () => {
+  it('refuses a retired Decimatio rite with a notice and no queue (ADR-038)', () => {
+    patchGold(1_000_000);
     store().act('caedes');
+    expect(store().state?.lifetime.actionQueue ?? []).toHaveLength(0);
+    expect(store().notice).toMatch(/unknown action/);
+  });
+
+  it('dismisses a notice', () => {
+    store().act('suggestion');
     expect(store().notice).toBeTruthy();
     store().dismissNotice();
     expect(store().notice).toBeNull();
@@ -275,22 +287,22 @@ describe('gameStore — the Unveiling queue (maleficia brought home)', () => {
 
 describe('gameStore — outcome log', () => {
   it('records an outcome when a queued action resolves', () => {
-    patchGold(200);
-    store().act('caedes');
-    store().advance(10); // resolves the 10 s Caedes
+    patchInfluence(50);
+    store().act('suggestion');
+    store().advance(10); // resolves the 1 s Suggestion
     expect(store().state?.lifetime.actionQueue).toHaveLength(0);
     expect(store().log.length).toBeGreaterThanOrEqual(1);
-    expect(store().log[0]?.actionId).toBe('caedes');
+    expect(store().log[0]?.actionId).toBe('suggestion');
   });
 
   it('caps the log at 100 entries, newest first', () => {
     for (let i = 0; i < 120; i++) {
-      patchGold(200);
-      store().act('caedes');
+      patchInfluence(50);
+      store().act('suggestion');
       store().advance(10);
     }
     expect(store().log).toHaveLength(100);
-    expect(store().log[0]?.actionId).toBe('caedes');
+    expect(store().log[0]?.actionId).toBe('suggestion');
   });
 });
 
@@ -584,26 +596,26 @@ function patchSin(sin: 'ira', level: number): void {
 
 describe('gameStore — auto-repeat wiring', () => {
   it('toggling auto-repeat on a toggle-unlocked rite starts a looping cycle and clears notices', () => {
-    patchSin('ira', 1); // caedes toggles at Ira 1
-    patchGold(5000);
-    store().toggleAutoRepeat('caedes', true);
+    patchSin('ira', 1); // suggestion toggles at max Sin level 1 (any Sin, Ira included)
+    patchInfluence(5000);
+    store().toggleAutoRepeat('suggestion', true);
     const s = store().state as GameState;
-    expect(s.lifetime.autoRepeat).toEqual(['caedes']);
-    expect(s.lifetime.actionQueue.some((t) => t.actionId === 'caedes')).toBe(true);
+    expect(s.lifetime.autoRepeat).toEqual(['suggestion']);
+    expect(s.lifetime.actionQueue.some((t) => t.actionId === 'suggestion')).toBe(true);
     expect(store().notice).toBeNull();
   });
 
   it('toggling off removes the rite from the auto-repeat set', () => {
     patchSin('ira', 1);
-    patchGold(5000);
-    store().toggleAutoRepeat('caedes', true);
-    store().toggleAutoRepeat('caedes', false);
+    patchInfluence(5000);
+    store().toggleAutoRepeat('suggestion', true);
+    store().toggleAutoRepeat('suggestion', false);
     expect((store().state as GameState).lifetime.autoRepeat).toEqual([]);
   });
 
   it('is a no-op (no crash, empty set) for a rite that is not toggle-unlocked yet', () => {
-    patchGold(5000); // Ira 0 — caedes auto-repeat not yet available
-    store().toggleAutoRepeat('caedes', true);
+    patchInfluence(5000); // every Sin at 0 — suggestion auto-repeat not yet available
+    store().toggleAutoRepeat('suggestion', true);
     expect((store().state as GameState).lifetime.autoRepeat).toEqual([]);
   });
 });

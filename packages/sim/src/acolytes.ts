@@ -9,7 +9,7 @@
  * Acolytes are not lost to outcomes (per the user's correction: no Bad-tier loss). They are
  * lost only at Katabasis, where the lifetime acolyte list is reset to empty (see `katabasis.ts`).
  *
- * Delegation covers Indagatio (time-mode) plus Suasio and Decimatio (cost-outcome). Acolytes carry
+ * Delegation covers Indagatio (time-mode) plus Suasio (cost-outcome). Acolytes carry
  * out their delegated actions WITHOUT spending resources — a delegated cycle pays no gold/influence
  * cost and so never stalls on an empty treasury. The per-channel cycle logic lives in `runner.ts`
  * (`advanceRunnerCycles`); the `isDelegatable` predicate gates which actions may be assigned.
@@ -79,9 +79,9 @@ export function autoRecruitAcolytes(state: GameState): GameState {
 
 /**
  * Which actions can currently be delegated to acolytes. Indagatio (time-mode) is always available;
- * Emptio never (it needs a per-target maleficium). The Suasio/Decimatio rites become delegatable
- * only once the player's HIGHEST Sin level reaches the sheet's "toggle" level (`def.delegateUnlock`),
- * e.g. Suggestion at level 1, Purgatio at level 4 — automating a rite is gated above merely being
+ * Emptio never (it needs a per-target maleficium). The Suasio rites become delegatable only once the
+ * player's HIGHEST Sin level reaches the sheet's "toggle" level (`def.delegateUnlock`), e.g.
+ * Suggestion at level 1, Imperium at level 4 — automating a rite is gated above merely being
  * able to cast it (player tuning: the gate is the max Sin level, not the rite's thematic Sin).
  */
 export function isDelegatable(state: GameState, actionId: string): boolean {
@@ -153,7 +153,7 @@ export function assignedCount(state: GameState, actionId: string): number {
 /**
  * Advance every assigned acolyte by `deltaSeconds` through the shared runner engine. Each acolyte
  * runs its own channel at the acolyte efficiency: time-mode (Indagatio) and cost-outcome
- * (Suasio/Decimatio) alike just count down — acolytes carry out their actions for free, so a channel
+ * (Suasio) alike just count down — acolytes carry out their actions for free, so a channel
  * never stalls on resources.
  *
  * Delegation LOOPS: an assigned acolyte runs its action cycle after cycle — resolving one and

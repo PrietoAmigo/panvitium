@@ -22,6 +22,13 @@
  *    or parentheses. Hyphens (-), the minus sign (−) in numeric deltas, and the middle dot
  *    (·) as a separator are all fine.
  */
+/**
+ * The boon line of a DORMANT seal (sigil effect kind `inert`): the seal keeps its id, name and art
+ * but does nothing while bound (ADR-038 put the Decimatio seals to sleep). It is not an effect line,
+ * so it carries no number and no \u2191/\u2193 terminal.
+ */
+const SIGIL_DORMANT = 'Dormant: this seal grants no effect while bound.';
+
 export const strings = {
   appName: 'Panvitium',
   menu: {
@@ -72,20 +79,13 @@ export const strings = {
   reprobates: 'Reprobates',
   opera: {
     suasio: 'Suasio',
-    decimatio: 'Decimatio',
     depraedatio: 'Depraedatio',
     indagatio: 'Indagatio',
     emptio: 'Emptio',
     suggestion: 'Suggestion',
     logismoi: 'Logismoi',
     imperium: 'Imperium',
-    caedes: 'Caedes',
-    pogrom: 'Pogrom',
-    purgatio: 'Purgatio',
     tempt: 'Tempt',
-    cull: 'Cull',
-    purge: 'Purge',
-    pogromEmpty: 'No reprobates to purge',
     logs: 'Logs',
     back: 'Back',
     selectLedger: 'select a ledger',
@@ -149,7 +149,7 @@ export const strings = {
     } as Record<string, { name: string; maxim: string }>,
     // Gate prefix for a sealed row, e.g. \u201cRequires Any Sin III\u201d.
     suasioRequires: 'Requires',
-    // The any-Sin gate token. Suasio/Decimatio rites open at the given level of ANY Sin (not one
+    // The any-Sin gate token. Suasio rites open at the given level of ANY Sin (not one
     // specific Sin), so the sealed-row requirement reads "Requires Any Sin III" and the locked
     // auto/delegate hint reads "Any Sin I".
     anySin: 'Any Sin',
@@ -158,51 +158,11 @@ export const strings = {
     // Panvitium on the scroll: its open name and the ramping-cost suffix on the cost line.
     panvitium: 'Panvitium',
     panvitiumRising: 'and rising',
-    // The Suasio scroll's outcome ledger, mirroring Decimatio's "Index Opervm": resolved temptations,
-    // newest first, below the rites. Box-drawing rule (U+2500), never a dash (hard copy rule 2).
+    // The Suasio scroll's outcome ledger: resolved temptations, newest first, below the rites.
+    // Box-drawing rule (U+2500), never a dash (hard copy rule 2).
     suasioLedgerHeading: '\u2500 INDEX SVASIONVM \u2500',
     suasioEmptyLedger: 'No temptation has been spoken yet.',
     suasioNoYield: 'no soul stirred',
-
-    // Decimatio: \u201cThe Breathing Dark\u201d (Claude Design rework). The culling program\u2019s PC
-    // body: three rites, a live Reprobates KPI, and the \u201cIndex Opervm\u201d ledger of real outcomes.
-    // Latin terms (the creed, the ledger heading, the rite names) stay untranslated (ADR-020).
-    decimatioCreed: 'Pars pro toto cadat.',
-    decimatioCostLabel: 'Cost',
-    decimatioTimeLabel: 'Time',
-    decimatioAcolytesLabel: 'Acolytes',
-    decimatioGoldUnit: 'g',
-    // The auto-repeat toggle label on a rite card (the on-state is carried by colour, not text).
-    decimatioAuto: '\u21bb Auto',
-    // Decorative rules are box-drawing lines (U+2500), never dashes (hard copy rule 2).
-    decimatioLedgerHeading: '\u2500 INDEX OPERVM \u2500',
-    decimatioEmptyLedger: 'No action has been taken yet.',
-    // A gated rite (Pogrom, Purgatio) before its Ira gate is met shows a sealed card: its name
-    // suffixed with this, plus the lock note below.
-    decimatioSealedSuffix: '\u00b7 sealed',
-    // Lock notes shown on a gated rite, explaining why it cannot be worked yet (with its Sin-level
-    // gate: any Sin at the level, not Ira specifically).
-    decimatioLocked: {
-      pogrom: 'You cannot infuse enough anger into your acolytes yet. Any Sin I.',
-      purgatio: 'Making anger contagious among your followers is not yet possible. Any Sin III.',
-    } as Record<string, string>,
-    // Ledger outcome fragments (re-skinned from the real OutcomeEvent deltas).
-    decimatioYield: '(+souls / \u2212reprobates)',
-    decimatioNoYield: 'no yield \u00b7 tribute spent',
-    decimatioBackfired: 'the rite backfired',
-    // Each rite\u2019s flavour description, shown beneath its name.
-    decimatioDesc: {
-      caedes: 'You put coin in a hired blade\u2019s hand and some names.',
-      pogrom: 'You loose your acolytes upon a crowd.',
-      purgatio:
-        'You call the whole of your following into the streets and give a city over to the dark.',
-    } as Record<string, string>,
-    // Per-rite verb on the commission button.
-    decimatioCta: {
-      caedes: 'Hire the blade',
-      pogrom: 'Loose the acolytes',
-      purgatio: 'Call the faithful',
-    } as Record<string, string>,
   },
   /**
    * The Depraedatio "Counting House" account (Claude Design redesign of the Faeneratio loop). The
@@ -450,7 +410,6 @@ export const strings = {
      *  +X% / ×N value the Analytics tab computes from the current modifier bundle). */
     effectLabels: {
       influence: 'influence gain',
-      decimatioEff: 'Decimatio efficiency',
       faeneratioOutput: 'interest income',
       stellar: 'Stellar chance',
       baseSuicide: 'base suicide rate',
@@ -980,8 +939,10 @@ export const strings = {
       english: 'Wrath',
       epithet: 'The Adversary',
       skill: 'Retribution',
-      skillEffect: 'Multiplies Decimatio success and invocation efficiency by 1 + intensity.',
-      levelEffect: 'Each level doubles (×2) your Decimatio action efficiency.',
+      // ADR-038: Retribution kept its invocation half when Decimatio retired; the levels, which
+      // doubled Decimatio efficiency, are an empty slot pending a re-home.
+      skillEffect: 'Multiplies invocation efficiency by 1 + intensity.',
+      levelEffect: 'Its levels carry no effect.',
     },
     acedia: {
       prince: 'Belphegor',
@@ -1078,7 +1039,9 @@ export const strings = {
     // number can live in these strings. The number channel is the UI: `splitBoon` strips the
     // trailing \u2191/\u2193 terminal and the ledger renders the LIVE computed magnitude in its
     // place. Keep every entry ending in its \u2191/\u2193 terminal so that
-    // splice keeps working; never replace the terminal with prose.
+    // splice keeps working; never replace the terminal with prose. The one exception is a DORMANT
+    // seal (effect kind `inert`, ADR-038): it has no effect and so no magnitude, and its line says so
+    // plainly with no terminal.
     descriptions: {
       1: 'Opera negative outcomes \u2193',
       2: 'Indagatio double-output chance \u2191',
@@ -1092,7 +1055,7 @@ export const strings = {
       10: 'Familiar effect \u2191',
       11: 'Influence gain \u2193',
       12: 'Desidia gain \u2191',
-      13: 'Decimatio positive outcomes \u2191',
+      13: SIGIL_DORMANT,
       14: 'Murder \u2192 suicide chance \u2191',
       15: 'Emptio costs \u2193',
       16: 'Invocation costs \u2193',
@@ -1100,8 +1063,8 @@ export const strings = {
       18: 'Acolyte efficiency \u2191',
       19: 'Desidia drain \u2193',
       20: 'Gold kept on descent \u2191',
-      21: 'Decimatio efficiency \u2191',
-      22: 'Decimatio negative outcomes \u2193',
+      21: SIGIL_DORMANT,
+      22: SIGIL_DORMANT,
       23: 'Murder rate \u2191',
       24: 'Indagatio time \u2193',
       25: 'Murder rate \u2191 (flat)',
@@ -1119,8 +1082,8 @@ export const strings = {
       37: 'Emptio negative outcomes \u2193',
       38: 'Common & rare find chance \u2193',
       39: 'Suasio double-output chance \u2191',
-      40: 'Decimatio efficiency \u2191, Suasio efficiency \u2193',
-      41: 'Decimatio double-output chance \u2191',
+      40: SIGIL_DORMANT,
+      41: SIGIL_DORMANT,
       42: 'Ira invocation effect \u2191',
       43: 'Suicide rate \u2191 (flat)',
       44: 'Avaritia invocation effect \u2191',
@@ -1143,14 +1106,14 @@ export const strings = {
       61: 'Suasio efficiency \u2191',
       62: 'Indagatio negative outcomes \u2193',
       63: 'Emptio Stellar chance \u2191',
-      64: 'Decimatio Stellar chance \u2191',
+      64: SIGIL_DORMANT,
       65: 'Invocation costs \u2193, Desidia speed \u2191',
       66: 'Maleficia kept on descent \u2191',
       67: 'All Opera positive outcomes \u2191',
       68: 'Influence gain \u2191',
       69: 'Flat influence generation \u2191',
       70: 'Emptio efficiency \u2191',
-      71: 'Suasio efficiency \u2191, Decimatio efficiency \u2193',
+      71: 'Suasio efficiency \u2191',
       72: 'Emptio positive outcomes \u2191',
     } as Record<number, string>,
   },

@@ -45,7 +45,7 @@ export type SigilId = number;
 
 /** A pending or running timed action (Opera). Resolves when `remainingSeconds` hits 0. */
 export interface ActionTimer {
-  /** Identifier of the action being performed (e.g. 'suasio', 'caedes'). */
+  /** Identifier of the action being performed (e.g. 'suggestion', 'indagatio'). */
   readonly actionId: string;
   /** Seconds of work left, given the combined efficiency assigned to it. */
   remainingSeconds: number;

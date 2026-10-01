@@ -146,8 +146,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v10 (the Depraedatio relationship-tier rework bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(10);
+  it('schemaVersion is v11 (the Decimatio retirement bumped it again, ADR-038)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(11);
   });
 });
 

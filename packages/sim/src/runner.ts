@@ -4,7 +4,7 @@
  * the player's slot — at its own efficiency:
  *
  *   - Time-mode actions (Indagatio): cycle duration = base / efficiency.
- *   - Cost-outcome actions (Suasio/Decimatio): resolve `max(1, floor(efficiency))` outcome units
+ *   - Cost-outcome actions (Suasio): resolve `max(1, floor(efficiency))` outcome units
  *     over the action's base duration.
  *
  * Delegated runners DO NOT spend resources to carry out their actions: unlike the player's own
@@ -39,7 +39,7 @@ const MAX_CYCLES_PER_CALL = 100_000;
  * Advance one runner channel by `deltaSeconds`. Starts a (free) cycle when `remaining` is null,
  * counts it down, and on completion resolves the outcome at `efficiency` then starts the next cycle
  * with any leftover budget. Pass `deltaSeconds = 0` to (lazily) start the first cycle at assignment
- * time without advancing it. `forcedTier` pins the outcome tier (the Imp's Caedes). `oneShot` stops
+ * time without advancing it. `forcedTier` pins the outcome tier. `oneShot` stops
  * after the first cycle resolves and reports `completed` so a caller can retire the channel;
  * persistent runners (acolyte delegation and invocations) leave it false and loop.
  */

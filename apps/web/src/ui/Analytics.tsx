@@ -372,7 +372,7 @@ function ActionsTab(): ReactElement {
 }
 
 /** The Opera categories in reading order, for the Risk tab's grouping. */
-const RISK_CATEGORIES = ['suasio', 'decimatio', 'indagatio', 'emptio'] as const;
+const RISK_CATEGORIES = ['suasio', 'indagatio', 'emptio'] as const;
 
 /** An outcome probability (0..1) as a fixed-width percentage: "0%", "<0.1%", "12.5%". */
 function riskPct(p: number): string {

@@ -66,7 +66,6 @@ export type ScalarModifierField =
   | 'maxInfluenceMul'
   | 'playerEfficiencyMul'
   | 'suasioEfficiencyMul'
-  | 'decimatioEfficiencyMul'
   | 'indagatioEfficiencyMul'
   | 'emptioEfficiencyMul'
   | 'reprobateGenerationRateMul'
@@ -106,8 +105,10 @@ export interface CostReductionEffect {
  * or `1/(1 + strength)` (decrease) — the same convention as Sin skills (ADR-022). `katabasis` adds
  * `strength` (a flat fraction) to one or more carry-over rolls. `composite` (ADR-035) bundles several
  * modifier / cost-reduction parts onto one seal, ALL sharing the seal's single strength: a tradeoff
- * seal that lifts one lever while it softens another (Raum #40, Dantalion #71), or a dual seal that
- * spans two systems at once (Andrealphus #65).
+ * seal that lifts one lever while it softens another, or a dual seal that spans two systems at once
+ * (Andrealphus #65). `inert` is a DORMANT seal: its catalog id, name and art are kept, but it does
+ * nothing while bound (the Decimatio seals since that category retired, ADR-038; the same holding
+ * pattern ADR-024 used). Every channel filters by kind, so a dormant seal is skipped everywhere.
  */
 export type SigilEffect =
   | ModifierEffect
@@ -137,7 +138,7 @@ export type SigilEffect =
   | { readonly kind: 'indagatioDoubleFind' }
   | { readonly kind: 'invocationEffect'; readonly invocation: string }
   | { readonly kind: 'shutdownRefund' }
-  | { readonly kind: 'duplicateOutput'; readonly category: 'suasio' | 'decimatio' | 'indagatio' }
+  | { readonly kind: 'duplicateOutput'; readonly category: 'suasio' | 'indagatio' }
   | { readonly kind: 'murderTriggersSuicide' }
   | { readonly kind: 'maleficiaEffect' }
   | { readonly kind: 'sigilEffect' }
@@ -145,10 +146,11 @@ export type SigilEffect =
   | {
       readonly kind: 'composite';
       readonly effects: readonly (ModifierEffect | CostReductionEffect)[];
-    };
+    }
+  | { readonly kind: 'inert' };
 
-/** The four Opera action categories a per-category tier sigil can target. */
-export type SigilCategory = 'suasio' | 'decimatio' | 'indagatio' | 'emptio';
+/** The three Opera action categories a per-category tier sigil can target. */
+export type SigilCategory = 'suasio' | 'indagatio' | 'emptio';
 
 /**
  * A cost a sigil can soften (Paimon/Orobas/Zepar/Andrealphus/Eligos). `influence` = action influence
@@ -232,8 +234,8 @@ export function sigilModifierContributions(state: GameState, effectMul = 1): Sig
     if (!def) continue;
     const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
-    // `composite` (Raum #40, Dantalion #71, Andrealphus #65) folds each of its modifier parts here
-    // at the seal's single strength; its cost-reduction part is picked up by the cost function.
+    // `composite` (Andrealphus #65) folds each of its modifier parts here at the seal's single
+    // strength; its cost-reduction part is picked up by the cost function.
     for (const part of effectParts(def.effect)) {
       if (part.kind === 'modifier') {
         const mul = part.direction === 'increase' ? 1 + s : 1 / (1 + s);
@@ -253,10 +255,10 @@ export function sigilModifierContributions(state: GameState, effectMul = 1): Sig
 }
 
 /**
- * Per-CATEGORY tier-weight contributions from bound sigils (Agares/Beleth/Botis/Ipos/Astaroth/Andras/
- * Andromalius/Naberius). Distinct from the global `tier` contributions in `sigilModifierContributions`
- * because these target a single Opera category's distribution. Composed by `categoryTierModifiers`
- * alongside the Resignation/Retribution success shifts. `effectMul` carries the sigil-effect enhancers.
+ * Per-CATEGORY tier-weight contributions from bound sigils (the `categoryTier` seals, e.g. Botis,
+ * Astaroth, Andras, Andromalius). Distinct from the global `tier` contributions in
+ * `sigilModifierContributions` because these target a single Opera category's distribution. Composed
+ * by `categoryTierModifiers` alongside the Resignation success shift. `effectMul` carries the sigil-effect enhancers.
  */
 export function sigilCategoryTierContributions(
   state: GameState,
@@ -462,12 +464,12 @@ function sumKind(
 
 /**
  * Chance to duplicate an Opera category's POSITIVE output (Agares #2 Indagatio, Malphas #39
- * Suasio, Focalor #41 Decimatio). Rolled once per resolution in `resolveAction`; only
- * Stellar/Excellent/Good outcomes duplicate — the curse never doubles a catastrophe.
+ * Suasio). Rolled once per resolution in `resolveAction`; only Stellar/Excellent/Good outcomes
+ * duplicate — the curse never doubles a catastrophe.
  */
 export function sigilDuplicateOutputChance(
   state: GameState,
-  category: 'suasio' | 'decimatio' | 'indagatio',
+  category: 'suasio' | 'indagatio',
   effectMul = 1,
 ): number {
   let total = 0;

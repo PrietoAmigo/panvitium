@@ -2,12 +2,12 @@
  * Opera action engine (02 §3, 03 §2). An action declares a base time, a cost, and a base outcome
  * distribution (TierWeights). `startAction` pays the cost and queues a timer; `tick` advances the
  * timer and calls `resolveAction` on completion, which draws a tier from the seeded RNG and applies
- * that tier's effect. This slice implements the two base actions that close the first loop —
- * Suggestion (corrupt → reprobates) and Caedes (cull → souls). The remaining Suasio/Decimatio
- * actions, costs/times for higher tiers, and efficiency from sins/invocations come later.
+ * that tier's effect. The catalog holds the Suasio temptations (Suggestion / Logismoi / Imperium:
+ * corrupt → reprobates) and the two background channels, Indagatio and Emptio. The Decimatio culling
+ * rites (Caedes / Pogrom / Purgatio: cull → souls) are retired (ADR-038).
  *
- * Efficiency note (03 §2.1/§2.2): for Suasio and Decimatio, efficiency scales costs and outcomes by
- * the same %, NOT the action time. It defaults to 1 here (no modifiers yet); the resolver and start
+ * Efficiency note (03 §2.1): for Suasio, efficiency scales costs and outcomes by the same %, NOT
+ * the action time. It defaults to 1 here (no modifiers yet); the resolver and start
  * accept it so the hook exists. Resolution recomputes at the current efficiency rather than storing
  * it on the timer, which avoids changing the serialized state shape.
  */
@@ -27,7 +27,6 @@ import {
   addReprobates,
   loseGoldFraction,
   loseReprobatesFraction,
-  mintSouls,
   removeReprobates,
 } from './population.js';
 import { type ActionTimer, type GameState, SINS, totalReprobates } from './state.js';
@@ -59,7 +58,7 @@ export interface ActionCost {
 
 /**
  * How action efficiency feeds into a category:
- *   'cost-outcome' — Suasio / Decimatio: efficiency scales costs and outcome units by the same %.
+ *   'cost-outcome' — Suasio: efficiency scales costs and outcome units by the same %.
  *   'time'         — Indagatio / Emptio: efficiency divides the action's duration; cost and
  *                    success rates are untouched (03 §2.5 / §2.6).
  */
@@ -67,7 +66,7 @@ export type EfficiencyMode = 'cost-outcome' | 'time';
 
 export interface ActionDef {
   readonly id: string;
-  readonly category: 'suasio' | 'decimatio' | 'indagatio' | 'emptio';
+  readonly category: 'suasio' | 'indagatio' | 'emptio';
   readonly baseTimeSeconds: number;
   readonly cost: ActionCost;
   readonly weights: TierWeights;
@@ -76,22 +75,20 @@ export interface ActionDef {
    * Availability gate: the action appears in the Opera once the player's HIGHEST Sin level across
    * all Sins reaches this level (player tuning: keyed to the max Sin level, not the rite's thematic
    * Sin, so raising any Sin advances the gate). Absent = available from the first lifetime
-   * (Suggestion / Caedes, gated only on *delegation*). Logismoi/Pogrom open at 1, Imperium/Purgatio
-   * at 3.
+   * (Suggestion, gated only on *delegation*). Logismoi opens at 1, Imperium at 3.
    */
   readonly unlock?: number;
   /**
    * Delegation gate: acolyte assignment / auto-repeat unlocks once the player's HIGHEST Sin level
-   * across all Sins reaches this level (the Suasio/Decimatio sheets' "toggle" level). Distinct from
-   * `unlock` (mere availability): an action can be playable by hand before it can be automated.
-   * Absent on Indagatio/Emptio (handled separately). Suggestion/Caedes toggle at 1; the higher rites
-   * at 2 and 4.
+   * across all Sins reaches this level (the Suasio sheet's "toggle" level). Distinct from `unlock`
+   * (mere availability): an action can be playable by hand before it can be automated. Absent on
+   * Indagatio/Emptio (handled separately). Suggestion toggles at 1; the higher rites at 2 and 4.
    */
   readonly delegateUnlock?: number;
 }
 
 /**
- * The player's HIGHEST Sin level across all eight Sins. Suasio/Decimatio availability and delegation
+ * The player's HIGHEST Sin level across all eight Sins. Suasio availability and delegation
  * gate on this (player tuning), not on the rite's thematic Sin, so advancing ANY Sin advances every
  * gated rite in lockstep.
  */
@@ -125,16 +122,16 @@ export interface StartOptions {
 }
 
 /**
- * Cost multiplier applied to a cost-outcome action's declared cost at efficiency `eff` (03 §2.1/2.2):
+ * Cost multiplier applied to a cost-outcome action's declared cost at efficiency `eff` (03 §2.1):
  *
- *   - Decimatio: LINEAR (× eff). Its cost is gold, an uncapped resource, so the classic
- *     cost↔outcome coupling holds — pay eff× the gold, kill eff× as many.
  *   - Suasio: LOGARITHMIC (× (1 + ln eff)). Its cost is INFLUENCE, hard-capped at the effective max,
  *     while efficiency is driven by unrelated modifiers (Luxuria levels, Gula skill, Erinyes stacks).
  *     A linear influence cost made rites unlockable-but-uncastable — Logismoi at its own Luxuria-2
  *     gate already cost the whole base cap, and a few Erinyes descents (×2 player efficiency each)
  *     bricked even the 1-influence Suggestion. The log curve keeps the cost rising with power without
  *     ever outrunning the cap: it equals the base at eff = 1 and grows only ~ln thereafter.
+ *   - Any other cost-outcome category: LINEAR (× eff), the classic cost↔outcome coupling. No such
+ *     category exists since the Decimatio gold rites retired (ADR-038); the branch is the default.
  *
  * Never below the base cost (clamped at eff = 1) so no efficiency ever makes a rite cheaper than its
  * printed price.
@@ -148,7 +145,7 @@ export function costOutcomeCostMultiplier(category: ActionDef['category'], eff: 
  * The gold / influence an action would actually cost to start right now — the single source of truth
  * shared by `startAction` (what it deducts) and the UI (what it displays and gates the button on),
  * so the two can never drift. Mirrors `startAction`'s cost pipeline exactly: the cost-outcome
- * multiplier (`costOutcomeCostMultiplier` — log for Suasio, linear for Decimatio), Emptio's per-target
+ * multiplier (`costOutcomeCostMultiplier`, log for Suasio), Emptio's per-target
  * rolled price softened by the Amy #58 gold reduction, and the Paimon #9 influence reduction. Time-mode
  * actions (Indagatio/Emptio) don't scale cost by efficiency. For Emptio with no/unknown target the
  * gold cost is 0 (the caller supplies the target).
@@ -187,9 +184,8 @@ export function plannedActionCost(
 /**
  * The actions that run in their OWN background channel rather than the single player-drive slot
  * (02 §3): Indagatio (scrying) and Emptio (a purchase). Each is single-instance within its own
- * channel, but it neither blocks nor is blocked by a Suasio/Decimatio rite — so a rite can even
- * auto-repeat in the slot while a scry or a purchase runs alongside. Only Suasio/Decimatio occupy
- * the player slot; the UI reads this so a background channel never disables a rite (and vice versa).
+ * channel, but it neither blocks nor is blocked by a Suasio rite — so a rite can even auto-repeat in
+ * the slot while a scry or a purchase runs alongside. Only the Suasio rites occupy the player slot; the UI reads this so a background channel never disables a rite (and vice versa).
  */
 export const BACKGROUND_ACTIONS: ReadonlySet<string> = new Set(['indagatio', 'emptio']);
 
@@ -201,7 +197,7 @@ export function occupiesPlayerSlot(actionId: string): boolean {
 /**
  * Pay an action's cost and queue it. Affordability compares the FLOORED resource (resources are
  * natural numbers; the bignum gotcha). Efficiency is applied per category's `efficiencyMode`:
- * `cost-outcome` (Suasio/Decimatio) scales the cost; `time` (Indagatio/Emptio) divides the duration
+ * `cost-outcome` (Suasio) scales the cost; `time` (Indagatio/Emptio) divides the duration
  * and leaves cost untouched. Emptio is per-target: it reads `MALEFICIA[target].cost` for gold and
  * verifies the target is on the *Emptio* list.
  */
@@ -213,7 +209,7 @@ export function startAction(
   const def = ACTIONS[actionId];
   if (!def) return { ok: false, reason: `unknown action: ${actionId}` };
 
-  // Sin-level availability gate (Suasio/Decimatio sheets). Suggestion/Caedes have no gate.
+  // Sin-level availability gate (Suasio sheet). Suggestion has no gate.
   if (!actionUnlocked(state, def)) {
     return { ok: false, reason: 'This rite is not yet within your reach.' };
   }
@@ -224,7 +220,7 @@ export function startAction(
   }
 
   // One player-driven action at a time (02 §3) — EXCEPT the background channels Indagatio and Emptio,
-  // which do not occupy the player slot: each neither blocks nor is blocked by a Suasio/Decimatio rite,
+  // which do not occupy the player slot: each neither blocks nor is blocked by a Suasio rite,
   // and only ONE of each may run at once (its Cast / Acquire control is single). So a rite can even
   // auto-repeat in the slot while a scry or a purchase runs alongside it.
   if (actionId === 'indagatio') {
@@ -252,7 +248,7 @@ export function startAction(
     target = options.target;
   }
   // The exact amounts to deduct — the same pipeline the UI reads (`plannedActionCost`): the
-  // cost-outcome multiplier (log for Suasio, linear for Decimatio), Emptio's rolled per-target price
+  // cost-outcome multiplier (log for Suasio), Emptio's rolled per-target price
   // softened by Amy #58, and the Paimon #9 influence reduction.
   const { gold: goldCost, influence: influenceCost } = plannedActionCost(state, actionId, {
     ...options,
@@ -291,7 +287,7 @@ export function startAction(
 
 /**
  * Whether `actionId` may be set to AUTO-REPEAT: it carries a toggle-level gate (`delegateUnlock` —
- * the Suasio/Decimatio sheets' "toggle" level) and the player's HIGHEST Sin level has reached it.
+ * the Suasio sheet's "toggle" level) and the player's HIGHEST Sin level has reached it.
  * This is the same gate that opens acolyte delegation; the player's own one-shot rite gains its
  * auto-repeat toggle at the same level (02 §3). Actions without a `delegateUnlock` (Indagatio/Emptio) are never
  * player-auto-repeatable. Every action's toggle level sits at or above its availability gate
@@ -407,7 +403,7 @@ export interface OutcomeMoment {
  * times each tier's per-dimension delta moments — no sampling, deterministic, and consistent with
  * what `resolveAction` actually rolls. `souls`/`reprobates`/`gold` are net deltas; `maleficia` is the
  * expected count surfaced (Indagatio). Modeled for the actions that have runner/forecast surfaces so
- * far (Caedes, Suggestion, Indagatio); other actions return a zero forecast until modeled.
+ * far (Suggestion, Indagatio); other actions return a zero forecast until modeled.
  */
 export interface OutcomeForecast {
   readonly souls: OutcomeMoment;
@@ -449,44 +445,6 @@ const uniform = (lo: number, hi: number, k: number): Dim => {
   const n = hi - lo + 1;
   return { m: (k * (lo + hi)) / 2, v: k * k * ((n * n - 1) / 12) };
 };
-
-function caedesTierDelta(
-  tier: Tier,
-  units: number,
-  pop: number,
-  gold: number,
-  loss: number,
-): TierDelta {
-  switch (tier) {
-    // Stellar/Excellent remove randint(...)×units (capped by population in `resolveCaedes`; the
-    // forecast uses the uncapped moments, an upper bound when the roster is nearly empty). Souls
-    // minted equal reprobates removed.
-    case 'stellar': {
-      const r = uniform(15, 45, units);
-      return { ...NO_DELTA, reprobates: { m: -r.m, v: r.v }, souls: r };
-    }
-    case 'excellent': {
-      const r = uniform(3, 9, units);
-      return { ...NO_DELTA, reprobates: { m: -r.m, v: r.v }, souls: r };
-    }
-    case 'good': {
-      const removed = Math.min(units, pop); // deterministic
-      return { ...NO_DELTA, reprobates: fixed(-removed), souls: fixed(removed) };
-    }
-    case 'bad':
-      return { ...NO_DELTA, gold: fixed(-Math.floor(0.05 * loss * gold)) };
-    case 'terrible':
-      return { ...NO_DELTA, gold: fixed(-Math.floor(0.15 * loss * gold)) };
-    case 'apocalyptic':
-      return {
-        ...NO_DELTA,
-        gold: fixed(-Math.floor(0.33 * loss * gold)),
-        reprobates: fixed(-Math.floor(0.25 * loss * pop)),
-      };
-    default:
-      return NO_DELTA; // neutral: the kill fails
-  }
-}
 
 function suggestionTierDelta(tier: Tier, units: number, pop: number, loss: number): TierDelta {
   switch (tier) {
@@ -551,13 +509,11 @@ export function actionOutcomeForecast(
     ? (Object.fromEntries(TIERS.map((t) => [t, t === forcedTier ? 1 : 0])) as TierWeights)
     : actionTierDistribution(state, actionId);
   const tierDelta = (tier: Tier): TierDelta =>
-    actionId === 'caedes'
-      ? caedesTierDelta(tier, units, pop, gold, loss)
-      : actionId === 'suggestion'
-        ? suggestionTierDelta(tier, units, pop, loss)
-        : actionId === 'indagatio'
-          ? indagatioTierDelta(state, tier, gold, loss)
-          : NO_DELTA;
+    actionId === 'suggestion'
+      ? suggestionTierDelta(tier, units, pop, loss)
+      : actionId === 'indagatio'
+        ? indagatioTierDelta(state, tier, gold, loss)
+        : NO_DELTA;
 
   // Mixture moments via the law of total variance: across tiers, mean = Σ pₜ·mₜ and
   // E[X²] = Σ pₜ·(vₜ + mₜ²); variance = E[X²] − mean².
@@ -597,20 +553,15 @@ export function resolveAction(
   const def = ACTIONS[actionId];
   if (!def) return { state, event: null };
   const mods = computeModifiers(state);
-  // Efficiency for cost-outcome categories combines player × category mul; time-mode actions
-  // (Indagatio/Emptio) don't use eff in resolution — duration was scaled at start.
+  // Efficiency for the cost-outcome category (Suasio) combines player × category mul; time-mode
+  // actions (Indagatio/Emptio) don't use eff in resolution — duration was scaled at start.
   const eff =
     options.efficiency ??
-    mods.playerEfficiencyMul *
-      (def.category === 'suasio'
-        ? mods.suasioEfficiencyMul
-        : def.category === 'decimatio'
-          ? mods.decimatioEfficiencyMul
-          : 1);
-  // A background runner may force a fixed outcome tier (the Imp's Caedes is always Good, 03 §2.4 —
-  // a passive entity must not randomly trigger an Apocalyptic that wipes the player unprompted).
-  // Otherwise: global tier multipliers (Sin skills, sigils, maleficia) THEN the per-category success
-  // shift (Resignation/Retribution/Lamia, 02 §2) — composed before renormalization in resolveTier.
+    mods.playerEfficiencyMul * (def.category === 'suasio' ? mods.suasioEfficiencyMul : 1);
+  // A background runner may force a fixed outcome tier — a passive entity must not randomly trigger
+  // an Apocalyptic that wipes the player unprompted. Otherwise: global tier multipliers (Sin skills,
+  // sigils, maleficia) THEN the per-category success shift (Resignation and the per-category tier
+  // seals, 02 §2) — composed before renormalization in resolveTier.
   let tierWeights = applyTierModifiers(
     applyTierModifiers(def.weights, mods.tierWeightMul),
     categoryTierModifiers(state, def.category),
@@ -631,14 +582,13 @@ export function resolveAction(
   let acquired: string[] = [];
   let lostFromList: string[] = [];
 
-  // Duplicate-output sigils (Sigils sheet rev 2026-06-12): Malphas #39 (Suasio), Focalor #41
-  // (Decimatio), Agares #2 (Indagatio). Rolled once per resolution; only POSITIVE tiers
-  // (Stellar/Excellent/Good) duplicate — the curse never doubles a catastrophe. Emptio has no
-  // duplication sigil. The second application re-rolls its own randomness against the same tier.
+  // Duplicate-output sigils (Sigils sheet rev 2026-06-12): Malphas #39 (Suasio), Agares #2
+  // (Indagatio). Rolled once per resolution; only POSITIVE tiers (Stellar/Excellent/Good) duplicate —
+  // the curse never doubles a catastrophe. Emptio has no duplication sigil (and Focalor #41, the
+  // Decimatio one, is dormant since ADR-038). The second application re-rolls its own randomness
+  // against the same tier.
   const dupCategory =
-    def.category === 'suasio' || def.category === 'decimatio' || def.category === 'indagatio'
-      ? def.category
-      : null;
+    def.category === 'suasio' || def.category === 'indagatio' ? def.category : null;
   const positiveTier = tier === 'stellar' || tier === 'excellent' || tier === 'good';
   // Compute the duplication chance FIRST and only draw from the RNG when it is live. An unbound
   // dup-sigil roster yields chance 0, so gating the draw keeps the seeded stream byte-identical to
@@ -663,18 +613,6 @@ export function resolveAction(
     case 'imperium':
       next = resolveImperium(state, tier, rng, eff);
       if (applyTwice) next = resolveImperium(next, tier, rng, eff);
-      break;
-    case 'caedes':
-      next = resolveCaedes(state, tier, rng, eff);
-      if (applyTwice) next = resolveCaedes(next, tier, rng, eff);
-      break;
-    case 'pogrom':
-      next = resolvePogrom(state, tier, rng, eff);
-      if (applyTwice) next = resolvePogrom(next, tier, rng, eff);
-      break;
-    case 'purgatio':
-      next = resolvePurgatio(state, tier, rng, eff);
-      if (applyTwice) next = resolvePurgatio(next, tier, rng, eff);
       break;
     case 'indagatio': {
       surfaced = [];
@@ -718,8 +656,8 @@ export function resolveAction(
  * runner's efficiency so a low-efficiency background channel (an acolyte at 0.33, an invocation
  * runner at 0.05) can't inflict a full-strength catastrophe. The player always casts at efficiency
  * ≥ 1, so this clamps to 1 and leaves every player-facing loss exactly as before — it only softens
- * DELEGATED culls, closing the "an acolyte on Purgatio rolls Terrible and burns 100% of your gold"
- * bankruptcy trap. Never above 1, so no runner is ever punished harder than a hand-cast rite.
+ * DELEGATED resolutions, so an acolyte's unattended Apocalyptic can't wipe the flock or the treasury
+ * at full strength. Never above 1, so no runner is ever punished harder than a hand-cast rite.
  */
 export function lossScale(efficiency: number): number {
   return Math.min(1, Math.max(0, efficiency));
@@ -812,125 +750,6 @@ export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficien
     case 'neutral':
     default:
       return state;
-  }
-}
-
-/** Caedes outcome effects (exported for direct testing of each tier). */
-export function resolveCaedes(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
-  const scale = Math.max(1, Math.floor(efficiency));
-  const loss = lossScale(efficiency);
-  switch (tier) {
-    case 'stellar': {
-      const { state: next, removed } = removeReprobates(state, randint(rng, 15, 45) * scale);
-      return mintSouls(next, removed);
-    }
-    case 'excellent': {
-      const { state: next, removed } = removeReprobates(state, randint(rng, 3, 9) * scale);
-      return mintSouls(next, removed);
-    }
-    case 'good': {
-      const { state: next, removed } = removeReprobates(state, scale);
-      return mintSouls(next, removed);
-    }
-    case 'bad':
-      return loseGoldFraction(state, 0.05 * loss);
-    case 'terrible':
-      return loseGoldFraction(state, 0.15 * loss);
-    case 'apocalyptic': {
-      // A Higher Power stops the assassination and campaigns against you (Decimatio sheet rev):
-      // 33% current gold loss and 25% of all reprobates lost — taken from you, not harvested,
-      // so no souls are minted (mirrors the Suggestion "Church" loss). Loss scaled by the runner's
-      // efficiency, so a delegated cull can't inflict the full catastrophe.
-      const afterGold = loseGoldFraction(state, 0.33 * loss);
-      return loseReprobatesFraction(afterGold, 0.25 * loss).state;
-    }
-    case 'neutral':
-    default:
-      // The kill fails; gold was already spent, nothing else happens.
-      return state;
-  }
-}
-
-/**
- * Pogrom outcome (Decimatio sheet rev 2026-06-12): a mass cull of the reprobate pool.
- * Stellar/Excellent/Good kill 2.5 / 1 / 0.1 % of the population and harvest a soul per death;
- * positive culls scale with efficiency (clamped to 100%). Bad burns gold; Terrible lets the Church
- * seize the flock; Apocalyptic burns 66% of gold AND half the flock.
- *
- * A successful cull always claims at least one soul: the sheet's percentages floor to zero on a
- * small flock (Good = 0.1% needs 1,000+ reprobates to remove even one), so a Good Pogrom — its most
- * common outcome (60%) — otherwise did nothing at typical populations and read as a broken rite.
- * The floor of 1 mirrors Caedes; the percentage still scales past 1 as the flock grows.
- */
-export function resolvePogrom(state: GameState, tier: Tier, _rng: Rng, efficiency = 1): GameState {
-  // Efficiency lifts the positive cull share (02 §2: Decimatio efficiency modifies positive
-  // outcomes), never beyond the whole population.
-  const cullFrac = (base: number): number => Math.min(1, base * Math.max(0, efficiency));
-  const loss = lossScale(efficiency); // negative outcomes scale DOWN by the runner's efficiency
-  const purge = (frac: number): GameState => {
-    const pop = totalReprobates(state);
-    if (pop <= 0) return state; // no flock to cull
-    const k = Math.max(1, Math.floor(pop * cullFrac(frac)));
-    const { state: next, removed } = removeReprobates(state, k);
-    return mintSouls(next, removed);
-  };
-  switch (tier) {
-    case 'stellar':
-      return purge(0.025);
-    case 'excellent':
-      return purge(0.01);
-    case 'good':
-      return purge(0.001);
-    case 'bad':
-      return loseGoldFraction(state, 0.05 * loss); // mob turns
-    case 'terrible':
-      return loseReprobatesFraction(state, 0.15 * loss).state; // Church seizes the flock
-    case 'apocalyptic':
-      // A Higher Power smites the operation: 66% gold and half the flock (sheet rev).
-      return loseReprobatesFraction(loseGoldFraction(state, 0.66 * loss), 0.5 * loss).state;
-    case 'neutral':
-    default:
-      return state; // mob disperses; gold already spent
-  }
-}
-
-/**
- * Purgatio outcome (Decimatio sheet rev 2026-06-12): the great soul farm — Stellar/Excellent/Good
- * kill 25 / 10 / 1 % of all reprobates, harvesting a soul per death (positive share scales with
- * efficiency, clamped to 100%). Bad burns 5% of gold; Terrible burns ALL gold; Apocalyptic burns
- * all gold and the whole flock.
- */
-export function resolvePurgatio(
-  state: GameState,
-  tier: Tier,
-  _rng: Rng,
-  efficiency = 1,
-): GameState {
-  const loss = lossScale(efficiency); // negative outcomes scale DOWN by the runner's efficiency
-  const harvest = (base: number): GameState => {
-    const frac = Math.min(1, base * Math.max(0, efficiency));
-    const k = Math.floor(totalReprobates(state) * frac);
-    const { state: next, removed } = removeReprobates(state, k);
-    return mintSouls(next, removed);
-  };
-  switch (tier) {
-    case 'stellar':
-      return harvest(0.25);
-    case 'excellent':
-      return harvest(0.1);
-    case 'good':
-      return harvest(0.01);
-    case 'bad':
-      return loseGoldFraction(state, 0.05 * loss); // mob turns
-    case 'terrible':
-      return loseGoldFraction(state, 1 * loss); // the whole purse burns (sheet rev)
-    case 'apocalyptic':
-      // Everything burns: all gold AND the whole flock, none of it harvested. Scaled by the
-      // runner's efficiency, so a delegated Purgatio can't zero the treasury and the flock at once.
-      return loseReprobatesFraction(loseGoldFraction(state, 1 * loss), 1 * loss).state;
-    case 'neutral':
-    default:
-      return state; // mob disperses; gold already spent
   }
 }
 

@@ -73,16 +73,14 @@ describe('Tristitia / Ira SKILLS — acolyte and invocation efficiency (sheet re
     expect(m.acolyteEfficiencyMul).toBeCloseTo(0.33, 9);
   });
 
-  it('Ira LEVELS lift Decimatio efficiency ×2 per level (and not player efficiency)', () => {
+  it('Ira LEVELS carry no effect: the Decimatio slot is empty (ADR-038)', () => {
     const s = withSinLevel(fresh(), 'ira', 3);
     expect(sinLevel(s.devotion.ira)).toBe(3);
-    const m = computeModifiers(s);
-    expect(m.decimatioEfficiencyMul / computeModifiers(fresh()).decimatioEfficiencyMul).toBeCloseTo(
-      2 ** 3,
-      6,
-    );
-    const base = computeModifiers(fresh()).playerEfficiencyMul;
-    expect(m.playerEfficiencyMul).toBe(base);
+    // Only the skill (Retribution → invocation efficiency) moves with Ira Devotion; no
+    // level-driven field does.
+    const { invocationEfficiencyMul: _lifted, ...m } = computeModifiers(s);
+    const { invocationEfficiencyMul: _base, ...base } = computeModifiers(fresh());
+    expect(m).toEqual(base);
   });
 
   it('Luxuria LEVELS lift Suasio efficiency ×2 per level', () => {

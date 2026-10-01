@@ -85,7 +85,7 @@ export interface Maleficium {
 
 /** One revealed Opera category's distributions (e.g. Suasio), for the oracular readout. */
 export interface OracleGroup {
-  /** Category id ('suasio' | 'decimatio' | 'indagatio' | 'emptio'). */
+  /** Category id ('suasio' | 'indagatio' | 'emptio'). */
   category: string;
   /** Display label for the category. */
   label: string;
