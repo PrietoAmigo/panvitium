@@ -2,7 +2,8 @@
  * Katabasis-modifying apex tests (03 §2.4) — Erinyes + Astiwihad — plus the one-apex-per-lifetime
  * rule and Morpheus's reworked reprobate → desidia conversion. Pins:
  *   - catalog entries (gates, free, max 1; Morpheus's reprobate-fraction upkeep)
- *   - Erinyes invoke: kills every reprobate (mints one soul each), sets pendingErinyes + apexInvoked
+ *   - Erinyes invoke: kills every reprobate (mints one soul each), sets pendingErinyes + apexInvoked;
+ *     the wipe answers once per lifetime (a Dispel + Summon does not repeat it)
  *   - Astiwihad invoke: sets pendingAstiwihad + apexInvoked; the tick is then frozen (world-still)
  *   - one apex kind per lifetime: a different apex is refused even after dispelling the first; the
  *     same kind may be re-summoned
@@ -94,6 +95,24 @@ describe('Erinyes invoke', () => {
     expect(r.state.lifetime.invocations.erinyes).toBe(1);
     expect(r.state.lifetime.pendingErinyes).toBe(true);
     expect(r.state.lifetime.apexInvoked).toBe('erinyes');
+  });
+
+  it('wipes once per lifetime: Dispel + Summon is not a repeatable harvest (balance audit 2026-10-08)', () => {
+    const first = invoke(withAllGates({ souls: 0, reprobates: 250 }), 'erinyes');
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    // The flock regrows, then the player dispels and re-summons.
+    const regrown = { ...first.state, lifetime: { ...first.state.lifetime, reprobates: 400 } };
+    const d = dispel(regrown, 'erinyes');
+    expect(d.ok).toBe(true);
+    if (!d.ok) return;
+    const again = invoke(d.state, 'erinyes');
+    expect(again.ok).toBe(true);
+    if (!again.ok) return;
+    expect(totalReprobates(again.state)).toBe(400); // the regrown flock lives
+    expect(soulsOf(again.state)).toBe(250); // only the first wipe minted souls
+    expect(again.state.lifetime.pendingErinyes).toBe(true); // the descent's price still stands
+    expect(again.state.lifetime.invocations.erinyes).toBe(1);
   });
 });
 

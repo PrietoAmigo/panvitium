@@ -58,6 +58,21 @@ describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
     }
   });
 
+  it('keeps two significant digits for the per-capita rate seals, never "+0" (balance audit 2026-10-08)', () => {
+    // Sabnock #43 at 1k souls: 0.001 × pct(1k) ≈ 0.00016 suicides per reprobate per second. Two fixed
+    // decimals used to print every live binding of the rate seals as "+0".
+    expect(effectDisplay(sigilById(43), bn(1_000))).toBe('+0.00016 suicides/reprobate\u00b7s');
+    expect(effectDisplay(sigilById(25), bn(1_000))).toBe('+0.00032 murders/reprobate\u00b7s');
+    // Larger flat amounts read as before.
+    expect(effectDisplay(sigilById(69), bn(1_000))).toBe('+0.8 influence/s');
+  });
+
+  it('scales the magnitude by the live sigil-effect stack it is given (relics, Gaap, Semet)', () => {
+    // Valefor at 1e6 souls: 0.382 bare; Solomon's Ring (×1.66) lifts it to ≈ 0.634.
+    expect(effectDisplay(sigilById(6), bn(1_000_000), 1.66)).toBe('+63.4%');
+    expect(effectDisplay(sigilById(6), bn(1_000_000))).toBe('+38.2%'); // default: no stack
+  });
+
   it('is zero-safe and tolerates an unknown seal', () => {
     expect(effectDisplay(sigilById(6), bn(0))).toBe('+0.0%');
     expect(effectDisplay(undefined, bn(10))).toBe('\u2014');

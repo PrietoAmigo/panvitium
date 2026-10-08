@@ -20,6 +20,7 @@ import {
   remainingMaleficiaChance,
   sigilKatabasisBonus,
   sigilStrengthMul,
+  sigilEffectMulFor,
   eternalSinVisible,
   eternalSinRevealed,
   eternalProgress,
@@ -680,7 +681,8 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
       const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
       const { text } = splitBoon(desc);
       const name = strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
-      rows.push({ id, name, effect: effectDisplay(def, v), text, bound: v });
+      const effect = effectDisplay(def, v, def ? sigilEffectMulFor(state, def) : 1);
+      rows.push({ id, name, effect, text, bound: v });
     }
     rows.sort((a, b) => (gt(b.bound, a.bound) ? 1 : gt(a.bound, b.bound) ? -1 : a.id - b.id));
     return rows;

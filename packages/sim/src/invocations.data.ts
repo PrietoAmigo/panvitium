@@ -102,7 +102,7 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 1,
     maxActive: 10,
     upkeep: { reprobate: 50 }, // 50 reprobates/s (a pure cost — no souls minted)
-    // Effect (modifiers.ts → flatInfluencePerSecond): +1 influence/s per copy, scaled by invocation
+    // Effect (modifiers.ts → flatInfluencePerSecond): +0.25 influence/s per copy, scaled by invocation
     // efficiency.
   },
 

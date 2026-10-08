@@ -4,10 +4,12 @@
  * 1k, ~31% at 100k, ~50% at ~39M, then keeps creeping up with NO cap — meaningful early, gentle
  * late, and far tamer than the old √ default (which was near-zero early and exploded late).
  * A standard sigil carries `coefficient: 1` (so its strength IS the curve); a weaker sigil scales it
- * down (Paimon 0.5; Zepar #16 / Marax #21 / Zagan #61 at 1/3). Some sigils override the curve to
- * `linear` (swingy) or `log` (the flat generators, Forneus #30's invoking power, Katabasis
- * carry-over); the `sqrt` curve is supported but no seal currently uses it. `bindingMagnitude`
- * returns the bare magnitude; a per-sigil coefficient multiplies it into a concrete effect strength.
+ * down (Paimon 0.5; Zepar #16 / Marax #21 / Zagan #61 at 1/3); the five flat generators carry a
+ * coefficient in their own unit (gold/s, influence/s, …; see `FLAT_SEAL_SPLASH` in the data file).
+ * Some sigils override the curve to `log` (Forneus #30's invoking power, Semet, Gaap, Katabasis
+ * carry-over); the `linear` and `sqrt` curves are supported but no seal currently uses them.
+ * `bindingMagnitude` returns the bare magnitude; a per-sigil coefficient multiplies it into a
+ * concrete effect strength.
  *
  * The catalog (03 §5) is the full Goetia numbering 1..72, with #32 = Semet. Every seal is now wired
  * with a demon name and a real effect. Each channel function below takes an `effectMul`: callers
@@ -300,10 +302,11 @@ export function sigilInvocationSinContributions(
   return out;
 }
 /**
- * Flat per-second resource generation from the log-curve generator sigils (Haagenti #48 → gold,
- * Decarabia #69 → influence). Each contributes its `coefficient × ln(1 + souls)` directly (additive,
- * not a multiplier). Consumed by `computeModifiers` → `flatGoldPerSecond` / `flatInfluencePerSecond`,
- * which the tick accrues. `effectMul` carries the sigil enhancers.
+ * Flat per-second resource generation from the generator sigils (Haagenti #48 → gold, Decarabia #69
+ * → influence, Ose #57 → births, Sabnock #43 / Glasya-Labolas #25 → the per-capita suicide / murder
+ * base). Each contributes its strength (`coefficient × pct(souls)`) directly (additive, not a
+ * multiplier). Consumed by `computeModifiers` → the matching flat fields, which the tick and the
+ * dynamics accrue. `effectMul` carries the sigil enhancers.
  */
 export function sigilFlatGeneration(
   state: GameState,
@@ -521,6 +524,19 @@ export function sigilEffectStack(state: GameState): SigilEffectStack {
 /** The multiplier on every sigil's strength in every channel (`sigilEffectStack(state).sigilMul`). */
 export function sigilStrengthMul(state: GameState): number {
   return sigilEffectStack(state).sigilMul;
+}
+
+/**
+ * The multiplier the sigil-effect stack applies to ONE seal's own strength, mirroring the acyclic
+ * order of `sigilEffectStack`: Semet #32 reads the relics alone (it cannot scale itself), Gaap #33
+ * reads the relics × Semet, and every other seal takes the full `sigilMul`. For showing a seal's
+ * live effect; the channels themselves already apply the same factors.
+ */
+export function sigilEffectMulFor(state: GameState, def: SigilDef): number {
+  const raw = rawRelicSigilMul(state.lifetime.maleficia);
+  if (def.effect.kind === 'sigilEffect') return raw;
+  if (def.effect.kind === 'maleficiaEffect') return raw * (1 + sumKind(state, 'sigilEffect', raw));
+  return sigilStrengthMul(state);
 }
 
 /**

@@ -135,9 +135,15 @@ export interface StartOptions {
  *
  * Never below the base cost (clamped at eff = 1) so no efficiency ever makes a rite cheaper than its
  * printed price.
+ *
+ * The Suasio curve reads the WHOLE units of efficiency (`floor(eff)`), the same units the resolvers
+ * pay out (`units = max(1, floor(eff))`). Reading the raw efficiency charged for a fraction that
+ * buys nothing: at any efficiency in (1, 2) (the Familiar's +33%, Gula's first skill tier, The
+ * Dadu) Suggestion still yields one unit, yet `ceil(1 × (1 + ln 1.33))` doubled its price to 2
+ * influence (balance audit 2026-10-08).
  */
 export function costOutcomeCostMultiplier(category: ActionDef['category'], eff: number): number {
-  if (category === 'suasio') return Math.max(1, 1 + Math.log(Math.max(1, eff)));
+  if (category === 'suasio') return Math.max(1, 1 + Math.log(Math.max(1, Math.floor(eff))));
   return Math.max(1, eff);
 }
 
