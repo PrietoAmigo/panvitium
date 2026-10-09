@@ -270,7 +270,10 @@ export function invoke(state: GameState, id: string): InvokeResult {
   if (id === 'erinyes') {
     // Kill every reprobate at once — each death mints one soul (the 1-person-1-soul invariant; this
     // is a KILL, not upkeep). No RNG draws (a 100% wipe is deterministic) and the count is exact.
-    const population = totalReprobates(working);
+    // The wipe answers ONCE per lifetime, on the summon that sets `pendingErinyes`: without the
+    // guard, Dispel + Summon (the grimoire offers both) re-ran it as a free, repeatable harvest of
+    // the whole flock (balance audit 2026-10-08). A re-summon keeps its pending descent, nothing more.
+    const population = state.lifetime.pendingErinyes === true ? 0 : totalReprobates(working);
     if (population > 0) {
       working = mintSouls(working, population);
       working = { ...working, lifetime: { ...working.lifetime, reprobates: 0 } };

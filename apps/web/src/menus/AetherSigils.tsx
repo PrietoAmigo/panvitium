@@ -5,6 +5,7 @@ import {
   sigilById,
   sigilVisible,
   sigilStrength,
+  sigilEffectMulFor,
   floor,
   isZero,
   bn,
@@ -29,8 +30,9 @@ import { HoldButton, SEMET_ID } from './katabasisShared.js';
 //      from / write to the persisted `state.sigilBindings` via the store's
 //      bind/unbind actions, so they survive every descent.
 //   2) Effect magnitude — the panel shows the real `sigilStrength(def, bound)`
-//      (coefficient × curve magnitude), formatted per effect kind, not the
-//      prototype's √×0.01 stand-in.
+//      (coefficient × curve magnitude) scaled by the live sigil-effect stack
+//      (`sigilEffectMulFor`: the relics, Gaap and Semet), formatted per effect
+//      kind, not the prototype's √×0.01 stand-in.
 //   3) The port itself — reimplemented in React: the rAF projection loop mutates
 //      the seal transforms/opacity/glow directly (no per-frame React render);
 //      only the infrequent focus change and the panel are React state.
@@ -129,22 +131,30 @@ function effectSign(e: SigilDef['effect']): '+' | '−' {
   return '+';
 }
 
-/** A small flat magnitude, shown plainly (e.g. "62" or "0.04"). */
+/**
+ * A small flat magnitude, shown plainly (e.g. "62" or "0.04"). Below 0.01 it keeps two significant
+ * digits: the per-capita rates (Sabnock, Glasya-Labolas) live there, and two fixed decimals read
+ * every live binding of theirs as "+0".
+ */
 function fmtFlat(s: number): string {
   if (s >= 10) return formatBigNum(bn(Math.round(s)));
-  return s.toFixed(2).replace(/\.?0+$/, '');
+  if (s <= 0 || s >= 0.01) return s.toFixed(2).replace(/\.?0+$/, '');
+  const digits = Math.min(20, 1 - Math.floor(Math.log10(s)));
+  return s.toFixed(digits).replace(/\.?0+$/, '');
 }
 
 /**
  * The real per-seal effect at the current binding (pending point #2). `sigilStrength` is the bare
- * strength the sim applies: a fraction for the multiplier / chance / percentage-point sigils (shown
- * as ±X.X% per `effectSign`), a flat per-second amount for the generators (Haagenti, Decarabia, …), or rounded
- * invoking power. The boon *text* already says what the seal does; this is its magnitude. A dormant
- * seal (`inert`, ADR-038) has none, so it reads as an em dash however many souls it holds.
+ * strength; `effectMul` is the sigil-effect stack that scales it in play (callers pass
+ * `sigilEffectMulFor(state, def)`), so the number shown is the one the sim applies: a fraction for
+ * the multiplier / chance / percentage-point sigils (shown as ±X.X% per `effectSign`), a flat
+ * per-second amount for the generators (Haagenti, Decarabia, …), or rounded invoking power. The boon
+ * *text* already says what the seal does; this is its magnitude. A dormant seal (`inert`, ADR-038)
+ * has none, so it reads as an em dash however many souls it holds.
  */
-export function effectDisplay(def: SigilDef | undefined, bound: BigNum): string {
+export function effectDisplay(def: SigilDef | undefined, bound: BigNum, effectMul = 1): string {
   if (!def || def.effect.kind === 'inert') return '\u2014';
-  const s = sigilStrength(def, bound);
+  const s = sigilStrength(def, bound) * effectMul;
   const e = def.effect;
   if (e.kind === 'flatGen') return `+${fmtFlat(s)} ${FLAT_UNIT[e.resource] ?? '/s'}`;
   if (e.kind === 'invokingPower') return `+${Math.round(s)} invoking power`;
@@ -587,7 +597,9 @@ function SealPanel({
             </div>
             <div className="ap-stat">
               <span className="ap-k">Effect</span>
-              <span className="ap-v gold">{effectDisplay(def, bound)}</span>
+              <span className="ap-v gold">
+                {effectDisplay(def, bound, def ? sigilEffectMulFor(state, def) : 1)}
+              </span>
             </div>
           </div>
 

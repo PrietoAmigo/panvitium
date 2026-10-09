@@ -301,7 +301,7 @@ describe('modifier integration', () => {
 
 describe('modifier integration — per-category efficiency', () => {
   it('Luxuria levels scale Suggestion cost but not the time-mode channels (sheet rev 2026-06-12)', () => {
-    // Luxuria L1 → suasioEffMul = 2. Suggestion influence cost = ceil(1 × 2) = 2.
+    // Luxuria L1 → suasioEffMul = 2. Suggestion influence cost = ceil(1 × (1 + ln 2)) = 2.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -314,6 +314,31 @@ describe('modifier integration — per-category efficiency', () => {
     // The Suasio lift never reaches Indagatio or Emptio.
     expect(categoryEfficiency(state, 'indagatio')).toBe(1);
     expect(categoryEfficiency(state, 'emptio')).toBe(1);
+  });
+
+  it('a fractional efficiency the yield cannot use does not raise the Suasio price (balance audit 2026-10-08)', () => {
+    // Suasio pays out whole units (`floor(eff)`), so the price reads the same whole units. Before the
+    // fix, any efficiency in (1, 2) doubled Suggestion to 2 influence for the same single unit:
+    // offering the first 180 souls to Gula (Insatiability ≈ ×1.31) or summoning the Familiar (×1.33).
+    const base = withInfluence(fresh(), 100);
+    const gula = withSin(base, 'gula', 1);
+    const familiar: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, invocations: { familiar: 1 } },
+    };
+    for (const s of [gula, familiar]) {
+      const eff = categoryEfficiency(s, 'suasio');
+      expect(eff).toBeGreaterThan(1.3);
+      expect(eff).toBeLessThan(2);
+      expect(plannedActionCost(s, 'suggestion').influence).toBe(1);
+      expect(plannedActionCost(s, 'logismoi').influence).toBe(25);
+      const r = startAction(s, 'suggestion');
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(floor(r.state.lifetime.influence).toNumber()).toBe(99); // 100 − 1
+    }
+    // Whole units still cost more: ×2 efficiency (two units per cast) is ceil(1 + ln 2) = 2.
+    expect(plannedActionCost(base, 'suggestion', { efficiency: 2 }).influence).toBe(2);
+    expect(plannedActionCost(base, 'suggestion', { efficiency: 1.99 }).influence).toBe(1);
   });
 
   it('Ira levels scale no action cost now that Decimatio is retired (ADR-038)', () => {

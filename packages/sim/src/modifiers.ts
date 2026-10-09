@@ -91,7 +91,7 @@ export interface Modifiers {
    */
   readonly flatInfluencePerSecond: number;
   /**
-   * Additive flat gold-per-second from the Haagenti #48 generator sigil (log curve). Accrued in the
+   * Additive flat gold-per-second from the Haagenti #48 generator sigil. Accrued in the
    * tick alongside the other gold sources, scaled by `goldRateMul`. 0 when no source is active.
    */
   readonly flatGoldPerSecond: number;
@@ -328,7 +328,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const empusaCount = inv.empusa ?? 0; // each: +1 reprobate/s (× invEff)
   const lamiaCount = inv.lamia ?? 0; // each: +50/3 reprobates/s (× invEff)
   const koboldCount = inv.kobold ?? 0; // each: +10 gold gain/s (× invEff)
-  const arachneCount = inv.arachne ?? 0; // each: +1 influence/s (× invEff)
+  const arachneCount = inv.arachne ?? 0; // each: +0.25 influence/s (× invEff)
   const blobCount = inv.blob ?? 0; // each: +0.00625 desidia/s (× invEff)
   const morpheusCount = inv.morpheus ?? 0; // each: +0.001 desidia per cost-consumed reprobate (× invEff)
   const hasSuccubus = (inv.succubus ?? 0) > 0; // apex Luxuria: +1000 reprobates/s (× invEff)
@@ -499,7 +499,7 @@ export function computeModifiers(state: GameState): Modifiers {
       faustoCurseMul, // Fausto's curse (05): ×0.33 while his fourth letter remains
 
     maxInfluenceMul: maxInfluenceMulV,
-    // Flat influence/s: the Decarabia #69 generator sigil (log curve) + each Arachne (+1/s × invEff).
+    // Flat influence/s: the Decarabia #69 generator sigil + each Arachne (+0.25/s × invEff).
     flatInfluencePerSecond:
       flatGen.influence +
       ARACHNE_INFLUENCE_PER_SECOND * invEffFor('vanagloria') * arachneCount +
@@ -508,13 +508,13 @@ export function computeModifiers(state: GameState): Modifiers {
       flat('blood_chalk', 2) +
       flat('blackthorn_wand', 2) +
       flat('sulfur_censer', 0.6),
-    // Flat gold/s: the Haagenti #48 generator sigil (log curve) + each Kobold (+10/s × invEff).
+    // Flat gold/s: the Haagenti #48 generator sigil + each Kobold (+10/s × invEff).
     flatGoldPerSecond: flatGen.gold + KOBOLD_GOLD_PER_SECOND * invEffFor('avaritia') * koboldCount,
     // Additive increase to the base per-capita reprobate suicide rate (added to the base in
     // `dynamics`). Each Nightmare contributes +0.005/s × invEff.
     flatBaseSuicideRatePerSecond:
-      NIGHTMARE_SUICIDE_FACTOR * invEffFor('tristitia') * nightmareCount + flatGen.suicideRate, // Sabnock #43 (log curve, flat per-capita addition)
-    // Flat addition to the per-capita murder base: Glasya-Labolas #25 (log curve) + each Harpy
+      NIGHTMARE_SUICIDE_FACTOR * invEffFor('tristitia') * nightmareCount + flatGen.suicideRate, // Sabnock #43 (flat per-capita addition)
+    // Flat addition to the per-capita murder base: Glasya-Labolas #25 + each Harpy
     // (+0.005/s × invEff).
     flatBaseMurderRatePerSecond:
       flatGen.murderRate + HARPY_MURDER_FACTOR * invEffFor('ira') * harpyCount,

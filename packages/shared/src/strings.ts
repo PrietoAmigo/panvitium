@@ -463,7 +463,7 @@ export const strings = {
       aurevora:
         'Player efficiency ×1.05 per second active; drains gold at 100/s, growing ×1.05 per second, and self-dispels at 0 gold.',
       erinyes:
-        'Kills every reprobate (each mints 1 soul); at the next Katabasis, a permanent ×2 player efficiency, but 0% gold and maleficia carried.',
+        'Kills every reprobate (each mints 1 soul), once per lifetime; at the next Katabasis, a permanent ×2 player efficiency, but 0% gold and maleficia carried.',
       morpheus:
         '+0.001 desidia per cost-consumed reprobate (consumes 5% of the reprobate pool/s), scaled by invocation efficiency.',
     } as Record<string, string>,

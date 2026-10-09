@@ -103,9 +103,30 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1257** (sim 607 · shared 86 · api 20 · web 544).
+**Current test count: 1265** (sim 613 · shared 86 · api 20 · web 546).
 
-> **Latest change — Decimatio removed (ADR-038).** Design decision: the culling category leaves the
+> **Latest change — Playability and balance audit (`docs/balance-audit-2026-10-08.md`).** A sweep
+> for bugs and outliers, measured on the modifier bundle and a scripted one-hour first lifetime
+> (252 souls, nothing bound). Five fixes. **The flat seals** (Haagenti #48, Decarabia #69, Ose
+> #57, Sabnock #43, Glasya-Labolas #25) ran on `coeff × ln(1 + N)`, so the first soul paid the
+> most: one soul gave +69% base gold (Haagenti) or ×7.9 the suicide rate (Sabnock), and 20 souls in
+> each multiplied the hour's souls ×17 (their percentage twins: ×1.05). They now ride the default
+> `pct` curve with `coefficient = FLAT_SEAL_SPLASH (10) × the base rate they add to` (Ose, with no
+> base rate, takes 10× its sheet 0.3): each adds ten times what its percentage twin adds to that
+> base; the same 100 souls now give ×1.7. **Suasio price at fractional efficiency**: the cost read
+> `1 + ln(eff)` while the yield pays `floor(eff)` whole units, so the Familiar (×1.33) or the first
+> Gula offering (×1.31) doubled Suggestion to 2 influence for no extra yield; the cost now reads
+> `1 + ln(floor(eff))`. **Erinyes** re-ran its kill-every-reprobate harvest on each Dispel +
+> Summon; the wipe now fires once per lifetime (copy updated). **The Goetia display**: the rate
+> seals read "+0" (two fixed decimals; now two significant digits), and every seal showed its bare
+> strength without the relic / Gaap / Semet stack the sim applies (new `sigilEffectMulFor`, used by
+> the seal panel and the Ledger). No save-schema or RNG change. The audit's seventeen open findings
+> (Panvitium's `souls × e^(gold/100,000)` harvest, hand-compounded reserve interest × the gold
+> multipliers, uncapped Erinyes stacks, the %-of-flock × efficiency Suasio tiers, the Church taking
+> ~84% of the early flock, free acolyte casts, trap invocations and seals) are design calls, listed
+> in the doc and under **Remaining**. Net **+8 tests** (sim 607 → 613, web 544 → 546).
+>
+> **Earlier change — Decimatio removed (ADR-038).** Design decision: the culling category leaves the
 > game. Its three rites (**Caedes**, **Pogrom**, **Purgatio**) are gone from the action catalog with
 > their tier weights, resolvers and forecast model, and the PC's **Decimatio** program ("The
 > Breathing Dark") is gone with its strings and CSS. The `decimatioEfficiencyMul` lever is removed
@@ -1612,6 +1633,19 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
     stay flavour.
 
 ### Remaining
+
+**Balance audit 2026-10-08 open findings** — design calls, ranked and quantified in
+`docs/balance-audit-2026-10-08.md`: Panvitium's harvest (`souls × e^(gold burned / 100,000)`, one
+long burn ends the game); reserve interest multiplied by `goldRateMul` and compounded by hand (free
+deposits; Midas ×10 doubles the reserve every ~2.3 min); Erinyes's uncapped ×2 per descent; the
+Imperium / Logismoi %-of-flock × efficiency tiers (exponential flock growth, fed by Aurevora's
+gold-for-efficiency and Erinyes); the Church culls taking ~84% of the early flock; acolytes casting
+Suasio for free at a full unit of gain; sub-×2 efficiency being dead weight for Suggestion's yield;
+Sin-1 invocation upkeep outrunning the 0.5/s base influence regen (watch after the Decarabia
+retune); Behemoth and Arachne as trap invocations; Halphas / Stolas raising Indagatio's gold-loss
+tiers; Gusion's pure downside; the duplicate seals (Bael = Balam, Naberius = Bifrons, Vine = Furcas,
+Dantalion ⊃ Zagan, Amy = Bifrons + Seere); Aamon's empty early game; Astiwihad's costless freeze;
+Forneus's generous rounding.
 
 **Gaps opened by the Decimatio removal (ADR-038)** — each needs a design or sheet decision:
 

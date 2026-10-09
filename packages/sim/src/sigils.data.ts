@@ -4,9 +4,32 @@
  * in `sigils.ts` so the economy knobs live in one editable place. Pure data; types and behaviour
  * stay in `sigils.ts`. Curve defaults to the `pct` percentage curve unless noted; on it a
  * `coefficient` of 1 is the standard strength (log base 33: ~5% at 33 souls, ~50% at ~39M, no cap), 0.5 is half.
- * '(flat)' effects use the `log` curve with their own coefficients and read as flat amounts.
+ * The five flat generators (Haagenti, Decarabia, Ose, Sabnock, Glasya-Labolas) ride the same `pct`
+ * curve and read as flat amounts: see `FLAT_SEAL_SPLASH`. Forneus's invoking power, Semet, Gaap and
+ * the three Katabasis carry-over seals keep the sheet's `log` curve.
  */
 import { type SigilDef } from './sigils.js';
+import {
+  BASE_GOLD_PER_SECOND,
+  BASE_INFLUENCE_RATE,
+  BASE_MAX_INFLUENCE,
+  BASE_MURDER_RATE_PER_SECOND,
+  BASE_SUICIDE_RATE_PER_SECOND,
+} from './constants.js';
+
+/**
+ * Balance audit (2026-10-08): the flat generators were on the sheet's `log` curve, `coeff × ln(1 + N)`,
+ * which pays most of its value for the first souls bound. ONE soul in Haagenti added +69% to base
+ * gold, one in Sabnock multiplied the suicide rate ×7.9, and 20 souls in each of the five seals
+ * multiplied a first lifetime's soul harvest ×17 (their percentage twins, Valefor / Belial / Aamon /
+ * Ronove / Aim, gave +5% for the same souls). They now ride the default `pct` curve (nothing below
+ * ~7 souls) with a coefficient of `FLAT_SEAL_SPLASH ×` the base rate each one adds to: a flat seal
+ * adds ten times what its percentage twin adds to that base rate (Haagenti +50% of base gold at 33
+ * souls, +160% at 1k, +600% at 1B). They stay the strongest early pick and fall behind the
+ * percentage seals late, when the base rate is a small share of the economy. Ose has no base rate
+ * (passive generation is 0), so it takes ten times its sheet coefficient (0.3 → 3).
+ */
+const FLAT_SEAL_SPLASH = 10;
 
 export const SIGILS: Readonly<Record<number, SigilDef>> = {
   1: {
@@ -201,8 +224,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   25: {
     id: 25,
     name: 'Glasya-Labolas',
-    curve: 'log',
-    coefficient: 0.001,
+    coefficient: FLAT_SEAL_SPLASH * BASE_MURDER_RATE_PER_SECOND, // 0.002 (balance audit 2026-10-08)
     // Sigils sheet (rev 2026-06-12): +murder rate (flat addition to the per-capita base).
     effect: { kind: 'flatGen', resource: 'murderRate' },
   },
@@ -355,8 +377,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   43: {
     id: 43,
     name: 'Sabnock',
-    curve: 'log',
-    coefficient: 0.001,
+    coefficient: FLAT_SEAL_SPLASH * BASE_SUICIDE_RATE_PER_SECOND, // 0.001 (balance audit 2026-10-08)
     // Sigils sheet (rev 2026-06-12): +suicide rate (flat addition to the per-capita base).
     effect: { kind: 'flatGen', resource: 'suicideRate' },
   },
@@ -392,8 +413,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   48: {
     id: 48,
     name: 'Haagenti',
-    curve: 'log',
-    coefficient: 3,
+    coefficient: FLAT_SEAL_SPLASH * BASE_GOLD_PER_SECOND, // 30 (balance audit 2026-10-08)
     // Sigils sheet (rev 2026-06-12): +gold/s (flat).
     effect: { kind: 'flatGen', resource: 'gold' },
   },
@@ -462,8 +482,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   57: {
     id: 57,
     name: 'Ose',
-    curve: 'log',
-    coefficient: 0.3,
+    coefficient: FLAT_SEAL_SPLASH * 0.3, // 3: the sheet's 0.3, ×10 (balance audit 2026-10-08)
     // Sigils sheet (rev 2026-06-12): +reprobate generation (flat).
     effect: { kind: 'flatGen', resource: 'generation' },
   },
@@ -568,8 +587,9 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   69: {
     id: 69,
     name: 'Decarabia',
-    curve: 'log',
-    coefficient: 0.5,
+    // 5: ten times the base influence regeneration, 0.5% of the 100 base cap per second (balance
+    // audit 2026-10-08).
+    coefficient: FLAT_SEAL_SPLASH * BASE_INFLUENCE_RATE * BASE_MAX_INFLUENCE,
     // Sigils sheet (rev 2026-06-12): generates influence/s (flat).
     effect: { kind: 'flatGen', resource: 'influence' },
   },
