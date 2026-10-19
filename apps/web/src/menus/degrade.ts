@@ -8,7 +8,8 @@
    pass and stays crisp.
 
    The recipe, in order, runs inside `render()`:
-     1. Composite the live scene (backdrop + animated sprites) into a small
+     1. Composite the live scene (backdrop + animated sprites + the glows crisp
+        chrome casts into the room) into a small
         low-resolution buffer  ........................  PIXELATION (block size)
      2. Tone curve — crush blacks, lift floor, add contrast  ......  THE GRADE
      3. Quantise each channel to N steps (optional Bayer dither)  .  COLOUR CRUSH
@@ -154,6 +155,65 @@ export interface EngineSprite {
   };
 }
 
+/**
+ * Light that crisp chrome over the canvas casts into the room: the altar sigil's glow and aura,
+ * STATUS QUO's line and bloom. The chrome itself stays crisp DOM above the canvas; its glow is
+ * drawn into the scene buffer after the sprites, so the pass pixelates, crushes and grains it with
+ * the room. Positions and boxes are stage fractions (x and w of the width, y and h of the height);
+ * a shadow's blur is a fraction of the stage width, so a glow keeps its proportions in any buffer.
+ */
+export type EngineGlow = EngineGlowSilhouette | EngineGlowBar | EngineGlowEllipse;
+
+/** One drop-shadow of a glowing shape: blur radius (stage-width fraction) and CSS colour. */
+export interface EngineGlowShadow {
+  blur: number;
+  color: string;
+}
+
+/** Gradient stops: offset 0..1 and CSS colour. */
+export type EngineGlowStops = readonly (readonly [number, string])[];
+
+/** An image's silhouette, tinted `fill`, then its shadows chained as CSS chains drop-shadows. */
+export interface EngineGlowSilhouette {
+  kind: 'silhouette';
+  img: CanvasImageSource;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  fill: string;
+  shadows: readonly EngineGlowShadow[];
+  alpha: number;
+}
+
+/** A horizontal bar filled with a left-to-right gradient, its shadows chained the same way. */
+export interface EngineGlowBar {
+  kind: 'bar';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  stops: EngineGlowStops;
+  shadows: readonly EngineGlowShadow[];
+  alpha: number;
+}
+
+/** A radial gradient filling the ellipse inscribed in its box (CSS `closest-side`). */
+export interface EngineGlowEllipse {
+  kind: 'ellipse';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  stops: EngineGlowStops;
+  alpha: number;
+}
+
+/** Where the engine reads the glows each frame (it samples live DOM state, see `setGlows`). */
+export type EngineGlowSource = () => readonly EngineGlow[];
+
+const NO_GLOWS: EngineGlowSource = () => [];
+
 /** A composed scene: one backdrop plate + any sprites + the studio ritual glow. */
 export interface EngineScene {
   bg: HTMLImageElement | null;
@@ -240,6 +300,12 @@ export class DegradePass {
   private readonly noise: HTMLCanvasElement;
   private readonly nctx: CanvasRenderingContext2D;
   private readonly _noiseData: ImageData;
+  // Two scratch layers for a glow's chained shadows: each shadow is cast from the shape plus the
+  // shadows before it, ping-ponging between the two. They grow to the largest glow drawn.
+  private readonly glowA: HTMLCanvasElement;
+  private readonly gactx: CanvasRenderingContext2D;
+  private readonly glowB: HTMLCanvasElement;
+  private readonly gbctx: CanvasRenderingContext2D;
 
   private s: DegradeSettings = { ...DEFAULT_DEGRADE };
   private scene: EngineScene = { bg: null, sprites: [], signature: false };
@@ -262,6 +328,9 @@ export class DegradePass {
   // Eased fast-forward intensity 0..1 — animation state, NOT a setting. Ramps toward `s.ffw` each
   // rendered frame (same ~0.7s cadence as `_curse`) so the Desidia VHS layer fades in/out.
   private _ffw = 0;
+
+  // The glows crisp chrome casts into the room, read every rendered frame.
+  private _glows: EngineGlowSource = NO_GLOWS;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -294,6 +363,11 @@ export class DegradePass {
     this.noise.height = Math.round(VH / 5);
     this.nctx = this.noise.getContext('2d')!;
     this._noiseData = this.nctx.createImageData(this.noise.width, this.noise.height);
+
+    this.glowA = document.createElement('canvas');
+    this.gactx = this.glowA.getContext('2d')!;
+    this.glowB = document.createElement('canvas');
+    this.gbctx = this.glowB.getContext('2d')!;
   }
 
   /** Merge a partial recipe and repaint a frame immediately. */
@@ -319,6 +393,16 @@ export class DegradePass {
       // Idle, or a curtain already opening on this room: show it now; the opening keeps fading.
       this.scene = scene;
     }
+    this.renderSafe();
+  }
+
+  /**
+   * Set where the glows come from, or `null` for none. The source is called on every rendered
+   * frame, so it can sample the live state of the chrome that casts them (its CSS animations,
+   * transitions and fades) and the glow follows at the pass's own cadence.
+   */
+  setGlows(source: EngineGlowSource | null): void {
+    this._glows = source ?? NO_GLOWS;
     this.renderSafe();
   }
 
@@ -544,6 +628,96 @@ export class DegradePass {
       ctx.drawImage(img, dx, dy, dw, dh);
       ctx.restore();
     }
+    // The light crisp chrome casts into the room rides over the figures, inside the same buffer.
+    for (const g of this._glows()) {
+      if (g.alpha <= 0.001) continue;
+      if (g.kind === 'ellipse') this._drawGlowEllipse(ctx, w, h, g);
+      else this._drawGlowShape(ctx, w, h, g);
+    }
+  }
+
+  private _drawGlowEllipse(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    g: EngineGlowEllipse,
+  ): void {
+    const rx = (g.w * w) / 2;
+    const ry = (g.h * h) / 2;
+    if (rx < 0.5 || ry < 0.5) return;
+    ctx.save();
+    ctx.globalAlpha *= Math.min(1, g.alpha);
+    ctx.translate(g.x * w, g.y * h);
+    ctx.scale(rx, ry);
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    for (const [at, color] of g.stops) grad.addColorStop(at, color);
+    ctx.fillStyle = grad;
+    ctx.fillRect(-1, -1, 2, 2);
+    ctx.restore();
+  }
+
+  /**
+   * A silhouette or a bar with its shadows chained as CSS chains drop-shadows: the shape goes into
+   * one scratch layer, then each shadow is cast from that layer into the other (shadow plus the
+   * layer on top), ping-ponging, and the result lands in the scene. A shadow of blur b is a
+   * Gaussian of sigma b/2 here as in CSS, so 1.5b of margin per shadow holds the chain.
+   */
+  private _drawGlowShape(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    g: EngineGlowSilhouette | EngineGlowBar,
+  ): void {
+    const gw = g.w * w;
+    const gh = g.h * h;
+    if (gw < 0.5 || gh <= 0) return;
+    const blurs = g.shadows.map((sh) => sh.blur * w);
+    const m = Math.ceil(blurs.reduce((sum, b) => sum + b * 1.5, 0)) + 2;
+    const cw = Math.ceil(gw) + m * 2;
+    const ch = Math.ceil(gh) + m * 2;
+    for (const c of [this.glowA, this.glowB]) {
+      if (cw > c.width || ch > c.height) {
+        c.width = Math.max(cw, c.width);
+        c.height = Math.max(ch, c.height);
+      }
+    }
+
+    // 1. The shape: the image's silhouette tinted with `fill`, or the gradient bar.
+    let src = this.gactx;
+    let dst = this.gbctx;
+    src.clearRect(0, 0, cw, ch);
+    src.save();
+    if (g.kind === 'silhouette') {
+      src.imageSmoothingEnabled = true;
+      src.imageSmoothingQuality = 'high';
+      src.drawImage(g.img, m, m, gw, gh);
+      src.globalCompositeOperation = 'source-in';
+      src.fillStyle = g.fill;
+      src.fillRect(0, 0, cw, ch);
+    } else {
+      const grad = src.createLinearGradient(m, 0, m + gw, 0);
+      for (const [at, color] of g.stops) grad.addColorStop(at, color);
+      src.fillStyle = grad;
+      src.fillRect(m, m, gw, gh);
+    }
+    src.restore();
+
+    // 2. Each shadow cast from everything so far.
+    g.shadows.forEach((sh, i) => {
+      dst.clearRect(0, 0, cw, ch);
+      dst.save();
+      dst.shadowColor = sh.color;
+      dst.shadowBlur = blurs[i] ?? 0;
+      dst.drawImage(src.canvas, 0, 0, cw, ch, 0, 0, cw, ch);
+      dst.restore();
+      [src, dst] = [dst, src];
+    });
+
+    // 3. Into the scene, centred on the shape.
+    ctx.save();
+    ctx.globalAlpha *= Math.min(1, g.alpha);
+    ctx.drawImage(src.canvas, 0, 0, cw, ch, g.x * w - gw / 2 - m, g.y * h - gh / 2 - m, cw, ch);
+    ctx.restore();
   }
 
   render(now?: number): void {

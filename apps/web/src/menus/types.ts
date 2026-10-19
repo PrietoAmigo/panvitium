@@ -137,8 +137,14 @@ export interface MaleficiumUse {
 // Presentation shapes for the canvas degradation pass. RoomId above is shared.
 // DegradeSettings/Engine* come from the engine. (The Ars Goetia book's types live
 // in ./ars-goetia.types.ts — decoupled from this layer.)
-import type { DegradeSettings } from './degrade.js';
-export type { DegradeSettings, EngineSprite, EngineScene } from './degrade.js';
+import type { DegradeSettings, EngineGlowSource } from './degrade.js';
+export type {
+  DegradeSettings,
+  EngineSprite,
+  EngineScene,
+  EngineGlow,
+  EngineGlowSource,
+} from './degrade.js';
 
 /** A diegetic sprite laid into the room scene; positions are stage fractions 0..1. */
 export interface SceneSprite {
@@ -203,6 +209,9 @@ export interface DegradedSceneProps {
   sprites?: SceneSprite[];
   /** Bound invocation figures to composite into the scene THROUGH the degradation pass. */
   figures?: BoundInvocationVisual[];
+  /** Light that crisp chrome over the canvas casts into the room (the altar sigil's glow),
+   *  sampled every rendered frame and painted THROUGH the degradation pass; null = none. */
+  glows?: EngineGlowSource | null;
   signature?: boolean;
   settings?: Partial<DegradeSettings>;
   className?: string;

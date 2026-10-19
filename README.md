@@ -103,9 +103,24 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1258** (sim 613 · shared 86 · api 20 · web 539).
+**Current test count: 1267** (sim 613 · shared 86 · api 20 · web 548).
 
-> **Latest change — UI: a brighter sigil glow, and STATUS QUO underlined in red light.** The
+> **Latest change — UI: the altar's glow turns a deep crimson, spreads wider, and goes through
+> the pixelation.** The seal and the STATUS QUO label stay crisp DOM over the room's canvas, but
+> the light they cast is now the room's: `DegradePass` gains glows (`setGlows`), painted into the
+> low-resolution scene buffer after the figures, so the pass pixelates, crushes, dithers and grains
+> them with the room. The seal's glow is darker and bigger, idle and armed: a deep crimson
+> silhouette glow (its shadows chained as CSS chains drop-shadows) under a wide aura reaching well
+> past the seal; STATUS QUO's bloom and line keep their look, now pixelated, and its letters lose
+> their crisp red text glow to the bloom behind them. The DOM still times all of it: hidden anchors
+> (`.altar-sigil-aura`, `.altar-sq-bloom`, `.altar-sq-line`) carry the geometry, fades, hover
+> transitions and the glyph's registered `--seal-breath`, and `menus/altarGlow.ts` samples them on
+> every frame the pass renders. Painting the glow once per frame in the small buffer instead of
+> re-blurring CSS drop-shadows at full size took a measured run from 23 / 6 fps (idle / armed) to
+> 49 / 51. Reduced motion holds the glow still. No sim, save or RNG change. Net **+9 tests** (web
+> 539 → 548).
+>
+> **Earlier change — UI: a brighter sigil glow, and STATUS QUO underlined in red light.** The
 > altar seal's red glow is brighter, idle and armed: each `kat-seal-breathe` keyframe now stacks
 > three drop-shadows in a brighter, fuller red (a tight inner one hugging the strokes under the
 > two wider ones), where the handoff's darker red had two; reduced motion holds the new first
