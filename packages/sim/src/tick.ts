@@ -14,7 +14,12 @@
  * persisted; the caller surfaces them in the log / pop-ups.
  */
 import { add, bn, gt, lt, max, min, mul, sub, ZERO, type BigNum } from './bignum.js';
-import { ensureAutoRepeatStarted, resolveAction } from './actions.js';
+import {
+  advanceAutoRepeat,
+  isAutoRepeating,
+  resolveAction,
+  TIMER_EPSILON_SECONDS,
+} from './actions.js';
 import { advanceAcolytes, autoRecruitAcolytes } from './acolytes.js';
 import { invocationUpkeep } from './invocations.js';
 import { applyInvocationTickEffects, aurevoraDrainNow } from './apex.js';
@@ -414,16 +419,19 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     };
   }
 
-  // 2. Resolve in-flight Opera timers. A timer whose remaining time falls to <= 0 this tick
-  //    completes: its outcome is drawn from `rng` and applied, scaled by player efficiency.
-  //    A large delta resolves every queued action at once. Emptio carries its target
-  //    maleficium id on the timer so the resolver knows which item was being bought.
+  // 2. Resolve in-flight Opera timers. A timer whose remaining time falls to <= 0 this tick (within
+  //    float tolerance) completes: its outcome is drawn from `rng` and applied, scaled by player
+  //    efficiency. A large delta resolves every queued action at once. Emptio carries its target
+  //    maleficium id on the timer so the resolver knows which item was being bought. An
+  //    auto-repeating rite's overshoot (the part of `simDelta` left after it completed) is kept
+  //    for step 2b, which hands it to the next cycle instead of discarding it.
+  const autoRepeatCarry = new Map<string, number>();
   if (working.lifetime.actionQueue.length > 0) {
     const remaining: ActionTimer[] = [];
     const completed: ActionTimer[] = [];
     for (const timer of working.lifetime.actionQueue) {
       const left = timer.remainingSeconds - simDelta;
-      if (left > 0) {
+      if (left > TIMER_EPSILON_SECONDS) {
         remaining.push({
           actionId: timer.actionId,
           remainingSeconds: left,
@@ -432,6 +440,9 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
         });
       } else {
         completed.push(timer);
+        if (isAutoRepeating(working, timer.actionId)) {
+          autoRepeatCarry.set(timer.actionId, Math.max(0, -left));
+        }
       }
     }
     working = { ...working, lifetime: { ...working.lifetime, actionQueue: remaining } };
@@ -465,10 +476,15 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   }
 
   // 2b. Auto-repeat (02 §3): re-queue any player rite the player has toggled to loop and that isn't
-  //     currently in flight — both a just-completed cycle and one that stalled on a prior tick. Free
-  //     and harmless when nothing is set to auto-repeat.
+  //     currently in flight — both a just-completed cycle and one that stalled on a prior tick. A
+  //     cycle that completed this tick carries its overshoot into the next, which resolves within
+  //     this tick too if the carry covers it: the loop runs one cycle per duration of GAME time, so
+  //     Desidia (or any span) never loses time to a timer that finished mid-tick. Free and harmless
+  //     when nothing is set to auto-repeat.
   if (working.lifetime.autoRepeat.length > 0) {
-    working = ensureAutoRepeatStarted(working);
+    const repeated = advanceAutoRepeat(working, autoRepeatCarry, rng);
+    working = repeated.state;
+    for (const ev of repeated.events) events.push(ev);
   }
 
   // 4. Reprobate dynamics: fractional pools accrue per tick and drain into integer

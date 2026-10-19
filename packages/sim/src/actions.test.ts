@@ -17,6 +17,7 @@ import {
   isAutoRepeating,
   setAutoRepeat,
   ensureAutoRepeatStarted,
+  advanceAutoRepeat,
   plannedActionCost,
   ACTIONS,
 } from './actions.js';
@@ -677,6 +678,57 @@ describe('auto-repeat (player-slot looping, 02 §3)', () => {
     s = withInfluence(s, 1000);
     s = tick(s, 1).state;
     expect(s.lifetime.actionQueue.some((t) => t.actionId === 'suggestion')).toBe(true);
+  });
+
+  /** Tick `s` `n` times by `step`, counting the player's own resolved Suggestion cycles. */
+  const runLoop = (s: GameState, step: number, n: number): { state: GameState; cycles: number } => {
+    let state = s;
+    let cycles = 0;
+    for (let i = 0; i < n; i++) {
+      const r = tick(state, step);
+      cycles += r.events.filter((e) => e.actionId === 'suggestion' && !e.source).length;
+      state = r.state;
+    }
+    return { state, cycles };
+  };
+  const looping = (): GameState =>
+    setAutoRepeat(withIra(withInfluence(fresh(), 5000), 1), 'suggestion', true);
+
+  it('a 1 s rite loops once per second at the live 100 ms step (no float-drift tick)', () => {
+    // Ten 0.1 s subtractions leave ~1e-16 on the timer; it must still finish on the tenth tick.
+    expect(runLoop(looping(), 0.1, 100).cycles).toBe(10);
+  });
+
+  it('carries a completed cycle’s overshoot into the next, so a coarse step loses no time', () => {
+    // 0.8 s steps (Desidia at 8×): 8 s of game time is 8 cycles. Discarding the overshoot made
+    // every 1 s cycle cost two steps: 5.
+    expect(runLoop(looping(), 0.8, 10).cycles).toBe(8);
+  });
+
+  it('one large span resolves as many cycles as a run of small ticks (ADR-004)', () => {
+    const big = runLoop(looping(), 10, 1);
+    const small = runLoop(looping(), 0.1, 100);
+    expect(big.cycles).toBe(10);
+    expect(small.cycles).toBe(10);
+    // Both leave a fresh full cycle in flight.
+    for (const { state } of [big, small]) {
+      expect(state.lifetime.actionQueue).toEqual([{ actionId: 'suggestion', remainingSeconds: 1 }]);
+    }
+  });
+
+  it('a stalled restart drops the rest of the carry (a stalled rite banks no time)', () => {
+    // A cycle completed with 5 s of overshoot, but there is influence for only two restarts.
+    const s = withIra(withInfluence(fresh(), 2), 1);
+    const r = advanceAutoRepeat(
+      { ...s, lifetime: { ...s.lifetime, autoRepeat: ['suggestion'] } },
+      new Map([['suggestion', 5]]),
+      rng(),
+    );
+    expect(r.events).toHaveLength(2); // both restarts resolve within the carry...
+    expect(r.state.lifetime.actionQueue).toHaveLength(0); // ...and the third cannot be paid
+    // Funded later, the loop restarts on a full cycle: none of the dropped carry survives.
+    const funded = ensureAutoRepeatStarted(withInfluence(r.state, 10));
+    expect(funded.lifetime.actionQueue).toEqual([{ actionId: 'suggestion', remainingSeconds: 1 }]);
   });
 
   it('ensureAutoRepeatStarted is idempotent when the rite is already running', () => {

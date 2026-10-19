@@ -7,6 +7,7 @@ import {
   desidiaMax,
   grantDesidiaForOffline,
   setDesidia,
+  setAutoRepeat,
   DESIDIA_BASE_MAX,
   DESIDIA_BASE_SPEED,
   type GameState,
@@ -105,6 +106,29 @@ describe('Desidia in the tick — accelerate the sim, drain desidia, honest cloc
       tick(seeded(), 1).state.lifetime.gold.toNumber(),
       6,
     );
+  });
+
+  it('an auto-repeating rite loops at the accelerated rate (its overshoot carries over)', () => {
+    // 30 real seconds at the live 100 ms step: ~40 s of game time, so a 1 s Suggestion already in
+    // flight completes 39 cycles. Discarding each cycle's overshoot made it cost
+    // ceil(1 / 0.1333) = 8 steps: 37.
+    const ira1 = {
+      ...seeded({ desidiaActive: true }),
+      devotion: { ...fresh().devotion, ira: bn(180) },
+    };
+    let s = setAutoRepeat(
+      { ...ira1, lifetime: { ...ira1.lifetime, influence: bn(5000) } },
+      'suggestion',
+      true,
+    );
+    let cycles = 0;
+    for (let i = 0; i < 300; i++) {
+      const r = tick(s, 0.1);
+      cycles += r.events.filter((e) => e.actionId === 'suggestion' && !e.source).length;
+      s = r.state;
+    }
+    expect(s.desidiaActive).toBe(true); // stayed accelerated throughout
+    expect(cycles).toBe(Math.floor(30 * DESIDIA_BASE_SPEED)); // 39
   });
 
   it('Acedia makes Desidia faster still (higher speed multiplier)', () => {

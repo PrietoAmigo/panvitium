@@ -103,9 +103,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1278** (sim 616 · shared 86 · api 20 · web 556).
+**Current test count: 1283** (sim 621 · shared 86 · api 20 · web 556).
 
-> **Latest change — Copy: Fausto's letters, rewritten closings.** The closing paragraph of Fausto
+> **Latest change — Fix: auto-repeat no longer loses time (Desidia included).** A rite set to
+> auto-repeat threw away the part of the tick left after its timer finished and restarted on a full
+> cycle the next step, so a cycle always took whole ticks and at most one completed per tick:
+> Desidia near 8× looped a 1 s Suggestion 5 times a real second instead of 8, and every speed from
+> 5× to 10× gave the same 5. The tick now carries that overshoot into the next cycle
+> (`advanceAutoRepeat`, tick step 2b), resolving and restarting within the tick as often as the carry
+> covers, each restart paying its cost; an unaffordable restart drops the rest, so a stalled loop
+> banks no time. One large span now resolves as many cycles as a run of 100 ms ticks (ADR-004). Timers
+> also finish within `TIMER_EPSILON_SECONDS` (1e-9) of zero: ten 0.1 s subtractions left ~1e-16 on a
+> 1 s timer, holding every cycle an extra tick even at normal speed (Suggestion ran at 90%). No save
+> change; the RNG stream shifts only where cycles now complete on time. Net **+5 tests** (sim 616 →
+> 621).
+>
+> **Earlier change — Copy: Fausto's letters, rewritten closings.** The closing paragraph of Fausto
 > #1, #2 and #3 is replaced, and in #4 ("Take this with you") so is the line leading into the Latin
 > curse, now "One gift remains for you. … You will carry what I have written." In
 > `strings.emails.catalog` and `docs/05-email-content.md`. Copy only: no sim, save or RNG change; no
