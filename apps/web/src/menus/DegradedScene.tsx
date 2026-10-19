@@ -72,6 +72,26 @@ export function preloadImage(url: string): void {
   im.src = url;
 }
 
+/** True when `url` is already in the decoded cache, so a `DegradedScene` shows it on its first frame. */
+export function isImageDecoded(url: string): boolean {
+  return DECODED_IMAGES.has(url);
+}
+
+/** Like `preloadImage`, but resolves once the image is in the decoded cache (rejects if it fails). */
+export function decodeImage(url: string): Promise<void> {
+  if (DECODED_IMAGES.has(url)) return Promise.resolve();
+  if (typeof Image === 'undefined') return Promise.reject(new Error('Image unavailable'));
+  return new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = (): void => {
+      DECODED_IMAGES.set(url, im);
+      resolve();
+    };
+    im.onerror = (): void => reject(new Error(`failed to load ${url}`));
+    im.src = url;
+  });
+}
+
 /** Small image cache — loads urls once, re-renders when each decodes. */
 function useImages(urls: string[]): Record<string, HTMLImageElement> {
   // Stored in state (not a ref): each decode yields a NEW object, so consumers that depend on the

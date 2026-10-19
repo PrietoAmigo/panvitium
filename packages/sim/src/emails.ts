@@ -249,6 +249,12 @@ export interface DeliverResult {
   readonly state: GameState;
   /** Ids delivered on this pass, in catalog order — surfaced so the UI can cue per-email SFX (05). */
   readonly delivered: string[];
+  /**
+   * Ids whose requirement was met on this pass, in catalog order: a timed / random email arming, or
+   * an immediate email delivering (it has no arm step). The moment the player EARNS the letter, not
+   * its later arrival; surfaced so the UI can cue it then (Fausto's subliminal plates).
+   */
+  readonly triggered: string[];
 }
 
 /**
@@ -256,13 +262,15 @@ export interface DeliverResult {
  * fire as soon as eligible; timed/random emails arm on first eligibility (recorded in
  * `emailArmedAt`) and fire once their delay/offset elapses and any `fireGate` still holds. Each
  * email is delivered at most once per game (deduped by inbox id, and the inbox persists across
- * Katabasis). Pure; returns the same state reference and an empty `delivered` when nothing arms or fires.
+ * Katabasis). Pure; returns the same state reference and empty `delivered` / `triggered` when nothing
+ * arms or fires.
  */
 export function deliverEmails(state: GameState, now: number): DeliverResult {
   const have = new Set(state.lifetime.inbox.map((e) => e.id));
   let armed = state.lifetime.emailArmedAt;
   let armedChanged = false;
   const fired: string[] = [];
+  const triggered: string[] = [];
 
   for (const def of EMAIL_DEFS) {
     if (have.has(def.id)) continue;
@@ -270,7 +278,10 @@ export function deliverEmails(state: GameState, now: number): DeliverResult {
 
     const immediate = (def.delaySeconds ?? 0) <= 0 && def.randomWindow === undefined;
     if (immediate) {
-      if (def.fireGate === undefined || def.fireGate(state)) fired.push(def.id);
+      if (def.fireGate === undefined || def.fireGate(state)) {
+        fired.push(def.id);
+        triggered.push(def.id);
+      }
       continue;
     }
 
@@ -282,6 +293,7 @@ export function deliverEmails(state: GameState, now: number): DeliverResult {
         armedChanged = true;
       }
       armed[def.id] = now;
+      triggered.push(def.id);
       continue; // armed this tick; the earliest possible delivery is a later tick
     }
     const delaySec = def.randomWindow
@@ -292,7 +304,7 @@ export function deliverEmails(state: GameState, now: number): DeliverResult {
     }
   }
 
-  if (fired.length === 0 && !armedChanged) return { state, delivered: [] };
+  if (fired.length === 0 && !armedChanged) return { state, delivered: [], triggered: [] };
 
   const inbox =
     fired.length > 0
@@ -309,7 +321,7 @@ export function deliverEmails(state: GameState, now: number): DeliverResult {
       ...(curseLaid ? { flagFaustoCurse: true } : {}),
     },
   };
-  return { state: next, delivered: fired };
+  return { state: next, delivered: fired, triggered };
 }
 
 /** A fresh, unread inbox entry. */

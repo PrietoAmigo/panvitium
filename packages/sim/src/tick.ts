@@ -60,6 +60,12 @@ export interface TickResult {
    * the inbox; surfaced so the UI can cue per-email SFX (the Fausto #5 door-knock). Empty on most ticks.
    */
   readonly emailsDelivered: string[];
+  /**
+   * Ids of emails whose requirement was met on this tick (a timed email arming, an immediate one
+   * delivering), in catalog order: the moment a letter is earned, however long it then takes to
+   * arrive. Surfaced so the UI can cue it (Fausto's subliminal plates). Empty on most ticks.
+   */
+  readonly emailsTriggered: string[];
 }
 
 /** Instantaneous passive income, read-only (for the HUD's per-second readouts). */
@@ -167,7 +173,14 @@ export function resourceFlows(state: GameState): ResourceFlows {
 /** Advance `state` by `deltaSeconds`. Returns a new state; never mutates the input. */
 export function tick(state: GameState, deltaSeconds: number): TickResult {
   if (deltaSeconds <= 0)
-    return { state, events: [], notices: [], achievementsUnlocked: [], emailsDelivered: [] };
+    return {
+      state,
+      events: [],
+      notices: [],
+      achievementsUnlocked: [],
+      emailsDelivered: [],
+      emailsTriggered: [],
+    };
 
   // Frozen during the descent (02 §6): while the Katabasis menu is open the lifetime is in trance.
   // Absorb the elapsed time (advance the clock) but run NO simulation — no income, no reprobate
@@ -180,6 +193,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
       notices: [],
       achievementsUnlocked: [],
       emailsDelivered: [],
+      emailsTriggered: [],
     };
   }
 
@@ -202,6 +216,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
       notices: [],
       achievementsUnlocked: ach.unlocked,
       emailsDelivered: [],
+      emailsTriggered: [],
     };
   }
 
@@ -526,7 +541,8 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
 
   // 7. Impact-feedback mail (5.2 / content 05). Arm and deliver any newly-triggered emails against
   //    the fully-advanced state — last, like achievements, so one big delta also catches up
-  //    the inbox (and its arm timers). `delivered` surfaces this tick's new mail for SFX cues.
+  //    the inbox (and its arm timers). `delivered` surfaces this tick's new mail for SFX cues;
+  //    `triggered` the letters earned this tick (armed or delivered at once) for their cues.
   const mailed = deliverEmails(ach.state, finalState.lastTickAt);
 
   return {
@@ -535,5 +551,6 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     notices,
     achievementsUnlocked: ach.unlocked,
     emailsDelivered: mailed.delivered,
+    emailsTriggered: mailed.triggered,
   };
 }

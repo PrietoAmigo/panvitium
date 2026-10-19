@@ -103,9 +103,23 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1267** (sim 613 · shared 86 · api 20 · web 548).
+**Current test count: 1278** (sim 616 · shared 86 · api 20 · web 556).
 
-> **Latest change — UI: the altar's glow turns a deep crimson, spreads wider, and goes through
+> **Latest change — UI: subliminal plates.** Twenty plates in `public/assets/panvitium/subliminals/`
+> now flash over the whole screen for a fraction of a second (`SUBLIMINAL_MS`, 120 ms), through the
+> degradation pass like the rooms, above every overlay, taking no input. **Fausto's plates** mark the
+> moment one of his letters is earned, not its later arrival: `deliverEmails` gains `triggered` (a
+> timed or random email arming, an immediate one delivering) and the tick surfaces it as
+> `emailsTriggered`, which the store maps to a plate: Fausto #1 to #3 to `fausto1`–`fausto3`, Fausto
+> #5 to `fausto4`; "Take this with you" (Fausto #4) has none. **The sixteen `subl*` plates** surface
+> at random during live play (not behind the title, in a descent, on an answered call or during the
+> jumpscare): a Poisson process averaging one every six minutes, never the same plate twice in a row,
+> the next one decoded ahead (`game/useRandomSubliminals.ts`, presentation-only `Math.random`). Both
+> feed one transient store queue (`subliminalQueue`), shown by `ui/Subliminal.tsx`, which waits for
+> its plate to decode so a flash never shows a black frame. No save or RNG change. Net **+11 tests**
+> (sim 613 → 616, web 548 → 556).
+>
+> **Earlier change — UI: the altar's glow turns a deep crimson, spreads wider, and goes through
 > the pixelation.** The seal and the STATUS QUO label stay crisp DOM over the room's canvas, but
 > the light they cast is now the room's: `DegradePass` gains glows (`setGlows`), painted into the
 > low-resolution scene buffer after the figures, so the pass pixelates, crushes, dithers and grains

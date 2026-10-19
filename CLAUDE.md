@@ -113,9 +113,10 @@ from auto-repeat, the action queue (base-price refund) and acolyte delegations).
 
 - **State (ADR-003): Zustand, `store/gameStore.ts`.** Owns the authoritative `GameState` + save
   metadata and delegates _all_ logic to the sim's `tick`/`startAction`/etc. UI-only state (current
-  room, open panel) lives in components, not the store. It also surfaces two transient,
-  non-persisted channels from each tick: the rolling outcome `log` and the `unveilQueue` of
-  maleficia Emptio has just brought home. Device-local player preferences (the Settings switches,
+  room, open panel) lives in components, not the store. It also surfaces three transient,
+  non-persisted channels from each tick: the rolling outcome `log`, the `unveilQueue` of
+  maleficia Emptio has just brought home, and the `subliminalQueue` of plates to flash (Fausto's,
+  queued from the tick's `emailsTriggered`; the random ones from `useRandomSubliminals`). Device-local player preferences (the Settings switches,
   e.g. the Unveiling on/off) are not game state: they live in `store/preferences.ts` under their
   own `localStorage` key, never in `GameState` or the save, and the store holds them as
   `preferences`.

@@ -5,9 +5,10 @@
  * components, not here.
  *
  * It also keeps transient, NON-persisted channels surfaced from the sim each tick: a rolling
- * outcome `log` (the PC's game log, 02 §10) and the maleficia Emptio has just brought home, queued
- * for their Unveiling. None of them is part of the save; nor are the device-local `preferences`
- * (the Settings switches), which live under their own localStorage key (see preferences.ts).
+ * outcome `log` (the PC's game log, 02 §10), the maleficia Emptio has just brought home, queued
+ * for their Unveiling, and the subliminal plates waiting to flash. None of them is part of the
+ * save; nor are the device-local `preferences` (the Settings switches), which live under their own
+ * localStorage key (see preferences.ts).
  */
 import { create } from 'zustand';
 import {
@@ -68,6 +69,7 @@ import {
   type Preferences,
 } from './preferences.js';
 import { resumeGame } from '../game/session.js';
+import { faustoSubliminals } from '../game/subliminals.js';
 import { CALL_IN_BY_ID } from '../menus/calls-in.data.js';
 import {
   CURRENT_SCHEMA_VERSION,
@@ -123,6 +125,28 @@ function obtainedPatch(
   return unveil ? { unveilQueue: [...queue, ...fresh], lastObtained } : { lastObtained };
 }
 
+/**
+ * A subliminal plate waiting to flash. `seq` is unique per flash (a transient counter, not saved), so
+ * the same plate queued twice still flashes twice.
+ */
+export interface SubliminalFlash {
+  readonly src: string;
+  readonly seq: number;
+}
+
+let nextSubliminalSeq = 1;
+
+/** Append plates to the subliminal queue (an empty patch when there are none). */
+function subliminalPatch(
+  queue: readonly SubliminalFlash[],
+  srcs: readonly string[],
+): { subliminalQueue?: SubliminalFlash[] } {
+  if (srcs.length === 0) return {};
+  return {
+    subliminalQueue: [...queue, ...srcs.map((src) => ({ src, seq: nextSubliminalSeq++ }))],
+  };
+}
+
 /** The transient obtain channels, cleared whenever another game (or lifetime) takes the screen. */
 const NO_OBTAINED = { unveilQueue: [] as ObtainedRelic[], lastObtained: null };
 
@@ -146,6 +170,11 @@ interface GameStore {
    * it on close (transient).
    */
   lastObtained: ObtainedRelic | null;
+  /**
+   * Subliminal plates waiting to flash over the whole screen, oldest first (transient). Fausto's are
+   * queued by the tick that earns one of his letters; the random ones by App's scheduler.
+   */
+  subliminalQueue: SubliminalFlash[];
   /** A transient message for a refused action (e.g. "not enough gold"), or null. */
   notice: string | null;
   /** Which Katabasis screen is open (null = none). */
@@ -296,6 +325,10 @@ interface GameStore {
   dismissUnveiling: (seq: number) => void;
   /** Forget the last-obtained focus (the Loculi has closed). */
   clearLastObtained: () => void;
+  /** Queue a subliminal plate to flash (the random scheduler's entry point). */
+  flashSubliminal: (src: string) => void;
+  /** Retire the subliminal that has finished (a no-op unless `seq` is the one at the head). */
+  dismissSubliminal: (seq: number) => void;
   /** Clear the achievement toast. */
   dismissAchievementToast: () => void;
   /** Clear the active notice. */
@@ -385,6 +418,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ready: false,
   log: [],
   ...NO_OBTAINED,
+  subliminalQueue: [],
   notice: null,
   achievementToast: null,
   katabasisPhase: null,
@@ -430,12 +464,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const suspended =
       phase === 'recap' || (phase === 'menu' && current.inKatabasis === true) || get().titleOpen;
     if (suspended) return;
-    const { state, events, notices, achievementsUnlocked, emailsDelivered } = tick(
+    const { state, events, notices, achievementsUnlocked, emailsDelivered, emailsTriggered } = tick(
       current,
       deltaSeconds,
     );
     // Fausto Cescru #5's delivery knocks at the door (05 / ADR-014); other mail arrives silently.
     if (emailsDelivered.includes('fausto-5')) audio.play('email-knock');
+    // Earning one of Fausto's letters flashes its plate at once, before the letter itself arrives.
+    const faustoPatch = subliminalPatch(get().subliminalQueue, faustoSubliminals(emailsTriggered));
     // A toggle that auto-deactivated this tick surfaces as the transient notice (02 §3). The
     // sim has already removed it; this just tells the player. Latest wins if several fired.
     const noticePatch = notices.length > 0 ? { notice: notices[notices.length - 1]! } : {};
@@ -445,7 +481,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ? { achievementToast: achievementsUnlocked[achievementsUnlocked.length - 1]! }
         : {};
     if (events.length === 0) {
-      set({ state, ...noticePatch, ...achievementPatch });
+      set({ state, ...noticePatch, ...achievementPatch, ...faustoPatch });
       return;
     }
     set((s) => {
@@ -467,6 +503,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ...obtainedPatch(s.unveilQueue, acquired, s.preferences.showUnveiling),
         ...noticePatch,
         ...achievementPatch,
+        ...faustoPatch,
       };
     });
   },
@@ -722,6 +759,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   dismissUnveiling: (seq) =>
     set((s) => (s.unveilQueue[0]?.seq === seq ? { unveilQueue: s.unveilQueue.slice(1) } : s)),
   clearLastObtained: () => set({ lastObtained: null }),
+  flashSubliminal: (src) => set((s) => subliminalPatch(s.subliminalQueue, [src])),
+  dismissSubliminal: (seq) =>
+    set((s) =>
+      s.subliminalQueue[0]?.seq === seq ? { subliminalQueue: s.subliminalQueue.slice(1) } : s,
+    ),
   dismissAchievementToast: () => set({ achievementToast: null }),
   dismissNotice: () => set({ notice: null }),
 
