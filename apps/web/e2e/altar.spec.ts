@@ -2,10 +2,10 @@ import { test, expect, type Page } from '@playwright/test';
 
 /**
  * The altar sigil (Claude Design "Altar sigil" handoff): clicking the altar raises the Katabasis
- * sigil over the Altar Room, with STATUS QUO beneath it; the room stays. The seal is painted into
- * the room's degradation canvas, so the pixelation reaches it like the rest of the frame. Its first
- * press arms it, the second falls into the descent; STATUS QUO opens the Ledger, whose way back
- * returns to the room; left alone for 4 s, the sigil fades away.
+ * sigil over the Altar Room, with STATUS QUO beneath it; the room stays. The seal is a crisp DOM
+ * image over the room's canvas, outside the degradation pass, so no pixelation reaches it. Its
+ * first press arms it, the second falls into the descent; STATUS QUO opens the Ledger, whose way
+ * back returns to the room; left alone for 4 s, the sigil fades away.
  */
 
 /** Dismiss the launch title menu and wait out the entry transition (see smoke.spec.ts). */
@@ -38,7 +38,7 @@ async function brightAtCentre(page: Page): Promise<number> {
   });
 }
 
-test('the altar raises its sigil over the room, painted into the degraded canvas', async ({
+test('the altar raises its sigil over the room, crisp, outside the degraded canvas', async ({
   page,
 }) => {
   await enterLair(page);
@@ -49,10 +49,14 @@ test('the altar raises its sigil over the room, painted into the degraded canvas
   // The room is not replaced: no full-screen flow opens.
   await expect(page.getByRole('group', { name: 'The Altar Room', exact: true })).toBeVisible();
   await expect(page.locator('.katabasis-flow')).toHaveCount(0);
-  // No crisp seal image sits over the room: the seal is drawn inside the canvas, through the pass.
-  await expect(page.locator('img[src*="seal-panvitium"]')).toHaveCount(0);
-  // …and its strokes light the canvas there (~7k bright pixels over a ~1k floor, measured).
-  await expect.poll(() => brightAtCentre(page), { timeout: 5_000 }).toBeGreaterThan(before + 2000);
+  // The seal is a decoded image over the room, at the browser's own resolution…
+  const glyph = page.locator('.altar-sigil img[src*="seal-panvitium"]');
+  await expect(glyph).toBeVisible();
+  await expect
+    .poll(() => glyph.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
+    .toBe(true);
+  // …and none of it is drawn into the canvas (its strokes would add ~6k bright pixels there).
+  expect(await brightAtCentre(page)).toBeLessThan(before + 2000);
 });
 
 test('arms on the first press, then falls into the descent among the Princes', async ({ page }) => {

@@ -1,5 +1,4 @@
-/* DegradedScene — the room backdrop + summoned creatures (+ the altar sigil),
-   rendered through the uniform degradation pass onto a <canvas>. Drop it where
+/* DegradedScene — the room backdrop + summoned creatures, rendered through the uniform degradation pass onto a <canvas>. Drop it where
    the CSS `.scene` background used to be; the integrator layers hotspots over
    it (see RoomView).
 
@@ -124,7 +123,6 @@ export function DegradedScene({
   backdrop,
   sprites = NO_SPRITES,
   figures = NO_FIGURES,
-  sigil = null,
   signature = false,
   settings,
   className,
@@ -133,15 +131,9 @@ export function DegradedScene({
   const passRef = useRef<DegradePass | null>(null);
   const prevRoom = useRef<string | null>(null);
 
-  const sigilSrc = sigil?.src ?? null;
   const urls = useMemo(
-    () => [
-      backdrop,
-      ...sprites.map((s) => s.src),
-      ...figures.map((f) => f.src),
-      ...(sigilSrc ? [sigilSrc] : []),
-    ],
-    [backdrop, sprites, figures, sigilSrc],
+    () => [backdrop, ...sprites.map((s) => s.src), ...figures.map((f) => f.src)],
+    [backdrop, sprites, figures],
   );
   const images = useImages(urls);
 
@@ -195,30 +187,6 @@ export function DegradedScene({
     prevRoom.current = roomId;
     pass.setScene(scene, animate);
   }, [roomId, backdrop, sprites, figures, signature, images]);
-
-  // The altar sigil lives outside the scene: it is not part of the room-change curtain (a door
-  // cancels it at once) and the engine animates it between these targets. It joins the pass once
-  // its art has decoded, fading in from that frame.
-  useEffect(() => {
-    const pass = passRef.current;
-    if (!pass) return;
-    const img = sigil ? images[sigil.src] : undefined;
-    if (!sigil || !img) {
-      pass.setSigil(null);
-      return;
-    }
-    pass.setSigil({
-      img,
-      x: sigil.x,
-      y: sigil.y,
-      glyphPx: sigil.glyphPx,
-      stagePx: sigil.stagePx,
-      look: sigil.look,
-      shown: sigil.shown,
-      hover: sigil.hover,
-      press: sigil.press,
-    });
-  }, [sigil, images]);
 
   return (
     <canvas

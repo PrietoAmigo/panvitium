@@ -103,9 +103,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1265** (sim 613 · shared 86 · api 20 · web 546).
+**Current test count: 1258** (sim 613 · shared 86 · api 20 · web 539).
 
-> **Latest change — Playability and balance audit (`docs/balance-audit-2026-10-08.md`).** A sweep
+> **Latest change — UI: the altar sigil stays crisp, outside the degradation pass.** The Katabasis
+> seal that rises when the altar is clicked is no longer pixelated, crushed or grained with the
+> room. It is grimoire chrome now, not a diegetic element: a DOM image over the room's canvas
+> (`menus/AltarSigil.tsx`), animated by the handoff's own CSS keyframes (the `kat-seal-*` vibration,
+> pulse and darker red glow, back in `menus.css`), with real `:hover` / `:active` / focus scaling.
+> The canvas-side seal retires: `DegradePass`'s sigil layer, the keyframe sampler
+> (`menus/altarSigil.ts`, with its tests), and the hit target's pointer and size reporting. Reduced
+> motion still drops the vibration and the pulse and holds a static glow. The altar e2e spec now
+> checks the seal is a decoded image over the room and that none of it is drawn into the canvas. No
+> sim, save or RNG change. Net **−11 tests** (web 550 → 539).
+>
+> **Earlier change — Playability and balance audit (`docs/balance-audit-2026-10-08.md`).** A sweep
 > for bugs and outliers, measured on the modifier bundle and a scripted one-hour first lifetime
 > (252 souls, nothing bound). Five fixes. **The flat seals** (Haagenti #48, Decarabia #69, Ose
 > #57, Sabnock #43, Glasya-Labolas #25) ran on `coeff × ln(1 + N)`, so the first soul paid the
