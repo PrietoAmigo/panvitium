@@ -126,7 +126,10 @@ from auto-repeat, the action queue (base-price refund) and acolyte delegations).
   canvas engine (`DegradePass`, the "cursed CD-ROM" look — ADR-021). Anything diegetic that must
   pixelate with the room (bound figures) is drawn _into_ the pass, never laid over the canvas as
   DOM; the room's clickable spots are invisible DOM hotspots on top. The altar's Katabasis sigil is
-  chrome, not diegetic: a crisp DOM layer over the canvas, outside the pass (see `AltarSigil`).
+  chrome, not diegetic: a crisp DOM layer over the canvas, outside the pass (see `AltarSigil`). The
+  light it and its STATUS QUO label cast is the room's, though: `DegradePass.setGlows` paints it
+  into the pass from hidden DOM anchors it samples every frame (`menus/altarGlow.ts`), so the CSS
+  still times it while the pass pixelates it.
 - `art/` — source for baked art, not imported by the app: the Ars Goetia invocation plates' brush
   and gesture tables. `pnpm --filter @panvitium/web bake:plates` (`scripts/`) rasterizes them to
   the PNGs the grimoire loads; re-bake after any edit (a digest test catches a stale bake), and

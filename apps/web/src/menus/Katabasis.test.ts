@@ -347,19 +347,25 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     render(App);
     expect(room()).not.toBeNull();
     expect(sigilLayer()).toBeNull();
+    expect(scene.last?.glows ?? null).toBeNull();
     click('The Altar');
     // The room stays: no full-screen flow, just the overlay over it.
     expect(room()).not.toBeNull();
     expect(container!.querySelector('.katabasis-flow')).toBeNull();
     expect(button('Press the sigil')).not.toBeNull();
     expect(button('Status Quo')).not.toBeNull();
-    // The seal is a crisp DOM image in the overlay, outside the room's degradation pass: the canvas
-    // is handed the room alone.
+    // The seal is a crisp DOM image in the overlay, outside the room's degradation pass…
     const glyph = seal()?.querySelector('img.altar-sigil-glyph');
     expect(glyph?.getAttribute('src')).toBe('/assets/panvitium/katabasis/seal-panvitium.png');
     expect(glyph?.getAttribute('alt')).toBe('');
     expect(seal()?.classList.contains('is-armed')).toBe(false);
     expect(scene.last).not.toHaveProperty('sigil');
+    // …while the light it and STATUS QUO cast goes THROUGH the pass: the room hands the pass a
+    // glow source, sampling the hidden anchors the overlay lays out.
+    expect(typeof scene.last?.glows).toBe('function');
+    for (const anchor of ['.altar-sigil-aura', '.altar-sq-bloom', '.altar-sq-line']) {
+      expect(sigilLayer()?.querySelector(anchor)).not.toBeNull();
+    }
     expect(store().katabasisPhase).toBeNull(); // nothing opened, nothing torn down
   });
 
@@ -377,6 +383,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     expect(store().katabasisPhase).toBe('menu');
     expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
     expect(sigilLayer()).toBeNull();
+    expect(scene.last?.glows ?? null).toBeNull();
   });
 
   it('lands among the Princes once the descent transition has played', () => {
@@ -470,6 +477,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     click('Press the sigil');
     click('To the Studio');
     expect(sigilLayer()).toBeNull(); // no fade
+    expect(scene.last?.glows ?? null).toBeNull(); // nor any glow left in the room
     expect(container!.querySelector('[aria-label="The Studio"]')).not.toBeNull();
     click('To the Altar');
     expect(sigilLayer()).toBeNull();

@@ -123,6 +123,7 @@ export function DegradedScene({
   backdrop,
   sprites = NO_SPRITES,
   figures = NO_FIGURES,
+  glows = null,
   signature = false,
   settings,
   className,
@@ -151,6 +152,11 @@ export function DegradedScene({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The glows are sampled by the engine itself, every frame it renders.
+  useEffect(() => {
+    passRef.current?.setGlows(glows);
+  }, [glows]);
 
   // Push recipe changes.
   useEffect(() => {

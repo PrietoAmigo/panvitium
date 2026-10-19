@@ -4,9 +4,11 @@ import type { ReactElement } from 'react';
    Status Quo shortcut, raised over the Altar Room when the altar is clicked. The room is not
    dimmed or replaced.
 
-   The seal is grimoire chrome, not a diegetic element: it rides over the room's canvas as DOM,
-   OUTSIDE the degradation pass, so it stays crisp (no pixelation, crush, grain or scanlines) at
-   any stage size. Its motion is the handoff's CSS keyframes (menus.css, `kat-seal-*`). Only the
+   The seal and the STATUS QUO label are grimoire chrome, not diegetic elements: they ride over
+   the room's canvas as DOM, OUTSIDE the degradation pass, so they stay crisp (no pixelation,
+   crush, grain or scanlines) at any stage size. The light they cast is the room's, though: the
+   seal's glow and aura and the label's bloom and line are painted INTO the pass (altarGlow.ts),
+   at the hidden anchors below, which carry their geometry and CSS motion (menus.css). Only the
    seal and STATUS QUO take pointer events, so the room's hotspots keep working around them. */
 
 /** The seal's art (the same glyph the prior full-screen gate used). */
@@ -35,6 +37,7 @@ export function AltarSigil({ armed, fading, onPress, onStatusQuo }: AltarSigilPr
         >
           {/* The span carries the pulse so it composes cleanly with the glyph's own vibration. */}
           <span className="altar-sigil-scale">
+            <span className="altar-sigil-aura" aria-hidden="true" />
             <img
               className="altar-sigil-glyph"
               src={ALTAR_SIGIL_SRC}
@@ -48,7 +51,9 @@ export function AltarSigil({ armed, fading, onPress, onStatusQuo }: AltarSigilPr
       {!armed && (
         <div className="altar-sq-row">
           <button type="button" className="altar-sq" onClick={onStatusQuo}>
+            <span className="altar-sq-bloom" aria-hidden="true" />
             Status Quo
+            <span className="altar-sq-line" aria-hidden="true" />
           </button>
         </div>
       )}

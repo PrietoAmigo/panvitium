@@ -3,9 +3,10 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * The altar sigil (Claude Design "Altar sigil" handoff): clicking the altar raises the Katabasis
  * sigil over the Altar Room, with STATUS QUO beneath it; the room stays. The seal is a crisp DOM
- * image over the room's canvas, outside the degradation pass, so no pixelation reaches it. Its
- * first press arms it, the second falls into the descent; STATUS QUO opens the Ledger, whose way
- * back returns to the room; left alone for 4 s, the sigil fades away.
+ * image over the room's canvas, outside the degradation pass, so no pixelation reaches it; the red
+ * light it casts is painted into the canvas, through the pass. Its first press arms it, the second
+ * falls into the descent; STATUS QUO opens the Ledger, whose way back returns to the room; left
+ * alone for 4 s, the sigil fades away.
  */
 
 /** Dismiss the launch title menu and wait out the entry transition (see smoke.spec.ts). */
@@ -24,25 +25,29 @@ async function clickAltar(page: Page): Promise<void> {
   await altar.click({ position: { x: box.width / 2, y: box.height - 12 } });
 }
 
-/** Cream-bright pixels (the seal's strokes) in the canvas around the stage's centre. */
-async function brightAtCentre(page: Page): Promise<number> {
+/** In the canvas around the stage's centre: cream-bright pixels (the seal's strokes) and deep red
+ *  ones (its glow). */
+async function atCentre(page: Page): Promise<{ cream: number; red: number }> {
   return page.evaluate(() => {
     const canvas = document.querySelector<HTMLCanvasElement>('canvas.scene-canvas');
     const px = canvas?.getContext('2d')?.getImageData(520, 240, 240, 240).data;
-    if (!px) return -1;
-    let n = 0;
+    if (!px) return { cream: -1, red: -1 };
+    let cream = 0;
+    let red = 0;
     for (let i = 0; i < px.length; i += 4) {
-      if (px[i]! > 200 && px[i + 1]! > 170 && px[i + 2]! > 150) n++;
+      const [r, g, b] = [px[i]!, px[i + 1]!, px[i + 2]!];
+      if (r > 200 && g > 170 && b > 150) cream++;
+      if (r > 120 && g < 60 && b < 60) red++;
     }
-    return n;
+    return { cream, red };
   });
 }
 
-test('the altar raises its sigil over the room, crisp, outside the degraded canvas', async ({
+test('the altar raises its sigil over the room, crisp, its glow inside the degraded canvas', async ({
   page,
 }) => {
   await enterLair(page);
-  const before = await brightAtCentre(page);
+  const before = await atCentre(page);
   await clickAltar(page);
   await expect(page.getByRole('button', { name: 'Press the sigil' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Status Quo' })).toBeVisible();
@@ -55,8 +60,11 @@ test('the altar raises its sigil over the room, crisp, outside the degraded canv
   await expect
     .poll(() => glyph.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0))
     .toBe(true);
-  // …and none of it is drawn into the canvas (its strokes would add ~6k bright pixels there).
-  expect(await brightAtCentre(page)).toBeLessThan(before + 2000);
+  // …and none of it is drawn into the canvas (its strokes would add ~6k bright pixels there)…
+  expect((await atCentre(page)).cream).toBeLessThan(before.cream + 2000);
+  // …but its glow is: the canvas centre turns deep red (~1k such pixels before, ~49k after, of
+  // 57.6k, measured).
+  await expect.poll(async () => (await atCentre(page)).red).toBeGreaterThan(before.red + 20_000);
 });
 
 test('arms on the first press, then falls into the descent among the Princes', async ({ page }) => {

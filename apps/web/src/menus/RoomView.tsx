@@ -1,9 +1,10 @@
-import { useEffect, useMemo, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react';
 import type { RoomDef, HotspotAction, DegradeSettings } from './types.js';
 import { DegradedScene, preloadImage } from './DegradedScene.js';
 import { ROOM_PLATES, altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
 import { CALL_PLATE_RING } from './calls-in.data.js';
 import { AltarSigil, ALTAR_SIGIL_SRC, type AltarSigilView } from './AltarSigil.js';
+import { altarGlows } from './altarGlow.js';
 
 interface RoomViewProps {
   room: RoomDef;
@@ -41,7 +42,8 @@ function doorGlyph(id: string): string {
 // single <canvas> through the uniform degradation pass (DegradedScene), so the whole frame — figures
 // included — reads at one fidelity. The chrome — hotspots (and the HUD/panels above) — layers over
 // that and stays clickable. The altar sigil is chrome too: the seal and its STATUS QUO label ride
-// over the canvas as DOM, outside the pass, so they stay crisp.
+// over the canvas as DOM, outside the pass, so they stay crisp, while the light they cast is
+// painted through the pass, sampled from them every frame (altarGlow.ts).
 export function RoomView({
   room,
   signature,
@@ -82,6 +84,11 @@ export function RoomView({
     [curseActive, desidiaActive, reducedMotion],
   );
 
+  // While the sigil is up, the pass samples its glow from this stage on every frame it renders.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const sampleAltarGlows = useCallback(() => altarGlows(stageRef.current), []);
+  const sigilUp = room.id === 'altar' && altarSigil !== null;
+
   // The sigil's art is decoded while the player stands in the Altar Room, so it shows on the very
   // first click rather than a beat later.
   useEffect(() => {
@@ -89,11 +96,12 @@ export function RoomView({
   }, [room.id]);
 
   return (
-    <div className={'scene ' + room.sceneClass} role="group" aria-label={room.title}>
+    <div className={'scene ' + room.sceneClass} role="group" aria-label={room.title} ref={stageRef}>
       <DegradedScene
         roomId={room.id}
         backdrop={backdrop}
         figures={boundVisuals}
+        glows={sigilUp ? sampleAltarGlows : null}
         signature={room.id === 'studio' && signature}
         settings={degradeSettings}
       />

@@ -257,10 +257,13 @@ body {
 
 /* ---------- The altar sigil (Claude Design "Altar sigil" handoff) ----------
    Clicking the altar raises the Katabasis sigil over the room, with STATUS QUO
-   beneath it; the room is not dimmed or replaced. The seal is chrome, not part
-   of the room: it sits over the canvas as DOM, outside the degradation pass, so
-   it stays crisp. Only the seal and STATUS QUO take pointer events, so the
-   hotspots keep working around them. */
+   beneath it; the room is not dimmed or replaced. The seal and the label are
+   chrome, not part of the room: they sit over the canvas as DOM, outside the
+   degradation pass, so they stay crisp. The light they cast is the room's: the
+   pass paints it (menus/altarGlow.ts) at the hidden anchors below, whose boxes,
+   opacities and the glyph's `--seal-breath` it samples every frame, so the CSS
+   here still times all of it. Only the seal and STATUS QUO take pointer
+   events, so the hotspots keep working around them. */
 .altar-sigil {
   position: absolute;
   inset: 0;
@@ -308,34 +311,24 @@ body {
   place-items: center;
   animation: kat-seal-pulse 3.4s ease-in-out infinite;
   position: relative;
-  isolation: isolate;
 }
-/* The seal's wide aura: a deep crimson radial gradient behind the glyph, well past its edges. A
-   gradient needs no blur, and its breath animates only opacity and transform, so the halo stays
-   cheap however wide it is (the glyph's drop-shadows carry the glow that hugs the strokes). It
-   pulses with the seal but does not shake with it, and takes no clicks. */
-.altar-sigil-scale::before {
-  content: '';
+/* The anchor of the seal's wide aura, which the pass paints as a deep crimson radial gradient
+   filling this box, well past the glyph. It pulses with the seal but does not shake with it; its
+   own breath is its opacity and scale. Invisible itself, so it takes no clicks. */
+.altar-sigil-aura {
   position: absolute;
   inset: -75% -85%;
-  z-index: -1;
-  pointer-events: none;
-  background: radial-gradient(
-    closest-side,
-    rgba(150, 10, 7, 0.6),
-    rgba(125, 7, 5, 0.38) 40%,
-    rgba(95, 4, 4, 0.16) 70%,
-    transparent
-  );
+  visibility: hidden;
   animation: kat-seal-aura 3.4s ease-in-out infinite;
 }
-/* The glyph: the design's image width, at the seal art's aspect (495 × 561). */
+/* The glyph: the design's image width, at the seal art's aspect (495 × 561). The pass paints its
+   glow, the deep crimson hugging the strokes, swelling as `--seal-breath` runs 0 to 1. */
 .altar-sigil-glyph {
   display: block;
   width: clamp(150px, 30vw, 240px);
   aspect-ratio: 495 / 561;
   user-select: none;
-  will-change: transform, filter;
+  will-change: transform;
   animation:
     kat-seal-vibe 0.12s linear infinite,
     kat-seal-breathe 3.4s ease-in-out infinite;
@@ -344,7 +337,7 @@ body {
 .altar-sigil-btn.is-armed .altar-sigil-scale {
   animation: kat-seal-pulse-armed 1s ease-in-out infinite;
 }
-.altar-sigil-btn.is-armed .altar-sigil-scale::before {
+.altar-sigil-btn.is-armed .altar-sigil-aura {
   animation: kat-seal-aura-armed 1s ease-in-out infinite;
 }
 .altar-sigil-btn.is-armed .altar-sigil-glyph {
@@ -359,53 +352,51 @@ body {
     animation: none;
     transform: scale(0.97);
   }
-  .altar-sigil-scale::before {
+  .altar-sigil-aura {
     animation: none;
     opacity: 0.75;
     transform: scale(0.92);
   }
   .altar-sigil-glyph {
     animation: none;
-    filter: drop-shadow(0 0 6px rgba(170, 14, 9, 1)) drop-shadow(0 0 20px rgba(180, 15, 10, 1))
-      drop-shadow(0 0 46px rgba(150, 10, 7, 1));
   }
   .altar-sigil-btn.is-armed .altar-sigil-scale {
     animation: none;
     transform: scale(1.55);
   }
-  .altar-sigil-btn.is-armed .altar-sigil-scale::before {
+  .altar-sigil-btn.is-armed .altar-sigil-aura {
     animation: none;
     opacity: 0.7;
     transform: none;
   }
   .altar-sigil-btn.is-armed .altar-sigil-glyph {
     animation: none;
-    filter: drop-shadow(0 0 9px rgba(180, 15, 10, 1)) drop-shadow(0 0 30px rgba(190, 17, 11, 1))
-      drop-shadow(0 0 70px rgba(155, 11, 7, 1));
   }
 }
-/* The seal glow: a deep crimson. The drop-shadows hug the strokes (each keyframe keeps three, so
-   the filter interpolates); the aura above carries the wide halo. */
+/* The seal's breath, 0 at rest and 1 at the swell, eased like the pulse it rides with. Registered
+   so it interpolates (and so the pass can read its live value). The armed keyframes are the same
+   but separately named: swapping the name restarts the breath with the armed pulse. */
+@property --seal-breath {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
 @keyframes kat-seal-breathe {
   0%,
   100% {
-    filter: drop-shadow(0 0 6px rgba(170, 14, 9, 1)) drop-shadow(0 0 20px rgba(180, 15, 10, 1))
-      drop-shadow(0 0 46px rgba(150, 10, 7, 1));
+    --seal-breath: 0;
   }
   50% {
-    filter: drop-shadow(0 0 8px rgba(185, 18, 11, 1)) drop-shadow(0 0 30px rgba(195, 20, 12, 1))
-      drop-shadow(0 0 62px rgba(160, 12, 8, 1));
+    --seal-breath: 1;
   }
 }
 @keyframes kat-seal-breathe-armed {
   0%,
   100% {
-    filter: drop-shadow(0 0 9px rgba(180, 15, 10, 1)) drop-shadow(0 0 30px rgba(190, 17, 11, 1))
-      drop-shadow(0 0 70px rgba(155, 11, 7, 1));
+    --seal-breath: 0;
   }
   50% {
-    filter: drop-shadow(0 0 12px rgba(195, 20, 12, 1)) drop-shadow(0 0 44px rgba(205, 22, 13, 1))
-      drop-shadow(0 0 100px rgba(165, 13, 8, 1));
+    --seal-breath: 1;
   }
 }
 @keyframes kat-seal-aura {
@@ -546,74 +537,50 @@ body {
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: #ffd9cf;
-  text-shadow:
-    0 0 18px rgba(140, 24, 22, 0.9),
-    0 2px 6px #000;
+  /* only a dark legibility shadow: the label's red glow is the pass's bloom and line below */
+  text-shadow: 0 2px 6px #000;
   animation: kat-sq-in 0.7s ease both;
-  transition:
-    color 0.18s,
-    text-shadow 0.18s;
-  /* the glow and its line below sit behind the label, inside the button */
+  transition: color 0.18s;
+  /* the bloom's and the line's anchors are placed against the label */
   position: relative;
-  isolation: isolate;
 }
 .altar-sq:hover,
 .altar-sq:focus-visible {
   outline: none;
   color: #fff1ea;
-  text-shadow:
-    0 0 22px rgba(255, 90, 60, 0.85),
-    0 0 8px rgba(255, 90, 60, 0.5),
-    0 2px 6px #000;
 }
-/* The emphasis: a soft red bloom behind the label, and a glowing red line beneath it whose ends
-   fade out. Hovered or focused, both brighten and the line reaches a little wider. */
-.altar-sq::before,
-.altar-sq::after {
-  content: '';
+/* The emphasis, painted by the pass at these invisible anchors: a soft red bloom behind the
+   label, and a glowing red line beneath it whose ends fade out. Hovered or focused, both brighten
+   and the line reaches a little wider. */
+.altar-sq-bloom,
+.altar-sq-line {
   position: absolute;
   left: 50%;
   transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: -1;
+  visibility: hidden;
   opacity: 0.85;
   transition:
     opacity 0.18s,
     transform 0.18s;
 }
-.altar-sq::after {
+.altar-sq-bloom {
   top: 50%;
   width: clamp(260px, 30vw, 440px);
   height: 46px;
-  background: radial-gradient(
-    ellipse closest-side,
-    rgba(235, 30, 18, 0.55),
-    rgba(200, 20, 12, 0.22) 55%,
-    transparent
-  );
 }
-.altar-sq::before {
+.altar-sq-line {
   top: calc(100% - 0.15rem);
   width: clamp(220px, 26vw, 380px);
   height: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 45, 25, 0.9) 22%,
-    rgba(255, 120, 90, 1) 50%,
-    rgba(255, 45, 25, 0.9) 78%,
-    transparent
-  );
-  filter: drop-shadow(0 0 4px rgba(255, 50, 28, 1)) drop-shadow(0 0 10px rgba(240, 30, 18, 0.9));
 }
-.altar-sq:hover::before,
-.altar-sq:hover::after,
-.altar-sq:focus-visible::before,
-.altar-sq:focus-visible::after {
+.altar-sq:hover .altar-sq-bloom,
+.altar-sq:hover .altar-sq-line,
+.altar-sq:focus-visible .altar-sq-bloom,
+.altar-sq:focus-visible .altar-sq-line {
   opacity: 1;
 }
-.altar-sq:hover::before,
-.altar-sq:focus-visible::before {
+.altar-sq:hover .altar-sq-line,
+.altar-sq:focus-visible .altar-sq-line {
   transform: translate(-50%, -50%) scaleX(1.08);
 }
 @keyframes kat-ov-in {
