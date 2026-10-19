@@ -19,7 +19,7 @@ import { splitBoon, TRANSIT_HOLD_MS } from './Katabasis.js';
 import type { DegradedSceneProps } from './types.js';
 
 // The room's canvas pass needs a real 2D context (none under jsdom): stub it, keeping the props the
-// room hands it, so the altar sigil's hand-off to the pass can be read back.
+// room hands it, so a test can read back what the pass is (and is not) given.
 const scene = vi.hoisted(() => ({ last: null as DegradedSceneProps | null }));
 vi.mock('./DegradedScene.js', () => ({
   DegradedScene: (props: DegradedSceneProps) => {
@@ -340,24 +340,26 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
   // the Katabasis flow above them.
   const room = (): Element | null => container!.querySelector('[aria-label="The Altar Room"]');
   const sigilLayer = (): Element | null => container!.querySelector('.altar-sigil');
+  const seal = (): HTMLButtonElement | null =>
+    container!.querySelector<HTMLButtonElement>('.altar-sigil-btn');
 
   it('raises the sigil and STATUS QUO over the room when the altar is clicked', () => {
     render(App);
     expect(room()).not.toBeNull();
     expect(sigilLayer()).toBeNull();
-    expect(scene.last?.sigil ?? null).toBeNull();
     click('The Altar');
     // The room stays: no full-screen flow, just the overlay over it.
     expect(room()).not.toBeNull();
     expect(container!.querySelector('.katabasis-flow')).toBeNull();
     expect(button('Press the sigil')).not.toBeNull();
     expect(button('Status Quo')).not.toBeNull();
-    // The seal itself is painted through the room's degradation pass (so it pixelates with it).
-    expect(scene.last?.sigil).toMatchObject({
-      src: '/assets/panvitium/katabasis/seal-panvitium.png',
-      look: 'idle',
-      shown: true,
-    });
+    // The seal is a crisp DOM image in the overlay, outside the room's degradation pass: the canvas
+    // is handed the room alone.
+    const glyph = seal()?.querySelector('img.altar-sigil-glyph');
+    expect(glyph?.getAttribute('src')).toBe('/assets/panvitium/katabasis/seal-panvitium.png');
+    expect(glyph?.getAttribute('alt')).toBe('');
+    expect(seal()?.classList.contains('is-armed')).toBe(false);
+    expect(scene.last).not.toHaveProperty('sigil');
     expect(store().katabasisPhase).toBeNull(); // nothing opened, nothing torn down
   });
 
@@ -366,9 +368,8 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     click('The Altar');
     click('Press the sigil');
     expect(button('Status Quo')).toBeNull();
-    const seal = button(/there is no return/);
-    expect(seal).not.toBeNull();
-    expect(scene.last?.sigil?.look).toBe('armed');
+    expect(button(/there is no return/)).toBe(seal());
+    expect(seal()?.classList.contains('is-armed')).toBe(true);
     expect((store().state as GameState).inKatabasis).not.toBe(true); // still safe to walk away
     click(/there is no return/);
     // Committed: the teardown + freeze, and the flow falls straight into the Abyss descent.
@@ -376,7 +377,6 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     expect(store().katabasisPhase).toBe('menu');
     expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
     expect(sigilLayer()).toBeNull();
-    expect(scene.last?.sigil ?? null).toBeNull();
   });
 
   it('lands among the Princes once the descent transition has played', () => {
@@ -423,12 +423,11 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
         vi.advanceTimersByTime(1);
       });
       expect(sigilLayer()?.classList.contains('is-fading')).toBe(true);
-      expect(scene.last?.sigil?.shown).toBe(false); // the painted seal fades with it
+      expect(sigilLayer()?.contains(seal()!)).toBe(true); // the seal fades with the layer
       act(() => {
         vi.advanceTimersByTime(500);
       });
       expect(sigilLayer()).toBeNull();
-      expect(scene.last?.sigil ?? null).toBeNull();
       expect(button('Status Quo')).toBeNull();
     } finally {
       vi.useRealTimers();
@@ -454,7 +453,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
         vi.advanceTimersByTime(1000);
       });
       expect(sigilLayer()?.classList.contains('is-fading')).toBe(true);
-      expect(scene.last?.sigil).toMatchObject({ look: 'armed', shown: false });
+      expect(seal()?.classList.contains('is-armed')).toBe(true);
       act(() => {
         vi.advanceTimersByTime(500);
       });
@@ -465,32 +464,12 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     }
   });
 
-  it('the painted seal mirrors its hit target: hovering lifts it, a press sinks it', () => {
-    render(App);
-    click('The Altar');
-    const seal = button('Press the sigil')!;
-    const fire = (type: string, init: MouseEventInit = {}): void => {
-      act(() => {
-        seal.dispatchEvent(new MouseEvent(type, { bubbles: true, ...init }));
-      });
-    };
-    expect(scene.last?.sigil).toMatchObject({ hover: false, press: false });
-    fire('pointerover');
-    expect(scene.last?.sigil).toMatchObject({ hover: true, press: false });
-    fire('pointerdown', { button: 0 });
-    expect(scene.last?.sigil).toMatchObject({ hover: true, press: true });
-    fire('pointerup', { button: 0 });
-    fire('pointerout', { relatedTarget: document.body });
-    expect(scene.last?.sigil).toMatchObject({ hover: false, press: false });
-  });
-
   it('a door puts the sigil away at once', () => {
     render(App);
     click('The Altar');
     click('Press the sigil');
     click('To the Studio');
     expect(sigilLayer()).toBeNull(); // no fade
-    expect(scene.last?.sigil ?? null).toBeNull();
     expect(container!.querySelector('[aria-label="The Studio"]')).not.toBeNull();
     click('To the Altar');
     expect(sigilLayer()).toBeNull();

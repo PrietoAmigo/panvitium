@@ -1,16 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import type { RoomDef, HotspotAction, DegradeSettings, SceneSigil } from './types.js';
+import { useEffect, useMemo, type ReactElement } from 'react';
+import type { RoomDef, HotspotAction, DegradeSettings } from './types.js';
 import { DegradedScene, preloadImage } from './DegradedScene.js';
 import { ROOM_PLATES, altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
 import { CALL_PLATE_RING } from './calls-in.data.js';
-import {
-  AltarSigil,
-  ALTAR_SIGIL_SRC,
-  SIGIL_AT_REST,
-  type AltarSigilGeometry,
-  type AltarSigilPointer,
-  type AltarSigilView,
-} from './AltarSigil.js';
+import { AltarSigil, ALTAR_SIGIL_SRC, type AltarSigilView } from './AltarSigil.js';
 
 interface RoomViewProps {
   room: RoomDef;
@@ -47,8 +40,8 @@ function doorGlyph(id: string): string {
 // One room. The backdrop, its baked props AND any bound invocation figures are composited onto a
 // single <canvas> through the uniform degradation pass (DegradedScene), so the whole frame — figures
 // included — reads at one fidelity. The chrome — hotspots (and the HUD/panels above) — layers over
-// that and stays clickable. The altar sigil straddles both: its picture goes through the pass with
-// the figures, its hit target and STATUS QUO label ride with the chrome.
+// that and stays clickable. The altar sigil is chrome too: the seal and its STATUS QUO label ride
+// over the canvas as DOM, outside the pass, so they stay crisp.
 export function RoomView({
   room,
   signature,
@@ -66,7 +59,7 @@ export function RoomView({
 }: RoomViewProps): ReactElement {
   // The bound invocations that have a designed display in this room (Morpheus over the altar, …).
   // Memoised with the settings below: the scene re-composes only when they really change, not on
-  // every re-render of the room (the sigil's pointer feedback re-renders it).
+  // every re-render of the room.
   const boundVisuals = useMemo(
     () => boundVisualsFor(room.id, summoned, doppelgaengerSeen),
     [room.id, summoned, doppelgaengerSeen],
@@ -95,48 +88,12 @@ export function RoomView({
     if (room.id === 'altar') preloadImage(ALTAR_SIGIL_SRC);
   }, [room.id]);
 
-  // The hit target reports its pointer state and measured size; the painted seal mirrors both.
-  const [pointer, setPointer] = useState<AltarSigilPointer>(SIGIL_AT_REST);
-  const [geometry, setGeometry] = useState<AltarSigilGeometry>({ glyphPx: 0, stagePx: 0 });
-  const onPointer = useCallback(
-    (p: AltarSigilPointer) =>
-      setPointer((prev) => (prev.hover === p.hover && prev.press === p.press ? prev : p)),
-    [],
-  );
-  const onGeometry = useCallback(
-    (g: AltarSigilGeometry) =>
-      setGeometry((prev) => (prev.glyphPx === g.glyphPx && prev.stagePx === g.stagePx ? prev : g)),
-    [],
-  );
-  const sigilUp = room.id === 'altar' && altarSigil !== null;
-  const armed = altarSigil?.armed === true;
-  const fading = altarSigil?.fading === true;
-  const sceneSigil = useMemo<SceneSigil | null>(
-    () =>
-      sigilUp
-        ? {
-            src: ALTAR_SIGIL_SRC,
-            // Centred on the stage, where the hit target's wrapper sits (left/top 50%).
-            x: 0.5,
-            y: 0.5,
-            glyphPx: geometry.glyphPx,
-            stagePx: geometry.stagePx,
-            look: armed ? 'armed' : 'idle',
-            shown: !fading,
-            hover: pointer.hover,
-            press: pointer.press,
-          }
-        : null,
-    [sigilUp, armed, fading, geometry, pointer],
-  );
-
   return (
     <div className={'scene ' + room.sceneClass} role="group" aria-label={room.title}>
       <DegradedScene
         roomId={room.id}
         backdrop={backdrop}
         figures={boundVisuals}
-        sigil={sceneSigil}
         signature={room.id === 'studio' && signature}
         settings={degradeSettings}
       />
@@ -161,14 +118,12 @@ export function RoomView({
           </button>
         );
       })}
-      {sigilUp && (
+      {room.id === 'altar' && altarSigil && (
         <AltarSigil
-          armed={armed}
-          fading={fading}
+          armed={altarSigil.armed}
+          fading={altarSigil.fading}
           onPress={onSigilPress}
           onStatusQuo={onStatusQuo}
-          onPointer={onPointer}
-          onGeometry={onGeometry}
         />
       )}
     </div>
