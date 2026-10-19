@@ -1,6 +1,10 @@
+import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import { createInitialState, MALEFICIA, SINGLE_USE_MALEFICIA } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
+import { ASSET_BASE, MALEFICIA as DESIGN } from '../menus/menus.data.js';
 import { parseEffect } from '../menus/relics.js';
 import { buildCabinet, invokingPowerText, maleficiumView, splitDescription } from './maleficia.js';
 
@@ -137,13 +141,23 @@ describe('maleficiumView — one relic by id (the Unveiling)', () => {
     expect(view!.use).toBeUndefined();
   });
 
-  it('splits the sim description for a relic the design did not illustrate', () => {
+  it('carries the art of a relic illustrated after the handoff, with the sim copy split', () => {
     const view = maleficiumView('dybbuk_box');
     expect(view).toMatchObject({
       name: 'Dybbuk Box',
-      img: '',
       desc: 'Something agreed to stay inside. For now.',
       effect: '+10% gold gain.',
+    });
+    expect(view!.img).toContain('dybbuk_box.png');
+  });
+
+  it('splits the sim description for a relic with no art', () => {
+    const view = maleficiumView('adder_stone');
+    expect(view).toMatchObject({
+      name: 'Adder Stone',
+      img: '',
+      desc: 'A holed stone the serpents bored; look through it and see what breeds.',
+      effect: '+0.6 reprobates per second.',
     });
   });
 
@@ -228,5 +242,26 @@ describe('buildCabinet — the private item safe (Depraedatio Custody VIP)', () 
     const byId = Object.fromEntries(buildCabinet(vault).map((m) => [m.id, m]));
     expect(byId.codex_gigas?.safe).toEqual({ stored: true });
     expect(byId.ars_serpens?.safe).toEqual({ stored: false });
+  });
+});
+
+describe('the design art table', () => {
+  // By path: jsdom's URL would resolve a relative file URL against its http://localhost page.
+  const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../public');
+
+  it('keys every row to a sim catalog id', () => {
+    for (const row of DESIGN) expect(MALEFICIA[row.id], row.id).toBeDefined();
+  });
+
+  it('points every row at a specimen image that ships in public/', () => {
+    for (const row of DESIGN) {
+      expect(row.img.startsWith(`${ASSET_BASE}/maleficia/`), row.id).toBe(true);
+      expect(existsSync(join(PUBLIC_DIR, row.img)), row.img).toBe(true);
+    }
+  });
+
+  it('illustrates every catalog relic but the Adder Stone', () => {
+    const bare = Object.keys(MALEFICIA).filter((id) => maleficiumView(id)!.img === '');
+    expect(bare).toEqual(['adder_stone']);
   });
 });

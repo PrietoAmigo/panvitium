@@ -1,8 +1,8 @@
 // View-model adapter for the designed Maleficia cabinet: the player's *owned* maleficia (collapsing
 // duplicate stackables into one item: a ×N on the name, except for a consumable, whose copies read
 // as its remaining uses instead), each merged from the authoritative sim catalog (name, rarity,
-// description) with the design's specimen art + split flavour/effect where the handoff illustrated
-// it. Items without bespoke art carry an empty `img`; the cabinet renders a text label. Items
+// description) with the design's specimen art, and its split flavour/effect where the handoff wrote
+// one. Items without bespoke art carry an empty `img`; the cabinet renders a text label. Items
 // without design copy split the sim description into flavour + effect, so the Loculi can set every
 // item's effect as its headline number.
 //
@@ -21,11 +21,13 @@ import {
 } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import { MALEFICIA as DESIGN } from '../menus/menus.data.js';
-import type { Maleficium, MaleficiumUse, Rarity } from '../menus/types.js';
+import type { Maleficium, MaleficiumArt, MaleficiumUse, Rarity } from '../menus/types.js';
 import { formatDuration } from './format.js';
 import { buildOracle } from './oracle.js';
 
-const DESIGN_BY_ID: Record<string, Maleficium> = Object.fromEntries(DESIGN.map((m) => [m.id, m]));
+const DESIGN_BY_ID: Record<string, MaleficiumArt> = Object.fromEntries(
+  DESIGN.map((m) => [m.id, m]),
+);
 
 /** Derive the Use affordance for the single-use consumables; `undefined` for ordinary maleficia. */
 function makeAffordance(state: GameState): (id: string) => MaleficiumUse | undefined {
@@ -59,21 +61,23 @@ export function splitDescription(description: string): { desc: string; effect: s
 }
 
 /**
- * One maleficium's presentation by id, without the owned-stack count or the Use affordance: the
- * design's art and split copy where the handoff illustrated it, else the sim name and its description
- * split into flavour + effect. The Unveiling shows exactly this for a freshly obtained relic.
+ * One maleficium's presentation by id, without the owned-stack count or the Use affordance: the sim
+ * name, the design's art where a relic is illustrated, and the handoff's split copy where it wrote
+ * one, else the sim description split into flavour + effect. The Unveiling shows exactly this for a
+ * freshly obtained relic.
  */
 export function maleficiumView(id: string): Maleficium | undefined {
   const def = CATALOG[id];
   if (!def) return undefined;
   const art = DESIGN_BY_ID[id];
-  const copy = art ? { desc: art.desc, effect: art.effect } : splitDescription(def.description);
+  const split = splitDescription(def.description);
   return {
     id,
     name: def.name,
     rarity: def.rarity as Rarity,
     img: art?.img ?? '',
-    ...copy,
+    desc: art?.desc ?? split.desc,
+    effect: art?.effect ?? split.effect,
     invokingPower: def.invokingPower,
   };
 }
