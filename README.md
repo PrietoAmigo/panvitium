@@ -105,7 +105,15 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 1258** (sim 613 · shared 86 · api 20 · web 539).
 
-> **Latest change — UI: the altar sigil stays crisp, outside the degradation pass.** The Katabasis
+> **Latest change — UI: a brighter sigil glow, and STATUS QUO underlined in red light.** The
+> altar seal's red glow is brighter, idle and armed: each `kat-seal-breathe` keyframe now stacks
+> three drop-shadows in a brighter, fuller red (a tight inner one hugging the strokes under the
+> two wider ones), where the handoff's darker red had two; reduced motion holds the new first
+> keyframe. **Status Quo** gains a glowing red line beneath it, its ends fading out, over a soft red
+> bloom behind the word; hovered or focused, both brighten and the line reaches a little wider.
+> CSS only (`menus.css`). No sim, save or RNG change; no test-count change.
+>
+> **Earlier change — UI: the altar sigil stays crisp, outside the degradation pass.** The Katabasis
 > seal that rises when the altar is clicked is no longer pixelated, crushed or grained with the
 > room. It is grimoire chrome now, not a diegetic element: a DOM image over the room's canvas
 > (`menus/AltarSigil.tsx`), animated by the handoff's own CSS keyframes (the `kat-seal-*` vibration,
