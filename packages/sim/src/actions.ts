@@ -331,6 +331,57 @@ export function ensureAutoRepeatStarted(state: GameState): GameState {
 }
 
 /**
+ * A timer this close to zero has finished. Counting a timer down in 100 ms steps accumulates float
+ * error (1 − 10 × 0.1 leaves ~1e-16, still > 0), which would hold every cycle one extra tick: a
+ * tenth of a 1 s Suggestion's rate.
+ */
+export const TIMER_EPSILON_SECONDS = 1e-9;
+
+/** Hard cap on carried cycles per rite in one call — guards against a zero-duration loop. */
+const MAX_CARRIED_CYCLES = 100_000;
+
+/**
+ * The tick's auto-repeat step (02 §3): `ensureAutoRepeatStarted`, then each rite that completed this
+ * tick hands its overshoot (`carry`: the part of the tick's span left after it completed) to the
+ * cycle just started, so a loop runs one cycle per duration of GAME time whatever the span, Desidia's
+ * accelerated one included. When the carry covers a whole cycle, that cycle resolves too and the next
+ * starts, paying its cost like any restart; an unaffordable restart stalls the loop and drops the rest
+ * of the carry, so a stalled rite banks no time. The RNG is drawn only when a carried cycle completes.
+ */
+export function advanceAutoRepeat(
+  state: GameState,
+  carry: ReadonlyMap<string, number>,
+  rng: Rng,
+): { state: GameState; events: OutcomeEvent[] } {
+  let working = ensureAutoRepeatStarted(state);
+  const events: OutcomeEvent[] = [];
+  for (const [id, overshoot] of carry) {
+    let budget = overshoot;
+    for (let guard = 0; budget > 0 && guard < MAX_CARRIED_CYCLES; guard++) {
+      const queue = working.lifetime.actionQueue;
+      const timer = queue.find((t) => t.actionId === id);
+      if (timer === undefined) break; // the restart stalled: nothing to carry into
+      const left = timer.remainingSeconds - budget;
+      if (left > TIMER_EPSILON_SECONDS) {
+        const actionQueue = queue.map((t) => (t === timer ? { ...t, remainingSeconds: left } : t));
+        working = { ...working, lifetime: { ...working.lifetime, actionQueue } };
+        break;
+      }
+      // The carry completes this cycle too. An auto-repeating rite carries no target (Emptio
+      // never loops), so it resolves like a hand cast; then the loop restarts it.
+      budget = Math.max(0, -left);
+      const actionQueue = queue.filter((t) => t !== timer);
+      working = { ...working, lifetime: { ...working.lifetime, actionQueue } };
+      const resolved = resolveAction(working, id, rng);
+      working = resolved.state;
+      if (resolved.event) events.push(resolved.event);
+      working = ensureAutoRepeatStarted(working);
+    }
+  }
+  return { state: working, events };
+}
+
+/**
  * Turn auto-repeat on or off for a player rite. Enabling is mutually exclusive among the
  * player-slot rites — only one fills the slot at a time (02 §3) — so it replaces any other
  * auto-repeating rite and immediately starts a first cycle (via `ensureAutoRepeatStarted`). Disabling
