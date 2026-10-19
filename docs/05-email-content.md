@@ -448,9 +448,9 @@ built. None carry mechanical effects unless stated.
   > word of complaint on the privilege of the climb. In all of that time I have never once met my
   > equal, and now, against every expectation I had of the world, it appears that I may have. You have
   > not earned your place beside me, that much is plain to anyone of breeding, yet here you stand at it
-  > regardless, and that interests me rather more than I will say twice. So you will tell me who you
-  > are. Write to me, and promptly, for I am not a man who is kept waiting by anyone. Your silence I
-  > will take as the deference it so plainly is, and we will speak again.
+  > regardless, and that interests me rather more than I will say twice. Of course, you will tell me
+  > who you are. Breeding would have taught you to answer a man of my house promptly. Even your
+  > silence I shall accept as deference. You will hear from me again.
   > Fausto Cescru
 - **Answers:**
   - (1) "I will use your blood as catalyst for my next katabasis, torment your soul and end your
@@ -469,9 +469,10 @@ built. None carry mechanical effects unless stated.
   > be direct, because men of rank do not haggle and I never learned how. I am offering to raise you.
   > I hold knowledge gathered across lifetimes and no heir living worthy to receive it, and you, for
   > all your low beginnings, are very nearly worthy of the gift. Come and take your place beneath my
-  > hand, and I will spare you the centuries of error that I have already paid for in full. Do not
-  > mistake any part of this for a request. Men like me do not extend the offer twice, and men like
-  > you do not refuse it and go on prospering.
+  > hand, and I will spare you the centuries of error that I have already paid for in full. Offers
+  > from my house are extended once. Be sensible enough to recognise what has been placed before you.
+  > Even men of better blood have ruined themselves by mistaking my generosity for a negotiation. You
+  > will not prosper by refusing me.
   > Fausto
 - **Answers:** none.
 - **Trigger:** 7 minutes after `totalSinLevel >= 20` and `flagFCThreatSent = 0`.
@@ -486,9 +487,9 @@ built. None carry mechanical effects unless stated.
   > your cycles turning over in a fraction of the time any inheritance on earth permits. No bloodline
   > moves that quickly. You hold an instrument and I
   > have decided that I will know what it is. So you will tell me by what means you descend, and you
-  > will not make me ask a third time. I have been patient with you as a king is patient with a clever
-  > servant, which is to say only for as long as the cleverness keeps amusing him. Do not mistake that
-  > patience for a thing that lasts.
+  > will not make me ask a third time. Only your cleverness has purchased this much patience. But a
+  > king does not suffer a servant to keep a locked room in his own house. Every silence now adds to
+  > what you owe me. You will give me the means of your descent.
   > Fausto
 - **Answers:** none.
 - **Trigger:** 7 minutes after `totalSinLevel >= 30` and `flagFCThreatSent = 0`.
@@ -504,8 +505,9 @@ built. None carry mechanical effects unless stated.
   > to mount? You are base blood. You found a thing in the dirt that was meant for better men than
   > you, and you rode it up without earning a single step of the ascent. I will not stoop to beg a
   > guttersnipe for his trick. I will do what my name has done to upstarts since before your
-  > grandfathers were filth on a road. Take this with you, then, since you have taken everything else
-  > that was ever mine:
+  > grandfathers were filth on a road. One gift remains for you. Blood such as yours would never
+  > recognise it as a gift, but recognition is no longer required. Every word that follows belongs to
+  > you now. You will carry what I have written.
   >
   > Qui hanc epistulam legit aut tenet, maledictus esto. Marcescat sanguis eius, deficiant manus
   > eius, et aurum eius in cinerem vertatur. Quamdiu haec verba manent, manet maledictio.
