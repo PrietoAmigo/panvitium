@@ -123,6 +123,16 @@ body {
   background: #000;
 }
 
+/* A subliminal plate (Fausto's, or a random one): fixed over the WHOLE viewport, above everything
+   including the jumpscare, for a fraction of a second. It only mounts once its plate has decoded, so
+   no black fallback is needed; it takes no pointer input, so a click mid-flash reaches the game. */
+.subliminal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+}
+
 /* bespoke candlelit backdrops, one per room */
 .scene-invocation {
   background:

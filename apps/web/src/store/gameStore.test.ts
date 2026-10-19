@@ -7,10 +7,12 @@ import {
   SINS,
   ETERNAL_SIN_THRESHOLD,
   computeModifiers,
+  devotionForLevel,
   type GameState,
 } from '@panvitium/sim';
 import { useGameStore } from './gameStore.js';
 import { DEFAULT_PREFERENCES } from './preferences.js';
+import { FAUSTO_SUBLIMINALS } from '../game/subliminals.js';
 
 const store = (): ReturnType<typeof useGameStore.getState> => useGameStore.getState();
 
@@ -45,6 +47,7 @@ beforeEach(() => {
     log: [],
     unveilQueue: [],
     lastObtained: null,
+    subliminalQueue: [],
     notice: null,
     katabasisPhase: null,
     recap: null,
@@ -282,6 +285,32 @@ describe('gameStore — the Unveiling queue (maleficia brought home)', () => {
     store().confirmKatabasis();
     expect(store().unveilQueue).toHaveLength(0);
     expect(store().lastObtained).toBeNull();
+  });
+});
+
+describe('gameStore — subliminal plates', () => {
+  it("flashes Fausto's plate on the tick his letter is earned, not when it arrives", () => {
+    const s = store().state as GameState;
+    const devotion = { ...s.devotion };
+    for (const sin of SINS) devotion[sin] = devotionForLevel(2); // total Sin level 16 ≥ 10
+    useGameStore.setState({ state: { ...s, devotion } });
+    store().advance(0.1);
+    expect(store().subliminalQueue.map((f) => f.src)).toEqual([FAUSTO_SUBLIMINALS['fausto-1']]);
+    // Earned once: the following ticks (the letter still on its way) flash nothing more.
+    store().advance(0.1);
+    expect(store().subliminalQueue).toHaveLength(1);
+    expect(store().state?.lifetime.inbox.some((e) => e.id === 'fausto-1')).toBe(false);
+  });
+
+  it('queues each flash with its own seq and retires only the head', () => {
+    store().flashSubliminal('/a.png');
+    store().flashSubliminal('/a.png');
+    const [first, second] = store().subliminalQueue;
+    expect(first?.seq).not.toBe(second?.seq);
+    store().dismissSubliminal(second!.seq); // not the head: a stale dismissal changes nothing
+    expect(store().subliminalQueue).toHaveLength(2);
+    store().dismissSubliminal(first!.seq);
+    expect(store().subliminalQueue).toEqual([second]);
   });
 });
 

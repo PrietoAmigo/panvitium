@@ -23,6 +23,8 @@ import { ConflictModal } from './ui/ConflictModal.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
 import { Jumpscare, JUMPSCARE_IMG } from './ui/Jumpscare.js';
+import { Subliminal } from './ui/Subliminal.js';
+import { useRandomSubliminals } from './game/useRandomSubliminals.js';
 import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
@@ -176,6 +178,18 @@ export function App(): ReactElement {
     [answeredKey],
   );
   const { ringing, answer } = useIncomingCall(callInEnabled, eligibleIds, answeredIds);
+
+  // Subliminal plates (game/subliminals.ts): the head of the store's queue flashes over everything.
+  // Fausto's are queued by the tick the moment one of his letters is earned, wherever the player is;
+  // the random ones surface about once every six minutes of live play, anywhere but the title, a
+  // descent, an answered call or the jumpscare.
+  const subliminal = useGameStore((s) => s.subliminalQueue[0] ?? null);
+  const flashSubliminal = useGameStore((s) => s.flashSubliminal);
+  const dismissSubliminal = useGameStore((s) => s.dismissSubliminal);
+  useRandomSubliminals(
+    ready && !titleOpen && katabasisPhase === null && answeredCall === null && !jumpscare,
+    flashSubliminal,
+  );
   const callInView = answeredCall ? buildCallInView(answeredCall) : null;
   // Defensive: an answered id that has no view (would never happen for catalogue ids) must not strand
   // the line — clear it so a new call can ring.
@@ -311,6 +325,15 @@ export function App(): ReactElement {
       {/* The one-time Doppelgänger scare covers EVERYTHING (highest layer), blocks all input, and
           clears itself after 2s — see Jumpscare. */}
       {jumpscare && <Jumpscare onDone={() => setJumpscare(false)} />}
+      {/* A subliminal plate flashes over even the jumpscare, for a fraction of a second, and takes
+          no input. Keyed by its seq so each flash mounts fresh. */}
+      {subliminal && (
+        <Subliminal
+          key={subliminal.seq}
+          src={subliminal.src}
+          onDone={() => dismissSubliminal(subliminal.seq)}
+        />
+      )}
     </div>
   );
 }

@@ -93,6 +93,39 @@ describe('emails — timed triggers', () => {
   });
 });
 
+describe('emails — the moment a letter is earned (triggered)', () => {
+  it('reports a timed email on the pass it arms, never on its later delivery', () => {
+    const base = createInitialState('seed', 1_000_000);
+    const tenth = withAllSins(base, 2); // total sin level 16 ≥ Fausto #1's gate of 10
+    expect(totalSinLevel(tenth)).toBeGreaterThanOrEqual(10);
+    const armed = deliverEmails(tenth, 1_000_000);
+    expect(armed.triggered).toContain('fausto-1');
+    expect(armed.delivered).not.toContain('fausto-1');
+    // Already armed: neither the waiting passes nor the delivery report it again.
+    expect(deliverEmails(armed.state, 1_000_000 + 1 * MIN).triggered).not.toContain('fausto-1');
+    const late = deliverEmails(armed.state, 1_000_000 + 8 * MIN);
+    expect(late.delivered).toContain('fausto-1');
+    expect(late.triggered).not.toContain('fausto-1');
+  });
+
+  it('reports an immediate email on the pass it delivers (Fausto #5), once', () => {
+    const base = createInitialState('seed', 0);
+    const rich: GameState = { ...base, totalSoulsObtained: bn(2e9) };
+    const r1 = deliverEmails(rich, 1);
+    expect(r1.delivered).toContain('fausto-5');
+    expect(r1.triggered).toContain('fausto-5');
+    expect(deliverEmails(r1.state, 2).triggered).not.toContain('fausto-5');
+  });
+
+  it('reports nothing when nothing arms or fires', () => {
+    const base = createInitialState('seed', 0);
+    const settled = deliverEmails(base, 0).state; // arms the always-eligible newsletters
+    const r = deliverEmails(settled, 1);
+    expect(r.triggered).toEqual([]);
+    expect(r.state).toBe(settled);
+  });
+});
+
 describe('emails — random newsletters', () => {
   it('arms an always-eligible newsletter and delivers it deterministically within the window', () => {
     const base = createInitialState('seed', 0);
