@@ -105,7 +105,16 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 1258** (sim 613 · shared 86 · api 20 · web 539).
 
-> **Latest change — UI: a brighter sigil glow, and STATUS QUO underlined in red light.** The
+> **Latest change — UI: the sigil's glow turns a deep crimson and spreads wider.** The altar
+> seal's glow is darker and bigger, idle and armed. Its drop-shadows move to a deep crimson (three
+> per keyframe, hugging the strokes), and a new aura carries the wide halo: a radial gradient
+> behind the glyph (`.altar-sigil-scale::before`), reaching well past the seal, that breathes with
+> it through opacity and transform only, so the wider halo costs no extra blur (casting it as more
+> wide drop-shadows cut the frame rate about fourfold in a measured run). It pulses with the seal
+> but does not shake with it, takes no clicks, and holds still under reduced motion. Status Quo is
+> unchanged. CSS only (`menus.css`). No sim, save or RNG change; no test-count change.
+>
+> **Earlier change — UI: a brighter sigil glow, and STATUS QUO underlined in red light.** The
 > altar seal's red glow is brighter, idle and armed: each `kat-seal-breathe` keyframe now stacks
 > three drop-shadows in a brighter, fuller red (a tight inner one hugging the strokes under the
 > two wider ones), where the handoff's darker red had two; reduced motion holds the new first

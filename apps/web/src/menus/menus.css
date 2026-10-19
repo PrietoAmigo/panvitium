@@ -307,6 +307,27 @@ body {
   display: grid;
   place-items: center;
   animation: kat-seal-pulse 3.4s ease-in-out infinite;
+  position: relative;
+  isolation: isolate;
+}
+/* The seal's wide aura: a deep crimson radial gradient behind the glyph, well past its edges. A
+   gradient needs no blur, and its breath animates only opacity and transform, so the halo stays
+   cheap however wide it is (the glyph's drop-shadows carry the glow that hugs the strokes). It
+   pulses with the seal but does not shake with it, and takes no clicks. */
+.altar-sigil-scale::before {
+  content: '';
+  position: absolute;
+  inset: -75% -85%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    rgba(150, 10, 7, 0.6),
+    rgba(125, 7, 5, 0.38) 40%,
+    rgba(95, 4, 4, 0.16) 70%,
+    transparent
+  );
+  animation: kat-seal-aura 3.4s ease-in-out infinite;
 }
 /* The glyph: the design's image width, at the seal art's aspect (495 × 561). */
 .altar-sigil-glyph {
@@ -323,6 +344,9 @@ body {
 .altar-sigil-btn.is-armed .altar-sigil-scale {
   animation: kat-seal-pulse-armed 1s ease-in-out infinite;
 }
+.altar-sigil-btn.is-armed .altar-sigil-scale::before {
+  animation: kat-seal-aura-armed 1s ease-in-out infinite;
+}
 .altar-sigil-btn.is-armed .altar-sigil-glyph {
   animation:
     kat-seal-vibe-strong 0.07s linear infinite,
@@ -335,44 +359,75 @@ body {
     animation: none;
     transform: scale(0.97);
   }
+  .altar-sigil-scale::before {
+    animation: none;
+    opacity: 0.75;
+    transform: scale(0.92);
+  }
   .altar-sigil-glyph {
     animation: none;
-    filter: drop-shadow(0 0 5px rgba(255, 70, 45, 1)) drop-shadow(0 0 14px rgba(255, 40, 22, 1))
-      drop-shadow(0 0 34px rgba(235, 25, 15, 0.8));
+    filter: drop-shadow(0 0 6px rgba(170, 14, 9, 1)) drop-shadow(0 0 20px rgba(180, 15, 10, 1))
+      drop-shadow(0 0 46px rgba(150, 10, 7, 1));
   }
   .altar-sigil-btn.is-armed .altar-sigil-scale {
     animation: none;
     transform: scale(1.55);
   }
+  .altar-sigil-btn.is-armed .altar-sigil-scale::before {
+    animation: none;
+    opacity: 0.7;
+    transform: none;
+  }
   .altar-sigil-btn.is-armed .altar-sigil-glyph {
     animation: none;
-    filter: drop-shadow(0 0 8px rgba(255, 80, 55, 1)) drop-shadow(0 0 30px rgba(255, 45, 25, 1))
-      drop-shadow(0 0 70px rgba(245, 30, 18, 0.95));
+    filter: drop-shadow(0 0 9px rgba(180, 15, 10, 1)) drop-shadow(0 0 30px rgba(190, 17, 11, 1))
+      drop-shadow(0 0 70px rgba(155, 11, 7, 1));
   }
 }
-/* The seal glow: a bright red, brighter than the handoff's darker red. A tight inner shadow hugs
-   the strokes so the outer two read as light rather than haze; each keyframe keeps three shadows,
-   so the filter interpolates. */
+/* The seal glow: a deep crimson. The drop-shadows hug the strokes (each keyframe keeps three, so
+   the filter interpolates); the aura above carries the wide halo. */
 @keyframes kat-seal-breathe {
   0%,
   100% {
-    filter: drop-shadow(0 0 5px rgba(255, 70, 45, 1)) drop-shadow(0 0 14px rgba(255, 40, 22, 1))
-      drop-shadow(0 0 34px rgba(235, 25, 15, 0.8));
+    filter: drop-shadow(0 0 6px rgba(170, 14, 9, 1)) drop-shadow(0 0 20px rgba(180, 15, 10, 1))
+      drop-shadow(0 0 46px rgba(150, 10, 7, 1));
   }
   50% {
-    filter: drop-shadow(0 0 7px rgba(255, 90, 60, 1)) drop-shadow(0 0 24px rgba(255, 50, 28, 1))
-      drop-shadow(0 0 58px rgba(245, 32, 18, 1));
+    filter: drop-shadow(0 0 8px rgba(185, 18, 11, 1)) drop-shadow(0 0 30px rgba(195, 20, 12, 1))
+      drop-shadow(0 0 62px rgba(160, 12, 8, 1));
   }
 }
 @keyframes kat-seal-breathe-armed {
   0%,
   100% {
-    filter: drop-shadow(0 0 8px rgba(255, 80, 55, 1)) drop-shadow(0 0 30px rgba(255, 45, 25, 1))
-      drop-shadow(0 0 70px rgba(245, 30, 18, 0.95));
+    filter: drop-shadow(0 0 9px rgba(180, 15, 10, 1)) drop-shadow(0 0 30px rgba(190, 17, 11, 1))
+      drop-shadow(0 0 70px rgba(155, 11, 7, 1));
   }
   50% {
-    filter: drop-shadow(0 0 12px rgba(255, 100, 70, 1)) drop-shadow(0 0 48px rgba(255, 55, 30, 1))
-      drop-shadow(0 0 110px rgba(250, 38, 20, 1));
+    filter: drop-shadow(0 0 12px rgba(195, 20, 12, 1)) drop-shadow(0 0 44px rgba(205, 22, 13, 1))
+      drop-shadow(0 0 100px rgba(165, 13, 8, 1));
+  }
+}
+@keyframes kat-seal-aura {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+@keyframes kat-seal-aura-armed {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.12);
   }
 }
 @keyframes kat-seal-pulse {
