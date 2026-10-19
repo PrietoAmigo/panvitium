@@ -127,7 +127,7 @@ describe('Buffs HUD', () => {
     answerCall('the-shipment');
     render();
     expect(tiles()[0]!.querySelector('.buffs-hud-art canvas')).not.toBeNull(); // Defixio
-    expect(tiles()[1]!.querySelector('.buffs-hud-glyph')?.textContent).toBe('+33%'); // Hand of Glory
+    expect(tiles()[1]!.querySelector('.buffs-hud-art canvas')).not.toBeNull(); // Hand of Glory
     expect(tiles()[2]!.querySelector('.buffs-hud-glyph')?.textContent).toBe('×2'); // the call
   });
 

@@ -53,9 +53,9 @@ describe('buildBuffs: the single-use maleficia', () => {
     expect(ring.effects[0]!.text).toBe('−15% Indagatio time');
   });
 
-  it('gives Hand of Glory, which has no art, its magnitude as the glyph', () => {
+  it('gives Hand of Glory its art, and its magnitude as the fallback glyph', () => {
     const ring = only(buildBuffs(withLifetime({ maleficiaBuffs: { hand_of_glory: 900 } })));
-    expect(ring.img).toBeUndefined();
+    expect(ring.img).toContain('hand_of_glory.png');
     expect(ring.glyph).toBe('+33%');
     expect(ring.effects[0]!.text).toBe('+33% reprobate generation');
   });

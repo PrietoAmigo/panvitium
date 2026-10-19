@@ -1,8 +1,8 @@
 // Static config + design flavour for the menu layer. What remains here is live:
 //
 // - ROOMS: the room/hotspot layout the `RoomView` reads (real config, not a stand-in).
-// - INVOCATIONS / INVOCATION_BY_ID and MALEFICIA: the illustrated entries' art / lore (and the
-//   maleficia split flavour/effect), merged onto the authoritative sim catalogs by the view-models
+// - INVOCATIONS / INVOCATION_BY_ID and MALEFICIA: the illustrated entries' art / lore (and, for
+//   the maleficia the handoff wrote copy for, their split flavour/effect), merged onto the authoritative sim catalogs by the view-models
 //   (game/invocations.ts, game/maleficia.ts). Mechanics — counts, costs, effects — always come from
 //   `packages/sim`, never from here.
 //
@@ -10,7 +10,7 @@
 // per-invocation effect copy) were dropped once every panel was wired to real state — those entities
 // now feed from the sim and the store. See INTEGRATION.md §"Wiring to real state".
 
-import type { RoomId, RoomDef, Invocation, Maleficium } from './types.js';
+import type { RoomId, RoomDef, Invocation, MaleficiumArt } from './types.js';
 
 // All art is served from apps/web/public/assets/panvitium/ (Vite serves public/ at root).
 export const ASSET_BASE = '/assets/panvitium';
@@ -176,7 +176,7 @@ export const INVOCATION_BY_ID: Record<string, Invocation> = Object.fromEntries(
   INVOCATIONS.map((iv) => [iv.id, iv]),
 );
 
-export const MALEFICIA: Maleficium[] = [
+export const MALEFICIA: MaleficiumArt[] = [
   {
     id: 'obsidian_mirror',
     name: 'Obsidian Mirror',
@@ -344,5 +344,78 @@ export const MALEFICIA: Maleficium[] = [
     img: `${ASSET_BASE}/maleficia/hollow_effigy.png`,
     desc: "Wax in your likeness, and in someone else's.",
     effect: '+0.1 murders per second.',
+  },
+  // Illustrated after the handoff: art alone, so the copy is the sim description, split.
+  {
+    id: 'the_dadu',
+    name: 'The Dadu',
+    rarity: 'common',
+    img: `${ASSET_BASE}/maleficia/dadu.png`,
+  },
+  {
+    id: 'witch_ladder',
+    name: 'Witch Ladder',
+    rarity: 'common',
+    img: `${ASSET_BASE}/maleficia/witch_ladder.png`,
+  },
+  {
+    id: 'poppet',
+    name: 'Poppet',
+    rarity: 'common',
+    img: `${ASSET_BASE}/maleficia/poppet.png`,
+  },
+  {
+    id: 'hand_of_glory',
+    name: 'Hand of Glory',
+    rarity: 'rare',
+    img: `${ASSET_BASE}/maleficia/hand_of_glory.png`,
+  },
+  {
+    id: 'dybbuk_box',
+    name: 'Dybbuk Box',
+    rarity: 'rare',
+    img: `${ASSET_BASE}/maleficia/dybbuk_box.png`,
+  },
+  {
+    id: 'black_vessel',
+    name: 'Black Vessel',
+    rarity: 'rare',
+    img: `${ASSET_BASE}/maleficia/black_vessel.png`,
+  },
+  {
+    id: 'teraphim',
+    name: 'Teraphim',
+    rarity: 'rare',
+    img: `${ASSET_BASE}/maleficia/teraphim.png`,
+  },
+  {
+    id: 'galdrabok',
+    name: 'Galdrabók',
+    rarity: 'profane',
+    img: `${ASSET_BASE}/maleficia/galdrabok.png`,
+  },
+  {
+    id: 'grimoire_of_pope_honorius',
+    name: 'Grimoire of Pope Honorius',
+    rarity: 'profane',
+    img: `${ASSET_BASE}/maleficia/grimoire_of_pope_honorius.png`,
+  },
+  {
+    id: 'picatrix',
+    name: 'Picatrix',
+    rarity: 'profane',
+    img: `${ASSET_BASE}/maleficia/picatrix.png`,
+  },
+  {
+    id: 'achans_wedge',
+    name: "Achan's Wedge",
+    rarity: 'anathema',
+    img: `${ASSET_BASE}/maleficia/achans_wedge.png`,
+  },
+  {
+    id: 'pilates_basin',
+    name: "Pilate's Basin",
+    rarity: 'anathema',
+    img: `${ASSET_BASE}/maleficia/pilates_basin.png`,
   },
 ];

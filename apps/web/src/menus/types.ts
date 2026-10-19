@@ -83,6 +83,14 @@ export interface Maleficium {
   safe?: { stored: boolean };
 }
 
+/**
+ * One row of the design's maleficia table (`menus.data.ts`): the specimen art, plus the handoff's
+ * own split flavour/effect where it wrote one. A relic illustrated after the handoff carries its art
+ * alone, and its copy is the sim description, split by the view-model.
+ */
+export type MaleficiumArt = Pick<Maleficium, 'id' | 'name' | 'rarity' | 'img'> &
+  Partial<Pick<Maleficium, 'desc' | 'effect'>>;
+
 /** One revealed Opera category's distributions (e.g. Suasio), for the oracular readout. */
 export interface OracleGroup {
   /** Category id ('suasio' | 'indagatio' | 'emptio'). */
