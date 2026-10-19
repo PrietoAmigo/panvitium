@@ -105,7 +105,13 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 1278** (sim 616 · shared 86 · api 20 · web 556).
 
-> **Latest change — UI: subliminal plates.** Twenty plates in `public/assets/panvitium/subliminals/`
+> **Latest change — Copy: Fausto's letters, rewritten closings.** The closing paragraph of Fausto
+> #1, #2 and #3 is replaced, and in #4 ("Take this with you") so is the line leading into the Latin
+> curse, now "One gift remains for you. … You will carry what I have written." In
+> `strings.emails.catalog` and `docs/05-email-content.md`. Copy only: no sim, save or RNG change; no
+> test-count change.
+>
+> **Earlier change — UI: subliminal plates.** Twenty plates in `public/assets/panvitium/subliminals/`
 > now flash over the whole screen for a fraction of a second (`SUBLIMINAL_MS`, 120 ms), through the
 > degradation pass like the rooms, above every overlay, taking no input. **Fausto's plates** mark the
 > moment one of his letters is earned, not its later arrival: `deliverEmails` gains `triggered` (a
