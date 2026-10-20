@@ -257,6 +257,19 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
     height: '100.2%',
     clipBottom: 0.74,
   },
+  // Empusa stands at the back of the Studio, against the far wall right of the door, just in front
+  // of the painting's lower-right corner. A grounded figure: no `float`, no `vignette`, no ground or
+  // cast shadow. She specifies no movement, so she holds perfectly still. Composited through the
+  // degradation pass like any bound figure. Baseline (top + height = 65.5%) lands on the floor line
+  // of the back wall; `left` is her horizontal centre (the art is centred in its 447×558 frame).
+  empusa: {
+    id: 'empusa',
+    room: 'studio',
+    src: `${ASSET_BASE}/invocations/empusa.png`,
+    left: '60%',
+    top: '42%',
+    height: '23.5%',
+  },
 };
 
 /** Helper: the visuals for whichever bound invocations belong in `room`, from `summoned`

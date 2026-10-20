@@ -155,6 +155,25 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['midas'])).toEqual([]);
   });
 
+  it('returns the Empusa visual only in the studio room, grounded with no effects', () => {
+    const studio = boundVisualsFor('studio', ['empusa']);
+    expect(studio.map((v) => v.id)).toEqual(['empusa']);
+    // Stands still against the back wall: no levitation, no room-dimming glow, no shadow of any kind.
+    expect(studio[0]?.float).toBeUndefined();
+    expect(studio[0]?.vignette).toBeUndefined();
+    expect(studio[0]?.groundShadow).toBeUndefined();
+    expect(studio[0]?.shadowCast).toBeUndefined();
+    expect(studio[0]?.left).toBe('60%');
+    expect(studio[0]?.top).toBe('42%');
+    expect(studio[0]?.height).toBe('23.5%');
+    // Same id, wrong room → nothing (her designed display lives in the studio).
+    expect(boundVisualsFor('altar', ['empusa'])).toEqual([]);
+    // A present (unseen) Doppelgaenger overrides her like every other studio figure.
+    expect(boundVisualsFor('studio', ['empusa', 'doppelgaenger']).map((v) => v.id)).toEqual([
+      'doppelgaenger',
+    ]);
+  });
+
   it('a present Doppelgaenger overrides every other figure in the studio', () => {
     // Specunitas + Familiar both have studio displays, but a bound Doppelgaenger is the sole figure.
     const studio = boundVisualsFor('studio', ['specunitas', 'familiar', 'doppelgaenger']);
