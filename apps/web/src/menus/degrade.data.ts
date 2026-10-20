@@ -49,6 +49,26 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
     float: true,
     vignette: 0.82,
   },
+  // Erinyes stands at the back of the Altar Room, directly behind the altar stone, facing the lens —
+  // a large grounded figure on the floor between the stone and the back wall, towering over it. The
+  // stone sits in front of her, so everything below its top edge is hidden (`clipBottom`, same crop
+  // Midas uses behind the Studio table): she reads from the head to the upper thighs over the altar.
+  // She burns with a fire-like aura (`fireAura`): flames lick up off her silhouette and a warm light
+  // spills on the wall behind her; only the flames move. No `float`, no `vignette`, no ground/cast
+  // shadow. The figure itself specifies no movement, so she holds perfectly still. Composited
+  // through the degradation pass like any bound figure, aura included. `left` is her horizontal
+  // centre (the art is centred in its 408×612 frame), aligned on the altar's centre; baseline
+  // (top + height = 72.7%) lands on the floor just behind the stone.
+  erinyes: {
+    id: 'erinyes',
+    room: 'altar',
+    src: `${ASSET_BASE}/invocations/erinyes.png`,
+    left: '50.8%',
+    top: '27.7%',
+    height: '45%',
+    clipBottom: 0.528,
+    fireAura: 1,
+  },
   // Fama stands at the player's threshold on the LEFT of the altar room, close to the camera — a large
   // foreground figure (height > the stage, the gown's hem falling just past the bottom edge so she
   // reads as standing near the lens). The brief calls for NO visual effects, so she carries none: no

@@ -127,6 +127,12 @@ export interface EngineSprite {
       clipped at the line in the same scene buffer, so the cut downsamples/pixelates uniformly with
       the frame — used to crop a figure behind a foreground prop. Omit for no clip. */
   clipBelow?: number;
+  /** Fire-like aura strength (0..1; 0 / omitted = none). Flickering ember → flame → core casts off
+      the silhouette, each lifted upward so the flames lick above the figure, plus a warm light spill
+      behind it — all drawn BEHIND the figure (additively) in the scene buffer, so they crush/pixelate
+      with the frame and honour `clipBelow`. Independent of `still`: the figure holds still while the
+      flames flicker; under `reducedMotion` the flames freeze at a steady mid intensity. */
+  fireAura?: number;
   /** Dark enveloping shadow — the widest cast's blur as a fraction of stage height (0 / omitted =
       none). Several stacked black casts off the silhouette build the halo that wraps the figure;
       drawn into the same buffer as the figure, so it crushes and pixelates uniformly with the rest. */
@@ -278,6 +284,26 @@ function buildPaletteLUT(): Uint8ClampedArray {
 }
 
 const PAL_LUT = buildPaletteLUT();
+
+// The fire aura's casts, back to front: colour, peak alpha, blur (fraction of stage height), upward
+// lift and sideways sway (fractions of stage height), flicker frequency and phase.
+const FIRE_AURA_LAYERS: readonly {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+  blur: number;
+  lift: number;
+  sway: number;
+  f: number;
+  p: number;
+}[] = [
+  { r: 150, g: 24, b: 8, a: 0.55, blur: 0.075, lift: 0.03, sway: 0.006, f: 2.1, p: 0 },
+  { r: 225, g: 80, b: 18, a: 0.5, blur: 0.04, lift: 0.018, sway: 0.004, f: 3.7, p: 1.3 },
+  { r: 255, g: 150, b: 50, a: 0.35, blur: 0.016, lift: 0.008, sway: 0.002, f: 5.3, p: 2.6 },
+  { r: 235, g: 95, b: 22, a: 0.4, blur: 0.025, lift: 0.05, sway: 0.012, f: 4.4, p: 3.9 },
+  { r: 210, g: 60, b: 14, a: 0.35, blur: 0.03, lift: 0.07, sway: 0.016, f: 3.2, p: 5.1 },
+];
 
 export class DegradePass {
   readonly canvas: HTMLCanvasElement;
@@ -588,6 +614,9 @@ export class DegradePass {
         ctx.rect(0, 0, w, sp.clipBelow * h);
         ctx.clip();
       }
+      if (sp.fireAura && sp.fireAura > 0) {
+        this._drawFireAura(ctx, img, dx, dy, dw, dh, h, t, Math.min(1, sp.fireAura));
+      }
       // Enveloping shadow — a very large dark blob drawn BEHIND the figure (so it darkens the altar
       // around Morpheus), plus a few stacked black casts off the silhouette for a tight rim. Both
       // live in the scene buffer, so they crush/pixelate with the frame, and stay distinct from the
@@ -634,6 +663,60 @@ export class DegradePass {
       if (g.kind === 'ellipse') this._drawGlowEllipse(ctx, w, h, g);
       else this._drawGlowShape(ctx, w, h, g);
     }
+  }
+
+  /**
+   * The fire-like aura behind a figure (Erinyes): a warm light spill, then stacked coloured casts of
+   * the silhouette — deep ember (wide), flame (mid), hot core (tight) and two loose tongues — each
+   * lifted upward and swaying a touch so the flames lick above her. Only the casts land: the source
+   * image is drawn off-buffer and its shadow offset back onto the figure. Drawn additively
+   * ('lighter') so it reads as light, not paint; the alphas are kept low so the stack never
+   * blows out to white. Flicker is a sum of sines (no RNG); reduced motion
+   * freezes it. Shadow offsets ignore the ctx transform, so this assumes an un-rolled figure (any
+   * figure with an aura carries no `float`).
+   */
+  private _drawFireAura(
+    ctx: CanvasRenderingContext2D,
+    img: HTMLImageElement,
+    dx: number,
+    dy: number,
+    dw: number,
+    dh: number,
+    h: number,
+    t: number,
+    k: number,
+  ): void {
+    const still = this.s.reducedMotion;
+    const flick = (f: number, p: number): number =>
+      still ? 0.5 : 0.5 + 0.25 * Math.sin(t * f + p) + 0.25 * Math.sin(t * f * 2.3 + p * 1.7);
+    const far = dx + dw + 4 * dh; // off-buffer source; only its cast lands back on the figure
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // Warm spill on the wall behind her — a tall soft ellipse, breathing with the flames.
+    const cx = dx + dw / 2;
+    const cy = dy + dh * 0.42;
+    const r = dh * 0.4;
+    const a0 = 0.22 * k * (0.8 + 0.4 * flick(3.1, 0));
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(1, 1.6);
+    const spill = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    spill.addColorStop(0, `rgba(200,70,20,${a0})`);
+    spill.addColorStop(0.5, `rgba(120,30,10,${a0 * 0.45})`);
+    spill.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = spill;
+    ctx.fillRect(-r, -r, 2 * r, 2 * r);
+    ctx.restore();
+    for (const L of FIRE_AURA_LAYERS) {
+      const fl = flick(L.f, L.p);
+      const a = Math.min(1, L.a * k * (0.6 + 0.8 * fl));
+      ctx.shadowColor = `rgba(${L.r},${L.g},${L.b},${a})`;
+      ctx.shadowBlur = L.blur * h * (0.85 + 0.3 * fl);
+      ctx.shadowOffsetX = far + (still ? 0 : Math.sin(t * L.f * 0.7 + L.p) * L.sway * h);
+      ctx.shadowOffsetY = -L.lift * h * (0.7 + 0.6 * fl);
+      ctx.drawImage(img, dx - far, dy, dw, dh);
+    }
+    ctx.restore();
   }
 
   private _drawGlowEllipse(

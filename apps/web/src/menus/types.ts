@@ -174,6 +174,10 @@ export interface BoundInvocationVisual {
    *  foreground prop (e.g. Midas behind the Studio table). Omit for no clip (figure clips only at the
    *  frame edge, as before). */
   clipBottom?: number;
+  /** Fire-like aura (0..1 strength; omit/0 = none): flickering ember-to-flame casts off the
+   *  silhouette, licking upward, plus a warm light spill behind the figure. The figure itself holds
+   *  still; only the flames move (frozen under reduced motion). Clipped by `clipBottom` like the figure. */
+  fireAura?: number;
   /** Levitating-trance treatment: slow float + a dark enveloping shadow (no orange glow). */
   float?: boolean;
   /** Focal-vignette ink alpha (0..1) that dims the room while bound; omit/0 for none. */

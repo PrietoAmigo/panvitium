@@ -18,12 +18,28 @@ export type AudioEvent =
   | 'outcome-apocalyptic'
   | 'panvitium-activate'
   // A delivered email worth a cue: the Fausto Cescru #5 door-knock (05, ADR-014).
-  | 'email-knock';
+  | 'email-knock'
+  // The Banshee's scream: a rare cue on her Summon click (see `summonCue`).
+  | 'banshee-scream';
 
 /** The one-shot SFX file for each cue that has audio direction; absent cues stay silent. */
 const CUE_SRC: Partial<Record<AudioEvent, string>> = {
   'email-knock': `${ASSET_BASE}/music/knock-door_left.mp3`,
+  'banshee-scream': `${ASSET_BASE}/music/banshee_scream.mp3`,
 };
+
+/** Chance that a click on the Banshee's Summon button lets out her scream. */
+export const BANSHEE_SCREAM_CHANCE = 0.05;
+
+/**
+ * The cue (if any) a Summon click on `invocationId` sounds. Presentation only: the roll is the
+ * browser's `Math.random`, never the sim's seeded RNG (ADR-011), so a scream leaves the save's
+ * sequence untouched. `roll` is injectable for tests.
+ */
+export function summonCue(invocationId: string, roll: number = Math.random()): AudioEvent | null {
+  if (invocationId === 'banshee' && roll < BANSHEE_SCREAM_CHANCE) return 'banshee-scream';
+  return null;
+}
 
 const CUE_VOLUME = 0.7;
 

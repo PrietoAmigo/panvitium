@@ -174,6 +174,25 @@ describe('boundVisualsFor', () => {
     ]);
   });
 
+  it('returns the Erinyes visual only in the altar room, still behind the altar stone, wreathed in fire', () => {
+    const altar = boundVisualsFor('altar', ['erinyes']);
+    expect(altar.map((v) => v.id)).toEqual(['erinyes']);
+    // Stands behind the altar: no levitation, no room-dimming glow, no shadow — only the stone's
+    // top-edge crop (clipBottom) hides her below the upper thighs.
+    expect(altar[0]?.float).toBeUndefined();
+    expect(altar[0]?.vignette).toBeUndefined();
+    expect(altar[0]?.groundShadow).toBeUndefined();
+    expect(altar[0]?.shadowCast).toBeUndefined();
+    expect(altar[0]?.left).toBe('50.8%');
+    expect(altar[0]?.top).toBe('27.7%');
+    expect(altar[0]?.height).toBe('45%');
+    expect(altar[0]?.clipBottom).toBe(0.528);
+    expect(altar[0]?.fireAura).toBe(1);
+    // Same id, wrong room → nothing (her designed display lives on the altar).
+    expect(boundVisualsFor('studio', ['erinyes'])).toEqual([]);
+    expect(boundVisualsFor('invocation', ['erinyes'])).toEqual([]);
+  });
+
   it('a present Doppelgaenger overrides every other figure in the studio', () => {
     // Specunitas + Familiar both have studio displays, but a bound Doppelgaenger is the sole figure.
     const studio = boundVisualsFor('studio', ['specunitas', 'familiar', 'doppelgaenger']);
