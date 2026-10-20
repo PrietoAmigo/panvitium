@@ -183,7 +183,7 @@ describe('Gaap #33 boosts every maleficium (ADR-036)', () => {
     expect(untouched).toEqual([]);
   });
 
-  it('grows increases linearly: Achan +200% gold, Black Robe +0.4 influence/s, Black Candles', () => {
+  it('grows increases linearly: Achan +200% gold, Red Robe +0.4 influence/s, Black Candles', () => {
     expect(computeModifiers(gaap(own(fresh(), 'achans_wedge'))).goldRateMul).toBeCloseTo(
       1 + 2 * mb,
       9,

@@ -236,7 +236,7 @@ The catalog (invoking power, stack caps, prices, and exact magnitudes in the `Ma
 | **Blackthorn Wand** | Power source | Rare | Grants invoking power. |
 | **Hand of Glory** | Targeted, stackable | Rare | Single-use: doubles the reprobate generation rate for one hour. |
 | **Dybbuk Box** | Power source | Rare | Grants invoking power. |
-| **Black Robe** | Power source | Common | Grants invoking power. |
+| **Red Robe** | Power source | Common | Grants invoking power. |
 | **Sulfur Censer** | Power source | Common | Grants invoking power. |
 | **Black Candles** | Enhancer, stackable | Common | Increases invocation effect per candle. |
 | **The Dadu** | Enhancer, power source | Common | +5% player efficiency; grants power. |

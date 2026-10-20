@@ -44,7 +44,7 @@ describe('maleficia catalog', () => {
   });
 
   it('totalInvokingPower sums per-copy values across the inventory', () => {
-    // Black Robe (1) + Sulfur Censer (2) + The Voynich Manuscript (7) = 10.
+    // Red Robe (1) + Sulfur Censer (2) + The Voynich Manuscript (7) = 10.
     expect(totalInvokingPower(['black_robe', 'sulfur_censer', 'voynich_manuscript'])).toBe(10);
   });
 });

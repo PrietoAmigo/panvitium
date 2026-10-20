@@ -301,9 +301,9 @@ export const MALEFICIA: MaleficiumArt[] = [
   },
   {
     id: 'black_robe',
-    name: 'Black Robe',
+    name: 'Red Robe',
     rarity: 'common',
-    img: `${ASSET_BASE}/maleficia/black_robe.png`,
+    img: `${ASSET_BASE}/maleficia/red_robe.png`,
     desc: 'What separates the celebrant from the congregation is mostly fabric.',
     effect: '+0.4 influence per second.',
   },
