@@ -103,9 +103,16 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1336** (sim 625 · shared 89 · api 20 · web 602).
+**Current test count: 1338** (sim 625 · shared 89 · api 20 · web 604).
 
-> **Latest change — The empty-handed warning.** The first time in a playthrough the altar sigil is
+> **Latest change — Aurevora holds the invocation room.** While Aurevora is bound it is the only
+> figure shown in the invocation room (like the Doppelgänger in the Studio): every other invocation
+> figure there is hidden. The hold outlasts it: once seen in the room, the others stay hidden until
+> the player walks out, so a dispelled Aurevora simply vanishes and the rest reappear on the next
+> entry rather than in its place (`boundVisualsFor`'s new `aurevoraHold`, latched in `RoomView`).
+> Presentation only: no sim, save or RNG change. Net **+2 tests** (web 602 → 604).
+>
+> **Earlier change — The empty-handed warning.** The first time in a playthrough the altar sigil is
 > committed with no souls in hand, the descent is stopped before any teardown: the sigil goes down,
 > the screen goes black and one line surfaces in yellow italic, "I should not descend
 > empty-handed.", then sinks and the black lifts back onto the Altar Room (7.3 s, unskippable, no
