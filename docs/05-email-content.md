@@ -82,7 +82,8 @@ additive-optional pattern.
   > proposal is simple: hand me a larger share to manage on the usual percentage, and the next time
   > you vanish for months the floor under you sits higher. Think on it. Glad you are home.
   > Gideon
-- **Answers:** none.
+- **Answers:**
+  - (1) "no worry how are you". No mechanical effect.
 - **Trigger:** 2 minutes after returning from the first katabasis (`katabasisCount` reaches 1).
 
 ### Gideon Reyes #2

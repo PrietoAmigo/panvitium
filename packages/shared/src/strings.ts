@@ -573,6 +573,12 @@ export const strings = {
         addr: 'g.reyes@reyes-stewardship.com',
         subject: 'Welcome home, and a frank word about the float',
         body: 'Welcome back.\n\nI will be blunt, because you pay me to be: while you were away the cash ran perilously close to the bone, closer than I am comfortable with. The visible holdings I steward, the shops, the property, the dull legitimate book, kept the lights on and the staff paid, which is precisely why they are the part that survives a long absence. The rest of what you keep your own counsel on does not survive you being unreachable, and that is your affair, not mine.\n\nMy proposal is simple: hand me a larger share to manage on the usual percentage, and the next time you vanish for months the floor under you sits higher. Think on it. Glad you are home.\n\nGideon',
+        replies: [
+          {
+            text: 'no worry how are you',
+            effect: 'No mechanical effect.',
+          },
+        ],
       },
       'gideon-2': {
         from: 'Gideon Reyes',
