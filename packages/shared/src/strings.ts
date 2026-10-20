@@ -603,6 +603,12 @@ export const strings = {
         addr: 'g.reyes@reyes-stewardship.com',
         subject: 'I have stopped asking questions',
         body: 'I do not know what you did, and I have decided not to ask. Everything, and I mean everything, is up. The shops, the property, the side of the book that usually limps, all of it printing money this month as though the stars lined up over your head and agreed you had earned it. I have stopped trying to explain it to the accountant and started simply enjoying it. Keep doing whatever it is.\n\nYour humble and slightly bewildered steward,\nGideon',
+        replies: [
+          {
+            text: 'I forget how clever i can be',
+            effect: 'No mechanical effect.',
+          },
+        ],
       },
 
       // ── The world / commerce: newsletters and reactive mail ──

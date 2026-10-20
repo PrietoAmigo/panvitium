@@ -129,7 +129,8 @@ additive-optional pattern.
   > whatever it is.
   > Your humble and slightly bewildered steward,
   > Gideon
-- **Answers:** none.
+- **Answers:**
+  - (1) "I forget how clever i can be". No mechanical effect.
 - **Trigger:** 5 minutes after the Thirty Pieces of Silver maleficium enters your ownership.
 
 ---
