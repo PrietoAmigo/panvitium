@@ -66,6 +66,29 @@ describe('ChthonicLogos — outcome ledger', () => {
     expect(text).toContain('+5'); // the soul yield
     expect(text).toContain(strings.resources.souls);
   });
+
+  it('names a reprobate loss as a suicide (with its souls) or a plain loss', () => {
+    useGameStore.setState({
+      log: [
+        { actionId: 'suggestion', tier: 'good', soulsDelta: 3, reprobateDelta: -3, goldDelta: 0 },
+        {
+          actionId: 'imperium',
+          tier: 'terrible',
+          soulsDelta: 0,
+          reprobateDelta: -40,
+          goldDelta: 0,
+        },
+      ],
+    });
+    render();
+    const texts = Array.from(container!.querySelectorAll('.logos-ledger-text')).map(
+      (el) => el.textContent,
+    );
+    expect(texts).toEqual([
+      `${strings.opera.suggestion} · −3 ${strings.reprobates} ${strings.opera.logosSuicide}, +3 ${strings.resources.souls}`,
+      `${strings.opera.imperium} · −40 ${strings.reprobates} ${strings.opera.logosLost}`,
+    ]);
+  });
 });
 
 describe('ChthonicLogos — sealed action names', () => {
