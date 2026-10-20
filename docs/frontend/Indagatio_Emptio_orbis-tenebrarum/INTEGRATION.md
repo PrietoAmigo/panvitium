@@ -48,7 +48,7 @@ the host shell supplies those. Two clean ways to mount it:
    with one. In `PcWindow.tsx`: collapse the two `EXECUTABLES` entries into a single program (e.g.
    `{ id: 'Indagatio', color: '#2c7bbe', glyph: '?' }`), add that id to the `FULLBLEED` set, and have
    `renderProgram('Indagatio')` return `<OrbisTenebrarum … />`. It fills `.pc-app--fullbleed`.
-2. **As a full-screen overlay**, wrapped in your own `.panel-overlay` + titlebar (like Ars Goetia /
+2. **As a full-screen overlay**, wrapped in your own `.panel-overlay` + titlebar (like Magna Goetia /
    Katabasis), if you'd rather it open from a room hotspot than from the PC.
 
 It expects a sized parent (it's `height: 100%`, min 600px). The globe stage is fixed at 360px; the

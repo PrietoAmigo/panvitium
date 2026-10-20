@@ -1,4 +1,4 @@
-// The cave-painting brush of the Ars Goetia invocation plates (Claude Design, "Invocation Plates"
+// The cave-painting brush of the Magna Goetia invocation plates (Claude Design, "Invocation Plates"
 // handoff, archived in docs/frontend/). A gesture is a centreline and a brush width; the brush lays it
 // down as a fan of dry bristle strokes in one yellow ochre, every random choice drawn from a seeded
 // mulberry32, so the same gesture and seed always paint the same marks. Presentation only and

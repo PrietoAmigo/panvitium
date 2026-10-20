@@ -105,7 +105,16 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 1282** (sim 619 · shared 86 · api 20 · web 557).
 
-> **Latest change — Revert: the flat seals are back on the log curve.** Design decision: the
+> **Latest change — Rename: the grimoire is the Magna Goetia.** The invocation book, called the
+> Ars Goetia game-wide, is now the **Magna Goetia**: the room hotspot, the book's title and dialog
+> labels, and its subtitle, which reads **"The Greater Key"** (was "The Lesser Key"). The code
+> follows (`MagnaGoetiaBook`, `magna-goetia.types.ts`, the `magna-goetia` panel id, the
+> `invocations-magna-goetia/` plate directory, the e2e spec) along with comments and the live docs;
+> the changelog entries below keep the old name. The sigils' fallback "A seal of the lesser key."
+> and the real-world _Lesser Key of Solomon_ references are untouched. No sim, save or RNG change.
+> No test count change.
+>
+> **Earlier change — Revert: the flat seals are back on the log curve.** Design decision: the
 > balance audit's flat-seal retune (2026-10-08, below) is undone. Haagenti #48, Decarabia #69, Ose
 > #57, Sabnock #43 and Glasya-Labolas #25 leave the default `pct` curve and `FLAT_SEAL_SPLASH` for
 > the sheet's `coeff × ln(1 + N)` with the sheet coefficients (3, 0.5, 0.3, 0.001, 0.001), as before

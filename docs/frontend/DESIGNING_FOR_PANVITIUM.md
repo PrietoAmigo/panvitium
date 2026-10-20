@@ -21,7 +21,7 @@ the framing, the flavour. The integrator's job is to feed your components real v
 Design accordingly and the seam between the two is clean.
 
 The world is three rooms — `invocation`, `altar`, `studio` — each with clickable hotspots that either
-walk to another room or open a panel. The panels are the diegetic menus (the Ars Goetia grimoire, the
+walk to another room or open a panel. The panels are the diegetic menus (the Magna Goetia grimoire, the
 Altar, the Katabasis descent, the Maleficia cabinet, the Suasio scroll, the PC).
 
 ---
@@ -73,7 +73,7 @@ variant="stone" hideHeader />`."_ If you invent a new variant, ship its CSS in t
 it in the handoff.
 
 **(b) Full-screen overlays** render their _own_ shell — their own `.panel-overlay`, titlebar/close,
-and background. The Ars Goetia grimoire, the Katabasis descent, and the PC file-manager are these.
+and background. The Magna Goetia grimoire, the Katabasis descent, and the PC file-manager are these.
 These are self-contained; they don't use `PanelShell`. Say so explicitly: _"full-screen; renders its
 own shell; takes `onClose`."_
 
@@ -93,7 +93,7 @@ outcomes. The integrator merges them. Make that merge easy and safe:
   - sins: the eight keys `gula luxuria avaritia tristitia ira acedia vanagloria superbia`
   - sigils: the numbers `1`–`72`
   - maleficia: their string ids (`ars_serpens`, `ritual_dagger`, …)
-  - rooms: `invocation altar studio`; panels: `ars-goetia altar-menu maleficia suasio pc`
+  - rooms: `invocation altar studio`; panels: `magna-goetia altar-menu maleficia suasio pc`
 - **Do not invent or hard-code mechanical values.** Gates, soul costs, Devotion thresholds, effect
   magnitudes, level math — these come from the sim and change with economy tuning. If a prototype
   needs a number to render, mark it clearly as a placeholder (a comment, or a `placeholder: true`

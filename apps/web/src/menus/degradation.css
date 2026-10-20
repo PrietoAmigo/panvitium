@@ -1,6 +1,6 @@
 /* Degradation layer — NEW classes only.
    Import once, AFTER the base stylesheet and menus.css (it adds, never renames).
-   Everything else the layer needs — the Ars Goetia .goetia-* / .gb-* classes,
+   Everything else the layer needs — the Magna Goetia .goetia-* / .gb-* classes,
    the .stage / .hotspot / .hud vocabulary — already lives in menus.css. */
 
 /* The canvas IS the room scene. It renders 1280x720 internally; nearest-

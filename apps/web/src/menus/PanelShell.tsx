@@ -11,7 +11,7 @@ interface PanelShellProps {
 }
 
 // The framed overlay shared by the parchment (scroll), stone (altar) and wooden
-// (cabinet) panels. Click-outside and the × both close. Ars Goetia, the PC and
+// (cabinet) panels. Click-outside and the × both close. Magna Goetia, the PC and
 // Katabasis render their own full-screen shells instead — they don't use this.
 export function PanelShell({
   title,

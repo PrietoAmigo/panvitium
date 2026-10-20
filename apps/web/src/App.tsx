@@ -7,7 +7,7 @@ import { ROOMS } from './menus/menus.data.js';
 import { RoomView } from './menus/RoomView.js';
 import { SmartphoneCallIn } from './menus/SmartphoneCallIn.js';
 import { CALL_PLATE_ANSWERING } from './menus/calls-in.data.js';
-import { ArsGoetiaBook } from './menus/ArsGoetiaBook.js';
+import { MagnaGoetiaBook } from './menus/MagnaGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
 import { Loculi, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
@@ -30,7 +30,7 @@ import { useGameStore } from './store/gameStore.js';
 import { audio } from './audio/audio.js';
 
 /**
- * The full-screen Ars Goetia grimoire, wired to real state. Kept as its own subscriber so its
+ * The full-screen Magna Goetia grimoire, wired to real state. Kept as its own subscriber so its
  * per-tick re-render (soul cost tracks the pool) stays local and doesn't re-render the room shell.
  */
 function GoetiaBook({ onClose }: { onClose: () => void }): ReactElement {
@@ -39,7 +39,7 @@ function GoetiaBook({ onClose }: { onClose: () => void }): ReactElement {
   const banish = useGameStore((s) => s.banish);
   const view = state ? buildGoetia(state) : { invokingPower: '0', entries: [] };
   return (
-    <ArsGoetiaBook
+    <MagnaGoetiaBook
       entries={view.entries}
       invokingPower={view.invokingPower}
       onSummon={summon}
@@ -243,7 +243,7 @@ export function App(): ReactElement {
   };
 
   // The persistent Influence/Gold HUD rides over the Invocation and Studio rooms and over the
-  // Loculi, the Ars Goetia book and the Suasio scroll — but not in the Altar room, not over
+  // Loculi, the Magna Goetia book and the Suasio scroll — but not in the Altar room, not over
   // the PC desk or the Status Quo Ledger, not during a descent (the Ledger + an ongoing Katabasis
   // both hold `katabasisPhase !== null`), and not behind the launch title menu. It mounts at the app
   // level (below) so it layers over those menu overlays rather than under them.
@@ -288,7 +288,7 @@ export function App(): ReactElement {
       {/* Every menu is its own full-surface overlay (designed reliquary / grimoire / desk /
           parchment / phone); none wears a framed panel. */}
       {panel === 'maleficia' && <Loculi onClose={closePanel} />}
-      {panel === 'ars-goetia' && <GoetiaBook onClose={closePanel} />}
+      {panel === 'magna-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
       {panel === 'suasio' && <SuasioScroll onClose={closePanel} />}
       {panel === 'phone' && <PhoneDialer onClose={closePanel} />}

@@ -13,7 +13,7 @@ import type { Maleficium, OracleGroup } from './types.js';
 // procession along the floor (click one, or the ‹ › arrows / ← → keys; Esc closes). Browse and
 // detail are one screen. Relics are ordered anathema → common, stable within a tier.
 //
-// A full-surface overlay (like Ars Goetia / the Suasio scroll), not a framed panel: the room plate
+// A full-surface overlay (like Magna Goetia / the Suasio scroll), not a framed panel: the room plate
 // behind it is RoomView's own. The composition was authored on a 1280×720 stage and lays out in a
 // 16:9 frame fitted to the overlay (`STAGE_FRAME`, lengths via `px`). Same `items` / `onUse` props as
 // the niche wall it replaces; `onClose` is the ✕ and Esc. Inline-styled; menus.css carries only the

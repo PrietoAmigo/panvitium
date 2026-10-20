@@ -1,5 +1,5 @@
 // View-model adapter: maps the authoritative `packages/sim` invocation catalog + live game state
-// onto the presentation `Invocation` shape the designed Ars Goetia grimoire consumes. The dynamic
+// onto the presentation `Invocation` shape the designed Magna Goetia grimoire consumes. The dynamic
 // fields (name, gate, upkeep cost, unlocked, bound count, invoking power) are all real; the design's
 // lore is reused where the handoff wrote one (the line is omitted otherwise), the rank numeral is the
 // entry's place in the index, and every entry carries its painted plate. No flavour is fabricated.
@@ -16,7 +16,7 @@ import {
   type InvocationDef,
 } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
-import type { GoetiaEntry } from '../menus/ars-goetia.types.js';
+import type { GoetiaEntry } from '../menus/magna-goetia.types.js';
 import { INVOCATION_BY_ID, ASSET_BASE } from '../menus/menus.data.js';
 import { aurevoraDrainText, invocationEffectText } from './invocationEffect.js';
 import { roman } from './format.js';
@@ -74,7 +74,7 @@ function invocationCostLabel(state: GameState, def: InvocationDef): string {
 
 /** Build the grimoire's presentation view from authoritative sim state. The index is CLUSTERED by
  *  Cardinal Sin level (the unaligned Familiar first), and ordered by required invoking power within
- *  each cluster — the same reading order the design's Ars Goetia expects. */
+ *  each cluster — the same reading order the design's Magna Goetia expects. */
 export function buildGoetia(state: GameState): GoetiaView {
   const power = currentInvokingPower(state);
   const entries: GoetiaEntry[] = [];
@@ -130,7 +130,7 @@ export function buildGoetia(state: GameState): GoetiaView {
       // The painted plate (Claude Design, "Invocation Plates"), not the photorealistic creature
       // art: one baked PNG per invocation in its own folder, keyed by id (src/art holds the source
       // and scripts/bake-invocation-plates.ts bakes it). A plate that fails to load is hidden.
-      illus: `${ASSET_BASE}/invocations-ars-goetia/${id}.png`,
+      illus: `${ASSET_BASE}/invocations-magna-goetia/${id}.png`,
     });
   });
   return { invokingPower: String(power), entries };

@@ -1,5 +1,5 @@
 /**
- * The Ars Goetia invocation plates (Claude Design, "Invocation Plates" handoff): one plate for every
+ * The Magna Goetia invocation plates (Claude Design, "Invocation Plates" handoff): one plate for every
  * sim invocation, in the design's seed order; each a 600 × 800 SVG over the 300 × 400 design box,
  * layered bottom to top as base fill, stone, vignette, then the paint under the wobble, with the
  * stone cycled by plate and the paint in the one ochre. And the baked PNGs the grimoire loads: one
@@ -53,7 +53,7 @@ const DESIGN_ORDER = [
 // By path: jsdom's URL would resolve a relative file URL against its http://localhost page.
 const BAKED_DIR = join(
   dirname(fileURLToPath(import.meta.url)),
-  '../../public/assets/panvitium/invocations-ars-goetia',
+  '../../public/assets/panvitium/invocations-magna-goetia',
 );
 
 /** The plate's SVG, which every known id has. */

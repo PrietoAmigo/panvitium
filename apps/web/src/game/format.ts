@@ -84,7 +84,7 @@ const ROMAN_UNITS: readonly [number, string][] = [
   [4, 'IV'],
   [1, 'I'],
 ];
-/** Integer → Roman numeral (1..3999). Used for the Sin-level gate, the Ars Goetia index numerals (so
+/** Integer → Roman numeral (1..3999). Used for the Sin-level gate, the Magna Goetia index numerals (so
  *  every seal reads as a numeral; the old lookup table stopped at XVIII and fell back to Arabic) and
  *  the Loculi's relic counter. Anything that is not a positive integer falls back to Arabic. */
 export function roman(n: number): string {

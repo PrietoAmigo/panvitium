@@ -3,7 +3,7 @@ import './menus/menus.css';
 import {
   ROOMS, type RoomId, type PanelId, type HotspotAction,
   RoomView, PanelShell, AltarPanel, MaleficiaCabinet, SuasioPanel,
-  PcWindow, ArsGoetiaBook, Katabasis,
+  PcWindow, MagnaGoetiaBook, Katabasis,
 } from './menus';
 
 // EXAMPLE orchestration — the glue from the prototype's app.jsx, minus the
@@ -63,8 +63,8 @@ export function Playspace(): ReactElement {
       )}
 
       {panel === 'pc' && <PcWindow onClose={() => setPanel(null)} />}
-      {panel === 'ars-goetia' && (
-        <ArsGoetiaBook summoned={summoned} onSummon={summon} onDispel={dispel} onClose={() => setPanel(null)} />
+      {panel === 'magna-goetia' && (
+        <MagnaGoetiaBook summoned={summoned} onSummon={summon} onDispel={dispel} onClose={() => setPanel(null)} />
       )}
       {katabasis && <Katabasis onClose={() => setKatabasis(false)} />}
     </div>

@@ -1,4 +1,4 @@
-// The Ars Goetia invocation plates (Claude Design, "Invocation Plates" handoff, archived in
+// The Magna Goetia invocation plates (Claude Design, "Invocation Plates" handoff, archived in
 // docs/frontend/): one painted plate per invocation, a fast dry brush in yellow ochre on dark cave
 // stone. This module lays a plate out as a standalone SVG, bottom to top: the base fill, the stone
 // (fractal noise under a low raking light, one of three textures cycled by plate), a vignette, then

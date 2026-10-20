@@ -10,7 +10,7 @@
  * Every cost is softened by `invocationCostMul` (the Orobas / Zepar / Andrealphus cost channel and
  * Black Vessel, each a `1/(1 + x)` cut; ADR-035/036).
  *
- * Visibility (02 §12): an invocation appears in the Ars Goetia list once the player has at least
+ * Visibility (02 §12): an invocation appears in the Magna Goetia list once the player has at least
  * HALF its required invoking power — a teaser that the entity is within reach.
  *
  * **The apex entities (Sin level 3) are one-kind-per-lifetime** (see `invoke`): once any apex is
@@ -96,7 +96,7 @@ export function activeInvocationCount(state: GameState, id: string): number {
   return state.lifetime.invocations[id] ?? 0;
 }
 
-/** Visible in the Ars Goetia list once invoking power ≥ half the requirement (02 §12). */
+/** Visible in the Magna Goetia list once invoking power ≥ half the requirement (02 §12). */
 export function invocationVisible(state: GameState, def: InvocationDef): boolean {
   return currentInvokingPower(state) >= def.invokingPower / 2;
 }

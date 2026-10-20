@@ -75,7 +75,7 @@ function tile(phrase: string, times = 8): string {
 
 /**
  * The Suasio scroll — "Opus Suasio, the Honeyed Tongue" (Claude Design rework). A self-framed,
- * full-surface overlay (like Ars Goetia / the PC / Katabasis — it does NOT use PanelShell): an
+ * full-surface overlay (like Magna Goetia / the PC / Katabasis — it does NOT use PanelShell): an
  * illuminated parchment of three temptations, each an alchemical circle that fills into a progress
  * ring while its rite is spoken. Sealed rites read as redacted Latin until their Sin gate is met.
  * Purely presentational — fed the real action/cost/progress by the wrapper in ui/panels.tsx;

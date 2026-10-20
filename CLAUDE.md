@@ -123,7 +123,7 @@ from auto-repeat, the action queue (base-price refund) and acolyte delegations).
 - `game/` — thin **view-model adapters** (`buildGoetia`, `buildAltar`, `buildCabinet`, …) that map
   the sim catalogs + live state onto presentation shapes, plus formatting/labels. No game logic.
 - `menus/` — the diegetic room/panel UI (the integrated design handoff): `RoomView`, `PanelShell`,
-  the PC window, Katabasis, Ars Goetia, etc. Backdrops render through a framework-free degradation
+  the PC window, Katabasis, Magna Goetia, etc. Backdrops render through a framework-free degradation
   canvas engine (`DegradePass`, the "cursed CD-ROM" look — ADR-021). Anything diegetic that must
   pixelate with the room (bound figures) is drawn _into_ the pass, never laid over the canvas as
   DOM; the room's clickable spots are invisible DOM hotspots on top. The altar's Katabasis sigil is
@@ -131,7 +131,7 @@ from auto-repeat, the action queue (base-price refund) and acolyte delegations).
   light it and its STATUS QUO label cast is the room's, though: `DegradePass.setGlows` paints it
   into the pass from hidden DOM anchors it samples every frame (`menus/altarGlow.ts`), so the CSS
   still times it while the pass pixelates it.
-- `art/` — source for baked art, not imported by the app: the Ars Goetia invocation plates' brush
+- `art/` — source for baked art, not imported by the app: the Magna Goetia invocation plates' brush
   and gesture tables. `pnpm --filter @panvitium/web bake:plates` (`scripts/`) rasterizes them to
   the PNGs the grimoire loads; re-bake after any edit (a digest test catches a stale bake), and
   never reorder the plate table (a plate's position seeds its strokes). See `DEVELOPMENT.md`.

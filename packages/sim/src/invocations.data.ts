@@ -9,7 +9,7 @@
  * copies (four copies at 25% of gold gain zero the gold gain). Effects marked "scaled by efficiency"
  * scale by the all-invocation and per-Sin invocation-effect multipliers (NOT player efficiency).
  *
- * Entries are ordered by Sin level, then required invoking power — the same clustering the Ars Goetia
+ * Entries are ordered by Sin level, then required invoking power — the same clustering the Magna Goetia
  * index shows.
  */
 import { type InvocationDef } from './invocations.js';

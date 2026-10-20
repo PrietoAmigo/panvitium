@@ -1,11 +1,11 @@
-// Bakes the Ars Goetia invocation plates (Claude Design, "Invocation Plates" handoff) into the static
+// Bakes the Magna Goetia invocation plates (Claude Design, "Invocation Plates" handoff) into the static
 // PNGs the grimoire shows:
 //
 //   pnpm --filter @panvitium/web bake:plates            # every plate
 //   pnpm --filter @panvitium/web bake:plates imp fama   # only these
 //
 // Each plate's SVG comes from src/art (the brush and the gesture tables). Chromium rasterizes it at
-// 2× the design box (600 × 800) into public/assets/panvitium/invocations-ars-goetia/<id>.png, and a
+// 2× the design box (600 × 800) into public/assets/panvitium/invocations-magna-goetia/<id>.png, and a
 // digest of the SVG it baked is recorded in src/art/invocationPlates.baked.json, so a test catches a
 // plate that was retuned but not re-baked. Needs Playwright's Chromium (`pnpm --filter
 // @panvitium/web e2e:install`), or CHROMIUM_PATH pointing at another Chromium binary.
@@ -18,7 +18,7 @@ import { createServer } from 'vite';
 import type * as Plates from '../src/art/invocationPlates.js';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(web, 'public/assets/panvitium/invocations-ars-goetia');
+const outDir = join(web, 'public/assets/panvitium/invocations-magna-goetia');
 const manifestPath = join(web, 'src/art/invocationPlates.baked.json');
 
 // The generator is TypeScript importing with the repo's `.js` specifiers, so Vite loads it.

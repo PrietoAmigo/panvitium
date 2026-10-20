@@ -1,7 +1,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 
 /**
- * E2E coverage for the Ars Goetia's painted plates (Claude Design, "Invocation Plates" handoff):
+ * E2E coverage for the Magna Goetia's painted plates (Claude Design, "Invocation Plates" handoff):
  * opening an entry's leaf sets its plate on the right-hand page, the baked 600×800 PNG served from
  * the production build, filling the column's width as a decorative image; each entry shows its own,
  * sealed or not. A seeded save (two relics, invoking power 6, so the whole roster is visible) is
@@ -26,7 +26,7 @@ function seededSave(): string {
     schemaVersion: 5,
     saveVersion: 1,
     lastTickAt: now,
-    deviceId: 'e2e-ars-goetia',
+    deviceId: 'e2e-magna-goetia',
     state: {
       souls: zero,
       devotion,
@@ -50,7 +50,7 @@ function seededSave(): string {
   });
 }
 
-async function openArsGoetia(page: Page): Promise<Locator> {
+async function openMagnaGoetia(page: Page): Promise<Locator> {
   await page.addInitScript((save: string) => {
     localStorage.setItem('panvitium:save', save);
   }, seededSave());
@@ -59,8 +59,8 @@ async function openArsGoetia(page: Page): Promise<Locator> {
   await expect(page.locator('.title-menu')).toHaveCount(0, { timeout: 15_000 });
   await expect(page.locator('.entry-fade')).toHaveCount(0, { timeout: 15_000 });
   await page.getByRole('button', { name: 'To the Invocation Room' }).click();
-  await page.getByRole('button', { name: 'Ars Goetia' }).click();
-  const book = page.getByRole('dialog', { name: 'Ars Goetia' });
+  await page.getByRole('button', { name: 'Magna Goetia' }).click();
+  const book = page.getByRole('dialog', { name: 'Magna Goetia' });
   await expect(book).toBeVisible();
   return book;
 }
@@ -71,7 +71,7 @@ async function loadedWidth(plate: Locator): Promise<number> {
 }
 
 test("sets an entry's painted plate on the right-hand page", async ({ page }) => {
-  const book = await openArsGoetia(page);
+  const book = await openMagnaGoetia(page);
   await expect(book.locator('img')).toHaveCount(0); // none on the index
 
   await book.locator('.gb-entry', { hasText: 'Familiar' }).click();
@@ -80,7 +80,7 @@ test("sets an entry's painted plate on the right-hand page", async ({ page }) =>
   await expect(plate).toBeVisible();
   await expect(plate).toHaveAttribute(
     'src',
-    '/assets/panvitium/invocations-ars-goetia/familiar.png',
+    '/assets/panvitium/invocations-magna-goetia/familiar.png',
   );
   await expect(plate).toHaveAttribute('alt', '');
   await expect.poll(() => loadedWidth(plate)).toBe(600);
@@ -95,7 +95,7 @@ test("sets an entry's painted plate on the right-hand page", async ({ page }) =>
 });
 
 test('shows each entry its own plate, sealed or not', async ({ page }) => {
-  const book = await openArsGoetia(page);
+  const book = await openMagnaGoetia(page);
   const plate = book.locator('.gb-page--right img');
 
   // Aurevora is an apex, sealed on this save (its Sin is at level 0).
@@ -103,7 +103,7 @@ test('shows each entry its own plate, sealed or not', async ({ page }) => {
   await expect(book.getByRole('button', { name: 'Sealed' })).toBeVisible();
   await expect(plate).toHaveAttribute(
     'src',
-    '/assets/panvitium/invocations-ars-goetia/aurevora.png',
+    '/assets/panvitium/invocations-magna-goetia/aurevora.png',
   );
   await expect.poll(() => loadedWidth(plate)).toBe(600);
 
@@ -111,7 +111,7 @@ test('shows each entry its own plate, sealed or not', async ({ page }) => {
   await book.locator('.gb-entry', { hasText: 'Morpheus' }).click();
   await expect(plate).toHaveAttribute(
     'src',
-    '/assets/panvitium/invocations-ars-goetia/morpheus.png',
+    '/assets/panvitium/invocations-magna-goetia/morpheus.png',
   );
   await expect.poll(() => loadedWidth(plate)).toBe(600);
 });

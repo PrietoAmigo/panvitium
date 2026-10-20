@@ -1,4 +1,4 @@
-/* ArsGoetiaBook — the diegetic grimoire of invocations.
+/* MagnaGoetiaBook — the diegetic grimoire of invocations.
 
    Archetype: FULL-SCREEN OVERLAY. Renders its own shell (.goetia-overlay) and
    close affordance; does NOT use PanelShell. Reuses the existing goetia-* / gb-*
@@ -12,15 +12,15 @@
    the right. */
 
 import { useState } from 'react';
-import type { ArsGoetiaBookProps } from './ars-goetia.types.js';
+import type { MagnaGoetiaBookProps } from './magna-goetia.types.js';
 
-export function ArsGoetiaBook({
+export function MagnaGoetiaBook({
   entries,
   invokingPower,
   onSummon,
   onDispel,
   onClose,
-}: ArsGoetiaBookProps): JSX.Element {
+}: MagnaGoetiaBookProps): JSX.Element {
   const [sel, setSel] = useState<string | null>(null);
   const [broken, setBroken] = useState<Record<string, boolean>>({});
   const entry = sel !== null ? entries.find((e) => e.id === sel) : undefined;
@@ -29,7 +29,7 @@ export function ArsGoetiaBook({
     <div
       className="goetia-overlay"
       role="dialog"
-      aria-label="Ars Goetia"
+      aria-label="Magna Goetia"
       aria-modal="true"
       onClick={onClose}
     >
@@ -37,7 +37,7 @@ export function ArsGoetiaBook({
         type="button"
         className="goetia-close"
         onClick={onClose}
-        aria-label="Close the Ars Goetia"
+        aria-label="Close the Magna Goetia"
       >
         ✕
       </button>
@@ -45,8 +45,8 @@ export function ArsGoetiaBook({
         {!entry && (
           <div className="gb-page gb-page--index">
             <div className="gb-index-head">
-              <h2 className="gb-title">Ars Goetia</h2>
-              <p className="gb-subtitle">The Lesser Key</p>
+              <h2 className="gb-title">Magna Goetia</h2>
+              <p className="gb-subtitle">The Greater Key</p>
               <div className="gb-rule" />
               <p className="gb-power">Invoking power · {invokingPower}</p>
             </div>

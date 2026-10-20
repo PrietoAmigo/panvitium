@@ -32,7 +32,7 @@ handoff/
       ├─ MaleficiaCabinet.tsx   wooden display case + close-up
       ├─ SuasioPanel.tsx        temptation scroll + log
       ├─ PcWindow.tsx           Ubuntu-style file manager of ritual programs
-      ├─ ArsGoetiaBook.tsx      full-screen open grimoire (index → detail leaf)
+      ├─ MagnaGoetiaBook.tsx      full-screen open grimoire (index → detail leaf)
       ├─ Katabasis.tsx          full-screen demonic two-page descent
       ├─ useHold.ts             press-and-hold-with-ramp hook
       └─ index.ts               barrel export
@@ -93,7 +93,7 @@ Swap these for your sim/store. The seams (all marked `TODO(wire)` in code):
 |---|---|
 | **HUD** (yours) | Souls / Gold / Influence / Reprobates from store |
 | `RoomView` / `Playspace` | `summoned` list, `signature` (a ritual is running) |
-| `ArsGoetiaBook` | `INVOCATIONS` unlocked/gates + bound count; `onSummon`/`onDispel` → your invocation actions (one bound at a time; cleared on leaving the room) |
+| `MagnaGoetiaBook` | `INVOCATIONS` unlocked/gates + bound count; `onSummon`/`onDispel` → your invocation actions (one bound at a time; cleared on leaving the room) |
 | `AltarPanel` | per-Prince devotion + level; bound sigils list; `onDescend` opens `<Katabasis/>` |
 | `Katabasis` | seed `pool` from banked souls; commit `poured` (Prince levels) + `bound` (sigils) to the sim on **Ascend** |
 | `MaleficiaCabinet` | owned maleficia (your `packages/sim` catalog already has names/rarities/effects) |
@@ -114,13 +114,13 @@ Keep `types.ts` as the adapter shape, or map your entities to it.
 
 ## Notes & gotchas
 
-- **No scrollbars by design.** The Altar, Maleficia, Ars Goetia and Katabasis are
+- **No scrollbars by design.** The Altar, Maleficia, Magna Goetia and Katabasis are
   fixed-layout; Maleficia hides its overflow bar (`scrollbar-width:none`). If you
   add many more items, paginate rather than re-enabling a bar.
 - **Fonts.** The menus use *Cinzel*, *EB Garamond*, *IM Fell English / SC*
   (manuscript) and *Ubuntu / Ubuntu Mono* (the PC). Load these (you're free to
   self-host); the prototype pulled them from Google Fonts.
-- **Full-screen shells.** Ars Goetia, the PC and Katabasis render their own
+- **Full-screen shells.** Magna Goetia, the PC and Katabasis render their own
   `position:fixed` overlay and intentionally do **not** use `PanelShell`.
 - **Hold-to-pour.** `useHold` ramps the repeat rate; it uses pointer events and
   `touch-action:none`, so it works on touch too.
