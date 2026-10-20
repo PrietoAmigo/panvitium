@@ -151,11 +151,11 @@ describe('maleficiumView — one relic by id (the Unveiling)', () => {
     expect(view!.img).toContain('dybbuk_box.png');
   });
 
-  it('splits the sim description for a relic with no art', () => {
+  it('carries the Adder Stone art with the sim description split', () => {
     const view = maleficiumView('adder_stone');
     expect(view).toMatchObject({
       name: 'Adder Stone',
-      img: '',
+      img: `${ASSET_BASE}/maleficia/adder_stone.png`,
       desc: 'A holed stone the serpents bored; look through it and see what breeds.',
       effect: '+0.6 reprobates per second.',
     });
@@ -260,8 +260,8 @@ describe('the design art table', () => {
     }
   });
 
-  it('illustrates every catalog relic but the Adder Stone', () => {
+  it('illustrates every catalog relic', () => {
     const bare = Object.keys(MALEFICIA).filter((id) => maleficiumView(id)!.img === '');
-    expect(bare).toEqual(['adder_stone']);
+    expect(bare).toEqual([]);
   });
 });
