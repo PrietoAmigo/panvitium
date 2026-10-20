@@ -35,7 +35,7 @@ import {
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
 import { AetherSigils, effectDisplay, toRoman } from './AetherSigils.js';
-import { HoldButton, splitBoon } from './katabasisShared.js';
+import { HoldButton, boonLabel } from './katabasisShared.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
 // the two carved-slab layers are placed here on apply (they live at the repo root + the design zip).
@@ -642,8 +642,8 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
 
   // Bound sigils — name + current effect, sorted most-bound first. A seal appears only once it has
   // souls bound and is visible (Semet stays sealed until the gate opens). The effect text comes from
-  // the authoritative `strings.sigils.descriptions` (its trailing ↑/↓ direction arrow stripped, the
-  // live magnitude shown in its place); the souls-bound count is the binding itself.
+  // the authoritative `strings.sigils.descriptions` (its ↑/↓ direction arrows kept, the live
+  // magnitude shown beside them); the souls-bound count is the binding itself.
   const boundSigils = useMemo(() => {
     const rows: Array<{
       id: number;
@@ -657,8 +657,7 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
       if (v === undefined || isZero(v)) continue;
       const def = sigilById(id);
       if (def && !sigilVisible(state, def)) continue;
-      const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
-      const { text } = splitBoon(desc);
+      const text = boonLabel(strings.sigils.descriptions[id] ?? 'A seal of the lesser key.');
       const name = strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
       const effect = effectDisplay(def, v, def ? sigilEffectMulFor(state, def) : 1);
       rows.push({ id, name, effect, text, bound: v });
@@ -677,8 +676,7 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
       if (v !== undefined && !isZero(v)) continue;
       const def = sigilById(id);
       if (def && !sigilVisible(state, def)) continue;
-      const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
-      const { text } = splitBoon(desc);
+      const text = boonLabel(strings.sigils.descriptions[id] ?? 'A seal of the lesser key.');
       const name = strings.sigils.names[id] ?? def?.name ?? `Seal ${id}`;
       rows.push({ id, name, text });
     }

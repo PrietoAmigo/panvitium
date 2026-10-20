@@ -18,7 +18,7 @@ import { KatabasisModal } from '../ui/KatabasisModal.js';
 import { App } from '../App.js';
 import { EMPTY_HANDED_TOTAL_MS } from '../ui/EmptyHandedWarning.js';
 import { TRANSIT_HOLD_MS } from './Katabasis.js';
-import { splitBoon } from './katabasisShared.js';
+import { boonLabel } from './katabasisShared.js';
 import type { DegradedSceneProps } from './types.js';
 
 // The room's canvas pass needs a real 2D context (none under jsdom): stub it, keeping the props the
@@ -253,6 +253,10 @@ describe('Katabasis flow — orchestrator', () => {
     expect(unbound[0]!.querySelector('.ls-bound')).toBeNull();
     expect(unbound[0]!.querySelector('.ls-seal-img')).not.toBeNull();
     expect(unbound[0]!.querySelector('.ls-roman')?.textContent).toBe('I');
+    // The effect keeps its direction arrow (Bael #1, "Opera negative outcomes \u2193").
+    expect(unbound[0]!.querySelector('.ls-effect')?.textContent).toBe(
+      'Opera negative outcomes \u2193',
+    );
   });
 
   it('shows each Sin’s Level and the souls owed to the next level (rank renamed to level)', () => {
@@ -298,11 +302,10 @@ describe('Katabasis flow — orchestrator', () => {
     // The seal carries its art + Goetic number to the left of the name (Marbas #5 → "V").
     expect(sig!.querySelector('.ls-seal-img')).not.toBeNull();
     expect(sig!.querySelector('.ls-roman')?.textContent).toBe('V');
-    // The effect text now carries the live magnitude in place of the direction arrow\u2026
+    // The effect text keeps its direction arrow, with the live magnitude beside it\u2026
     const effect = sig!.querySelector('.ls-effect')?.textContent ?? '';
-    expect(effect).toContain('Indagatio positive outcomes');
+    expect(effect).toContain('Indagatio positive outcomes \u2191 +');
     expect(effect).toContain('%'); // current effect magnitude
-    expect(effect).not.toContain('\u2191'); // the arrow is gone
     // \u2026and the trailing field reads the souls bound, not the effect.
     expect(sig!.querySelector('.ls-bound')?.textContent).toContain('souls bound');
     expect(sig!.querySelector('.ls-bound')?.textContent).toContain('100');
@@ -543,26 +546,28 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
   });
 });
 
-describe('splitBoon (ledger label)', () => {
+describe('boonLabel (ledger label)', () => {
   const UP = '\u2191';
   const DOWN = '\u2193';
 
-  it('strips a single trailing arrow and returns it as dir', () => {
-    expect(splitBoon(`Gold gain ${UP}`)).toEqual({ text: 'Gold gain', dir: UP });
-    expect(splitBoon(`Opera negative outcomes ${DOWN}`)).toEqual({
-      text: 'Opera negative outcomes',
-      dir: DOWN,
-    });
+  it('keeps a single-effect seal\u2019s direction arrow', () => {
+    expect(boonLabel(`Gold gain ${UP}`)).toBe(`Gold gain ${UP}`);
+    expect(boonLabel(`Opera negative outcomes ${DOWN}`)).toBe(`Opera negative outcomes ${DOWN}`);
   });
 
-  it('drops a trailing (flat) qualifier before the arrow', () => {
-    expect(splitBoon(`Murder rate ${UP} (flat)`).text).toBe('Murder rate');
+  it('drops only a trailing (flat) qualifier, keeping the arrow', () => {
+    expect(boonLabel(`Murder rate ${UP} (flat)`)).toBe(`Murder rate ${UP}`);
   });
 
-  it('strips EVERY arrow of a composite label, leaving no dangling mid-string arrow', () => {
-    // Andrealphus #65: two legs, one arrow each; the magnitude column carries the signs.
-    expect(splitBoon(`Invocation costs ${DOWN}, Desidia speed ${UP}`).text).toBe(
-      'Invocation costs, Desidia speed',
+  it('keeps EVERY arrow of a composite label', () => {
+    // Andrealphus #65: two legs, one arrow each.
+    expect(boonLabel(`Invocation costs ${DOWN}, Desidia speed ${UP}`)).toBe(
+      `Invocation costs ${DOWN}, Desidia speed ${UP}`,
     );
+  });
+
+  it('leaves a dormant seal\u2019s line as written', () => {
+    const dormant = 'Dormant: this seal grants no effect while bound.';
+    expect(boonLabel(dormant)).toBe(dormant);
   });
 });

@@ -12,8 +12,8 @@
  *    baked into the string itself ("+33%", "×2", "0.01% chance", "+12.5% per level"), taken
  *    from the sim's data/constants (the economy spreadsheet is the source of truth). Magnitudes
  *    that scale live (sigil boons scale with souls bound; Sin skills with Devotion) keep the
- *    quantity channel the UI composes: sigil descriptions end in their ↑/↓ terminal that
- *    `splitBoon` replaces with the live number, and Sin skill lines state the exact coupling
+ *    quantity channel the UI composes: sigil descriptions end in their ↑/↓ terminal, beside
+ *    which the ledger shows the live number, and Sin skill lines state the exact coupling
  *    ("by 1 + intensity") next to the intensity the UI displays. Never ship a bare qualitative
  *    effect line ("raises gold gain") with no number in the string and no live value beside it.
  *
@@ -1046,10 +1046,9 @@ export const strings = {
     // column (Sigils sheet). '\u2191' = raise, '\u2193' = soften. The sim (sigils.ts) implements
     // these exact effects; this is the single source for the Katabasis ledger display.
     // Hard copy rule 1 note: a sigil's magnitude scales with the souls bound to it, so no static
-    // number can live in these strings. The number channel is the UI: `splitBoon` strips the
-    // trailing \u2191/\u2193 terminal and the ledger renders the LIVE computed magnitude in its
-    // place. Keep every entry ending in its \u2191/\u2193 terminal so that
-    // splice keeps working; never replace the terminal with prose. The one exception is a DORMANT
+    // number can live in these strings. The number channel is the UI: the ledger renders the LIVE
+    // computed magnitude beside the \u2191/\u2193 terminal, which stays to give the direction.
+    // Keep every entry ending in its \u2191/\u2193 terminal; never replace the terminal with prose. The one exception is a DORMANT
     // seal (effect kind `inert`, ADR-038): it has no effect and so no magnitude, and its line says so
     // plainly with no terminal.
     descriptions: {

@@ -15,7 +15,7 @@ import { strings } from '@panvitium/shared';
 import { bn, sigilById, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { AetherSigils, toRoman, effectDisplay, browseEffectText } from './AetherSigils.js';
-import { splitBoon } from './katabasisShared.js';
+import { boonLabel } from './katabasisShared.js';
 
 describe('toRoman', () => {
   it('renders seal numbers 1..72 as roman numerals', () => {
@@ -29,17 +29,19 @@ describe('toRoman', () => {
 });
 
 describe('browseEffectText (the browse bar\u2019s effect line)', () => {
-  it('reads the Status Quo label: the boon text, no arrow, no magnitude', () => {
+  it('reads the Status Quo label: the boon text with its arrows, no magnitude', () => {
     // idx is zero-based: seal #33 (Gaap) is idx 32.
-    expect(browseEffectText(32, true)).toBe('Maleficia effects');
-    expect(browseEffectText(24, true)).toBe('Murder rate'); // Glasya-Labolas #25, "(flat)" dropped
-    expect(browseEffectText(64, true)).toBe('Invocation costs, Desidia speed'); // Andrealphus #65
+    expect(browseEffectText(32, true)).toBe('Maleficia effects \u2191');
+    expect(browseEffectText(10, true)).toBe('Influence gain \u2193'); // Gusion #11, a reduction
+    expect(browseEffectText(24, true)).toBe('Murder rate \u2191'); // Glasya-Labolas #25, "(flat)" dropped
+    // Andrealphus #65: both legs keep their arrows.
+    expect(browseEffectText(64, true)).toBe('Invocation costs \u2193, Desidia speed \u2191');
   });
 
   it('matches the ledger\u2019s label for every seal', () => {
     for (let id = 1; id <= 72; id++) {
       const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
-      expect(browseEffectText(id - 1, true)).toBe(splitBoon(desc).text);
+      expect(browseEffectText(id - 1, true)).toBe(boonLabel(desc));
     }
   });
 
@@ -49,7 +51,7 @@ describe('browseEffectText (the browse bar\u2019s effect line)', () => {
 
   it('names the gate, not the boon, while Semet is sealed', () => {
     expect(browseEffectText(31, false)).toBe('Sealed until every Cardinal Sin reaches Rank II');
-    expect(browseEffectText(31, true)).toBe('Sigil effects');
+    expect(browseEffectText(31, true)).toBe('Sigil effects \u2191');
   });
 });
 
