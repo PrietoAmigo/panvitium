@@ -4,7 +4,8 @@
  * the room with STATUS QUO beneath it; the sigil arms on the first press and commits on the second
  * (the two-press safeguard, preserved), falling into the Abyss descent; STATUS QUO opens the
  * read-only Ledger (Cardinal-Sin standing + bound-sigil effects), whose way back returns to the
- * room; left alone, the sigil fades away. The recap reads "You Rise" off the committed state, and
+ * room; left alone, the sigil fades away. The first commit of a playthrough made with no souls in
+ * hand plays the empty-handed warning instead of descending. The recap reads "You Rise" off the committed state, and
  * the Eternal-Sin reveal overlays the still-mounted flow. The store actions and sim math themselves
  * are covered by their own suites.
  */
@@ -15,6 +16,7 @@ import { bn, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { KatabasisModal } from '../ui/KatabasisModal.js';
 import { App } from '../App.js';
+import { EMPTY_HANDED_TOTAL_MS } from '../ui/EmptyHandedWarning.js';
 import { splitBoon, TRANSIT_HOLD_MS } from './Katabasis.js';
 import type { DegradedSceneProps } from './types.js';
 
@@ -64,6 +66,7 @@ beforeEach(() => {
     eternalReveal: false,
     log: [],
     notice: null,
+    emptyHandedWarning: false,
     titleOpen: false,
   });
   store().init();
@@ -370,6 +373,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
   });
 
   it('arms on the first press, hiding STATUS QUO, and commits the descent on the second', () => {
+    patch({ souls: bn(1) }); // souls in hand: no empty-handed warning
     render(App);
     click('The Altar');
     click('Press the sigil');
@@ -389,6 +393,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
   it('lands among the Princes once the descent transition has played', () => {
     vi.useFakeTimers();
     try {
+      patch({ souls: bn(1) });
       render(App);
       click('The Altar');
       click('Press the sigil');
@@ -401,6 +406,59 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('stops the first soulless descent with the empty-handed warning, unskippable, then the room', () => {
+    vi.useFakeTimers();
+    try {
+      patch({ souls: bn(0) });
+      render(App);
+      click('The Altar');
+      click('Press the sigil');
+      click(/there is no return/);
+      // No descent: nothing torn down, no flow; the sigil is down and the warning has the screen.
+      const warning = (): HTMLElement | null => container!.querySelector('.empty-handed');
+      expect((store().state as GameState).inKatabasis).not.toBe(true);
+      expect(store().katabasisPhase).toBeNull();
+      expect(container!.querySelector('.katabasis-flow')).toBeNull();
+      expect(sigilLayer()).toBeNull();
+      expect(warning()?.textContent).toBe('I should not descend empty-handed.');
+      expect((store().state as GameState).emptyHandedWarned).toBe(true);
+      // Clicks do not skip it.
+      act(() => warning()!.click());
+      act(() => {
+        vi.advanceTimersByTime(EMPTY_HANDED_TOTAL_MS - 1);
+      });
+      expect(warning()).not.toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      // Back in the Altar Room, the sigil down; the altar raises it again, disarmed.
+      expect(warning()).toBeNull();
+      expect(room()).not.toBeNull();
+      expect(sigilLayer()).toBeNull();
+      click('The Altar');
+      expect(seal()?.classList.contains('is-armed')).toBe(false);
+      // The second soulless commit descends.
+      click('Press the sigil');
+      click(/there is no return/);
+      expect(warning()).toBeNull();
+      expect((store().state as GameState).inKatabasis).toBe(true);
+      expect(store().katabasisPhase).toBe('menu');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('descends at once with souls in hand, leaving the warning unplayed', () => {
+    patch({ souls: bn(5) });
+    render(App);
+    click('The Altar');
+    click('Press the sigil');
+    click(/there is no return/);
+    expect(container!.querySelector('.empty-handed')).toBeNull();
+    expect((store().state as GameState).inKatabasis).toBe(true);
+    expect((store().state as GameState).emptyHandedWarned).toBeUndefined();
   });
 
   it('opens the Ledger from STATUS QUO, whose way back returns to the room', () => {

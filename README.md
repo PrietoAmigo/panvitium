@@ -103,9 +103,22 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1319** (sim 619 · shared 88 · api 20 · web 592).
+**Current test count: 1336** (sim 625 · shared 89 · api 20 · web 602).
 
-> **Latest change — Rename: Suasio is now Logos.** The Opera category of temptation rites is
+> **Latest change — The empty-handed warning.** The first time in a playthrough the altar sigil is
+> committed with no souls in hand, the descent is stopped before any teardown: the sigil goes down,
+> the screen goes black and one line surfaces in yellow italic, "I should not descend
+> empty-handed.", then sinks and the black lifts back onto the Altar Room (7.3 s, unskippable, no
+> blur under reduced motion; `ui/EmptyHandedWarning`, z 9000 under the jumpscare and subliminals,
+> which, with the Unveiling and incoming calls, wait while it plays). The next commit descends as
+> usual, souls or not; with souls in hand it never plays. The once-per-playthrough record is a new
+> top-level `emptyHandedWarned` flag (additive-optional, ADR-023: no schema bump), carried through
+> every Katabasis, set by the sim's `markEmptyHandedWarned` and persisted at once by the store's
+> `warnEmptyHanded`, so a reload mid-warning cannot replay it. No economy or RNG change. Net
+> **+13 tests** (sim 622 → 625, shared 88 → 89, web 593 → 602; the prior count line had drifted),
+> and the altar e2e now plays the warning before its descent.
+>
+> **Earlier change — Rename: Suasio is now Logos.** The Opera category of temptation rites is
 > renamed everywhere: player-facing copy, the sim's category id (`'logos'`) and its modifier
 > channel (`logosEfficiencyMul`), constants, the panel id, `LogosPanel` and the `.logos-*`
 > classes, the docs and design handoffs, and the economy spreadsheet (its `Logos` sheet). The

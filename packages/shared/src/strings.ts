@@ -1007,6 +1007,8 @@ export const strings = {
     maleficiaKept: 'Maleficia retained',
     maleficiaLost: 'Maleficia lost',
     rise: 'Rise',
+    // The once-per-playthrough warning when the altar sigil is committed with no souls in hand.
+    emptyHanded: 'I should not descend empty-handed.',
   },
   sigils: {
     heading: 'The Goetia',

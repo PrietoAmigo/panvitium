@@ -176,6 +176,9 @@ export const serializedGameStateSchema = z.object({
   // Answered incoming-call ids (presentation bookkeeping): an answered once-only call never rings
   // again. Permanent; carried across lifetimes. Additive-optional (ADR-023): absent ≡ empty.
   callsAnswered: z.array(z.string()).optional(),
+  // The once-per-playthrough empty-handed warning has played (presentation bookkeeping). Permanent;
+  // carried across lifetimes. Additive-optional (ADR-023): absent ≡ false.
+  emptyHandedWarned: z.boolean().optional(),
   // Permanent ×2-per-stack player-efficiency multiplier from past Erinyes commits (03 §2.4).
   // Additive-optional (ADR-023); old saves default to 0.
   erinyesEfficiencyStacks: z.number().int().nonnegative().optional(),
@@ -328,6 +331,7 @@ export function serializeGameState(state: GameState): SerializedGameState {
     ...(state.flagFatherMad === true ? { flagFatherMad: true } : {}),
     ...(state.flagReubenDead === true ? { flagReubenDead: true } : {}),
     ...(state.flagDoppelgaengerSeen === true ? { flagDoppelgaengerSeen: true } : {}),
+    ...(state.emptyHandedWarned === true ? { emptyHandedWarned: true } : {}),
     // Answered calls: omit when empty so fresh and pre-feature saves keep the prior wire form.
     ...(state.callsAnswered && state.callsAnswered.length > 0
       ? { callsAnswered: [...state.callsAnswered] }
@@ -457,6 +461,7 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     ...(s.flagFatherMad === true ? { flagFatherMad: true } : {}),
     ...(s.flagReubenDead === true ? { flagReubenDead: true } : {}),
     ...(s.flagDoppelgaengerSeen === true ? { flagDoppelgaengerSeen: true } : {}),
+    ...(s.emptyHandedWarned === true ? { emptyHandedWarned: true } : {}),
     // Answered calls: absent ≡ empty (conditional spread keeps the field optional under EOPT).
     ...(s.callsAnswered && s.callsAnswered.length > 0
       ? { callsAnswered: [...s.callsAnswered] }

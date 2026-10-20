@@ -5,7 +5,8 @@ import { test, expect, type Page } from '@playwright/test';
  * sigil over the Altar Room, with STATUS QUO beneath it; the room stays. The seal is a crisp DOM
  * image over the room's canvas, outside the degradation pass, so no pixelation reaches it; the red
  * light it casts is painted into the canvas, through the pass. Its first press arms it, the second
- * falls into the descent; STATUS QUO opens the Ledger, whose way back returns to the room; left
+ * falls into the descent (the first time with no souls in hand, the empty-handed warning plays
+ * instead); STATUS QUO opens the Ledger, whose way back returns to the room; left
  * alone for 4 s, the sigil fades away.
  */
 
@@ -67,11 +68,26 @@ test('the altar raises its sigil over the room, crisp, its glow inside the degra
   await expect.poll(async () => (await atCentre(page)).red).toBeGreaterThan(before.red + 20_000);
 });
 
-test('arms on the first press, then falls into the descent among the Princes', async ({ page }) => {
+test('arms on the first press; empty-handed, the first commit is stopped, the next descends', async ({
+  page,
+}) => {
   await enterLair(page);
   await clickAltar(page);
   await page.getByRole('button', { name: 'Press the sigil' }).click();
   await expect(page.getByRole('button', { name: 'Status Quo' })).toHaveCount(0);
+  // A fresh game holds no souls: the first commit plays the empty-handed warning instead (once per
+  // playthrough). It runs 7.3 s and cannot be skipped, then hands back the Altar Room.
+  await page.getByRole('button', { name: /Confirm the descent/ }).click();
+  const warning = page.locator('.empty-handed');
+  await expect(warning).toHaveText('I should not descend empty-handed.');
+  await expect(page.locator('.altar-sigil')).toHaveCount(0);
+  await warning.click();
+  await expect(warning).toBeVisible();
+  await expect(warning).toHaveCount(0, { timeout: 12_000 });
+  await expect(page.locator('.katabasis-flow')).toHaveCount(0);
+  // The second commit descends, souls or not.
+  await clickAltar(page);
+  await page.getByRole('button', { name: 'Press the sigil' }).click();
   await page.getByRole('button', { name: /Confirm the descent/ }).click();
   await expect(page.locator('.transit-word')).toHaveText('Katabasis');
   await expect(page.locator('.transit-sub')).toHaveText('exspes in ima');

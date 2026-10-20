@@ -24,6 +24,7 @@ import { ConflictModal } from './ui/ConflictModal.js';
 import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
 import { Jumpscare, JUMPSCARE_IMG } from './ui/Jumpscare.js';
+import { EmptyHandedWarning } from './ui/EmptyHandedWarning.js';
 import { Subliminal } from './ui/Subliminal.js';
 import { useRandomSubliminals } from './game/useRandomSubliminals.js';
 import { preloadImage } from './menus/DegradedScene.js';
@@ -68,6 +69,9 @@ export function App(): ReactElement {
   const katabasisPhase = useGameStore((s) => s.katabasisPhase);
   const openKatabasis = useGameStore((s) => s.openKatabasis);
   const beginKatabasis = useGameStore((s) => s.beginKatabasis);
+  const warnEmptyHanded = useGameStore((s) => s.warnEmptyHanded);
+  const emptyHandedWarning = useGameStore((s) => s.emptyHandedWarning);
+  const endEmptyHandedWarning = useGameStore((s) => s.endEmptyHandedWarning);
   const titleOpen = useGameStore((s) => s.titleOpen);
   const ready = useGameStore((s) => s.ready);
 
@@ -144,9 +148,12 @@ export function App(): ReactElement {
   // The altar sigil (Claude Design "Altar sigil" handoff): clicking the altar raises the Katabasis
   // sigil over the room with STATUS QUO beneath it. The second press on the sigil commits the
   // descent (the teardown + freeze, then the Abyss transition into the flow); STATUS QUO opens the
-  // read-only Ledger. Untouched for 4 s, it fades away.
+  // read-only Ledger. Untouched for 4 s, it fades away. The first commit of a playthrough made with
+  // no souls in hand does not descend: the sigil goes down and the empty-handed warning plays
+  // instead (checked before any teardown); the next commit descends as usual.
   const altarSigil = useAltarSigil({
     onDescend: () => {
+      if (warnEmptyHanded()) return;
       beginKatabasis();
       audio.play('katabasis');
     },
@@ -174,7 +181,8 @@ export function App(): ReactElement {
     !titleOpen &&
     room === 'studio' &&
     answeredCall === null &&
-    !jumpscare;
+    !jumpscare &&
+    !emptyHandedWarning;
   // Only calls whose requirements are met may be drawn (e.g. the mutually-exclusive Succubus/Astiwihad
   // lines, gated on the Fausto branch). Memoised off the primitive inputs so it changes only when the
   // gated state does, not every tick.
@@ -196,12 +204,18 @@ export function App(): ReactElement {
   // Subliminal plates (game/subliminals.ts): the head of the store's queue flashes over everything.
   // Fausto's are queued by the tick the moment one of his letters is earned, wherever the player is;
   // the random ones surface about once every six minutes of live play, anywhere but the title, a
-  // descent, an answered call or the jumpscare.
+  // descent, an answered call, the jumpscare or the empty-handed warning. Fausto's wait in the queue
+  // while the warning plays.
   const subliminal = useGameStore((s) => s.subliminalQueue[0] ?? null);
   const flashSubliminal = useGameStore((s) => s.flashSubliminal);
   const dismissSubliminal = useGameStore((s) => s.dismissSubliminal);
   useRandomSubliminals(
-    ready && !titleOpen && katabasisPhase === null && answeredCall === null && !jumpscare,
+    ready &&
+      !titleOpen &&
+      katabasisPhase === null &&
+      answeredCall === null &&
+      !jumpscare &&
+      !emptyHandedWarning,
     flashSubliminal,
   );
   const callInView = answeredCall ? buildCallInView(answeredCall) : null;
@@ -268,7 +282,11 @@ export function App(): ReactElement {
     answeredCall === null &&
     !titleOpen;
   const unveilingVisible =
-    katabasisPhase === null && answeredCall === null && !jumpscare && !titleOpen;
+    katabasisPhase === null &&
+    answeredCall === null &&
+    !jumpscare &&
+    !emptyHandedWarning &&
+    !titleOpen;
 
   return (
     <div className="app">
@@ -335,14 +353,19 @@ export function App(): ReactElement {
       {hudVisible && panel !== 'maleficia' && <BuffsHud />}
       {/* The Unveiling (z 88): a maleficium Emptio just brought home, over the room and every menu
           overlay and HUD, under the system modals. It waits (the queue holds in the store) while a
-          descent, an answered call or the jumpscare has the screen. */}
+          descent, an answered call, the jumpscare or the empty-handed warning has the screen. */}
       {unveilingVisible && <Unveiling />}
+      {/* The empty-handed warning (z 9000): the black, the one line, the black lifting. Over the
+          room, every menu and the system modals, under the jumpscare and subliminals; it blocks all
+          input and clears itself when its timeline ends. See EmptyHandedWarning. */}
+      {emptyHandedWarning && <EmptyHandedWarning onDone={endEmptyHandedWarning} />}
       {/* The one-time Doppelgänger scare covers EVERYTHING (highest layer), blocks all input, and
           clears itself after 2s — see Jumpscare. */}
       {jumpscare && <Jumpscare onDone={() => setJumpscare(false)} />}
       {/* A subliminal plate flashes over even the jumpscare, for a fraction of a second, and takes
-          no input. Keyed by its seq so each flash mounts fresh. */}
-      {subliminal && (
+          no input; it holds in the queue while the empty-handed warning plays. Keyed by its seq so
+          each flash mounts fresh. */}
+      {subliminal && !emptyHandedWarning && (
         <Subliminal
           key={subliminal.seq}
           src={subliminal.src}

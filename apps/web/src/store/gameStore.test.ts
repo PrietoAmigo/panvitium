@@ -49,6 +49,7 @@ beforeEach(() => {
     lastObtained: null,
     subliminalQueue: [],
     notice: null,
+    emptyHandedWarning: false,
     katabasisPhase: null,
     recap: null,
     titleOpen: false,
@@ -742,6 +743,50 @@ describe('gameStore — answered incoming calls', () => {
     useGameStore.setState({ ready: false });
     store().init();
     expect(store().state?.callsAnswered).toEqual(['succubus']);
+  });
+});
+
+describe('gameStore — the empty-handed warning', () => {
+  it('stops the first soulless commit: the flag is set and persisted, nothing descends', () => {
+    patchSouls(0);
+    expect(store().warnEmptyHanded()).toBe(true);
+    expect(store().emptyHandedWarning).toBe(true);
+    expect(store().state?.emptyHandedWarned).toBe(true);
+    // No teardown, no freeze: the lifetime is untouched and no descent screen opens.
+    expect(store().katabasisPhase).toBeNull();
+    expect(store().state?.inKatabasis).not.toBe(true);
+    store().endEmptyHandedWarning();
+    expect(store().emptyHandedWarning).toBe(false);
+    // Persisted at once: a reload mid-warning cannot replay it.
+    useGameStore.setState({ ready: false });
+    store().init();
+    expect(store().state?.emptyHandedWarned).toBe(true);
+    expect(store().warnEmptyHanded()).toBe(false);
+  });
+
+  it('lets the second soulless commit descend', () => {
+    patchSouls(0);
+    expect(store().warnEmptyHanded()).toBe(true);
+    store().endEmptyHandedWarning();
+    expect(store().warnEmptyHanded()).toBe(false);
+    expect(store().emptyHandedWarning).toBe(false);
+  });
+
+  it('never warns with souls in hand, and leaves the flag unset', () => {
+    patchSouls(3);
+    expect(store().warnEmptyHanded()).toBe(false);
+    expect(store().emptyHandedWarning).toBe(false);
+    expect(store().state?.emptyHandedWarned).toBeUndefined();
+  });
+
+  it('carries the flag through a Katabasis', () => {
+    patchSouls(0);
+    store().warnEmptyHanded();
+    store().endEmptyHandedWarning();
+    store().beginKatabasis();
+    store().confirmKatabasis();
+    expect(store().state?.emptyHandedWarned).toBe(true);
+    expect(store().warnEmptyHanded()).toBe(false);
   });
 });
 

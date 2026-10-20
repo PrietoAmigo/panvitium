@@ -251,6 +251,19 @@ describe('inbox reply / delete — ADR-023 additive-optional round-trip', () => 
   });
 });
 
+describe('emptyHandedWarned — ADR-023 additive-optional round-trip', () => {
+  it('round-trips when set; omitted from the wire (and absent ≡ false) otherwise', () => {
+    const fresh = createInitialState('seed', 0);
+    expect('emptyHandedWarned' in serializeGameState(fresh)).toBe(false);
+    expect(deserializeGameState(serializeGameState(fresh)).emptyHandedWarned).toBeUndefined();
+
+    const warned: GameState = { ...fresh, emptyHandedWarned: true };
+    const wire = serializeGameState(warned);
+    expect(wire.emptyHandedWarned).toBe(true);
+    expect(deserializeGameState(wire).emptyHandedWarned).toBe(true);
+  });
+});
+
 describe('flagDoppelgaengerSeen — ADR-023 additive-optional round-trip', () => {
   it('round-trips when set; omitted from the wire (and absent ≡ false) otherwise', () => {
     const fresh = createInitialState('seed', 0);

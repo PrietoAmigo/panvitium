@@ -367,6 +367,15 @@ export interface GameState {
    */
   callsAnswered?: string[];
   /**
+   * Set true once the empty-handed warning has played: the first time in a playthrough the player
+   * commits a Katabasis holding no souls, the descent is stopped and "I should not descend
+   * empty-handed." shows instead (Claude Design "Empty-Handed Warning" handoff). Once set, the next
+   * commit descends as usual, souls or not. Presentation bookkeeping owned by the web app, recorded
+   * through `markEmptyHandedWarned`. Permanent (carried across Katabasis: once per playthrough, not
+   * per lifetime), additive-optional on the wire (ADR-023); absent ≡ false.
+   */
+  emptyHandedWarned?: boolean;
+  /**
    * True while the player is mid-descent — the Katabasis menu is open and allocation is underway
    * (02 §6). The lifetime is frozen: `tick` runs no simulation when this is set, so nothing accrues
    * (a reload mid-descent resumes the menu rather than fast-forwarding a torn-down lifetime). Set by
