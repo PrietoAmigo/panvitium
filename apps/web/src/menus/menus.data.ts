@@ -212,7 +212,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Thirty Pieces of Silver',
     rarity: 'anathema',
     img: `${ASSET_BASE}/maleficia/30_pieces.png`,
-    desc: 'Counted out, refused, returned, refused again \u2014 coinage that always finds its way back into a hand.',
+    desc: 'Sent in greed, returned in despair.',
     effect: '+200% suicide rate.',
   },
   {
