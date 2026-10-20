@@ -66,7 +66,7 @@ export type ScalarModifierField =
   | 'influenceRateMul'
   | 'maxInfluenceMul'
   | 'playerEfficiencyMul'
-  | 'suasioEfficiencyMul'
+  | 'logosEfficiencyMul'
   | 'indagatioEfficiencyMul'
   | 'emptioEfficiencyMul'
   | 'reprobateGenerationRateMul'
@@ -139,7 +139,7 @@ export type SigilEffect =
   | { readonly kind: 'indagatioDoubleFind' }
   | { readonly kind: 'invocationEffect'; readonly invocation: string }
   | { readonly kind: 'shutdownRefund' }
-  | { readonly kind: 'duplicateOutput'; readonly category: 'suasio' | 'indagatio' }
+  | { readonly kind: 'duplicateOutput'; readonly category: 'logos' | 'indagatio' }
   | { readonly kind: 'murderTriggersSuicide' }
   | { readonly kind: 'maleficiaEffect' }
   | { readonly kind: 'sigilEffect' }
@@ -151,7 +151,7 @@ export type SigilEffect =
   | { readonly kind: 'inert' };
 
 /** The three Opera action categories a per-category tier sigil can target. */
-export type SigilCategory = 'suasio' | 'indagatio' | 'emptio';
+export type SigilCategory = 'logos' | 'indagatio' | 'emptio';
 
 /**
  * A cost a sigil can soften (Paimon/Orobas/Zepar/Andrealphus/Eligos). `influence` = action influence
@@ -466,12 +466,12 @@ function sumKind(
 
 /**
  * Chance to duplicate an Opera category's POSITIVE output (Agares #2 Indagatio, Malphas #39
- * Suasio). Rolled once per resolution in `resolveAction`; only Stellar/Excellent/Good outcomes
+ * Logos). Rolled once per resolution in `resolveAction`; only Stellar/Excellent/Good outcomes
  * duplicate — the curse never doubles a catastrophe.
  */
 export function sigilDuplicateOutputChance(
   state: GameState,
-  category: 'suasio' | 'indagatio',
+  category: 'logos' | 'indagatio',
   effectMul = 1,
 ): number {
   let total = 0;

@@ -8,7 +8,7 @@ import {
   devotionForLevel,
   MAX_SIN_LEVEL,
   GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL,
-  LUXURIA_SUASIO_EFF_PER_LEVEL,
+  LUXURIA_LOGOS_EFF_PER_LEVEL,
   REMAINING_GOLD_PER_AVARITIA_LEVEL,
   REMAINING_REPROBATE_PER_TRISTITIA_LEVEL,
   REMAINING_MALEFICIA_PER_SUPERBIA_LEVEL,
@@ -554,7 +554,7 @@ function sinLevelEffectValue(sin: Sin, level: number): string {
     case 'gula':
       return `−${Math.round(Math.min(1, GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL * level) * 100)}%`;
     case 'luxuria':
-      return `×${LUXURIA_SUASIO_EFF_PER_LEVEL ** level}`;
+      return `×${LUXURIA_LOGOS_EFF_PER_LEVEL ** level}`;
     case 'ira':
       return '';
     case 'vanagloria':

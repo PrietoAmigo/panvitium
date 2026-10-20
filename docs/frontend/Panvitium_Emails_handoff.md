@@ -1,7 +1,7 @@
 # Emails — two-pane mail client (Claude Design integration handoff)
 
 Source design: `Panvitium_Emails.dc.html` (decoded from the Claude Design bundle `Panvitium_Emails.html`,
-same gzip+base64 `__bundler/*` format as the Suasio/Maleficia/Aether bundles — manifest = dc-runtime +
+same gzip+base64 `__bundler/*` format as the Logos/Maleficia/Aether bundles — manifest = dc-runtime +
 woff2 fonts; the design lives in the `__bundler/template` script). Styling is **inline** (the bundle's
 `design.css` is empty), as with the Maleficia rework.
 

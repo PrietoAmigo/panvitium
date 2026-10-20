@@ -12,7 +12,7 @@ mechanic are removed), the **Vitium Mercatura / Vitium Compositum redesign** (th
 and build queue retired), the **Depraedatio gold rework** (the Mercatus system retired in favour
 of the Faeneratio loop — Mutuum, Thesaurus, Syngraphae — with the Foedus re-anchored to the
 hoard), and the **Vitium Compositum retirement** (ADR-031: the eight lesser ceremonies removed;
-Panvitium alone survives and lives on the Chthonic Logos, the Suasio scroll).
+Panvitium alone survives and lives on the Chthonic Logos, the Logos scroll).
 
 ---
 
@@ -68,7 +68,7 @@ would lose meaningful progress.
 
 - **Source:** generated passively as a *proportion of maximum influence*, capped at maximum
   influence. Base rate and base maximum are in the spreadsheet (`Globals`).
-- **Role:** the social budget. Drives maximum acolyte count (§10) and is consumed by *Suasio*,
+- **Role:** the social budget. Drives maximum acolyte count (§10) and is consumed by *Logos*,
   the *Panvitium* toggle, and several invocations.
 - **Maximum influence** is itself a modifiable value (Vanagloria's Acclaim skill, Spear of
   Longinus, Marchosias #35).
@@ -110,7 +110,7 @@ Two kinds of deviation from plain multiplication are allowed, and both are expli
   per level (additive; at the level cap the negative-outcome chance reaches 0% — see `03 §1` and
   the `Sins & Devotion` sheet).
 
-Per-category tier shifts (e.g. a sigil raising only Suasio's Stellar chance) attach at
+Per-category tier shifts (e.g. a sigil raising only Logos's Stellar chance) attach at
 action-resolution time rather than as global tier multipliers, since they target a specific
 category's distribution.
 
@@ -174,7 +174,7 @@ Every action declares an **efficiency mode** describing how its effective effici
 resolution. The spreadsheet states each category's mode at the top of its sheet; the sheet wins
 over any older prose.
 
-- **`cost-outcome`** (*Suasio*): efficiency scales both the *cost paid* and the
+- **`cost-outcome`** (*Logos*): efficiency scales both the *cost paid* and the
   *positive outcome units delivered* by the same percentage. Duration is not affected.
 - **`time`** (*Indagatio*, *Emptio*): efficiency divides the *action's duration*. Costs and the
   tier distribution are not affected. (*Emptio* additionally pays the targeted maleficium's gold
@@ -187,7 +187,7 @@ existing modes are stable.
 
 The total efficiency for a specific action is the **product** of the player's global efficiency
 (Gula's Insatiability), the action's category
-efficiency (Luxuria levels for *Suasio*, per-category sigils), and
+efficiency (Luxuria levels for *Logos*, per-category sigils), and
 the **sum** of all runner contributions on that action: the player's own contribution plus each
 assigned acolyte's plus any invocation contribution.
 
@@ -232,7 +232,7 @@ cost outruns the treasury, *Panvitium* ends.
 
 | Category | Latin meaning | Role |
 |---|---|---|
-| **Suasio** | "Persuasion / temptation" | Corrupt ordinary humans into reprobates. |
+| **Logos** | "Persuasion / temptation" | Corrupt ordinary humans into reprobates. |
 | **Decimatio** *(retired, ADR-038)* | "Culling" | Removed. Its rites (*Caedes*, *Pogrom*, *Purgatio*) killed reprobates to harvest souls; souls now come only from deaths by suicide and murder (and the apex effects that cause them). |
 | **Depraedatio** | "Plundering / despoliation" | The vice economy: the Faeneratio loop — the *Mutuum* loan book, the *Thesaurus* hoard, and the *Syngraphae* contract tree. |
 | **Indagatio** | "Searching out" | Hunt for maleficia. |
@@ -374,7 +374,7 @@ spreadsheet.
 
 Per **ADR-024**, reprobates are a **single undifferentiated pool** — one integer population.
 There are no subtypes and no conversion mechanic. The population is the centre of the economy:
-*Suasio* and the generation-raising ceremonies and sigils grow it, the *Mutuum* loan book earns
+*Logos* and the generation-raising ceremonies and sigils grow it, the *Mutuum* loan book earns
 per living head, and the ambient death rates (suicide and murder, raised by invocations, maleficia,
 sigils and *Panvitium*) spend it for souls; the *Decimatio* culls are retired (ADR-038). Every
 death — suicide or murder — mints exactly one soul (and pays its Escheat death duty when that
@@ -386,7 +386,7 @@ The mechanics that change the population each tick produce *fractional* contribu
 become integer events deterministically. The lifetime state carries three fractional pools
 alongside the integer population:
 
-- `generationPool` — fractional births (*Suasio*-adjacent toggles, sigils Ose #57 / Aamon #7,
+- `generationPool` — fractional births (*Logos*-adjacent toggles, sigils Ose #57 / Aamon #7,
   Adder Stone, Hand of Glory; the Mercatus `genPerDepth` channel retired with the
   trades and nothing replaces it by default — a sheet decision).
 - `suicidePool` — fractional removals from despair.
@@ -415,7 +415,7 @@ murder a chance to trigger a follow-on suicide.
 ### Generation
 
 Base passive generation is **zero**: nothing breeds reprobates until the player acts. The two
-engines are *Suasio* (the player's hand) and *Vitium Mercatura* corruption (the trades'
+engines are *Logos* (the player's hand) and *Vitium Mercatura* corruption (the trades'
 throughput, `03 §2.3`), plus the flat and percentage modifiers above.
 
 ---
@@ -513,10 +513,10 @@ The 2015-era seat of the worldly operation: a desk, a PC, a smartphone, a window
   contract tree), the *Indagatio* actions, the *Emptio* market, achievements, the
   event log, and the **email** client (the content channel — `00-lore-bible.md` §10).
 - **The smartphone** carries the incoming and outgoing calls.
-- **The Chthonic Logos.** The scroll on the Studio table that holds the *Suasio* actions. The
+- **The Chthonic Logos.** The scroll on the Studio table that holds the *Logos* actions. The
   player is writing it themselves, from their notes on worldly and otherworldly experience (the
   Katabasis descents among them); its purpose is the mastery of eloquence and persuasion. It
-  carries the *Suasio* actions and their delegation, plus **Panvitium** as the scroll's sealed
+  carries the *Logos* actions and their delegation, plus **Panvitium** as the scroll's sealed
   fourth rite (ADR-031) — redacted Latin until every Sin reaches level III, then
   the Unleash control with its confirming second press.
 - **The window** is the *Panvitium* signature. The screenshot moment.

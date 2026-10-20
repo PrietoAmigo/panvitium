@@ -10,7 +10,7 @@
  *   - a non-toggle delegated task runs ONCE, then the acolyte retires to idle (no looping)
  *   - acolyte work does NOT occupy the player's actionQueue
  *   - Indagatio at 33% takes ~3× the player duration (1800/0.33 ≈ 5454 s)
- *   - Suasio is delegatable; Emptio is not (nor the retired Decimatio rites). Delegated cycles are
+ *   - Logos is delegatable; Emptio is not (nor the retired Decimatio rites). Delegated cycles are
  *     FREE (no resource cost)
  *   - Acolytes reset to empty on Katabasis
  *   - acolyteEfficiencyMul defaults to 0.33
@@ -52,7 +52,7 @@ function recruited(n = 1): GameState {
   return autoRecruitAcolytes(withDevotion(fresh(), 100 ** n));
 }
 
-/** Recruited + the Sin toggle level (Luxuria 1) that enables Suasio delegation. */
+/** Recruited + the Sin toggle level (Luxuria 1) that enables Logos delegation. */
 function delegatable(n = 1): GameState {
   const s = recruited(n);
   return { ...s, devotion: { ...s.devotion, luxuria: bn(180) } };
@@ -378,17 +378,17 @@ function withReprobates(s: GameState, n: number): GameState {
   };
 }
 
-describe('cost-outcome delegation (Suasio)', () => {
+describe('cost-outcome delegation (Logos)', () => {
   it('refuses to delegate a rite below its toggle Sin level', () => {
     // recruited() leaves every Sin at 0, so Suggestion (toggle level 1) cannot be delegated yet.
     const r = assignAcolyteToAction(withInfluence(recruited(), 100), 'suggestion');
     expect(r.ok).toBe(false);
   });
 
-  it('assigning Suasio starts the first cycle for free (no influence spent)', () => {
+  it('assigning Logos starts the first cycle for free (no influence spent)', () => {
     const s = withInfluence(delegatable(), 100);
     const r = assignAcolyteToAction(s, 'suggestion');
-    if (!r.ok) throw new Error('assign suasio failed');
+    if (!r.ok) throw new Error('assign logos failed');
     expect(r.state.lifetime.influence.toNumber()).toBe(100); // free — nothing paid at assign
     expect(r.state.lifetime.acolytes[0]!.assignedAction).toBe('suggestion');
     expect(r.state.lifetime.acolytes[0]!.remainingSeconds).toBe(
@@ -396,7 +396,7 @@ describe('cost-outcome delegation (Suasio)', () => {
     );
   });
 
-  it('a delegated Suasio rite resolves a cycle for free and stays assigned to loop', () => {
+  it('a delegated Logos rite resolves a cycle for free and stays assigned to loop', () => {
     let s = withReprobates(withInfluence(delegatable(), 100), 100);
     const cycle = ACTIONS.suggestion!.baseTimeSeconds; // cost-outcome duration is the base time
     const r = assignAcolyteToAction(s, 'suggestion');
@@ -434,7 +434,7 @@ describe('cost-outcome delegation (Suasio)', () => {
     expect(adv.state.lifetime.acolytes[0]!.assignedAction).toBe('suggestion'); // still delegated
   });
 
-  it('a broke Suasio acolyte does not occupy the player action slot', () => {
+  it('a broke Logos acolyte does not occupy the player action slot', () => {
     const s = withInfluence(delegatable(), 0);
     const r = assignAcolyteToAction(s, 'suggestion');
     if (!r.ok) throw new Error('assign');

@@ -8,7 +8,7 @@
  *
  * Roster, rarity, invoking power and stack caps are pinned to the `Maleficia` sheet (34 items).
  * Effects beyond raw invoking power are listed in each entry's `description`; the enhancer
- * multipliers (Suasio/Desidia/rate/invocation) are wired in `modifiers.ts`, the sigil-effect relics
+ * multipliers (Logos/Desidia/rate/invocation) are wired in `modifiers.ts`, the sigil-effect relics
  * in `sigilEffectStack` (sigils.ts), the invocation-cost reduction (Black Vessel) in
  * `invocationCostMul` (sigils.ts), and the single-use consumables in the `maleficiaBuffs` timer
  * system below.

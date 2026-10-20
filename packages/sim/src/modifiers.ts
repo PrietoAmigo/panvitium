@@ -7,13 +7,13 @@
  * Sources wired so far:
  *   - Sin LEVELS (sheet rev 2026-06-12):
  *                 Gula → strips negative tier weight (−20% / level; L4 → 20% remains)
- *                 Luxuria → suasioEfficiencyMul (×2 / level)
+ *                 Luxuria → logosEfficiencyMul (×2 / level)
  *                 Vanagloria → influenceRateMul (×1.33 / level)
  *                 (Ira's levels fed the retired Decimatio efficiency; they carry no effect now,
  *                 ADR-038.)
  *   - Sin SKILLS:  Avaritia  (Golden Hand)    → goldRateMul
  *                 Vanagloria (Acclaim)        → maxInfluenceMul
- *                 Tristitia  (Resignation)    → acolyteEfficiencyMul (+ Suasio success, per-category)
+ *                 Tristitia  (Resignation)    → acolyteEfficiencyMul (+ Logos success, per-category)
  *                 Ira        (Retribution)    → invocationEfficiencyMul
  *                 Gula       (Insatiability)  → playerEfficiencyMul
  *                 Luxuria    (Seduction)      → reprobateGenerationRateMul
@@ -45,7 +45,7 @@
  * `sigilEffectStack` (the sigil-effect relics, boosted by Gaap, × Semet #32; ADR-036).
  *
  * PER-CATEGORY tier shifts (02 §2) are NOT part of the global bundle: a source that lifts one
- * category's success probability (Resignation → Suasio, the per-category tier seals) is returned by `categoryTierModifiers(state, category)` and composed by
+ * category's success probability (Resignation → Logos, the per-category tier seals) is returned by `categoryTierModifiers(state, category)` and composed by
  * `resolveAction` at resolution time, since it targets a single category's distribution.
  *
  * Skill→effect coupling for now: a skill that "increases X" multiplies X by (1 + intensity); a
@@ -74,9 +74,9 @@ import {
   type ScalarModifierField,
 } from './sigils.js';
 import {
-  ARS_SERPENS_SUASIO_BONUS,
+  ARS_SERPENS_LOGOS_BONUS,
   GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL,
-  LUXURIA_SUASIO_EFF_PER_LEVEL,
+  LUXURIA_LOGOS_EFF_PER_LEVEL,
 } from './constants.js';
 
 export interface Modifiers {
@@ -147,8 +147,8 @@ export interface Modifiers {
   readonly maxInfluenceMul: number;
   /** Multiplier on the player's own action efficiency (Gula). Stacks with category eff. */
   readonly playerEfficiencyMul: number;
-  /** Multiplier on Suasio-category action efficiency (Leviathan / Resignation). */
-  readonly suasioEfficiencyMul: number;
+  /** Multiplier on Logos-category action efficiency (Leviathan / Resignation). */
+  readonly logosEfficiencyMul: number;
   /**
    * Multiplier on Indagatio-category action efficiency (time-mode → scales speed). Sources: Bifrons
    * #46, the a-good-find call buff, and the logarithmic gold-investment bonus (03 §2.5).
@@ -248,7 +248,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   flatGoldPerSecond: 0,
   maxInfluenceMul: 1,
   playerEfficiencyMul: 1,
-  suasioEfficiencyMul: 1,
+  logosEfficiencyMul: 1,
   indagatioEfficiencyMul: 1,
   emptioEfficiencyMul: 1,
   tierWeightMul: {},
@@ -556,10 +556,10 @@ export function computeModifiers(state: GameState): Modifiers {
     // applied post-normalization at resolution time (actions.ts → addFlatTierChance).
     flatStellarChance: BEHEMOTH_STELLAR_FLAT * invEffFor('superbia') * behemothCount,
     playerEfficiencyMul: playerEff,
-    suasioEfficiencyMul:
-      LUXURIA_SUASIO_EFF_PER_LEVEL ** luxuriaLvl * // ×2 per Luxuria level (sheet rev 2026-06-12)
-      more('ars_serpens', ARS_SERPENS_SUASIO_BONUS) * // Ars Serpens: +33% Suasio efficiency
-      sc('suasioEfficiencyMul'),
+    logosEfficiencyMul:
+      LUXURIA_LOGOS_EFF_PER_LEVEL ** luxuriaLvl * // ×2 per Luxuria level (sheet rev 2026-06-12)
+      more('ars_serpens', ARS_SERPENS_LOGOS_BONUS) * // Ars Serpens: +33% Logos efficiency
+      sc('logosEfficiencyMul'),
     // Indagatio efficiency: sigils × the a-good-find call buff × the logarithmic bonus from the gold
     // investment (03 §2.5) × the maleficia that shorten the Search — Crow Feather (−10% time) and
     // Obsidian Mirror (−33%) passively, Crossroads Dirt (−15%, single-use buff via `mBuff`).
@@ -654,18 +654,18 @@ const SUCCESS_TIERS: readonly Tier[] = ['stellar', 'excellent', 'good'];
  * `tierWeightMul` bundle because it targets a single category's distribution. "Increase overall
  * success" effects lift the Stellar + Excellent + Good weights by the same factor (03 §1); on
  * renormalization that pulls probability off the failure tiers. Wired sources:
- *   - Suasio: Resignation (Tristitia skill).
+ *   - Logos: Resignation (Tristitia skill).
  *   - All three categories: the per-category tier sigils (below).
  * (Retribution, the Ira skill, also lifted Decimatio success until that category retired, ADR-038.)
  * `resolveAction` composes this on top of the global tier multipliers before resolving the tier.
  */
 export function categoryTierModifiers(
   state: GameState,
-  category: 'suasio' | 'indagatio' | 'emptio',
+  category: 'logos' | 'indagatio' | 'emptio',
 ): TierModifiers {
   const out: TierModifiers = {};
   let successMul = 1;
-  if (category === 'suasio') {
+  if (category === 'logos') {
     successMul *= skillBonus(skillIntensity(state.devotion.tristitia)); // Resignation
   }
   if (successMul !== 1) for (const t of SUCCESS_TIERS) out[t] = successMul;
@@ -678,17 +678,17 @@ export function categoryTierModifiers(
 }
 
 /**
- * Player × category efficiency for an action category (03 §2.1). Suasio scales the outcome of
+ * Player × category efficiency for an action category (03 §2.1). Logos scales the outcome of
  * cost-outcome actions; Indagatio/Emptio are time-mode, so their mul scales speed (shorter
  * duration) via `startAction`. Each per-category mul currently carries Sin skills + sigils.
  */
 export function categoryEfficiency(
   state: GameState,
-  category: 'suasio' | 'indagatio' | 'emptio',
+  category: 'logos' | 'indagatio' | 'emptio',
 ): number {
   const m = computeModifiers(state);
   let categoryMul = 1;
-  if (category === 'suasio') categoryMul = m.suasioEfficiencyMul;
+  if (category === 'logos') categoryMul = m.logosEfficiencyMul;
   else if (category === 'indagatio') categoryMul = m.indagatioEfficiencyMul;
   else if (category === 'emptio') categoryMul = m.emptioEfficiencyMul;
   return m.playerEfficiencyMul * categoryMul;

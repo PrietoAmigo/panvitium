@@ -4,7 +4,7 @@ import { type ReactNode, type ReactElement, type CSSProperties } from 'react';
  * One temptation as shown on the scroll. A locked rite is *sealed* — its name and maxim arrive as
  * unreadable, redacted Latin and its right column shows the Sin gate rather than a cost + button.
  */
-export interface SuasioActionView {
+export interface LogosActionView {
   id: string;
   /** Roman numeral for the rite's place on the scroll (I / II / III). */
   numeral: string;
@@ -30,13 +30,13 @@ export interface SuasioActionView {
   progress: number;
   /** True while any rite is underway, the player can't afford it, or it is sealed. */
   disabled: boolean;
-  /** Fire the real Suasio action. */
+  /** Fire the real Logos action. */
   onTempt: () => void;
   /** Acolyte delegation controls, rendered beneath the body when the rite is delegatable. */
   delegation?: ReactNode;
 }
 
-interface SuasioPanelProps {
+interface LogosPanelProps {
   /** The scroll's name — "Chthonic Logos". */
   title: string;
   /** The illuminated maxim across the head of the parchment. */
@@ -44,7 +44,7 @@ interface SuasioPanelProps {
   /** Accessible label for the close control. */
   closeLabel: string;
   /** The three temptations, in scroll order. */
-  actions: readonly SuasioActionView[];
+  actions: readonly LogosActionView[];
   /** Resolved-outcome ledger rendered at the foot of the scroll. */
   ledger?: ReactNode;
   /** Dismiss the scroll. */
@@ -54,7 +54,7 @@ interface SuasioPanelProps {
 /**
  * Atmosphere: the parchment is overrun by drifting devotional Latin, fading in and out behind the
  * rites. The phrases are decorative texture (untranslated, per ADR-020); per-line speed, size and
- * direction come from `.suasio-drift-line:nth-child(n)` in menus.css.
+ * direction come from `.logos-drift-line:nth-child(n)` in menus.css.
  */
 const DRIFT_LINES: readonly string[] = [
   'DA MIHI ANIMAS · CETERA TOLLE · ',
@@ -73,7 +73,7 @@ function tile(phrase: string, times = 8): string {
 
 /**
  * The Chthonic Logos (Claude Design rework).
- * The Chthonic Logos is the scroll on the Studio table that holds the Suasio rites. The player is
+ * The Chthonic Logos is the scroll on the Studio table that holds the Logos rites. The player is
  * writing it themselves, from their notes on worldly and otherworldly experience (the Katabasis
  * descents among them); its purpose is the mastery of eloquence and persuasion.
  *
@@ -84,108 +84,108 @@ function tile(phrase: string, times = 8): string {
  * Purely presentational — fed the real action/cost/progress by the wrapper in ui/panels.tsx;
  * resolved outcomes live in the PC's Logs, not here.
  */
-export function SuasioPanel({
+export function LogosPanel({
   title,
   maxim,
   closeLabel,
   actions,
   ledger,
   onClose,
-}: SuasioPanelProps): ReactElement {
+}: LogosPanelProps): ReactElement {
   return (
-    <div className="suasio-overlay" onClick={onClose} role="presentation">
+    <div className="logos-overlay" onClick={onClose} role="presentation">
       <div
-        className="suasio-scroll"
+        className="logos-scroll"
         role="dialog"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
       >
-        <button type="button" className="suasio-close" onClick={onClose} aria-label={closeLabel}>
+        <button type="button" className="logos-close" onClick={onClose} aria-label={closeLabel}>
           {'\u2715'}
         </button>
 
-        <header className="suasio-head">
-          <h2 className="suasio-title">{title}</h2>
-          <span className="suasio-rule" aria-hidden="true" />
+        <header className="logos-head">
+          <h2 className="logos-title">{title}</h2>
+          <span className="logos-rule" aria-hidden="true" />
         </header>
 
-        <section className="suasio-card">
-          <div className="suasio-drift" aria-hidden="true">
+        <section className="logos-card">
+          <div className="logos-drift" aria-hidden="true">
             {DRIFT_LINES.map((phrase, i) => (
-              <div className="suasio-drift-line" key={i}>
+              <div className="logos-drift-line" key={i}>
                 {tile(phrase)}
               </div>
             ))}
           </div>
 
-          <div className="suasio-card-inner">
-            <p className="suasio-maxim">{maxim}</p>
+          <div className="logos-card-inner">
+            <p className="logos-maxim">{maxim}</p>
 
-            <div className="suasio-rows">
+            <div className="logos-rows">
               {actions.map((a, i) => {
                 // Imperium and Panvitium — the crowned rites get the spinning inner ring.
                 const apex = a.id === 'imperium' || a.id === 'panvitium';
                 const twoRings = i >= 1; // the later rites carry a second concentric ring.
                 const rowClass =
-                  'suasio-row' +
-                  (a.active ? ' suasio-row--active' : '') +
-                  (a.locked ? ' suasio-row--locked' : '') +
-                  (apex && !a.locked ? ' suasio-row--apex' : '');
-                const arcStyle = { '--suasio-w': `${a.progress}%` } as CSSProperties;
+                  'logos-row' +
+                  (a.active ? ' logos-row--active' : '') +
+                  (a.locked ? ' logos-row--locked' : '') +
+                  (apex && !a.locked ? ' logos-row--apex' : '');
+                const arcStyle = { '--logos-w': `${a.progress}%` } as CSSProperties;
                 const barStyle = { width: `${a.progress}%` } as CSSProperties;
                 return (
                   <div key={a.id} className={rowClass}>
-                    {a.active && <span className="suasio-edge" aria-hidden="true" />}
+                    {a.active && <span className="logos-edge" aria-hidden="true" />}
 
-                    <div className="suasio-numeral">{a.numeral}</div>
+                    <div className="logos-numeral">{a.numeral}</div>
 
                     <div
-                      className={'suasio-sigil' + (a.locked ? ' suasio-sigil--sealed' : '')}
+                      className={'logos-sigil' + (a.locked ? ' logos-sigil--sealed' : '')}
                       aria-hidden="true"
                     >
-                      <span className="suasio-ring suasio-ring--outer" />
+                      <span className="logos-ring logos-ring--outer" />
                       {twoRings && (
                         <span
                           className={
-                            'suasio-ring suasio-ring--inner' +
-                            (apex && !a.locked ? ' suasio-ring--spin' : '')
+                            'logos-ring logos-ring--inner' +
+                            (apex && !a.locked ? ' logos-ring--spin' : '')
                           }
                         />
                       )}
-                      {a.active && <span className="suasio-arc" style={arcStyle} />}
-                      <span className="suasio-glyph">{a.locked ? a.numeral : a.glyph}</span>
+                      {a.active && <span className="logos-arc" style={arcStyle} />}
+                      <span className="logos-glyph">{a.locked ? a.numeral : a.glyph}</span>
                     </div>
 
-                    <div className="suasio-body">
-                      <div className="suasio-name">{a.name}</div>
-                      <div className="suasio-quote">{a.quote}</div>
+                    <div className="logos-body">
+                      <div className="logos-name">{a.name}</div>
+                      <div className="logos-quote">{a.quote}</div>
                       {/* The progress bar + status keep their layout space even when idle
                           (visibility, not display), so a castable rite's row is a fixed height
                           and the buttons do not jump when the rite starts or ends. */}
                       {!a.locked && (
                         <>
                           <span
-                            className={'suasio-bar' + (a.active ? '' : ' suasio-idle')}
+                            className={'logos-bar' + (a.active ? '' : ' logos-idle')}
                             style={barStyle}
                             aria-hidden="true"
                           />
-                          <div className={'suasio-status' + (a.active ? '' : ' suasio-idle')}>
+                          <div className={'logos-status' + (a.active ? '' : ' logos-idle')}>
                             {a.status}
                           </div>
                         </>
                       )}
-                      {a.delegation && <div className="suasio-deleg">{a.delegation}</div>}
+                      {a.delegation && <div className="logos-deleg">{a.delegation}</div>}
                     </div>
 
-                    <div className="suasio-aside">
+                    <div className="logos-aside">
                       {a.locked ? (
-                        <div className="suasio-gate">{a.lockLabel}</div>
+                        <div className="logos-gate">{a.lockLabel}</div>
                       ) : (
                         <>
-                          <div className="suasio-cost">{a.cost}</div>
+                          <div className="logos-cost">{a.cost}</div>
                           <button
                             type="button"
-                            className="suasio-act"
+                            className="logos-act"
                             disabled={a.disabled}
                             onClick={a.onTempt}
                           >

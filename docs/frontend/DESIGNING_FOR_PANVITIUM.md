@@ -23,7 +23,7 @@ Design accordingly and the seam between the two is clean.
 The world is three rooms — `invocation`, `altar`, `studio` — each with clickable hotspots that either
 walk to another room or open a panel. The panels are the diegetic menus (the Magna Goetia grimoire, the
 Altar, the Katabasis descent, the Maleficia cabinet, the Chthonic Logos, the PC). The Chthonic Logos is
-the scroll on the Studio table holding the Suasio rites: the player writes it from their notes on
+the scroll on the Studio table holding the Logos rites: the player writes it from their notes on
 worldly and otherworldly experience (the Katabasis among them), to master eloquence and persuasion.
 
 ---
@@ -95,7 +95,7 @@ outcomes. The integrator merges them. Make that merge easy and safe:
   - sins: the eight keys `gula luxuria avaritia tristitia ira acedia vanagloria superbia`
   - sigils: the numbers `1`–`72`
   - maleficia: their string ids (`ars_serpens`, `ritual_dagger`, …)
-  - rooms: `invocation altar studio`; panels: `magna-goetia altar-menu maleficia suasio pc`
+  - rooms: `invocation altar studio`; panels: `magna-goetia altar-menu maleficia logos pc`
 - **Do not invent or hard-code mechanical values.** Gates, soul costs, Devotion thresholds, effect
   magnitudes, level math — these come from the sim and change with economy tuning. If a prototype
   needs a number to render, mark it clearly as a placeholder (a comment, or a `placeholder: true`

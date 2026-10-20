@@ -83,9 +83,9 @@ describe('Tristitia / Ira SKILLS — acolyte and invocation efficiency (sheet re
     expect(m).toEqual(base);
   });
 
-  it('Luxuria LEVELS lift Suasio efficiency ×2 per level', () => {
-    const base = computeModifiers(fresh()).suasioEfficiencyMul;
-    const lifted = computeModifiers(withSinLevel(fresh(), 'luxuria', 2)).suasioEfficiencyMul;
+  it('Luxuria LEVELS lift Logos efficiency ×2 per level', () => {
+    const base = computeModifiers(fresh()).logosEfficiencyMul;
+    const lifted = computeModifiers(withSinLevel(fresh(), 'luxuria', 2)).logosEfficiencyMul;
     expect(lifted / base).toBeCloseTo(4, 6);
   });
 });

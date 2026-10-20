@@ -433,7 +433,7 @@ If any of the records below should be downgraded from `Accepted` to `Proposed`, 
 
 **Context.** The grimoire-baroque tone depends on tight word choice — Latin terms, ecclesiastical cadence, careful flavour text. Translation is its own essay and is not in scope for launch. But hardcoded strings make later localization a refactor.
 
-**Decision.** English-only at launch. All player-facing strings live in a single `packages/shared/strings.ts` module from day 1, keyed not concatenated. Latin terms (*Opera*, *Suasio*, *Panvitium*, *Vitium Compositum*, etc.) stay untranslated regardless of locale — they are the product's voice. No i18n framework yet.
+**Decision.** English-only at launch. All player-facing strings live in a single `packages/shared/strings.ts` module from day 1, keyed not concatenated. Latin terms (*Opera*, *Logos*, *Panvitium*, *Vitium Compositum*, etc.) stay untranslated regardless of locale — they are the product's voice. No i18n framework yet.
 
 **Consequences.**
 - Adding a translation later means populating one module per locale, not refactoring.
@@ -495,7 +495,7 @@ If each consumer (tick loop, action engine, probability resolver) reads sources 
 
 **Consequences.**
 - Adding a new source is a one-line change: `result.someField *= sourceContribution`. Adding a new dimension is a new field on `Modifiers` plus its initial value in `NEUTRAL_MODIFIERS`.
-- Tests pin per-source contributions in isolation (e.g. "Leviathan 180 → suasioEfficiencyMul ≈ 5.1253") and per-target composition (e.g. "Avaritia 180 + Thirty Pieces of Silver → goldRateMul ≈ 15.376").
+- Tests pin per-source contributions in isolation (e.g. "Leviathan 180 → logosEfficiencyMul ≈ 5.1253") and per-target composition (e.g. "Avaritia 180 + Thirty Pieces of Silver → goldRateMul ≈ 15.376").
 - The bundle is recomputed each tick. Cost is negligible at our budget (a handful of multiplications and one log per Sin).
 - The bundle is **derived**, not persisted. The save format stores sources (Devotion, sigil bindings, equipped maleficia, etc.); the bundle is rebuilt on load.
 - A consumer that wants only one field (e.g. `playerEfficiency(state)`) gets a thin helper that calls the engine and reads the field; this preserves the discipline that the bundle is the source of truth.
@@ -739,14 +739,14 @@ the same composition.
 **Status.** Accepted [2026-06-12]. Implements the Sins & Devotion sheet (rev 2026-06-12).
 
 **Context.** The original mapping grew organically: Gula levels doubled player efficiency while
-its skill damped two negative tiers; Tristitia's skill drove Suasio efficiency AND the suicide
+its skill damped two negative tiers; Tristitia's skill drove Logos efficiency AND the suicide
 rate, with a per-level suicide doubling on top; Ira's skill drove Decimatio while its levels fed a
 ×1.33 acolyte+invocation ladder. The revised sheet redraws the whole table.
 
 **Decision.** Per the sheet: **Gula** — the Insatiability SKILL (intensity) lifts player
 efficiency; each LEVEL strips a quarter of the negative tiers' weight (Bad / Terrible /
 Apocalyptic ×(1 − 0.25·L), level 4 → no negative outcomes; the freed mass renormalizes).
-**Luxuria** — ×2 Suasio efficiency per level (Seduction skill keeps generation). **Ira** — ×2
+**Luxuria** — ×2 Logos efficiency per level (Seduction skill keeps generation). **Ira** — ×2
 Decimatio efficiency per level; the Retribution SKILL moves to invocation efficiency.
 **Tristitia** — the Resignation SKILL moves to acolyte efficiency; both old suicide couplings
 (skill lift and 2×-per-level) are removed — the despair channel is the Mercatus Tristitiae
@@ -758,7 +758,7 @@ signature clause (ADR-025). Avaritia / Acedia / Vanagloria / Superbia stand as a
 
 - Action efficiency now splits cleanly: Gula's skill is the global throttle; Luxuria / Ira levels
   are the category throttles — and since cost-outcome / time modes scale costs with efficiency,
-  Suasio rites get pricier exactly as they get stronger.
+  Logos rites get pricier exactly as they get stronger.
 - Acolytes and invocations each gain a dedicated, continuously-scaling Sin skill instead of
   sharing one Ira ladder.
 - Suicide pressure no longer comes free with Tristitia Devotion; it must be bought through trade
@@ -795,7 +795,7 @@ Eligos #15 → offline influence and Forneus #30 → invoking power (log 0.5), s
 roles; **Crocell #49 ⇄ Furcas #50** swap (double-find ⇄ divestment refund, Furcas composing with
 Vine); Amy #58 → a CURSED multi-field decrease on Indagatio AND Emptio efficiency; Glasya #25 /
 Sabnock #43 / Ose #57 → flat murder / suicide / generation channels through the modifier bundle.
-New mechanics: **duplicate-output** sigils (Agares #2 Indagatio, Malphas #39 Suasio, Focalor #41
+New mechanics: **duplicate-output** sigils (Agares #2 Indagatio, Malphas #39 Logos, Focalor #41
 Decimatio — one roll per resolution, only positive tiers duplicate); **Marax #21** speeds offline
 action-timer advancement (a tick dep from `resumeGame`); **Foras #31** extends the Acedia-compound
 accrual window; **Zepar #16** multiplies offline reprobate generation (threaded
@@ -951,7 +951,7 @@ channel) around one ritual that actually matters.
    (Sin-gated activation, per-second cost with the eᵗ ramp, the Foedus upkeep discount,
    auto-deactivation, unknown-id self-healing for old saves — no schema bump per ADR-023, since
    `activeToggles` is a plain string list and retired ids drop unbilled on the first tick).
-   **Panvitium moves to the Suasio scroll** (since renamed the Chthonic Logos) as its sealed fourth rite: gated visually exactly like
+   **Panvitium moves to the Logos scroll** (since renamed the Chthonic Logos) as its sealed fourth rite: gated visually exactly like
    the other temptations (redacted Latin name/maxim + the "Requires Every Sin III" label), with a
    two-press Unleash confirm; the Depraedatio panel drops its Compositum tab and carries only
    Thesaurus / Syngraphae.
@@ -1127,7 +1127,7 @@ home. The catalog is now the full Goetia 1..72: every seal has a name and a real
   reduces the `emptioGold` cost channel; **Zepar #16** reduces the `invocationSoul` cost channel;
   **Marax #21** raises `decimatioEfficiencyMul`; **Naberius #24** raises `indagatioEfficiencyMul`
   (Indagatio is time-mode, so the lift shortens the search); **Zagan #61** raises
-  `suasioEfficiencyMul`.
+  `logosEfficiencyMul`.
 - **Coefficient 1/3.** Zepar #16, Marax #21 and Zagan #61 carry `coefficient: 1/3` (a third of the
   standard pct strength), per the brief — following the sub-unit precedent (Paimon 0.5, Foras 0.25).
 
@@ -1151,7 +1151,7 @@ cost-reduction channel.
 
 **Context.** Two limits surfaced while auditing the 72-seal catalog. (1) A seal could carry only ONE
 effect, so several seals duplicated another exactly (Raum #40 was a full-strength twin of the
-Decimatio boost; Dantalion #71 of the Suasio boost; Andrealphus #65 shared Forneus #30's
+Decimatio boost; Dantalion #71 of the Logos boost; Andrealphus #65 shared Forneus #30's
 invoking-power niche). (2) The invocation cost-reduction channel was named `invocationSoul` and only
 softened the soul summon price plus the flat gold/influence upkeep — not the one-time gold summon
 price (Morpheus) nor the %-of-gain upkeep — so both its name and its reach understated it.
@@ -1164,8 +1164,8 @@ price (Morpheus) nor the %-of-gain upkeep — so both its name and its reach und
   the parts, so a composite folds into whichever channel each part belongs to. The type permits only
   those two sub-effect kinds inside a composite, keeping every other dispatch function composite-agnostic.
 - **Three seals rewired onto composites** (closing the exact-duplicate findings):
-  - **Raum #40** → +Decimatio efficiency / −Suasio efficiency (a tradeoff seal).
-  - **Dantalion #71** → +Suasio efficiency / −Decimatio efficiency (Raum's mirror; bound at equal
+  - **Raum #40** → +Decimatio efficiency / −Logos efficiency (a tradeoff seal).
+  - **Dantalion #71** → +Logos efficiency / −Decimatio efficiency (Raum's mirror; bound at equal
     strength the two cancel to neutral).
   - **Andrealphus #65** → −all invocation costs / +Desidia speed (a dual seal on the default pct
     curve; its old sqrt invoking-power role stays with Forneus #30).
@@ -1304,7 +1304,7 @@ lever, a Retribution success shift, seven seals, a PC program) existed to serve 
 
 - **The rites are removed.** `caedes`, `pogrom` and `purgatio` leave `ACTIONS` with their tier
   weights, resolvers (`resolveCaedes` / `resolvePogrom` / `resolvePurgatio`) and forecast model. The
-  action category union is `'suasio' | 'indagatio' | 'emptio'`. Starting, resolving, auto-repeating
+  action category union is `'logos' | 'indagatio' | 'emptio'`. Starting, resolving, auto-repeating
   or delegating a retired id fails as an unknown action.
 - **The lever is removed.** `decimatioEfficiencyMul` leaves the `Modifiers` bundle, the
   sigil-targetable fields and `categoryEfficiency`; `IRA_DECIMATIO_EFF_PER_LEVEL` is deleted.
@@ -1315,8 +1315,8 @@ lever, a Retribution success shift, seven seals, a PC program) existed to serve 
   keeps a seal's id, name and art while it does nothing; every channel filters by kind, so a dormant
   seal is skipped everywhere and draws no RNG. Beleth #13, Marax #21, Ipos #22, Focalor #41 and
   Haures #64 served only Decimatio and go dormant. **Raum #40** goes dormant too: its other leg was a
-  Suasio penalty, and a pure curse is worse than nothing for a player who had bound it. **Dantalion
-  #71** keeps its Suasio lift alone (a plain modifier, no longer composite). The ledger reads a
+  Logos penalty, and a pure curse is worse than nothing for a player who had bound it. **Dantalion
+  #71** keeps its Logos lift alone (a plain modifier, no longer composite). The ledger reads a
   dormant seal's boon as "Dormant" with no magnitude. Bindings are recoverable, so souls already on
   a dormant seal can be unbound.
 - **The surface is removed.** The PC's *Decimatio* program ("The Breathing Dark"), its strings and

@@ -137,10 +137,10 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 17,
     name: 'Botis',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): −Suasio negative outcome chance.
+    // Sigils sheet (rev 2026-06-12): −Logos negative outcome chance.
     effect: {
       kind: 'categoryTier',
-      category: 'suasio',
+      category: 'logos',
       tiers: ['bad', 'terrible', 'apocalyptic'],
       direction: 'decrease',
     },
@@ -325,15 +325,15 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 39,
     name: 'Malphas',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +chance to duplicate the output of Suasio.
-    effect: { kind: 'duplicateOutput', category: 'suasio' },
+    // Sigils sheet (rev 2026-06-12): +chance to duplicate the output of Logos.
+    effect: { kind: 'duplicateOutput', category: 'logos' },
   },
   40: {
     id: 40,
     name: 'Raum',
     coefficient: 1,
-    // ADR-038: dormant. It was a tradeoff seal (ADR-035): +Decimatio efficiency for −Suasio
-    // efficiency. With Decimatio retired only the Suasio penalty would remain, a pure curse, so the
+    // ADR-038: dormant. It was a tradeoff seal (ADR-035): +Decimatio efficiency for −Logos
+    // efficiency. With Decimatio retired only the Logos penalty would remain, a pure curse, so the
     // whole seal sleeps until it is re-homed.
     effect: { kind: 'inert' },
   },
@@ -386,8 +386,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 47,
     name: 'Vual',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +Stellar chance for Suasio.
-    effect: { kind: 'categoryTier', category: 'suasio', tiers: ['stellar'], direction: 'increase' },
+    // Sigils sheet (rev 2026-06-12): +Stellar chance for Logos.
+    effect: { kind: 'categoryTier', category: 'logos', tiers: ['stellar'], direction: 'increase' },
   },
   48: {
     id: 48,
@@ -451,10 +451,10 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 56,
     name: 'Gremory',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): +Suasio positive outcome chance.
+    // Sigils sheet (rev 2026-06-12): +Logos positive outcome chance.
     effect: {
       kind: 'categoryTier',
-      category: 'suasio',
+      category: 'logos',
       tiers: ['stellar', 'excellent', 'good'],
       direction: 'increase',
     },
@@ -498,8 +498,8 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 61,
     name: 'Zagan',
     coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
-    // ADR-034: +Suasio action efficiency (composes with Dantalion #71).
-    effect: { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'increase' },
+    // ADR-034: +Logos action efficiency (composes with Dantalion #71).
+    effect: { kind: 'modifier', field: 'logosEfficiencyMul', direction: 'increase' },
   },
   62: {
     id: 62,
@@ -584,10 +584,10 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 71,
     name: 'Dantalion',
     coefficient: 1,
-    // ADR-035 made it a tradeoff seal (+Suasio efficiency for −Decimatio efficiency, Raum #40's
-    // mirror). ADR-038 retired Decimatio, so only the Suasio lift remains: the seal has lost its
+    // ADR-035 made it a tradeoff seal (+Logos efficiency for −Decimatio efficiency, Raum #40's
+    // mirror). ADR-038 retired Decimatio, so only the Logos lift remains: the seal has lost its
     // cost and awaits a rebalance.
-    effect: { kind: 'modifier', field: 'suasioEfficiencyMul', direction: 'increase' },
+    effect: { kind: 'modifier', field: 'logosEfficiencyMul', direction: 'increase' },
   },
   72: {
     id: 72,

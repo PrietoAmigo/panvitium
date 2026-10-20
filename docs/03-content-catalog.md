@@ -26,7 +26,7 @@ Each Prince is a school of vice with its own temper, pacing, and economy
 | Prince | Sin (Latin) | English | Skill | Skill effect (continuous) | Per-level effect |
 |---|---|---|---|---|---|
 | **Beelzebub** | *Gula* | Gluttony | Insatiability | Increases player efficiency. | Removes a flat share of Bad, Terrible, and Apocalyptic chance per level (additive); at level 4 the negative-outcome chance is 0%. |
-| **Asmodeus** | *Luxuria* | Lust | Seduction | Increases the reprobate generation rate. | Multiplies overall *Suasio* efficiency per level; unlocks the *Suasio* actions and their toggles. |
+| **Asmodeus** | *Luxuria* | Lust | Seduction | Increases the reprobate generation rate. | Multiplies overall *Logos* efficiency per level; unlocks the *Logos* actions and their toggles. |
 | **Mammon** | *Avaritia* | Greed | Golden Hand | Increases the gold gain rate. | Increases the Katabasis remaining-gold percentage per level. |
 | **Leviathan** | *Tristitia* | Sorrow | Resignation | Increases acolyte efficiency. | Increases the Katabasis remaining-reprobate percentage per level. |
 | **Satan** | *Ira* | Wrath | Retribution | Increases invocation efficiency. | **None** (an empty slot since ADR-038 retired *Decimatio*, whose efficiency it multiplied). Its levels still count toward the max-Sin-level gates. |
@@ -42,11 +42,11 @@ the fixed curve in the spreadsheet.
 
 ## 2. The Opera (action menu)
 
-### 2.1 *Suasio* — Tempting
+### 2.1 *Logos* — Tempting
 
 Three actions: *Suggestion*, *Logismoi*, and *Imperium*, gated and toggle-gated by the player's
 highest Sin level across all Sins (player tuning: the gate is the max Sin level, not *Luxuria*
-specifically). Efficiency mode is **`cost-outcome`** (`02 §3`): it modifies *Suasio* costs and
+specifically). Efficiency mode is **`cost-outcome`** (`02 §3`): it modifies *Logos* costs and
 positive outcomes by the same percentage and does not affect action time.
 
 - **Suggestion** — the early-game reprobate source. Short, cheap, modest yield.
@@ -54,7 +54,7 @@ positive outcomes by the same percentage and does not affect action time.
 - **Imperium** — the late-game source; the player in control, with soul-minting and
   percentage-of-population outcomes at the top tiers.
 
-Per-action probabilities, outcomes, costs, and durations are in the `Suasio` sheet; the availability
+Per-action probabilities, outcomes, costs, and durations are in the `Logos` sheet; the availability
 and toggle gates are keyed to the player's highest Sin level (player tuning), not the sheet's
 *Luxuria* levels.
 
@@ -130,7 +130,7 @@ The eight lesser ceremonies (*Bacchanal*, *Charity*, *Gala*, *Doom Gathering*, *
 Broadcast*, *Dolce Far Niente*, *Vegas*, *Crusade*) are **retired** — their income, rate-boost,
 and percentage-of-income machinery (ADR-027) went with them, and old saves carrying a retired id
 self-heal on the first tick. What survives is the toggle engine and its one occupant,
-**Panvitium**, which now lives on the **Chthonic Logos** (the Suasio scroll) as its sealed fourth rite (`02 §12`).
+**Panvitium**, which now lives on the **Chthonic Logos** (the Logos scroll) as its sealed fourth rite (`02 §12`).
 
 #### *Foedus* — the hoard ↔ Panvitium coupling
 
@@ -199,7 +199,7 @@ conversion mechanic, and every per-subtype effect from earlier revisions are rem
 
 What remains is the population's role as the economy's centre of mass (`02 §9`):
 
-- **Born** of *Suasio* and of ceremonies and sigils that raise generation.
+- **Born** of *Logos* and of ceremonies and sigils that raise generation.
 - **Repaying** while alive — the *Mutuum* loan book earns per living head.
 - **Dying** by suicide and murder — every death mints exactly one soul. (The *Decimatio* culls are
   retired, ADR-038.)
@@ -225,12 +225,12 @@ The catalog (invoking power, stack caps, prices, and exact magnitudes in the `Ma
 | **Mark of Cain** | Enhancer | Anathema | Greatly multiplies the murder rate. |
 | **Thirty Pieces of Silver** | Enhancer | Anathema | Gold gain grows with current gold. |
 | **Solomon's Ring** | Enhancer | Anathema | Multiplies sigil effects. |
-| **The Voynich Manuscript** | Enhancer, power source | Profane | Multiplies *Suasio* efficiency; grants power. |
+| **The Voynich Manuscript** | Enhancer, power source | Profane | Multiplies *Logos* efficiency; grants power. |
 | **Obsidian Mirror** | Oracular, power source | Profane | Reveals ALL Opera distributions; grants power. |
 | **Defixio** | Targeted, stackable | Profane | Single-use curse: culls reprobates on an exponential ramp. |
 | **Galdrabók** | Enhancer | Profane | Multiplies the murder rate. |
 | **Codex Gigas** | Enhancer | Profane | Multiplies influence gain rate by 1.33. |
-| **Ars Serpens** | Enhancer, power source | Rare | Multiplies *Suasio* efficiency; grants power. |
+| **Ars Serpens** | Enhancer, power source | Rare | Multiplies *Logos* efficiency; grants power. |
 | **Ritual Dagger** | Enhancer, power source | Rare | Multiplies the murder rate (+10%); grants power. |
 | **Blood Chalk** | Power source | Rare | Grants invoking power. |
 | **Blackthorn Wand** | Power source | Rare | Grants invoking power. |
@@ -240,7 +240,7 @@ The catalog (invoking power, stack caps, prices, and exact magnitudes in the `Ma
 | **Sulfur Censer** | Power source | Common | Grants invoking power. |
 | **Black Candles** | Enhancer, stackable | Common | Increases invocation effect per candle. |
 | **The Dadu** | Enhancer, power source | Common | +5% player efficiency; grants power. |
-| **Hollow Effigy** | Oracular, power source | Common | Reveals the *Suasio* distribution; grants power. |
+| **Hollow Effigy** | Oracular, power source | Common | Reveals the *Logos* distribution; grants power. |
 | **Black Salt Pouch** | Power source, stackable | Common | Grants invoking power per copy, uncapped. |
 | **Iron Nails** | Power source, stackable | Common | Each copy increases sigil effects and grants power. |
 | **Witch Bottle** | Power source | Common | Grants invoking power. |
@@ -286,7 +286,7 @@ coefficients are in the `Sigils` sheet.
 | 14 | **Leraie** | Putrefies wounds | Chance a murder triggers a suicide. |
 | 15 | **Eligos** | Favour of important people | Reduces Emptio purchase costs. |
 | 16 | **Zepar** | Makes barren | Reduces overall invocation costs (a third of the standard strength). |
-| 17 | **Botis** | Past and future | Reduces *Suasio* negative outcome chance. |
+| 17 | **Botis** | Past and future | Reduces *Logos* negative outcome chance. |
 | 18 | **Bathin** | Transport | Increases acolyte action efficiency. |
 | 19 | **Sallos** | Peace, idleness | Reduces the Desidia drain rate (composes with Lemure). |
 | 20 | **Purson** | Hidden treasures | Increases the Katabasis remaining-gold % (flat). [log] |
@@ -308,15 +308,15 @@ coefficients are in the `Sigils` sheet.
 | 36 | **Stolas** | Astronomy, herbs | Reduces the chance of Common finds in *Indagatio*. |
 | 37 | **Phenex** | Phoenix; sings | Reduces *Emptio* negative outcome chance. |
 | 38 | **Halphas** | Builds towers, arms | Reduces the chance of Common and Rare finds. |
-| 39 | **Malphas** | Builds, demolishes; deceives | Chance to duplicate the output of *Suasio*. |
-| 40 | **Raum** | Steals; destroys cities | **Dormant** (ADR-038; was a tradeoff seal: increases *Decimatio* efficiency, dampens *Suasio* efficiency. The Suasio penalty alone would be a pure curse, so the whole seal sleeps). |
+| 39 | **Malphas** | Builds, demolishes; deceives | Chance to duplicate the output of *Logos*. |
+| 40 | **Raum** | Steals; destroys cities | **Dormant** (ADR-038; was a tradeoff seal: increases *Decimatio* efficiency, dampens *Logos* efficiency. The Logos penalty alone would be a pure curse, so the whole seal sleeps). |
 | 41 | **Focalor** | Kills by drowning | **Dormant** (ADR-038; was: chance to duplicate the output of *Decimatio*). |
 | 42 | **Vepar** | Putrefying wounds | Increases *Ira* invocation effectiveness. |
 | 43 | **Sabnock** | Wounds and sores | Increases the suicide rate (flat). [log] |
 | 44 | **Shax** | Deafness; takes money | Increases *Avaritia* invocation effectiveness. |
 | 45 | **Vine** | Reveals witches; walls | Increases the Thesaurus withdrawal recovery fraction (re-pinned from the Mercatus divest, same niche and magnitude). |
 | 46 | **Bifrons** | Sciences, herbs | Increases *Indagatio* action efficiency. |
-| 47 | **Vual** | Love of women; all times | Increases *Suasio* Stellar chance. |
+| 47 | **Vual** | Love of women; all times | Increases *Logos* Stellar chance. |
 | 48 | **Haagenti** | Metal to gold | Generates gold per second (flat). [log] |
 | 49 | **Crocell** | Geometry; warms waters | Chance *Indagatio* finds two. |
 | 50 | **Furcas** | Pyromancy | Increases the Thesaurus withdrawal recovery fraction (composes with Vine). |
@@ -325,12 +325,12 @@ coefficients are in the `Sigils` sheet.
 | 53 | **Camio** | Disputation | Increases the Katabasis remaining-reprobate % (flat). [log] |
 | 54 | **Murmur** | Summons dead souls | Increases overall invocation effectiveness. |
 | 55 | **Orobas** | Faithful; all times | Reduces the cost of all invocations. |
-| 56 | **Gremory** | Treasures; love | Increases *Suasio* positive outcome chance. |
+| 56 | **Gremory** | Treasures; love | Increases *Logos* positive outcome chance. |
 | 57 | **Ose** | Changes shape | Generates reprobates (flat). [log] |
 | 58 | **Amy** | Treasures | Increases *Indagatio* and *Emptio* action efficiency. |
 | 59 | **Orias** | Transformations | Increases the maximum Desidia (on top of the Acedia doubling). |
 | 60 | **Vapula** | Mechanical arts | Increases the Faeneratio gold output (Mutuum + Thesaurus interest). |
-| 61 | **Zagan** | Fools wise | Increases Suasio action efficiency (a third of the standard strength). |
+| 61 | **Zagan** | Fools wise | Increases Logos action efficiency (a third of the standard strength). |
 | 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
 | 63 | **Andras** | Sows discord | Increases *Emptio* Stellar chance. |
 | 64 | **Haures** | Destroys enemies | **Dormant** (ADR-038; was: increases *Decimatio* Stellar chance). |
@@ -340,7 +340,7 @@ coefficients are in the `Sigils` sheet.
 | 68 | **Belial** | Favour; preferments | Increases the influence gain rate. |
 | 69 | **Decarabia** | Stones and herbs | Generates influence per second (flat). [log] |
 | 70 | **Seere** | Brings things suddenly | Increases *Emptio* action efficiency. |
-| 71 | **Dantalion** | All human thoughts | Increases *Suasio* efficiency. (Its *Decimatio* penalty, the tradeoff's cost, went with ADR-038; pending a rebalance.) |
+| 71 | **Dantalion** | All human thoughts | Increases *Logos* efficiency. (Its *Decimatio* penalty, the tradeoff's cost, went with ADR-038; pending a rebalance.) |
 | 72 | **Andromalius** | Returns stolen; reveals plots | Increases *Emptio* positive outcome chance. |
 
 Sigil #58 (*Amy*) is authored in the sheet with a sign worth confirming at implementation time

@@ -147,7 +147,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   ars_serpens: {
     id: 'ars_serpens',
     name: 'Ars Serpens',
-    description: 'Smooth to the touch and ear. +33% Suasio efficiency.',
+    description: 'Smooth to the touch and ear. +33% Logos efficiency.',
     rarity: 'rare',
     cost: 2000,
     invokingPower: 2,

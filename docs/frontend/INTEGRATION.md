@@ -30,7 +30,7 @@ handoff/
       ├─ SummonedCreatures.tsx  invocations standing in the circle
       ├─ AltarPanel.tsx         stone devotion ledger → triggers descent
       ├─ MaleficiaCabinet.tsx   wooden display case + close-up
-      ├─ SuasioPanel.tsx        temptation scroll + log
+      ├─ LogosPanel.tsx        temptation scroll + log
       ├─ PcWindow.tsx           Ubuntu-style file manager of ritual programs
       ├─ MagnaGoetiaBook.tsx      full-screen open grimoire (index → detail leaf)
       ├─ Katabasis.tsx          full-screen demonic two-page descent
@@ -97,7 +97,7 @@ Swap these for your sim/store. The seams (all marked `TODO(wire)` in code):
 | `AltarPanel` | per-Prince devotion + level; bound sigils list; `onDescend` opens `<Katabasis/>` |
 | `Katabasis` | seed `pool` from banked souls; commit `poured` (Prince levels) + `bound` (sigils) to the sim on **Ascend** |
 | `MaleficiaCabinet` | owned maleficia (your `packages/sim` catalog already has names/rarities/effects) |
-| `SuasioPanel` | `Tempt` → real Suasio action; append resolved outcome to the log |
+| `LogosPanel` | `Tempt` → real Logos action; append resolved outcome to the log |
 | `PcWindow` → `PcProgram` | Depraedatio businesses, Decimatio/Indagatio actions, Emptio market, achievements, log feed |
 
 Because your `packages/sim` already holds the authoritative catalogs

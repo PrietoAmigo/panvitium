@@ -248,7 +248,7 @@ How the built calls-in front-end reconciles with this catalogue. The numbers are
 - **Recency cooldown:** the same call rings at most **once every 5 calls** — the last 4 callers are excluded from the draw (`RECENT_WINDOW = 4`), best-effort (relaxed before it would starve the line).
 - **Weights:** class buckets 49 % buff (25 positive / 24 tradeoff) / 50 % lore / 1 % easter egg (`CLASS_WEIGHT`), renormalised over non-empty buckets.
 
-**Where it rings.** Studio only; it keeps ringing (audibly) behind an open Studio menu (PC, Suasio, dialer). Tapping the phone answers and takes priority over dialling out. Not in the title, not during Katabasis, not while another call is on the line.
+**Where it rings.** Studio only; it keeps ringing (audibly) behind an open Studio menu (PC, Logos, dialer). Tapping the phone answers and takes priority over dialling out. Not in the title, not during Katabasis, not while another call is on the line.
 
 **Flags (as implemented).**
 

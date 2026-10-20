@@ -1,7 +1,7 @@
 /**
  * Shared runner-engine tests (02 §3). Pins:
  *   - delegated runners carry out actions for FREE — no per-cycle gold/influence cost
- *   - cost-outcome channels (Suasio) resolve at eff and never stall on an empty treasury
+ *   - cost-outcome channels (Logos) resolve at eff and never stall on an empty treasury
  *   - a large delta resolves every cycle the budget covers
  *   - time-mode channels (Indagatio) never stall and always hold an active cycle
  *   - a forced outcome tier is honoured (Good-only Suggestion: pure gain, no flock-loss tier)
@@ -23,7 +23,7 @@ function withReprobates(s: GameState, n: number): GameState {
 const fresh = (seed = 'runner'): GameState => createInitialState(seed, 0);
 const influenceOf = (s: GameState): number => s.lifetime.influence.toNumber();
 
-describe('advanceRunnerCycles — cost-outcome (Suasio)', () => {
+describe('advanceRunnerCycles — cost-outcome (Logos)', () => {
   it('resolves a cycle per base duration with no per-cycle resource cost', () => {
     // eff 1 → 1 s/cycle. 3 s of budget resolves exactly 3 cycles. Forced Good isolates the
     // accounting from outcome-driven flock changes.

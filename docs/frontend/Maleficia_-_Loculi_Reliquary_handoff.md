@@ -14,7 +14,7 @@ Asset paths in the prototype are `./apps/web/public/assets/panvitium/...`; in th
 **High-fidelity.** Colours, type, sizes and timings are final. Layout was authored on the 1280×720 stage (`.stage` max width, 16:9).
 
 ## Where it plugs in
-- `App.tsx` → `PANEL_SHELL.maleficia` currently `{ variant: 'niche', hideHeader: true }` wrapping content in `PanelShell` (`.panel-overlay` + `.panel--niche`). The Reliquary is **not a panel**: render it as a full-surface overlay (like Magna Goetia / Suasio), `position:absolute; inset:0; z-index:40`, with its own ✕ close. Influence/Gold HUD (`z-index:85`) and Desidia HUD stay visible above it, as today.
+- `App.tsx` → `PANEL_SHELL.maleficia` currently `{ variant: 'niche', hideHeader: true }` wrapping content in `PanelShell` (`.panel-overlay` + `.panel--niche`). The Reliquary is **not a panel**: render it as a full-surface overlay (like Magna Goetia / Logos), `position:absolute; inset:0; z-index:40`, with its own ✕ close. Influence/Gold HUD (`z-index:85`) and Desidia HUD stay visible above it, as today.
 - `ui/panels.tsx` → `Loculi()` keeps feeding `buildCabinet(state)` items + `activateMaleficium` as `onUse`. Props contract of `MaleficiaCabinet` (`items`, `onUse`) is unchanged.
 - The Unveiling mounts at App level (above the room/overlays, below system modals 90+ — suggest z-index 88) and is triggered by a store event when a maleficium is added to `lifetime.maleficia` (Emptio completion). It must not fire for Katabasis carry-over/loads.
 

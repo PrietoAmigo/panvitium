@@ -154,10 +154,10 @@ body {
 }
 
 /* ---------- Influence & Gold HUD (design handoff) ---------- */
-/* Top-left resource cluster, persistent over the rooms and the Maleficia / Magna Goetia / Suasio
+/* Top-left resource cluster, persistent over the rooms and the Maleficia / Magna Goetia / Logos
    menus. Rendered at the app level (a sibling of those menu overlays, after them in DOM) rather than
    inside .stage, so it isn't trapped beneath the full-surface overlays it must show through, and
-   carries z-index 85 — above the Magna Goetia (80) / Suasio / Maleficia (40) overlays, below the
+   carries z-index 85 — above the Magna Goetia (80) / Logos / Maleficia (40) overlays, below the
    system modals (Title 90, Settings 95, the entry fade 96). It pins to the viewport's top-left edge
    (not the centred stage box), and the vessel's negative left margin pulls its transparent left
    edge off-screen so the glass sits hard against the screen edge. Visibility is owned by App. */

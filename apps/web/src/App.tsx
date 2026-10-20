@@ -111,7 +111,7 @@ export function App(): ReactElement {
 
   // The one-time Doppelgänger jumpscare. It arms when a Doppelgänger is bound for the FIRST time ever
   // (the permanent `flagDoppelgaengerSeen` is still unset) and the player is in the Studio; the next
-  // interaction (PC / phone / Suasio / the door) then triggers the scare instead of its action.
+  // interaction (PC / phone / Logos / the door) then triggers the scare instead of its action.
   const doppelgaengerSeen = useGameStore((s) => s.state?.flagDoppelgaengerSeen ?? false);
   const markDoppelgaengerSeen = useGameStore((s) => s.markDoppelgaengerSeen);
   // Applies a chosen incoming-call option's effects to the game state (docs/PANVITIUM-CALLS-IN.md).
@@ -159,7 +159,7 @@ export function App(): ReactElement {
 
   // A call may ring during eligible active play in the Studio: live session, not in the title or a
   // descent, no call already answered, no jumpscare (06-smartphone-content.md §2: active play only,
-  // dark in Katabasis). A Studio menu (PC, Suasio, the dialer) does NOT silence the line — the phone
+  // dark in Katabasis). A Studio menu (PC, Logos, the dialer) does NOT silence the line — the phone
   // still rings behind it (you hear it; close the menu and tap the phone to answer).
   const callInEnabled =
     ready &&
@@ -297,7 +297,7 @@ export function App(): ReactElement {
       {panel === 'maleficia' && <Loculi onClose={closePanel} />}
       {panel === 'magna-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
-      {panel === 'suasio' && <ChthonicLogos onClose={closePanel} />}
+      {panel === 'logos' && <ChthonicLogos onClose={closePanel} />}
       {panel === 'phone' && <PhoneDialer onClose={closePanel} />}
       {/* The answered incoming call — a full-screen stage that takes over until the call resolves.
           Keyed by id so each call mounts fresh (its FSM starts at the answer). `onChoose` applies the
@@ -314,7 +314,7 @@ export function App(): ReactElement {
         />
       )}
       {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars
-          Goetia / Suasio surfaces, pinned to the viewport's top-left edge. */}
+          Goetia / Logos surfaces, pinned to the viewport's top-left edge. */}
       {hudVisible && <InfluenceGoldHud />}
       {/* Desidia (ADR-033), pinned to the viewport's bottom-left edge; same visibility
           as the Influence & Gold HUD, except over the Loculi: there its vessel would sit on the

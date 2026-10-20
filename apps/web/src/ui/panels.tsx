@@ -44,7 +44,7 @@ import {
 } from '@panvitium/sim';
 import { SmartphoneDialer, type DialResult } from '../menus/SmartphoneDialer.js';
 import { MaleficiaCabinet as DesignedCabinet } from '../menus/MaleficiaCabinet.js';
-import { SuasioPanel as DesignedSuasio, type SuasioActionView } from '../menus/SuasioPanel.js';
+import { LogosPanel as DesignedLogos, type LogosActionView } from '../menus/LogosPanel.js';
 import { PcWindow as DesignedPc } from '../menus/PcWindow.js';
 import { CalculatorProgram } from '../menus/Calculator.js';
 import {
@@ -223,18 +223,18 @@ function RiteControls({ actionId }: { actionId: string }): ReactElement {
 }
 
 /** The three temptations in scroll order, with their alchemical sigils (☿ Mercury, ✴ the eight
- * voices, ☉ the crowned Sun) and Roman numerals. Suasio always presents exactly these three. */
-const SUASIO_ORDER = ['suggestion', 'logismoi', 'imperium'] as const;
-const SUASIO_GLYPHS: Record<string, string> = {
+ * voices, ☉ the crowned Sun) and Roman numerals. Logos always presents exactly these three. */
+const LOGOS_ORDER = ['suggestion', 'logismoi', 'imperium'] as const;
+const LOGOS_GLYPHS: Record<string, string> = {
   suggestion: '\u263F',
   logismoi: '\u2734',
   imperium: '\u2609',
 };
-const SUASIO_NUMERALS = ['I', 'II', 'III'] as const;
+const LOGOS_NUMERALS = ['I', 'II', 'III'] as const;
 
-/** Per-tier colour for the Suasio ledger's outcome chip — the scroll's candle-gold palette fading to
+/** Per-tier colour for the Logos ledger's outcome chip — the scroll's candle-gold palette fading to
  *  ash. Keyed by the real OutcomeEvent tier. */
-const SUASIO_TIER_COLOR: Record<Tier, string> = {
+const LOGOS_TIER_COLOR: Record<Tier, string> = {
   stellar: '#e6c04a',
   excellent: '#d2a63f',
   good: '#c9a227',
@@ -244,9 +244,9 @@ const SUASIO_TIER_COLOR: Record<Tier, string> = {
   apocalyptic: '#8a3a2a',
 };
 
-/** Re-skin one resolved Suasio outcome into the ledger's second column: the rite and its net resource
+/** Re-skin one resolved Logos outcome into the ledger's second column: the rite and its net resource
  *  deltas (souls first), or a "no soul stirred" line when a temptation yielded nothing. */
-function suasioLedgerText(e: OutcomeEvent): string {
+function logosLedgerText(e: OutcomeEvent): string {
   const name = actionName(e.actionId);
   const parts: string[] = [];
   const sign = (n: number): string => `${n > 0 ? '+' : '−'}${Math.abs(n).toLocaleString('en-US')}`;
@@ -255,12 +255,12 @@ function suasioLedgerText(e: OutcomeEvent): string {
   if (e.goldDelta !== 0) parts.push(`${sign(e.goldDelta)} ${strings.resources.gold}`);
   return parts.length > 0
     ? `${name} · ${parts.join(' · ')}`
-    : `${name} · ${strings.opera.suasioNoYield}`;
+    : `${name} · ${strings.opera.logosNoYield}`;
 }
 
 /**
- * The Chthonic Logos (Studio), the Suasio rites' scroll (Claude Design rework).
- * The Chthonic Logos is the scroll on the Studio table that holds the Suasio rites. The player is
+ * The Chthonic Logos (Studio), the Logos rites' scroll (Claude Design rework).
+ * The Chthonic Logos is the scroll on the Studio table that holds the Logos rites. The player is
  * writing it themselves, from their notes on worldly and otherworldly experience (the Katabasis
  * descents among them); its purpose is the mastery of eloquence and persuasion.
  *
@@ -280,15 +280,15 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
   );
 
   const headerProps = {
-    title: strings.opera.suasioTitle,
-    maxim: strings.opera.suasioMaxim,
-    closeLabel: strings.opera.suasioClose,
+    title: strings.opera.logosTitle,
+    maxim: strings.opera.logosMaxim,
+    closeLabel: strings.opera.logosClose,
     onClose,
   };
-  if (!state) return <DesignedSuasio {...headerProps} actions={[]} />;
+  if (!state) return <DesignedLogos {...headerProps} actions={[]} />;
 
   const influence = floor(state.lifetime.influence).toNumber();
-  const eff = categoryEfficiency(state, 'suasio');
+  const eff = categoryEfficiency(state, 'logos');
   const underway = state.lifetime.actionQueue.some((t) => occupiesPlayerSlot(t.actionId));
   const names: Record<string, string> = {
     suggestion: strings.opera.suggestion,
@@ -296,33 +296,33 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
     imperium: strings.opera.imperium,
   };
 
-  const actions: SuasioActionView[] = SUASIO_ORDER.map((id, i) => {
+  const actions: LogosActionView[] = LOGOS_ORDER.map((id, i) => {
     const def = ACTIONS[id]!;
     // The exact influence the cast would take — the same pipeline startAction deducts (the log-scaled
-    // Suasio cost and the Paimon #9 reduction), so the printed cost and the affordability gate match.
+    // Logos cost and the Paimon #9 reduction), so the printed cost and the affordability gate match.
     const influenceCost = plannedActionCost(state, id, { efficiency: eff }).influence;
     const locked = !actionUnlocked(state, def);
     const active = head?.actionId === id;
-    // Suasio is cost-outcome, so a rite's queued duration is exactly its baseTimeSeconds — which
+    // Logos is cost-outcome, so a rite's queued duration is exactly its baseTimeSeconds — which
     // lets us reconstruct progress from the remaining time with no sim/save change.
     const base = def.baseTimeSeconds;
     const remaining = head?.remainingSeconds ?? base;
     const progress =
       active && base > 0 ? Math.min(100, Math.max(0, ((base - remaining) / base) * 100)) : 0;
-    const sealed = locked ? strings.opera.suasioSealed[id] : undefined;
+    const sealed = locked ? strings.opera.logosSealed[id] : undefined;
     // The control cluster (auto-repeat toggle + acolyte delegation) shows on EVERY unlocked rite —
     // each sub-control renders its own locked/disabled state until it is available (design handoff),
     // so the automation systems are visible from the first castable rite onward.
     const hasControls = !locked;
     return {
       id,
-      numeral: SUASIO_NUMERALS[i] ?? '',
-      glyph: SUASIO_GLYPHS[id] ?? '',
+      numeral: LOGOS_NUMERALS[i] ?? '',
+      glyph: LOGOS_GLYPHS[id] ?? '',
       name: locked ? (sealed?.name ?? '') : (names[id] ?? def.id),
-      quote: locked ? (sealed?.maxim ?? '') : (strings.opera.suasioQuote[id] ?? ''),
+      quote: locked ? (sealed?.maxim ?? '') : (strings.opera.logosQuote[id] ?? ''),
       cost: `${influenceCost} ${strings.resources.influence} · ${def.baseTimeSeconds}s`,
-      cta: strings.opera.suasioCta[id] ?? strings.opera.tempt,
-      status: strings.opera.suasioStatus[id] ?? '',
+      cta: strings.opera.logosCta[id] ?? strings.opera.tempt,
+      status: strings.opera.logosStatus[id] ?? '',
       locked,
       active,
       progress,
@@ -330,7 +330,7 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
       onTempt: () => act(id),
       ...(def.unlock !== undefined
         ? {
-            lockLabel: `${strings.opera.suasioRequires} ${strings.opera.anySin} ${romanLevel(
+            lockLabel: `${strings.opera.logosRequires} ${strings.opera.anySin} ${romanLevel(
               def.unlock,
             )}`,
           }
@@ -347,20 +347,20 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
   if (panvDef) {
     const locked = !compositumUnlocked(state, panvDef);
     const burning = isToggleActive(state, 'panvitium');
-    const sealed = locked ? strings.opera.suasioSealed.panvitium : undefined;
+    const sealed = locked ? strings.opera.logosSealed.panvitium : undefined;
     actions.push({
       id: 'panvitium',
       numeral: 'IV',
       glyph: '\u2641',
       name: locked ? (sealed?.name ?? '') : (strings.opera.panvitium ?? 'Panvitium'),
-      quote: locked ? (sealed?.maxim ?? '') : (strings.opera.suasioQuote.panvitium ?? ''),
+      quote: locked ? (sealed?.maxim ?? '') : (strings.opera.logosQuote.panvitium ?? ''),
       cost: `${(panvDef.costPerSecond.gold ?? 0).toLocaleString('en-US')} ${strings.resources.gold.toLowerCase()}/s \u00b7 ${strings.opera.panvitiumRising}`,
       cta: burning
-        ? (strings.opera.suasioStatus.panvitium ?? '')
+        ? (strings.opera.logosStatus.panvitium ?? '')
         : confirmingPanvitium
-          ? (strings.opera.suasioConfirm ?? '')
-          : (strings.opera.suasioCta.panvitium ?? ''),
-      status: strings.opera.suasioStatus.panvitium ?? '',
+          ? (strings.opera.logosConfirm ?? '')
+          : (strings.opera.logosCta.panvitium ?? ''),
+      status: strings.opera.logosStatus.panvitium ?? '',
       locked,
       active: burning,
       progress: burning ? 100 : 0,
@@ -374,26 +374,26 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
         activateCeremony('panvitium');
         setConfirmingPanvitium(false);
       },
-      lockLabel: `${strings.opera.suasioRequires} ${strings.opera.suasioPanvitiumGate}`,
+      lockLabel: `${strings.opera.logosRequires} ${strings.opera.logosPanvitiumGate}`,
     });
   }
 
   // The scroll's foot is its ledger: the resolved temptations (this program's rites only), newest
   // first, each an outcome tier chip beside its net resource deltas.
-  const ledgerRows = log.filter((e) => (SUASIO_ORDER as readonly string[]).includes(e.actionId));
+  const ledgerRows = log.filter((e) => (LOGOS_ORDER as readonly string[]).includes(e.actionId));
   const ledger = (
-    <div className="suasio-ledger">
-      <div className="suasio-ledger-head">{strings.opera.suasioLedgerHeading}</div>
+    <div className="logos-ledger">
+      <div className="logos-ledger-head">{strings.opera.logosLedgerHeading}</div>
       {ledgerRows.length === 0 ? (
-        <p className="suasio-ledger-empty">{strings.opera.suasioEmptyLedger}</p>
+        <p className="logos-ledger-empty">{strings.opera.logosEmptyLedger}</p>
       ) : (
         <div>
           {ledgerRows.map((e, i) => (
-            <div className="suasio-ledger-row" key={`${i}-${e.actionId}-${e.tier}`}>
-              <span className="suasio-ledger-tier" style={{ color: SUASIO_TIER_COLOR[e.tier] }}>
+            <div className="logos-ledger-row" key={`${i}-${e.actionId}-${e.tier}`}>
+              <span className="logos-ledger-tier" style={{ color: LOGOS_TIER_COLOR[e.tier] }}>
                 {strings.tiers[e.tier]}
               </span>
-              <span className="suasio-ledger-text">{suasioLedgerText(e)}</span>
+              <span className="logos-ledger-text">{logosLedgerText(e)}</span>
             </div>
           ))}
         </div>
@@ -401,7 +401,7 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
     </div>
   );
 
-  return <DesignedSuasio {...headerProps} actions={actions} ledger={ledger} />;
+  return <DesignedLogos {...headerProps} actions={actions} ledger={ledger} />;
 }
 
 /** The terminal log (02 §10): the last hundred outcomes, newest first. */

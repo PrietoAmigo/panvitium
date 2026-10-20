@@ -121,7 +121,7 @@ test('the Chthonic Logos carries Panvitium as its sealed fourth rite', async ({ 
   await expect(scroll).toBeVisible();
   // Four rows now: the three temptations plus Panvitium, sealed exactly like the other locked
   // rites (redacted Latin + the gate label) until every Sin reaches level III.
-  await expect(scroll.locator('.suasio-row')).toHaveCount(4);
+  await expect(scroll.locator('.logos-row')).toHaveCount(4);
   await expect(scroll).toContainText('Requires Every Sin III');
   await expect(scroll).toContainText('Zvorpo Wermurn'); // the redacted seal-name
 });

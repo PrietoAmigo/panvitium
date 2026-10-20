@@ -78,12 +78,12 @@ export const ROOMS: Record<RoomId, RoomDef> = {
         action: { type: 'panel', panel: 'pc' },
       },
       {
-        // The Chthonic Logos on the Studio table: the player's own scroll of the Suasio rites, written
+        // The Chthonic Logos on the Studio table: the player's own scroll of the Logos rites, written
         // from their notes on worldly and otherworldly experience (the Katabasis among them).
-        id: 'suasio',
+        id: 'logos',
         label: 'The Chthonic Logos',
         rect: { x: 13, y: 69, w: 34, h: 28 },
-        action: { type: 'panel', panel: 'suasio' },
+        action: { type: 'panel', panel: 'logos' },
       },
       {
         // The budget Android phone lying flat on the desk between the scroll and the PC. Declared
@@ -229,7 +229,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     rarity: 'rare',
     img: `${ASSET_BASE}/maleficia/ars_serpens.png`,
     desc: 'Smooth to the touch and ear.',
-    effect: '+33% Suasio efficiency.',
+    effect: '+33% Logos efficiency.',
   },
   {
     id: 'ritual_dagger',

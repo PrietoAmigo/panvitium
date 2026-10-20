@@ -1,7 +1,7 @@
 /**
  * Opera action TUNING DATA (02 §3, 03 §2) — the per-action numbers and tier-weight distributions,
  * separated from the engine in `actions.ts` so the economy knobs live in one editable place. Pure
- * data: types and behaviour stay in `actions.ts`. Numbers are from the economy spreadsheet (Suasio /
+ * data: types and behaviour stay in `actions.ts`. Numbers are from the economy spreadsheet (Logos /
  * Indagatio / Emptio); the inline notes record each sheet reconciliation. (The Decimatio culling
  * rites, Caedes / Pogrom / Purgatio, are retired: ADR-038.)
  */
@@ -20,7 +20,7 @@ const SUGGESTION_WEIGHTS: TierWeights = {
   apocalyptic: 0.001,
 };
 
-// Logismoi (Suasio sheet, retuned by player request): mid-game reprobate/soul source, richer than
+// Logismoi (Logos sheet, retuned by player request): mid-game reprobate/soul source, richer than
 // Suggestion. Neutral removed (0) so the rite almost always moves the flock; the tails (Terrible,
 // Apocalyptic) are fattened to offset the heavier Excellent/Good mass. Column still sums to 1.
 const LOGISMOI_WEIGHTS: TierWeights = {
@@ -33,7 +33,7 @@ const LOGISMOI_WEIGHTS: TierWeights = {
   apocalyptic: 0.01,
 };
 
-// Imperium (Suasio sheet, retuned by player request): the late rite's full distribution, reweighted
+// Imperium (Logos sheet, retuned by player request): the late rite's full distribution, reweighted
 // toward a dominant Good (0.45) with Neutral removed (0) so a cast almost always swells the flock;
 // the tails stay live. Column sums to 1.
 const IMPERIUM_WEIGHTS: TierWeights = {
@@ -70,7 +70,7 @@ const EMPTIO_WEIGHTS: TierWeights = {
 };
 
 /**
- * The actions implemented so far. Numbers are from the economy spreadsheet (Suasio / Indagatio /
+ * The actions implemented so far. Numbers are from the economy spreadsheet (Logos / Indagatio /
  * Emptio). Indagatio is 150 s baseline (player tuning: half the sheet's 300 s, rev
  * 2026-06-12) and Emptio is 120 s (player tuning: double the former 60 s); both efficiency-mode
  * `time`, so player efficiency divides the duration.
@@ -78,9 +78,9 @@ const EMPTIO_WEIGHTS: TierWeights = {
 export const ACTIONS: Record<string, ActionDef> = {
   suggestion: {
     id: 'suggestion',
-    category: 'suasio',
+    category: 'logos',
     // Tuning override (player request): the entry rite is now a 1 s, 1-influence cast so the
-    // opening loop reads instantly. Overrides the Suasio sheet's 5 s / 5-influence baseline.
+    // opening loop reads instantly. Overrides the Logos sheet's 5 s / 5-influence baseline.
     baseTimeSeconds: 1,
     cost: { influence: 1 },
     weights: SUGGESTION_WEIGHTS,
@@ -89,21 +89,21 @@ export const ACTIONS: Record<string, ActionDef> = {
   },
   logismoi: {
     id: 'logismoi',
-    category: 'suasio',
+    category: 'logos',
     baseTimeSeconds: 5,
     cost: { influence: 25 },
     weights: LOGISMOI_WEIGHTS,
     efficiencyMode: 'cost-outcome',
-    unlock: 1, // 2nd Suasio rite opens at max Sin level I (player tuning; was Luxuria II)
+    unlock: 1, // 2nd Logos rite opens at max Sin level I (player tuning; was Luxuria II)
     delegateUnlock: 2, // auto/delegate at max Sin level II (player tuning; was Luxuria III)
   },
   imperium: {
     id: 'imperium',
-    // Action time decided at 10s (the Suasio sheet left it "Fill Time"); cost/effect/gating are
+    // Action time decided at 10s (the Logos sheet left it "Fill Time"); cost/effect/gating are
     // from the sheet. A full-distribution late rite (Stellar pays +3% souls, the tails shed the
     // flock) — a short cast for its big influence price.
     baseTimeSeconds: 10,
-    category: 'suasio',
+    category: 'logos',
     cost: { influence: 40 }, // sheet 100; cut 2.5× (player tuning request)
     weights: IMPERIUM_WEIGHTS,
     efficiencyMode: 'cost-outcome',
