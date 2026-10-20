@@ -584,7 +584,13 @@ export const strings = {
         from: 'Gideon Reyes',
         addr: 'g.reyes@reyes-stewardship.com',
         subject: 'A delicate matter about the house',
-        body: 'A delicate one. I have had word, more than once now, that the household helps itself while you are away. Silver, small valuables, the odd thing that never makes it onto a list. I will not put names in an email I do not control.\n\nSeveral of my clients in your bracket use Hearthstone Protective: discreet, bonded, and they ask no questions about what is behind which door. I can make the introduction today if you want the house watched the next time you travel. Your call, as ever.\n\nGideon',
+        body: 'A delicate one. I have had word, more than once now, that the household helps itself while you are away. Silver, small valuables, the odd thing that never makes it onto a list. I will not put names in an email I do not control.\n\nSeveral of my clients in your bracket use Hearthstone Protective: discreet, bonded, and they ask no questions about what is behind which door. I can make the introduction today if you want the house watched the next time you travel. Your call, as ever.\n\nOn a lighter note, how has the weather been treating you?\n\nGideon',
+        replies: [
+          {
+            text: 'you and i are not good at small talk ... weather ?',
+            effect: 'No mechanical effect.',
+          },
+        ],
       },
       'gideon-3': {
         from: 'Gideon Reyes',

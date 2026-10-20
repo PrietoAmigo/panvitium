@@ -96,9 +96,10 @@ additive-optional pattern.
   > names in an email I do not control. Several of my clients in your bracket use Hearthstone
   > Protective: discreet, bonded, and they ask no questions about what is behind which door. I can
   > make the introduction today if you want the house watched the next time you travel. Your call,
-  > as ever.
+  > as ever. On a lighter note, how has the weather been treating you?
   > Gideon
-- **Answers:** none.
+- **Answers:**
+  - (1) "you and i are not good at small talk ... weather ?". No mechanical effect.
 - **Trigger:** 2 minutes after returning from the second katabasis (`katabasisCount` reaches 2).
 
 ### Gideon Reyes #3
