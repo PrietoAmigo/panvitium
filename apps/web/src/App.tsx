@@ -7,6 +7,7 @@ import { ROOMS } from './menus/menus.data.js';
 import { RoomView } from './menus/RoomView.js';
 import { SmartphoneCallIn } from './menus/SmartphoneCallIn.js';
 import { CALL_PLATE_ANSWERING } from './menus/calls-in.data.js';
+import { boundVisualsFor } from './menus/degrade.data.js';
 import { MagnaGoetiaBook } from './menus/MagnaGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
@@ -113,6 +114,12 @@ export function App(): ReactElement {
   // (the permanent `flagDoppelgaengerSeen` is still unset) and the player is in the Studio; the next
   // interaction (PC / phone / Logos / the door) then triggers the scare instead of its action.
   const doppelgaengerSeen = useGameStore((s) => s.state?.flagDoppelgaengerSeen ?? false);
+  // The Studio's bound figures, for the answered-call stage: it paints the Studio over the room, so
+  // it composites the same figures the room does (picking up the phone never dismisses them).
+  const studioFigures = useMemo(
+    () => boundVisualsFor('studio', summoned, doppelgaengerSeen),
+    [summoned, doppelgaengerSeen],
+  );
   const markDoppelgaengerSeen = useGameStore((s) => s.markDoppelgaengerSeen);
   // Applies a chosen incoming-call option's effects to the game state (docs/PANVITIUM-CALLS-IN.md).
   const answerCall = useGameStore((s) => s.answerCall);
@@ -307,6 +314,7 @@ export function App(): ReactElement {
         <SmartphoneCallIn
           key={answeredCall ?? ''}
           call={callInView}
+          figures={studioFigures}
           onChoose={(i) => {
             if (answeredCall) answerCall(answeredCall, i);
           }}

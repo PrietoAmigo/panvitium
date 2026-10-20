@@ -3,6 +3,7 @@ import { strings } from '@panvitium/shared';
 import type { CallInView } from '../game/callIn.js';
 import { CALL_AUDIO_BASE, CALL_PLATE_ANSWERING, CALL_PLATE_BASE } from './calls-in.data.js';
 import { DegradedScene } from './DegradedScene.js';
+import type { BoundInvocationVisual } from './types.js';
 
 /**
  * "The voice in the room" — the answered incoming-call stage (Claude Design handoff, "Smartphone
@@ -36,7 +37,13 @@ export interface SmartphoneCallInProps {
   plateOpacity?: number;
   /** Base path for the call recordings (`<id>.mp3`). Default `/assets/panvitium/music/`. */
   audioBase?: string;
+  /** The Studio's bound invocation figures (`boundVisualsFor('studio', …)`), composited into both
+   *  plates so whatever stands in the room stays there while the call is answered. */
+  figures?: BoundInvocationVisual[];
 }
+
+// A stable empty, so an omitted list doesn't read as a new scene on every render.
+const NO_FIGURES: BoundInvocationVisual[] = [];
 
 // Choose → reset cadence (design): pick → `done` at once; +950ms → `fading`; +1650ms → resolved.
 const DONE_TO_FADING_MS = 950;
@@ -60,6 +67,7 @@ export function SmartphoneCallIn({
   textSpeedMs = 32,
   plateOpacity = 0.66,
   audioBase = CALL_AUDIO_BASE,
+  figures = NO_FIGURES,
 }: SmartphoneCallInProps): ReactElement {
   const [phase, setPhaseState] = useState<Phase>(call.audio ? 'speaking' : 'type');
   const [typed, setTyped] = useState('');
@@ -209,14 +217,15 @@ export function SmartphoneCallIn({
       {/* Phase-driven background plates, composited THROUGH the degradation pass (ADR-021) so the
           call reads at the same crushed/pixelated fidelity as the room — the message + options sit
           ABOVE the degraded scene, not over a clean plate. The base resting plate shows through as
-          the answered plate crossfades out on done/fading. */}
-      <DegradedScene roomId="studio" backdrop={CALL_PLATE_BASE} />
+          the answered plate crossfades out on done/fading. The bound figures ride both plates, so
+          the room's invocations never vanish when the phone is picked up. */}
+      <DegradedScene roomId="studio" backdrop={CALL_PLATE_BASE} figures={figures} />
       <div
         className="callin-degraded-answering"
         style={{ opacity: answeringBg }}
         aria-hidden="true"
       >
-        <DegradedScene roomId="studio" backdrop={CALL_PLATE_ANSWERING} />
+        <DegradedScene roomId="studio" backdrop={CALL_PLATE_ANSWERING} figures={figures} />
       </div>
       <div className="callin-vignette" aria-hidden="true" />
       <div className="callin-kicker" aria-hidden="true">
