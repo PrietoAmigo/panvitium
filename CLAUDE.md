@@ -60,10 +60,11 @@ imports React, the DOM, or the network.
 Everything the game _does_ lives here as pure functions. Two contracts make the whole design work:
 
 - **The tick (ADR-004, `tick.ts`).** One pure function advances the entire game by a span of
-  seconds. The _same_ function serves both the live 10 Hz loop (δ ≈ 0.1 s) and offline catch-up (one
-  call, large capped δ), so online and offline gains can never drift. Purity contract: no DOM, no
-  `Math.random`, no mutation of the input state. It returns the new state plus transient
-  `OutcomeEvent`s (not persisted).
+  seconds, called by the live 10 Hz loop (δ ≈ 0.1 s). There is no offline catch-up: offline is a
+  freeze (ADR-032), so resuming runs no tick and only grants Desidia (clamped to its cap), whose
+  toggle later speeds up the live tick by scaling its game-time span `simDelta` (ADR-033). Purity
+  contract: no DOM, no `Math.random`, no mutation of the input state. It returns the new state plus
+  transient `OutcomeEvent`s (not persisted).
 - **Determinism (ADR-011, `rng.ts`).** All randomness draws from a seeded mulberry32 PRNG whose
   entire state is one integer living in `GameState`. A save therefore fully determines the sequence
   that follows it. **Consequence for edits:** when adding a randomized mechanic, gate the RNG draw so

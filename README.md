@@ -120,7 +120,10 @@ Each needs a design or spreadsheet decision before it becomes a coding slice.
   reserve interest multiplied by `goldRateMul` and compounded by hand (free deposits; Midas ×10
   doubles the reserve every ~2.3 min); Erinyes's uncapped ×2 player efficiency per descent; the
   Imperium / Logismoi %-of-flock × efficiency tiers compounding the flock (fed by Aurevora's
-  gold-for-efficiency and Erinyes); the Church culls taking most of the early flock.
+  gold-for-efficiency and Erinyes); the Church culls (Suggestion's Terrible −5% / Apocalyptic −25% of
+  the whole flock) capping the early flock. The audit measured them taking ~84% of it; since the
+  retune a one-hour Suggestion-only run loses ~30% to them (Good's suicides are now the main exit)
+  with the flock near ~130, so this one wants re-ranking.
 - _Medium:_ acolytes casting Logos for free at a full unit of gain; efficiency below ×2 doing nothing
   for Suggestion's yield; Sin-1 invocation upkeep outrunning the 0.5/s base influence regen without
   Decarabia; Behemoth and Arachne as trap invocations; Halphas #38 / Stolas #36 raising Indagatio's
@@ -131,13 +134,17 @@ Each needs a design or spreadsheet decision before it becomes a coding slice.
 
 **Gaps left by the Decimatio removal (ADR-038).**
 
-- **Soul economy.** The three rites were the only player-driven reprobate → soul conversion. Souls
-  now come only from deaths: the ambient suicide/murder rates (~1 soul per 33 s at 100 reprobates),
-  the death-rate invocations (Imp, Harpy, Banshee, Nightmare), maleficia, the death seals, Panvitium,
-  Erinyes and Astiwihad. Early Devotion, sigil and invocation pacing all read souls and need
-  re-checking.
+- **Soul economy.** The three rites were the only player-driven reprobate → soul conversion. Since
+  the 2026-10-20 retune, Suggestion's Good tier drives 1 to 3 reprobates to suicide and is the main
+  early source (~86% of the ~830 souls in a one-hour Suggestion-only run). Otherwise souls come only
+  from deaths: the ambient suicide/murder rates (~1 soul per 33 s at 100 reprobates), the death-rate
+  invocations (Imp, Harpy, Banshee, Nightmare), maleficia, the death seals, Panvitium, Erinyes and
+  two incoming-call answers (10% / 15% of the flock). Early Devotion, sigil and invocation pacing all
+  read souls and need re-checking.
 - **Gold sinks.** Caedes / Pogrom / Purgatio were the main repeatable sinks; gold now goes only to
-  Emptio, the Indagatio investment, the Depraedatio reserve, Panvitium upkeep and Aurevora.
+  Emptio, the Indagatio investment, the Depraedatio reserve, Panvitium upkeep, Aurevora, invocation
+  gold upkeep (Imp's 10 gold/s; Behemoth, Fama, Succubus and Specunitas take a share of gold gain)
+  and a few incoming-call answers.
 - **Ira (Satan).** The per-level effect is empty (the ledger reads "Its levels carry no effect.");
   Retribution lifts invocation efficiency only.
 - **Dormant seals** (`inert`, souls still bindable and recoverable) awaiting a re-home: Beleth #13,
@@ -153,11 +160,13 @@ Each needs a design or spreadsheet decision before it becomes a coding slice.
 - **Plutus** and **Vapula #60** now reach the reserve interest only, so they do nothing without a
   reserve.
 - **Early gold pacing.** Without the population-coupled loan income, passive gold before a reserve is
-  the base rate plus Haagenti #48, Kobold and maleficia; the gold prices (Emptio, the Indagatio
-  investment, the 100-gold Tier I deposit) need re-checking on the sheet.
+  the base rate plus Haagenti #48, Kobold and maleficia; the gold prices (Emptio, the 100-gold
+  Tier I deposit) and the Indagatio investment curve (now a share of gold held) need re-checking on
+  the sheet.
 - **Culling has no economic cost** any more (every reprobate used to be a debtor, 03 §1), and no
   death mints gold.
-- **Katabasis gold carry-over** comes only from the Avaritia level and Purson #20.
+- **Katabasis gold carry-over** is only the 5% base, the Avaritia level (+12.5% each) and Purson #20
+  (plus Astiwihad's 100%).
 - **Panvitium upkeep** has no Foedus rebate, so the burn is shorter at full price.
 - **Vine #45 / Furcas #50** only cut the surrender charge, a small value: candidates to re-home.
 
@@ -168,8 +177,9 @@ Each needs a design or spreadsheet decision before it becomes a coding slice.
   `apps/web/src/ui/panels.tsx`). Both wait on the outgoing-call engine specified in
   `docs/PANVITIUM-CALLS-OUT.md` and `docs/06-smartphone-content.md`. A buff-granting code needs a sim
   hook (and an additive-optional save field if it persists, ADR-023).
-- **Emails polish.** New mail shows only as the unread badge on the PC's Emails tile: there is no
-  delivery toast and no indicator on the PC prop in the room. Content and trigger tuning remain.
+- **Emails polish.** New mail shows only as the unread badge on the PC's Emails tile (Fausto's fifth
+  letter also knocks): there is no delivery toast and no indicator on the PC prop in the room.
+  Content and trigger tuning remain.
 
 ### Onboarding and game feel (5.4)
 
@@ -177,7 +187,8 @@ Confirm scope before coding. **Done when** a player starting from a cold save re
 _Katabasis_ unaided in playtest.
 
 - **First-run ramp.** Gentle prompts (not a modal tutorial) for the first _Logos_, the first Devotion
-  threshold and the first _Katabasis_.
+  threshold and the first _Katabasis_. The only first-run guard so far is the empty-handed warning,
+  which stops a soulless first descent.
 - **Help & glossary.** Tooltips on resources, the seven outcome tiers and the modifier readouts; a
   short glossary that explains the Latin without anglicizing it (ADR-020).
 - **Settings panel.** Audio controls (after the audio track below) and the `DegradePass` knobs (the
@@ -185,10 +196,11 @@ _Katabasis_ unaided in playtest.
 
 ### Audio (5.3, ADR-014)
 
-Sound plays today through a plain HTML5 `<audio>` facade (`apps/web/src/audio/audio.ts`: the title
-music and a few cues). Remaining: settle the event taxonomy, supply the asset set (the descent's
-ambient score among them), move to Howler when richer mixing is needed, and add mute/volume to
-Settings. **Done when** the core events have sound.
+Sound plays today through plain HTML5 `<audio>`: the title music, the descent's ambient score, the
+incoming-call recordings and vibration, the jumpscare, and two cues (Fausto's knock, the Banshee's
+scream) through the `apps/web/src/audio/audio.ts` facade, whose other events are still silent.
+Remaining: settle the event taxonomy, supply the rest of the asset set, move to Howler when richer
+mixing is needed, and add mute/volume to Settings. **Done when** the core events have sound.
 
 ### Testing
 
@@ -206,8 +218,8 @@ restore test, monitoring is green, and a beta cohort is playing.
 - **Backups.** Nightly `age`-encrypted `pg_dump` to B2/R2 with the weekly restore test running
   (ADR-018), including a migrated save through a production dump → restore.
 - **Observability.** Dozzle + UptimeRobot first; self-hosted PostHog later (ADR-019).
-- **Performance & accessibility.** Offline catch-up over very long absences (it is uncapped), the
-  `DegradePass` canvas cost, and keyboard / assistive-tech reach across the diegetic panels.
+- **Performance & accessibility.** The `DegradePass` canvas cost, and keyboard / assistive-tech reach
+  across the diegetic panels.
 - **Beta → launch.** A closed beta cohort, then launch.
 
 ### Docs to sync
