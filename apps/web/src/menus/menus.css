@@ -4071,11 +4071,14 @@ body {
   animation: panel-rise 0.4s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
-/* Two page text columns, light on the dark descent. */
+/* Two page text columns, light on the dark descent. An entry's leaf is set in quarters over the
+   same 6%–94% band the index uses: these two pages hold its top half (stats left, plate right),
+   the lore (.gb-lore) flows through the bottom half of both, and Summon / Dispel (.gb-actions)
+   close the bottom-right corner. */
 .gb-page {
   position: absolute;
-  top: 11%;
-  height: 78%;
+  top: 6%;
+  height: 43%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -4240,16 +4243,17 @@ body {
   color: var(--gold-leaf, #d8b658);
 }
 
-/* Detail leaf. The right-hand page holds the entry's painted plate (Claude Design, "Invocation
-   Plates"): a 3:4 cave-stone panel at the full width of the column, centred down it. */
+/* Detail leaf. The top half of the right-hand page holds the entry's painted plate (Claude Design,
+   "Invocation Plates"): a 3:4 cave-stone panel at the full height of the half, centred across it. */
 .gb-illus-page {
   align-items: center;
   justify-content: center;
 }
 .gb-illus-img {
   display: block;
-  width: 100%;
-  height: auto;
+  height: 100%;
+  width: auto;
+  max-width: 100%;
   /* The plate's own base fill, holding its place until the image decodes. */
   background: #17110d;
 }
@@ -4280,22 +4284,32 @@ body {
   font-family: 'IM Fell English SC', serif;
   font-size: 2.6cqh;
   color: rgba(216, 182, 88, 0.7);
-  margin: 1.2cqh 0 0;
+  margin: 0.8cqh 0 0;
   letter-spacing: 0.1em;
 }
 .gb-detail-name {
   font-family: 'IM Fell English SC', serif;
   font-weight: 400;
-  font-size: 5.2cqh;
+  font-size: 4.8cqh;
   margin: 0;
   color: var(--parchment);
 }
 .gb-stats {
-  margin: 1.4cqh 0;
+  margin: 1cqh 0;
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 0.5cqh 1em;
-  font-size: 2.6cqh;
+  gap: 0.4cqh 1em;
+  font-size: 2.3cqh;
+  line-height: 1.2;
+  /* The stats give way if the top half runs short (a long effect on a sealed entry): they scroll
+     inside it, bar hidden, so the heading always shows. */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+.gb-stats::-webkit-scrollbar {
+  display: none; /* WebKit / Blink */
 }
 .gb-stats dt {
   font-variant: small-caps;
@@ -4310,16 +4324,36 @@ body {
   color: var(--parchment);
   font-style: italic;
 }
+/* The lore runs through the bottom half of both pages as two columns, each exactly over its page
+   (9.5%–42.5% and 57.5%–90.5%, the 15cqw gutter between). The columns fill in order, not balanced,
+   so the text fills the left page's half and only then runs on into the right's. They stop short of
+   the leaf's foot (51%–88%), leaving the band below for the actions, so no lore runs under them. */
 .gb-lore {
-  font-size: 2.6cqh;
-  line-height: 1.5;
+  position: absolute;
+  top: 51%;
+  height: 37%;
+  left: 9.5%;
+  width: 81%;
+  column-count: 2;
+  column-gap: 15cqw;
+  column-fill: auto;
+  overflow: hidden;
+  font-family: 'IM Fell English', Georgia, serif;
+  font-size: 2.3cqh;
+  line-height: 1.45;
   color: var(--parchment-shadow);
   font-style: italic;
   text-align: justify;
   margin: 0;
 }
+/* The Latin (and the quoted scripture) stands upright on the italic page. */
+.gb-lore em {
+  font-style: normal;
+}
 .gb-actions {
-  margin-top: auto;
+  position: absolute;
+  right: 9.5%;
+  bottom: 6%;
   display: flex;
   gap: 0.8em;
 }

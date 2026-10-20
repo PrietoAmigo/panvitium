@@ -1,8 +1,8 @@
 // View-model adapter: maps the authoritative `packages/sim` invocation catalog + live game state
 // onto the presentation `Invocation` shape the designed Magna Goetia grimoire consumes. The dynamic
-// fields (name, gate, upkeep cost, unlocked, bound count, invoking power) are all real; the design's
-// lore is reused where the handoff wrote one (the line is omitted otherwise), the rank numeral is the
-// entry's place in the index, and every entry carries its painted plate. No flavour is fabricated.
+// fields (name, gate, upkeep cost, unlocked, bound count, invoking power) are all real; every entry
+// carries its grimoire lore (menus.data.ts; the line is omitted for an id without one), the rank
+// numeral is the entry's place in the index, and every entry carries its painted plate.
 import {
   INVOCATION_IDS,
   invocationById,
@@ -17,7 +17,7 @@ import {
 } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import type { GoetiaEntry } from '../menus/magna-goetia.types.js';
-import { INVOCATION_BY_ID, ASSET_BASE } from '../menus/menus.data.js';
+import { INVOCATION_LORE, ASSET_BASE } from '../menus/menus.data.js';
 import { aurevoraDrainText, invocationEffectText } from './invocationEffect.js';
 import { roman } from './format.js';
 
@@ -99,16 +99,15 @@ export function buildGoetia(state: GameState): GoetiaView {
     // The "Bound" field shows the live count of summoned entities (player request): e.g. "3" while
     // three copies are active (was a generic "bound" badge that hid the count). Absent when none.
     const bound = active > 0 ? String(active) : undefined;
-    const flavour = INVOCATION_BY_ID[id]; // design art/lore for the illustrated entries
     // Effect is a MECHANIC, so it comes from the authoritative sim (same source as the Analytics
-    // Invocations tab) — never the static menus.data.ts copy, which went stale. Lore/art stay flavour.
+    // Invocations tab) — never the static menus.data.ts copy, which went stale. Lore stays flavour.
     // The page describes ONE invocation, like its cost line: a single copy's effect, never the
     // summed stack (that total is the Analytics tab's line).
     const effect = invocationEffectText(state, id, 'perCopy');
-    const lore = flavour?.lore ?? '';
+    const lore = INVOCATION_LORE[id] ?? '';
     entries.push({
       id,
-      name: strings.invocations.names[id] ?? flavour?.name ?? id,
+      name: strings.invocations.names[id] ?? id,
       // The Familiar is the base creature, not one of the ranked seals — it carries no numeral. Every
       // other seal gets a sequential Roman numeral by its position in the index (not the design's
       // per-id flavour rank), so the index reads I, II, III, … with no Arabic fallthrough.

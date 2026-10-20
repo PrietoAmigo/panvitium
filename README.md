@@ -103,9 +103,23 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1287** (sim 619 · shared 86 · api 20 · web 562).
+**Current test count: 1319** (sim 619 · shared 88 · api 20 · web 592).
 
-> **Latest change — Erinyes burns behind the altar; the Banshee screams.** While Erinyes is bound,
+> **Latest change — The Magna Goetia: lore for every invocation, and a leaf set in quarters.** All
+> 25 invocations now carry a page of grimoire lore (was six, some stale against their retuned
+> effects): what the spirit is and whose household keeps it, how to guide it, why its cap protects
+> the Operator, and a closing Latin formula (untranslated, ADR-020). The prose stays oblique about
+> mechanics and names no resource or figure, so tuning cannot stale it; the effect, cost and cap
+> lines carry the numbers. It lives in one `INVOCATION_LORE` table in `menus/menus.data.ts`
+> (replacing the old six-entry design table and its dead `Invocation` type), with `*…*` marking the
+> Latin, set upright on the italic page. An entry's leaf is laid out anew: the stats in the top half
+> of the left page, the painted plate at the full height of the top half of the right, the lore as
+> one two-column flow through the bottom half of both (it fills the left page first, then runs on),
+> and Summon / Dispel in the bottom-right corner, under the lore. The stats type is a touch smaller
+> so a sealed apex's long effect line fits its half. No sim, save or RNG change. Net **+30 tests**
+> (web 562 → 592), plus two Magna Goetia e2e cases measuring every leaf for clipping.
+>
+> **Earlier change — Erinyes burns behind the altar; the Banshee screams.** While Erinyes is bound,
 > her figure (`invocations/erinyes.png`) stands at the back of the Altar Room, directly behind the
 > altar stone and facing the lens, cropped below the stone's top edge (`clipBottom`). She holds
 > still; a flickering fire aura (the new `fireAura` figure option) licks up off her silhouette and

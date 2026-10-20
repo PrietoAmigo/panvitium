@@ -4,7 +4,9 @@
  * hidden from assistive tech, since the name already heads the left page) sized for the 600 × 800
  * bake; the index shows none; a plate that fails to load is hidden with no fallback copy, for that
  * entry only; and an entry without a plate leaves the page bare. The plates themselves are pinned in
- * art/invocationPlates.test.ts, and the adapter's plate urls in game/invocations.test.ts.
+ * art/invocationPlates.test.ts, and the adapter's plate urls in game/invocations.test.ts. Also the
+ * lore: set apart from both pages (its own flow across their bottom halves, laid out in menus.css and
+ * measured in e2e/magna-goetia.spec.ts), with its `*…*` spans as `<em>`.
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { act, createElement } from 'react';
@@ -123,5 +125,32 @@ describe('the Magna Goetia plates', () => {
     expect(rightPage()).not.toBeNull();
     expect(plate()).toBeNull();
     expect(rightPage()?.textContent).toBe('');
+  });
+});
+
+describe('the Magna Goetia lore', () => {
+  const lore = (): Element | null => container!.querySelector('.gb-lore');
+
+  it('sets the lore apart from both pages, under them', () => {
+    render([{ ...IMP, lore: 'A graft of wrath. Formula: *I, et morde quod ostendo.*' }]);
+    open('Imp');
+    expect(lore()?.textContent).toBe('A graft of wrath. Formula: I, et morde quod ostendo.');
+    // Its own flow, not inside either page, and after both in reading order.
+    expect(lore()?.closest('.gb-page')).toBeNull();
+    expect(rightPage()?.compareDocumentPosition(lore()!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('sets each *…* span as an <em>, the rest as plain text', () => {
+    render([{ ...IMP, lore: 'The *impe*, a graft. Formula: *I, et morde.*' }]);
+    open('Imp');
+    const ems = Array.from(lore()!.querySelectorAll('em')).map((e) => e.textContent);
+    expect(ems).toEqual(['impe', 'I, et morde.']);
+    expect(lore()!.innerHTML).not.toContain('*');
+  });
+
+  it('shows no lore block for an entry without lore', () => {
+    render([FAMILIAR, IMP]);
+    open('Imp');
+    expect(lore()).toBeNull();
   });
 });
