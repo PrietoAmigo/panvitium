@@ -5,8 +5,8 @@ import { test, expect, type Page } from '@playwright/test';
  * sigil over the Altar Room, with STATUS QUO beneath it; the room stays. The seal is a crisp DOM
  * image over the room's canvas, outside the degradation pass, so no pixelation reaches it; the red
  * light it casts is painted into the canvas, through the pass. Its first press arms it, the second
- * falls into the descent (the first time with no souls in hand, the empty-handed warning plays
- * instead); STATUS QUO opens the Ledger, whose way back returns to the room; left
+ * falls into the descent (empty-handed before the playthrough's first descent, the empty-handed
+ * warning plays once instead); STATUS QUO opens the Ledger, whose way back returns to the room; left
  * alone for 4 s, the sigil fades away.
  */
 

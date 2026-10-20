@@ -148,8 +148,8 @@ export function App(): ReactElement {
   // The altar sigil (Claude Design "Altar sigil" handoff): clicking the altar raises the Katabasis
   // sigil over the room with STATUS QUO beneath it. The second press on the sigil commits the
   // descent (the teardown + freeze, then the Abyss transition into the flow); STATUS QUO opens the
-  // read-only Ledger. Untouched for 4 s, it fades away. The first commit of a playthrough made with
-  // no souls in hand does not descend: the sigil goes down and the empty-handed warning plays
+  // read-only Ledger. Untouched for 4 s, it fades away. A commit made with no souls in hand before
+  // the playthrough's first descent does not descend: the sigil goes down and the empty-handed warning plays
   // instead (checked before any teardown); the next commit descends as usual.
   const altarSigil = useAltarSigil({
     onDescend: () => {
