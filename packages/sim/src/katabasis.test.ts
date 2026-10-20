@@ -13,6 +13,8 @@ import {
   remainingMaleficiaChance,
   commitKatabasis,
   enterKatabasis,
+  emptyHandedWarningDue,
+  markEmptyHandedWarned,
 } from './katabasis.js';
 
 const fresh = (souls: number | string): GameState => ({
@@ -371,5 +373,28 @@ describe('tick — frozen while inKatabasis (02 §6)', () => {
     expect(entered.inKatabasis).toBe(true);
     const { state } = commitKatabasis(entered);
     expect(state.inKatabasis).toBe(false);
+  });
+});
+
+describe('the empty-handed warning — once per playthrough (presentation bookkeeping)', () => {
+  it('is due only with an empty (floored) soul pool and no prior warning', () => {
+    expect(emptyHandedWarningDue(fresh(0))).toBe(true);
+    expect(emptyHandedWarningDue(fresh('0.75'))).toBe(true); // a fraction is not a soul in hand
+    expect(emptyHandedWarningDue(fresh(1))).toBe(false);
+    expect(emptyHandedWarningDue(markEmptyHandedWarned(fresh(0)))).toBe(false);
+  });
+
+  it('marks the flag purely and idempotently', () => {
+    const base = fresh(0);
+    const warned = markEmptyHandedWarned(base);
+    expect(warned.emptyHandedWarned).toBe(true);
+    expect(base.emptyHandedWarned).toBeUndefined(); // input untouched (purity)
+    expect(markEmptyHandedWarned(warned)).toBe(warned);
+  });
+
+  it('survives the descent: a warned playthrough is never warned again', () => {
+    const { state } = commitKatabasis(enterKatabasis(markEmptyHandedWarned(fresh(0))));
+    expect(state.emptyHandedWarned).toBe(true);
+    expect(emptyHandedWarningDue(state)).toBe(false);
   });
 });

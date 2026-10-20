@@ -108,6 +108,27 @@ export function bindSigil(
   return { ...state, souls: sub(available, target), sigilBindings };
 }
 
+// ── The empty-handed warning (presentation bookkeeping) ─────────────────────
+
+/**
+ * Whether committing the descent now should instead play the empty-handed warning: the soul pool
+ * the player would offer to the Princes is empty (floored, ADR-005) and the warning has not yet
+ * played in this playthrough. The warning itself is orchestrated by the web app.
+ */
+export function emptyHandedWarningDue(state: GameState): boolean {
+  return state.emptyHandedWarned !== true && isZero(floor(state.souls));
+}
+
+/**
+ * Record that the empty-handed warning has played. Pure: returns a new state with
+ * `emptyHandedWarned` set, leaving the input untouched. Idempotent; once set the warning never
+ * plays again, and the flag rides through every Katabasis (it is top-level).
+ */
+export function markEmptyHandedWarned(state: GameState): GameState {
+  if (state.emptyHandedWarned === true) return state;
+  return { ...state, emptyHandedWarned: true };
+}
+
 // ── Enter (teardown on descent) ──────────────────────────────────────────────
 
 /**

@@ -123,6 +123,64 @@ body {
   background: #000;
 }
 
+/* The empty-handed warning (App mounts it; see EmptyHandedWarning): fixed over the WHOLE viewport,
+   above the room, the HUD, every menu and system modal, but below the jumpscare (9999) and the
+   subliminal plates (10000). It captures all pointer input (pointer-events on, no dismiss handler),
+   so the warning can't be skipped. The durations ride in as custom properties from the component's
+   timeline constants. The black fades in on mount, and lifts on the final step. */
+.empty-handed {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8%;
+  background: #000;
+  animation: empty-handed-in var(--ehw-black-in) ease;
+}
+.empty-handed[data-step='lift'] {
+  opacity: 0;
+  transition: opacity var(--ehw-black-out) ease;
+}
+@keyframes empty-handed-in {
+  from {
+    opacity: 0;
+  }
+}
+/* The words: hidden and blurred, they surface into focus on `speak`, and sink back on `sink`. */
+.empty-handed-line {
+  margin: 0;
+  max-width: 22em;
+  text-align: center;
+  text-wrap: balance;
+  font-family: 'IM Fell English', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.6rem, 3.6vw, 2.6rem);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: #f0c93a;
+  text-shadow: 0 0 24px #f0c93a40;
+  opacity: 0;
+  filter: blur(4px);
+  transition:
+    opacity var(--ehw-text-out) ease,
+    filter var(--ehw-text-out) ease;
+}
+.empty-handed[data-step='speak'] .empty-handed-line {
+  opacity: 1;
+  filter: blur(0);
+  transition-duration: var(--ehw-text-in);
+}
+/* Reduced motion drops the blur; the fades (and so the total duration) stay. */
+@media (prefers-reduced-motion: reduce) {
+  .empty-handed-line,
+  .empty-handed[data-step='speak'] .empty-handed-line {
+    filter: none;
+  }
+}
+
 /* A subliminal plate (Fausto's, or a random one): fixed over the WHOLE viewport, above everything
    including the jumpscare, for a fraction of a second. It only mounts once its plate has decoded, so
    no black fallback is needed; it takes no pointer input, so a click mid-flash reaches the game. */

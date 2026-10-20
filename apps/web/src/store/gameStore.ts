@@ -27,6 +27,8 @@ import {
   invoke,
   dispel,
   markDoppelgaengerSeen as markDoppelgaengerSeenSim,
+  emptyHandedWarningDue,
+  markEmptyHandedWarned,
   markCallAnswered as markCallAnsweredSim,
   assignAcolyteToAction,
   unassignAcolyteFromAction,
@@ -177,6 +179,12 @@ interface GameStore {
   subliminalQueue: SubliminalFlash[];
   /** A transient message for a refused action (e.g. "not enough gold"), or null. */
   notice: string | null;
+  /**
+   * True while the empty-handed warning plays over the whole screen (transient): the altar sigil
+   * was committed with no souls in hand, the first time this playthrough. Cleared when the
+   * warning's sequence ends (`endEmptyHandedWarning`).
+   */
+  emptyHandedWarning: boolean;
   /** Which Katabasis screen is open (null = none). */
   katabasisPhase: KatabasisPhase;
   /** How the open flow was entered from the Altar Room (transient; null = not from the room). */
@@ -277,6 +285,15 @@ interface GameStore {
    * permanent `flagDoppelgaengerSeen` so the scare never re-arms, and persists so it survives a reload.
    */
   markDoppelgaengerSeen: () => void;
+  /**
+   * The altar sigil's second press, before the descent: when the player holds no souls and the
+   * warning has never played this playthrough, record the permanent `emptyHandedWarned` (persisted
+   * at once, so a reload mid-warning cannot replay it), raise `emptyHandedWarning` and return true;
+   * the caller must then NOT descend. Otherwise a no-op returning false: descend as usual.
+   */
+  warnEmptyHanded: () => boolean;
+  /** The empty-handed warning has played out: drop the overlay (back in the Altar Room). */
+  endEmptyHandedWarning: () => void;
   /**
    * Open the Status Quo Ledger without committing — no teardown and no freeze: the lifetime keeps
    * ticking behind it, since the soul is not yet under. The altar sigil's STATUS QUO routes here;
@@ -421,6 +438,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   subliminalQueue: [],
   notice: null,
   achievementToast: null,
+  emptyHandedWarning: false,
   katabasisPhase: null,
   katabasisEntry: null,
   titleOpen: true,
@@ -639,6 +657,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().persist();
   },
 
+  warnEmptyHanded: () => {
+    const current = get().state;
+    if (!current || !emptyHandedWarningDue(current)) return false;
+    set({ state: markEmptyHandedWarned(current), emptyHandedWarning: true });
+    get().persist();
+    return true;
+  },
+  endEmptyHandedWarning: () => set({ emptyHandedWarning: false }),
+
   beginKatabasis: () => {
     const current = get().state;
     if (!current) return;
@@ -777,6 +804,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       log: [],
       ...NO_OBTAINED,
       notice: null,
+      emptyHandedWarning: false,
       katabasisPhase: null,
       katabasisEntry: null,
       recap: null,
