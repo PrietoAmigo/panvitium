@@ -4977,11 +4977,15 @@ body {
   color: #a0451e;
 }
 
-/* ---- ledger (resolved outcomes at the scroll's foot) ---- */
-.logos-ledger {
-  margin-top: 30px;
-  padding-top: 6px;
-  border-top: 1px solid #2a2017;
+/* ---- ledger (the Index Suasionum: resolved outcomes in their own card below the scroll's). The
+   drifting Latin belongs to the Chthonic Logos card alone; the index sits on plain black. ---- */
+.logos-index {
+  max-width: 880px;
+  margin: 24px auto 0;
+  padding: 22px 46px 30px;
+  border-radius: 16px;
+  background: #000;
+  border: 1px solid #2a2017;
 }
 .logos-ledger-head {
   font-family: var(--font-display);
@@ -5069,6 +5073,9 @@ body {
 @media (max-width: 560px) {
   .logos-card-inner {
     padding: 20px 18px 30px;
+  }
+  .logos-index {
+    padding: 18px 18px 24px;
   }
   .logos-row {
     grid-template-columns: 64px 1fr;

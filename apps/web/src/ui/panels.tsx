@@ -245,13 +245,28 @@ const LOGOS_TIER_COLOR: Record<Tier, string> = {
 };
 
 /** Re-skin one resolved Logos outcome into the ledger's second column: the rite and its net resource
- *  deltas (souls first), or a "no soul stirred" line when a temptation yielded nothing. */
+ *  deltas, or a "no soul stirred" line when a temptation yielded nothing. A reprobate loss names its
+ *  fate: driven to suicide (with the souls the deaths minted, ", +X Souls") or simply lost. */
 function logosLedgerText(e: OutcomeEvent): string {
   const name = actionName(e.actionId);
   const parts: string[] = [];
   const sign = (n: number): string => `${n > 0 ? '+' : '−'}${Math.abs(n).toLocaleString('en-US')}`;
-  if (e.soulsDelta !== 0) parts.push(`${sign(e.soulsDelta)} ${strings.resources.souls}`);
-  if (e.reprobateDelta !== 0) parts.push(`${sign(e.reprobateDelta)} ${strings.reprobates}`);
+  const souls = `${sign(e.soulsDelta)} ${strings.resources.souls}`;
+  if (e.reprobateDelta < 0) {
+    // A Logos rite mints souls only from deaths, and its only deaths are suicides (Suggestion's
+    // Good), so a soul yield beside a shrinking flock is the suicides' harvest; murder never comes
+    // from a rite. Any other drop is a reprobate lost to the Church, with no soul.
+    const lost = `${sign(e.reprobateDelta)} ${strings.reprobates}`;
+    parts.push(
+      e.soulsDelta > 0
+        ? `${lost} ${strings.opera.logosSuicide}, ${souls}`
+        : `${lost} ${strings.opera.logosLost}`,
+    );
+    if (e.soulsDelta < 0) parts.push(souls);
+  } else {
+    if (e.soulsDelta !== 0) parts.push(souls);
+    if (e.reprobateDelta !== 0) parts.push(`${sign(e.reprobateDelta)} ${strings.reprobates}`);
+  }
   if (e.goldDelta !== 0) parts.push(`${sign(e.goldDelta)} ${strings.resources.gold}`);
   return parts.length > 0
     ? `${name} · ${parts.join(' · ')}`

@@ -45,7 +45,7 @@ interface LogosPanelProps {
   closeLabel: string;
   /** The three temptations, in scroll order. */
   actions: readonly LogosActionView[];
-  /** Resolved-outcome ledger rendered at the foot of the scroll. */
+  /** Resolved-outcome ledger (the Index Suasionum), its own plain black card below the scroll's. */
   ledger?: ReactNode;
   /** Dismiss the scroll. */
   onClose: () => void;
@@ -198,10 +198,10 @@ export function LogosPanel({
                 );
               })}
             </div>
-
-            {ledger}
           </div>
         </section>
+
+        {ledger && <section className="logos-index">{ledger}</section>}
       </div>
     </div>
   );
