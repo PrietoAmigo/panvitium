@@ -35,6 +35,11 @@ export const RANDOM_SUBLIMINALS: readonly string[] = [
   'subl12_desidia',
   'subl13_vanagloria',
   'subl14_superbia',
+  'subl15_envy',
+  'subl16_guilt',
+  'subl17_resentment',
+  'subl18_obsession',
+  'subl19_betrayal',
   'sublcode_1',
   'sublcode_2',
 ].map((name) => `${BASE}/${name}.png`);

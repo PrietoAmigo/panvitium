@@ -30,8 +30,8 @@ describe('subliminals — Fausto', () => {
 });
 
 describe('subliminals — random', () => {
-  it('draws from the sixteen subl plates, none of them Fausto', () => {
-    expect(RANDOM_SUBLIMINALS).toHaveLength(16);
+  it('draws from the twenty-one subl plates, none of them Fausto', () => {
+    expect(RANDOM_SUBLIMINALS).toHaveLength(21);
     expect(RANDOM_SUBLIMINALS.every((src) => /\/subl[^/]*\.png$/.test(src))).toBe(true);
   });
 

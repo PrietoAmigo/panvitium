@@ -105,7 +105,16 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 1319** (sim 619 · shared 88 · api 20 · web 592).
 
-> **Latest change — The Magna Goetia: lore for every invocation, and a leaf set in quarters.** All
+> **Latest change — Five more random subliminal plates.** Envy (watching another's recognition
+> through a rain-streaked window), guilt (hands that cannot wash clean), resentment (burning a
+> former friend's photograph), obsession (an eye at a scratched keyhole), and betrayal (a
+> handshake concealing a dagger) join the random `subl` pool as `subl15` through `subl19`.
+> The pool grows from 16 to 21 plates; Fausto's four email plates, the 120 ms hold and the
+> six-minute average gap stay as they are. All five are cinematic 1672 × 941 PNGs, rendered through
+> the existing degradation pass. The existing pool and asset checks cover the additions.
+> No sim, save or RNG change. No test count change.
+>
+> **Earlier change — The Magna Goetia: lore for every invocation, and a leaf set in quarters.** All
 > 25 invocations now carry a page of grimoire lore (was six, some stale against their retuned
 > effects): what the spirit is and whose household keeps it, how to guide it, why its cap protects
 > the Operator, and a closing Latin formula (untranslated, ADR-020). The prose stays oblique about
