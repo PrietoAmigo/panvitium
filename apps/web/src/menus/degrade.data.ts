@@ -35,8 +35,8 @@ export function altarPlateForAcolytes(acolytes: number): string {
    than on top of it. A room without an entry shows its figures as drawn. ---- */
 export const ROOM_FIGURE_TINTS: Partial<Record<RoomId, SpriteTint>> = {
   // The Invocation Room's candlelit vault: a slight amber warming filter (#EC8A00, the photographic
-  // 85 gel, at 30%), luminosity preserved, so the figures warm to the chandeliers without darkening.
-  invocation: { rgb: [0xec, 0x8a, 0x00], density: 0.3 },
+  // 85 gel, at 40%), luminosity preserved, so the figures warm to the chandeliers without darkening.
+  invocation: { rgb: [0xec, 0x8a, 0x00], density: 0.4 },
 };
 
 /* ---- FLAVOUR: how each bound invocation is presented over its room. One entry per

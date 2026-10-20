@@ -108,7 +108,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > **Latest change — The invocation room's amber light on its figures.** Every bound figure shown in
 > the invocation room (Aurevora, the Succubus, the Lemure, the Upir, the Blob, and any added there
 > later) now takes a slight amber colour filter so it sits in the room's candlelight rather than
-> reading as neutrally lit art pasted on top. It is a photographic warming gel (#EC8A00 at 30%,
+> reading as neutrally lit art pasted on top. It is a photographic warming gel (#EC8A00 at 40%,
 > luminosity preserved, so the figures warm without darkening) declared per room in
 > `ROOM_FIGURE_TINTS` (`degrade.data.ts`; the altar and Studio have none) and passed by `RoomView`
 > to the scene. The pass filters each figure's art once and caches it (`SpriteTint`,

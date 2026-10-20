@@ -32,7 +32,7 @@ describe('DEFAULT_DEGRADE — Desidia fast-forward defaults', () => {
 // A bound figure's colour filter (the Invocation Room's amber) runs once over the art's pixels.
 // The canvas readback needs a real 2D context, so the filter itself is asserted on raw RGBA.
 describe('applySpriteTint', () => {
-  const AMBER = { rgb: [0xec, 0x8a, 0x00] as const, density: 0.3 };
+  const AMBER = { rgb: [0xec, 0x8a, 0x00] as const, density: 0.4 };
   const lum = (d: Uint8ClampedArray, i: number): number =>
     0.299 * d[i]! + 0.587 * d[i + 1]! + 0.114 * d[i + 2]!;
 

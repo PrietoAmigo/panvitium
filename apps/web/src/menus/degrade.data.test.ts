@@ -253,7 +253,7 @@ describe('ROOM_FIGURE_TINTS', () => {
     expect(g).toBeGreaterThan(b);
     // Slight: well short of the full multiply.
     expect(tint!.density).toBeGreaterThan(0);
-    expect(tint!.density).toBeLessThanOrEqual(0.4);
+    expect(tint!.density).toBeLessThanOrEqual(0.5);
     expect(ROOM_FIGURE_TINTS.altar).toBeUndefined();
     expect(ROOM_FIGURE_TINTS.studio).toBeUndefined();
   });
