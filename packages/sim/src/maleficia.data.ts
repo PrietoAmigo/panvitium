@@ -306,8 +306,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   thirty_pieces_of_silver: {
     id: 'thirty_pieces_of_silver',
     name: 'Thirty Pieces of Silver',
-    description:
-      'Counted out, refused, returned, refused again. Coinage that always finds its way back into a hand. +200% suicide rate.',
+    description: 'Sent in greed, returned in despair. +200% suicide rate.',
     rarity: 'anathema',
     cost: 800000,
     invokingPower: 0,
