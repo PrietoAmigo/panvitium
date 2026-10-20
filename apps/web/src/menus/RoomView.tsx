@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { RoomDef, HotspotAction, DegradeSettings } from './types.js';
 import { DegradedScene, preloadImage } from './DegradedScene.js';
-import { ROOM_PLATES, altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
+import {
+  ROOM_FIGURE_TINTS,
+  ROOM_PLATES,
+  altarPlateForAcolytes,
+  boundVisualsFor,
+} from './degrade.data.js';
 import { CALL_PLATE_RING } from './calls-in.data.js';
 import { AltarSigil, ALTAR_SIGIL_SRC, type AltarSigilView } from './AltarSigil.js';
 import { altarGlows } from './altarGlow.js';
@@ -110,6 +115,7 @@ export function RoomView({
         roomId={room.id}
         backdrop={backdrop}
         figures={boundVisuals}
+        figureTint={ROOM_FIGURE_TINTS[room.id] ?? null}
         glows={sigilUp ? sampleAltarGlows : null}
         signature={room.id === 'studio' && signature}
         settings={degradeSettings}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
+import { ROOM_FIGURE_TINTS, altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
 
 const PLATE = (n: number): string =>
   `/assets/panvitium/backgrounds/altar_by_acolytes/169_altar_clean_${n}acolytes.png`;
@@ -240,5 +240,21 @@ describe('boundVisualsFor', () => {
   it('skips invocations that have no designed display', () => {
     expect(boundVisualsFor('altar', ['imp', 'lamia'])).toEqual([]);
     expect(boundVisualsFor('altar', [])).toEqual([]);
+  });
+});
+
+describe('ROOM_FIGURE_TINTS', () => {
+  it('lays a slight amber filter over the figures in the invocation room only', () => {
+    const tint = ROOM_FIGURE_TINTS.invocation;
+    expect(tint).toBeDefined();
+    const [r, g, b] = tint!.rgb;
+    // Amber: red strongest, green between, no blue.
+    expect(r).toBeGreaterThan(g);
+    expect(g).toBeGreaterThan(b);
+    // Slight: well short of the full multiply.
+    expect(tint!.density).toBeGreaterThan(0);
+    expect(tint!.density).toBeLessThanOrEqual(0.4);
+    expect(ROOM_FIGURE_TINTS.altar).toBeUndefined();
+    expect(ROOM_FIGURE_TINTS.studio).toBeUndefined();
   });
 });

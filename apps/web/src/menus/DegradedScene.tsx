@@ -8,7 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DegradePass, DEFAULT_DEGRADE } from './degrade.js';
-import type { EngineScene, EngineSprite } from './degrade.js';
+import type { EngineScene, EngineSprite, SpriteTint } from './degrade.js';
 import type { BoundInvocationVisual, DegradedSceneProps, SceneSprite } from './types.js';
 
 // The composited stage is 16:9 (matches the engine's VW×VH buffer). A bound figure's `height` is a
@@ -26,8 +26,13 @@ function frac(pct: string): number {
 
 /** Convert a bound invocation visual into an engine sprite — once its art has decoded (the natural
  *  aspect sets the width that yields the designed `height`). The figure then composites THROUGH the
- *  degradation pass like any other sprite, so it crushes/pixelates with the room. */
-function figureToSprite(v: BoundInvocationVisual, img: HTMLImageElement): EngineSprite | null {
+ *  degradation pass like any other sprite, so it crushes/pixelates with the room, lit by the room's
+ *  `tint` when it has one. */
+function figureToSprite(
+  v: BoundInvocationVisual,
+  img: HTMLImageElement,
+  tint: SpriteTint | null,
+): EngineSprite | null {
   if (!img.complete || !img.naturalWidth) return null;
   const heightFrac = frac(v.height);
   return {
@@ -54,6 +59,9 @@ function figureToSprite(v: BoundInvocationVisual, img: HTMLImageElement): Engine
     // Crop the figure below a stage-fraction, when requested (Midas behind the Studio table). Omitted
     // (not set to undefined) per exactOptionalPropertyTypes when there is no clip.
     ...(v.clipBottom != null ? { clipBelow: v.clipBottom } : {}),
+    // The room's ambient light on the figure (the Invocation Room's amber), when it casts one.
+    // Omitted (not set to undefined) per exactOptionalPropertyTypes when absent.
+    ...(tint ? { tint } : {}),
   };
 }
 
@@ -146,6 +154,7 @@ export function DegradedScene({
   backdrop,
   sprites = NO_SPRITES,
   figures = NO_FIGURES,
+  figureTint = null,
   glows = null,
   signature = false,
   settings,
@@ -202,7 +211,7 @@ export function DegradedScene({
     const figureSprites: EngineSprite[] = figures
       .map((v): EngineSprite | null => {
         const img = images[v.src];
-        return img ? figureToSprite(v, img) : null;
+        return img ? figureToSprite(v, img, figureTint) : null;
       })
       .filter((sp): sp is EngineSprite => sp !== null);
     const focalVignette = Math.max(0, ...figures.map((v) => v.vignette ?? 0));
@@ -215,7 +224,7 @@ export function DegradedScene({
     const animate = prevRoom.current !== null && prevRoom.current !== roomId;
     prevRoom.current = roomId;
     pass.setScene(scene, animate);
-  }, [roomId, backdrop, sprites, figures, signature, images]);
+  }, [roomId, backdrop, sprites, figures, figureTint, signature, images]);
 
   return (
     <canvas

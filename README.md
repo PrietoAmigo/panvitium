@@ -103,9 +103,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1351** (sim 631 · shared 94 · api 20 · web 606).
+**Current test count: 1356** (sim 631 · shared 94 · api 20 · web 611).
 
-> **Latest change — Indagatio investment: a default percentage of gold.** Invest / Divest on the
+> **Latest change — The invocation room's amber light on its figures.** Every bound figure shown in
+> the invocation room (Aurevora, the Succubus, the Lemure, the Upir, the Blob, and any added there
+> later) now takes a slight amber colour filter so it sits in the room's candlelight rather than
+> reading as neutrally lit art pasted on top. It is a photographic warming gel (#EC8A00 at 30%,
+> luminosity preserved, so the figures warm without darkening) declared per room in
+> `ROOM_FIGURE_TINTS` (`degrade.data.ts`; the altar and Studio have none) and passed by `RoomView`
+> to the scene. The pass filters each figure's art once and caches it (`SpriteTint`,
+> `applySpriteTint` in `degrade.ts`), so it costs nothing per frame; shadows and auras are cast from
+> the silhouette and are unchanged. Presentation only: no sim, save or RNG change. Net **+5 tests**
+> (web 606 → 611).
+>
+> **Earlier change — Indagatio investment: a default percentage of gold.** Invest / Divest on the
 > Orbis Tenebrarum Search no longer move a one-shot gold stake for the next Search: they set the
 > DEFAULT share of gold every Search pours into itself. Each Invest adds **2 points**, each Divest
 > takes **1 point** off (whole points, clamped 0–100%); setting it moves no gold, so it is allowed
