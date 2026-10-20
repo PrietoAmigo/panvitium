@@ -49,7 +49,8 @@ highest Sin level across all Sins (player tuning: the gate is the max Sin level,
 specifically). Efficiency mode is **`cost-outcome`** (`02 §3`): it modifies *Logos* costs and
 positive outcomes by the same percentage and does not affect action time.
 
-- **Suggestion** — the early-game reprobate source. Short, cheap, modest yield.
+- **Suggestion** — the early-game reprobate source. Short, cheap, modest yield; its Good tier
+  drives a few reprobates to suicide, an early trickle of souls.
 - **Logismoi** — the mid-game source; bulk corruption with a wider variance.
 - **Imperium** — the late-game source; the player in control, with soul-minting and
   percentage-of-population outcomes at the top tiers.

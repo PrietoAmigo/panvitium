@@ -27,6 +27,7 @@ import {
   addReprobates,
   loseGoldFraction,
   loseReprobatesFraction,
+  mintSouls,
   removeReprobates,
 } from './population.js';
 import { type ActionTimer, type GameState, SINS, totalReprobates } from './state.js';
@@ -509,7 +510,14 @@ function suggestionTierDelta(tier: Tier, units: number, pop: number, loss: numbe
       return { ...NO_DELTA, reprobates: uniform(10, 25, units) };
     case 'excellent':
       return { ...NO_DELTA, reprobates: uniform(2, 9, units) };
-    case 'good':
+    case 'good': {
+      // randint(1,3) × units suicides, capped at the living flock: −k reprobates, +k souls.
+      const deaths = [1, 2, 3].map((r) => Math.min(r * units, pop));
+      const m = deaths.reduce((a, d) => a + d, 0) / 3;
+      const v = deaths.reduce((a, d) => a + d * d, 0) / 3 - m * m;
+      return { ...NO_DELTA, souls: { m, v }, reprobates: { m: -m, v } };
+    }
+    case 'neutral':
       return { ...NO_DELTA, reprobates: fixed(units) };
     case 'bad':
       return { ...NO_DELTA, reprobates: fixed(-Math.min(Math.floor(units * loss), pop)) };
@@ -518,7 +526,7 @@ function suggestionTierDelta(tier: Tier, units: number, pop: number, loss: numbe
     case 'apocalyptic':
       return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.25 * loss * pop)) };
     default:
-      return NO_DELTA; // neutral: nothing
+      return NO_DELTA;
   }
 }
 
@@ -736,15 +744,20 @@ export function resolveSuggestion(
     case 'excellent':
       // sin spreads → +randint(2,9) reprobates (player tuning); efficiency scales the count.
       return addReprobates(state, randint(rng, 2, 9) * units);
-    case 'good':
-      return addReprobates(state, units);
+    case 'good': {
+      // the word takes root → randint(1,3) reprobates driven to suicide, each death minting 1 soul
+      // (player tuning); efficiency scales the count, bounded by the living flock.
+      const r = removeReprobates(state, randint(rng, 1, 3) * units);
+      return mintSouls(r.state, r.removed);
+    }
+    case 'neutral':
+      return addReprobates(state, units); // the reliable +1 (player tuning)
     case 'bad':
       return removeReprobates(state, Math.floor(units * loss)).state; // rejects + redeems another
     case 'terrible':
       return loseReprobatesFraction(state, 0.05 * loss).state; // Church intervention (player tuning)
     case 'apocalyptic':
       return loseReprobatesFraction(state, 0.25 * loss).state; // mass apostasy (player tuning)
-    case 'neutral':
     default:
       return state;
   }

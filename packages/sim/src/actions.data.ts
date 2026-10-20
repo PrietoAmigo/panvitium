@@ -8,14 +8,15 @@
 import { type TierWeights } from './probability.js';
 import { type ActionDef } from './actions.js';
 
-// Suggestion (player tuning): Good raised to 0.5 and Neutral cut to 0.15 so the entry rite lands a
-// gain far more often; Terrible trimmed to 0.049 to keep the column summing to 1.
+// Suggestion (player tuning, rev 2026-10-20): Neutral is now the dominant tier (0.6, the reliable
+// +1 reprobate), Good (0.2) drives 1 to 3 reprobates to suicide for souls, and Excellent / Bad are
+// halved (0.049 / 0.1). Column sums to 1.
 const SUGGESTION_WEIGHTS: TierWeights = {
   stellar: 0.001,
-  excellent: 0.099,
-  good: 0.5,
-  neutral: 0.15,
-  bad: 0.2,
+  excellent: 0.049,
+  good: 0.2,
+  neutral: 0.6,
+  bad: 0.1,
   terrible: 0.049,
   apocalyptic: 0.001,
 };

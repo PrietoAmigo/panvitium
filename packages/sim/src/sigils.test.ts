@@ -30,6 +30,7 @@ import {
   reprobateRates,
   resolveAction,
   resolveIndagatio,
+  resolveSuggestion,
   surrenderCharge,
   thesaurusRecoveryFraction,
   sigilById,
@@ -841,13 +842,20 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
   });
 
   it('duplicate-output sigils double a positive resolution (Malphas #39 on Suggestion)', () => {
-    // A very large Malphas binding clamps the dup chance to 1. A Good Suggestion adds 1 reprobate
-    // per pass → 2 total.
+    // A very large Malphas binding clamps the dup chance to 1. A Good Suggestion drives
+    // randint(1,3) reprobates to suicide per pass; replaying the stream (the dup float, then one
+    // randint per pass) gives the exact two-pass toll.
     const s = bound(39, 1e50);
-    const r = resolveAction(s, 'suggestion', makeRng(7), { forcedTier: 'good', efficiency: 1 });
-    expect(totalReprobates(r.state) - totalReprobates(s)).toBe(2);
-    // Negative tiers never duplicate: a Bad outcome removes exactly one.
     const seeded = { ...s, lifetime: { ...s.lifetime, reprobates: 10 } };
+    const r = resolveAction(seeded, 'suggestion', makeRng(7), {
+      forcedTier: 'good',
+      efficiency: 1,
+    });
+    const ref = makeRng(7);
+    ref.float();
+    const deaths = 2 + ref.int(3) + ref.int(3);
+    expect(totalReprobates(seeded) - totalReprobates(r.state)).toBe(deaths);
+    // Negative tiers never duplicate: a Bad outcome removes exactly one.
     const bad = resolveAction(seeded, 'suggestion', makeRng(7), {
       forcedTier: 'bad',
       efficiency: 1,
@@ -856,14 +864,16 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
   });
 
   it('without a duplicate-output sigil the dup roll is NOT drawn (RNG stream stays byte-identical)', () => {
-    // ADR-011: an un-triggered feature must leave the seeded stream untouched. A Good Suggestion
-    // makes no internal RNG draw, so with no Malphas/Agares bound resolveAction must consume
-    // zero floats — the dup-chance draw is gated behind chance > 0. (Regression: it used to draw
-    // unconditionally, shifting every downstream roll for saves without these sigils.)
+    // ADR-011: an un-triggered feature must leave the seeded stream untouched. A Good Suggestion's
+    // only internal draw is its suicide randint, so with no Malphas/Agares bound resolveAction must
+    // consume exactly what the bare resolver does: the dup-chance draw is gated behind chance > 0.
+    // (Regression: it used to draw unconditionally, shifting every downstream roll for saves
+    // without these sigils.)
     const rng = makeRng(fresh().rngState);
-    const before = rng.state;
     resolveAction(fresh(), 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
-    expect(rng.state).toBe(before);
+    const ref = makeRng(fresh().rngState);
+    resolveSuggestion(fresh(), 'good', ref);
+    expect(rng.state).toBe(ref.state);
   });
 });
 
@@ -894,20 +904,24 @@ describe('Sigil-effect maleficia reach every sigil channel', () => {
     expect(strength).toBeLessThan(ROLL);
     expect(strength * 1.66).toBeGreaterThan(ROLL);
     const opts = { forcedTier: 'good' as const, efficiency: 1 };
-    const bare = bound(39, SOULS);
+    // The pinned roll also fixes each pass's suicide randint(1,3).
+    const perPass = 1 + Math.floor(ROLL * 3);
+    const b = bound(39, SOULS);
+    const bare = { ...b, lifetime: { ...b.lifetime, reprobates: 10 } };
     const r0 = resolveAction(bare, 'suggestion', pinnedRng(ROLL), opts);
-    expect(totalReprobates(r0.state) - totalReprobates(bare)).toBe(1);
+    expect(totalReprobates(bare) - totalReprobates(r0.state)).toBe(perPass);
     const lifted = ring(bare);
     const r1 = resolveAction(lifted, 'suggestion', pinnedRng(ROLL), opts);
-    expect(totalReprobates(r1.state) - totalReprobates(lifted)).toBe(2);
+    expect(totalReprobates(lifted) - totalReprobates(r1.state)).toBe(2 * perPass);
   });
 
   it('the ring alone never draws the duplicate roll (RNG stream stays byte-identical)', () => {
     const s = ring(fresh());
     const rng = makeRng(s.rngState);
-    const before = rng.state;
     resolveAction(s, 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
-    expect(rng.state).toBe(before);
+    const ref = makeRng(s.rngState);
+    resolveSuggestion(s, 'good', ref);
+    expect(rng.state).toBe(ref.state);
   });
 
   it("the ring lifts Crocell #49's double-find chance", () => {
@@ -973,9 +987,10 @@ describe('Dormant seals (ADR-038: the Decimatio seals)', () => {
     expect(sigilInvokingPower(s)).toBe(0);
     // No duplicate-output roll is drawn for a dormant seal (ADR-011: the stream stays untouched).
     const rng = makeRng(fresh().rngState);
-    const before = rng.state;
     resolveAction(s, 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
-    expect(rng.state).toBe(before);
+    const ref = makeRng(fresh().rngState);
+    resolveSuggestion(s, 'good', ref);
+    expect(rng.state).toBe(ref.state);
   });
 
   it('only the dormant seals are inert: the other 66 all carry an effect', () => {
