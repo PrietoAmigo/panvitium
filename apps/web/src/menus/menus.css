@@ -5377,22 +5377,42 @@ body {
   opacity: 0;
 }
 
-/* ── State A: browse bar (lifted clear of the floor nav band) ── */
+/* ── State A: browse bar (lifted clear of the floor nav band) ──
+   The seal's number/name and the two buttons on one row, its general effect on a line beneath. */
 .katabasis-flow .aether-browsebar {
   position: absolute;
   left: 50%;
-  bottom: calc(11vh + 18px);
+  bottom: calc(11vh + 34px);
   transform: translateX(-50%);
   z-index: 30;
   display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 7px 9px 7px 15px;
+  flex-direction: column;
+  padding: 7px 9px 8px 15px;
   background: rgba(9, 6, 5, 0.96);
   border: 1px solid rgba(201, 162, 39, 0.24);
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   max-width: min(92vw, 520px);
+}
+.katabasis-flow .bb-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+/* The effect line: the Status Quo label, set as the ledger sets it (body face, bone). Zero width
+   with a full min-width, so the row above sizes the bar and a longer label wraps rather than
+   widening it; a one-line min-height keeps the bar steady while nothing is centred. */
+.katabasis-flow .bb-effect {
+  width: 0;
+  min-width: 100%;
+  min-height: calc(1.3em + 7px); /* one line + the rule and its padding (border-box) */
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(201, 162, 39, 0.14);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.3;
+  color: var(--bone);
 }
 .katabasis-flow .bb-text {
   display: flex;
