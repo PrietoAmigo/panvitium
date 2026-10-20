@@ -184,7 +184,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Obsidian Mirror',
     rarity: 'profane',
     img: `${ASSET_BASE}/maleficia/obsidian_mirror.png`,
-    desc: 'It shows what the future is already weighing.',
+    desc: 'It is you.',
     effect: '-33% Indagatio time.',
   },
   {
@@ -200,7 +200,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Defixio',
     rarity: 'profane',
     img: `${ASSET_BASE}/maleficia/defixio.png`,
-    desc: 'A name, a nail, a curse folded into lead and buried.',
+    desc: 'One note of death.',
     effect: 'Single-use: +50% suicide rate for an hour.',
   },
   {
@@ -248,7 +248,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Ars Serpens',
     rarity: 'rare',
     img: `${ASSET_BASE}/maleficia/ars_serpens.png`,
-    desc: "The serpent's counsel, transcribed \u2014 every word a smoother lie.",
+    desc: 'Smooth to the touch and ear.',
     effect: '+33% Suasio efficiency.',
   },
   {
@@ -264,7 +264,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Blood Chalk',
     rarity: 'rare',
     img: `${ASSET_BASE}/maleficia/blood_chalk.png`,
-    desc: 'Drawn in a circle no priest will step inside.',
+    desc: 'Some entities are not bound by signatures.',
     effect: '+2 influence per second.',
   },
   {
@@ -280,7 +280,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Witch Bottle',
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/witch_bottle.png`,
-    desc: 'Urine, pins, and rosemary, corked against the dark \u2014 and aimed back at it.',
+    desc: 'Urine, pins and rosemary, corked dark.',
     effect: '+0.8 reprobates per second.',
   },
   {
@@ -296,7 +296,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Mandrake Root',
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/mandrake_root.png`,
-    desc: 'It screamed when it was pulled. You kept it anyway.',
+    desc: 'It was pulled, now it pushes.',
     effect: '+0.05 suicides per second.',
   },
   {
@@ -336,7 +336,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Crow Feather',
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/crow_feather.png`,
-    desc: 'The bird that counts the dead leaves you one.',
+    desc: 'An intellect too lofty?',
     effect: '-10% Indagatio time.',
   },
   {
@@ -344,7 +344,7 @@ export const MALEFICIA: MaleficiumArt[] = [
     name: 'Hollow Effigy',
     rarity: 'common',
     img: `${ASSET_BASE}/maleficia/hollow_effigy.png`,
-    desc: "Wax in your likeness, and in someone else's.",
+    desc: 'Hollow in name.',
     effect: '+0.1 murders per second.',
   },
   // Illustrated after the handoff: art alone, so the copy is the sim description, split.

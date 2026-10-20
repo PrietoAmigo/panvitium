@@ -53,7 +53,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   crow_feather: {
     id: 'crow_feather',
     name: 'Crow Feather',
-    description: 'The bird that counts the dead leaves you one. -10% Indagatio time.',
+    description: 'An intellect too lofty? -10% Indagatio time.',
     rarity: 'common',
     cost: 350,
     invokingPower: 1,
@@ -70,7 +70,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   hollow_effigy: {
     id: 'hollow_effigy',
     name: 'Hollow Effigy',
-    description: "Wax in your likeness, and in someone else's. +0.1 murders per second.",
+    description: 'Hollow in name. +0.1 murders per second.',
     rarity: 'common',
     cost: 400,
     invokingPower: 1,
@@ -95,8 +95,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   adder_stone: {
     id: 'adder_stone',
     name: 'Adder Stone',
-    description:
-      'A holed stone the serpents bored; look through it and see what breeds. +0.6 reprobates per second.',
+    description: 'Look through it to see what breeds. +0.6 reprobates per second.',
     rarity: 'common',
     cost: 600,
     invokingPower: 0,
@@ -104,8 +103,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   poppet: {
     id: 'poppet',
     name: 'Poppet',
-    description:
-      'A cloth figure sewn to a likeness; what it suffers, they suffer. +0.075 suicides per second.',
+    description: 'A leather figure sewn to likeness. +0.075 suicides per second.',
     rarity: 'common',
     cost: 600,
     invokingPower: 0,
@@ -113,8 +111,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   witch_bottle: {
     id: 'witch_bottle',
     name: 'Witch Bottle',
-    description:
-      'Urine, pins, and rosemary, corked against the dark, and aimed back at it. +0.8 reprobates per second.',
+    description: 'Urine, pins and rosemary, corked dark. +0.8 reprobates per second.',
     rarity: 'common',
     cost: 700,
     invokingPower: 2,
@@ -122,7 +119,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   mandrake_root: {
     id: 'mandrake_root',
     name: 'Mandrake Root',
-    description: 'It screamed when it was pulled. You kept it anyway. +0.05 suicides per second.',
+    description: 'It was pulled, now it pushes. +0.05 suicides per second.',
     rarity: 'common',
     cost: 750,
     invokingPower: 2,
@@ -150,8 +147,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   ars_serpens: {
     id: 'ars_serpens',
     name: 'Ars Serpens',
-    description:
-      "The serpent's counsel, transcribed, every word a smoother lie. +33% Suasio efficiency.",
+    description: 'Smooth to the touch and ear. +33% Suasio efficiency.',
     rarity: 'rare',
     cost: 2000,
     invokingPower: 2,
@@ -169,7 +165,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   blood_chalk: {
     id: 'blood_chalk',
     name: 'Blood Chalk',
-    description: 'Drawn in a circle no priest will step inside. +2 influence per second.',
+    description: 'Some entities are not bound by signatures. +2 influence per second.',
     rarity: 'rare',
     cost: 2500,
     invokingPower: 3,
@@ -223,8 +219,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   defixio: {
     id: 'defixio',
     name: 'Defixio',
-    description:
-      'A name, a nail, a curse folded into lead and buried. Single-use: +50% suicide rate for an hour.',
+    description: 'One note of death. Single-use: +50% suicide rate for an hour.',
     rarity: 'profane',
     cost: 10000,
     invokingPower: 0,
@@ -241,7 +236,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   galdrabok: {
     id: 'galdrabok',
     name: 'Galdrabók',
-    description: 'A book of staves bound in hide, each page a small undoing. +12.5% murder rate.',
+    description: 'Staves do not hit in a single way. +12.5% murder rate.',
     rarity: 'profane',
     cost: 15000,
     invokingPower: 6,
@@ -258,7 +253,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   obsidian_mirror: {
     id: 'obsidian_mirror',
     name: 'Obsidian Mirror',
-    description: 'It shows what the future is already weighing. -33% Indagatio time.',
+    description: 'It is you. -33% Indagatio time.',
     rarity: 'profane',
     cost: 20000,
     invokingPower: 8,
@@ -286,8 +281,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   achans_wedge: {
     id: 'achans_wedge',
     name: "Achan's Wedge",
-    description:
-      'The wedge of gold buried under a tent, the plunder that doomed a nation. +200% gold gain.',
+    description: 'Holds a different kind of door. +200% gold gain.',
     rarity: 'anathema',
     cost: 600000,
     invokingPower: 0,
@@ -295,8 +289,7 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
   pilates_basin: {
     id: 'pilates_basin',
     name: "Pilate's Basin",
-    description:
-      'The basin he washed his hands in; the water is still clean. -50% Desidia drain rate.',
+    description: 'Doing nothing is a choice. -50% Desidia drain rate.',
     rarity: 'anathema',
     cost: 780000,
     invokingPower: 0,
