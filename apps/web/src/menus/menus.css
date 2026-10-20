@@ -5399,12 +5399,16 @@ body {
   align-items: center;
   gap: 13px;
 }
-/* The effect line: the Status Quo label, set as the ledger sets it (body face, bone). Zero width
-   with a full min-width, so the row above sizes the bar and a longer label wraps rather than
-   widening it; a one-line min-height keeps the bar steady while nothing is centred. */
+/* The effect line: the Status Quo label, set as the ledger sets it (body face, bone), centred.
+   Zero width with a full min-width, so the row above sizes the bar and a longer label wraps rather
+   than widening it; a one-line min-height keeps the bar steady while nothing is centred. The bar
+   pads 15px left but 9px right, so the line reaches 6px into the left padding: its rule then sits
+   inset evenly and its text centres on the bar, not 3px right of it. */
 .katabasis-flow .bb-effect {
   width: 0;
-  min-width: 100%;
+  min-width: calc(100% + 6px);
+  margin-left: -6px;
+  text-align: center;
   min-height: calc(1.3em + 7px); /* one line + the rule and its padding (border-box) */
   margin-top: 7px;
   padding-top: 6px;
