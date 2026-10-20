@@ -12,8 +12,18 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { SmartphoneCallIn } from './SmartphoneCallIn.js';
 import { buildCallInView, type CallInView } from '../game/callIn.js';
+import { boundVisualsFor } from './degrade.data.js';
+import type { BoundInvocationVisual } from './types.js';
 
-vi.mock('./DegradedScene.js', () => ({ DegradedScene: () => null }));
+// The stub records the figures each plate is handed, so the "invocations stay in the room" rule can
+// be pinned without a canvas.
+const sceneFigures: unknown[] = [];
+vi.mock('./DegradedScene.js', () => ({
+  DegradedScene: (props: { figures?: unknown }) => {
+    sceneFigures.push(props.figures);
+    return null;
+  },
+}));
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -23,6 +33,7 @@ function render(props: {
   onChoose?: (i: number) => void;
   onDone?: () => void;
   textSpeedMs?: number;
+  figures?: BoundInvocationVisual[];
 }): void {
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -34,6 +45,7 @@ function render(props: {
         onChoose: props.onChoose ?? (() => {}),
         onDone: props.onDone ?? (() => {}),
         ...(props.textSpeedMs !== undefined ? { textSpeedMs: props.textSpeedMs } : {}),
+        ...(props.figures !== undefined ? { figures: props.figures } : {}),
       }),
     );
   });
@@ -63,6 +75,7 @@ const TYPED: CallInView = {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  sceneFigures.length = 0;
 });
 afterEach(() => {
   if (root) act(() => root!.unmount());
@@ -145,5 +158,16 @@ describe('SmartphoneCallIn — choosing', () => {
     expect(done).toBe(0);
     advance(700);
     expect(done).toBe(1);
+  });
+});
+
+describe('SmartphoneCallIn — the room behind the call', () => {
+  it('keeps the bound Studio invocations on both plates while the call is answered', () => {
+    const figures = boundVisualsFor('studio', ['midas'], false);
+    expect(figures.length).toBeGreaterThan(0);
+    render({ call: buildCallInView('a-good-find')!, figures });
+    // Base plate + answering plate, each composited with the Studio's figures.
+    expect(sceneFigures.length).toBeGreaterThanOrEqual(2);
+    for (const f of sceneFigures) expect(f).toBe(figures);
   });
 });
