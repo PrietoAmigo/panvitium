@@ -38,10 +38,10 @@ function GoetiaBook({ onClose }: { onClose: () => void }): ReactElement {
   const summon = useGameStore((s) => s.summon);
   const banish = useGameStore((s) => s.banish);
   const view = state ? buildGoetia(state) : { invokingPower: '0', entries: [] };
-  // A Summon click may carry a cue (the Banshee's rare scream); played on the click itself, so the
-  // user gesture satisfies the browser's autoplay policy.
+  // A successful Summon may carry a cue (the Banshee's rare scream); played on the click itself, so
+  // the user gesture satisfies the browser's autoplay policy. A refused summon never sounds.
   const onSummon = (id: string): void => {
-    summon(id);
+    if (!summon(id)) return;
     const cue = summonCue(id);
     if (cue !== null) audio.play(cue);
   };

@@ -111,9 +111,10 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > still; a flickering fire aura (the new `fireAura` figure option) licks up off her silhouette and
 > spills warm light on the wall behind her. The aura is drawn additively into the degradation pass's
 > scene buffer behind the figure, so the flames pixelate with the room and the altar crops them too;
-> the flicker is a sum of sines (no RNG) and freezes under reduced motion. Separately, a click on the
-> Banshee's **Summon** button has a 5% chance to play `music/banshee_scream.mp3` (`summonCue` in the
-> audio facade, rolled with the browser's `Math.random`, never the sim RNG). No sim, save or RNG
+> the flicker is a sum of sines (no RNG) and freezes under reduced motion. Separately, a successful Banshee
+> **Summon** has a 5% chance to play `music/banshee_scream.mp3` (a refused summon never sounds; the
+> store's `summon` now reports success). The roll is `summonCue` in the audio facade, using the
+> browser's `Math.random`, never the sim RNG. No sim, save or RNG
 > change. Net **+3 tests** (web 559 → 562).
 >
 > **Earlier change — Empusa stands in the Studio.** While Empusa is bound, her figure
