@@ -183,8 +183,19 @@ describe('resolveImperium', () => {
 });
 
 describe('resolveSuggestion', () => {
-  it('good adds one unconverted reprobate', () => {
-    expect(resolveSuggestion(fresh(), 'good', rng()).lifetime.reprobates).toBe(1);
+  it('good drives 1..3 reprobates to suicide, minting a soul for each death', () => {
+    const before = addReprobates(fresh(), 10);
+    const s = resolveSuggestion(before, 'good', rng());
+    const deaths = totalReprobates(before) - totalReprobates(s);
+    expect(deaths).toBeGreaterThanOrEqual(1);
+    expect(deaths).toBeLessThanOrEqual(3);
+    expect(soulsOf(s)).toBe(deaths);
+  });
+
+  it('good on an empty flock kills no one and mints nothing', () => {
+    const s = resolveSuggestion(fresh(), 'good', rng());
+    expect(totalReprobates(s)).toBe(0);
+    expect(soulsOf(s)).toBe(0);
   });
 
   it('stellar adds 10..25 unconverted reprobates and mints no soul', () => {
@@ -216,9 +227,9 @@ describe('resolveSuggestion', () => {
     );
   });
 
-  it('neutral changes nothing', () => {
+  it('neutral adds one unconverted reprobate', () => {
     const s = resolveSuggestion(fresh(), 'neutral', rng());
-    expect(totalReprobates(s)).toBe(0);
+    expect(s.lifetime.reprobates).toBe(1);
     expect(soulsOf(s)).toBe(0);
   });
 });
@@ -491,10 +502,12 @@ describe('actionTierDistribution (oracular reveals, 5.1)', () => {
     expect(dist.apocalyptic).toBeCloseTo(0.05, 10);
   });
 
-  it('reflects the base weights for Suggestion (Good is the dominant tier)', () => {
+  it('reflects the base weights for Suggestion (Neutral is the dominant tier)', () => {
     const s = createInitialState('oracle-test', 0);
     const dist = actionTierDistribution(s, 'suggestion');
-    for (const t of TIERS) if (t !== 'good') expect(dist.good).toBeGreaterThan(dist[t]);
+    expect(dist.neutral).toBeCloseTo(0.6, 10);
+    expect(dist.good).toBeCloseTo(0.2, 10);
+    for (const t of TIERS) if (t !== 'neutral') expect(dist.neutral).toBeGreaterThan(dist[t]);
   });
 
   it('Behemoth adds a FLAT bump to the Stellar chance globally (post-normalization)', () => {
@@ -525,7 +538,7 @@ describe('actionOutcomeForecast — expected outcome + variance', () => {
     state: GameState,
     actionId: string,
     eff: number,
-    forcedTier: 'good' | undefined,
+    forcedTier: 'good' | 'neutral' | undefined,
     n: number,
   ): { repMean: number; repSd: number; soulMean: number; malMean: number } {
     const r = makeRng(hashSeed('forecast-mc'));
@@ -563,15 +576,33 @@ describe('actionOutcomeForecast — expected outcome + variance', () => {
     expect(f.reprobates.sd).toBeGreaterThan(0); // stochastic outcome
   });
 
-  it('is deterministic for forced-Good Suggestion: +units reprobates, no souls, sd 0', () => {
+  it('is deterministic for forced-Neutral Suggestion: +units reprobates, no souls, sd 0', () => {
     const state = addReprobates(fresh(), 200);
-    const f = actionOutcomeForecast(state, 'suggestion', 1, 'good');
+    const f = actionOutcomeForecast(state, 'suggestion', 1, 'neutral');
     expect(f.reprobates.mean).toBeCloseTo(1, 6);
     expect(f.souls.mean).toBeCloseTo(0, 6);
     expect(f.reprobates.sd).toBeCloseTo(0, 6);
-    const e = empirical(state, 'suggestion', 1, 'good', 2000);
+    const e = empirical(state, 'suggestion', 1, 'neutral', 2000);
     expect(e.repMean).toBeCloseTo(1, 6);
     expect(e.soulMean).toBeCloseTo(0, 6);
+  });
+
+  it('forecasts forced-Good Suggestion as 1..3 suicides: souls +2, reprobates −2, sd √(2/3)', () => {
+    const state = addReprobates(fresh(), 200);
+    const f = actionOutcomeForecast(state, 'suggestion', 1, 'good');
+    expect(f.souls.mean).toBeCloseTo(2, 6);
+    expect(f.reprobates.mean).toBeCloseTo(-2, 6);
+    expect(f.souls.sd).toBeCloseTo(Math.sqrt(2 / 3), 6);
+    const e = empirical(state, 'suggestion', 1, 'good', 20000);
+    expect(Math.abs(e.soulMean - 2)).toBeLessThan(0.05);
+    expect(Math.abs(e.repMean + 2)).toBeLessThan(0.05);
+  });
+
+  it('caps the forced-Good Suggestion forecast at the living flock', () => {
+    // A flock of 2: the randint(1,3) toll reads 1, 2, 2 → mean 5/3.
+    const f = actionOutcomeForecast(addReprobates(fresh(), 2), 'suggestion', 1, 'good');
+    expect(f.souls.mean).toBeCloseTo(5 / 3, 6);
+    expect(f.reprobates.mean).toBeCloseTo(-5 / 3, 6);
   });
 
   it('returns a zero forecast for a retired Decimatio rite (ADR-038)', () => {

@@ -119,17 +119,23 @@ describe('Semet #32 reaches every seal (ADR-036)', () => {
     // At 1e6 souls a pct seal reads ~0.382; Semet lifts it to ~0.435. A roll pinned between them
     // misses the bare chance and hits the lifted one.
     const roll = (str(39) + str(39) * (1 + semet)) / 2;
+    // The pinned roll also fixes each pass's Good-Suggestion suicide randint(1,3).
     const opts = { forcedTier: 'good' as const, efficiency: 1 };
-    const bare = withSeals(fresh(), { 39: SOULS });
-    const lifted = withSemet({ 39: SOULS });
+    const perPass = 1 + Math.floor(roll * 3);
+    const flock = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: 10 },
+    });
+    const bare = flock(withSeals(fresh(), { 39: SOULS }));
+    const lifted = flock(withSemet({ 39: SOULS }));
     expect(
-      totalReprobates(resolveAction(bare, 'suggestion', pinnedRng(roll), opts).state) -
-        totalReprobates(bare),
-    ).toBe(1);
+      totalReprobates(bare) -
+        totalReprobates(resolveAction(bare, 'suggestion', pinnedRng(roll), opts).state),
+    ).toBe(perPass);
     expect(
-      totalReprobates(resolveAction(lifted, 'suggestion', pinnedRng(roll), opts).state) -
-        totalReprobates(lifted),
-    ).toBe(2);
+      totalReprobates(lifted) -
+        totalReprobates(resolveAction(lifted, 'suggestion', pinnedRng(roll), opts).state),
+    ).toBe(2 * perPass);
     const find = (s: GameState): number =>
       resolveIndagatio(s, 'stellar', pinnedRng(roll)).surfaced.length;
     expect(find(withSeals(fresh(), { 49: SOULS }))).toBe(1);
