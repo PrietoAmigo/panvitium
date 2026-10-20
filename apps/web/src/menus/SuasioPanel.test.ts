@@ -116,7 +116,7 @@ describe('Opus Suasio scroll', () => {
         baseAction({
           id: 'imperium',
           numeral: 'III',
-          name: 'Xherum Volctan',
+          name: 'Xherum Oneytan',
           quote: 'Qoth velim sarnu, ut nescias quod petat.',
           locked: true,
           disabled: true,
@@ -127,7 +127,7 @@ describe('Opus Suasio scroll', () => {
     });
     const sealed = container!.querySelector('.suasio-row--locked');
     expect(sealed).not.toBeNull();
-    expect(sealed!.querySelector('.suasio-name')?.textContent).toBe('Xherum Volctan');
+    expect(sealed!.querySelector('.suasio-name')?.textContent).toBe('Xherum Oneytan');
     expect(sealed!.querySelector('.suasio-gate')?.textContent).toBe('Requires Any Sin III');
     // A sealed rite is unactionable — no Speak/Command button.
     expect(sealed!.querySelector('.suasio-act')).toBeNull();

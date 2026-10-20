@@ -9,6 +9,7 @@ import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { strings } from '@panvitium/shared';
+import { bn } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { SuasioScroll } from './panels.js';
 
@@ -64,5 +65,66 @@ describe('SuasioScroll — outcome ledger', () => {
     expect(text).toContain(strings.opera.suggestion); // the rite name
     expect(text).toContain('+5'); // the soul yield
     expect(text).toContain(strings.resources.souls);
+  });
+});
+
+describe('SuasioScroll — sealed action names', () => {
+  it('keeps each seal on its action as other rites unlock, including after relocking', () => {
+    const initial = store().state!;
+    render();
+
+    function expectRites(names: string[], locked: boolean[]): void {
+      const rows = Array.from(container!.querySelectorAll('.suasio-row'));
+      expect(rows.map((row) => row.querySelector('.suasio-name')?.textContent)).toEqual(names);
+      expect(rows.map((row) => row.classList.contains('suasio-row--locked'))).toEqual(locked);
+    }
+
+    const sealedNames = [
+      strings.opera.suggestion,
+      'Vhorrus Exneth',
+      'Xherum Oneytan',
+      'Zvorpo Wermurn',
+    ];
+    expectRites(sealedNames, [false, true, true, true]);
+
+    act(() => {
+      useGameStore.setState({
+        state: { ...initial, devotion: { ...initial.devotion, luxuria: bn(180) } },
+      });
+    });
+    expectRites(
+      [strings.opera.suggestion, strings.opera.logismoi, 'Xherum Oneytan', 'Zvorpo Wermurn'],
+      [false, false, true, true],
+    );
+
+    act(() => {
+      useGameStore.setState({
+        state: { ...initial, devotion: { ...initial.devotion, luxuria: bn(180 ** 3) } },
+      });
+    });
+    expectRites(
+      [strings.opera.suggestion, strings.opera.logismoi, strings.opera.imperium, 'Zvorpo Wermurn'],
+      [false, false, false, true],
+    );
+
+    act(() => {
+      const devotion = { ...initial.devotion };
+      for (const sin of Object.keys(devotion) as (keyof typeof devotion)[]) {
+        devotion[sin] = bn(180 ** 3);
+      }
+      useGameStore.setState({ state: { ...initial, devotion } });
+    });
+    expectRites(
+      [
+        strings.opera.suggestion,
+        strings.opera.logismoi,
+        strings.opera.imperium,
+        strings.opera.panvitium,
+      ],
+      [false, false, false, false],
+    );
+
+    act(() => useGameStore.setState({ state: initial }));
+    expectRites(sealedNames, [false, true, true, true]);
   });
 });

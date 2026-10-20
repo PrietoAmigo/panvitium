@@ -133,6 +133,7 @@ export const strings = {
       panvitium: 'Burning\u2026 you cannot stop.',
     } as Record<string, string>,
     // A locked temptation is sealed: its name and maxim show as unreadable, redacted Latin.
+    // Seal names belong to these action IDs, regardless of which other rites are unlocked.
     suasioSealed: {
       logismoi: {
         name: 'Vhorrus Exneth',
@@ -143,7 +144,7 @@ export const strings = {
         maxim: '...ut nescias quod petat.',
       },
       panvitium: {
-        name: 'Zvorreth Ommurn',
+        name: 'Zvorpo Wermurn',
         maxim: '...donec omnia ardeant.',
       },
     } as Record<string, { name: string; maxim: string }>,
