@@ -135,11 +135,11 @@ export const strings = {
     // A locked temptation is sealed: its name and maxim show as unreadable, redacted Latin.
     suasioSealed: {
       logismoi: {
-        name: 'Vhorruz Lagneth',
+        name: 'Vhorrus Exneth',
         maxim: '...dum tacet quod clamat.',
       },
       imperium: {
-        name: 'Xherum Volctan',
+        name: 'Xherum Oneytan',
         maxim: '...ut nescias quod petat.',
       },
       panvitium: {
