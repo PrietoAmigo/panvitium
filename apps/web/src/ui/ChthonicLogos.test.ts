@@ -1,5 +1,5 @@
 /**
- * Render smoke tests for the Suasio scroll's outcome ledger (the "logs at the foot" addition). The
+ * Render smoke tests for the Chthonic Logos's outcome ledger (the "logs at the foot" addition). The
  * scroll's rites / sigils / dismissal are covered by SuasioPanel.test.ts; this pins the ledger wiring
  * the wrapper introduces: the heading + empty state before anything resolves, and a real Suasio
  * outcome surfacing as a tier chip beside its soul yield, filtered to this program's rites (another
@@ -11,7 +11,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { strings } from '@panvitium/shared';
 import { bn } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
-import { SuasioScroll } from './panels.js';
+import { ChthonicLogos } from './panels.js';
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -22,7 +22,7 @@ function render(): void {
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
-  act(() => root!.render(createElement(SuasioScroll, { onClose: () => {} })));
+  act(() => root!.render(createElement(ChthonicLogos, { onClose: () => {} })));
 }
 
 beforeEach(() => {
@@ -38,7 +38,7 @@ afterEach(() => {
   root = null;
 });
 
-describe('SuasioScroll — outcome ledger', () => {
+describe('ChthonicLogos — outcome ledger', () => {
   it('shows the ledger heading and the empty-state line before any temptation resolves', () => {
     render();
     expect(container!.querySelector('.suasio-ledger-head')?.textContent).toBe(
@@ -68,7 +68,7 @@ describe('SuasioScroll — outcome ledger', () => {
   });
 });
 
-describe('SuasioScroll — sealed action names', () => {
+describe('ChthonicLogos — sealed action names', () => {
   it('keeps each seal on its action as other rites unlock, including after relocking', () => {
     const initial = store().state!;
     render();

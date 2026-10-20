@@ -12,7 +12,7 @@ mechanic are removed), the **Vitium Mercatura / Vitium Compositum redesign** (th
 and build queue retired), the **Depraedatio gold rework** (the Mercatus system retired in favour
 of the Faeneratio loop — Mutuum, Thesaurus, Syngraphae — with the Foedus re-anchored to the
 hoard), and the **Vitium Compositum retirement** (ADR-031: the eight lesser ceremonies removed;
-Panvitium alone survives and lives on the Suasio scroll).
+Panvitium alone survives and lives on the Chthonic Logos, the Suasio scroll).
 
 ---
 
@@ -512,7 +512,10 @@ The 2015-era seat of the worldly operation: a desk, a PC, a smartphone, a window
   contract tree), the *Indagatio* actions, the *Emptio* market, achievements, the
   event log, and the **email** client (the content channel — `00-lore-bible.md` §10).
 - **The smartphone** carries the incoming and outgoing calls.
-- **The Suasio scroll.** The *Suasio* actions and their delegation, plus **Panvitium** as the
-  scroll's sealed fourth rite (ADR-031) — redacted Latin until every Sin reaches level III, then
+- **The Chthonic Logos.** The scroll on the Studio table that holds the *Suasio* actions. The
+  player is writing it themselves, from their notes on worldly and otherworldly experience (the
+  Katabasis descents among them); its purpose is the mastery of eloquence and persuasion. It
+  carries the *Suasio* actions and their delegation, plus **Panvitium** as the scroll's sealed
+  fourth rite (ADR-031) — redacted Latin until every Sin reaches level III, then
   the Unleash control with its confirming second press.
 - **The window** is the *Panvitium* signature. The screenshot moment.

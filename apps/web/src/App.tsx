@@ -10,7 +10,7 @@ import { CALL_PLATE_ANSWERING } from './menus/calls-in.data.js';
 import { MagnaGoetiaBook } from './menus/MagnaGoetiaBook.js';
 import type { RoomId, PanelId, HotspotAction } from './menus/types.js';
 import { buildGoetia } from './game/invocations.js';
-import { Loculi, PcDesk, SuasioScroll, PhoneDialer } from './ui/panels.js';
+import { Loculi, PcDesk, ChthonicLogos, PhoneDialer } from './ui/panels.js';
 import { InfluenceGoldHud } from './ui/InfluenceGoldHud.js';
 import { DesidiaHud } from './ui/DesidiaHud.js';
 import { BuffsHud } from './ui/BuffsHud.js';
@@ -243,7 +243,7 @@ export function App(): ReactElement {
   };
 
   // The persistent Influence/Gold HUD rides over the Invocation and Studio rooms and over the
-  // Loculi, the Magna Goetia book and the Suasio scroll — but not in the Altar room, not over
+  // Loculi, the Magna Goetia book and the Chthonic Logos — but not in the Altar room, not over
   // the PC desk or the Status Quo Ledger, not during a descent (the Ledger + an ongoing Katabasis
   // both hold `katabasisPhase !== null`), and not behind the launch title menu. It mounts at the app
   // level (below) so it layers over those menu overlays rather than under them.
@@ -290,7 +290,7 @@ export function App(): ReactElement {
       {panel === 'maleficia' && <Loculi onClose={closePanel} />}
       {panel === 'magna-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
-      {panel === 'suasio' && <SuasioScroll onClose={closePanel} />}
+      {panel === 'suasio' && <ChthonicLogos onClose={closePanel} />}
       {panel === 'phone' && <PhoneDialer onClose={closePanel} />}
       {/* The answered incoming call — a full-screen stage that takes over until the call resolves.
           Keyed by id so each call mounts fresh (its FSM starts at the answer). `onChoose` applies the

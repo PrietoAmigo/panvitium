@@ -57,7 +57,7 @@ export function Playspace(): ReactElement {
         </PanelShell>
       )}
       {panel === 'suasio' && (
-        <PanelShell title="The Suasio Scroll" variant="scroll" onClose={() => setPanel(null)}>
+        <PanelShell title="The Chthonic Logos" variant="scroll" onClose={() => setPanel(null)}>
           <SuasioPanel />
         </PanelShell>
       )}

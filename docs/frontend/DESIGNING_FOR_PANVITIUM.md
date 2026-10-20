@@ -22,7 +22,9 @@ Design accordingly and the seam between the two is clean.
 
 The world is three rooms — `invocation`, `altar`, `studio` — each with clickable hotspots that either
 walk to another room or open a panel. The panels are the diegetic menus (the Magna Goetia grimoire, the
-Altar, the Katabasis descent, the Maleficia cabinet, the Suasio scroll, the PC).
+Altar, the Katabasis descent, the Maleficia cabinet, the Chthonic Logos, the PC). The Chthonic Logos is
+the scroll on the Studio table holding the Suasio rites: the player writes it from their notes on
+worldly and otherworldly experience (the Katabasis among them), to master eloquence and persuasion.
 
 ---
 
@@ -65,7 +67,7 @@ the dialog framing, and the close affordance. `PanelShell` takes a `variant`:
 | ----------- | ----------------------- | ------------------- |
 | `stone`     | engraved tombstone slab | the Altar           |
 | `cabinet`   | dim wooden display case | the Maleficia shelf |
-| `scroll`    | aged parchment          | the Suasio scroll   |
+| `scroll`    | aged parchment          | the Chthonic Logos  |
 
 A framed panel's component renders **only its body** (the content that goes inside the shell). It must
 **not** draw its own overlay/background. In the handoff, state plainly: _"renders inside `<PanelShell

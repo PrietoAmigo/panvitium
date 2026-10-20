@@ -37,9 +37,7 @@ export interface SuasioActionView {
 }
 
 interface SuasioPanelProps {
-  /** Small uppercase line above the title — "The Honeyed Tongue". */
-  eyebrow: string;
-  /** The scroll's name — "Opus Suasio". */
+  /** The scroll's name — "Chthonic Logos". */
   title: string;
   /** The illuminated maxim across the head of the parchment. */
   maxim: string;
@@ -74,7 +72,12 @@ function tile(phrase: string, times = 8): string {
 }
 
 /**
- * The Suasio scroll — "Opus Suasio, the Honeyed Tongue" (Claude Design rework). A self-framed,
+ * The Chthonic Logos (Claude Design rework).
+ * The Chthonic Logos is the scroll on the Studio table that holds the Suasio rites. The player is
+ * writing it themselves, from their notes on worldly and otherworldly experience (the Katabasis
+ * descents among them); its purpose is the mastery of eloquence and persuasion.
+ *
+ * A self-framed,
  * full-surface overlay (like Magna Goetia / the PC / Katabasis — it does NOT use PanelShell): an
  * illuminated parchment of three temptations, each an alchemical circle that fills into a progress
  * ring while its rite is spoken. Sealed rites read as redacted Latin until their Sin gate is met.
@@ -82,7 +85,6 @@ function tile(phrase: string, times = 8): string {
  * resolved outcomes live in the PC's Logs, not here.
  */
 export function SuasioPanel({
-  eyebrow,
   title,
   maxim,
   closeLabel,
@@ -103,7 +105,6 @@ export function SuasioPanel({
         </button>
 
         <header className="suasio-head">
-          <p className="suasio-eyebrow">{eyebrow}</p>
           <h2 className="suasio-title">{title}</h2>
           <span className="suasio-rule" aria-hidden="true" />
         </header>

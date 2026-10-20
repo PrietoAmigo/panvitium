@@ -4401,7 +4401,7 @@ body {
    (altar_by_acolytes/…{0–4}acolytes.png) and is painted by the canvas (altarPlateForAcolytes,
    RoomView). The index.css gradient is the non-image base behind that canvas. */
 .scene-studio {
-  /* Use the complete plate so the desk PC and the Suasio scroll are actually drawn — the clean plate
+  /* Use the complete plate so the desk PC and the Chthonic Logos are actually drawn — the clean plate
      left the PC and scroll hotspots sitting over empty space. */
   background-image: url('/assets/panvitium/backgrounds/studio_complete.png');
 }
@@ -4500,13 +4500,16 @@ body {
 }
 
 /* ============================================================================
-   Opus Suasio — "the Honeyed Tongue" (Claude Design rework).
+   The Chthonic Logos (Claude Design rework): the scroll on the Studio table
+   holding the Suasio rites, written by the player from their notes on worldly
+   and otherworldly experience (the Katabasis among them), for the mastery of
+   eloquence and persuasion.
    A self-framed, full-surface overlay (mounted by App, not PanelShell): an
    illuminated dark parchment of three temptations. Each rite is an alchemical
    circle that fills into a progress ring while it is spoken; sealed (locked)
    rites read as redacted Latin behind a blur until their Sin gate is met.
    Class names map 1:1 to <SuasioPanel/>; the progress ring/bar are driven by
-   the real action queue (see SuasioScroll in ui/panels.tsx).
+   the real action queue (see ChthonicLogos in ui/panels.tsx).
    ============================================================================ */
 
 .suasio-overlay {
@@ -4563,16 +4566,8 @@ body {
   text-align: center;
   padding: 58px 32px 30px;
 }
-.suasio-eyebrow {
-  margin: 0;
-  font-family: var(--font-display);
-  letter-spacing: 0.46em;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  color: #9c7b3e;
-}
 .suasio-title {
-  margin: 14px 0 0;
+  margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 2.1rem;

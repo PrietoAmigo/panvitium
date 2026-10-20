@@ -1,5 +1,5 @@
 /**
- * Render smoke tests for the Opus Suasio scroll (Claude Design rework). These pin the wiring the
+ * Render smoke tests for the Chthonic Logos scroll (Claude Design rework). These pin the wiring the
  * visual rework introduced: the scroll is a self-framed dialog with a close affordance, each rite
  * renders its sigil row, the active rite surfaces its progress ring + bar + flicker status, a
  * sealed (locked) rite shows redacted Latin + its Sin gate and offers no action, an open rite's
@@ -52,8 +52,7 @@ function render(props: { actions: SuasioActionView[]; onClose: () => void }): vo
   act(() => {
     root!.render(
       createElement(SuasioPanel, {
-        eyebrow: 'The Honeyed Tongue',
-        title: 'Opus Suasio',
+        title: 'Chthonic Logos',
         maxim: 'Veritatis simplex oratio est',
         closeLabel: 'Close the scroll',
         actions: props.actions,
@@ -70,7 +69,7 @@ afterEach(() => {
   container = null;
 });
 
-describe('Opus Suasio scroll', () => {
+describe('Chthonic Logos scroll', () => {
   it('renders a labelled dialog with one row per temptation', () => {
     render({
       actions: [
@@ -81,7 +80,7 @@ describe('Opus Suasio scroll', () => {
       onClose: () => {},
     });
     const dialog = container!.querySelector('[role="dialog"]');
-    expect(dialog?.getAttribute('aria-label')).toBe('Opus Suasio');
+    expect(dialog?.getAttribute('aria-label')).toBe('Chthonic Logos');
     expect(container!.querySelectorAll('.suasio-row').length).toBe(3);
   });
 

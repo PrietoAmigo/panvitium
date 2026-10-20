@@ -259,13 +259,17 @@ function suasioLedgerText(e: OutcomeEvent): string {
 }
 
 /**
- * The Suasio scroll (Studio) — "Opus Suasio, the Honeyed Tongue" (Claude Design rework). A
- * self-framed, full-surface overlay (mounted by App like Magna Goetia / the PC, NOT via PanelShell):
+ * The Chthonic Logos (Studio), the Suasio rites' scroll (Claude Design rework).
+ * The Chthonic Logos is the scroll on the Studio table that holds the Suasio rites. The player is
+ * writing it themselves, from their notes on worldly and otherworldly experience (the Katabasis
+ * descents among them); its purpose is the mastery of eloquence and persuasion.
+ *
+ * A self-framed, full-surface overlay (mounted by App like Magna Goetia / the PC, NOT via PanelShell):
  * it feeds the designed parchment with the real action, cost, and live progress, and preserves
  * acolyte delegation per delegatable rite. A sealed (locked) rite shows redacted Latin + its Sin
  * gate. Resolved outcomes live in the PC's Logs program, not on the scroll.
  */
-export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement {
+export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
   const activateCeremony = useGameStore((s) => s.activateCeremony);
@@ -276,7 +280,6 @@ export function SuasioScroll({ onClose }: { onClose: () => void }): ReactElement
   );
 
   const headerProps = {
-    eyebrow: strings.opera.suasioEyebrow,
     title: strings.opera.suasioTitle,
     maxim: strings.opera.suasioMaxim,
     closeLabel: strings.opera.suasioClose,
@@ -541,7 +544,7 @@ export function IndagatioEmptioProgram(): ReactElement {
 
 /**
  * The Loculi reliquary (Invocation Room): a self-framed, full-surface overlay (mounted by App like
- * Magna Goetia / the Suasio scroll, NOT via PanelShell). Owned items grouped by id, stackables showing
+ * Magna Goetia / the Chthonic Logos, NOT via PanelShell). Owned items grouped by id, stackables showing
  * their count; the single-use rites wired to `activateMaleficium`, and (while the Depraedatio private
  * item safe is open) every relic's "Store in safe" toggle wired to `toggleSafeItem`. It opens on the newest relic
  * Emptio brought home (else the rarest), whether or not its Unveiling played, and forgets that
@@ -802,7 +805,7 @@ export function PcDesk({ onClose }: { onClose: () => void }): ReactElement {
 
 /**
  * The Studio desk smartphone (Claude Design, Direction A). A self-framed full-screen overlay (mounted
- * by App like Magna Goetia / the PC / the Suasio scroll, NOT via PanelShell): the player keys a code on
+ * by App like Magna Goetia / the PC / the Chthonic Logos, NOT via PanelShell): the player keys a code on
  * the dialer and submits it. The sim owns the valid-code set (`dialCode`); this wrapper turns the
  * sim's outcome into the toast the dialer renders, with copy from `strings`. The boon EFFECTS are a
  * documented empty hook awaiting the outgoing-call engine (docs/PANVITIUM-CALLS-OUT.md) — today a

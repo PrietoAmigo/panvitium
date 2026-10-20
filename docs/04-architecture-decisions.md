@@ -951,7 +951,7 @@ channel) around one ritual that actually matters.
    (Sin-gated activation, per-second cost with the eᵗ ramp, the Foedus upkeep discount,
    auto-deactivation, unknown-id self-healing for old saves — no schema bump per ADR-023, since
    `activeToggles` is a plain string list and retired ids drop unbilled on the first tick).
-   **Panvitium moves to the Suasio scroll** as its sealed fourth rite: gated visually exactly like
+   **Panvitium moves to the Suasio scroll** (since renamed the Chthonic Logos) as its sealed fourth rite: gated visually exactly like
    the other temptations (redacted Latin name/maxim + the "Requires Every Sin III" label), with a
    two-press Unleash confirm; the Depraedatio panel drops its Compositum tab and carries only
    Thesaurus / Syngraphae.

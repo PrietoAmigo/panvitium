@@ -104,9 +104,10 @@ export const strings = {
     compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
-    // The Suasio scroll: \u201cOpus Suasio, the Honeyed Tongue\u201d (Claude Design rework).
-    suasioEyebrow: 'The Honeyed Tongue',
-    suasioTitle: 'Opus Suasio',
+    // The Chthonic Logos: the scroll on the Studio table holding the Suasio rites, written by the
+    // player from their notes on worldly and otherworldly experience (the Katabasis among them) to
+    // master eloquence and persuasion (Claude Design rework).
+    suasioTitle: 'Chthonic Logos',
     suasioMaxim: 'Veritatis simplex oratio est',
     suasioClose: 'Close the scroll',
     // Each temptation\u2019s flavour line, spoken on the parchment.
@@ -154,12 +155,12 @@ export const strings = {
     // specific Sin), so the sealed-row requirement reads "Requires Any Sin III" and the locked
     // auto/delegate hint reads "Any Sin I".
     anySin: 'Any Sin',
-    // Panvitium's gate on the scroll (all eight Sins at level III).
+    // Panvitium's gate on the Chthonic Logos (all eight Sins at level III).
     suasioPanvitiumGate: 'Every Sin III',
     // Panvitium on the scroll: its open name and the ramping-cost suffix on the cost line.
     panvitium: 'Panvitium',
     panvitiumRising: 'and rising',
-    // The Suasio scroll's outcome ledger: resolved temptations, newest first, below the rites.
+    // The Chthonic Logos's outcome ledger: resolved temptations, newest first, below the rites.
     // Box-drawing rule (U+2500), never a dash (hard copy rule 2).
     suasioLedgerHeading: '\u2500 INDEX SVASIONVM \u2500',
     suasioEmptyLedger: 'No temptation has been spoken yet.',
