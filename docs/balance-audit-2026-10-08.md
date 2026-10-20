@@ -16,14 +16,14 @@ dies, not by how fast it is corrupted.
 
 | # | Finding | Before | After |
 |---|---|---|---|
-| F1 | **The five flat seals were wildly front-loaded** (Haagenti #48, Decarabia #69, Ose #57, Sabnock #43, Glasya-Labolas #25). They ran on the sheet's `coeff × ln(1 + N)`, so the FIRST soul paid the most. | 1 soul: Haagenti +69% base gold, Decarabia +69% influence regen, Sabnock ×7.9 suicide rate, Glasya ×4.5 murder rate. 20 souls in each of the five: **×17 souls** in the hour (their % twins Valefor/Belial/Aamon/Ronove/Aim: ×1.05). A % seal needs ~10¹⁰ souls to match one soul in Haagenti. | All five ride the default `pct` curve (nothing below ~7 souls) with `coefficient = FLAT_SEAL_SPLASH (10) × the base rate they add to`: each adds ten times what its % twin adds to that base. 20 souls in each: **×1.7 souls**. Still the best early pick, falling behind the % seals late. Ose (no base rate) takes 10× its sheet coefficient. One knob: `FLAT_SEAL_SPLASH` in `sigils.data.ts`. |
+| F1 | **The five flat seals were wildly front-loaded** (Haagenti #48, Decarabia #69, Ose #57, Sabnock #43, Glasya-Labolas #25). They ran on the sheet's `coeff × ln(1 + N)`, so the FIRST soul paid the most. | 1 soul: Haagenti +69% base gold, Decarabia +69% influence regen, Sabnock ×7.9 suicide rate, Glasya ×4.5 murder rate. 20 souls in each of the five: **×17 souls** in the hour (their % twins Valefor/Belial/Aamon/Ronove/Aim: ×1.05). A % seal needs ~10¹⁰ souls to match one soul in Haagenti. | **Reverted (2026-10-20, design decision).** This change moved all five to the default `pct` curve (nothing below ~7 souls) with `coefficient = FLAT_SEAL_SPLASH (10) × the base rate they add to` (20 souls in each: ×1.7 souls). They are back on the sheet's `coeff × ln(1 + N)` with the sheet coefficients (Haagenti 3, Decarabia 0.5, Ose 0.3, Sabnock 0.001, Glasya-Labolas 0.001), so the Before column is the live behaviour again. |
 | F2 | **Fractional efficiency doubled the Suasio price for nothing.** The cost read `ceil(base × (1 + ln eff))` on the raw efficiency, while the yield is `floor(eff)` whole units. | Offering the first 180 souls to Gula (Insatiability ×1.31) or summoning the Familiar (×1.33) raised Suggestion from 1 to **2 influence** (Logismoi 25 → 32/33) with no extra yield: on the influence-bound opening loop that halves the cast rate. | The cost reads the same whole units (`1 + ln(floor(eff))`): eff 1.99 costs 1, eff 2 costs 2. (`costOutcomeCostMultiplier`) |
 | F3 | **Erinyes was a free, repeatable harvest.** The grimoire offers Dispel on every bound invocation; each re-summon re-ran the "kill every reprobate, one soul each" wipe. | Dispel + Summon, at will, converted the whole flock to souls instantly, at no further cost (the descent penalty was already paid). | The wipe fires once per lifetime, on the summon that sets `pendingErinyes`. Copy says "once per lifetime". |
 | F4 | **Rate seals read "+0" in the Goetia.** `fmtFlat` used two fixed decimals. | Sabnock / Glasya-Labolas (per-capita rates ~10⁻⁴ to 10⁻²) showed `+0 suicides/reprobate·s` at almost every binding. | Two significant digits below 0.01 (`+0.00016 suicides/reprobate·s`). |
 | F5 | **The seal panel and the Ledger understated every seal.** `effectDisplay` showed the bare strength, without the sigil-effect stack (Solomon's Ring / Picatrix / Teraphim, Gaap, Semet) the sim applies. | With Solomon's Ring a +38.2% Valefor read +38.2% (applied: +63.4%). | New `sigilEffectMulFor(state, def)` mirrors `sigilEffectStack`'s order (Semet reads the relics, Gaap the relics × Semet, every other seal the full multiplier); both call sites pass it. |
 
 Also corrected: stale comments describing Arachne as +1 influence/s (it is +0.25, as the player copy
-says) and the flat generators as log-curve seals.
+says).
 
 ---
 
@@ -77,10 +77,10 @@ Ranked by how much they bend the game. Suggested directions are options, not dec
    the total reaches 2. F2 stops them costing extra; they are still dead weight for Suggestion (they
    do lift Logismoi/Imperium's % tiers and the Indagatio/Emptio timers). Same remedy as 6.
 8. **Sin-1 invocation upkeep outruns base influence regeneration.** Wendigo/Kobold/Banshee cost
-   1 influence/s and Blob/Empusa 2/s, against 0.5/s base regen (0.5% of the 100 cap). Before F1,
-   ~2–33 souls in Decarabia quietly paid for them; now the influence relics (Black Robe +0.4,
-   Sulfur Censer +0.6, Blood Chalk and Blackthorn Wand +2), Vanagloria and Belial do. Watch this in
-   play: if early invocations keep dispelling, raise Decarabia's splash or lower the Sin-1 upkeeps.
+   1 influence/s and Blob/Empusa 2/s, against 0.5/s base regen (0.5% of the 100 cap). With F1
+   reverted, ~2–33 souls in Decarabia quietly pay for them again; without Decarabia, the influence
+   relics (Black Robe +0.4, Sulfur Censer +0.6, Blood Chalk and Blackthorn Wand +2), Vanagloria and
+   Belial have to.
 9. **Behemoth is a trap.** +0.025 percentage points of Stellar per copy (+0.25 pp at the cap of 10)
    for 0.625% of gold AND influence gain each. Against Suggestion's 0.1% Stellar it is worth ~0.004
    reprobates per cast.
@@ -116,6 +116,6 @@ Ranked by how much they bend the game. Suggested directions are options, not dec
 The numbers come from throwaway harnesses (not committed): `computeModifiers` / `reprobateRates` /
 `perSecondRates` over each sigil at 1, 2, 10, 33, 10³, 10⁶ and 10⁹ bound souls, and a 36,000-tick
 (one hour, 0.1 s) loop of `startAction('suggestion')` + `tick` from `createInitialState`, with and
-without bindings. Each fix is pinned in the regular suite: `sigils.test.ts` (flat seals,
-`sigilEffectMulFor`), `actions.test.ts` (the Suasio price at fractional efficiency),
+without bindings. Each fix is pinned in the regular suite: `sigils.test.ts`
+(`sigilEffectMulFor`), `actions.test.ts` (the Suasio price at fractional efficiency),
 `apex-katabasis.test.ts` (Erinyes once per lifetime), `AetherSigils.test.ts` (display).

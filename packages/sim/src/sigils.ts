@@ -4,10 +4,9 @@
  * 1k, ~31% at 100k, ~50% at ~39M, then keeps creeping up with NO cap — meaningful early, gentle
  * late, and far tamer than the old √ default (which was near-zero early and exploded late).
  * A standard sigil carries `coefficient: 1` (so its strength IS the curve); a weaker sigil scales it
- * down (Paimon 0.5; Zepar #16 / Marax #21 / Zagan #61 at 1/3); the five flat generators carry a
- * coefficient in their own unit (gold/s, influence/s, …; see `FLAT_SEAL_SPLASH` in the data file).
- * Some sigils override the curve to `log` (Forneus #30's invoking power, Semet, Gaap, Katabasis
- * carry-over); the `linear` and `sqrt` curves are supported but no seal currently uses them.
+ * down (Paimon 0.5; Zepar #16 / Marax #21 / Zagan #61 at 1/3). Some sigils override the curve to
+ * `log` (the flat generators, Forneus #30's invoking power, Semet, Gaap, Katabasis carry-over); the
+ * `linear` and `sqrt` curves are supported but no seal currently uses them.
  * `bindingMagnitude` returns the bare magnitude; a per-sigil coefficient multiplies it into a
  * concrete effect strength.
  *
@@ -302,10 +301,10 @@ export function sigilInvocationSinContributions(
   return out;
 }
 /**
- * Flat per-second resource generation from the generator sigils (Haagenti #48 → gold, Decarabia #69
- * → influence, Ose #57 → births, Sabnock #43 / Glasya-Labolas #25 → the per-capita suicide / murder
- * base). Each contributes its strength (`coefficient × pct(souls)`) directly (additive, not a
- * multiplier). Consumed by `computeModifiers` → the matching flat fields, which the tick and the
+ * Flat per-second resource generation from the log-curve generator sigils (Haagenti #48 → gold,
+ * Decarabia #69 → influence, Ose #57 → births, Sabnock #43 / Glasya-Labolas #25 → the per-capita
+ * suicide / murder base). Each contributes its `coefficient × ln(1 + souls)` directly (additive, not
+ * a multiplier). Consumed by `computeModifiers` → the matching flat fields, which the tick and the
  * dynamics accrue. `effectMul` carries the sigil enhancers.
  */
 export function sigilFlatGeneration(

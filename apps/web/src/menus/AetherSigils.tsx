@@ -134,7 +134,7 @@ function effectSign(e: SigilDef['effect']): '+' | '−' {
 /**
  * A small flat magnitude, shown plainly (e.g. "62" or "0.04"). Below 0.01 it keeps two significant
  * digits: the per-capita rates (Sabnock, Glasya-Labolas) live there, and two fixed decimals read
- * every live binding of theirs as "+0".
+ * their bindings below ~22k souls as "+0" or "+0.01".
  */
 function fmtFlat(s: number): string {
   if (s >= 10) return formatBigNum(bn(Math.round(s)));
