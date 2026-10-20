@@ -379,7 +379,7 @@ describe('v7 → v8 migration (maleficia rework)', () => {
     expect(migrated.state.lifetime.maleficiaBuffs).toEqual({ hand_of_glory: 900 });
     expect('handOfGloryRemaining' in migrated.state.lifetime).toBe(false);
     expect('defixio' in migrated.state.lifetime).toBe(false);
-    expect(migrated.state.lifetime.maleficia).toEqual(['black_robe']);
+    expect(migrated.state.lifetime.maleficia).toEqual(['red_robe']);
     expect(migrated.state.lifetime.emptioList).toEqual(['ars_serpens']);
     expect(migrated.state.lifetime.maleficiaPrices).toEqual({ ars_serpens: 2000 });
   });
@@ -394,7 +394,7 @@ describe('v7 → v8 migration (maleficia rework)', () => {
     lifetime.maleficiaPrices = { ars_serpens: 2000 };
     const migrated = migrateSave(blob);
     expect(migrated.state.lifetime.maleficiaBuffs).toBeUndefined(); // absent on the wire → {} at load
-    expect(migrated.state.lifetime.maleficia).toEqual(['black_robe']);
+    expect(migrated.state.lifetime.maleficia).toEqual(['red_robe']);
   });
 });
 
@@ -519,6 +519,58 @@ describe('v10 → v11 migration (the Decimatio category retired, ADR-038)', () =
       autoRepeat: ['suggestion'],
       actionQueue: [{ actionId: 'suggestion', remainingSeconds: 1 }],
       acolytes: [{ id: 1, assignedAction: 'indagatio', remainingSeconds: 40 }],
+    });
+    const migrated = migrateSave(blob);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.lifetime).toEqual((blob.state as Record<string, unknown>).lifetime);
+  });
+});
+
+describe('v11 → v12 migration (the Black Robe renamed the Red Robe)', () => {
+  /** A v11-shaped raw blob with the given lifetime overrides. */
+  function v11Blob(extra: Record<string, unknown>): Record<string, unknown> {
+    const base = currentBlob();
+    const state = base.state as Record<string, unknown>;
+    const lifetime = state.lifetime as Record<string, unknown>;
+    return { ...base, schemaVersion: 11, state: { ...state, lifetime: { ...lifetime, ...extra } } };
+  }
+
+  it('rewrites black_robe to red_robe everywhere a save can carry it', () => {
+    const migrated = migrateSave(
+      v11Blob({
+        maleficia: ['sulfur_censer', 'black_robe'],
+        emptioList: ['black_robe', 'ars_serpens'],
+        maleficiaPrices: { obsidian_mirror: 14210, black_robe: 640, ars_serpens: 2000 },
+        actionQueue: [
+          { actionId: 'emptio', remainingSeconds: 30, target: 'black_robe', paidGold: 640 },
+          { actionId: 'indagatio', remainingSeconds: 90 },
+        ],
+        safeItem: 'black_robe',
+      }),
+    );
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const lifetime = migrated.state.lifetime;
+    expect(lifetime.maleficia).toEqual(['sulfur_censer', 'red_robe']);
+    expect(lifetime.emptioList).toEqual(['red_robe', 'ars_serpens']);
+    expect(lifetime.maleficiaPrices).toEqual({
+      obsidian_mirror: 14210,
+      red_robe: 640,
+      ars_serpens: 2000,
+    });
+    expect(lifetime.actionQueue).toEqual([
+      { actionId: 'emptio', remainingSeconds: 30, target: 'red_robe', paidGold: 640 },
+      { actionId: 'indagatio', remainingSeconds: 90 },
+    ]);
+    expect(lifetime.safeItem).toBe('red_robe');
+  });
+
+  it('is a no-op for a v11 save that never held the robe', () => {
+    const blob = v11Blob({
+      maleficia: ['sulfur_censer'],
+      emptioList: ['ars_serpens'],
+      maleficiaPrices: { ars_serpens: 2000 },
+      actionQueue: [{ actionId: 'emptio', remainingSeconds: 30, target: 'ars_serpens' }],
+      safeItem: 'sulfur_censer',
     });
     const migrated = migrateSave(blob);
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);

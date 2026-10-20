@@ -31,7 +31,7 @@ export const MALEFICIA_COORDS: Record<string, readonly [number, number]> = {
   thirty_pieces_of_silver: [35.5, 31.5],
   spear_of_longinus: [49, 33],
   sulfur_censer: [15, 37.7],
-  black_robe: [2, 48.8],
+  red_robe: [2, 48.8],
   black_candles: [23, 50],
   black_salt_pouch: [15, 60],
   crossroads_dirt: [-90, 32],

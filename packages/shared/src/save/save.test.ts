@@ -146,8 +146,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v11 (the Decimatio retirement bumped it again, ADR-038)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(11);
+  it('schemaVersion is v12 (the Black Robe → Red Robe id rename bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(12);
   });
 });
 
@@ -354,10 +354,10 @@ describe('the reserve + contracts + account fields — ADR-023 additive-optional
     const fresh = createInitialState('seed', 0);
     const withPrices: GameState = {
       ...fresh,
-      lifetime: { ...fresh.lifetime, maleficiaPrices: { obsidian_mirror: 14210, black_robe: 640 } },
+      lifetime: { ...fresh.lifetime, maleficiaPrices: { obsidian_mirror: 14210, red_robe: 640 } },
     };
     const back = deserializeGameState(serializeGameState(withPrices));
-    expect(back.lifetime.maleficiaPrices).toEqual({ obsidian_mirror: 14210, black_robe: 640 });
+    expect(back.lifetime.maleficiaPrices).toEqual({ obsidian_mirror: 14210, red_robe: 640 });
     // A save that predates rolled pricing deserializes to an empty map.
     const wire = serializeGameState(fresh);
     expect(back.lifetime).toBeDefined();

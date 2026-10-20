@@ -33,7 +33,7 @@
  *                 Pilate's Basin              → desidiaDrainMul × 0.5 (−50% drain)
  *                 Crow Feather / Obsidian     → indagatioEfficiencyMul (−10% / −33% Indagatio time)
  *                 Grimoire of Pope Honorius   → invocationEfficiencyMul × 1.13 (+13%)
- *                 flat/s: Black Robe/Blood Chalk/Blackthorn Wand/Sulfur Censer → influence;
+ *                 flat/s: Red Robe/Blood Chalk/Blackthorn Wand/Sulfur Censer → influence;
  *                         Hollow Effigy/Witch Ladder → murders; Poppet/Mandrake Root → suicides;
  *                         Adder Stone/Witch Bottle → generation
  *                 single-use buffs (maleficiaBuffs): Hand of Glory +33% gen, Black Salt Pouch +10% gen,
@@ -503,8 +503,8 @@ export function computeModifiers(state: GameState): Modifiers {
     flatInfluencePerSecond:
       flatGen.influence +
       ARACHNE_INFLUENCE_PER_SECOND * invEffFor('vanagloria') * arachneCount +
-      // Maleficia flat influence/s: Black Robe +0.4, Blood Chalk +2, Blackthorn Wand +2, Sulfur Censer +0.6.
-      flat('black_robe', 0.4) +
+      // Maleficia flat influence/s: Red Robe +0.4, Blood Chalk +2, Blackthorn Wand +2, Sulfur Censer +0.6.
+      flat('red_robe', 0.4) +
       flat('blood_chalk', 2) +
       flat('blackthorn_wand', 2) +
       flat('sulfur_censer', 0.6),

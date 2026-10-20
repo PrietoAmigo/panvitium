@@ -300,10 +300,10 @@ export const MALEFICIA: MaleficiumArt[] = [
     effect: '+0.05 suicides per second.',
   },
   {
-    id: 'black_robe',
-    name: 'Black Robe',
+    id: 'red_robe',
+    name: 'Red Robe',
     rarity: 'common',
-    img: `${ASSET_BASE}/maleficia/black_robe.png`,
+    img: `${ASSET_BASE}/maleficia/red_robe.png`,
     desc: 'What separates the celebrant from the congregation is mostly fabric.',
     effect: '+0.4 influence per second.',
   },

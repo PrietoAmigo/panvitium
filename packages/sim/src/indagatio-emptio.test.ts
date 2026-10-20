@@ -100,7 +100,7 @@ describe('resolveIndagatio (03 §2.5)', () => {
     // common find must evict a DIFFERENT common, never the one mid-purchase.
     const base = fresh();
     const filled = [
-      'black_robe', // the in-flight purchase target (common, non-stackable)
+      'red_robe', // the in-flight purchase target (common, non-stackable)
       ...Array.from({ length: 19 }, () => 'black_salt_pouch'),
     ];
     const seeded: GameState = {
@@ -108,12 +108,12 @@ describe('resolveIndagatio (03 §2.5)', () => {
       lifetime: {
         ...base.lifetime,
         emptioList: filled,
-        actionQueue: [{ actionId: 'emptio', remainingSeconds: 30, target: 'black_robe' }],
+        actionQueue: [{ actionId: 'emptio', remainingSeconds: 30, target: 'red_robe' }],
       },
     };
     const { state, surfaced } = resolveIndagatio(seeded, 'neutral', rng());
     expect(surfaced.length).toBe(1);
-    expect(state.lifetime.emptioList).toContain('black_robe'); // the purchase target survived
+    expect(state.lifetime.emptioList).toContain('red_robe'); // the purchase target survived
   });
 
   it('falls back to a lower rarity when the picked one is exhausted', () => {
@@ -167,10 +167,10 @@ describe('resolveEmptio (03 §2.6)', () => {
   }
 
   it('Good acquires the item and consumes the list entry', () => {
-    const r = resolveEmptio(listedWith('black_robe'), 'good', 'black_robe');
-    expect(r.acquired).toEqual(['black_robe']);
-    expect(r.state.lifetime.maleficia).toContain('black_robe');
-    expect(r.state.lifetime.emptioList).not.toContain('black_robe');
+    const r = resolveEmptio(listedWith('red_robe'), 'good', 'red_robe');
+    expect(r.acquired).toEqual(['red_robe']);
+    expect(r.state.lifetime.maleficia).toContain('red_robe');
+    expect(r.state.lifetime.emptioList).not.toContain('red_robe');
   });
 
   it('Stellar acquires AND refunds the full cost (a steal)', () => {
@@ -217,35 +217,35 @@ describe('resolveEmptio (03 §2.6)', () => {
   });
 
   it('Neutral acquires the item at the listed price — no refund, list entry consumed', () => {
-    const state = listedWith('black_robe', 500);
-    const r = resolveEmptio(state, 'neutral', 'black_robe');
-    expect(r.acquired).toEqual(['black_robe']);
-    expect(r.state.lifetime.maleficia).toContain('black_robe');
-    expect(r.state.lifetime.emptioList).not.toContain('black_robe');
+    const state = listedWith('red_robe', 500);
+    const r = resolveEmptio(state, 'neutral', 'red_robe');
+    expect(r.acquired).toEqual(['red_robe']);
+    expect(r.state.lifetime.maleficia).toContain('red_robe');
+    expect(r.state.lifetime.emptioList).not.toContain('red_robe');
     // Cost was already paid at startAction; Neutral neither refunds nor charges again.
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(500);
   });
 
   it('Bad: cost stays gone, item stays on the list', () => {
-    const state = listedWith('black_robe', 0);
-    const r = resolveEmptio(state, 'bad', 'black_robe');
-    expect(r.state.lifetime.maleficia).not.toContain('black_robe');
-    expect(r.state.lifetime.emptioList).toContain('black_robe');
+    const state = listedWith('red_robe', 0);
+    const r = resolveEmptio(state, 'bad', 'red_robe');
+    expect(r.state.lifetime.maleficia).not.toContain('red_robe');
+    expect(r.state.lifetime.emptioList).toContain('red_robe');
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(0);
   });
 
   it('Terrible snatches the item from the list (no refund, no acquisition)', () => {
-    const state = listedWith('black_robe', 0);
-    const r = resolveEmptio(state, 'terrible', 'black_robe');
-    expect(r.lostFromList).toEqual(['black_robe']);
-    expect(r.state.lifetime.emptioList).not.toContain('black_robe');
-    expect(r.state.lifetime.maleficia).not.toContain('black_robe');
+    const state = listedWith('red_robe', 0);
+    const r = resolveEmptio(state, 'terrible', 'red_robe');
+    expect(r.lostFromList).toEqual(['red_robe']);
+    expect(r.state.lifetime.emptioList).not.toContain('red_robe');
+    expect(r.state.lifetime.maleficia).not.toContain('red_robe');
   });
 
   it('Apocalyptic snatches the item AND bites 50% of total gold (bait)', () => {
-    const state = listedWith('black_robe', 1000);
-    const r = resolveEmptio(state, 'apocalyptic', 'black_robe');
-    expect(r.lostFromList).toEqual(['black_robe']);
+    const state = listedWith('red_robe', 1000);
+    const r = resolveEmptio(state, 'apocalyptic', 'red_robe');
+    expect(r.lostFromList).toEqual(['red_robe']);
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(500); // 1000 → lose 50%
   });
 
@@ -258,7 +258,7 @@ describe('resolveEmptio (03 §2.6)', () => {
       ...fresh(),
       lifetime: { ...fresh().lifetime, gold: bn(1000) }, // startAction already took the 400
     };
-    const r = resolveEmptio(seeded, 'good', 'black_robe', paid);
+    const r = resolveEmptio(seeded, 'good', 'red_robe', paid);
     expect(r.acquired).toEqual([]);
     expect(r.lostFromList).toEqual([]);
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(1400); // 1000 + refunded 400
@@ -317,7 +317,7 @@ describe('startAction — Indagatio / Emptio', () => {
   });
 
   it('Emptio refuses when the target is not on the Emptio list', () => {
-    const r = startAction(fresh(), 'emptio', { target: 'black_robe' });
+    const r = startAction(fresh(), 'emptio', { target: 'red_robe' });
     expect(r.ok).toBe(false);
   });
 
@@ -325,14 +325,14 @@ describe('startAction — Indagatio / Emptio', () => {
     const base = fresh();
     const state: GameState = {
       ...base,
-      lifetime: { ...base.lifetime, gold: bn(1000), emptioList: ['black_robe'] },
+      lifetime: { ...base.lifetime, gold: bn(1000), emptioList: ['red_robe'] },
     };
-    const r = startAction(state, 'emptio', { target: 'black_robe' });
+    const r = startAction(state, 'emptio', { target: 'red_robe' });
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(floor(r.state.lifetime.gold).toNumber()).toBe(1000 - MALEFICIA.black_robe!.cost);
+      expect(floor(r.state.lifetime.gold).toNumber()).toBe(1000 - MALEFICIA.red_robe!.cost);
       const t = r.state.lifetime.actionQueue[0]!;
-      expect(t.target).toBe('black_robe');
+      expect(t.target).toBe('red_robe');
     }
   });
 
@@ -340,9 +340,9 @@ describe('startAction — Indagatio / Emptio', () => {
     const base = fresh();
     const state: GameState = {
       ...base,
-      lifetime: { ...base.lifetime, gold: bn(100), emptioList: ['black_robe'] }, // need 500
+      lifetime: { ...base.lifetime, gold: bn(100), emptioList: ['red_robe'] }, // need 500
     };
-    const r = startAction(state, 'emptio', { target: 'black_robe' });
+    const r = startAction(state, 'emptio', { target: 'red_robe' });
     expect(r.ok).toBe(false);
   });
 
@@ -386,7 +386,7 @@ describe('startAction — Indagatio / Emptio', () => {
         ...base.lifetime,
         gold: bn(100_000),
         influence: bn(50),
-        emptioList: ['black_robe', 'hand_of_glory'],
+        emptioList: ['red_robe', 'hand_of_glory'],
       },
     };
 
@@ -394,7 +394,7 @@ describe('startAction — Indagatio / Emptio', () => {
     const player = startAction(funded, 'suggestion');
     expect(player.ok).toBe(true);
     if (player.ok) {
-      const plusEmptio = startAction(player.state, 'emptio', { target: 'black_robe' });
+      const plusEmptio = startAction(player.state, 'emptio', { target: 'red_robe' });
       expect(plusEmptio.ok).toBe(true);
       if (plusEmptio.ok) {
         expect([...plusEmptio.state.lifetime.actionQueue].map((t) => t.actionId).sort()).toEqual([
@@ -406,7 +406,7 @@ describe('startAction — Indagatio / Emptio', () => {
 
     // Emptio first: a player rite AND an Indagatio still start alongside it (independent channels);
     // a SECOND Emptio is refused (only one purchase at a time).
-    const emptio = startAction(funded, 'emptio', { target: 'black_robe' });
+    const emptio = startAction(funded, 'emptio', { target: 'red_robe' });
     expect(emptio.ok).toBe(true);
     if (emptio.ok) {
       expect(startAction(emptio.state, 'suggestion').ok).toBe(true);
