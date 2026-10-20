@@ -78,8 +78,10 @@ export const ROOMS: Record<RoomId, RoomDef> = {
         action: { type: 'panel', panel: 'pc' },
       },
       {
+        // The Chthonic Logos on the Studio table: the player's own scroll of the Suasio rites, written
+        // from their notes on worldly and otherworldly experience (the Katabasis among them).
         id: 'suasio',
-        label: 'The Suasio Scroll',
+        label: 'The Chthonic Logos',
         rect: { x: 13, y: 69, w: 34, h: 28 },
         action: { type: 'panel', panel: 'suasio' },
       },

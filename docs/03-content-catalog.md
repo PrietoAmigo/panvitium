@@ -9,7 +9,7 @@ their constants live in the sheet.
 This revision incorporates **ADR-024** (single reprobate pool; subtypes and conversion removed)
 the **Vitium Mercatura / Vitium Compositum redesign** (`vm-vc-redesign-spec.md`), the
 **Depraedatio gold rework** (Mercatus → the Faeneratio loop), and **ADR-031** (the gating
-rebalance; the lesser ceremonies retired — Panvitium alone survives, on the Suasio scroll). Section
+rebalance; the lesser ceremonies retired — Panvitium alone survives, on the Chthonic Logos). Section
 numbering is preserved from the previous revision so cross-references in other documents and in
 code comments stay valid.
 
@@ -130,7 +130,7 @@ The eight lesser ceremonies (*Bacchanal*, *Charity*, *Gala*, *Doom Gathering*, *
 Broadcast*, *Dolce Far Niente*, *Vegas*, *Crusade*) are **retired** — their income, rate-boost,
 and percentage-of-income machinery (ADR-027) went with them, and old saves carrying a retired id
 self-heal on the first tick. What survives is the toggle engine and its one occupant,
-**Panvitium**, which now lives on the **Suasio scroll** as its sealed fourth rite (`02 §12`).
+**Panvitium**, which now lives on the **Chthonic Logos** (the Suasio scroll) as its sealed fourth rite (`02 §12`).
 
 #### *Foedus* — the hoard ↔ Panvitium coupling
 

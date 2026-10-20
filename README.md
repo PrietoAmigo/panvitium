@@ -105,7 +105,17 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 1282** (sim 619 · shared 86 · api 20 · web 557).
 
-> **Latest change — Rename: the grimoire is the Magna Goetia.** The invocation book, called the
+> **Latest change — Rename: the Suasio scroll is the Chthonic Logos.** The scroll on the Studio
+> table is now the **Chthonic Logos**: the room hotspot ("The Chthonic Logos"), the scroll's title
+> and dialog label (was "Opus Suasio"). The "The Honeyed Tongue" line above the title is gone (its
+> string, prop and CSS removed). The wrapper component is now `ChthonicLogos` (its test file
+> follows); the `suasio` panel id, `SuasioPanel` and the `.suasio-*` classes keep the name of the
+> rites they render. Lore: the scroll is written by the player from their notes on worldly and
+> otherworldly experience (the Katabasis among them), for the mastery of eloquence and persuasion;
+> recorded in `00-lore-bible.md` §8, `02` (Studio), the frontend design guide and the component
+> comments. No sim, save or RNG change. No test count change.
+>
+> **Earlier change — Rename: the grimoire is the Magna Goetia.** The invocation book, called the
 > Ars Goetia game-wide, is now the **Magna Goetia**: the room hotspot, the book's title and dialog
 > labels, and its subtitle, which reads **"The Greater Key"** (was "The Lesser Key"). The code
 > follows (`MagnaGoetiaBook`, `magna-goetia.types.ts`, the `magna-goetia` panel id, the

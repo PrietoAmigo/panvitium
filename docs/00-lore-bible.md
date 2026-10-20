@@ -255,6 +255,11 @@ on the desk of the **Studio** room and carries its own messages. Both are 2015-e
 incoming-content channels (see §10). Use the difference: email for longer, formal, business and
 clerical traffic; the phone for shorter, more immediate, more personal pings.
 
+**The Chthonic Logos.** On the Studio table lies a scroll, the **Chthonic Logos**, that holds the
+*Suasio* rites. Nobody handed it to you: you are writing it yourself, from your own notes, gathered
+from worldly and otherworldly experience alike (the Katabasis descents among them). Its purpose is
+the mastery of eloquence and persuasion; every rite on it is a lesson in bending a will with words.
+
 ---
 
 ## 9. Factions and the cast framework
