@@ -111,8 +111,10 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > the sheet's `coeff × ln(1 + N)` with the sheet coefficients (3, 0.5, 0.3, 0.001, 0.001), as before
 > the audit. The audit's other fixes stay (the Suasio price at fractional efficiency, Erinyes once
 > per lifetime, the Goetia display); the display test now reads log-curve values. The audit doc
-> marks F1 as reverted. No save or RNG change. Net **−2 tests** (sim 621 → 619; the web count
-> already read 557, the Suasio seal-pin commit's +1 test was not recorded).
+> marks F1 as reverted. Also: the Suasio scroll e2e spec now expects the renamed Panvitium seal
+> (`Zvorpo Wermurn`; the rename left it on the old name). No save or RNG change. Net **−2 tests**
+> (sim 621 → 619; the web count already read 557, the Suasio seal-pin commit's +1 test was not
+> recorded).
 >
 > **Earlier change — Fix: auto-repeat no longer loses time (Desidia included).** A rite set to
 > auto-repeat threw away the part of the tick left after its timer finished and restarted on a full
