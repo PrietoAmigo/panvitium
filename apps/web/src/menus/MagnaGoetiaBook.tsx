@@ -159,11 +159,15 @@ export function MagnaGoetiaBook({
               >
                 {entry.atCap ? 'Bound' : entry.unlocked ? 'Summon' : 'Sealed'}
               </button>
-              {entry.active > 0 && (
-                <button type="button" className="gb-dispel" onClick={() => onDispel(entry.id)}>
-                  Dispel
-                </button>
-              )}
+              {/* Always shown; with nothing bound there is nothing to unbind, so it reads disabled. */}
+              <button
+                type="button"
+                className="gb-dispel"
+                disabled={entry.active === 0}
+                onClick={() => onDispel(entry.id)}
+              >
+                Dispel
+              </button>
             </div>
           </>
         )}
