@@ -470,7 +470,8 @@ Mercatura redesign removes `businesses`/`buildQueue`); v3 → v4 (the `caedis` �
 rename); v4 → v5 (the Depraedatio gold rework removes `mercatusDepths`, crediting each trade's
 divest value); v5 → v10 (see `packages/shared/src/save/migrate.ts`); v10 → v11 (ADR-038: the
 retired *Decimatio* rite ids are stripped from the auto-repeat list, the action queue, with each
-in-flight rite's base gold price refunded, and acolyte delegations).
+in-flight rite's base gold price refunded, and acolyte delegations); v11 → v12 (the Black Robe
+maleficium renamed the Red Robe: `black_robe` → `red_robe` wherever a save carries the id).
 
 ---
 

@@ -75,9 +75,8 @@ export const MALEFICIA: Record<string, MaleficiumDef> = {
     cost: 400,
     invokingPower: 1,
   },
-  // Keep the original ID so existing saves retain their Red Robe.
-  black_robe: {
-    id: 'black_robe',
+  red_robe: {
+    id: 'red_robe',
     name: 'Red Robe',
     description:
       'What separates the celebrant from the congregation is mostly fabric. +0.4 influence per second.',

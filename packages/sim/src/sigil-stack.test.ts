@@ -188,7 +188,7 @@ describe('Gaap #33 boosts every maleficium (ADR-036)', () => {
       1 + 2 * mb,
       9,
     );
-    expect(computeModifiers(gaap(own(fresh(), 'black_robe'))).flatInfluencePerSecond).toBeCloseTo(
+    expect(computeModifiers(gaap(own(fresh(), 'red_robe'))).flatInfluencePerSecond).toBeCloseTo(
       0.4 * mb,
       9,
     );

@@ -504,7 +504,7 @@ export function computeModifiers(state: GameState): Modifiers {
       flatGen.influence +
       ARACHNE_INFLUENCE_PER_SECOND * invEffFor('vanagloria') * arachneCount +
       // Maleficia flat influence/s: Red Robe +0.4, Blood Chalk +2, Blackthorn Wand +2, Sulfur Censer +0.6.
-      flat('black_robe', 0.4) +
+      flat('red_robe', 0.4) +
       flat('blood_chalk', 2) +
       flat('blackthorn_wand', 2) +
       flat('sulfur_censer', 0.6),

@@ -15,6 +15,7 @@ import { migrateV7ToV8 } from './migrations/v7-to-v8.js';
 import { migrateV8ToV9 } from './migrations/v8-to-v9.js';
 import { migrateV9ToV10 } from './migrations/v9-to-v10.js';
 import { migrateV10ToV11 } from './migrations/v10-to-v11.js';
+import { migrateV11ToV12 } from './migrations/v11-to-v12.js';
 
 /** A single forward migration that upgrades a blob from one schema version to the next. */
 export interface SaveMigration {
@@ -37,7 +38,9 @@ export interface SaveMigration {
  * their signing fees) and drop the Peculium base `hoardAtDescent`;
  * v10 → v11: the Decimatio category retired (ADR-038) — strip `caedes` / `pogrom` / `purgatio` from
  * the auto-repeat list, the action queue (refunding each in-flight rite's base price) and acolyte
- * delegations (back to idle)). */
+ * delegations (back to idle);
+ * v11 → v12: the Black Robe maleficium renamed the Red Robe — `black_robe` → `red_robe` in the owned
+ * relics, the Emptio listing, the rolled prices, an in-flight Emptio target and the safe). */
 export const SAVE_MIGRATIONS: readonly SaveMigration[] = [
   migrateV1ToV2,
   migrateV2ToV3,
@@ -49,6 +52,7 @@ export const SAVE_MIGRATIONS: readonly SaveMigration[] = [
   migrateV8ToV9,
   migrateV9ToV10,
   migrateV10ToV11,
+  migrateV11ToV12,
 ];
 
 export class SaveMigrationError extends Error {

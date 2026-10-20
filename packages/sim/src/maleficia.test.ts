@@ -35,7 +35,7 @@ describe('maleficia catalog', () => {
 
   it('isStackable maps to whether `stackMax` is set', () => {
     expect(isStackable(MALEFICIA.black_salt_pouch!)).toBe(true);
-    expect(isStackable(MALEFICIA.black_robe!)).toBe(false);
+    expect(isStackable(MALEFICIA.red_robe!)).toBe(false);
   });
 
   it('countCopies counts each occurrence in a list', () => {
@@ -45,7 +45,7 @@ describe('maleficia catalog', () => {
 
   it('totalInvokingPower sums per-copy values across the inventory', () => {
     // Red Robe (1) + Sulfur Censer (2) + The Voynich Manuscript (7) = 10.
-    expect(totalInvokingPower(['black_robe', 'sulfur_censer', 'voynich_manuscript'])).toBe(10);
+    expect(totalInvokingPower(['red_robe', 'sulfur_censer', 'voynich_manuscript'])).toBe(10);
   });
 });
 
@@ -109,7 +109,7 @@ describe('maleficia catalog — sheet parity (34 items)', () => {
       expect(MALEFICIA[id]!.stackMax, id).toBe(Number.POSITIVE_INFINITY);
     }
     expect(MALEFICIA.black_candles!.stackMax).toBe(5);
-    expect(MALEFICIA.black_robe!.stackMax).toBeUndefined();
+    expect(MALEFICIA.red_robe!.stackMax).toBeUndefined();
   });
 
   it('every cost sits within its (widened) rarity price band', () => {
@@ -137,9 +137,9 @@ describe('maleficia catalog — sheet parity (34 items)', () => {
 
 describe('canSurface — stack rules (03 §2.5)', () => {
   it('non-stackable items: owned OR listed blocks re-surfacing', () => {
-    expect(canSurface('black_robe', [], [])).toBe(true);
-    expect(canSurface('black_robe', ['black_robe'], [])).toBe(false);
-    expect(canSurface('black_robe', [], ['black_robe'])).toBe(false);
+    expect(canSurface('red_robe', [], [])).toBe(true);
+    expect(canSurface('red_robe', ['red_robe'], [])).toBe(false);
+    expect(canSurface('red_robe', [], ['red_robe'])).toBe(false);
   });
 
   it('stackable items: owned copies do not block re-finding, up to stackMax', () => {
@@ -169,7 +169,7 @@ describe('canSurface — stack rules (03 §2.5)', () => {
 describe('findableIds — by rarity, honouring stack rules', () => {
   it('returns only catalog entries of the given rarity that can be surfaced', () => {
     const commons = findableIds('common', [], []);
-    expect(commons).toContain('black_robe');
+    expect(commons).toContain('red_robe');
     expect(commons).toContain('black_salt_pouch');
     expect(commons).not.toContain('ritual_dagger'); // rare
   });
@@ -213,7 +213,7 @@ describe('single-use maleficia buffs', () => {
     s = (activateMaleficium(s, 'defixio') as { ok: true; state: GameState }).state;
     expect(s.lifetime.maleficiaBuffs.defixio).toBe(2 * MALEFICIA_BUFF_DURATION_SECONDS);
     expect(activateMaleficium(s, 'defixio').ok).toBe(false); // inventory now empty
-    expect(activateMaleficium(withItems(['black_robe']), 'black_robe').ok).toBe(false); // not usable
+    expect(activateMaleficium(withItems(['red_robe']), 'red_robe').ok).toBe(false); // not usable
   });
 
   it('each buff lifts the field it targets while live (and composes multiplicatively)', () => {
@@ -269,7 +269,7 @@ describe('passive maleficia enhancers (modifier bundle)', () => {
     expect(computeModifiers(owning(['hollow_effigy'])).flatMurdersPerSecond).toBeCloseTo(0.1, 6);
     expect(computeModifiers(owning(['poppet'])).flatSuicidesPerSecond).toBeCloseTo(0.075, 6);
     expect(computeModifiers(owning(['adder_stone'])).flatGenerationPerSecond).toBeCloseTo(0.6, 6);
-    expect(computeModifiers(owning(['black_robe'])).flatInfluencePerSecond).toBeCloseTo(0.4, 6);
+    expect(computeModifiers(owning(['red_robe'])).flatInfluencePerSecond).toBeCloseTo(0.4, 6);
   });
 
   it('Crow Feather and Obsidian Mirror shorten the Indagatio search', () => {
