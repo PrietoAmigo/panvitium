@@ -103,9 +103,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1283** (sim 621 · shared 86 · api 20 · web 556).
+**Current test count: 1282** (sim 619 · shared 86 · api 20 · web 557).
 
-> **Latest change — Fix: auto-repeat no longer loses time (Desidia included).** A rite set to
+> **Latest change — Revert: the flat seals are back on the log curve.** Design decision: the
+> balance audit's flat-seal retune (2026-10-08, below) is undone. Haagenti #48, Decarabia #69, Ose
+> #57, Sabnock #43 and Glasya-Labolas #25 leave the default `pct` curve and `FLAT_SEAL_SPLASH` for
+> the sheet's `coeff × ln(1 + N)` with the sheet coefficients (3, 0.5, 0.3, 0.001, 0.001), as before
+> the audit. The audit's other fixes stay (the Suasio price at fractional efficiency, Erinyes once
+> per lifetime, the Goetia display); the display test now reads log-curve values. The audit doc
+> marks F1 as reverted. Also: the Suasio scroll e2e spec now expects the renamed Panvitium seal
+> (`Zvorpo Wermurn`; the rename left it on the old name). No save or RNG change. Net **−2 tests**
+> (sim 621 → 619; the web count already read 557, the Suasio seal-pin commit's +1 test was not
+> recorded).
+>
+> **Earlier change — Fix: auto-repeat no longer loses time (Desidia included).** A rite set to
 > auto-repeat threw away the part of the tick left after its timer finished and restarted on a full
 > cycle the next step, so a cycle always took whole ticks and at most one completed per tick:
 > Desidia near 8× looped a 1 s Suggestion 5 times a real second instead of 8, and every speed from
@@ -1708,9 +1719,9 @@ deposits; Midas ×10 doubles the reserve every ~2.3 min); Erinyes's uncapped ×2
 Imperium / Logismoi %-of-flock × efficiency tiers (exponential flock growth, fed by Aurevora's
 gold-for-efficiency and Erinyes); the Church culls taking ~84% of the early flock; acolytes casting
 Suasio for free at a full unit of gain; sub-×2 efficiency being dead weight for Suggestion's yield;
-Sin-1 invocation upkeep outrunning the 0.5/s base influence regen (watch after the Decarabia
-retune); Behemoth and Arachne as trap invocations; Halphas / Stolas raising Indagatio's gold-loss
-tiers; Gusion's pure downside; the duplicate seals (Bael = Balam, Naberius = Bifrons, Vine = Furcas,
+Sin-1 invocation upkeep outrunning the 0.5/s base influence regen without Decarabia; Behemoth and
+Arachne as trap invocations; Halphas / Stolas raising Indagatio's gold-loss tiers; Gusion's pure
+downside; the duplicate seals (Bael = Balam, Naberius = Bifrons, Vine = Furcas,
 Dantalion ⊃ Zagan, Amy = Bifrons + Seere); Aamon's empty early game; Astiwihad's costless freeze;
 Forneus's generous rounding.
 

@@ -371,68 +371,42 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
   });
 });
 
-describe('Flat-generator sigils (S6; balance audit 2026-10-08)', () => {
-  // The five flat seals ride the default pct curve with a coefficient of 10 × the base rate each one
-  // adds to: a flat seal adds ten times what its percentage twin adds to that base rate. (They were
-  // on the sheet's `coeff × ln(1 + N)` log curve, where ONE soul in Haagenti added +69% gold.)
-  const pct = (n: number): number => bindingMagnitude('pct', bn(n));
-  const baseInfluencePerSecond = 0.005 * 100; // BASE_INFLUENCE_RATE × BASE_MAX_INFLUENCE
-
-  it('every flat seal is on the pct curve: nothing for a handful of souls', () => {
-    for (const id of [25, 43, 48, 57, 69]) {
-      const def = sigilById(id)!;
-      expect(def.effect.kind).toBe('flatGen');
-      expect(def.curve).toBeUndefined();
-      // The pct curve opens at ~7 souls: one soul (the old log curve's +69% jackpot) is worth 0.
-      expect(sigilStrength(def, bn(1))).toBe(0);
-      expect(sigilStrength(def, bn(6))).toBe(0);
-    }
+describe('Flat-generator sigils (S6)', () => {
+  it('Haagenti #48 generates gold/s on a log curve matching the sheet', () => {
+    // Sheet rev 2026-06-12: base coeff 3, N=100 → 3 × ln(101) ≈ 13.845 gold/s.
+    const strength = sigilStrength(sigilById(48)!, bn(100));
+    expect(strength).toBeCloseTo(3 * Math.log(101), 6);
+    const m = computeModifiers(bound(48, 100));
+    expect(m.flatGoldPerSecond).toBeCloseTo(3 * Math.log(101), 6);
+    expect(m.flatInfluencePerSecond).toBe(0);
   });
 
-  it('Haagenti #48 adds ten times what Valefor #6 adds to the base gold rate', () => {
-    for (const n of [33, 1_000, 1_000_000, 1e9]) {
-      const haagenti = computeModifiers(bound(48, n)).flatGoldPerSecond;
-      const valeforOnBase = BASE_GOLD_PER_SECOND * (computeModifiers(bound(6, n)).goldRateMul - 1);
-      expect(haagenti).toBeCloseTo(10 * valeforOnBase, 6);
-    }
-    expect(computeModifiers(bound(48, 33)).flatGoldPerSecond).toBeCloseTo(1.5, 6); // +50% base gold
-    expect(computeModifiers(bound(48, 33)).flatInfluencePerSecond).toBe(0);
-  });
-
-  it('Decarabia #69 adds ten times what Belial #68 adds to the base influence regeneration', () => {
-    for (const n of [33, 100_000, 1e9]) {
-      const decarabia = computeModifiers(bound(69, n)).flatInfluencePerSecond;
-      expect(decarabia).toBeCloseTo(10 * baseInfluencePerSecond * pct(n), 6);
-    }
-    expect(computeModifiers(bound(69, 100_000)).flatGoldPerSecond).toBe(0);
-  });
-
-  it('Sabnock #43 / Glasya-Labolas #25 add ten times the base per-capita suicide / murder rate × pct', () => {
-    const sabnock = computeModifiers(bound(43, 1_000)).flatBaseSuicideRatePerSecond;
-    expect(sabnock).toBeCloseTo(10 * 0.0001 * pct(1_000), 9);
-    const glasya = computeModifiers(bound(25, 1_000)).flatBaseMurderRatePerSecond;
-    expect(glasya).toBeCloseTo(10 * 0.0002 * pct(1_000), 9);
-    // At 33 souls each lifts its base rate by half (Ronove #27 / Aim #23 lift theirs by 5%).
-    const pop = { ...fresh(), lifetime: { ...fresh().lifetime, reprobates: 1_000 } };
-    const rates = (s: GameState) => reprobateRates(s, computeModifiers(s));
-    const base = rates(pop);
-    expect(rates(bound(43, 33, pop)).suicidePerSecond / base.suicidePerSecond).toBeCloseTo(1.5, 6);
-    expect(rates(bound(25, 33, pop)).murderPerSecond / base.murderPerSecond).toBeCloseTo(1.5, 6);
-  });
-
-  it('Ose #57 adds 3 × pct births/s (ten times its sheet coefficient)', () => {
-    expect(computeModifiers(bound(57, 1_000)).flatGenerationPerSecond).toBeCloseTo(
-      3 * pct(1_000),
-      9,
-    );
+  it('Decarabia #69 generates influence/s on a log curve matching the sheet', () => {
+    // Sheet rev 2026-06-12: base coeff 0.5, N=100000 → 0.5 × ln(100001) ≈ 5.756 influence/s.
+    const strength = sigilStrength(sigilById(69)!, bn(100_000));
+    expect(strength).toBeCloseTo(0.5 * Math.log(100_001), 6);
+    const m = computeModifiers(bound(69, 100_000));
+    expect(m.flatInfluencePerSecond).toBeCloseTo(0.5 * Math.log(100_001), 6);
+    expect(m.flatGoldPerSecond).toBe(0);
   });
 
   it('Haagenti gold flows into the tick (scaled by goldRateMul)', () => {
-    const s = bound(48, 1_000_000);
+    const s = bound(48, 100);
     const before = fresh().lifetime.gold.toNumber();
     const after = tick(s, 1).state.lifetime.gold.toNumber();
-    // One second of base gold + Haagenti's 30 × pct(1e6) ≈ 11.5/s (both × goldRateMul = 1).
-    expect(after - before).toBeCloseTo(BASE_GOLD_PER_SECOND + 30 * pct(1_000_000), 6);
+    // One second of base gold + Haagenti's ~13.85/s (both × goldRateMul = 1 at baseline).
+    expect(after - before).toBeGreaterThan(12);
+  });
+
+  it('Ose #57, Sabnock #43, and Glasya-Labolas #25 feed the new flat dynamics channels', () => {
+    // Ose: flat births/s (log 0.3); Sabnock: flat per-capita suicide (log 0.001); Glasya: flat
+    // per-capita murder (log 0.001) — all per the sheet rev 2026-06-12.
+    const ose = computeModifiers(bound(57, 100));
+    expect(ose.flatGenerationPerSecond).toBeCloseTo(0.3 * Math.log(101), 6);
+    const sabnock = computeModifiers(bound(43, 100));
+    expect(sabnock.flatBaseSuicideRatePerSecond).toBeCloseTo(0.001 * Math.log(101), 6);
+    const glasya = computeModifiers(bound(25, 100_000));
+    expect(glasya.flatBaseMurderRatePerSecond).toBeCloseTo(0.001 * Math.log(100_001), 6);
   });
 });
 

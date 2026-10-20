@@ -123,5 +123,5 @@ test('the Suasio scroll carries Panvitium as its sealed fourth rite', async ({ p
   // rites (redacted Latin + the gate label) until every Sin reaches level III.
   await expect(scroll.locator('.suasio-row')).toHaveCount(4);
   await expect(scroll).toContainText('Requires Every Sin III');
-  await expect(scroll).toContainText('Zvorreth Ommurn'); // the redacted seal-name
+  await expect(scroll).toContainText('Zvorpo Wermurn'); // the redacted seal-name
 });
