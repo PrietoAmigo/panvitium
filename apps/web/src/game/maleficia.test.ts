@@ -156,7 +156,7 @@ describe('maleficiumView — one relic by id (the Unveiling)', () => {
     expect(view).toMatchObject({
       name: 'Adder Stone',
       img: `${ASSET_BASE}/maleficia/adder_stone.png`,
-      desc: 'A holed stone the serpents bored; look through it and see what breeds.',
+      desc: 'Look through it to see what breeds.',
       effect: '+0.6 reprobates per second.',
     });
   });
@@ -178,7 +178,7 @@ describe('maleficiumView — one relic by id (the Unveiling)', () => {
     const [item] = buildCabinet(owning(['galdrabok', 'galdrabok']));
     expect(item).toMatchObject({
       name: 'Galdrabók ×2',
-      desc: 'A book of staves bound in hide, each page a small undoing.',
+      desc: 'Staves do not hit in a single way.',
       effect: '+12.5% murder rate.',
     });
   });
