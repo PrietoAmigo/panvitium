@@ -121,6 +121,26 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['upir'])).toEqual([]);
   });
 
+  it('returns the Blob visual only in the invocation room, grounded with a small centred pool', () => {
+    const room = boundVisualsFor('invocation', ['blob']);
+    expect(room.map((v) => v.id)).toEqual(['blob']);
+    // Rests on the floor under the chandelier: no levitation, no room-dimming glow, no centred
+    // contact pool (`groundShadow`). Its shadow is a flat, near-round `shadowCast` (angle 0).
+    expect(room[0]?.float).toBeUndefined();
+    expect(room[0]?.vignette).toBeUndefined();
+    expect(room[0]?.groundShadow).toBeUndefined();
+    expect(room[0]?.left).toBe('53%');
+    expect(room[0]?.shadowCast).toEqual({
+      offset: { x: -0.024, y: -0.012 },
+      length: 0.1,
+      thickness: 0.03,
+      angle: 0,
+      ink: 0.9,
+    });
+    // Same id, wrong room → nothing (its designed display lives in the invocation room).
+    expect(boundVisualsFor('altar', ['blob'])).toEqual([]);
+  });
+
   it('returns the Midas visual only in the studio room, clipped behind the table (no effects)', () => {
     const studio = boundVisualsFor('studio', ['midas']);
     expect(studio.map((v) => v.id)).toEqual(['midas']);

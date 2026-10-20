@@ -216,6 +216,31 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
       ink: 1.0, // Succubus 0.85, +25% = 1.0625, capped at the 1.0 ceiling
     },
   },
+  // The Blob rests on the floor at the left edge of the red carpet, just above the Magna Goetia's
+  // top-left corner. No `float` (no levitation, no enveloping shadow) and no `vignette` (the room is
+  // not dimmed). It specifies no movement, so it holds perfectly still. It sits directly under the
+  // chandelier, so its shadow is a small, flat, near-round pool centred on its base rather than the
+  // long trail the Succubus/Lemure/Upir cast. That pool rides `shadowCast` with `angle: 0`; the
+  // engine shifts the gradient's dense centre +0.48 × (length / 2) toward the "feet end", so
+  // `offset.x = -0.24 × length` cancels it and the pool is symmetric about `left`. Baseline
+  // (top + height = 77%) lands on the carpet's edge; `left` is the figure's horizontal centre.
+  // Composited through the degradation pass like any bound figure, so it and its shadow
+  // crush/pixelate with the room.
+  blob: {
+    id: 'blob',
+    room: 'invocation',
+    src: `${ASSET_BASE}/invocations/blob.png`,
+    left: '53%',
+    top: '59%',
+    height: '18%',
+    shadowCast: {
+      offset: { x: -0.024, y: -0.012 },
+      length: 0.1,
+      thickness: 0.03,
+      angle: 0,
+      ink: 0.9,
+    },
+  },
   // Midas stands across the studio table, very close to the player's PoV — only his head and upper
   // torso read; everything below the table edge is hidden (clipBottom), so he reads as standing on
   // the far side of the foreground desk. No `float` (no levitation, no enveloping shadow), no
