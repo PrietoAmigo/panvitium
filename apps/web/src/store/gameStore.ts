@@ -267,9 +267,9 @@ interface GameStore {
   toggleDesidia: () => void;
   /**
    * Summon an invocation (02 §7, 03 §2.4). Pays the soul cost and increments the active count.
-   * Notice on failure (gates unmet, at cap, not enough souls).
+   * Notice on failure (gates unmet, at cap, not enough souls). Returns whether the summon took.
    */
-  summon: (invocationId: string) => void;
+  summon: (invocationId: string) => boolean;
   /** Dispel one active invocation of the given id. */
   banish: (invocationId: string) => void;
   /**
@@ -616,10 +616,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   summon: (invocationId) => {
     const current = get().state;
-    if (!current) return;
+    if (!current) return false;
     const result = invoke(current, invocationId);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
+    return result.ok;
   },
 
   banish: (invocationId) => {

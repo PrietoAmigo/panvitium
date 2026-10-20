@@ -27,7 +27,7 @@ import { Subliminal } from './ui/Subliminal.js';
 import { useRandomSubliminals } from './game/useRandomSubliminals.js';
 import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
-import { audio } from './audio/audio.js';
+import { audio, summonCue } from './audio/audio.js';
 
 /**
  * The full-screen Magna Goetia grimoire, wired to real state. Kept as its own subscriber so its
@@ -38,11 +38,18 @@ function GoetiaBook({ onClose }: { onClose: () => void }): ReactElement {
   const summon = useGameStore((s) => s.summon);
   const banish = useGameStore((s) => s.banish);
   const view = state ? buildGoetia(state) : { invokingPower: '0', entries: [] };
+  // A successful Summon may carry a cue (the Banshee's rare scream); played on the click itself, so
+  // the user gesture satisfies the browser's autoplay policy. A refused summon never sounds.
+  const onSummon = (id: string): void => {
+    if (!summon(id)) return;
+    const cue = summonCue(id);
+    if (cue !== null) audio.play(cue);
+  };
   return (
     <MagnaGoetiaBook
       entries={view.entries}
       invokingPower={view.invokingPower}
-      onSummon={summon}
+      onSummon={onSummon}
       onDispel={banish}
       onClose={onClose}
     />

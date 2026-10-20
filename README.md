@@ -103,9 +103,21 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1284** (sim 619 · shared 86 · api 20 · web 559).
+**Current test count: 1287** (sim 619 · shared 86 · api 20 · web 562).
 
-> **Latest change — Empusa stands in the Studio.** While Empusa is bound, her figure
+> **Latest change — Erinyes burns behind the altar; the Banshee screams.** While Erinyes is bound,
+> her figure (`invocations/erinyes.png`) stands at the back of the Altar Room, directly behind the
+> altar stone and facing the lens, cropped below the stone's top edge (`clipBottom`). She holds
+> still; a flickering fire aura (the new `fireAura` figure option) licks up off her silhouette and
+> spills warm light on the wall behind her. The aura is drawn additively into the degradation pass's
+> scene buffer behind the figure, so the flames pixelate with the room and the altar crops them too;
+> the flicker is a sum of sines (no RNG) and freezes under reduced motion. Separately, a successful Banshee
+> **Summon** has a 5% chance to play `music/banshee_scream.mp3` (a refused summon never sounds; the
+> store's `summon` now reports success). The roll is `summonCue` in the audio facade, using the
+> browser's `Math.random`, never the sim RNG. No sim, save or RNG
+> change. Net **+3 tests** (web 559 → 562).
+>
+> **Earlier change — Empusa stands in the Studio.** While Empusa is bound, her figure
 > (`invocations/empusa.png`) stands at the back of the Studio against the far wall, right of the
 > door, just in front of the painting's lower-right corner, composited through the degradation pass
 > like the other bound figures. She holds still and carries no effects (no `float`, `vignette` or

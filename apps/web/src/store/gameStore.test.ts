@@ -688,7 +688,7 @@ describe('gameStore — invocations', () => {
 
   it('refuses to summon without invoking power / Sin level', () => {
     patchSouls(1_000_000);
-    store().summon('behemoth');
+    expect(store().summon('behemoth')).toBe(false); // reports the refusal (no Summon cue)
     expect(store().notice).toBeTruthy();
     expect(store().state?.lifetime.invocations.behemoth ?? 0).toBe(0);
   });
@@ -697,7 +697,7 @@ describe('gameStore — invocations', () => {
     equipPower(4);
     patchSuperbia(2);
     patchSouls(1000);
-    store().summon('behemoth'); // no upfront cost; upkeep is paid per tick
+    expect(store().summon('behemoth')).toBe(true); // no upfront cost; upkeep is paid per tick
     const s = store().state as GameState;
     expect(s.lifetime.invocations.behemoth).toBe(1);
     expect(floor(s.souls).toNumber()).toBe(1000); // souls untouched
