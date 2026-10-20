@@ -661,7 +661,6 @@ function formatAccountAge(seconds: number): string {
 
 export function DepraedatioGroup(): ReactElement {
   const state = useGameStore((s) => s.state);
-  const notice = useGameStore((s) => s.notice);
   const deposit = useGameStore((s) => s.depositThesaurus);
   const withdraw = useGameStore((s) => s.withdrawThesaurus);
   const sign = useGameStore((s) => s.signSyngrapha);
@@ -758,7 +757,6 @@ export function DepraedatioGroup(): ReactElement {
       onSign={sign}
       accent={CH_ACCENT}
       showSparkline={CH_SHOW_SPARKLINE}
-      notice={notice}
     />
   );
 }
