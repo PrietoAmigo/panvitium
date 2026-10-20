@@ -104,6 +104,42 @@ export const DEFAULT_DEGRADE: DegradeSettings = {
   reducedMotion: false,
 };
 
+/** A photographic colour filter laid over a sprite's own pixels, like a gel over the lens (an amber
+    warming filter, say): each channel is multiplied toward `rgb` by `density`, then the pixel is
+    rescaled to its original luminance, so the figure takes on the colour of the room's light
+    without darkening. Filtered once per art and cached, so it costs nothing per frame. */
+export interface SpriteTint {
+  /** Filter colour, 0..255 per channel. */
+  rgb: readonly [number, number, number];
+  /** Filter strength 0..1: 0 leaves the art untouched, 1 is the full multiply. */
+  density: number;
+}
+
+/** Run `tint` over RGBA pixels in place (see `SpriteTint`). Alpha is never touched and fully
+    transparent pixels are skipped. Luminance uses the same weights as the pass's palette grade. */
+export function applySpriteTint(d: Uint8ClampedArray, tint: SpriteTint): void {
+  const k = Math.max(0, Math.min(1, tint.density));
+  if (k === 0) return;
+  const fr = 1 - k + (k * tint.rgb[0]) / 255;
+  const fg = 1 - k + (k * tint.rgb[1]) / 255;
+  const fb = 1 - k + (k * tint.rgb[2]) / 255;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue;
+    const r = d[i]!;
+    const g = d[i + 1]!;
+    const b = d[i + 2]!;
+    const tr = r * fr;
+    const tg = g * fg;
+    const tb = b * fb;
+    const tl = 0.299 * tr + 0.587 * tg + 0.114 * tb;
+    const keep = tl > 0 ? (0.299 * r + 0.587 * g + 0.114 * b) / tl : 1;
+    // Uint8ClampedArray rounds and clamps, so a highlight lifted past 255 saturates cleanly.
+    d[i] = tr * keep;
+    d[i + 1] = tg * keep;
+    d[i + 2] = tb * keep;
+  }
+}
+
 /** A diegetic sprite the engine composites into the scene before degrading. */
 export interface EngineSprite {
   img: HTMLImageElement;
@@ -159,6 +195,10 @@ export interface EngineSprite {
     /** Peak ink alpha (0..1) at the dense (feet) end. */
     ink: number;
   };
+  /** Colour filter over the sprite's own pixels: the room's ambient light on a bound figure (see
+      `SpriteTint`). Shadows and auras are cast from the silhouette, so they are unaffected. Omit
+      for the art as drawn. */
+  tint?: SpriteTint;
 }
 
 /**
@@ -358,6 +398,12 @@ export class DegradePass {
   // The glows crisp chrome casts into the room, read every rendered frame.
   private _glows: EngineGlowSource = NO_GLOWS;
 
+  // Each tinted sprite's art, filtered once and kept per image with the tint it was filtered by.
+  private readonly _tinted = new WeakMap<
+    HTMLImageElement,
+    { tint: SpriteTint; art: CanvasImageSource }
+  >();
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     canvas.width = VW;
@@ -462,6 +508,31 @@ export class DegradePass {
     this.render(now);
   };
 
+  /** `img` with `tint` laid over it (see `SpriteTint`), filtered on first use and cached until the
+      sprite asks for another tint. Falls back to the art as drawn if its pixels can't be read. */
+  private _tintedArt(img: HTMLImageElement, tint: SpriteTint): CanvasImageSource {
+    const hit = this._tinted.get(img);
+    if (hit && hit.tint === tint) return hit.art;
+    let art: CanvasImageSource = img;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth;
+    c.height = img.naturalHeight;
+    const cx = c.getContext('2d');
+    if (cx) {
+      try {
+        cx.drawImage(img, 0, 0);
+        const px = cx.getImageData(0, 0, c.width, c.height);
+        applySpriteTint(px.data, tint);
+        cx.putImageData(px, 0, 0);
+        art = c;
+      } catch {
+        /* a tainted (cross-origin) image can't be read back; it draws untinted */
+      }
+    }
+    this._tinted.set(img, { tint, art });
+    return art;
+  }
+
   private _ensureLow(): void {
     const block = Math.max(1, Math.round(this.s.block));
     if (block === this._lastBlock) return;
@@ -543,6 +614,8 @@ export class DegradePass {
       const dh = drawH * breathe;
       const dx = cx - dw / 2;
       const dy = baseY - dh;
+      // The figure as drawn, through the room's colour filter when it carries one.
+      const art = sp.tint && sp.tint.density > 0 ? this._tintedArt(img, sp.tint) : img;
       // Flat contact/ground shadow — a soft dark pool pinned to the floor at the figure's baseline
       // (the cast of an overhead light). Drawn BEFORE the figure so the feet sit ON it, and off the
       // UN-bobbed baseline (sp.y, not baseY) so it stays put on the ground while the figure moves.
@@ -649,12 +722,12 @@ export class DegradePass {
         ctx.shadowOffsetY = 0.015 * h;
         for (const f of [1, 0.6, 0.35]) {
           ctx.shadowBlur = sp.shadow * h * f;
-          ctx.drawImage(img, dx, dy, dw, dh);
+          ctx.drawImage(art, dx, dy, dw, dh);
         }
         ctx.shadowBlur = 0;
         ctx.shadowOffsetY = 0;
       }
-      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.drawImage(art, dx, dy, dw, dh);
       ctx.restore();
     }
     // The light crisp chrome casts into the room rides over the figures, inside the same buffer.

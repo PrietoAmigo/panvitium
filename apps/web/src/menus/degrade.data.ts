@@ -9,7 +9,7 @@
 
    ⚠️  Components must never import this file. Props in, callbacks out. */
 
-import type { RoomId, BoundInvocationVisual } from './types.js';
+import type { RoomId, BoundInvocationVisual, SpriteTint } from './types.js';
 
 export const ASSET_BASE = '/assets/panvitium';
 
@@ -28,6 +28,16 @@ export function altarPlateForAcolytes(acolytes: number): string {
   const n = Math.max(0, Math.min(4, Math.floor(acolytes)));
   return `${ASSET_BASE}/backgrounds/altar_by_acolytes/169_altar_clean_${n}acolytes.png`;
 }
+
+/* ---- FLAVOUR: the colour of each room's light on the bound figures in it. The figure art is lit
+   neutrally, so a room whose plate carries a strong ambient cast lays a matching colour filter over
+   every figure it shows (`DegradedScene` hands it to the pass), and they sit in its light rather
+   than on top of it. A room without an entry shows its figures as drawn. ---- */
+export const ROOM_FIGURE_TINTS: Partial<Record<RoomId, SpriteTint>> = {
+  // The Invocation Room's candlelit vault: a slight amber warming filter (#EC8A00, the photographic
+  // 85 gel, at 40%), luminosity preserved, so the figures warm to the chandeliers without darkening.
+  invocation: { rgb: [0xec, 0x8a, 0x00], density: 0.4 },
+};
 
 /* ---- FLAVOUR: how each bound invocation is presented over its room. One entry per
    invocation that has a designed display; `DegradedScene` composites the figure into the room

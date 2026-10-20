@@ -125,10 +125,11 @@ export interface MaleficiumUse {
 // Presentation shapes for the canvas degradation pass. RoomId above is shared.
 // DegradeSettings/Engine* come from the engine. (The Magna Goetia book's types live
 // in ./magna-goetia.types.ts — decoupled from this layer.)
-import type { DegradeSettings, EngineGlowSource } from './degrade.js';
+import type { DegradeSettings, EngineGlowSource, SpriteTint } from './degrade.js';
 export type {
   DegradeSettings,
   EngineSprite,
+  SpriteTint,
   EngineScene,
   EngineGlow,
   EngineGlowSource,
@@ -201,6 +202,9 @@ export interface DegradedSceneProps {
   sprites?: SceneSprite[];
   /** Bound invocation figures to composite into the scene THROUGH the degradation pass. */
   figures?: BoundInvocationVisual[];
+  /** Colour filter laid over every bound figure: the room's ambient light (ROOM_FIGURE_TINTS);
+   *  null = the figures as drawn. */
+  figureTint?: SpriteTint | null;
   /** Light that crisp chrome over the canvas casts into the room (the altar sigil's glow),
    *  sampled every rendered frame and painted THROUGH the degradation pass; null = none. */
   glows?: EngineGlowSource | null;
