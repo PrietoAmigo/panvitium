@@ -573,12 +573,24 @@ export const strings = {
         addr: 'g.reyes@reyes-stewardship.com',
         subject: 'Welcome home, and a frank word about the float',
         body: 'Welcome back.\n\nI will be blunt, because you pay me to be: while you were away the cash ran perilously close to the bone, closer than I am comfortable with. The visible holdings I steward, the shops, the property, the dull legitimate book, kept the lights on and the staff paid, which is precisely why they are the part that survives a long absence. The rest of what you keep your own counsel on does not survive you being unreachable, and that is your affair, not mine.\n\nMy proposal is simple: hand me a larger share to manage on the usual percentage, and the next time you vanish for months the floor under you sits higher. Think on it. Glad you are home.\n\nGideon',
+        replies: [
+          {
+            text: 'no worry how are you',
+            effect: 'No mechanical effect.',
+          },
+        ],
       },
       'gideon-2': {
         from: 'Gideon Reyes',
         addr: 'g.reyes@reyes-stewardship.com',
         subject: 'A delicate matter about the house',
-        body: 'A delicate one. I have had word, more than once now, that the household helps itself while you are away. Silver, small valuables, the odd thing that never makes it onto a list. I will not put names in an email I do not control.\n\nSeveral of my clients in your bracket use Hearthstone Protective: discreet, bonded, and they ask no questions about what is behind which door. I can make the introduction today if you want the house watched the next time you travel. Your call, as ever.\n\nGideon',
+        body: 'A delicate one. I have had word, more than once now, that the household helps itself while you are away. Silver, small valuables, the odd thing that never makes it onto a list. I will not put names in an email I do not control.\n\nSeveral of my clients in your bracket use Hearthstone Protective: discreet, bonded, and they ask no questions about what is behind which door. I can make the introduction today if you want the house watched the next time you travel. Your call, as ever.\n\nOn a lighter note, how has the weather been treating you?\n\nGideon',
+        replies: [
+          {
+            text: 'you and i are not good at small talk ... weather ?',
+            effect: 'No mechanical effect.',
+          },
+        ],
       },
       'gideon-3': {
         from: 'Gideon Reyes',
@@ -591,6 +603,12 @@ export const strings = {
         addr: 'g.reyes@reyes-stewardship.com',
         subject: 'I have stopped asking questions',
         body: 'I do not know what you did, and I have decided not to ask. Everything, and I mean everything, is up. The shops, the property, the side of the book that usually limps, all of it printing money this month as though the stars lined up over your head and agreed you had earned it. I have stopped trying to explain it to the accountant and started simply enjoying it. Keep doing whatever it is.\n\nYour humble and slightly bewildered steward,\nGideon',
+        replies: [
+          {
+            text: 'I forget how clever i can be',
+            effect: 'No mechanical effect.',
+          },
+        ],
       },
 
       // ── The world / commerce: newsletters and reactive mail ──
@@ -727,7 +745,7 @@ export const strings = {
         body: 'God forgive me, I did not want to believe it of any living soul, and now I have stood in the street and watched it and I cannot unsee it. This is you. The madness loose in this city tonight, the appetite in every gutter, all of it pours from one source, and I know its name and its address.\n\nI am done building a quiet case. I am gathering everyone who will listen, with everything I have, and we are coming for the thing you have made of yourself. I will not stop.\n\nAnd though it will do no good, I pray for your soul, because someone must.\n\nStahl',
         replies: [
           {
-            text: "It's pandemonium, but specifically it's panvitium. The latter could be considered a subset of the former. You're welcome.",
+            text: 'this is just the beginning',
             effect: 'No mechanical effect.',
           },
         ],

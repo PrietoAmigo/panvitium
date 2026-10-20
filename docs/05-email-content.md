@@ -82,7 +82,8 @@ additive-optional pattern.
   > proposal is simple: hand me a larger share to manage on the usual percentage, and the next time
   > you vanish for months the floor under you sits higher. Think on it. Glad you are home.
   > Gideon
-- **Answers:** none.
+- **Answers:**
+  - (1) "no worry how are you". No mechanical effect.
 - **Trigger:** 2 minutes after returning from the first katabasis (`katabasisCount` reaches 1).
 
 ### Gideon Reyes #2
@@ -95,9 +96,10 @@ additive-optional pattern.
   > names in an email I do not control. Several of my clients in your bracket use Hearthstone
   > Protective: discreet, bonded, and they ask no questions about what is behind which door. I can
   > make the introduction today if you want the house watched the next time you travel. Your call,
-  > as ever.
+  > as ever. On a lighter note, how has the weather been treating you?
   > Gideon
-- **Answers:** none.
+- **Answers:**
+  - (1) "you and i are not good at small talk ... weather ?". No mechanical effect.
 - **Trigger:** 2 minutes after returning from the second katabasis (`katabasisCount` reaches 2).
 
 ### Gideon Reyes #3
@@ -127,7 +129,8 @@ additive-optional pattern.
   > whatever it is.
   > Your humble and slightly bewildered steward,
   > Gideon
-- **Answers:** none.
+- **Answers:**
+  - (1) "I forget how clever i can be". No mechanical effect.
 - **Trigger:** 5 minutes after the Thirty Pieces of Silver maleficium enters your ownership.
 
 ---
@@ -414,8 +417,7 @@ built. None carry mechanical effects unless stated.
   > And though it will do no good, I pray for your soul, because someone must.
   > Stahl
 - **Answers:**
-  - (1) "It's pandemonium, but specifically it's panvitium. The latter could be considered a subset
-    of the former. You're welcome.". No mechanical effect.
+  - (1) "this is just the beginning". No mechanical effect.
 - **Trigger:** the Panvitium (VC) toggle has been continuously active for at least 3 seconds.
 
 ### Parish Newsletter #3
