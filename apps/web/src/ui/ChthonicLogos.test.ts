@@ -49,6 +49,14 @@ describe('ChthonicLogos — outcome ledger', () => {
     );
   });
 
+  it('sits in its own card below the scroll, outside the drifting Latin', () => {
+    render();
+    const ledger = container!.querySelector('.logos-ledger');
+    expect(ledger?.closest('.logos-index')).not.toBeNull();
+    expect(ledger?.closest('.logos-card')).toBeNull();
+    expect(container!.querySelector('.logos-index .logos-drift')).toBeNull();
+  });
+
   it('surfaces a resolved Logos outcome as a tier chip beside its soul yield, filtered to its rites', () => {
     useGameStore.setState({
       log: [
