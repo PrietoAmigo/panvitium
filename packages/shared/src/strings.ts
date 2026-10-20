@@ -165,10 +165,11 @@ export const strings = {
     logosLedgerHeading: '\u2500 INDEX SVASIONVM \u2500',
     logosEmptyLedger: 'No temptation has been spoken yet.',
     logosNoYield: 'no soul stirred',
-    // The fate glossed onto a ledger line's reprobate loss. A Logos rite kills only by suicide
-    // (Suggestion's Good, each death minting 1 soul, printed after it as ", +X Souls"); every other
-    // drop is a reprobate lost to the Church (redeemed, rejected, apostate), with no soul.
-    logosSuicide: 'driven to suicide',
+    // The fate glossed, in parentheses, onto a ledger line's reprobate loss. A Logos rite kills
+    // only by suicide (Suggestion's Good, each death minting 1 soul: "-3 Reprobates, +3 Souls
+    // (suicide)"); every other drop is a reprobate lost to the Church (redeemed, rejected,
+    // apostate), with no soul: "-1 Reprobates (lost)".
+    logosSuicide: 'suicide',
     logosLost: 'lost',
   },
   /**

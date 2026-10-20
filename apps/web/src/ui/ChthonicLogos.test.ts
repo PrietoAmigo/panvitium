@@ -79,6 +79,9 @@ describe('ChthonicLogos — outcome ledger', () => {
     useGameStore.setState({
       log: [
         { actionId: 'suggestion', tier: 'good', soulsDelta: 3, reprobateDelta: -3, goldDelta: 0 },
+        // A vast soul hoard rounds the suicides' yield out of the event delta: still a suicide.
+        { actionId: 'suggestion', tier: 'good', soulsDelta: 0, reprobateDelta: -2, goldDelta: 0 },
+        { actionId: 'suggestion', tier: 'bad', soulsDelta: 0, reprobateDelta: -1, goldDelta: 0 },
         {
           actionId: 'imperium',
           tier: 'terrible',
@@ -92,9 +95,14 @@ describe('ChthonicLogos — outcome ledger', () => {
     const texts = Array.from(container!.querySelectorAll('.logos-ledger-text')).map(
       (el) => el.textContent,
     );
+    const { suggestion, imperium, logosSuicide, logosLost } = strings.opera;
+    const R = strings.reprobates;
+    const S = strings.resources.souls;
     expect(texts).toEqual([
-      `${strings.opera.suggestion} · −3 ${strings.reprobates} ${strings.opera.logosSuicide}, +3 ${strings.resources.souls}`,
-      `${strings.opera.imperium} · −40 ${strings.reprobates} ${strings.opera.logosLost}`,
+      `${suggestion} · −3 ${R}, +3 ${S} (${logosSuicide})`,
+      `${suggestion} · −2 ${R}, +2 ${S} (${logosSuicide})`,
+      `${suggestion} · −1 ${R} (${logosLost})`,
+      `${imperium} · −40 ${R} (${logosLost})`,
     ]);
   });
 });

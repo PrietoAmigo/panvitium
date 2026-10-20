@@ -244,27 +244,30 @@ const LOGOS_TIER_COLOR: Record<Tier, string> = {
   apocalyptic: '#8a3a2a',
 };
 
+/** The success tiers. On a Logos rite, a reprobate loss at one of these is a suicide (Suggestion's
+ *  Good); a loss at any failure tier is a plain loss to the Church. */
+const LOGOS_SUCCESS_TIERS: ReadonlySet<Tier> = new Set<Tier>(['stellar', 'excellent', 'good']);
+
 /** Re-skin one resolved Logos outcome into the ledger's second column: the rite and its net resource
  *  deltas, or a "no soul stirred" line when a temptation yielded nothing. A reprobate loss names its
- *  fate: driven to suicide (with the souls the deaths minted, ", +X Souls") or simply lost. */
+ *  fate: a suicide with the souls it minted ("−3 Reprobates, +3 Souls (suicide)") or a plain loss
+ *  ("−1 Reprobates (lost)"). Murder never comes from a rite. */
 function logosLedgerText(e: OutcomeEvent): string {
   const name = actionName(e.actionId);
   const parts: string[] = [];
   const sign = (n: number): string => `${n > 0 ? '+' : '−'}${Math.abs(n).toLocaleString('en-US')}`;
-  const souls = `${sign(e.soulsDelta)} ${strings.resources.souls}`;
   if (e.reprobateDelta < 0) {
-    // A Logos rite mints souls only from deaths, and its only deaths are suicides (Suggestion's
-    // Good), so a soul yield beside a shrinking flock is the suicides' harvest; murder never comes
-    // from a rite. Any other drop is a reprobate lost to the Church, with no soul.
-    const lost = `${sign(e.reprobateDelta)} ${strings.reprobates}`;
+    const flock = `${sign(e.reprobateDelta)} ${strings.reprobates}`;
+    // The fate follows the tier, not the soul delta: a few souls added to a vast hoard round away in
+    // the BigNum event delta, which would misread a suicide as a loss. Each suicide mints exactly 1
+    // soul, so the death count is the soul yield.
     parts.push(
-      e.soulsDelta > 0
-        ? `${lost} ${strings.opera.logosSuicide}, ${souls}`
-        : `${lost} ${strings.opera.logosLost}`,
+      LOGOS_SUCCESS_TIERS.has(e.tier)
+        ? `${flock}, ${sign(-e.reprobateDelta)} ${strings.resources.souls} (${strings.opera.logosSuicide})`
+        : `${flock} (${strings.opera.logosLost})`,
     );
-    if (e.soulsDelta < 0) parts.push(souls);
   } else {
-    if (e.soulsDelta !== 0) parts.push(souls);
+    if (e.soulsDelta !== 0) parts.push(`${sign(e.soulsDelta)} ${strings.resources.souls}`);
     if (e.reprobateDelta !== 0) parts.push(`${sign(e.reprobateDelta)} ${strings.reprobates}`);
   }
   if (e.goldDelta !== 0) parts.push(`${sign(e.goldDelta)} ${strings.resources.gold}`);
