@@ -15,9 +15,11 @@ When numbers/behaviour conflict with docs, the precedence is explicit:
 - A **number** disagreement → `docs/Panvitium_Economy_Template.xlsx` wins.
 - A **behaviour** disagreement → the relevant ADR (`docs/04-architecture-decisions.md`) wins.
 
-Design docs live in `docs/` (`00`–`05`, plus `frontend/` design handoffs). The authoritative
-**progress log** — what has shipped, current test count, what remains — is the "Status" section of
-`README.md`, updated on every release. Do not duplicate progress tracking elsewhere.
+Design docs live in `docs/` (`00`–`06`, plus `frontend/` design handoffs). `README.md` tracks only
+the current test count ("Status") and what is still open ("Open work"); what has shipped is recorded
+in commit messages and PRs, not in the README. When a change finishes an open item, delete it from
+"Open work" and update the test count; never add a changelog entry to the README. Do not duplicate
+progress tracking elsewhere.
 
 ## Commands
 
