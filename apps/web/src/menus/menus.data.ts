@@ -347,6 +347,12 @@ export const MALEFICIA: MaleficiumArt[] = [
   },
   // Illustrated after the handoff: art alone, so the copy is the sim description, split.
   {
+    id: 'adder_stone',
+    name: 'Adder Stone',
+    rarity: 'common',
+    img: `${ASSET_BASE}/maleficia/adder_stone.png`,
+  },
+  {
     id: 'the_dadu',
     name: 'The Dadu',
     rarity: 'common',
