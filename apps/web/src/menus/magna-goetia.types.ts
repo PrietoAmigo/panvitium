@@ -23,10 +23,11 @@ export interface GoetiaEntry {
   gate?: string;
   /** Effect of ONE copy (never the bound stack's total). REAL string where one exists, else omit. */
   effect?: string;
-  /** Lore prose. FLAVOUR. */
+  /** Lore prose, set across the bottom half of both pages; `*…*` marks a span set upright (the
+   *  Latin). FLAVOUR. */
   lore?: string;
-  /** The painted plate's url (a 600×800 PNG), shown on the right-hand page. Omit, or a plate that
-   *  fails to load, → the right-hand page stays bare. FLAVOUR. */
+  /** The painted plate's url (a 600×800 PNG), shown in the top half of the right-hand page. Omit, or
+   *  a plate that fails to load, → that half stays bare. FLAVOUR. */
   illus?: string;
   /** Whether the entry passes its gate (invoking power + Sin level). REAL. */
   unlocked: boolean;

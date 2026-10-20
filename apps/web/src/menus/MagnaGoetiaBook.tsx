@@ -8,11 +8,22 @@
    (merged with design flavour by id); Summon/Dispel are callbacks. Local state is
    which entry leaf is open and which plates failed to load (hidden, leaving the leaf bare). The index
    is a single leaf: the title block at the top, the whole roster in two columns below. An entry's
-   leaf sets its stats on the left page and its painted plate (Claude Design, "Invocation Plates") on
-   the right. */
+   leaf is set in quarters: its stats in the top half of the left page, its painted plate (Claude
+   Design, "Invocation Plates") in the top half of the right, and its lore below both, filling the
+   left page's bottom half first and running on into the right's, with Summon / Dispel in the
+   bottom-right corner. */
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { MagnaGoetiaBookProps } from './magna-goetia.types.js';
+
+/** The lore's `*…*` spans (the Latin, the quoted scripture) as upright `<em>`s on the italic page. */
+function loreText(lore: string): JSX.Element[] {
+  return lore
+    .split('*')
+    .map((part, i) =>
+      i % 2 === 1 ? <em key={i}>{part}</em> : <Fragment key={i}>{part}</Fragment>,
+    );
+}
 
 export function MagnaGoetiaBook({
   entries,
@@ -119,22 +130,6 @@ export function MagnaGoetiaBook({
                 <dt>Cap</dt>
                 <dd>{entry.cap}</dd>
               </dl>
-              {entry.lore ? <p className="gb-lore">{entry.lore}</p> : null}
-              <div className="gb-actions">
-                <button
-                  type="button"
-                  className="gb-summon"
-                  disabled={!entry.unlocked || entry.atCap}
-                  onClick={() => onSummon(entry.id)}
-                >
-                  {entry.atCap ? 'Bound' : entry.unlocked ? 'Summon' : 'Sealed'}
-                </button>
-                {entry.active > 0 && (
-                  <button type="button" className="gb-dispel" onClick={() => onDispel(entry.id)}>
-                    Dispel
-                  </button>
-                )}
-              </div>
             </div>
             <div className="gb-page gb-page--right gb-illus-page">
               {/* The plate is decorative: the name already heads the left page. */}
@@ -151,6 +146,24 @@ export function MagnaGoetiaBook({
                   onError={() => setBroken((b) => ({ ...b, [entry.id]: true }))}
                 />
               ) : null}
+            </div>
+            {/* One flow across the bottom half of both pages: the left column fills first. */}
+            {entry.lore ? <p className="gb-lore">{loreText(entry.lore)}</p> : null}
+            {/* Summon / Dispel close the leaf, in its bottom-right corner under the lore. */}
+            <div className="gb-actions">
+              <button
+                type="button"
+                className="gb-summon"
+                disabled={!entry.unlocked || entry.atCap}
+                onClick={() => onSummon(entry.id)}
+              >
+                {entry.atCap ? 'Bound' : entry.unlocked ? 'Summon' : 'Sealed'}
+              </button>
+              {entry.active > 0 && (
+                <button type="button" className="gb-dispel" onClick={() => onDispel(entry.id)}>
+                  Dispel
+                </button>
+              )}
             </div>
           </>
         )}

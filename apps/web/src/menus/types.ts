@@ -41,18 +41,6 @@ export interface Sin {
   devotion: string; // pre-formatted for display
 }
 
-export interface Invocation {
-  id: string;
-  name: string;
-  rank: string; // roman numeral
-  sub: string;
-  cost: string;
-  gate: string | null; // unlock requirement, or null if always available
-  unlocked: boolean;
-  img: string;
-  lore: string;
-}
-
 export interface Maleficium {
   id: string;
   name: string;

@@ -1,11 +1,13 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 
 /**
- * E2E coverage for the Magna Goetia's painted plates (Claude Design, "Invocation Plates" handoff):
- * opening an entry's leaf sets its plate on the right-hand page, the baked 600×800 PNG served from
- * the production build, filling the column's width as a decorative image; each entry shows its own,
- * sealed or not. A seeded save (two relics, invoking power 6, so the whole roster is visible) is
- * written to localStorage before load.
+ * E2E coverage for the Magna Goetia's entry leaves, set in quarters: the painted plate (Claude
+ * Design, "Invocation Plates" handoff) in the top half of the right-hand page, the baked 600×800 PNG
+ * served from the production build at the full height of that half as a decorative image, each entry
+ * its own, sealed or not; the stats in the top half of the left page; the lore below both, filling
+ * the left page's half before running on into the right's; Summon / Dispel in the bottom-right
+ * corner. Every leaf is measured so nothing is clipped. A seeded save (two relics, invoking power 6,
+ * so the whole roster is visible) is written to localStorage before load.
  */
 
 /** A minimal valid v5 save owning the Codex Gigas (4) and a Witch Bottle (2), stamped to "now". */
@@ -70,7 +72,7 @@ async function loadedWidth(plate: Locator): Promise<number> {
   return plate.evaluate((img: HTMLImageElement) => (img.complete ? img.naturalWidth : 0));
 }
 
-test("sets an entry's painted plate on the right-hand page", async ({ page }) => {
+test("sets an entry's painted plate in the top half of the right-hand page", async ({ page }) => {
   const book = await openMagnaGoetia(page);
   await expect(book.locator('img')).toHaveCount(0); // none on the index
 
@@ -85,13 +87,74 @@ test("sets an entry's painted plate on the right-hand page", async ({ page }) =>
   await expect(plate).toHaveAttribute('alt', '');
   await expect.poll(() => loadedWidth(plate)).toBe(600);
 
-  // The plate spans the column's width at its 3:4 proportion.
-  const column = await right.boundingBox();
+  // The plate fills the half's height at its 3:4 proportion, inside the column, above the lore.
+  const half = await right.boundingBox();
   const box = await plate.boundingBox();
-  expect(column && box).toBeTruthy();
-  expect(Math.abs(box!.width - column!.width)).toBeLessThan(1);
-  expect(Math.abs(box!.height - (box!.width * 4) / 3)).toBeLessThan(1);
-  expect(box!.height).toBeLessThanOrEqual(column!.height);
+  const lore = await book.locator('.gb-lore').boundingBox();
+  expect(half && box && lore).toBeTruthy();
+  expect(Math.abs(box!.height - half!.height)).toBeLessThan(1);
+  expect(Math.abs(box!.width - (box!.height * 3) / 4)).toBeLessThan(1);
+  expect(box!.x).toBeGreaterThanOrEqual(half!.x - 0.5);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(half!.x + half!.width + 0.5);
+  expect(half!.y + half!.height).toBeLessThanOrEqual(lore!.y);
+});
+
+test('fits every leaf: stats, lore and actions, nothing clipped', async ({ page }) => {
+  const book = await openMagnaGoetia(page);
+  await page.evaluate(() => document.fonts.ready);
+  const names = await book.locator('.gb-entry .gb-name').allTextContents();
+  expect(names).toHaveLength(25);
+  for (const name of names) {
+    await book.locator('.gb-entry', { hasText: name }).click();
+    const m = await book.evaluate((el) => {
+      const rect = (sel: string): DOMRect => el.querySelector(sel)!.getBoundingClientRect();
+      const stats = el.querySelector('.gb-stats')!;
+      const lore = el.querySelector('.gb-lore')!;
+      // Where the lore's text actually lands: its line boxes, by page.
+      const range = document.createRange();
+      range.selectNodeContents(lore);
+      const lines = Array.from(range.getClientRects());
+      const right = rect('.gb-page--right');
+      return {
+        statsClipped: stats.scrollHeight - stats.clientHeight,
+        loreOverflow: lore.scrollWidth - lore.clientWidth,
+        leftBottom: rect('.gb-page--left').bottom,
+        loreTop: rect('.gb-lore').top,
+        loreBottom: rect('.gb-lore').bottom,
+        textBottom: Math.max(...lines.map((r) => r.bottom)),
+        textRight: Math.max(...lines.map((r) => r.right)),
+        rightPage: { left: right.left, right: right.right },
+        actions: rect('.gb-actions'),
+      };
+    });
+    // The stats show whole (a 1px rounding allowance); the lore stays within its two columns.
+    expect(m.statsClipped, name).toBeLessThanOrEqual(1);
+    expect(m.loreOverflow, name).toBeLessThanOrEqual(0);
+    expect(m.textRight, name).toBeLessThanOrEqual(m.rightPage.right + 1);
+    // Top half, then the lore, then the actions under it, right-aligned with the right-hand page.
+    expect(m.loreTop, name).toBeGreaterThanOrEqual(m.leftBottom);
+    expect(m.textBottom, name).toBeLessThanOrEqual(m.loreBottom + 1);
+    expect(m.actions.top, name).toBeGreaterThanOrEqual(m.loreBottom);
+    expect(Math.abs(m.actions.right - m.rightPage.right), name).toBeLessThan(1);
+    await book.getByRole('button', { name: 'back to index' }).click();
+  }
+});
+
+test('runs long lore on from the left page into the right', async ({ page }) => {
+  const book = await openMagnaGoetia(page);
+  await book.locator('.gb-entry', { hasText: 'Erinyes' }).click();
+  const pages = await book.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el.querySelector('.gb-lore')!);
+    const left = el.querySelector('.gb-page--left')!.getBoundingClientRect();
+    const right = el.querySelector('.gb-page--right')!.getBoundingClientRect();
+    const lines = Array.from(range.getClientRects());
+    return {
+      onLeft: lines.some((r) => r.left >= left.left - 1 && r.right <= left.right + 1),
+      onRight: lines.some((r) => r.left >= right.left - 1 && r.right <= right.right + 1),
+    };
+  });
+  expect(pages).toEqual({ onLeft: true, onRight: true });
 });
 
 test('shows each entry its own plate, sealed or not', async ({ page }) => {

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialState, currentInvokingPower, MALEFICIA } from '@panvitium/sim';
+import {
+  createInitialState,
+  currentInvokingPower,
+  INVOCATION_IDS,
+  MALEFICIA,
+} from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
+import { INVOCATION_LORE } from '../menus/menus.data.js';
 import { buildGoetia } from './invocations.js';
 import { invocationEffectText } from './invocationEffect.js';
 
@@ -161,4 +167,25 @@ describe('buildGoetia describes ONE invocation, never the bound stack', () => {
     // The Analytics line keeps the three-copy total (+22.5%, shown rounded as +23%).
     expect(invocationEffectText(s, 'fama')).toBe('+23% influence gain');
   });
+});
+
+describe('buildGoetia lore (every invocation has its grimoire page)', () => {
+  it('carries each entry its own lore', () => {
+    const entries = buildGoetia(richState()).entries;
+    expect(entries.map((e) => e.id).sort()).toEqual([...INVOCATION_IDS].sort());
+    for (const e of entries) expect(e.lore).toBe(INVOCATION_LORE[e.id]);
+  });
+
+  it('keeps the lore table to the catalog, one entry per id', () => {
+    expect(Object.keys(INVOCATION_LORE).sort()).toEqual([...INVOCATION_IDS].sort());
+  });
+
+  it.each(Object.entries(INVOCATION_LORE))(
+    '%s: closes on its formula, with balanced *…* spans and no dashes',
+    (_id, lore) => {
+      expect(lore).toMatch(/Formula: \*[^*]+\*$|\*[^*]+\*\.? Bind it under [^*]+\.$/);
+      expect((lore.match(/\*/g) ?? []).length % 2).toBe(0);
+      expect(lore).not.toMatch(/[\u2013\u2014]/);
+    },
+  );
 });
