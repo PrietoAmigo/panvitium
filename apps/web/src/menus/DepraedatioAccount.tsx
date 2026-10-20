@@ -105,8 +105,6 @@ export interface DepraedatioAccountProps {
   accent?: string;
   /** Show the decorative balance sparkline. Default true. */
   showSparkline?: boolean;
-  /** A transient store notice (e.g. an Astiwihad refusal), shown as an unobtrusive banner. */
-  notice?: string | null;
 }
 
 type View = 'portfolio' | 'contracts';
@@ -164,7 +162,6 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
     onSign,
     accent = '#1E4638',
     showSparkline = true,
-    notice = null,
   } = props;
 
   const F = strings.faeneratio;
@@ -372,8 +369,6 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
         </header>
 
         <div className="ch-scroll" ref={scrollRef}>
-          {notice !== null && <div className="ch-notice">{notice}</div>}
-
           {view === 'portfolio' ? (
             <div className="ch-screen">
               {/* Balance summary */}

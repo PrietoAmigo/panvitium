@@ -3028,17 +3028,6 @@ body {
   flex-direction: column;
   gap: 22px;
 }
-.ch-notice {
-  max-width: 1080px;
-  margin: 0 auto 18px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #fbf1ec;
-  border: 1px solid #ecd4c8;
-  color: #8a3d2c;
-  font-size: 0.78rem;
-}
-
 /* ── Cards ── */
 .ch-card {
   background: #fff;
