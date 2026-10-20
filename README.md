@@ -105,7 +105,14 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 **Current test count: 1319** (sim 619 · shared 88 · api 20 · web 592).
 
-> **Latest change — The Magna Goetia: lore for every invocation, and a leaf set in quarters.** All
+> **Latest change — Rename: Suasio is now Logos.** The Opera category of temptation rites is
+> renamed everywhere: player-facing copy, the sim's category id (`'logos'`) and its modifier
+> channel (`logosEfficiencyMul`), constants, the panel id, `LogosPanel` and the `.logos-*`
+> classes, the docs and design handoffs, and the economy spreadsheet (its `Logos` sheet). The
+> category id is never persisted, so no save migration is needed. No behaviour, number or RNG
+> change; the test count is unchanged.
+>
+> **Earlier change — The Magna Goetia: lore for every invocation, and a leaf set in quarters.** All
 > 25 invocations now carry a page of grimoire lore (was six, some stale against their retuned
 > effects): what the spirit is and whose household keeps it, how to guide it, why its cap protects
 > the Operator, and a closing Latin formula (untranslated, ADR-020). The prose stays oblique about
@@ -145,11 +152,11 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > small, flat, near-round pool centred on its base (`shadowCast` at `angle: 0`). One data entry in
 > `BOUND_INVOCATION_VISUALS`. No sim, save or RNG change. Net **+1 test** (web 557 → 558).
 >
-> **Earlier change — Rename: the Suasio scroll is the Chthonic Logos.** The scroll on the Studio
+> **Earlier change — Rename: the Logos scroll is the Chthonic Logos.** The scroll on the Studio
 > table is now the **Chthonic Logos**: the room hotspot ("The Chthonic Logos"), the scroll's title
-> and dialog label (was "Opus Suasio"). The "The Honeyed Tongue" line above the title is gone (its
+> and dialog label (was "Opus Logos"). The "The Honeyed Tongue" line above the title is gone (its
 > string, prop and CSS removed). The wrapper component is now `ChthonicLogos` (its test file
-> follows); the `suasio` panel id, `SuasioPanel` and the `.suasio-*` classes keep the name of the
+> follows); the `logos` panel id, `LogosPanel` and the `.logos-*` classes keep the name of the
 > rites they render. Lore: the scroll is written by the player from their notes on worldly and
 > otherworldly experience (the Katabasis among them), for the mastery of eloquence and persuasion;
 > recorded in `00-lore-bible.md` §8, `02` (Studio), the frontend design guide and the component
@@ -168,11 +175,11 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > balance audit's flat-seal retune (2026-10-08, below) is undone. Haagenti #48, Decarabia #69, Ose
 > #57, Sabnock #43 and Glasya-Labolas #25 leave the default `pct` curve and `FLAT_SEAL_SPLASH` for
 > the sheet's `coeff × ln(1 + N)` with the sheet coefficients (3, 0.5, 0.3, 0.001, 0.001), as before
-> the audit. The audit's other fixes stay (the Suasio price at fractional efficiency, Erinyes once
+> the audit. The audit's other fixes stay (the Logos price at fractional efficiency, Erinyes once
 > per lifetime, the Goetia display); the display test now reads log-curve values. The audit doc
-> marks F1 as reverted. Also: the Suasio scroll e2e spec now expects the renamed Panvitium seal
+> marks F1 as reverted. Also: the Logos scroll e2e spec now expects the renamed Panvitium seal
 > (`Zvorpo Wermurn`; the rename left it on the old name). No save or RNG change. Net **−2 tests**
-> (sim 621 → 619; the web count already read 557, the Suasio seal-pin commit's +1 test was not
+> (sim 621 → 619; the web count already read 557, the Logos seal-pin commit's +1 test was not
 > recorded).
 >
 > **Earlier change — Fix: auto-repeat no longer loses time (Desidia included).** A rite set to
@@ -250,7 +257,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > each multiplied the hour's souls ×17 (their percentage twins: ×1.05). They now ride the default
 > `pct` curve with `coefficient = FLAT_SEAL_SPLASH (10) × the base rate they add to` (Ose, with no
 > base rate, takes 10× its sheet 0.3): each adds ten times what its percentage twin adds to that
-> base; the same 100 souls now give ×1.7. **Suasio price at fractional efficiency**: the cost read
+> base; the same 100 souls now give ×1.7. **Logos price at fractional efficiency**: the cost read
 > `1 + ln(eff)` while the yield pays `floor(eff)` whole units, so the Familiar (×1.33) or the first
 > Gula offering (×1.31) doubled Suggestion to 2 influence for no extra yield; the cost now reads
 > `1 + ln(floor(eff))`. **Erinyes** re-ran its kill-every-reprobate harvest on each Dispel +
@@ -259,7 +266,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > strength without the relic / Gaap / Semet stack the sim applies (new `sigilEffectMulFor`, used by
 > the seal panel and the Ledger). No save-schema or RNG change. The audit's seventeen open findings
 > (Panvitium's `souls × e^(gold/100,000)` harvest, hand-compounded reserve interest × the gold
-> multipliers, uncapped Erinyes stacks, the %-of-flock × efficiency Suasio tiers, the Church taking
+> multipliers, uncapped Erinyes stacks, the %-of-flock × efficiency Logos tiers, the Church taking
 > ~84% of the early flock, free acolyte casts, trap invocations and seals) are design calls, listed
 > in the doc and under **Remaining**. Net **+8 tests** (sim 607 → 613, web 544 → 546).
 >
@@ -271,11 +278,11 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > effect (they still count toward the max-Sin-level gates) and **Retribution** keeps only its
 > invocation-efficiency half. A new **dormant** sigil kind (`inert`) holds the six seals that served
 > only Decimatio (Beleth #13, Marax #21, Ipos #22, Raum #40, Focalor #41, Haures #64; Raum's
-> remaining leg would have been a pure Suasio curse) with ids, names and art kept; the ledger reads
-> them as "Dormant" with no magnitude. **Dantalion #71** keeps only its Suasio lift. Save schema
+> remaining leg would have been a pure Logos curse) with ids, names and art kept; the ledger reads
+> them as "Dormant" with no magnitude. **Dantalion #71** keeps only its Logos lift. Save schema
 > **v10 → v11**: the migration strips the retired ids from auto-repeat, drops in-flight retired
 > timers (refunding each one's base gold price) and idles acolytes delegated to them. Acolyte
-> delegation and auto-repeat now cover Suasio (and Indagatio for acolytes); the generic engine tests
+> delegation and auto-repeat now cover Logos (and Indagatio for acolytes); the generic engine tests
 > (queueing, auto-repeat, runners, loss scaling, forecasts) moved onto Suggestion and Indagatio. No
 > RNG change for any save without a Decimatio rite. Every gap this opens is listed under
 > **Remaining** below. Net **−9 tests** (sim 620 → 607, shared 81 → 86, web 545 → 544).
@@ -496,7 +503,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > (anathema → common; click, the ‹ › arrows or ← → to browse, wrapping; Esc closes; a crowded
 > procession scrolls). Each relic is pixelated on the Influence vessel's principle at a fixed 3 px art
 > pixel (downscaled, alpha-hardened, colour-crushed, ringed in a one-pixel rarity outline). It is now
-> a full-surface overlay mounted by `App` like Ars Goetia and the Suasio scroll, laid out on the
+> a full-surface overlay mounted by `App` like Ars Goetia and the Logos scroll, laid out on the
 > design's 1280×720 stage in a fitted 16:9 frame; the framed-panel path (`PANELS`, the `niche`
 > `PanelShell` variant) retires with it. A new **Unveiling** pop-up plays when an Emptio purchase
 > brings a maleficium home: pixel light shafts in the rarity colour, the relic resolving out of coarse
@@ -651,7 +658,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > The Orbis Tenebrarum Search now carries a gold stake you set aside to scry faster. A new
 > `lifetime.indagatioInvestment` (BigNum, additive-optional on the wire — no schema bump) grants
 > Indagatio efficiency ALONE, folded into `indagatioEfficiencyMul` in `computeModifiers` (ADR-022),
-> so only the player's own Cast speeds up (Suasio/Decimatio/Emptio and the acolyte/Familiar runner
+> so only the player's own Cast speeds up (Logos/Decimatio/Emptio and the acolyte/Familiar runner
 > channels are untouched). The bonus is **logarithmic** — `1 + 0.05 · log10(gold)`, i.e. 10 g → +5%,
 > 100 g → +10%, 1,000 g → +15%, and so on, clamped so ≤ 1 g grants nothing. Since Indagatio is
 > time-mode, more efficiency means a shorter search (the Duration meter shrinks as you invest). New
@@ -740,7 +747,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 > **Earlier change — post-offline-rework polish: composite ledger labels + "online" copy.** Two small
 > cleanups. (1) The Katabasis ledger's `splitBoon` now strips EVERY direction arrow, not just the
-> trailing one, so a composite seal's second leg (e.g. Raum #40's "…, Suasio ↓") no longer keeps a
+> trailing one, so a composite seal's second leg (e.g. Raum #40's "…, Logos ↓") no longer keeps a
 > dangling arrow in the ledger; the signed magnitudes were always shown in the effect column, and the
 > AetherSigils panel (verbatim) was already fine. (2) With offline frozen (ADR-032/033) there is no
 > offline concept, so the redundant "online" is dropped from the player-facing effect copy (Valefor
@@ -750,8 +757,8 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > **Earlier change — composite sigils + the invocation cost channel covers all costs (ADR-035).**
 > Two follow-ups from a sigil-redundancy audit. (1) A `composite` effect lets one seal carry several
 > modifier / cost-reduction parts at its single strength, and three exact-duplicate seals are reshaped
-> onto it: **Raum #40** now trades **+Decimatio for −Suasio** efficiency, **Dantalion #71** is its
-> mirror (**+Suasio, −Decimatio**; bound at equal strength they cancel), and **Andrealphus #65**
+> onto it: **Raum #40** now trades **+Decimatio for −Logos** efficiency, **Dantalion #71** is its
+> mirror (**+Logos, −Decimatio**; bound at equal strength they cancel), and **Andrealphus #65**
 > becomes a dual seal — **−all invocation costs, +Desidia speed** — handing its invoking-power niche
 > to Forneus #30. (2) The invocation cost-reduction channel is renamed `invocationSoul → invocation`
 > and now softens EVERY invocation cost: the soul and gold summon prices and all upkeep, flat and
@@ -765,7 +772,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > quickens Desidia acceleration, and **Sallos #19** softens the Desidia drain. Six attach to the live
 > economy: **Gusion #11** softens the player's own influence gain, **Eligos #15** cuts Emptio costs,
 > **Zepar #16** cuts invocation costs, **Marax #21** lifts Decimatio efficiency, **Naberius #24**
-> shortens Indagatio, and **Zagan #61** lifts Suasio efficiency. Zepar, Marax and Zagan carry a third
+> shortens Indagatio, and **Zagan #61** lifts Logos efficiency. Zepar, Marax and Zagan carry a third
 > of the standard pct strength (coefficient 1/3). Two new modifier-bundle fields (`desidiaGainMul`,
 > `desidiaMaxMul`) feed `grantDesidiaForOffline` / `desidiaMax`; the two Desidia levers were
 > already sigil-targetable. No save-schema bump (additive-optional). Net **+7 tests** (sim 552 → 559).
@@ -870,7 +877,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > summoned entities (e.g. "3") instead of a generic badge. (4) **Camio #53** (and its identical siblings
 > Purson #20 / Cimejes #66) no longer saturate the Katabasis carry-over: the sheet yield (a log curve)
 > applies as a **percentage** (÷100), so Camio at 100 souls is +4.6% reprobate carry-over, not the
-> +461% that clamped to 100%. (5) The **second Suasio and Decimatio rites** (Logismoi, Pogrom) now
+> +461% that clamped to 100%. (5) The **second Logos and Decimatio rites** (Logismoi, Pogrom) now
 > unlock at **level 1** instead of 2. Net **+1 test** (sim 537 → 538).
 
 > **Earlier change — smartphone calls ring 33% more often.** The incoming-call scheduler's quiet gap
@@ -879,20 +886,20 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > `useIncomingCall`; no test-count change.
 
 > **Earlier change — Emptio runs in its own background channel (not the player slot).** Emptio is no
-> longer a player-drive rite: like Indagatio, it neither blocks nor is blocked by a Suasio/Decimatio
+> longer a player-drive rite: like Indagatio, it neither blocks nor is blocked by a Logos/Decimatio
 > rite, so a rite can even auto-repeat in the slot while a purchase runs alongside. Only **one Emptio**
 > may run at a time (a second Acquire is refused while one is in flight, and the Acquire control locks
 > and reads "Emptio underway"). A new `occupiesPlayerSlot` helper in the sim is the single source of the
-> slot rule, read by `startAction` and by the Suasio/Decimatio "underway" gating in the UI. Net **+2
+> slot rule, read by `startAction` and by the Logos/Decimatio "underway" gating in the UI. Net **+2
 > tests** (sim 536 → 537, web 264 → 265).
 
-> **Earlier change — Suasio ledger + Status Quo Souls KPI (menu polish).** Three UI moves. (1) The
-> **Opus Suasio** scroll no longer shows a scrollbar (the overlay stays scrollable, the bar is hidden,
+> **Earlier change — Logos ledger + Status Quo Souls KPI (menu polish).** Three UI moves. (1) The
+> **Opus Logos** scroll no longer shows a scrollbar (the overlay stays scrollable, the bar is hidden,
 > matching Depraedatio), and it now carries an **outcome ledger at its foot** in the same shape as
 > Decimatio's Index Opervm: the resolved temptations, newest first, each a tier chip beside its soul
 > yield. (2) The **Souls** readout is removed from the Analytics program's Main tab and (3) reinstated
 > as a **big red Souls KPI** heading the **Status Quo** Ledger, above the six standing readouts. Net
-> **+3 tests** (web 261 → 264): the Suasio ledger wiring (empty + populated) and the Ledger's Souls KPI.
+> **+3 tests** (web 261 → 264): the Logos ledger wiring (empty + populated) and the Ledger's Souls KPI.
 
 > **Earlier change — Decimatio gold KPI and a 1/10 gold-cost cut (player tuning).** The Decimatio
 > masthead now carries a live **Gold** KPI beside the Reprobates count, so the currency a cull
@@ -911,7 +918,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > "toggle, then reload" soul-mint exploit (ADR-004). (2) **Delegated culls** scale their negative
 > outcomes by the runner's efficiency, so an acolyte or invocation on Purgatio/Pogrom can no longer
 > roll a catastrophe that zeroes your treasury; a hand cast (efficiency ≥ 1) is unchanged. (3)
-> **Suasio influence cost** grows with the _log_ of efficiency rather than linearly, so rites stay
+> **Logos influence cost** grows with the _log_ of efficiency rather than linearly, so rites stay
 > castable past their unlock and heavy Erinyes stacks no longer brick the category. (4) The
 > **Emptio list** evicts a random _lower_-rarity item when full (never a rarer one, never one being
 > purchased), an in-flight purchase whose target vanishes is **refunded**, and **stackable relics**
@@ -933,7 +940,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > the ADR-027 percentage machinery (`GainRates`, percent cost/output, the tick's base-gain-rate
 > plumbing) and the three ceremony modifier fields all retire; the toggle engine survives in the
 > shape Panvitium needs, retired ids in old saves drop unbilled on the first tick (no schema bump),
-> and the Foedus upkeep discount still reaches the eᵗ ramp. **Panvitium moves to the Suasio
+> and the Foedus upkeep discount still reaches the eᵗ ramp. **Panvitium moves to the Logos
 > scroll** as its sealed fourth rite — redacted Latin + "Requires Every Sin III", exactly the
 > scroll's own gating idiom, with a two-press Unleash — and the Depraedatio panel drops its
 > Compositum tab (Thesaurus / Syngraphae remain). Four more sigils orphan per ADR-029's pattern
@@ -1112,7 +1119,7 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 > with the frame). It is a single `BOUND_INVOCATION_VISUALS` entry (`degrade.data.ts`) picked up by
 > `boundVisualsFor`, with `groundShadow` plumbed through `BoundInvocationVisual` → `EngineSprite` →
 > the degrade pass (Claude Design handoff). Alongside it, a **one-time scare**: the first time ever a
-> Doppelgänger is bound and the player enters the Studio, their next interaction (PC / phone / Suasio /
+> Doppelgänger is bound and the player enters the Studio, their next interaction (PC / phone / Logos /
 > the door) is replaced by a full-screen jumpscare — the `doppelganger_jumpscare.png` plate composited
 > THROUGH the degradation pass, with `jumpscare.wav`, held for exactly 2s. It blocks all input and
 > cannot be skipped, and fires only once: a permanent, save-synced `flagDoppelgaengerSeen`
@@ -1156,7 +1163,7 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 
 > **Latest change — the smartphone dialer (Claude Design handoff, Direction A "Stock light").** The
 > player's budget Android phone — the one mundane object on the Studio desk, the black slab lying
-> between the rolled Suasio scroll and the PC — now opens a **dialer**. A new Studio hotspot (`phone`,
+> between the rolled Logos scroll and the PC — now opens a **dialer**. A new Studio hotspot (`phone`,
 > "The Smartphone") opens a self-framed full-screen overlay (its own shell over the `.panel-overlay`,
 > `role="dialog"` + `aria-label="Phone"`, not a `PanelShell`): a pixel-faithful stock-AOSP number pad —
 > device bezel with speaker slit + camera dot, a light screen with a status bar, a code display with a
@@ -1184,7 +1191,7 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 > reads as pixel art (spatial pixelation only, full colour kept); a persistent rAF loop tweens the
 > displayed fill toward the live target for a smooth rise/fall. The HUD reads live state via the
 > store (selecting the stable `state`, deriving in render per the Zustand guidance) and is mounted by
-> `App`: shown in all three rooms and over the Maleficia shelf, the Ars Goetia book and the Suasio
+> `App`: shown in all three rooms and over the Maleficia shelf, the Ars Goetia book and the Logos
 > scroll, and hidden over the Altar gate, the PC desk and during a Katabasis (both the gate and an
 > ongoing descent hold `katabasisPhase !== null`). The vessel art ships under
 > `public/assets/panvitium/hud/`; four web render tests pin the cluster, the `value / max` readout
@@ -1242,7 +1249,7 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 > `coordForFind` snaps any sea coordinate to the nearest anchor while unlisted ids hash directly into
 > the set (memoised per id so the pin loop stays cheap). Indagatio now scries in the **background**:
 > `startAction` no longer counts it toward the single player-action slot (02 §3), so a search runs
-> while the player still works Suasio/Decimatio/Emptio — and the slot-aware UI reads
+> while the player still works Logos/Decimatio/Emptio — and the slot-aware UI reads
 > `actionQueue.find(t => t.actionId !== 'indagatio')` so a running search never disables those rites.
 > The Cast control shows a live **time-left countdown** while a search runs; **Emptio** (which stays a
 > foreground, slot-holding buy) no longer spins the globe and instead draws a **progress bar** on the
@@ -1337,17 +1344,17 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 > dropped); the close-up is bounded + scrollable so a full four-category reveal never clips. Five
 > render-smoke tests pin the wiring. Test count 732 (web 171).
 
-> **Earlier change — UI: the Opus Suasio scroll rework (Claude Design).** The Suasio menu is
-> rebuilt from the delivered "Opus Suasio, the Honeyed Tongue" design as a self-framed, full-surface
+> **Earlier change — UI: the Opus Logos scroll rework (Claude Design).** The Logos menu is
+> rebuilt from the delivered "Opus Logos, the Honeyed Tongue" design as a self-framed, full-surface
 > overlay (mounted by `App` like Ars Goetia / the PC / Katabasis — it no longer rides `PanelShell`'s
 > parchment frame). It is an illuminated dark parchment with a drifting devotional-Latin backdrop and
 > three temptation rows — Suggestion (☿), Logismoi (✴), Imperium (☉) — each an alchemical circle that
 > fills into a live **progress ring + bar** while its rite is spoken, reconstructed from the real
-> action queue (Suasio is cost-outcome, so a rite's duration is its `baseTimeSeconds` — no sim/save
+> action queue (Logos is cost-outcome, so a rite's duration is its `baseTimeSeconds` — no sim/save
 > change). Per-rite verbs (Speak / Infiltrate / Command) and flicker status lines are keyed in
 > `strings.ts` (Latin left untranslated, ADR-020); a **sealed** (locked) rite shows redacted Latin
 > behind a blur with its Sin gate ("Requires Luxuria III") and offers no action; acolyte delegation is
-> preserved per delegatable rite. New `.suasio-*` class block in `menus.css` (reduced-motion + mobile
+> preserved per delegatable rite. New `.logos-*` class block in `menus.css` (reduced-motion + mobile
 > aware); the design artifact is archived under `docs/frontend/`. Five render-smoke tests pin the
 > wiring. Test count 727 (web 166).
 
@@ -1371,7 +1378,7 @@ level` within the current rank, and `eternalProgress` maps `log(devotion)/log(th
 > **Earlier change — economy retune, slice 4 of 6: the Sins remap (ADR-028).** The Sins &
 > Devotion table is rewired to the revised sheet. **Gula**: the Insatiability skill now lifts
 > player efficiency; each LEVEL strips a quarter of the negative tiers' weight (level 4 → the
-> Opera cannot roll Bad/Terrible/Apocalyptic at all). **Luxuria** ×2 Suasio efficiency per level;
+> Opera cannot roll Bad/Terrible/Apocalyptic at all). **Luxuria** ×2 Logos efficiency per level;
 > **Ira** ×2 Decimatio efficiency per level, with its Retribution skill moving to invocation
 > efficiency; **Tristitia**'s Resignation skill moves to acolyte efficiency, and BOTH old suicide
 > couplings (the skill lift and the 2×-per-level doubling) are removed — despair now flows
@@ -1503,7 +1510,7 @@ and surfaced in the three-room UI.
 Implemented gameplay (each slice pinned with Vitest):
 
 - **Resources & probability** — gold/influence generation, the seven-tier outcome resolver (02 §2).
-- **Opera** — _Suasio_, _Decimatio_, the action engine (`cost-outcome` / `time` efficiency modes).
+- **Opera** — _Logos_, _Decimatio_, the action engine (`cost-outcome` / `time` efficiency modes).
 - **Devotion & the modifier engine** — Cardinal Sin levels (`180^X`) and skill intensities, composed
   through a single `computeModifiers` point (ADR-022).
 - **Katabasis** — the descent flow, offering menu, recap, and unspent-soul carry-over.
@@ -1545,7 +1552,7 @@ ceremony plus the apex now matches the sheet):
 | 10  | Compositum population      | Bacchanal → 10% of (Glutton+Degenerate)/s generation; Enraging Broadcast → % cull of population.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 11  | Compositum penalty/offline | Vegas / Crusade flatly raise the opposite faction's subtype penalties; Dolce ×1.01 offline gain.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 12  | Panvitium ritual           | Exponential `eᵗ` cost/conversion; conversion across all subtypes + soul harvest (∝ souls) + flat gen.                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| 13  | Suasio Opera actions       | Sheet-specified Logismoi (Luxuria 2) + Imperium (Luxuria 3) added to the action catalog with their tier distributions and a new optional `unlock { sin, level }` gate + `actionUnlocked` helper + `startAction` guard (Suggestion/Caedes stay ungated). The Suasio scroll now holds all three temptations: Suggestion is always open; Logismoi/Imperium show their Luxuria gate until reached. Imperium's duration is a flagged placeholder (the sheet defers it). The Decimatio pair (Pogrom/Purgatio) is a separate slice.                                                      |
+| 13  | Logos Opera actions        | Sheet-specified Logismoi (Luxuria 2) + Imperium (Luxuria 3) added to the action catalog with their tier distributions and a new optional `unlock { sin, level }` gate + `actionUnlocked` helper + `startAction` guard (Suggestion/Caedes stay ungated). The Logos scroll now holds all three temptations: Suggestion is always open; Logismoi/Imperium show their Luxuria gate until reached. Imperium's duration is a flagged placeholder (the sheet defers it). The Decimatio pair (Pogrom/Purgatio) is a separate slice.                                                       |
 | 14  | Decimatio Opera actions    | Sheet-specified Pogrom (Ira 2) + Purgatio (Ira 3) added with their tier effects. Pogrom culls a chosen subtype (5/10/25% by tier, soul per death) via the existing action-`target` plumbing + a `startAction` subtype guard; Purgatio culls all subtypes (33/66/100%). New `cullSubtypeFraction` and `loseConvertedReprobatesFraction` population helpers; positive culls scale with efficiency (clamped ≤100%), the Church/gold losses are fixed. Sim core only — UI surfacing is deferred (see Remaining). Costs are flagged placeholders (sheet says "high"/"very high gold"). |
 | 15  | Action delegation gating   | New optional `delegateUnlock { sin, level }` on the six Opera actions (the sheet's "toggle" levels: Suggestion/Caedes at Luxuria/Ira 1, Logismoi/Pogrom at 3, Imperium/Purgatio at 4). `isDelegatable` is now state-aware; acolyte assignment and the `AcolyteControls` UI honour it, so a rite can be cast by hand before it can be automated. Autonomous invocation runners (Familiar/Imp/Upir) stay gated by invocation possession, not the toggle level; Indagatio is always delegatable, Emptio never.                                                                       |
 
@@ -1554,7 +1561,7 @@ ceremony plus the apex now matches the sheet):
 | #   | Slice                 | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | --- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | M1  | Maleficia roster      | Full 25-item catalog with sheet rarity / invoking power / stack caps (∞ where unbounded); costs normalized into per-rarity price bands (`MALEFICIUM_PRICE_RANGE`, exported for the later rolled-pricing slice).                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| M2  | Opera enhancers       | Ars Serpens (+33% Suasio), The Voynich Manuscript (+66% Suasio), Ritual Dagger (+33% Decimatio) folded into the efficiency muls as multiplicative `(1 + bonus)` factors.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| M2  | Opera enhancers       | Ars Serpens (+33% Logos), The Voynich Manuscript (+66% Logos), Ritual Dagger (+33% Decimatio) folded into the efficiency muls as multiplicative `(1 + bonus)` factors.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | M3  | Sigil enhancers       | Solomon's Ring (+50%) and Iron Nails (+1%/copy) scale every sigil's effect strength via `sigilEffectMultiplier`, threaded into `sigilModifierContributions` (modifier + tier sigils) and `sigilKatabasisBonus` (carry-over sigils).                                                                                                                                                                                                                                                                                                                                                                                                       |
 | M4  | Rolled Emptio pricing | Each maleficium's price is rolled within its rarity band (`MALEFICIUM_PRICE_RANGE`) the moment it is surfaced by Indagatio, and persisted in a new additive-optional `lifetime.maleficiaPrices`; the draws are appended after the find logic so which items surface stays byte-identical. Emptio (and its UI) charge the rolled price, falling back to the catalog cost for pre-pricing saves; the map resets with the emptio list on Katabasis (preserved under Morpheus).                                                                                                                                                               |
 | M5  | Hand of Glory (sim)   | Single-use generation buff: a new `activateMaleficium` consumes one Hand of Glory and adds an hour to `lifetime.handOfGloryRemaining` (additive-optional save field; repeat uses stack the timer). While the timer is live, `reprobateGenerationRateMul` is ×2 (+100% base generation); the tick decays it in real time and it resets on Katabasis. Sim core only — the cabinet "Use" affordance is deferred (see Remaining).                                                                                                                                                                                                             |
@@ -1565,9 +1572,9 @@ factor × the player's current action efficiency × the invocation-effect multip
 
 | #   | Slice                              | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | --- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| I1  | Multiplier effects + Black Candles | Fama (influence), Harpy (→ Decimatio efficiency, retargeted off murder), Plutus (VM output) and Succubus (→ Suasio efficiency + gold cut, retargeted off generation) reworked to `factor × playerEff × invEff`. Black Candles (+5%/candle) folded into `invocationEfficiencyMul`, so it boosts every invocation that reads it (runners already; these passive effects now too).                                                        |
+| I1  | Multiplier effects + Black Candles | Fama (influence), Harpy (→ Decimatio efficiency, retargeted off murder), Plutus (VM output) and Succubus (→ Logos efficiency + gold cut, retargeted off generation) reworked to `factor × playerEff × invEff`. Black Candles (+5%/candle) folded into `invocationEfficiencyMul`, so it boosts every invocation that reads it (runners already; these passive effects now too).                                                         |
 | I2  | Additive-to-base effects           | Nightmare → additive to base suicide rate (new `flatBaseSuicideRatePerSecond` bundle field, added in `dynamics` alongside the Doom toggle); Behemoth → additive Stellar weight (factor 0.0005, deferred past the tierAcc block for its `playerEff` dependency); Lemure → offline gain rate, retargeted off the wrong influence/Husk target (`flatInfluencePerSecond` now reserved for the Decarabia #69 sigil). All efficiency-scaled. |
-| I3  | Lamia runner                       | Reclassified Lamia from a generation + Suasio-success modifier into an autonomous Suasio runner (`autonomous: { action: 'suggestion', efficiency: 0.05 }`), advanced by `runner.ts` like Familiar/Upir/Imp. Removed its `reprobateGenerationRateMul` and `categoryTierModifiers` contributions (and the dead `LAMIA_*` constants).                                                                                                     |
+| I3  | Lamia runner                       | Reclassified Lamia from a generation + Logos-success modifier into an autonomous Logos runner (`autonomous: { action: 'suggestion', efficiency: 0.05 }`), advanced by `runner.ts` like Familiar/Upir/Imp. Removed its `reprobateGenerationRateMul` and `categoryTierModifiers` contributions (and the dead `LAMIA_*` constants).                                                                                                       |
 
 **Sigils** — in progress (completing the 72-Goetia catalog against the Sigils sheet; ~68 of 72 now
 bindable, the rest pending their effect mechanics):
@@ -1575,7 +1582,7 @@ bindable, the rest pending their effect mechanics):
 | #   | Slice                            | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | --- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | S1  | Existing-field wiring            | Wired the sigils expressible via the existing modifier bundle with no new mechanic: Belial #68 (influence rate), Marax #21 (offline time mul), Murmur #54 (overall invocation effectiveness), Balam #51 (−Terrible weight), Cimejes #66 (maleficia Katabasis roll). Added `invocationEfficiencyMul` + `offlineTimeMul` to the sigil-targetable fields (both already in the bundle and consumed).                                                                                                                                                                                                         |
-| S2  | Per-category tier/success        | New `categoryTier` SigilEffect variant (`{ category, tiers, direction }`) folded into `categoryTierModifiers` via `sigilCategoryTierContributions` (scaled by the Solomon's Ring / Iron Nails enhancers). Wired Agares #2 / Beleth #13 (Indagatio / Decimatio success), Botis #17 / Ipos #22 (−Suasio / −Decimatio bad outcomes), Astaroth #29 / Andras #63 (+Stellar for Indagatio / Emptio), Andromalius #72 (Emptio success) and Naberius #24 (Suasio success).                                                                                                                                       |
+| S2  | Per-category tier/success        | New `categoryTier` SigilEffect variant (`{ category, tiers, direction }`) folded into `categoryTierModifiers` via `sigilCategoryTierContributions` (scaled by the Solomon's Ring / Iron Nails enhancers). Wired Agares #2 / Beleth #13 (Indagatio / Decimatio success), Botis #17 / Ipos #22 (−Logos / −Decimatio bad outcomes), Astaroth #29 / Andras #63 (+Stellar for Indagatio / Emptio), Andromalius #72 (Emptio success) and Naberius #24 (Logos success).                                                                                                                                         |
 | S3  | Per-category action efficiency   | Added `indagatioEfficiencyMul` + `emptioEfficiencyMul` to the bundle and `categoryEfficiency`, completing the four-category Opera-efficiency surface (these are time-mode, so they scale action speed). Wired Bifrons #46 (Indagatio) and Seere #70 (Emptio).                                                                                                                                                                                                                                                                                                                                            |
 | S4  | Per-Sin invocation effectiveness | New `invocationSin` SigilEffect variant + `sigilInvocationSinContributions` feeding a per-Sin `invocationSinEffectivenessMul` bundle map. `invEffFor(sin)` applies it to every efficiency-derived invocation effect (Fama/Harpy/Plutus/Succubus/Nightmare/Behemoth/Lemure) and the autonomous runners (via `def.sin`). Wired Samigina #4 (Tristitia), Barbatos #8 (Gula), Bune #26 (Vanagloria), Berith #28 (Superbia), Furfur #34 (Luxuria), Vepar #42 (Ira), Shax #44 (Avaritia), Alloces #52 (Acedia).                                                                                                |
 | S5  | Subtype penalty reductions       | New `penaltyReduction` SigilEffect variant + `sigilPenaltyReductionByChannel`, dividing a penalty channel's per-count coefficient by `(1 + strength)` (never into a bonus). Wired Gaap #33 (Sigma influence), Malphas #39 (Celebrity gold), Gremory #56 (Degenerate suicide) and Volac #62 (Gambler generation). Vual #47 softens BOTH the Degenerate suicide and Choleric-murder dampening via a shared `degenerateDeathRates` channel applied to both muls in `computeModifiers`.                                                                                                                      |
@@ -1591,7 +1598,7 @@ folded in as a compiling foundation, aligned to repo conventions (strict TS, exp
 extensions, `import type`, Prettier):
 
 - `apps/web/src/menus/` — the ported TypeScript menu layer: `RoomView`, `SummonedCreatures`,
-  `PanelShell`, `AltarPanel`, `MaleficiaCabinet`, `SuasioPanel`, `PcWindow`, `ArsGoetiaBook`,
+  `PanelShell`, `AltarPanel`, `MaleficiaCabinet`, `LogosPanel`, `PcWindow`, `ArsGoetiaBook`,
   `Katabasis`, the `useHold` ramp hook, the `types.ts` presentation shapes, the `menus.data.ts`
   **mock** catalogs, and `menus.css`. Typechecks under the workspace gate.
 - `apps/web/public/assets/panvitium/` — the designed backdrops, invocation / maleficia art and
@@ -1628,12 +1635,12 @@ extensions, `import type`, Prettier):
     buttons ramp the per-step _amount_ (souls are BigNum, so a +1/tick hold can't scale). The recap
     and Eternal-Sin reveal remain their own views. `KatabasisModal` is slimmed to the phase
     orchestrator + those two views.
-  - _W5 — Maleficia cabinet + Suasio scroll live._ `MaleficiaCabinet` now shows the player's **owned**
+  - _W5 — Maleficia cabinet + Logos scroll live._ `MaleficiaCabinet` now shows the player's **owned**
     maleficia (a `buildCabinet` view-model collapsing duplicate stackables into ×N), each merged from
     the sim catalog (name/rarity/description) with the design's specimen art + split flavour/effect;
-    art-less items fall back to a text label. `SuasioPanel` fires the real **Suggestion** action via
+    art-less items fall back to a text label. `LogosPanel` fires the real **Suggestion** action via
     the store (`act`), with the live efficiency-scaled cost and a log of resolved Suggestion outcomes
-    (filtered from the store log, described via `describeOutcome`); acolyte delegation to Suasio is
+    (filtered from the store log, described via `describeOutcome`); acolyte delegation to Logos is
     preserved beneath it. Pinned by a cabinet adapter unit test.
   - _W6 — the PC live (menu-layer wiring complete)._ The designed `PcWindow` file-manager is now the
     full-screen `pc` overlay; each “executable” launches the **real** system body via the existing
@@ -1642,11 +1649,11 @@ extensions, `import type`, Prettier):
     real group components unchanged. With this, every diegetic panel and room is wired to real
     state; the `menus.data.ts` stand-ins survive only as design flavour (art/lore/rank) merged by
     the view-models, plus its now-unused PC/Sin/Sigil mock arrays and the superseded text panels
-    (`PcPanel`, `ArsGoetiaPanel`, the old Suasio/Maleficia markup), which a later cleanup can drop.
+    (`PcPanel`, `ArsGoetiaPanel`, the old Logos/Maleficia markup), which a later cleanup can drop.
   - _W7 — themed panel shells (fix)._ The three framed panels were rendering in the generic frame
     rather than the designed `PanelShell`, so they had lost their themed backgrounds. They now render
     via `PanelShell` with the right variant: the Altar in engraved **stone** (`altar-stone.png`,
-    header-less), the Maleficia **cabinet** in wood, and the Suasio **scroll** in parchment. Ars
+    header-less), the Maleficia **cabinet** in wood, and the Logos **scroll** in parchment. Ars
     Goetia, the PC and Katabasis keep their own full-screen shells. The PC window is **25% larger**
     (1050→1312 wide, 560→700 tall) and its program card's `max-width` is raised to match (840→1050), so
     the menus get more room while their contents — icons, text, buttons — keep their native sizes (the
@@ -1695,9 +1702,9 @@ extensions, `import type`, Prettier):
     copies cull/persuade at ~N× the rate. Folding the count into efficiency wouldn't work — the
     per-cycle outcome is quantised at `max(1, floor(eff))`, so sub-unit gains would round away. The
     Familiar stays the lone capped runner (the "Special").
-  - _PC/Suasio polish._ Confirmed acolyte **delegation works inside the PC**: Decimatio (`caedes`)
+  - _PC/Logos polish._ Confirmed acolyte **delegation works inside the PC**: Decimatio (`caedes`)
     and Indagatio (`indagatio`) render the `+`/− `AcolyteControls` (shown once you hold ≥1 acolyte)
-    via `ActionRow`'s delegation slot. Removed the outcome **log from the Suasio scroll** (outcomes
+    via `ActionRow`'s delegation slot. Removed the outcome **log from the Logos scroll** (outcomes
     live in the PC's Logs program). Split the PC's **Depraedatio** program into three tabs — Vitium
     Mercatura (the businesses), Vitium Compositum (the ceremonies), and In Flight (builds under
     construction); the in-flight tab collapses identical builds into one counted row (“6× Street
@@ -1735,9 +1742,9 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
     Layout, sizes and the prop-driven component are unchanged — this is the visual change the
     component/CSS exports never actually carried.
   - _Done._ The menu-layer wiring is complete: all three rooms and every diegetic panel (Ars Goetia,
-    Altar, Katabasis, Maleficia cabinet, Suasio scroll, PC) now run on real state in their designed
+    Altar, Katabasis, Maleficia cabinet, Logos scroll, PC) now run on real state in their designed
     shells. Backdrops: the **Studio** uses its `studio_complete.png` plate as its base so the desk PC
-    and Suasio scroll are drawn under their hotspots; the Invocation room and Altar use their clean
+    and Logos scroll are drawn under their hotspots; the Invocation room and Altar use their clean
     plates. The remaining `*_complete.png` furnished plates ship and are styled (`.furnished
 .scene-*`) but there's no furnish trigger for those two yet — turning them on as the player
     progresses is a design call. Hotspots are boxless: hovering reveals the label (and door glyph)
@@ -1753,7 +1760,7 @@ goetia/<id>.png` (book drawings, not the photorealistic creature art) with a tex
     maleficia, audio).
   - _Ars Goetia effect lines made authoritative._ The grimoire's per-invocation **Effect** line was
     reading hand-authored copy from `menus.data.ts` (`INVOCATION_BY_ID[id].effect`), which had gone
-    stale and wrong: Harpy listed _Suasio_ (it's **Decimatio** efficiency), Behemoth listed _×2
+    stale and wrong: Harpy listed _Logos_ (it's **Decimatio** efficiency), Behemoth listed _×2
     reprobate generation_ (it's a **+Stellar-chance** boost) and via a `\\u00D7` escape rendered the
     literal `\u00D72`, Upir was framed as a passive (it's a **Caedes runner**), Fama showed a
     hardcoded `+50%`, and Lamia/Imp/Succubus/Doppelgänger/Midas/&c. had **no** effect line at all.
@@ -1777,7 +1784,7 @@ long burn ends the game); reserve interest multiplied by `goldRateMul` and compo
 deposits; Midas ×10 doubles the reserve every ~2.3 min); Erinyes's uncapped ×2 per descent; the
 Imperium / Logismoi %-of-flock × efficiency tiers (exponential flock growth, fed by Aurevora's
 gold-for-efficiency and Erinyes); the Church culls taking ~84% of the early flock; acolytes casting
-Suasio for free at a full unit of gain; sub-×2 efficiency being dead weight for Suggestion's yield;
+Logos for free at a full unit of gain; sub-×2 efficiency being dead weight for Suggestion's yield;
 Sin-1 invocation upkeep outrunning the 0.5/s base influence regen without Decarabia; Behemoth and
 Arachne as trap invocations; Halphas / Stolas raising Indagatio's gold-loss tiers; Gusion's pure
 downside; the duplicate seals (Bael = Balam, Naberius = Bifrons, Vine = Furcas,
@@ -1801,9 +1808,9 @@ Forneus's generous rounding.
   shift and now lifts invocation efficiency only.
 - **Dormant seals** (`inert`, no effect, souls still bindable and recoverable): **Beleth #13**
   (+Decimatio positive outcomes), **Marax #21** (+Decimatio efficiency), **Ipos #22** (−Decimatio
-  negative outcomes), **Raum #40** (+Decimatio / −Suasio efficiency tradeoff), **Focalor #41**
+  negative outcomes), **Raum #40** (+Decimatio / −Logos efficiency tradeoff), **Focalor #41**
   (Decimatio double output), **Haures #64** (+Decimatio Stellar).
-- **Dantalion #71**: lost its −Decimatio cost; it is now a plain +Suasio efficiency seal, a free
+- **Dantalion #71**: lost its −Decimatio cost; it is now a plain +Logos efficiency seal, a free
   boon that duplicates Zagan #61's lever at full strength.
 - **Acolytes**: delegation covers Suggestion / Logismoi / Imperium and Indagatio only; no gold-cost
   rite remains to delegate.
@@ -1841,7 +1848,7 @@ Forneus's generous rounding.
 Economy-parity tracks still to reconcile against the spreadsheet:
 
 - **Maleficia effects** — the enhancers (Opera-efficiency, sigil-amplifier, Black Candles, and the Anathema multipliers), invoking power, stack caps, **rolled Emptio pricing**, the **Hand of Glory generation buff**, and the **Defixio curse** (sim mechanics) are all done. The **single-use activation UI** (Phase 5 slice) has shipped: the Maleficia cabinet's detail view now carries a **Use** button + status readout (Hand of Glory's remaining buff time, Defixio's active target / "choosing its victim"), wired to a new `activateMaleficium` store action; selection is by id so consuming the last copy can't strand the detail view. The **oracular reveals** (Phase 5 slice) have also shipped: owning Obsidian Mirror / Hollow Effigy / The Dadu / Crossroads Dirt / Crow Feather surfaces a live Opera tier-distribution readout in that item's cabinet detail (a stacked odds bar per action, via a read-only `actionTierDistribution` sim helper that reuses the exact `resolveAction` composition). With this, Maleficia is complete — roster, gating, and every effect.
-- **Opera actions** — the three _Suasio_ rites are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15), surfaced on the scroll. Imperium's action time is now **decided at 10s** (the Suasio sheet had left it "Fill Time"; it was a flagged 60s placeholder). _Decimatio_ (Caedes / Pogrom / Purgatio and the PC program) is **retired** (ADR-038; see the gaps above).
+- **Opera actions** — the three _Logos_ rites are in the sim with sheet-accurate tiers, Sin-level **availability** gating, and Sin-level **delegation** gating (economy-parity 13–15), surfaced on the scroll. Imperium's action time is now **decided at 10s** (the Logos sheet had left it "Fill Time"; it was a flagged 60s placeholder). _Decimatio_ (Caedes / Pogrom / Purgatio and the PC program) is **retired** (ADR-038; see the gaps above).
 - **Emails (PC program) — impact-feedback system** _(✓ shipped, content authored — 05)_. An inbox that
   surfaces the in-world consequences of the player's descent as incoming correspondence, so the player
   _feels_ the impact rather than reading it only as numbers. The full authored catalog (`docs/05-email-content.md`)
@@ -1897,7 +1904,7 @@ only on a number or mechanic being settled on the sheet; once it is, each is a s
 - **The last 4 sigils** — _all resolved and shipped._ Haures #64 (Cholerics killable by default +
   Choleric-targeting murder bias), Ose #57 / Orias #59 (conversion re-roll toward the minority /
   majority subtype), and Vual #47 (softens the Degenerate suicide/murder penalties). See Status.
-- **Imperium's action time** — _decided at 10s_ (the Suasio sheet had left it "Fill Time").
+- **Imperium's action time** — _decided at 10s_ (the Logos sheet had left it "Fill Time").
 - **Placeholder sweep** — _audited and reconciled._ No value changes were needed (every flag was
   either stale or pointed to a magnitude the sheet doesn't pin); comments were corrected. See 5.5.
 
@@ -1942,14 +1949,14 @@ surface. All three have shipped (no new mechanic — the only sim addition was a
 - **Oracular reveals** _(✓ shipped)_. Owning an oracular item surfaces a live Opera tier-distribution
   readout in its cabinet detail — a stacked odds bar per action, computed by the read-only
   `actionTierDistribution` sim helper (so the odds always match an actual cast). Per the **catalog**
-  (authoritative): Hollow Effigy → _Suasio_, The Dadu → _Decimatio_, Crossroads Dirt → _Emptio_, Crow
+  (authoritative): Hollow Effigy → _Logos_, The Dadu → _Decimatio_, Crossroads Dirt → _Emptio_, Crow
   Feather → _Indagatio_, Obsidian Mirror → all four. (The earlier README prose had Crossroads/Crow
   swapped — corrected here.) Pinned by `buildOracle` + `actionTierDistribution` unit tests.
 - **Complete the PC's Decimatio program** _(✓ shipped)_. The PC's _Decimatio_ program now carries
   _Caedes_, _Pogrom_ (then with a present-subtype picker wiring `act('pogrom', subtype)`), and
   _Purgatio_, each gated by its Ira level; delegation was offered on Caedes/Purgatio but not Pogrom.
   _(Post-ADR-024: Pogrom culls the single pool; the picker and the delegation caveat retired with
-  the subtypes.)_ Decimatio lives entirely in the PC, never on the Suasio scroll.
+  the subtypes.)_ Decimatio lives entirely in the PC, never on the Logos scroll.
   Pinned by a `pogromTargets` adapter test; the Playwright e2e step is deferred to a machine with a
   browser.
 
@@ -2043,10 +2050,10 @@ content._
 _Forward-looking — not yet in the backlog; **confirm scope before coding**. None of this is new gameplay;
 it is the UX an idle game needs to keep a cold-start player past the first minutes._
 
-- **First-run ramp.** A light guided opening — the first _Suasio_, the first Devotion threshold, the first
+- **First-run ramp.** A light guided opening — the first _Logos_, the first Devotion threshold, the first
   _Katabasis_ — surfaced as gentle prompts rather than a heavy modal tutorial.
 - **Help & glossary.** Tooltips on resources, the seven outcome tiers, and the modifier readouts; a short
-  glossary that explains (without anglicizing) the Latin — _Opera_, _Suasio_, _Decimatio_, _Katabasis_,
+  glossary that explains (without anglicizing) the Latin — _Opera_, _Logos_, _Decimatio_, _Katabasis_,
   _Vitium Compositum_, and the rest.
 - **Readability** _(✓ shipped)_. BigNum displays use **consistent short-scale suffixing**:
   `formatBigNum` reads as grouped integers below a million, then M / B / T / … / Dc suffixes, then
@@ -2146,7 +2153,7 @@ composition)._
   **Vual #47** landed with their subtype/conversion mechanics, were neutralized to `inert` by
   **ADR-024**, and now carry their revised-sheet effects per **ADR-029** — along with the other
   twelve orphans. No sigil is inert anymore.
-- **Imperium's action time** _(✓ shipped)_. Decided at 10s (the _Suasio_ sheet had left it "Fill Time";
+- **Imperium's action time** _(✓ shipped)_. Decided at 10s (the _Logos_ sheet had left it "Fill Time";
   was a flagged 60s placeholder).
 - **Placeholder sweep** _(✓ shipped)_. Audited every inline-flagged magnitude against the sheet. The
   verdict: **no value changes were needed** — each flag was either stale (the value is already

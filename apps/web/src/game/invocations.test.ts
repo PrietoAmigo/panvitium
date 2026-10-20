@@ -88,7 +88,7 @@ describe('buildGoetia effect lines (sim-derived, not stale static copy)', () => 
   it('Harpy reads as a base murder-rate boost (no stale runner blurb)', () => {
     const eff = effectOf('harpy');
     expect(eff.toLowerCase()).toContain('murder');
-    expect(eff).not.toMatch(/Pogrom|Suasio/i);
+    expect(eff).not.toMatch(/Pogrom|Logos/i);
   });
 
   it('Behemoth reads as a Stellar-chance boost, not the stale "reprobate generation"', () => {

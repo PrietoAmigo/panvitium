@@ -1,7 +1,7 @@
 /**
  * Player-facing strings, keyed not concatenated (ADR-020). English-only at launch; adding a
  * locale later means populating a sibling module, not refactoring call sites. Latin terms
- * (Opera, Suasio, Katabasis, …) stay untranslated regardless of locale: they are the voice.
+ * (Opera, Logos, Katabasis, …) stay untranslated regardless of locale: they are the voice.
  * This grows as the UI lands (step 4); it starts with the few labels the skeleton needs.
  *
  * TWO HARD COPY RULES (apply to every string in this module, no exceptions):
@@ -78,7 +78,7 @@ export const strings = {
   },
   reprobates: 'Reprobates',
   opera: {
-    suasio: 'Suasio',
+    logos: 'Logos',
     depraedatio: 'Depraedatio',
     indagatio: 'Indagatio',
     emptio: 'Emptio',
@@ -91,7 +91,7 @@ export const strings = {
     selectLedger: 'select a ledger',
     underway: 'Another action is ongoing.',
     emptyLog: 'The terminal log is empty. Nothing has been done.',
-    suasioIntro: 'The temptations, written to be spoken. Whisper one and wait.',
+    logosIntro: 'The temptations, written to be spoken. Whisper one and wait.',
     notYet: 'not yet inscribed',
     idle: 'No rite underway.',
     search: 'Search',
@@ -104,30 +104,30 @@ export const strings = {
     compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
-    // The Chthonic Logos: the scroll on the Studio table holding the Suasio rites, written by the
+    // The Chthonic Logos: the scroll on the Studio table holding the Logos rites, written by the
     // player from their notes on worldly and otherworldly experience (the Katabasis among them) to
     // master eloquence and persuasion (Claude Design rework).
-    suasioTitle: 'Chthonic Logos',
-    suasioMaxim: 'Veritatis simplex oratio est',
-    suasioClose: 'Close the scroll',
+    logosTitle: 'Chthonic Logos',
+    logosMaxim: 'Veritatis simplex oratio est',
+    logosClose: 'Close the scroll',
     // Each temptation\u2019s flavour line, spoken on the parchment.
-    suasioQuote: {
+    logosQuote: {
       suggestion: 'A word left where a thought will find it.',
       logismoi: 'Intruding voices, the sinner\u2019s own.',
       imperium: 'No longer asked.',
       panvitium: 'Sicut in inferno, et in terra',
     } as Record<string, string>,
     // Per-temptation verb on the action button.
-    suasioCta: {
+    logosCta: {
       suggestion: 'Speak',
       logismoi: 'Infiltrate',
       imperium: 'Command',
       panvitium: 'Unleash',
     } as Record<string, string>,
     // Panvitium is irreversible while it burns, so the Unleash verb takes a second, confirming press.
-    suasioConfirm: 'Let it burn?',
+    logosConfirm: 'Let it burn?',
     // The flicker line shown while a temptation is underway.
-    suasioStatus: {
+    logosStatus: {
       suggestion: 'A word is being left\u2026',
       logismoi: 'The voices press in, and will not relent\u2026',
       imperium: 'The command takes hold\u2026',
@@ -135,7 +135,7 @@ export const strings = {
     } as Record<string, string>,
     // A locked temptation is sealed: its name and maxim show as unreadable, redacted Latin.
     // Seal names belong to these action IDs, regardless of which other rites are unlocked.
-    suasioSealed: {
+    logosSealed: {
       logismoi: {
         name: 'Vhorrus Exneth',
         maxim: '...dum tacet quod clamat.',
@@ -150,21 +150,21 @@ export const strings = {
       },
     } as Record<string, { name: string; maxim: string }>,
     // Gate prefix for a sealed row, e.g. \u201cRequires Any Sin III\u201d.
-    suasioRequires: 'Requires',
-    // The any-Sin gate token. Suasio rites open at the given level of ANY Sin (not one
+    logosRequires: 'Requires',
+    // The any-Sin gate token. Logos rites open at the given level of ANY Sin (not one
     // specific Sin), so the sealed-row requirement reads "Requires Any Sin III" and the locked
     // auto/delegate hint reads "Any Sin I".
     anySin: 'Any Sin',
     // Panvitium's gate on the Chthonic Logos (all eight Sins at level III).
-    suasioPanvitiumGate: 'Every Sin III',
+    logosPanvitiumGate: 'Every Sin III',
     // Panvitium on the scroll: its open name and the ramping-cost suffix on the cost line.
     panvitium: 'Panvitium',
     panvitiumRising: 'and rising',
     // The Chthonic Logos's outcome ledger: resolved temptations, newest first, below the rites.
     // Box-drawing rule (U+2500), never a dash (hard copy rule 2).
-    suasioLedgerHeading: '\u2500 INDEX SVASIONVM \u2500',
-    suasioEmptyLedger: 'No temptation has been spoken yet.',
-    suasioNoYield: 'no soul stirred',
+    logosLedgerHeading: '\u2500 INDEX SVASIONVM \u2500',
+    logosEmptyLedger: 'No temptation has been spoken yet.',
+    logosNoYield: 'no soul stirred',
   },
   /**
    * The Depraedatio "Counting House" account (Claude Design redesign of the Faeneratio loop). The
@@ -419,7 +419,7 @@ export const strings = {
       gold: 'gold',
       apocalyptic: 'Apocalyptic chance',
       apocLocked: 'Apocalyptic locked to zero',
-      suasioEff: 'Suasio efficiency',
+      logosEff: 'Logos efficiency',
       playerEff: 'player efficiency',
       murders: 'murders/s',
       suicides: 'suicides/s',
@@ -915,7 +915,7 @@ export const strings = {
       epithet: 'King of the Nine Hells',
       skill: 'Seduction',
       skillEffect: 'Multiplies the reprobate generation rate by 1 + intensity.',
-      levelEffect: 'Each level doubles (×2) your Suasio action efficiency.',
+      levelEffect: 'Each level doubles (×2) your Logos action efficiency.',
     },
     avaritia: {
       prince: 'Mammon',
@@ -932,7 +932,7 @@ export const strings = {
       english: 'Sorrow',
       epithet: 'The Coiled Deep',
       skill: 'Resignation',
-      skillEffect: 'Multiplies Suasio success and acolyte efficiency by 1 + intensity.',
+      skillEffect: 'Multiplies Logos success and acolyte efficiency by 1 + intensity.',
       levelEffect: 'Each level adds +12.5% to the reprobates kept on descent (base 5%).',
     },
     ira: {
@@ -1061,7 +1061,7 @@ export const strings = {
       14: 'Murder \u2192 suicide chance \u2191',
       15: 'Emptio costs \u2193',
       16: 'Invocation costs \u2193',
-      17: 'Suasio negative outcomes \u2193',
+      17: 'Logos negative outcomes \u2193',
       18: 'Acolyte efficiency \u2191',
       19: 'Desidia drain \u2193',
       20: 'Gold kept on descent \u2191',
@@ -1083,7 +1083,7 @@ export const strings = {
       36: 'Common maleficia find chance \u2193',
       37: 'Emptio negative outcomes \u2193',
       38: 'Common & rare find chance \u2193',
-      39: 'Suasio double-output chance \u2191',
+      39: 'Logos double-output chance \u2191',
       40: SIGIL_DORMANT,
       41: SIGIL_DORMANT,
       42: 'Ira invocation effect \u2191',
@@ -1091,7 +1091,7 @@ export const strings = {
       44: 'Avaritia invocation effect \u2191',
       45: 'Reserve surrender charge \u2193',
       46: 'Indagatio efficiency \u2191',
-      47: 'Suasio Stellar chance \u2191',
+      47: 'Logos Stellar chance \u2191',
       48: 'Flat gold generation \u2191',
       49: 'Indagatio double-find chance \u2191',
       50: 'Reserve surrender charge \u2193',
@@ -1100,12 +1100,12 @@ export const strings = {
       53: 'Reprobates kept on descent \u2191',
       54: 'Overall invocation effect \u2191',
       55: 'Invocation costs \u2193',
-      56: 'Suasio positive outcomes \u2191',
+      56: 'Logos positive outcomes \u2191',
       57: 'Flat reprobate generation \u2191',
       58: 'Indagatio & Emptio efficiency \u2191',
       59: 'Maximum Desidia \u2191',
       60: 'Account income \u2191',
-      61: 'Suasio efficiency \u2191',
+      61: 'Logos efficiency \u2191',
       62: 'Indagatio negative outcomes \u2193',
       63: 'Emptio Stellar chance \u2191',
       64: SIGIL_DORMANT,
@@ -1115,7 +1115,7 @@ export const strings = {
       68: 'Influence gain \u2191',
       69: 'Flat influence generation \u2191',
       70: 'Emptio efficiency \u2191',
-      71: 'Suasio efficiency \u2191',
+      71: 'Logos efficiency \u2191',
       72: 'Emptio positive outcomes \u2191',
     } as Record<number, string>,
   },

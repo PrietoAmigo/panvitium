@@ -116,7 +116,7 @@ function VesselCanvas({ frac }: { frac: number }): ReactElement {
  * selector guidance — select the stable `state`, derive the fill ratio + formatted values in render.
  *
  * Mounting/visibility is owned by `App` (shown in the Invocation / Studio rooms and over the
- * Maleficia / Magna Goetia / Suasio menus; hidden in the Altar room, over the Altar gate, the PC, and
+ * Maleficia / Magna Goetia / Logos menus; hidden in the Altar room, over the Altar gate, the PC, and
  * during Katabasis).
  */
 export function InfluenceGoldHud(): ReactElement | null {

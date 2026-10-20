@@ -3,7 +3,7 @@ export * from './menus.data.js';
 export { PanelShell } from './PanelShell.js';
 export { RoomView } from './RoomView.js';
 export { MaleficiaCabinet } from './MaleficiaCabinet.js';
-export { SuasioPanel } from './SuasioPanel.js';
+export { LogosPanel } from './LogosPanel.js';
 export { PcWindow } from './PcWindow.js';
 export { MagnaGoetiaBook } from './MagnaGoetiaBook.js';
 export {

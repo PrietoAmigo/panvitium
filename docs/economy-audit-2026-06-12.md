@@ -53,9 +53,9 @@ The skill column (intensity-driven) and per-level column have been **remapped**:
 | Sin | Sheet skill (intensity) | Sheet per-level | Code today | Verdict |
 |---|---|---|---|---|
 | Gula | + online player eff | **−25% Bad/Terrible/Apocalyptic chance per level (additive; 0% at L4)** | per-level = ×2 player efficiency (`2^gulaLvl`) | ⚠ per-level effect replaced |
-| Luxuria | + reprobate generation | **×2 Suasio efficiency per level** + unlocks | Suasio eff driven by *Tristitia intensity*; no per-level ×2 | ⚠ remapped |
+| Luxuria | + reprobate generation | **×2 Logos efficiency per level** + unlocks | Logos eff driven by *Tristitia intensity*; no per-level ×2 | ⚠ remapped |
 | Avaritia | + gold gain | +12.5% remaining gold %/lvl | matches | ✓ |
-| Tristitia | **+ acolyte efficiency** | +12.5% remaining reprobate %/lvl | skill → Suasio eff + suicide; per-level `2^lvl` **suicide doubling** not on sheet | ⚠ remapped; suicide doubling orphaned |
+| Tristitia | **+ acolyte efficiency** | +12.5% remaining reprobate %/lvl | skill → Logos eff + suicide; per-level `2^lvl` **suicide doubling** not on sheet | ⚠ remapped; suicide doubling orphaned |
 | Ira | **+ invocation efficiency** | **×2 Decimatio efficiency per level** + unlocks | skill → Decimatio eff; per-level ×1.33 acolyte+invocation | ⚠ remapped |
 | Acedia | + offline player eff | compound **`1.0000002^(s·L²)`, s in seconds** | `1.00002^(minutes·L²)` ≈ `1.00000033^s` | ✗ base & unit changed (~1.7× slower growth on sheet) |
 | Vanagloria | + max influence | **×1.33 influence gain /lvl** | `1.5^vanagloriaLvl` | ✗ 1.5 → 1.33 |
@@ -64,7 +64,7 @@ The skill column (intensity-driven) and per-level column have been **remapped**:
 ❓ **Sheet-internal inconsistency:** row 2 prose says intensity divisor `0.6537`; the formulas (and
 code) use `65.37`. Confirm 65.37 stands and fix the prose.
 
-## 3. Suasio / Decimatio (actions) — numbers changed, plus toggles ✓
+## 3. Logos / Decimatio (actions) — numbers changed, plus toggles ✓
 
 - **Action toggles** (Suggestion/Caedes at L1, Logismoi/Pogrom at L3, Imperium/Purgatio at L4):
   already in code and matching the sheet's gates. ✓
@@ -107,7 +107,7 @@ code) use `65.37`. Confirm 65.37 stands and fix the prose.
   conversion-bias effect. ⚠ (resolves one ADR-024 orphan).
 - **Lamia → applies to *Logismoi*** (code: runs *Suggestion*). ⚠
 - **Succubus: "action efficiency applies to *Imperium*", eff 0.99, cost 99% current gold gain/s**
-  — code models Succubus as a Suasio-efficiency + gold-drain modifier pair. ⚠
+  — code models Succubus as a Logos-efficiency + gold-drain modifier pair. ⚠
 - **Harpy: applies to *Pogrom*** (code: boosts all Decimatio efficiency). ⚠
 - **Imp: "efficiency applies to Caedes"** — code runs Caedes autonomously at forced-Good; confirm
   whether the runner model stays. ❓
@@ -154,9 +154,9 @@ The sheet now defines **all 72** with `curve` (sqrt/log/linear semantics per the
 
 - **All 16 inert sigils get effects**: #1 Bael (−Opera negative chance), #15 Eligos (offline
   influence), #25 Glasya-Labolas (flat murder, log 0.001), #27 Ronove (+suicide), #33 Gaap
-  (+maleficia effect %, log 0.01), #37 Phenex (−Emptio negative), #39 Malphas (duplicate Suasio
+  (+maleficia effect %, log 0.01), #37 Phenex (−Emptio negative), #39 Malphas (duplicate Logos
   output), #41 Focalor (duplicate Decimatio output), #43 Sabnock (flat suicide, log), #47 Vual
-  (+Suasio Stellar), #53 Camio (+remaining reprobate %, log 1), #56 Gremory (+Suasio positive),
+  (+Logos Stellar), #53 Camio (+remaining reprobate %, log 1), #56 Gremory (+Logos positive),
   #57 Ose (flat generation, log 0.3), #59 Orias (+VC influence output), #62 Volac (−Indagatio
   negative), #64 Haures (+Decimatio Stellar).
 - **Re-targets of currently-wired sigils**: #12 Sitri → *VM reprobate generation* (code: succubus

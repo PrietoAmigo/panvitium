@@ -296,13 +296,13 @@ describe('Per-category tier sigils (S2)', () => {
     const m = categoryTierModifiers(s, 'indagatio');
     expect(m.good).toBeCloseTo(1 + strength, 6);
     expect(m.stellar).toBeCloseTo(1 + strength, 6);
-    expect(categoryTierModifiers(s, 'suasio')).toEqual({}); // category-scoped
+    expect(categoryTierModifiers(s, 'logos')).toEqual({}); // category-scoped
   });
 
-  it('Botis #17 damps only the Suasio bad-outcome tiers', () => {
+  it('Botis #17 damps only the Logos bad-outcome tiers', () => {
     const s = bound(17, 10_000);
     const strength = sigilStrength(sigilById(17)!, bn(10_000));
-    const m = categoryTierModifiers(s, 'suasio');
+    const m = categoryTierModifiers(s, 'logos');
     expect(m.terrible).toBeCloseTo(1 / (1 + strength), 6);
     expect(m.bad).toBeCloseTo(1 / (1 + strength), 6);
     expect(m.good).toBeUndefined();
@@ -322,11 +322,11 @@ describe('Per-category tier sigils (S2)', () => {
     expect(categoryTierModifiers(s, 'emptio').good).toBeCloseTo(1 + strength, 6);
   });
 
-  it('Gremory #56 composes onto the Suasio success shift', () => {
+  it('Gremory #56 composes onto the Logos success shift', () => {
     const base = bound(56, 10_000);
     const strength = sigilStrength(sigilById(56)!, bn(10_000));
     // No Devotion here, so the success multiplier is Gremory alone.
-    expect(categoryTierModifiers(base, 'suasio').good).toBeCloseTo(1 + strength, 6);
+    expect(categoryTierModifiers(base, 'logos').good).toBeCloseTo(1 + strength, 6);
   });
 });
 
@@ -542,7 +542,7 @@ describe('Indagatio find-quality sigils (S12)', () => {
     expect(v.stellar).toBeGreaterThan(1);
     expect(v.excellent).toBeGreaterThan(1);
     expect(v.good).toBeUndefined();
-    expect(sigilCategoryTierContributions(bound(3, 1_000_000), 'suasio')).toEqual({});
+    expect(sigilCategoryTierContributions(bound(3, 1_000_000), 'logos')).toEqual({});
     // Stolas DAMPS the Neutral (Common-find) entry per the sheet rev; Halphas #38 damps
     // Neutral + Good (common & rare) together.
     expect(sigilCategoryTierContributions(bound(36, 1_000_000), 'indagatio').neutral).toBeLessThan(
@@ -656,23 +656,23 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
     expect(desidiaMax(bound(59, 100_000_000))).toBeCloseTo(DESIDIA_BASE_MAX * (1 + strength), 6);
   });
 
-  it('Zagan #61 lifts Suasio efficiency at 1/3 strength', () => {
+  it('Zagan #61 lifts Logos efficiency at 1/3 strength', () => {
     const strength = sigilStrength(sigilById(61)!, bn(100_000_000));
     const { scalar } = sigilModifierContributions(bound(61, 100_000_000));
-    expect(scalar.suasioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+    expect(scalar.logosEfficiencyMul).toBeCloseTo(1 + strength, 6);
   });
 });
 
 describe('Composite (multi-effect) seals (S17 — ADR-035)', () => {
-  it('Dantalion #71 keeps only its Suasio lift once its Decimatio cost retired (ADR-038)', () => {
+  it('Dantalion #71 keeps only its Logos lift once its Decimatio cost retired (ADR-038)', () => {
     expect(sigilById(71)!.effect).toEqual({
       kind: 'modifier',
-      field: 'suasioEfficiencyMul',
+      field: 'logosEfficiencyMul',
       direction: 'increase',
     });
     const strength = sigilStrength(sigilById(71)!, bn(100_000_000));
     const { scalar } = sigilModifierContributions(bound(71, 100_000_000));
-    expect(scalar.suasioEfficiencyMul).toBeCloseTo(1 + strength, 6);
+    expect(scalar.logosEfficiencyMul).toBeCloseTo(1 + strength, 6);
   });
 
   it('Andrealphus #65 is a dual seal: softens invocation costs AND quickens Desidia', () => {
@@ -941,7 +941,7 @@ describe('Sigil-effect maleficia reach every sigil channel', () => {
 
 describe('Dormant seals (ADR-038: the Decimatio seals)', () => {
   // Beleth #13, Marax #21, Ipos #22, Raum #40, Focalor #41 and Haures #64 served only the retired
-  // Decimatio category (Raum's other leg, a Suasio penalty, would have left it a pure curse). Their
+  // Decimatio category (Raum's other leg, a Logos penalty, would have left it a pure curse). Their
   // ids, names and art stay; the effect is `inert` until each is re-homed.
   const DORMANT: readonly number[] = [13, 21, 22, 40, 41, 64];
   const NAMES: Readonly<Record<number, string>> = {
@@ -965,7 +965,7 @@ describe('Dormant seals (ADR-038: the Decimatio seals)', () => {
     let s = { ...fresh(), souls: bn(6e9) };
     for (const id of DORMANT) s = bindSigil(s, id, 1e9);
     expect(computeModifiers(s)).toEqual(computeModifiers(fresh()));
-    for (const cat of ['suasio', 'indagatio', 'emptio'] as const) {
+    for (const cat of ['logos', 'indagatio', 'emptio'] as const) {
       expect(categoryTierModifiers(s, cat)).toEqual({});
       expect(categoryEfficiency(s, cat)).toBe(categoryEfficiency(fresh(), cat));
     }

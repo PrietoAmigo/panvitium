@@ -4,7 +4,7 @@
 // INTEGRATION.md §"Wiring to real state".
 
 export type RoomId = 'invocation' | 'altar' | 'studio';
-export type PanelId = 'maleficia' | 'magna-goetia' | 'pc' | 'suasio' | 'phone';
+export type PanelId = 'maleficia' | 'magna-goetia' | 'pc' | 'logos' | 'phone';
 export type Rarity = 'common' | 'rare' | 'profane' | 'anathema';
 
 export interface Rect {
@@ -79,9 +79,9 @@ export interface Maleficium {
 export type MaleficiumArt = Pick<Maleficium, 'id' | 'name' | 'rarity' | 'img'> &
   Partial<Pick<Maleficium, 'desc' | 'effect'>>;
 
-/** One revealed Opera category's distributions (e.g. Suasio), for the oracular readout. */
+/** One revealed Opera category's distributions (e.g. Logos), for the oracular readout. */
 export interface OracleGroup {
-  /** Category id ('suasio' | 'indagatio' | 'emptio'). */
+  /** Category id ('logos' | 'indagatio' | 'emptio'). */
   category: string;
   /** Display label for the category. */
   label: string;

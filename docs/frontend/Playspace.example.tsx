@@ -2,7 +2,7 @@ import { useState, useEffect, type ReactElement } from 'react';
 import './menus/menus.css';
 import {
   ROOMS, type RoomId, type PanelId, type HotspotAction,
-  RoomView, PanelShell, AltarPanel, MaleficiaCabinet, SuasioPanel,
+  RoomView, PanelShell, AltarPanel, MaleficiaCabinet, LogosPanel,
   PcWindow, MagnaGoetiaBook, Katabasis,
 } from './menus';
 
@@ -56,9 +56,9 @@ export function Playspace(): ReactElement {
           <MaleficiaCabinet />
         </PanelShell>
       )}
-      {panel === 'suasio' && (
+      {panel === 'logos' && (
         <PanelShell title="The Chthonic Logos" variant="scroll" onClose={() => setPanel(null)}>
-          <SuasioPanel />
+          <LogosPanel />
         </PanelShell>
       )}
 

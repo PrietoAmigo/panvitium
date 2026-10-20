@@ -114,20 +114,20 @@ export const AUREVORA_EFFICIENCY_GROWTH_PER_SECOND = 1.05;
  * - Gula: each level removes a fifth of the negative tiers' weight (Bad/Terrible/Apocalyptic
  *   ×(1 − 0.2·L), level 4 → 20% of the negative weight remains; freed mass renormalizes across
  *   the rest).
- * - Luxuria: ×2 overall Suasio efficiency per level.
+ * - Luxuria: ×2 overall Logos efficiency per level.
  * - Ira: none. Its levels doubled Decimatio efficiency until that category was retired (ADR-038);
  *   the slot is empty pending a re-home. The old ×1.33 Ira acolyte/invocation ladder is retired
  *   too: those channels are now the Tristitia (acolytes) and Ira (invocations) SKILL intensities.
  */
 export const GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL = 0.2;
-export const LUXURIA_SUASIO_EFF_PER_LEVEL = 2;
+export const LUXURIA_LOGOS_EFF_PER_LEVEL = 2;
 
 /**
  * Maleficia enhancer magnitudes (03 §4 / Maleficia sheet). Each is an Opera-efficiency multiplier
  * applied as a separate `(1 + bonus)` factor (multiplicative composition, ADR-022). Items are
  * non-stackable, so the count is 0 or 1.
  */
-export const ARS_SERPENS_SUASIO_BONUS = 0.33; // Ars Serpens: +33% Suasio efficiency.
+export const ARS_SERPENS_LOGOS_BONUS = 0.33; // Ars Serpens: +33% Logos efficiency.
 /**
  * Sigil-effect enhancers: each lifts all sigil effect strength by a flat `(1 + bonus)` factor
  * (Maleficia sheet). All three are non-stackable (count 0 or 1), so they compose additively here.

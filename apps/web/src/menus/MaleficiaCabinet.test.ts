@@ -297,8 +297,8 @@ describe('Loculi — the effect and the rite', () => {
           name: 'An Oracle',
           reveal: [
             {
-              category: 'suasio',
-              label: 'Suasio',
+              category: 'logos',
+              label: 'Logos',
               actions: [
                 {
                   action: 'suggestion',

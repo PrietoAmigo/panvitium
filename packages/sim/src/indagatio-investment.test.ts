@@ -121,7 +121,7 @@ describe('investment feeds Indagatio efficiency alone (ADR-022)', () => {
   it('leaves the other action categories untouched', () => {
     const invested = withLifetime({ indagatioInvestment: bn(1000) });
     const mods = computeModifiers(invested);
-    expect(mods.suasioEfficiencyMul).toBe(1);
+    expect(mods.logosEfficiencyMul).toBe(1);
     expect(mods.emptioEfficiencyMul).toBe(1);
     expect(categoryEfficiency(invested, 'emptio')).toBeCloseTo(1, 10);
   });
@@ -148,7 +148,7 @@ describe('the Cast consumes the investment (one-shot, 03 §2.5)', () => {
   });
 
   it('is consumed only by an Indagatio cast, not by starting another rite', () => {
-    // Starting a Suasio rite must leave the staked investment intact — only the Search spends it.
+    // Starting a Logos rite must leave the staked investment intact — only the Search spends it.
     const invested = withLifetime({
       gold: bn(5000),
       influence: bn(50),

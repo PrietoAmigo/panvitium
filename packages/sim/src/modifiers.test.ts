@@ -71,9 +71,9 @@ describe('computeModifiers — Sin skill effects (continuous)', () => {
 });
 
 describe('computeModifiers — per-category efficiency', () => {
-  it('Luxuria LEVELS lift suasioEfficiencyMul ×2 per level, and only that (sheet rev)', () => {
+  it('Luxuria LEVELS lift logosEfficiencyMul ×2 per level, and only that (sheet rev)', () => {
     const m = computeModifiers(withDevotion({ luxuria: bn(180) }));
-    expect(m.suasioEfficiencyMul).toBeCloseTo(2, 6);
+    expect(m.logosEfficiencyMul).toBeCloseTo(2, 6);
     expect(m.indagatioEfficiencyMul).toBe(1);
     expect(m.emptioEfficiencyMul).toBe(1);
   });
@@ -81,7 +81,7 @@ describe('computeModifiers — per-category efficiency', () => {
   it('Ira LEVELS lift no category efficiency since Decimatio retired (ADR-038)', () => {
     const s = withDevotion({ ira: bn(32400) }); // L2
     const m = computeModifiers(s);
-    expect(m.suasioEfficiencyMul).toBe(1);
+    expect(m.logosEfficiencyMul).toBe(1);
     expect(m.indagatioEfficiencyMul).toBe(1);
     expect(m.emptioEfficiencyMul).toBe(1);
     expect(m.playerEfficiencyMul).toBe(1);
@@ -89,10 +89,10 @@ describe('computeModifiers — per-category efficiency', () => {
   });
 
   it('categoryEfficiency stacks player × category multiplicatively', () => {
-    // Gula 180 → player ≈ 1.3132 (skill); Luxuria L1 → Suasio mul 2. Total Suasio eff ≈ 2.6265.
+    // Gula 180 → player ≈ 1.3132 (skill); Luxuria L1 → Logos mul 2. Total Logos eff ≈ 2.6265.
     // Emptio receives no category boost → just the player skill.
     const s = withDevotion({ gula: bn(180), luxuria: bn(180) });
-    expect(categoryEfficiency(s, 'suasio')).toBeCloseTo(1.3132 * 2, 2);
+    expect(categoryEfficiency(s, 'logos')).toBeCloseTo(1.3132 * 2, 2);
     expect(categoryEfficiency(s, 'emptio')).toBeCloseTo(1.3132, 3);
   });
 });
@@ -167,17 +167,17 @@ describe('computeModifiers — maleficia effects', () => {
     expect(computeModifiers(equipped(['mark_of_cain'])).tierWeightMul.apocalyptic).toBeUndefined();
   });
 
-  it('Ars Serpens lifts Suasio efficiency by 33%', () => {
-    const base = computeModifiers(fresh()).suasioEfficiencyMul;
-    const m = computeModifiers(equipped(['ars_serpens'])).suasioEfficiencyMul;
+  it('Ars Serpens lifts Logos efficiency by 33%', () => {
+    const base = computeModifiers(fresh()).logosEfficiencyMul;
+    const m = computeModifiers(equipped(['ars_serpens'])).logosEfficiencyMul;
     expect(m).toBeCloseTo(base * 1.33, 6);
   });
 
-  it('The Voynich Manuscript lifts the Desidia gain rate by 25% (no longer Suasio)', () => {
-    const baseSua = computeModifiers(fresh()).suasioEfficiencyMul;
+  it('The Voynich Manuscript lifts the Desidia gain rate by 25% (no longer Logos)', () => {
+    const baseSua = computeModifiers(fresh()).logosEfficiencyMul;
     const m = computeModifiers(equipped(['voynich_manuscript']));
     expect(m.desidiaGainMul).toBeCloseTo(1.25, 6);
-    expect(m.suasioEfficiencyMul).toBeCloseTo(baseSua, 6); // Suasio is left untouched
+    expect(m.logosEfficiencyMul).toBeCloseTo(baseSua, 6); // Logos is left untouched
   });
 
   it("Pilate's Basin halves the Desidia drain rate", () => {
@@ -229,15 +229,15 @@ describe('categoryTierModifiers — per-category success shift (02 §2)', () => 
   };
 
   it('is empty with no source (no Tristitia Devotion, no Lamia)', () => {
-    expect(categoryTierModifiers(fresh(), 'suasio')).toEqual({});
+    expect(categoryTierModifiers(fresh(), 'logos')).toEqual({});
     expect(categoryTierModifiers(fresh(), 'indagatio')).toEqual({});
     expect(categoryTierModifiers(fresh(), 'emptio')).toEqual({});
   });
 
-  it('Resignation (Tristitia) lifts Suasio Stellar+Excellent+Good by (1 + intensity), equally', () => {
+  it('Resignation (Tristitia) lifts Logos Stellar+Excellent+Good by (1 + intensity), equally', () => {
     const s = withDevotion({ tristitia: bn(180) });
     const expected = 1 + skillIntensity(s.devotion.tristitia);
-    const m = categoryTierModifiers(s, 'suasio');
+    const m = categoryTierModifiers(s, 'logos');
     expect(m.stellar).toBeCloseTo(expected, 6);
     expect(m.excellent).toBeCloseTo(expected, 6);
     expect(m.good).toBeCloseTo(expected, 6);
@@ -251,19 +251,19 @@ describe('categoryTierModifiers — per-category success shift (02 §2)', () => 
 
   it('Retribution (Ira) shifts no category: its Decimatio success half retired (ADR-038)', () => {
     const s = withDevotion({ ira: bn(1_000_000) });
-    expect(categoryTierModifiers(s, 'suasio')).toEqual({});
+    expect(categoryTierModifiers(s, 'logos')).toEqual({});
     expect(categoryTierModifiers(s, 'indagatio')).toEqual({});
     expect(categoryTierModifiers(s, 'emptio')).toEqual({});
   });
 
-  it('Lamia no longer shifts Suasio success (reclassified as a Suasio runner)', () => {
-    const base = categoryTierModifiers(withDevotion({ tristitia: bn(180) }), 'suasio').good!;
+  it('Lamia no longer shifts Logos success (reclassified as a Logos runner)', () => {
+    const base = categoryTierModifiers(withDevotion({ tristitia: bn(180) }), 'logos').good!;
     const s = {
       ...withDevotion({ tristitia: bn(180) }),
       lifetime: { ...fresh().lifetime, invocations: { lamia: 2 } },
     };
-    // Only Resignation (Tristitia) shifts Suasio success now; Lamia acts through its runner instead.
-    expect(categoryTierModifiers(s, 'suasio').good!).toBeCloseTo(base, 6);
+    // Only Resignation (Tristitia) shifts Logos success now; Lamia acts through its runner instead.
+    expect(categoryTierModifiers(s, 'logos').good!).toBeCloseTo(base, 6);
   });
 
   it('Indagatio / Emptio have no success-shift source yet', () => {
@@ -297,7 +297,7 @@ describe('computeModifiers — production invocations (Plutus, Succubus)', () =>
 
   it('Succubus no longer touches the rate modifiers — its effect is an Imperium runner, cost is upkeep', () => {
     const m = computeModifiers(withInvocation('succubus', 1));
-    expect(m.suasioEfficiencyMul).toBeCloseTo(1, 6); // no longer a Suasio-efficiency source (#8 retarget)
+    expect(m.logosEfficiencyMul).toBeCloseTo(1, 6); // no longer a Logos-efficiency source (#8 retarget)
     expect(m.goldRateMul).toBeCloseTo(1, 6); // the 99% gold gain is upkeep (tick 1a), not a rate cut
     expect(m.reprobateGenerationRateMul).toBe(NEUTRAL_MODIFIERS.reprobateGenerationRateMul);
   });

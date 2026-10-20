@@ -4,7 +4,7 @@
  * the player's slot — at its own efficiency:
  *
  *   - Time-mode actions (Indagatio): cycle duration = base / efficiency.
- *   - Cost-outcome actions (Suasio): resolve `max(1, floor(efficiency))` outcome units
+ *   - Cost-outcome actions (Logos): resolve `max(1, floor(efficiency))` outcome units
  *     over the action's base duration.
  *
  * Delegated runners DO NOT spend resources to carry out their actions: unlike the player's own

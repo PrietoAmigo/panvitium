@@ -2,11 +2,11 @@
  * Opera action engine (02 §3, 03 §2). An action declares a base time, a cost, and a base outcome
  * distribution (TierWeights). `startAction` pays the cost and queues a timer; `tick` advances the
  * timer and calls `resolveAction` on completion, which draws a tier from the seeded RNG and applies
- * that tier's effect. The catalog holds the Suasio temptations (Suggestion / Logismoi / Imperium:
+ * that tier's effect. The catalog holds the Logos temptations (Suggestion / Logismoi / Imperium:
  * corrupt → reprobates) and the two background channels, Indagatio and Emptio. The Decimatio culling
  * rites (Caedes / Pogrom / Purgatio: cull → souls) are retired (ADR-038).
  *
- * Efficiency note (03 §2.1): for Suasio, efficiency scales costs and outcomes by the same %, NOT
+ * Efficiency note (03 §2.1): for Logos, efficiency scales costs and outcomes by the same %, NOT
  * the action time. It defaults to 1 here (no modifiers yet); the resolver and start
  * accept it so the hook exists. Resolution recomputes at the current efficiency rather than storing
  * it on the timer, which avoids changing the serialized state shape.
@@ -58,7 +58,7 @@ export interface ActionCost {
 
 /**
  * How action efficiency feeds into a category:
- *   'cost-outcome' — Suasio: efficiency scales costs and outcome units by the same %.
+ *   'cost-outcome' — Logos: efficiency scales costs and outcome units by the same %.
  *   'time'         — Indagatio / Emptio: efficiency divides the action's duration; cost and
  *                    success rates are untouched (03 §2.5 / §2.6).
  */
@@ -66,7 +66,7 @@ export type EfficiencyMode = 'cost-outcome' | 'time';
 
 export interface ActionDef {
   readonly id: string;
-  readonly category: 'suasio' | 'indagatio' | 'emptio';
+  readonly category: 'logos' | 'indagatio' | 'emptio';
   readonly baseTimeSeconds: number;
   readonly cost: ActionCost;
   readonly weights: TierWeights;
@@ -80,7 +80,7 @@ export interface ActionDef {
   readonly unlock?: number;
   /**
    * Delegation gate: acolyte assignment / auto-repeat unlocks once the player's HIGHEST Sin level
-   * across all Sins reaches this level (the Suasio sheet's "toggle" level). Distinct from `unlock`
+   * across all Sins reaches this level (the Logos sheet's "toggle" level). Distinct from `unlock`
    * (mere availability): an action can be playable by hand before it can be automated. Absent on
    * Indagatio/Emptio (handled separately). Suggestion toggles at 1; the higher rites at 2 and 4.
    */
@@ -88,7 +88,7 @@ export interface ActionDef {
 }
 
 /**
- * The player's HIGHEST Sin level across all eight Sins. Suasio availability and delegation
+ * The player's HIGHEST Sin level across all eight Sins. Logos availability and delegation
  * gate on this (player tuning), not on the rite's thematic Sin, so advancing ANY Sin advances every
  * gated rite in lockstep.
  */
@@ -124,7 +124,7 @@ export interface StartOptions {
 /**
  * Cost multiplier applied to a cost-outcome action's declared cost at efficiency `eff` (03 §2.1):
  *
- *   - Suasio: LOGARITHMIC (× (1 + ln eff)). Its cost is INFLUENCE, hard-capped at the effective max,
+ *   - Logos: LOGARITHMIC (× (1 + ln eff)). Its cost is INFLUENCE, hard-capped at the effective max,
  *     while efficiency is driven by unrelated modifiers (Luxuria levels, Gula skill, Erinyes stacks).
  *     A linear influence cost made rites unlockable-but-uncastable — Logismoi at its own Luxuria-2
  *     gate already cost the whole base cap, and a few Erinyes descents (×2 player efficiency each)
@@ -136,14 +136,14 @@ export interface StartOptions {
  * Never below the base cost (clamped at eff = 1) so no efficiency ever makes a rite cheaper than its
  * printed price.
  *
- * The Suasio curve reads the WHOLE units of efficiency (`floor(eff)`), the same units the resolvers
+ * The Logos curve reads the WHOLE units of efficiency (`floor(eff)`), the same units the resolvers
  * pay out (`units = max(1, floor(eff))`). Reading the raw efficiency charged for a fraction that
  * buys nothing: at any efficiency in (1, 2) (the Familiar's +33%, Gula's first skill tier, The
  * Dadu) Suggestion still yields one unit, yet `ceil(1 × (1 + ln 1.33))` doubled its price to 2
  * influence (balance audit 2026-10-08).
  */
 export function costOutcomeCostMultiplier(category: ActionDef['category'], eff: number): number {
-  if (category === 'suasio') return Math.max(1, 1 + Math.log(Math.max(1, Math.floor(eff))));
+  if (category === 'logos') return Math.max(1, 1 + Math.log(Math.max(1, Math.floor(eff))));
   return Math.max(1, eff);
 }
 
@@ -151,7 +151,7 @@ export function costOutcomeCostMultiplier(category: ActionDef['category'], eff: 
  * The gold / influence an action would actually cost to start right now — the single source of truth
  * shared by `startAction` (what it deducts) and the UI (what it displays and gates the button on),
  * so the two can never drift. Mirrors `startAction`'s cost pipeline exactly: the cost-outcome
- * multiplier (`costOutcomeCostMultiplier`, log for Suasio), Emptio's per-target
+ * multiplier (`costOutcomeCostMultiplier`, log for Logos), Emptio's per-target
  * rolled price softened by the Amy #58 gold reduction, and the Paimon #9 influence reduction. Time-mode
  * actions (Indagatio/Emptio) don't scale cost by efficiency. For Emptio with no/unknown target the
  * gold cost is 0 (the caller supplies the target).
@@ -190,8 +190,8 @@ export function plannedActionCost(
 /**
  * The actions that run in their OWN background channel rather than the single player-drive slot
  * (02 §3): Indagatio (scrying) and Emptio (a purchase). Each is single-instance within its own
- * channel, but it neither blocks nor is blocked by a Suasio rite — so a rite can even auto-repeat in
- * the slot while a scry or a purchase runs alongside. Only the Suasio rites occupy the player slot; the UI reads this so a background channel never disables a rite (and vice versa).
+ * channel, but it neither blocks nor is blocked by a Logos rite — so a rite can even auto-repeat in
+ * the slot while a scry or a purchase runs alongside. Only the Logos rites occupy the player slot; the UI reads this so a background channel never disables a rite (and vice versa).
  */
 export const BACKGROUND_ACTIONS: ReadonlySet<string> = new Set(['indagatio', 'emptio']);
 
@@ -203,7 +203,7 @@ export function occupiesPlayerSlot(actionId: string): boolean {
 /**
  * Pay an action's cost and queue it. Affordability compares the FLOORED resource (resources are
  * natural numbers; the bignum gotcha). Efficiency is applied per category's `efficiencyMode`:
- * `cost-outcome` (Suasio) scales the cost; `time` (Indagatio/Emptio) divides the duration
+ * `cost-outcome` (Logos) scales the cost; `time` (Indagatio/Emptio) divides the duration
  * and leaves cost untouched. Emptio is per-target: it reads `MALEFICIA[target].cost` for gold and
  * verifies the target is on the *Emptio* list.
  */
@@ -215,7 +215,7 @@ export function startAction(
   const def = ACTIONS[actionId];
   if (!def) return { ok: false, reason: `unknown action: ${actionId}` };
 
-  // Sin-level availability gate (Suasio sheet). Suggestion has no gate.
+  // Sin-level availability gate (Logos sheet). Suggestion has no gate.
   if (!actionUnlocked(state, def)) {
     return { ok: false, reason: 'This rite is not yet within your reach.' };
   }
@@ -226,7 +226,7 @@ export function startAction(
   }
 
   // One player-driven action at a time (02 §3) — EXCEPT the background channels Indagatio and Emptio,
-  // which do not occupy the player slot: each neither blocks nor is blocked by a Suasio rite,
+  // which do not occupy the player slot: each neither blocks nor is blocked by a Logos rite,
   // and only ONE of each may run at once (its Cast / Acquire control is single). So a rite can even
   // auto-repeat in the slot while a scry or a purchase runs alongside it.
   if (actionId === 'indagatio') {
@@ -254,7 +254,7 @@ export function startAction(
     target = options.target;
   }
   // The exact amounts to deduct — the same pipeline the UI reads (`plannedActionCost`): the
-  // cost-outcome multiplier (log for Suasio), Emptio's rolled per-target price
+  // cost-outcome multiplier (log for Logos), Emptio's rolled per-target price
   // softened by Amy #58, and the Paimon #9 influence reduction.
   const { gold: goldCost, influence: influenceCost } = plannedActionCost(state, actionId, {
     ...options,
@@ -293,7 +293,7 @@ export function startAction(
 
 /**
  * Whether `actionId` may be set to AUTO-REPEAT: it carries a toggle-level gate (`delegateUnlock` —
- * the Suasio sheet's "toggle" level) and the player's HIGHEST Sin level has reached it.
+ * the Logos sheet's "toggle" level) and the player's HIGHEST Sin level has reached it.
  * This is the same gate that opens acolyte delegation; the player's own one-shot rite gains its
  * auto-repeat toggle at the same level (02 §3). Actions without a `delegateUnlock` (Indagatio/Emptio) are never
  * player-auto-repeatable. Every action's toggle level sits at or above its availability gate
@@ -610,11 +610,11 @@ export function resolveAction(
   const def = ACTIONS[actionId];
   if (!def) return { state, event: null };
   const mods = computeModifiers(state);
-  // Efficiency for the cost-outcome category (Suasio) combines player × category mul; time-mode
+  // Efficiency for the cost-outcome category (Logos) combines player × category mul; time-mode
   // actions (Indagatio/Emptio) don't use eff in resolution — duration was scaled at start.
   const eff =
     options.efficiency ??
-    mods.playerEfficiencyMul * (def.category === 'suasio' ? mods.suasioEfficiencyMul : 1);
+    mods.playerEfficiencyMul * (def.category === 'logos' ? mods.logosEfficiencyMul : 1);
   // A background runner may force a fixed outcome tier — a passive entity must not randomly trigger
   // an Apocalyptic that wipes the player unprompted. Otherwise: global tier multipliers (Sin skills,
   // sigils, maleficia) THEN the per-category success shift (Resignation and the per-category tier
@@ -639,13 +639,13 @@ export function resolveAction(
   let acquired: string[] = [];
   let lostFromList: string[] = [];
 
-  // Duplicate-output sigils (Sigils sheet rev 2026-06-12): Malphas #39 (Suasio), Agares #2
+  // Duplicate-output sigils (Sigils sheet rev 2026-06-12): Malphas #39 (Logos), Agares #2
   // (Indagatio). Rolled once per resolution; only POSITIVE tiers (Stellar/Excellent/Good) duplicate —
   // the curse never doubles a catastrophe. Emptio has no duplication sigil (and Focalor #41, the
   // Decimatio one, is dormant since ADR-038). The second application re-rolls its own randomness
   // against the same tier.
   const dupCategory =
-    def.category === 'suasio' || def.category === 'indagatio' ? def.category : null;
+    def.category === 'logos' || def.category === 'indagatio' ? def.category : null;
   const positiveTier = tier === 'stellar' || tier === 'excellent' || tier === 'good';
   // Compute the duplication chance FIRST and only draw from the RNG when it is live. An unbound
   // dup-sigil roster yields chance 0, so gating the draw keeps the seeded stream byte-identical to
@@ -750,7 +750,7 @@ export function resolveSuggestion(
   }
 }
 
-/** Logismoi outcome effects (Suasio sheet; exported for direct testing of each tier). */
+/** Logismoi outcome effects (Logos sheet; exported for direct testing of each tier). */
 export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
   const loss = lossScale(efficiency);
@@ -778,7 +778,7 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
 }
 
 /**
- * Imperium outcomes (Suasio sheet, retuned by player request): a full distribution, all in
+ * Imperium outcomes (Logos sheet, retuned by player request): a full distribution, all in
  * reprobates now (Stellar no longer mints souls). Stellar +25% of the population; Excellent +7%;
  * Good +randint(100,1000) reprobates; the tails shed the flock.
  */

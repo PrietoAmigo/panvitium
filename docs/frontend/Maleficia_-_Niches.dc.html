@@ -141,22 +141,22 @@ class Component extends DCLogic {
   ASSET = 'assets/maleficia';
 
   CATALOG = [
-    { id: 'obsidian_mirror', name: 'Obsidian Mirror', rarity: 'profane', img: 'obsidian_mirror.png', desc: 'It shows what the future is already weighing.', effect: 'Reveals every Opera distribution.', oracle: ['suasio','decimatio','indagatio','emptio'] },
+    { id: 'obsidian_mirror', name: 'Obsidian Mirror', rarity: 'profane', img: 'obsidian_mirror.png', desc: 'It shows what the future is already weighing.', effect: 'Reveals every Opera distribution.', oracle: ['logos','decimatio','indagatio','emptio'] },
     { id: 'codex_gigas', name: 'Codex Gigas', rarity: 'anathema', img: 'codex_gigas.png', desc: 'One scribe. One night. One signature in the margin no Pope has ever erased.', effect: '×3 influence gain rate.' },
     { id: 'longinus', name: 'Spear of Longinus', rarity: 'anathema', img: 'longinus.png', desc: 'Just the tip.', effect: '×3 maximum influence.' },
     { id: 'mark_of_cain', name: 'Mark of Cain', rarity: 'anathema', img: 'mark_of_cain.png', desc: 'The sevenfold vengeance was never a curse. It was a guarantee.', effect: 'Apocalyptic chance falls to zero.' },
     { id: '30_pieces', name: 'Thirty Pieces of Silver', rarity: 'anathema', img: '30_pieces.png', desc: 'Counted out, refused, returned, refused again — coinage that always finds its way back into a hand.', effect: '×3 gold gain rate.' },
     { id: 'solomon_ring', name: "Solomon's Ring", rarity: 'anathema', img: 'solomon_ring.png', desc: 'The seal that bound seventy-two kings. It still pinches.', effect: '+50% sigil effects.' },
-    { id: 'voynich_manuscript', name: 'The Voynich Manuscript', rarity: 'profane', img: 'voynich_manuscript.png', desc: 'Unreadable to the faithful; fluent to the fallen.', effect: '+66% Suasio efficiency.' },
+    { id: 'voynich_manuscript', name: 'The Voynich Manuscript', rarity: 'profane', img: 'voynich_manuscript.png', desc: 'Unreadable to the faithful; fluent to the fallen.', effect: '+66% Logos efficiency.' },
     { id: 'defixio', name: 'Defixio', rarity: 'profane', img: 'defixio.png', desc: 'A name, a nail, a curse folded into lead and buried.', effect: 'Single-use: culls a random subtype.', use: 'defixio' },
     { id: 'hand_of_glory', name: 'Hand of Glory', rarity: 'rare', img: '', desc: 'A hanged thief\u2019s hand, pickled and wicked at the fingertips. While it burns, none who sleep may wake.', effect: 'Single-use: a fevered surge of generation.', use: 'hand_of_glory' },
-    { id: 'ars_serpens', name: 'Ars Serpens', rarity: 'rare', img: 'ars_serpens.png', desc: "The serpent's counsel, transcribed — every word a smoother lie.", effect: '+33% Suasio efficiency.' },
+    { id: 'ars_serpens', name: 'Ars Serpens', rarity: 'rare', img: 'ars_serpens.png', desc: "The serpent's counsel, transcribed — every word a smoother lie.", effect: '+33% Logos efficiency.' },
     { id: 'ritual_dagger', name: 'Ritual Dagger', rarity: 'rare', img: 'ritual_dagger.png', desc: 'A rare hour of convergence: when offering and offerer cease to be separate.', effect: '+33% Decimatio efficiency.' },
     { id: 'blood_chalk', name: 'Blood Chalk', rarity: 'rare', img: 'blood_chalk.png', desc: 'Drawn in a circle no priest will step inside.', effect: '+4 invoking power.' },
     { id: 'blackthorn_wand', name: 'Blackthorn Wand', rarity: 'rare', img: 'blackthorn_wand.png', desc: 'Cut on a moonless night from a tree that took root over a grave.', effect: '+4 invoking power.' },
     { id: 'crossroads_dirt', name: 'Crossroads Dirt', rarity: 'common', img: 'crossroads_dirt.png', desc: 'Gathered where four roads meet at midnight.', effect: 'Reveals the Emptio distribution.', count: 3, oracle: ['emptio'] },
     { id: 'crow_feather', name: 'Crow Feather', rarity: 'common', img: 'crow_feather.png', desc: 'The bird that counts the dead leaves you one.', effect: 'Reveals the Indagatio distribution.', count: 2, oracle: ['indagatio'] },
-    { id: 'hollow_effigy', name: 'Hollow Effigy', rarity: 'common', img: 'hollow_effigy.png', desc: "Wax in your likeness, and in someone else's.", effect: 'Reveals the Suasio distribution.', oracle: ['suasio'] },
+    { id: 'hollow_effigy', name: 'Hollow Effigy', rarity: 'common', img: 'hollow_effigy.png', desc: "Wax in your likeness, and in someone else's.", effect: 'Reveals the Logos distribution.', oracle: ['logos'] },
     { id: 'witch_bottle', name: 'Witch Bottle', rarity: 'common', img: 'witch_bottle.png', desc: 'Urine, pins, and rosemary, corked against the dark — and aimed back at it.', effect: '+2 invoking power.' },
     { id: 'sulfur_censer', name: 'Sulfur Censer', rarity: 'common', img: 'sulfur_censer.png', desc: 'Where it has burned, prayer no longer travels upward.', effect: '+2 invoking power.' },
     { id: 'mandrake_root', name: 'Mandrake Root', rarity: 'common', img: 'mandrake_root.png', desc: 'It screamed when it was pulled. You kept it anyway.', effect: '+2 invoking power.' },
@@ -165,8 +165,8 @@ class Component extends DCLogic {
     { id: 'black_salt_pouch', name: 'Black Salt Pouch', rarity: 'common', img: 'black_salt_pouch.png', desc: 'Drawn from ash, charcoal, and graveyard earth.', effect: '+1 invoking power.', count: 3 },
   ];
 
-  OPERA_LABEL = { suasio: 'Suasio', decimatio: 'Decimatio', indagatio: 'Indagatio', emptio: 'Emptio' };
-  OPERA_ACTIONS = { suasio: ['Suggestion','Logismoi'], decimatio: ['Caedes'], indagatio: ['Indagatio'], emptio: ['Emptio'] };
+  OPERA_LABEL = { logos: 'Logos', decimatio: 'Decimatio', indagatio: 'Indagatio', emptio: 'Emptio' };
+  OPERA_ACTIONS = { logos: ['Suggestion','Logismoi'], decimatio: ['Caedes'], indagatio: ['Indagatio'], emptio: ['Emptio'] };
 
   doUse = (id) => {
     if (id === 'defixio') this.setState({ defixioActive: true });

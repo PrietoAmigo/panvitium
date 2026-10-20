@@ -72,12 +72,12 @@ describe('startAction', () => {
     }
   });
 
-  it('the action catalog holds only the Suasio rites and the two background channels', () => {
+  it('the action catalog holds only the Logos rites and the two background channels', () => {
     expect(Object.keys(ACTIONS).sort()).toEqual(
       ['emptio', 'imperium', 'indagatio', 'logismoi', 'suggestion'].sort(),
     );
     expect(new Set(Object.values(ACTIONS).map((d) => d.category))).toEqual(
-      new Set(['suasio', 'indagatio', 'emptio']),
+      new Set(['logos', 'indagatio', 'emptio']),
     );
   });
 
@@ -104,7 +104,7 @@ describe('action unlock gating (max Sin level, not a specific Sin)', () => {
   it('gates Logismoi at level 1 and Imperium at level 3, satisfied by ANY Sin', () => {
     expect(actionUnlocked(fresh(), ACTIONS.logismoi!)).toBe(false);
     // The gate reads the HIGHEST Sin level across all Sins (player tuning), so a non-Luxuria Sin
-    // opens a Suasio rite: Tristitia I unlocks Logismoi as well as Luxuria I does.
+    // opens a Logos rite: Tristitia I unlocks Logismoi as well as Luxuria I does.
     expect(actionUnlocked(withSin(fresh(), 'tristitia', 1), ACTIONS.logismoi!)).toBe(true);
     expect(actionUnlocked(withLuxuria(fresh(), 1), ACTIONS.logismoi!)).toBe(true);
     // Imperium needs level 3 from any Sin: level 2 is not enough, level 3 is.
@@ -121,7 +121,7 @@ describe('action unlock gating (max Sin level, not a specific Sin)', () => {
     expect(startAction(withInf(fresh()), 'logismoi').ok).toBe(false);
     const ok = startAction(withInf(withLuxuria(fresh(), 2)), 'logismoi');
     expect(ok.ok).toBe(true);
-    // Luxuria L2 also lifts Suasio efficiency ×4 (sheet rev). Suasio influence cost scales by the
+    // Luxuria L2 also lifts Logos efficiency ×4 (sheet rev). Logos influence cost scales by the
     // LOG of efficiency (playability retune): 25 × (1 + ln 4) = 25 × 2.386 → ceil 60 influence.
     if (ok.ok) expect(floor(ok.state.lifetime.influence).toNumber()).toBe(40); // 100 - 60
   });
@@ -274,7 +274,7 @@ describe('resolveAction', () => {
 describe('modifier integration', () => {
   it('startAction defaults its efficiency to playerEfficiency(state) — Gula skill scales cost', () => {
     // Gula Devotion 32 400 → Insatiability intensity ≈ 1.6502 (sheet rev: skill, not level) →
-    // playerEfficiencyMul ≈ 2.6502. Suasio cost scales by the LOG of efficiency (playability retune):
+    // playerEfficiencyMul ≈ 2.6502. Logos cost scales by the LOG of efficiency (playability retune):
     // Suggestion costs ceil(1 × (1 + ln 2.6502)) = ceil(1.975) = 2 influence.
     const base = fresh();
     const state: GameState = {
@@ -302,7 +302,7 @@ describe('modifier integration', () => {
 
 describe('modifier integration — per-category efficiency', () => {
   it('Luxuria levels scale Suggestion cost but not the time-mode channels (sheet rev 2026-06-12)', () => {
-    // Luxuria L1 → suasioEffMul = 2. Suggestion influence cost = ceil(1 × (1 + ln 2)) = 2.
+    // Luxuria L1 → logosEffMul = 2. Suggestion influence cost = ceil(1 × (1 + ln 2)) = 2.
     const base = fresh();
     const state: GameState = {
       ...base,
@@ -312,13 +312,13 @@ describe('modifier integration — per-category efficiency', () => {
     const r1 = startAction(state, 'suggestion');
     expect(r1.ok).toBe(true);
     if (r1.ok) expect(floor(r1.state.lifetime.influence).toNumber()).toBe(98); // 100 − 2
-    // The Suasio lift never reaches Indagatio or Emptio.
+    // The Logos lift never reaches Indagatio or Emptio.
     expect(categoryEfficiency(state, 'indagatio')).toBe(1);
     expect(categoryEfficiency(state, 'emptio')).toBe(1);
   });
 
-  it('a fractional efficiency the yield cannot use does not raise the Suasio price (balance audit 2026-10-08)', () => {
-    // Suasio pays out whole units (`floor(eff)`), so the price reads the same whole units. Before the
+  it('a fractional efficiency the yield cannot use does not raise the Logos price (balance audit 2026-10-08)', () => {
+    // Logos pays out whole units (`floor(eff)`), so the price reads the same whole units. Before the
     // fix, any efficiency in (1, 2) doubled Suggestion to 2 influence for the same single unit:
     // offering the first 180 souls to Gula (Insatiability ≈ ×1.31) or summoning the Familiar (×1.33).
     const base = withInfluence(fresh(), 100);
@@ -328,7 +328,7 @@ describe('modifier integration — per-category efficiency', () => {
       lifetime: { ...base.lifetime, invocations: { familiar: 1 } },
     };
     for (const s of [gula, familiar]) {
-      const eff = categoryEfficiency(s, 'suasio');
+      const eff = categoryEfficiency(s, 'logos');
       expect(eff).toBeGreaterThan(1.3);
       expect(eff).toBeLessThan(2);
       expect(plannedActionCost(s, 'suggestion').influence).toBe(1);
@@ -393,7 +393,7 @@ describe('resolveAction — per-category success shift (Resignation, 02 §2)', (
     return succ;
   }
 
-  it('high Tristitia yields more Suasio successes than none (same seed)', () => {
+  it('high Tristitia yields more Logos successes than none (same seed)', () => {
     const base = successesOf(fresh(), 'suggestion', 400);
     const withResignation = successesOf(
       { ...fresh(), devotion: { ...fresh().devotion, tristitia: bn(1_000_000) } },
@@ -615,7 +615,7 @@ describe('auto-repeat (player-slot looping, 02 §3)', () => {
   });
 
   it('enabling adds the id and starts the first cycle immediately', () => {
-    // Ira opens the toggle without touching Suasio efficiency, so the cost stays the base 1.
+    // Ira opens the toggle without touching Logos efficiency, so the cost stays the base 1.
     const s = withIra(withInfluence(fresh(), 100), 1);
     const next = setAutoRepeat(s, 'suggestion', true);
     expect(isAutoRepeating(next, 'suggestion')).toBe(true);

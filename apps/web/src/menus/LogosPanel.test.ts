@@ -9,7 +9,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { SuasioPanel, type SuasioActionView } from './SuasioPanel.js';
+import { LogosPanel, type LogosActionView } from './LogosPanel.js';
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -26,7 +26,7 @@ function spy(): Spy {
   return s;
 }
 
-function baseAction(over: Partial<SuasioActionView>): SuasioActionView {
+function baseAction(over: Partial<LogosActionView>): LogosActionView {
   return {
     id: 'suggestion',
     numeral: 'I',
@@ -45,13 +45,13 @@ function baseAction(over: Partial<SuasioActionView>): SuasioActionView {
   };
 }
 
-function render(props: { actions: SuasioActionView[]; onClose: () => void }): void {
+function render(props: { actions: LogosActionView[]; onClose: () => void }): void {
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
   act(() => {
     root!.render(
-      createElement(SuasioPanel, {
+      createElement(LogosPanel, {
         title: 'Chthonic Logos',
         maxim: 'Veritatis simplex oratio est',
         closeLabel: 'Close the scroll',
@@ -81,7 +81,7 @@ describe('Chthonic Logos scroll', () => {
     });
     const dialog = container!.querySelector('[role="dialog"]');
     expect(dialog?.getAttribute('aria-label')).toBe('Chthonic Logos');
-    expect(container!.querySelectorAll('.suasio-row').length).toBe(3);
+    expect(container!.querySelectorAll('.logos-row').length).toBe(3);
   });
 
   it('lights the progress ring for the active rite and reserves the bar/status space on idle rites', () => {
@@ -94,18 +94,18 @@ describe('Chthonic Logos scroll', () => {
       onClose: () => {},
     });
     // The progress ring (arc) is drawn for the active rite alone.
-    expect(container!.querySelectorAll('.suasio-arc').length).toBe(1);
-    const rows = container!.querySelectorAll('.suasio-row');
+    expect(container!.querySelectorAll('.logos-arc').length).toBe(1);
+    const rows = container!.querySelectorAll('.logos-row');
     // The active rite's bar is visible and reflects its progress.
-    const activeBar = rows[0]!.querySelector('.suasio-bar') as HTMLElement;
-    expect(activeBar.classList.contains('suasio-idle')).toBe(false);
+    const activeBar = rows[0]!.querySelector('.logos-bar') as HTMLElement;
+    expect(activeBar.classList.contains('logos-idle')).toBe(false);
     expect(activeBar.style.width).toBe('60%');
-    expect(rows[0]!.querySelector('.suasio-status')?.textContent).toContain('A word is being left');
-    // An idle (but castable) rite still renders its bar + status, hidden via `suasio-idle`, so the
+    expect(rows[0]!.querySelector('.logos-status')?.textContent).toContain('A word is being left');
+    // An idle (but castable) rite still renders its bar + status, hidden via `logos-idle`, so the
     // row keeps a fixed height and the buttons do not jump when a rite starts or ends.
-    const idleBar = rows[1]!.querySelector('.suasio-bar') as HTMLElement;
-    expect(idleBar.classList.contains('suasio-idle')).toBe(true);
-    expect(rows[1]!.querySelector('.suasio-status')?.classList.contains('suasio-idle')).toBe(true);
+    const idleBar = rows[1]!.querySelector('.logos-bar') as HTMLElement;
+    expect(idleBar.classList.contains('logos-idle')).toBe(true);
+    expect(rows[1]!.querySelector('.logos-status')?.classList.contains('logos-idle')).toBe(true);
   });
 
   it('renders a locked rite as sealed: redacted name, the gate, and no action button', () => {
@@ -124,14 +124,14 @@ describe('Chthonic Logos scroll', () => {
       ],
       onClose: () => {},
     });
-    const sealed = container!.querySelector('.suasio-row--locked');
+    const sealed = container!.querySelector('.logos-row--locked');
     expect(sealed).not.toBeNull();
-    expect(sealed!.querySelector('.suasio-name')?.textContent).toBe('Xherum Oneytan');
-    expect(sealed!.querySelector('.suasio-gate')?.textContent).toBe('Requires Any Sin III');
+    expect(sealed!.querySelector('.logos-name')?.textContent).toBe('Xherum Oneytan');
+    expect(sealed!.querySelector('.logos-gate')?.textContent).toBe('Requires Any Sin III');
     // A sealed rite is unactionable — no Speak/Command button.
-    expect(sealed!.querySelector('.suasio-act')).toBeNull();
+    expect(sealed!.querySelector('.logos-act')).toBeNull();
     // It can never be active, so it reserves no progress bar (only castable rites do).
-    expect(sealed!.querySelector('.suasio-bar')).toBeNull();
+    expect(sealed!.querySelector('.logos-bar')).toBeNull();
   });
 
   it('fires the real action when an open rite is spoken', () => {
@@ -140,7 +140,7 @@ describe('Chthonic Logos scroll', () => {
       actions: [baseAction({ id: 'suggestion', onTempt: tempt.fn })],
       onClose: () => {},
     });
-    const btn = container!.querySelector('.suasio-act') as HTMLButtonElement;
+    const btn = container!.querySelector('.logos-act') as HTMLButtonElement;
     act(() => btn.click());
     expect(tempt.calls).toBe(1);
   });
@@ -149,15 +149,15 @@ describe('Chthonic Logos scroll', () => {
     const close = spy();
     render({ actions: [baseAction({})], onClose: close.fn });
 
-    const scroll = container!.querySelector('.suasio-scroll') as HTMLElement;
+    const scroll = container!.querySelector('.logos-scroll') as HTMLElement;
     act(() => scroll.click());
     expect(close.calls).toBe(0); // clicking the parchment must not close it
 
-    const closeBtn = container!.querySelector('.suasio-close') as HTMLButtonElement;
+    const closeBtn = container!.querySelector('.logos-close') as HTMLButtonElement;
     act(() => closeBtn.click());
     expect(close.calls).toBe(1);
 
-    const overlay = container!.querySelector('.suasio-overlay') as HTMLElement;
+    const overlay = container!.querySelector('.logos-overlay') as HTMLElement;
     act(() => overlay.click());
     expect(close.calls).toBe(2);
   });

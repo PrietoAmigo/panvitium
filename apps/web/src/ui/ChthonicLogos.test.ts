@@ -1,7 +1,7 @@
 /**
  * Render smoke tests for the Chthonic Logos's outcome ledger (the "logs at the foot" addition). The
- * scroll's rites / sigils / dismissal are covered by SuasioPanel.test.ts; this pins the ledger wiring
- * the wrapper introduces: the heading + empty state before anything resolves, and a real Suasio
+ * scroll's rites / sigils / dismissal are covered by LogosPanel.test.ts; this pins the ledger wiring
+ * the wrapper introduces: the heading + empty state before anything resolves, and a real Logos
  * outcome surfacing as a tier chip beside its soul yield, filtered to this program's rites (another
  * program's outcome in the same log must not leak in).
  */
@@ -41,27 +41,27 @@ afterEach(() => {
 describe('ChthonicLogos — outcome ledger', () => {
   it('shows the ledger heading and the empty-state line before any temptation resolves', () => {
     render();
-    expect(container!.querySelector('.suasio-ledger-head')?.textContent).toBe(
-      strings.opera.suasioLedgerHeading,
+    expect(container!.querySelector('.logos-ledger-head')?.textContent).toBe(
+      strings.opera.logosLedgerHeading,
     );
-    expect(container!.querySelector('.suasio-ledger-empty')?.textContent).toBe(
-      strings.opera.suasioEmptyLedger,
+    expect(container!.querySelector('.logos-ledger-empty')?.textContent).toBe(
+      strings.opera.logosEmptyLedger,
     );
   });
 
-  it('surfaces a resolved Suasio outcome as a tier chip beside its soul yield, filtered to its rites', () => {
+  it('surfaces a resolved Logos outcome as a tier chip beside its soul yield, filtered to its rites', () => {
     useGameStore.setState({
       log: [
         { actionId: 'suggestion', tier: 'good', soulsDelta: 5, reprobateDelta: 0, goldDelta: 0 },
-        // Another program's outcome in the same log must NOT leak into the Suasio ledger.
+        // Another program's outcome in the same log must NOT leak into the Logos ledger.
         { actionId: 'indagatio', tier: 'stellar', soulsDelta: 0, reprobateDelta: 0, goldDelta: 0 },
       ],
     });
     render();
-    const rows = Array.from(container!.querySelectorAll('.suasio-ledger-row'));
-    expect(rows.length).toBe(1); // only the Suasio outcome
-    expect(rows[0]!.querySelector('.suasio-ledger-tier')?.textContent).toBe(strings.tiers.good);
-    const text = rows[0]!.querySelector('.suasio-ledger-text')?.textContent ?? '';
+    const rows = Array.from(container!.querySelectorAll('.logos-ledger-row'));
+    expect(rows.length).toBe(1); // only the Logos outcome
+    expect(rows[0]!.querySelector('.logos-ledger-tier')?.textContent).toBe(strings.tiers.good);
+    const text = rows[0]!.querySelector('.logos-ledger-text')?.textContent ?? '';
     expect(text).toContain(strings.opera.suggestion); // the rite name
     expect(text).toContain('+5'); // the soul yield
     expect(text).toContain(strings.resources.souls);
@@ -74,9 +74,9 @@ describe('ChthonicLogos — sealed action names', () => {
     render();
 
     function expectRites(names: string[], locked: boolean[]): void {
-      const rows = Array.from(container!.querySelectorAll('.suasio-row'));
-      expect(rows.map((row) => row.querySelector('.suasio-name')?.textContent)).toEqual(names);
-      expect(rows.map((row) => row.classList.contains('suasio-row--locked'))).toEqual(locked);
+      const rows = Array.from(container!.querySelectorAll('.logos-row'));
+      expect(rows.map((row) => row.querySelector('.logos-name')?.textContent)).toEqual(names);
+      expect(rows.map((row) => row.classList.contains('logos-row--locked'))).toEqual(locked);
     }
 
     const sealedNames = [
