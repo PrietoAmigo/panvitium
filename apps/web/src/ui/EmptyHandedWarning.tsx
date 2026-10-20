@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 
-/* The empty-handed warning (Claude Design "Empty-Handed Warning" handoff). The first time in a
-   playthrough the altar sigil is committed with no souls in hand, the descent is stopped: the
-   screen goes black, one line surfaces in yellow italic, sinks, and the black lifts back onto the
-   Altar Room. App orchestrates when it fires; the store records that it has played. Like the
+/* The empty-handed warning (Claude Design "Empty-Handed Warning" handoff). When the altar sigil
+   is committed with no souls in hand before the playthrough's first descent, it is stopped
+   (once): the screen goes black, one line surfaces in yellow italic, sinks, and the black lifts
+   back onto the Altar Room. App orchestrates when it fires; the store records that it has played. Like the
    Katabasis transits it cannot be skipped: the overlay swallows every click and has no key
    handler, and it ends only when its timeline does. */
 

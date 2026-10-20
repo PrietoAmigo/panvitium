@@ -384,6 +384,14 @@ describe('the empty-handed warning — once per playthrough (presentation bookke
     expect(emptyHandedWarningDue(markEmptyHandedWarned(fresh(0)))).toBe(false);
   });
 
+  it('is never due once the playthrough has made a descent, warned or not', () => {
+    expect(emptyHandedWarningDue({ ...fresh(0), katabasisCount: 1 })).toBe(false);
+    // Descended once with souls in hand, then commits again empty-handed: no warning.
+    const { state } = commitKatabasis(enterKatabasis(fresh(5)));
+    expect(state.emptyHandedWarned).toBeUndefined();
+    expect(emptyHandedWarningDue({ ...state, souls: fresh(0).souls })).toBe(false);
+  });
+
   it('marks the flag purely and idempotently', () => {
     const base = fresh(0);
     const warned = markEmptyHandedWarned(base);

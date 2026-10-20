@@ -181,7 +181,7 @@ interface GameStore {
   notice: string | null;
   /**
    * True while the empty-handed warning plays over the whole screen (transient): the altar sigil
-   * was committed with no souls in hand, the first time this playthrough. Cleared when the
+   * was committed with no souls in hand, before any descent this playthrough. Cleared when the
    * warning's sequence ends (`endEmptyHandedWarning`).
    */
   emptyHandedWarning: boolean;
@@ -286,8 +286,8 @@ interface GameStore {
    */
   markDoppelgaengerSeen: () => void;
   /**
-   * The altar sigil's second press, before the descent: when the player holds no souls and the
-   * warning has never played this playthrough, record the permanent `emptyHandedWarned` (persisted
+   * The altar sigil's second press, before the descent: when the player holds no souls, has never
+   * descended this playthrough, and the warning has never played, record the permanent `emptyHandedWarned` (persisted
    * at once, so a reload mid-warning cannot replay it), raise `emptyHandedWarning` and return true;
    * the caller must then NOT descend. Otherwise a no-op returning false: descend as usual.
    */
