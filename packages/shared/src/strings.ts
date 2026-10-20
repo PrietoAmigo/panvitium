@@ -727,7 +727,7 @@ export const strings = {
         body: 'God forgive me, I did not want to believe it of any living soul, and now I have stood in the street and watched it and I cannot unsee it. This is you. The madness loose in this city tonight, the appetite in every gutter, all of it pours from one source, and I know its name and its address.\n\nI am done building a quiet case. I am gathering everyone who will listen, with everything I have, and we are coming for the thing you have made of yourself. I will not stop.\n\nAnd though it will do no good, I pray for your soul, because someone must.\n\nStahl',
         replies: [
           {
-            text: "It's pandemonium, but specifically it's panvitium. The latter could be considered a subset of the former. You're welcome.",
+            text: 'this is just the beginning',
             effect: 'No mechanical effect.',
           },
         ],

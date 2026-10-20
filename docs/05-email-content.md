@@ -414,8 +414,7 @@ built. None carry mechanical effects unless stated.
   > And though it will do no good, I pray for your soul, because someone must.
   > Stahl
 - **Answers:**
-  - (1) "It's pandemonium, but specifically it's panvitium. The latter could be considered a subset
-    of the former. You're welcome.". No mechanical effect.
+  - (1) "this is just the beginning". No mechanical effect.
 - **Trigger:** the Panvitium (VC) toggle has been continuously active for at least 3 seconds.
 
 ### Parish Newsletter #3
