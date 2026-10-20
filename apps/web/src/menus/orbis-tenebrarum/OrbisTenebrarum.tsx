@@ -584,7 +584,9 @@ function useOrbisGlobe(
 export function OrbisTenebrarum({
   finds,
   tierChances = [],
-  investment,
+  investmentPercent,
+  investmentGold,
+  gold,
   searching,
   searchDuration = '30:00',
   searchRemaining = null,
@@ -626,7 +628,7 @@ export function OrbisTenebrarum({
         </div>
 
         <div className="orbis-cast-row">
-          {/* LEFT — set the default gold stake that speeds the Search */}
+          {/* LEFT — set the default share of gold every Search pours into itself */}
           <div className="orbis-invest-group">
             <button
               type="button"
@@ -646,10 +648,19 @@ export function OrbisTenebrarum({
             </button>
           </div>
 
-          {/* CENTER-LEFT — the gold staked on the next Search (consumed when it is cast) */}
-          <div className="orbis-meter orbis-meter--right">
+          {/* CENTER-LEFT — the default percentage, then the gold it amounts to right now */}
+          <div className="orbis-meter">
             <span className="orbis-meter-label">Investment</span>
-            <span className="orbis-gold-value">{investment}</span>
+            <span className="orbis-invest-value">
+              <span className="orbis-invest-pct">{investmentPercent}</span>{' '}
+              <span className="orbis-invest-gold">({investmentGold})</span>
+            </span>
+          </div>
+
+          {/* CENTER — the gold the player holds */}
+          <div className="orbis-meter">
+            <span className="orbis-meter-label">Gold</span>
+            <span className="orbis-gold-value">{gold}</span>
           </div>
 
           {/* CENTER-RIGHT — the running countdown, or the idle duration estimate */}

@@ -57,11 +57,18 @@ export interface OrbisTenebrarumProps {
    */
   tierChances?: readonly OrbisTierChance[];
   /**
-   * The Indagatio investment, PRE-FORMATTED, e.g. `'1,240'` — the gold staked to speed the next
-   * Search (a one-shot stake, consumed when it is cast). Shown in the "Investment" meter; set with
-   * the Invest / Divest controls.
+   * The default Indagatio investment, PRE-FORMATTED as a percentage, e.g. `'4%'`: the share of the
+   * gold held that every Search pours into itself when cast (spent, and baked into its speed). Shown
+   * first in the "Investment" meter; set with the Invest / Divest controls.
    */
-  investment: string;
+  investmentPercent: string;
+  /**
+   * The gold that share amounts to right now, PRE-FORMATTED, e.g. `'1,240'`. Shown in parentheses
+   * after the percentage; it fluctuates with the gold held.
+   */
+  investmentGold: string;
+  /** The gold the player holds, PRE-FORMATTED, e.g. `'31,000'`. Shown in the "Gold" meter. */
+  gold: string;
   /** True while an Indagatio search is underway. Spins the globe + disables Cast. The integrator owns the timer. */
   searching: boolean;
   /** Indagatio cycle length, PRE-FORMATTED, e.g. `'30:00'`. Defaults to `'30:00'`. */
@@ -74,15 +81,15 @@ export interface OrbisTenebrarumProps {
   emptioProgress?: { id: string; fraction: number } | null;
   /** Currently inspected find id. Drives the globe's focus tween and the detail panel. */
   selectedId?: string | null;
-  /** Whether Invest can run right now (there is liquid gold to move). Disables the Invest control when false. */
+  /** Whether Invest can run right now (the percentage is below its 100% cap). Disables the Invest control when false. */
   canInvest?: boolean;
-  /** Whether Divest can run right now (there is investment to pull back). Disables the Divest control when false. */
+  /** Whether Divest can run right now (the percentage is above 0%). Disables the Divest control when false. */
   canDivest?: boolean;
   /** Begin an Indagatio search. */
   onCast: () => void;
-  /** Move a slice of liquid gold into the default investment. */
+  /** Raise the default investment percentage (2 points per press). */
   onInvest: () => void;
-  /** Pull a slice of the default investment back into liquid gold. */
+  /** Lower the default investment percentage (1 point per press). */
   onDivest: () => void;
   /** Inspect a find (fired by clicking a globe pin OR a ledger row). */
   onSelect: (id: string) => void;

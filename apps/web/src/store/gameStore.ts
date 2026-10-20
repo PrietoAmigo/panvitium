@@ -228,10 +228,10 @@ interface GameStore {
    */
   activateMaleficium: (id: string) => void;
   /**
-   * Adjust the Indagatio investment (03 §2.5): Invest moves 10% of liquid gold into the stake,
-   * Divest pulls 10% back out. The staked gold speeds a single Search (Indagatio efficiency alone)
-   * and is consumed when that Search is cast. Each sets a notice on failure (nothing to move, or the
-   * Morpheus freeze).
+   * Adjust the default Indagatio investment (03 §2.5): Invest raises the percentage of gold every
+   * Search pours into itself by 2 points (capped at 100%), Divest lowers it by 1 point. No gold moves
+   * until a Search is cast, which spends that share of the gold then held (Indagatio efficiency
+   * alone). Each sets a notice on failure (already at 100%, or nothing invested).
    */
   investIndagatio: () => void;
   divestIndagatio: () => void;

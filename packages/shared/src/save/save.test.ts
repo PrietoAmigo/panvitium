@@ -54,22 +54,33 @@ describe('GameState serialization', () => {
     expect(eq(back.sigilBindings[32]!, bn('1e30'))).toBe(true);
   });
 
-  it('handles the default Indagatio investment (additive-optional, ADR-023)', () => {
-    // (a) A fresh state's investment is zero and is OMITTED from the wire; (b) a pre-feature save
-    // (no field) loads as zero; (c) a populated investment round-trips exactly.
+  it('handles the default Indagatio investment percentage (additive-optional, ADR-023)', () => {
+    // (a) A fresh state's percentage is 0 and is OMITTED from the wire; (b) a save without the
+    // field loads as 0; (c) a set percentage round-trips exactly.
     const fresh = serializeGameState(createInitialState('seed', 0));
-    expect(fresh.lifetime.indagatioInvestment).toBeUndefined();
-    expect(deserializeGameState(fresh).lifetime.indagatioInvestment.toNumber()).toBe(0);
+    expect('indagatioInvestPercent' in fresh.lifetime).toBe(false);
+    expect(deserializeGameState(fresh).lifetime.indagatioInvestPercent).toBe(0);
 
     const original = createInitialState('seed', 0);
     const invested: GameState = {
       ...original,
-      lifetime: { ...original.lifetime, indagatioInvestment: bn('12345') },
+      lifetime: { ...original.lifetime, indagatioInvestPercent: 14 },
     };
     const wire = serializeGameState(invested);
-    expect(wire.lifetime.indagatioInvestment).toBe('12345');
-    const back = deserializeGameState(wire);
-    expect(eq(back.lifetime.indagatioInvestment, bn('12345'))).toBe(true);
+    expect(wire.lifetime.indagatioInvestPercent).toBe(14);
+    expect(deserializeGameState(wire).lifetime.indagatioInvestPercent).toBe(14);
+  });
+
+  it('rejects an investment percentage outside 0–100 or not whole', () => {
+    const wire = serializeGameState(createInitialState('seed', 0));
+    const withPercent = (p: number): unknown => ({
+      ...wire,
+      lifetime: { ...wire.lifetime, indagatioInvestPercent: p },
+    });
+    expect(serializedGameStateSchema.safeParse(withPercent(100)).success).toBe(true);
+    expect(serializedGameStateSchema.safeParse(withPercent(101)).success).toBe(false);
+    expect(serializedGameStateSchema.safeParse(withPercent(-1)).success).toBe(false);
+    expect(serializedGameStateSchema.safeParse(withPercent(2.5)).success).toBe(false);
   });
 });
 
@@ -146,8 +157,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v12 (the Black Robe → Red Robe id rename bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(12);
+  it('schemaVersion is v13 (the Indagatio investment rework bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(13);
   });
 });
 

@@ -64,8 +64,9 @@
 }
 
 /* ---------- cast + investment control row ----------
-   One row, everything on the same baseline: Invest/Divest at the far left, the Time-left / Duration
-   meter center-left, the Default-investment meter center-right, and Cast the Search at the far right.
+   One row, everything on the same baseline: Invest/Divest at the far left, then the Investment
+   meter (the default percentage and, in parentheses, the gold it amounts to now), the Gold meter
+   (gold held) and the Time-left / Duration meter, and Cast the Search at the far right.
    `space-between` pins the two ends and spreads the meters evenly through the middle. */
 .orbis-cast-row {
   display: flex;
@@ -81,13 +82,13 @@
   align-items: center;
   gap: 8px;
 }
+/* Each meter centres its label over its value, and every value reserves its widest footprint, so a
+   live number grows evenly on both sides within its own box and the row never reflows. */
 .orbis-meter {
   display: flex;
   flex-direction: column;
+  align-items: center;
   line-height: 1.1;
-}
-.orbis-meter--right {
-  align-items: flex-end;
 }
 .orbis-meter-label {
   font-family: 'IM Fell English SC', serif;
@@ -100,17 +101,41 @@
   font-family: 'Ubuntu Mono', monospace;
   font-size: 15px;
   color: #b6a884;
+  /* "59m 59s" in the monospace face. */
+  min-width: 7ch;
+  text-align: center;
 }
 .orbis-gold-value {
   font-family: 'Cinzel', serif;
   font-size: 18px;
   color: #e7cd7c;
   font-variant-numeric: tabular-nums;
-  /* Reserve a stable footprint and right-align: the number grows leftward within its own box as it
-     changes width, so the Cast button and Duration meter beside it never reflow. 9ch covers the full
-     pre-suffix integer range ("9,999,999") — beyond that the suffix/scientific forms are shorter. */
-  min-width: 9ch;
-  text-align: right;
+  /* 7ch covers the widest formatted gold ("999,999"); from a million up the suffix forms are
+     shorter. */
+  min-width: 7ch;
+  text-align: center;
+}
+/* The Investment meter's value, one unit: the default percentage in the gilt numeral, then the gold
+   that share amounts to right now, smaller and dimmer in parentheses. The pair is reserved its
+   widest footprint ("100% (999,999)") and centred within it. */
+.orbis-invest-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  min-width: 10em;
+  font-size: 13px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.orbis-invest-pct {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  color: #e7cd7c;
+}
+.orbis-invest-gold {
+  font-family: 'Cinzel', serif;
+  color: #a8935a;
 }
 .orbis-cast-btn {
   font-family: 'Cinzel', serif;
@@ -134,7 +159,7 @@
   cursor: default;
 }
 
-/* Invest (gold) / Divest (silver) — set the default gold stake for the Search. Share the Cast
+/* Invest (gold) / Divest (silver) — set the default share of gold every Search takes. Share the Cast
    button's shape and type so the three read as one control row; the gilt vs. argent fills mark
    which way the gold flows. */
 .orbis-invest-btn,

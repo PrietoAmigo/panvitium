@@ -13,6 +13,8 @@ import {
   countCopies,
   MALEFICIA,
   computeModifiers,
+  indagatioInvestmentGold,
+  INDAGATIO_INVEST_MAX_PERCENT,
   FENUS_RATE,
   MAX_RELATIONSHIP_TIER,
   accountAgeHours,
@@ -523,10 +525,10 @@ export function IndagatioEmptioProgram(): ReactElement {
       }
     : null;
 
-  // The Investment meter shows gold staked on the next Search (consumed when cast); Invest/Divest
-  // move 10% of the relevant balance per press (the sim clamps + floors). Disable each when there is
-  // nothing to move.
-  const investedGold = floor(state.lifetime.indagatioInvestment);
+  // The Investment meter shows the default percentage every Search pours into itself, then the gold
+  // that share of the treasury amounts to right now (the same sum the next Cast would spend).
+  // Invest/Divest step the percentage (+2 / -1 points); disable each at its bound.
+  const investPercent = state.lifetime.indagatioInvestPercent;
 
   // The live per-tier odds of a Search (base weights × the player's current tier modifiers), so the
   // globe shows how likely each outcome — and thus each rarity of find — is right now.
@@ -541,7 +543,9 @@ export function IndagatioEmptioProgram(): ReactElement {
     <OrbisTenebrarum
       finds={finds}
       tierChances={tierChances}
-      investment={formatBigNum(investedGold)}
+      investmentPercent={`${investPercent}%`}
+      investmentGold={formatBigNum(indagatioInvestmentGold(state))}
+      gold={formatBigNum(state.lifetime.gold)}
       searching={indagatioTimer !== null}
       searchDuration={formatDuration(actualSec)}
       searchRemaining={
@@ -549,8 +553,8 @@ export function IndagatioEmptioProgram(): ReactElement {
       }
       emptioProgress={emptioProgress}
       selectedId={selectedId}
-      canInvest={goldNum >= 1}
-      canDivest={investedGold.gt(0)}
+      canInvest={investPercent < INDAGATIO_INVEST_MAX_PERCENT}
+      canDivest={investPercent > 0}
       onCast={() => act('indagatio')}
       onInvest={invest}
       onDivest={divest}
