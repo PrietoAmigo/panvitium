@@ -1211,7 +1211,7 @@ body {
   text-align: center;
 }
 
-/* Lists shared by Ars Goetia / Maleficia / ledgers */
+/* Lists shared by Magna Goetia / Maleficia / ledgers */
 .vitium-list {
   list-style: none;
   margin: 0.4rem 0 0;
@@ -4027,7 +4027,7 @@ body {
   }
 }
 
-/* ---------- Ars Goetia — full-screen open book ---------- */
+/* ---------- Magna Goetia — full-screen open book ---------- */
 .goetia-overlay {
   position: fixed;
   inset: 0;

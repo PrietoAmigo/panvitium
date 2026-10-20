@@ -1,4 +1,4 @@
-/* Ars Goetia — presentation types. Self-contained: this menu no longer depends
+/* Magna Goetia — presentation types. Self-contained: this menu no longer depends
    on the degradation-layer types.ts, so it can be integrated on its own.
 
    One GoetiaEntry is design FLAVOUR (rank numeral, lore, painted plate) merged
@@ -39,7 +39,7 @@ export interface GoetiaEntry {
   bound?: string;
 }
 
-export interface ArsGoetiaBookProps {
+export interface MagnaGoetiaBookProps {
   /** The roster, in book order. Un-illustrated entries degrade gracefully. */
   entries: GoetiaEntry[];
   /** Pre-formatted current invoking power, e.g. '14'. REAL. */

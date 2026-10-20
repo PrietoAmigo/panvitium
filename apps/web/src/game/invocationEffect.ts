@@ -1,5 +1,5 @@
 // Single source of truth for an invocation's human-readable EFFECT line, derived from the
-// authoritative sim — used by both the Analytics "Invocations" tab and the Ars Goetia grimoire so the
+// authoritative sim — used by both the Analytics "Invocations" tab and the Magna Goetia grimoire so the
 // two can never drift. Each line is the LIVE quantified magnitude, computed by diffing
 // `computeModifiers` with and without the invocation, so it reflects the REAL CURRENT effect after
 // every invocation-efficiency increase/decrease (Ira's Retribution, Black Candles, the per-Sin

@@ -358,7 +358,7 @@ export const strings = {
     dispel: 'Dispel',
     active: 'bound',
     free: 'no cost',
-    /** The Ars Goetia cap-line value for an uncapped (stackable) invocation. */
+    /** The Magna Goetia cap-line value for an uncapped (stackable) invocation. */
     capUnlimited: 'Unlimited',
     names: {
       familiar: 'Familiar',
@@ -431,7 +431,7 @@ export const strings = {
       desidiaDrain: 'Desidia drain',
     },
     /** Effect line per invocation. The view-model (invocationEffect.ts) shows a LIVE quantified
-     *  magnitude where the effect is a modifier-bundle field (so the Ars Goetia reflects the real
+     *  magnitude where the effect is a modifier-bundle field (so the Magna Goetia reflects the real
      *  current effect after invocation-efficiency increases/decreases); these strings are the
      *  fallback (and the sole source for the structural apex effects: Astiwihad's world-still carry,
      *  Erinyes's kill-all). Per hard copy rule 1, every line still bakes in its base numbers from the

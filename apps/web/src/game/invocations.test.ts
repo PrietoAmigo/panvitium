@@ -33,7 +33,7 @@ describe('buildGoetia view-model adapter', () => {
       else expect(typeof e.gate).toBe('string');
       // Every seal points its painted plate at the dedicated folder, keyed by id (every catalog id
       // has a baked plate there: pinned in art/invocationPlates.test.ts).
-      expect(e.illus).toBe(`/assets/panvitium/invocations-ars-goetia/${e.id}.png`);
+      expect(e.illus).toBe(`/assets/panvitium/invocations-magna-goetia/${e.id}.png`);
     }
   });
 

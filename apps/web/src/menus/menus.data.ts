@@ -28,10 +28,10 @@ export const ROOMS: Record<RoomId, RoomDef> = {
         action: { type: 'panel', panel: 'maleficia' },
       },
       {
-        id: 'ars-goetia',
-        label: 'Ars Goetia',
+        id: 'magna-goetia',
+        label: 'Magna Goetia',
         rect: { x: 57, y: 64, w: 36, h: 33 },
-        action: { type: 'panel', panel: 'ars-goetia' },
+        action: { type: 'panel', panel: 'magna-goetia' },
       },
       {
         id: 'door',

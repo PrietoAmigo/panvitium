@@ -6,7 +6,7 @@ import { DegradedScene } from './DegradedScene.js';
 
 /**
  * "The voice in the room" — the answered incoming-call stage (Claude Design handoff, "Smartphone
- * Call-In System"). A self-framed full-viewport overlay (mounted by App like Ars Goetia / the PC /
+ * Call-In System"). A self-framed full-viewport overlay (mounted by App like Magna Goetia / the PC /
  * the dialer, NOT via PanelShell). It is opened ALREADY ANSWERED — the `ring` phase lives in the
  * room (the studio backdrop swaps + the phone vibrates; see `useIncomingCall`), and tapping the
  * phone there is the answer gesture that mounts this. From here the call walks its own FSM:

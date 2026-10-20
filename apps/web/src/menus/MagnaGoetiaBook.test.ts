@@ -1,5 +1,5 @@
 /**
- * Render tests for the painted plates in the Ars Goetia (Claude Design, "Invocation Plates"
+ * Render tests for the painted plates in the Magna Goetia (Claude Design, "Invocation Plates"
  * handoff): an entry's leaf sets its plate on the right-hand page as a decorative image (alt="",
  * hidden from assistive tech, since the name already heads the left page) sized for the 600 × 800
  * bake; the index shows none; a plate that fails to load is hidden with no fallback copy, for that
@@ -9,8 +9,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { ArsGoetiaBook } from './ArsGoetiaBook.js';
-import type { GoetiaEntry } from './ars-goetia.types.js';
+import { MagnaGoetiaBook } from './MagnaGoetiaBook.js';
+import type { GoetiaEntry } from './magna-goetia.types.js';
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -22,7 +22,7 @@ afterEach(() => {
   container = null;
 });
 
-const plateUrl = (id: string): string => `/assets/panvitium/invocations-ars-goetia/${id}.png`;
+const plateUrl = (id: string): string => `/assets/panvitium/invocations-magna-goetia/${id}.png`;
 
 function entry(id: string, name: string, rank: string): GoetiaEntry {
   return {
@@ -50,7 +50,7 @@ function render(entries: GoetiaEntry[]): void {
   root = createRoot(container);
   act(() => {
     root!.render(
-      createElement(ArsGoetiaBook, {
+      createElement(MagnaGoetiaBook, {
         entries,
         invokingPower: '4',
         onSummon: () => {},
@@ -75,7 +75,7 @@ const back = (): void => click(container!.querySelector('.gb-back'));
 const rightPage = (): Element | null => container!.querySelector('.gb-page--right');
 const plate = (): HTMLImageElement | null => container!.querySelector('img');
 
-describe('the Ars Goetia plates', () => {
+describe('the Magna Goetia plates', () => {
   it('shows no plate on the index', () => {
     render([FAMILIAR, IMP]);
     expect(container!.querySelector('.gb-page--index')).not.toBeNull();

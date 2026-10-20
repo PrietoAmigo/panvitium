@@ -57,8 +57,8 @@ source of truth; the inline comments record each reconciliation.
 
 ## Baking the invocation plates
 
-The Ars Goetia's painted plates (one per invocation) ship as static PNGs in
-`apps/web/public/assets/panvitium/invocations-ars-goetia/`, baked from the source in
+The Magna Goetia's painted plates (one per invocation) ship as static PNGs in
+`apps/web/public/assets/panvitium/invocations-magna-goetia/`, baked from the source in
 `apps/web/src/art/`: `brush.ts` (the procedural dry brush) and `invocationPlates.data.ts` (each
 plate's gestures). To retune a plate, edit its gestures, then re-bake:
 

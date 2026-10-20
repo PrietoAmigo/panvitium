@@ -1,7 +1,7 @@
 # Handoff: Invocation Plates (Panvitium)
 
 ## Overview
-One painted plate per invocation (25, matching `packages/sim/src/invocations.data.ts`). Each plate is shown on the right side of that invocation's page in the Ars Goetia / Invocatio UI. The style is a fast, dry brush in a single yellow ochre on dark cave stone, like primal cave painting. The plates show concepts, not figures: Aurevora is a maw of gold, Astiwihad is a noose, and so on.
+One painted plate per invocation (25, matching `packages/sim/src/invocations.data.ts`). Each plate is shown on the right side of that invocation's page in the Magna Goetia / Invocatio UI. The style is a fast, dry brush in a single yellow ochre on dark cave stone, like primal cave painting. The plates show concepts, not figures: Aurevora is a maw of gold, Astiwihad is a noose, and so on.
 
 ## About the design files
 `Invocation Plates.dc.html` is a **design reference built in HTML**, not production code. Recreate it in `apps/web` (React 18 + TS strict + Vite), using the repo's patterns. Open the file in a browser (with `support.js` next to it) to see all plates. The `invocation` prop (`all` or an id) shows one plate full-width. The `captions` prop turns the name labels on or off.

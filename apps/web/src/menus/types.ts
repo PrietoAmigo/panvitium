@@ -4,7 +4,7 @@
 // INTEGRATION.md §"Wiring to real state".
 
 export type RoomId = 'invocation' | 'altar' | 'studio';
-export type PanelId = 'maleficia' | 'ars-goetia' | 'pc' | 'suasio' | 'phone';
+export type PanelId = 'maleficia' | 'magna-goetia' | 'pc' | 'suasio' | 'phone';
 export type Rarity = 'common' | 'rare' | 'profane' | 'anathema';
 
 export interface Rect {
@@ -135,8 +135,8 @@ export interface MaleficiumUse {
 
 // ── Degradation layer (degradation-pass handoff) ────────────────────────────
 // Presentation shapes for the canvas degradation pass. RoomId above is shared.
-// DegradeSettings/Engine* come from the engine. (The Ars Goetia book's types live
-// in ./ars-goetia.types.ts — decoupled from this layer.)
+// DegradeSettings/Engine* come from the engine. (The Magna Goetia book's types live
+// in ./magna-goetia.types.ts — decoupled from this layer.)
 import type { DegradeSettings, EngineGlowSource } from './degrade.js';
 export type {
   DegradeSettings,

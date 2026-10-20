@@ -335,7 +335,7 @@ Summoned entities, maintained from the Invocation Room (`§12`). Mechanics:
 
 - **Invoking power** gates every invocation. Power comes from owned power-source maleficia
   (`03 §4`) and from sigils (Forneus #30). An invocation becomes *visible* in
-  the Ars Goetia book once the player holds at least **half** its required power; it becomes
+  the Magna Goetia book once the player holds at least **half** its required power; it becomes
   summonable at full power plus its Sin-level gate and cost.
 - **Concurrency:** at most one **Apex** invocation active at a time; at most one **Familiar**;
   any number of **Normal** invocations. All invocations are dispelled on Katabasis; an
@@ -488,7 +488,7 @@ carved-in-stone modal.
 Stone walls, intricate parquet, a luxurious candelabra; a red carpet on the door side, a drawn
 invocation circle on the other.
 
-- **Ars Goetia (book).** Opens the *Invocatio* panel: available invocations, costs, gates,
+- **Magna Goetia (book).** Opens the *Invocatio* panel: available invocations, costs, gates,
   active counts, the summon button — inked text on an old page. An invocation appears once the
   player holds at least half its required invoking power (§7).
 - **Maleficia shelf.** Opens the inventory: icons in a list; clicking one shows the full

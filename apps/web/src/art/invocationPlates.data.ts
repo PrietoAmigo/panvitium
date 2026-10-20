@@ -1,4 +1,4 @@
-// The gesture tables of the Ars Goetia invocation plates (Claude Design, "Invocation Plates" handoff,
+// The gesture tables of the Magna Goetia invocation plates (Claude Design, "Invocation Plates" handoff,
 // archived in docs/frontend/): one painted concept per invocation, not a figure (Aurevora is a maw of
 // gold, Astiwihad a noose), in the design's own notation so the table diffs cleanly against a future
 // handoff. Tune a plate here, then re-bake (`pnpm --filter @panvitium/web bake:plates`); the brush
