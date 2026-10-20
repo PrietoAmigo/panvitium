@@ -15,7 +15,7 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
-import { HoldButton, SEMET_ID } from './katabasisShared.js';
+import { HoldButton, SEMET_ID, splitBoon } from './katabasisShared.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // "Aether" — the sigil-binding screen of the Katabasis, ported from the Claude
@@ -187,6 +187,18 @@ function browseNameText(idx: number, semetUnlocked: boolean): string {
   if (idx + 1 === SEMET_ID && !semetUnlocked) return 'A seal unread';
   return sealName(idx);
 }
+/**
+ * The browse bar's effect line: what the centred seal does, in general. The Status Quo ledger's
+ * label (the boon text, its ↑/↓ arrows and "(flat)" stripped by `splitBoon`), without the live
+ * magnitude or the souls bound, which the Focus panel shows. Empty when nothing is centred; the
+ * sealed Semet seal names its gate rather than its boon.
+ */
+export function browseEffectText(idx: number, semetUnlocked: boolean): string {
+  if (idx < 0) return '';
+  const id = idx + 1;
+  if (id === SEMET_ID && !semetUnlocked) return 'Sealed until every Cardinal Sin reaches Rank II';
+  return splitBoon(strings.sigils.descriptions[id] ?? 'A seal of the lesser key.').text;
+}
 
 export function AetherSigils({
   state,
@@ -218,6 +230,7 @@ export function AetherSigils({
   // Browse-bar elements, updated imperatively when the centred seal changes (no React re-render).
   const bbNoRef = useRef<HTMLDivElement | null>(null);
   const bbNameRef = useRef<HTMLDivElement | null>(null);
+  const bbEffectRef = useRef<HTMLDivElement | null>(null);
   const focusBtnRef = useRef<HTMLButtonElement | null>(null);
   // Last glow filter written per seal — so we only touch style.filter (a paint) when it changes,
   // not every frame.
@@ -358,6 +371,7 @@ export function AetherSigils({
         // so routing this through React state would re-render the whole sphere every few frames.
         if (bbNoRef.current) bbNoRef.current.textContent = browseNoText(bestIdx);
         if (bbNameRef.current) bbNameRef.current.textContent = browseNameText(bestIdx, semet);
+        if (bbEffectRef.current) bbEffectRef.current.textContent = browseEffectText(bestIdx, semet);
         if (focusBtnRef.current) focusBtnRef.current.disabled = bestIdx < 0;
       }
       raf = requestAnimationFrame(loop);
@@ -483,33 +497,39 @@ export function AetherSigils({
       {/* ── State A: the browse bar (a seal is centred but not yet opened) ── */}
       {selected < 0 && (
         <div className="aether-browsebar">
-          <div className="bb-text">
-            <div className="bb-no" ref={bbNoRef}>
-              {browseNoText(fi)}
+          <div className="bb-row">
+            <div className="bb-text">
+              <div className="bb-no" ref={bbNoRef}>
+                {browseNoText(fi)}
+              </div>
+              <div className="bb-name" ref={bbNameRef}>
+                {browseNameText(fi, semetUnlocked)}
+              </div>
             </div>
-            <div className="bb-name" ref={bbNameRef}>
-              {browseNameText(fi, semetUnlocked)}
-            </div>
+            <button
+              type="button"
+              className="aether-btn aether-btn--ash"
+              disabled={!anyBound}
+              onClick={() => unbindAll()}
+            >
+              Unbind all
+            </button>
+            <button
+              type="button"
+              ref={focusBtnRef}
+              className="aether-btn aether-btn--blood"
+              disabled={fi < 0}
+              onClick={() => {
+                if (focusRef.current >= 0) setSelected(focusRef.current);
+              }}
+            >
+              Focus
+            </button>
           </div>
-          <button
-            type="button"
-            className="aether-btn aether-btn--ash"
-            disabled={!anyBound}
-            onClick={() => unbindAll()}
-          >
-            Unbind all
-          </button>
-          <button
-            type="button"
-            ref={focusBtnRef}
-            className="aether-btn aether-btn--blood"
-            disabled={fi < 0}
-            onClick={() => {
-              if (focusRef.current >= 0) setSelected(focusRef.current);
-            }}
-          >
-            Focus
-          </button>
+          {/* The centred seal's general effect (the Status Quo label), kept current by the loop. */}
+          <div className="bb-effect" ref={bbEffectRef}>
+            {browseEffectText(fi, semetUnlocked)}
+          </div>
         </div>
       )}
 

@@ -11,9 +11,11 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { strings } from '@panvitium/shared';
 import { bn, sigilById, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
-import { AetherSigils, toRoman, effectDisplay } from './AetherSigils.js';
+import { AetherSigils, toRoman, effectDisplay, browseEffectText } from './AetherSigils.js';
+import { splitBoon } from './katabasisShared.js';
 
 describe('toRoman', () => {
   it('renders seal numbers 1..72 as roman numerals', () => {
@@ -23,6 +25,31 @@ describe('toRoman', () => {
     expect(toRoman(32)).toBe('XXXII');
     expect(toRoman(44)).toBe('XLIV');
     expect(toRoman(72)).toBe('LXXII');
+  });
+});
+
+describe('browseEffectText (the browse bar\u2019s effect line)', () => {
+  it('reads the Status Quo label: the boon text, no arrow, no magnitude', () => {
+    // idx is zero-based: seal #33 (Gaap) is idx 32.
+    expect(browseEffectText(32, true)).toBe('Maleficia effects');
+    expect(browseEffectText(24, true)).toBe('Murder rate'); // Glasya-Labolas #25, "(flat)" dropped
+    expect(browseEffectText(64, true)).toBe('Invocation costs, Desidia speed'); // Andrealphus #65
+  });
+
+  it('matches the ledger\u2019s label for every seal', () => {
+    for (let id = 1; id <= 72; id++) {
+      const desc = strings.sigils.descriptions[id] ?? 'A seal of the lesser key.';
+      expect(browseEffectText(id - 1, true)).toBe(splitBoon(desc).text);
+    }
+  });
+
+  it('is empty when nothing is centred', () => {
+    expect(browseEffectText(-1, true)).toBe('');
+  });
+
+  it('names the gate, not the boon, while Semet is sealed', () => {
+    expect(browseEffectText(31, false)).toBe('Sealed until every Cardinal Sin reaches Rank II');
+    expect(browseEffectText(31, true)).toBe('Sigil effects');
   });
 });
 
@@ -157,5 +184,12 @@ describe('AetherSigils — render smoke', () => {
       container!.querySelectorAll<HTMLButtonElement>('.aether-btn--ash'),
     ).find((b) => (b.textContent ?? '').includes('Unbind all'));
     expect(btn2!.disabled).toBe(false);
+  });
+
+  it('carries the effect line beneath the browse bar\u2019s buttons', () => {
+    renderWith({ souls: bn(50_000), sigilBindings: {} });
+    const bar = container!.querySelector('.aether-browsebar');
+    expect(bar?.querySelector('.bb-row .aether-btn--blood')).not.toBeNull();
+    expect(bar?.lastElementChild?.classList.contains('bb-effect')).toBe(true);
   });
 });

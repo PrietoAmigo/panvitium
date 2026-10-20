@@ -17,7 +17,8 @@ import { useGameStore } from '../store/gameStore.js';
 import { KatabasisModal } from '../ui/KatabasisModal.js';
 import { App } from '../App.js';
 import { EMPTY_HANDED_TOTAL_MS } from '../ui/EmptyHandedWarning.js';
-import { splitBoon, TRANSIT_HOLD_MS } from './Katabasis.js';
+import { TRANSIT_HOLD_MS } from './Katabasis.js';
+import { splitBoon } from './katabasisShared.js';
 import type { DegradedSceneProps } from './types.js';
 
 // The room's canvas pass needs a real 2D context (none under jsdom): stub it, keeping the props the
