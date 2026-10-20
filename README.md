@@ -103,9 +103,16 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1337** (sim 626 · shared 89 · api 20 · web 602).
+**Current test count: 1339** (sim 626 · shared 89 · api 20 · web 604).
 
-> **Latest change — The empty-handed warning: only before the first descent.** The warning now
+> **Latest change — Aurevora holds the invocation room.** While Aurevora is bound it is the only
+> figure shown in the invocation room (like the Doppelgänger in the Studio): every other invocation
+> figure there is hidden. The hold outlasts it: once seen in the room, the others stay hidden until
+> the player walks out, so a dispelled Aurevora simply vanishes and the rest reappear on the next
+> entry rather than in its place (`boundVisualsFor`'s new `aurevoraHold`, latched in `RoomView`).
+> Presentation only: no sim, save or RNG change. Net **+2 tests** (web 602 → 604).
+>
+> **Earlier change — The empty-handed warning: only before the first descent.** The warning now
 > plays only while the playthrough has never descended (`katabasisCount === 0`): a player who has
 > already made a Katabasis and later commits with no souls simply descends. No save, economy or RNG
 > change. Net **+1 test** (sim 625 → 626).

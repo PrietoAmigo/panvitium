@@ -211,6 +211,32 @@ describe('boundVisualsFor', () => {
     ).toEqual(['specunitas']);
   });
 
+  it('a present Aurevora overrides every other figure in the invocation room', () => {
+    // Succubus + Blob both have invocation-room displays, but a bound Aurevora is the sole figure.
+    const room = boundVisualsFor('invocation', ['blob', 'succubus', 'aurevora']);
+    expect(room.map((v) => v.id)).toEqual(['aurevora']);
+    // Without it, the others render as usual.
+    const both = boundVisualsFor('invocation', ['blob', 'succubus']);
+    expect(both.map((v) => v.id).sort()).toEqual(['blob', 'succubus']);
+    // The override is the invocation room's alone: other rooms are untouched.
+    expect(boundVisualsFor('studio', ['familiar', 'aurevora']).map((v) => v.id)).toEqual([
+      'familiar',
+    ]);
+  });
+
+  it("keeps the other figures hidden while Aurevora's hold outlasts it", () => {
+    // Dispelled but still held (the player has not left the room) → nothing shows.
+    expect(boundVisualsFor('invocation', ['blob', 'succubus'], false, true)).toEqual([]);
+    // Still bound and held → Aurevora alone, as before.
+    expect(
+      boundVisualsFor('invocation', ['blob', 'aurevora'], false, true).map((v) => v.id),
+    ).toEqual(['aurevora']);
+    // The hold only concerns the invocation room.
+    expect(boundVisualsFor('studio', ['familiar'], false, true).map((v) => v.id)).toEqual([
+      'familiar',
+    ]);
+  });
+
   it('skips invocations that have no designed display', () => {
     expect(boundVisualsFor('altar', ['imp', 'lamia'])).toEqual([]);
     expect(boundVisualsFor('altar', [])).toEqual([]);

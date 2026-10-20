@@ -299,11 +299,17 @@ export const BOUND_INVOCATION_VISUALS: Record<string, BoundInvocationVisual> = {
  *   - Once the one-time jumpscare has fired (`doppelgaengerSeen`), the Doppelgänger figure never
  *     shows again — it is dropped from the result even while still bound.
  *   - While it IS shown, it OVERRIDES every other figure in its room: a present Doppelgänger is the
- *     only figure returned, so no other Studio invocation (Familiar, Specunitas, …) renders with it. */
+ *     only figure returned, so no other Studio invocation (Familiar, Specunitas, …) renders with it.
+ *
+ *  Aurevora likewise overrides the invocation room: while bound it is the only figure there. The
+ *  override outlasts it (`aurevoraHold`, latched by RoomView while the player stays in the room):
+ *  once it has been seen there, the other figures stay hidden until the player leaves and comes
+ *  back, so a dispelled Aurevora is never replaced in place by figures appearing out of nowhere. */
 export function boundVisualsFor(
   room: RoomId,
   summoned: string[],
   doppelgaengerSeen = false,
+  aurevoraHold = false,
 ): BoundInvocationVisual[] {
   const visuals = summoned
     .map((id) => BOUND_INVOCATION_VISUALS[id])
@@ -312,5 +318,9 @@ export function boundVisualsFor(
   const shown = doppelgaengerSeen ? visuals.filter((v) => v.id !== 'doppelgaenger') : visuals;
   // A present Doppelgänger overrides everything else in the room (tweak #1).
   const doppelgaenger = shown.find((v) => v.id === 'doppelgaenger');
-  return doppelgaenger ? [doppelgaenger] : shown;
+  if (doppelgaenger) return [doppelgaenger];
+  // A present (or still-held) Aurevora overrides everything else in the invocation room.
+  const aurevora = shown.find((v) => v.id === 'aurevora');
+  if (aurevora) return [aurevora];
+  return aurevoraHold && room === 'invocation' ? [] : shown;
 }

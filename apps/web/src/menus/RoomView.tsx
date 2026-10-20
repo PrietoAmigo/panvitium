@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import type { RoomDef, HotspotAction, DegradeSettings } from './types.js';
 import { DegradedScene, preloadImage } from './DegradedScene.js';
 import { ROOM_PLATES, altarPlateForAcolytes, boundVisualsFor } from './degrade.data.js';
@@ -59,12 +59,21 @@ export function RoomView({
   onStatusQuo,
   onAction,
 }: RoomViewProps): ReactElement {
+  // Aurevora's hold on the invocation room: latched the moment it is seen bound there, released
+  // only when the player walks out. While held, no other invocation figure shows in that room, even
+  // after Aurevora is dispelled, so the others reappear on the next entry rather than in its place.
+  const aurevoraBound = summoned.includes('aurevora');
+  const [aurevoraHold, setAurevoraHold] = useState(false);
+  useEffect(() => {
+    if (room.id !== 'invocation') setAurevoraHold(false);
+    else if (aurevoraBound) setAurevoraHold(true);
+  }, [room.id, aurevoraBound]);
   // The bound invocations that have a designed display in this room (Morpheus over the altar, …).
   // Memoised with the settings below: the scene re-composes only when they really change, not on
   // every re-render of the room.
   const boundVisuals = useMemo(
-    () => boundVisualsFor(room.id, summoned, doppelgaengerSeen),
-    [room.id, summoned, doppelgaengerSeen],
+    () => boundVisualsFor(room.id, summoned, doppelgaengerSeen, aurevoraHold),
+    [room.id, summoned, doppelgaengerSeen, aurevoraHold],
   );
   // The Altar's backdrop tracks the acolyte count (0–4); the Studio swaps to the "incoming call"
   // plate while the phone is ringing; every other room uses its default plate.
