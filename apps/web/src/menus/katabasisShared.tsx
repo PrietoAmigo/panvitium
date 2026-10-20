@@ -7,25 +7,14 @@ import { useCallback, useEffect, useRef, useState, type ReactElement, type React
 export const SEMET_ID = 32;
 
 /**
- * Strip a boon string's direction arrows (↑/↓); the ledger shows each leg's live signed
- * magnitude in their place. A single-effect seal ends in one arrow; a composite seal (Andrealphus
- * #65) carries one per leg ("Invocation costs ↓, Desidia speed ↑"), so strip EVERY arrow,
- * not just the trailing one, or a mid-string leg keeps a dangling arrow. `dir` stays the trailing
- * arrow (single-effect seals unchanged); the magnitude column carries each leg's sign. Shared with
- * the Aether browse bar, which reads the same bare `text` under the centred seal's name.
+ * A seal's effect label, as the Status Quo ledger and the Aether browse bar show it: the boon text
+ * with every ↑/↓ direction arrow kept (one per leg on a composite seal, Andrealphus #65: "Invocation
+ * costs ↓, Desidia speed ↑"), so the label always says which way the seal pushes, with or without
+ * the live magnitude beside it. Only a trailing "(flat)" qualifier is dropped (e.g. "Murder rate ↑
+ * (flat)" → "Murder rate ↑"); the ledger's magnitude carries the flat per-second unit.
  */
-export function splitBoon(desc: string): { text: string; dir: string } {
-  // Drop a trailing "(flat)" qualifier first (e.g. "Murder rate ↑ (flat)") — the magnitude column
-  // carries the flat per-second unit, and this leaves the arrow trailing so it strips cleanly below.
-  const trimmed = desc
-    .trimEnd()
-    .replace(/\s*\(flat\)$/i, '')
-    .trimEnd();
-  const last = trimmed.slice(-1);
-  const dir = last === '\u2191' || last === '\u2193' ? last : '';
-  // Remove every arrow (and the space before it) so a multi-leg composite label reads cleanly.
-  const text = trimmed.replace(/\s*[\u2191\u2193]/g, '').trimEnd();
-  return { text, dir };
+export function boonLabel(desc: string): string {
+  return desc.replace(/\s*\(flat\)\s*$/i, '').trimEnd();
 }
 
 // ── Press-and-hold pour (exponential ramp) ───────────────────────────────────

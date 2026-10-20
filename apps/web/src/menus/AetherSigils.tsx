@@ -15,7 +15,7 @@ import {
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum } from '../game/format.js';
-import { HoldButton, SEMET_ID, splitBoon } from './katabasisShared.js';
+import { HoldButton, SEMET_ID, boonLabel } from './katabasisShared.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // "Aether" — the sigil-binding screen of the Katabasis, ported from the Claude
@@ -113,9 +113,8 @@ const FLAT_UNIT: Record<string, string> = {
 
 /**
  * The sign a seal's magnitude reads with: a reduction (a `decrease` modifier/tier, or any cost
- * reduction) shows as `−X.X%`, matching the seal's own ↓ description — the ledger strips that arrow
- * and shows the magnitude in its place, so the sign must carry the direction. Everything else lifts
- * its target and reads `+`.
+ * reduction) shows as `−X.X%`, matching the ↓ of the seal's own description, which the ledger
+ * shows beside it. Everything else lifts its target and reads `+`.
  */
 function effectSign(e: SigilDef['effect']): '+' | '−' {
   if (e.kind === 'costReduction') return '−';
@@ -189,7 +188,7 @@ function browseNameText(idx: number, semetUnlocked: boolean): string {
 }
 /**
  * The browse bar's effect line: what the centred seal does, in general. The Status Quo ledger's
- * label (the boon text, its ↑/↓ arrows and "(flat)" stripped by `splitBoon`), without the live
+ * label (`boonLabel`: the boon text with its ↑/↓ arrows, "(flat)" dropped), without the live
  * magnitude or the souls bound, which the Focus panel shows. Empty when nothing is centred; the
  * sealed Semet seal names its gate rather than its boon.
  */
@@ -197,7 +196,7 @@ export function browseEffectText(idx: number, semetUnlocked: boolean): string {
   if (idx < 0) return '';
   const id = idx + 1;
   if (id === SEMET_ID && !semetUnlocked) return 'Sealed until every Cardinal Sin reaches Rank II';
-  return splitBoon(strings.sigils.descriptions[id] ?? 'A seal of the lesser key.').text;
+  return boonLabel(strings.sigils.descriptions[id] ?? 'A seal of the lesser key.');
 }
 
 export function AetherSigils({
