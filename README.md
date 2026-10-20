@@ -103,9 +103,23 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1282** (sim 619 · shared 86 · api 20 · web 557).
+**Current test count: 1284** (sim 619 · shared 86 · api 20 · web 559).
 
-> **Latest change — Rename: the Suasio scroll is the Chthonic Logos.** The scroll on the Studio
+> **Latest change — Empusa stands in the Studio.** While Empusa is bound, her figure
+> (`invocations/empusa.png`) stands at the back of the Studio against the far wall, right of the
+> door, just in front of the painting's lower-right corner, composited through the degradation pass
+> like the other bound figures. She holds still and carries no effects (no `float`, `vignette` or
+> shadow). A present Doppelgänger overrides her like every other Studio figure. One data entry in
+> `BOUND_INVOCATION_VISUALS`. No sim, save or RNG change. Net **+1 test** (web 558 → 559).
+>
+> **Earlier change — The Blob stands in the Invocation Room.** While the Blob is bound, its figure
+> (`invocations/blob.png`) rests on the floor at the left edge of the red carpet, just above the
+> Magna Goetia's top-left corner, composited through the degradation pass like the other bound
+> figures. It holds still (no `float`, no `vignette`) and, standing under the chandelier, casts a
+> small, flat, near-round pool centred on its base (`shadowCast` at `angle: 0`). One data entry in
+> `BOUND_INVOCATION_VISUALS`. No sim, save or RNG change. Net **+1 test** (web 557 → 558).
+>
+> **Earlier change — Rename: the Suasio scroll is the Chthonic Logos.** The scroll on the Studio
 > table is now the **Chthonic Logos**: the room hotspot ("The Chthonic Logos"), the scroll's title
 > and dialog label (was "Opus Suasio"). The "The Honeyed Tongue" line above the title is gone (its
 > string, prop and CSS removed). The wrapper component is now `ChthonicLogos` (its test file

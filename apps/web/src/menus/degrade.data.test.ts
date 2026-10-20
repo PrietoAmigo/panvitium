@@ -121,6 +121,26 @@ describe('boundVisualsFor', () => {
     expect(boundVisualsFor('altar', ['upir'])).toEqual([]);
   });
 
+  it('returns the Blob visual only in the invocation room, grounded with a small centred pool', () => {
+    const room = boundVisualsFor('invocation', ['blob']);
+    expect(room.map((v) => v.id)).toEqual(['blob']);
+    // Rests on the floor under the chandelier: no levitation, no room-dimming glow, no centred
+    // contact pool (`groundShadow`). Its shadow is a flat, near-round `shadowCast` (angle 0).
+    expect(room[0]?.float).toBeUndefined();
+    expect(room[0]?.vignette).toBeUndefined();
+    expect(room[0]?.groundShadow).toBeUndefined();
+    expect(room[0]?.left).toBe('53%');
+    expect(room[0]?.shadowCast).toEqual({
+      offset: { x: -0.024, y: -0.012 },
+      length: 0.1,
+      thickness: 0.03,
+      angle: 0,
+      ink: 0.9,
+    });
+    // Same id, wrong room → nothing (its designed display lives in the invocation room).
+    expect(boundVisualsFor('altar', ['blob'])).toEqual([]);
+  });
+
   it('returns the Midas visual only in the studio room, clipped behind the table (no effects)', () => {
     const studio = boundVisualsFor('studio', ['midas']);
     expect(studio.map((v) => v.id)).toEqual(['midas']);
@@ -133,6 +153,25 @@ describe('boundVisualsFor', () => {
     expect(studio[0]?.clipBottom).toBe(0.74);
     // Same id, wrong room → nothing (his designed display lives in the studio).
     expect(boundVisualsFor('altar', ['midas'])).toEqual([]);
+  });
+
+  it('returns the Empusa visual only in the studio room, grounded with no effects', () => {
+    const studio = boundVisualsFor('studio', ['empusa']);
+    expect(studio.map((v) => v.id)).toEqual(['empusa']);
+    // Stands still against the back wall: no levitation, no room-dimming glow, no shadow of any kind.
+    expect(studio[0]?.float).toBeUndefined();
+    expect(studio[0]?.vignette).toBeUndefined();
+    expect(studio[0]?.groundShadow).toBeUndefined();
+    expect(studio[0]?.shadowCast).toBeUndefined();
+    expect(studio[0]?.left).toBe('60%');
+    expect(studio[0]?.top).toBe('42%');
+    expect(studio[0]?.height).toBe('23.5%');
+    // Same id, wrong room → nothing (her designed display lives in the studio).
+    expect(boundVisualsFor('altar', ['empusa'])).toEqual([]);
+    // A present (unseen) Doppelgaenger overrides her like every other studio figure.
+    expect(boundVisualsFor('studio', ['empusa', 'doppelgaenger']).map((v) => v.id)).toEqual([
+      'doppelgaenger',
+    ]);
   });
 
   it('a present Doppelgaenger overrides every other figure in the studio', () => {
