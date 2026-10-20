@@ -4385,8 +4385,12 @@ body {
   background: transparent;
   border: 1px solid rgba(216, 182, 88, 0.5);
 }
-.gb-dispel:hover {
+.gb-dispel:hover:not(:disabled) {
   background: rgba(216, 182, 88, 0.12);
+}
+.gb-dispel:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* ---------- Motion ---------- */

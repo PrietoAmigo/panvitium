@@ -6,7 +6,8 @@
  * entry only; and an entry without a plate leaves the page bare. The plates themselves are pinned in
  * art/invocationPlates.test.ts, and the adapter's plate urls in game/invocations.test.ts. Also the
  * lore: set apart from both pages (its own flow across their bottom halves, laid out in menus.css and
- * measured in e2e/magna-goetia.spec.ts), with its `*…*` spans as `<em>`.
+ * measured in e2e/magna-goetia.spec.ts), with its `*…*` spans as `<em>`. And Dispel: always shown,
+ * disabled while nothing is bound.
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { act, createElement } from 'react';
@@ -152,5 +153,22 @@ describe('the Magna Goetia lore', () => {
     render([FAMILIAR, IMP]);
     open('Imp');
     expect(lore()).toBeNull();
+  });
+});
+
+describe('the Magna Goetia Dispel button', () => {
+  const dispel = (): HTMLButtonElement | null => container!.querySelector('.gb-dispel');
+
+  it('shows Dispel on a leaf with nothing bound, disabled', () => {
+    render([IMP]);
+    open('Imp');
+    expect(dispel()?.textContent).toBe('Dispel');
+    expect(dispel()?.disabled).toBe(true);
+  });
+
+  it('enables Dispel once the entry is bound', () => {
+    render([{ ...IMP, active: 1, bound: 'bound' }]);
+    open('Imp');
+    expect(dispel()?.disabled).toBe(false);
   });
 });
