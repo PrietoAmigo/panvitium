@@ -103,9 +103,14 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1336** (sim 625 · shared 89 · api 20 · web 602).
+**Current test count: 1337** (sim 626 · shared 89 · api 20 · web 602).
 
-> **Latest change — The empty-handed warning.** The first time in a playthrough the altar sigil is
+> **Latest change — The empty-handed warning: only before the first descent.** The warning now
+> plays only while the playthrough has never descended (`katabasisCount === 0`): a player who has
+> already made a Katabasis and later commits with no souls simply descends. No save, economy or RNG
+> change. Net **+1 test** (sim 625 → 626).
+>
+> **Earlier change — The empty-handed warning.** The first time in a playthrough the altar sigil is
 > committed with no souls in hand, the descent is stopped before any teardown: the sigil goes down,
 > the screen goes black and one line surfaces in yellow italic, "I should not descend
 > empty-handed.", then sinks and the black lifts back onto the Altar Room (7.3 s, unskippable, no
