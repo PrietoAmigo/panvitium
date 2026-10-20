@@ -10,7 +10,7 @@
  *
  * This module is the pure core; the menu UI and store orchestrate it. All randomness comes from the injected save RNG (ADR-011).
  */
-import { add, clamp, floor, gt, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
+import { add, clamp, floor, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
 import { liquidateThesaurus } from './faeneratio.js';
 import { privateSafeOpen, safeItem } from './syngraphae.js';
 import { sigilKatabasisBonus, sigilStrengthMul } from './sigils.js';
@@ -177,11 +177,6 @@ export function enterKatabasis(state: GameState): GameState {
       acolytes, // followers drop their tasks (the list itself clears at commit)
       // The chosen contracts stay listed through the frozen menu; the terms lapse with the
       // lifetime reset at commit.
-      // The default Indagatio investment (03 §2.5) is gold set aside: fold it back into the estate
-      // BEFORE the remaining-gold roll so it shares the same carry-over as liquid gold, rather than
-      // being lost outright. Zeroed here; the new lifetime starts with no stake.
-      gold: add(liquidated.lifetime.gold, liquidated.lifetime.indagatioInvestment),
-      indagatioInvestment: ZERO,
     },
   };
 }
@@ -224,18 +219,6 @@ export function commitKatabasis(
   // roll, so the estate participates in the remaining-gold % and not at face value.
   // `enterKatabasis` already liquidated; this defensive repeat is a no-op on an empty reserve.
   state = liquidateThesaurus(state);
-  // Defensively fold any remaining Indagatio investment into liquid gold before the roll (a no-op
-  // after `enterKatabasis` already folded it) so the stake shares the estate's remaining-gold %.
-  if (gt(state.lifetime.indagatioInvestment, ZERO)) {
-    state = {
-      ...state,
-      lifetime: {
-        ...state.lifetime,
-        gold: add(state.lifetime.gold, state.lifetime.indagatioInvestment),
-        indagatioInvestment: ZERO,
-      },
-    };
-  }
   const goldAtDescent = state.lifetime.gold;
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6), inclusive of the
@@ -291,7 +274,7 @@ export function commitKatabasis(
     // in this lifetime are not lost. Otherwise the list clears (02 §6).
     emptioList: pendingAstiwihad ? [...state.lifetime.emptioList] : [],
     maleficiaPrices: pendingAstiwihad ? { ...state.lifetime.maleficiaPrices } : {},
-    indagatioInvestment: ZERO, // folded into the estate above; the new lifetime starts with no stake
+    indagatioInvestPercent: 0, // the new lifetime pours nothing into the Search until set again
     maleficiaBuffs: {}, // single-use maleficia buffs end with the lifetime
     callBuffs: [], // incoming-call timed buffs end with the lifetime
     activeToggles: [], // toggles stop

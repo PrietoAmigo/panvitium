@@ -23,6 +23,7 @@ import {
   resolveTier,
 } from './probability.js';
 import { categoryEfficiency, categoryTierModifiers, computeModifiers } from './modifiers.js';
+import { indagatioInvestmentGold } from './indagatio.js';
 import {
   addReprobates,
   loseGoldFraction,
@@ -279,15 +280,16 @@ export function startAction(
       : // Emptio: carry the gold actually paid so the tiered refunds at resolution are computed
         // against it (not a recompute that could drift if the Amy reduction changes mid-flight).
         { actionId: def.id, remainingSeconds: duration, target, paidGold: goldCost };
+  // The Indagatio investment (03 §2.5): a Search pours the default percentage of the gold held now
+  // into itself. Its efficiency bonus is already baked into `duration` above (via `eff`, read from
+  // this same state), and the gold is spent here, not refunded. The percentage itself stands, so the
+  // next Cast pours the same share of whatever gold is then held. Never more than the gold held.
+  const invested = actionId === 'indagatio' ? indagatioInvestmentGold(state) : ZERO;
   const lifetime = {
     ...state.lifetime,
-    gold: sub(state.lifetime.gold, goldCost),
+    gold: sub(sub(state.lifetime.gold, goldCost), invested),
     influence: sub(state.lifetime.influence, influenceCost),
     actionQueue: [...state.lifetime.actionQueue, timer],
-    // The Indagatio investment is a ONE-SHOT stake (03 §2.5): its efficiency bonus is already baked
-    // into this search's `duration` above (via `eff`), and it is consumed here so it speeds only this
-    // single search, never a later one. Spent, not refunded — the gold is the price of the boost.
-    ...(actionId === 'indagatio' ? { indagatioInvestment: ZERO } : {}),
   };
   return { ok: true, state: { ...state, lifetime } };
 }

@@ -103,9 +103,26 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 > whenever progress moves). The engineering skill intentionally does **not** track progress, to
 > avoid drift; this is the single source of truth for "what's done / what's next."
 
-**Current test count: 1339** (sim 626 · shared 89 · api 20 · web 604).
+**Current test count: 1351** (sim 631 · shared 94 · api 20 · web 606).
 
-> **Latest change — Aurevora holds the invocation room.** While Aurevora is bound it is the only
+> **Latest change — Indagatio investment: a default percentage of gold.** Invest / Divest on the
+> Orbis Tenebrarum Search no longer move a one-shot gold stake for the next Search: they set the
+> DEFAULT share of gold every Search pours into itself. Each Invest adds **2 points**, each Divest
+> takes **1 point** off (whole points, clamped 0–100%); setting it moves no gold, so it is allowed
+> under the Astiwihad freeze. Each Cast spends that share of the gold held at that moment
+> (`indagatioInvestmentGold`: `floor(floor(gold) × percent / 100)`) and bakes the unchanged
+> logarithmic bonus (`1 + 0.05 · log10(gold)`, Indagatio efficiency alone, ADR-022) into that
+> search's duration; the percentage stands for later Casts and resets to 0% with the lifetime at
+> Katabasis. The **Investment** meter reads the percentage, then in parentheses the gold it amounts
+> to right now (it moves with the treasury), and a new **Gold** meter (gold held) sits between it and
+> the **Duration** meter; the meters now centre over reserved widths so live numbers never reflow
+> the row. Save schema bumps to **v13** (`v12-to-v13`: drop `lifetime.indagatioInvestment` and
+> refund the stake into gold); the new `lifetime.indagatioInvestPercent` is additive-optional
+> (omitted at 0). New e2e `indagatio-investment.spec.ts` (loads a v12 save with a stake, so it
+> exercises the refund). Net **+10 tests** (sim 626 → 631, shared 89 → 94; web 606, the prior count
+> line had drifted by 2).
+>
+> **Earlier change — Aurevora holds the invocation room.** While Aurevora is bound it is the only
 > figure shown in the invocation room (like the Doppelgänger in the Studio): every other invocation
 > figure there is hidden. The hold outlasts it: once seen in the room, the others stay hidden until
 > the player walks out, so a dispelled Aurevora simply vanishes and the rest reappear on the next

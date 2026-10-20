@@ -84,9 +84,11 @@ const lifetimeSchema = z.object({
   maleficia: z.array(z.string()),
   emptioList: z.array(z.string()),
   maleficiaPrices: z.record(z.string(), z.number().int().nonnegative()).optional(),
-  // Default Indagatio investment (03 §2.5): gold set aside to speed the Search. Additive-optional
-  // (ADR-023): absent ≡ zero, omitted when zero so a fresh game's wire form is unchanged.
-  indagatioInvestment: bigNumString.optional(),
+  // Default Indagatio investment (03 §2.5): the whole-point share (0–100) of the gold held that
+  // every Search pours into itself. Additive-optional (ADR-023): absent ≡ 0, omitted when 0 so a
+  // fresh game's wire form is unchanged. (The schema-v12 gold stake `indagatioInvestment` was
+  // REMOVED in schema v13; `v12-to-v13.ts` refunds it into gold.)
+  indagatioInvestPercent: z.number().int().min(0).max(100).optional(),
   activeToggles: z.array(z.string()),
   // Per-toggle active-duration counters for duration-scaled cost (Panvitium). Additive-optional
   // (ADR-023): absent in old saves → {} at runtime; omitted from the wire when empty.
@@ -237,9 +239,9 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(Object.keys(state.lifetime.maleficiaPrices).length > 0
         ? { maleficiaPrices: { ...state.lifetime.maleficiaPrices } }
         : {}),
-      // Default Indagatio investment: omit when zero so fresh saves keep a minimal wire form (ADR-023).
-      ...(state.lifetime.indagatioInvestment.gt(0)
-        ? { indagatioInvestment: serializeBigNum(state.lifetime.indagatioInvestment) }
+      // Default Indagatio investment: omit when 0 so fresh saves keep a minimal wire form (ADR-023).
+      ...(state.lifetime.indagatioInvestPercent > 0
+        ? { indagatioInvestPercent: state.lifetime.indagatioInvestPercent }
         : {}),
       activeToggles: [...state.lifetime.activeToggles],
       ...(Object.keys(state.lifetime.toggleDurations).length > 0
@@ -383,10 +385,8 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       maleficia: [...s.lifetime.maleficia],
       emptioList: [...s.lifetime.emptioList],
       maleficiaPrices: { ...(s.lifetime.maleficiaPrices ?? {}) },
-      // Default Indagatio investment: additive-optional (ADR-023) — absent in old saves means zero.
-      indagatioInvestment: s.lifetime.indagatioInvestment
-        ? deserializeBigNum(s.lifetime.indagatioInvestment)
-        : deserializeBigNum('0'),
+      // Default Indagatio investment: additive-optional (ADR-023) — absent means 0%.
+      indagatioInvestPercent: s.lifetime.indagatioInvestPercent ?? 0,
       activeToggles: [...s.lifetime.activeToggles],
       toggleDurations: { ...(s.lifetime.toggleDurations ?? {}) },
       actionQueue: s.lifetime.actionQueue.map((t) => ({

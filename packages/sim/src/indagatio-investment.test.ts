@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { bn, floor } from './bignum.js';
 import { createInitialState, type GameState } from './state.js';
-import { indagatioInvestmentEfficiencyMul, investIndagatio, divestIndagatio } from './indagatio.js';
+import {
+  indagatioInvestmentEfficiencyMul,
+  indagatioInvestmentGold,
+  investIndagatio,
+  divestIndagatio,
+} from './indagatio.js';
 import { categoryEfficiency, computeModifiers } from './modifiers.js';
 import { ACTIONS, startAction } from './actions.js';
+import { commitKatabasis, enterKatabasis } from './katabasis.js';
 
 const fresh = (): GameState => createInitialState('seed', 0);
 const withLifetime = (patch: Partial<GameState['lifetime']>): GameState => {
@@ -31,87 +37,100 @@ describe('indagatioInvestmentEfficiencyMul (03 §2.5 — logarithmic, +5% per de
   });
 });
 
-describe('investIndagatio (moves 10% of liquid gold into the default stake)', () => {
-  it('invests one tenth of current gold, floored', () => {
+describe('investIndagatio (raises the default percentage by 2 points)', () => {
+  it('sets 2% per press and moves no gold', () => {
     const r = investIndagatio(withLifetime({ gold: bn(1000) }));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(floor(r.state.lifetime.gold).toNumber()).toBe(900);
-    expect(floor(r.state.lifetime.indagatioInvestment).toNumber()).toBe(100);
+    expect(r.state.lifetime.indagatioInvestPercent).toBe(2);
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(1000);
   });
 
-  it('moves at least one coin when 10% floors to zero', () => {
-    const r = investIndagatio(withLifetime({ gold: bn(5) }));
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(floor(r.state.lifetime.gold).toNumber()).toBe(4);
-    expect(floor(r.state.lifetime.indagatioInvestment).toNumber()).toBe(1);
+  it('accumulates across presses', () => {
+    let s = fresh();
+    for (let i = 0; i < 3; i += 1) {
+      const r = investIndagatio(s);
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      s = r.state;
+    }
+    expect(s.lifetime.indagatioInvestPercent).toBe(6);
   });
 
-  it('accumulates across presses (10% of the shrinking balance each time)', () => {
-    let s = withLifetime({ gold: bn(1000) });
-    const step1 = investIndagatio(s);
-    expect(step1.ok).toBe(true);
-    if (!step1.ok) return;
-    s = step1.state; // gold 900, investment 100
-    const step2 = investIndagatio(s);
-    expect(step2.ok).toBe(true);
-    if (!step2.ok) return;
-    expect(floor(step2.state.lifetime.gold).toNumber()).toBe(810); // 900 − 90
-    expect(floor(step2.state.lifetime.indagatioInvestment).toNumber()).toBe(190); // 100 + 90
-  });
-
-  it('refuses when there is no gold to invest', () => {
+  it('works with no gold held (the percentage is a default, not a transfer)', () => {
     const r = investIndagatio(withLifetime({ gold: bn(0) }));
-    expect(r.ok).toBe(false);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.lifetime.indagatioInvestPercent).toBe(2);
   });
 
-  it('is refused under the Astiwihad freeze', () => {
-    const r = investIndagatio(withLifetime({ gold: bn(1000), invocations: { astiwihad: 1 } }));
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toContain('Astiwihad');
+  it('caps at 100% and is refused once there', () => {
+    const r = investIndagatio(withLifetime({ indagatioInvestPercent: 99 }));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.state.lifetime.indagatioInvestPercent).toBe(100);
+    expect(investIndagatio(withLifetime({ indagatioInvestPercent: 100 })).ok).toBe(false);
+  });
+
+  it('is allowed under the Astiwihad freeze (it moves no gold)', () => {
+    const r = investIndagatio(withLifetime({ invocations: { astiwihad: 1 } }));
+    expect(r.ok).toBe(true);
   });
 });
 
-describe('divestIndagatio (pulls 10% of the stake back, in full — no penalty)', () => {
-  it('returns one tenth of the investment to liquid gold, floored', () => {
-    const r = divestIndagatio(withLifetime({ gold: bn(0), indagatioInvestment: bn(190) }));
+describe('divestIndagatio (lowers the default percentage by 1 point)', () => {
+  it('takes 1 point off per press and moves no gold', () => {
+    const r = divestIndagatio(withLifetime({ gold: bn(500), indagatioInvestPercent: 6 }));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(floor(r.state.lifetime.indagatioInvestment).toNumber()).toBe(171); // 190 − 19
-    expect(floor(r.state.lifetime.gold).toNumber()).toBe(19); // full amount back, no recovery loss
+    expect(r.state.lifetime.indagatioInvestPercent).toBe(5);
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(500);
   });
 
-  it('moves at least one coin when 10% floors to zero, and can drain to empty', () => {
-    let s = withLifetime({ gold: bn(0), indagatioInvestment: bn(3) });
-    for (let i = 0; i < 3; i += 1) {
+  it('drains to 0% and is then refused', () => {
+    let s = withLifetime({ indagatioInvestPercent: 2 });
+    for (let i = 0; i < 2; i += 1) {
       const r = divestIndagatio(s);
       expect(r.ok).toBe(true);
       if (!r.ok) return;
       s = r.state;
     }
-    expect(floor(s.lifetime.indagatioInvestment).toNumber()).toBe(0);
-    expect(floor(s.lifetime.gold).toNumber()).toBe(3); // every coin recovered
-    expect(divestIndagatio(s).ok).toBe(false); // nothing left to pull
+    expect(s.lifetime.indagatioInvestPercent).toBe(0);
+    expect(divestIndagatio(s).ok).toBe(false);
+  });
+});
+
+describe('indagatioInvestmentGold (the live share of the gold held)', () => {
+  it('is the percentage of the gold held, in whole coins', () => {
+    expect(indagatioInvestmentGold(withLifetime({ gold: bn(1000) })).toNumber()).toBe(0);
+    const s = withLifetime({ gold: bn(1000), indagatioInvestPercent: 4 });
+    expect(indagatioInvestmentGold(s).toNumber()).toBe(40);
+    // Floored at both ends (ADR-005): 1,234.9 g → 1,234 g held → 7% = 86.38 → 86.
+    const odd = withLifetime({ gold: bn(1234.9), indagatioInvestPercent: 7 });
+    expect(indagatioInvestmentGold(odd).toNumber()).toBe(86);
   });
 
-  it('refuses when nothing is invested', () => {
-    const r = divestIndagatio(withLifetime({ indagatioInvestment: bn(0) }));
-    expect(r.ok).toBe(false);
+  it('is exact where a fractional multiply would round down (29% of 100 g)', () => {
+    // 100 × 0.29 is 28.999… in floating point; the whole-point multiply-then-divide gives 29.
+    const s = withLifetime({ gold: bn(100), indagatioInvestPercent: 29 });
+    expect(indagatioInvestmentGold(s).toNumber()).toBe(29);
   });
 
-  it('is refused under the Astiwihad freeze', () => {
-    const r = divestIndagatio(
-      withLifetime({ indagatioInvestment: bn(100), invocations: { astiwihad: 1 } }),
-    );
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toContain('Astiwihad');
+  it('fluctuates with the treasury', () => {
+    const s = withLifetime({ gold: bn(1000), indagatioInvestPercent: 10 });
+    expect(indagatioInvestmentGold(s).toNumber()).toBe(100);
+    const richer = { ...s, lifetime: { ...s.lifetime, gold: bn(5000) } };
+    expect(indagatioInvestmentGold(richer).toNumber()).toBe(500);
+  });
+
+  it('never exceeds the gold held, at 100%', () => {
+    const s = withLifetime({ gold: bn(777.5), indagatioInvestPercent: 100 });
+    expect(indagatioInvestmentGold(s).toNumber()).toBe(777);
   });
 });
 
 describe('investment feeds Indagatio efficiency alone (ADR-022)', () => {
   it('lifts indagatioEfficiencyMul and the Indagatio category efficiency', () => {
-    const invested = withLifetime({ indagatioInvestment: bn(100) });
+    // 10% of 1,000 g = 100 g → +10%.
+    const invested = withLifetime({ gold: bn(1000), indagatioInvestPercent: 10 });
     expect(computeModifiers(invested).indagatioEfficiencyMul).toBeCloseTo(1.1, 10);
     // categoryEfficiency = playerEfficiencyMul × indagatioEfficiencyMul; a fresh game's playerEff is 1.
     expect(categoryEfficiency(invested, 'indagatio')).toBeCloseTo(1.1, 10);
@@ -119,7 +138,7 @@ describe('investment feeds Indagatio efficiency alone (ADR-022)', () => {
   });
 
   it('leaves the other action categories untouched', () => {
-    const invested = withLifetime({ indagatioInvestment: bn(1000) });
+    const invested = withLifetime({ gold: bn(10000), indagatioInvestPercent: 10 });
     const mods = computeModifiers(invested);
     expect(mods.logosEfficiencyMul).toBe(1);
     expect(mods.emptioEfficiencyMul).toBe(1);
@@ -127,10 +146,10 @@ describe('investment feeds Indagatio efficiency alone (ADR-022)', () => {
   });
 });
 
-describe('the Cast consumes the investment (one-shot, 03 §2.5)', () => {
-  it('bakes the bonus into the launched search and then zeroes the stake', () => {
-    const invested = withLifetime({ gold: bn(1000), indagatioInvestment: bn(1000) });
-    // 1,000 g staked → +15% Indagatio efficiency at cast.
+describe('the Cast spends the share of gold held (03 §2.5)', () => {
+  it('bakes the bonus into the launched search, spends the gold and keeps the percentage', () => {
+    // 50% of 2,000 g = 1,000 g staked → +15% Indagatio efficiency at cast.
+    const invested = withLifetime({ gold: bn(2000), indagatioInvestPercent: 50 });
     expect(categoryEfficiency(invested, 'indagatio')).toBeCloseTo(1.15, 10);
     const r = startAction(invested, 'indagatio');
     expect(r.ok).toBe(true);
@@ -140,23 +159,47 @@ describe('the Cast consumes the investment (one-shot, 03 §2.5)', () => {
       ACTIONS.indagatio!.baseTimeSeconds / 1.15,
       6,
     );
-    // …the stake is spent (zeroed), not refunded to gold (Indagatio has no gold cost)…
-    expect(floor(r.state.lifetime.indagatioInvestment).toNumber()).toBe(0);
+    // …the 1,000 g is spent (Indagatio has no other gold cost)…
     expect(floor(r.state.lifetime.gold).toNumber()).toBe(1000);
-    // …so a later search would run at base speed.
-    expect(categoryEfficiency(r.state, 'indagatio')).toBeCloseTo(1, 10);
+    // …and the default stands, so the next Search would pour 50% of the remaining 1,000 g.
+    expect(r.state.lifetime.indagatioInvestPercent).toBe(50);
+    expect(indagatioInvestmentGold(r.state).toNumber()).toBe(500);
   });
 
-  it('is consumed only by an Indagatio cast, not by starting another rite', () => {
-    // Starting a Logos rite must leave the staked investment intact — only the Search spends it.
+  it('spends nothing at 0%', () => {
+    const r = startAction(withLifetime({ gold: bn(2000) }), 'indagatio');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(floor(r.state.lifetime.gold).toNumber()).toBe(2000);
+  });
+
+  it('can pour in all the gold held at 100%', () => {
+    const r = startAction(
+      withLifetime({ gold: bn(640), indagatioInvestPercent: 100 }),
+      'indagatio',
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(floor(r.state.lifetime.gold).toNumber()).toBe(0);
+  });
+
+  it('is spent only by an Indagatio cast, not by starting another rite', () => {
     const invested = withLifetime({
       gold: bn(5000),
       influence: bn(50),
-      indagatioInvestment: bn(1000),
+      indagatioInvestPercent: 50,
     });
     const r = startAction(invested, 'suggestion');
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(floor(r.state.lifetime.indagatioInvestment).toNumber()).toBe(1000);
+    const suggestionGold = ACTIONS.suggestion!.cost.gold ?? 0;
+    expect(floor(r.state.lifetime.gold).toNumber()).toBe(5000 - suggestionGold);
+    expect(r.state.lifetime.indagatioInvestPercent).toBe(50);
+  });
+});
+
+describe('the percentage resets with the lifetime at Katabasis', () => {
+  it('starts the new lifetime at 0%', () => {
+    const before = withLifetime({ gold: bn(1000), indagatioInvestPercent: 30 });
+    const { state } = commitKatabasis(enterKatabasis(before));
+    expect(state.lifetime.indagatioInvestPercent).toBe(0);
   });
 });

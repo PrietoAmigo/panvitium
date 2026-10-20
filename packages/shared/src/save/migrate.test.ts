@@ -577,3 +577,41 @@ describe('v11 → v12 migration (the Black Robe renamed the Red Robe)', () => {
     expect(migrated.state.lifetime).toEqual((blob.state as Record<string, unknown>).lifetime);
   });
 });
+
+describe('v12 → v13 migration (the Indagatio investment becomes a default percentage)', () => {
+  /** A v12-shaped raw blob with the given lifetime overrides. */
+  function v12Blob(extra: Record<string, unknown>): Record<string, unknown> {
+    const base = currentBlob();
+    const state = base.state as Record<string, unknown>;
+    const lifetime = state.lifetime as Record<string, unknown>;
+    return { ...base, schemaVersion: 12, state: { ...state, lifetime: { ...lifetime, ...extra } } };
+  }
+
+  it('drops the gold stake and refunds it into liquid gold', () => {
+    const migrated = migrateSave(v12Blob({ gold: '1000', indagatioInvestment: '250' }));
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const lifetime = migrated.state.lifetime;
+    expect('indagatioInvestment' in lifetime).toBe(false);
+    expect(lifetime.gold).toBe('1250');
+    // The new percentage seeds by omission: the player chooses a share afresh.
+    expect(lifetime.indagatioInvestPercent).toBeUndefined();
+  });
+
+  it('refunds a stake beyond the safe-integer range exactly (BigNum gold)', () => {
+    const migrated = migrateSave(v12Blob({ gold: '1e30', indagatioInvestment: '1e30' }));
+    expect(migrated.state.lifetime.gold).toBe('2e+30');
+  });
+
+  it('drops a malformed stake without crediting anything', () => {
+    const migrated = migrateSave(v12Blob({ gold: '1000', indagatioInvestment: 42 }));
+    expect('indagatioInvestment' in migrated.state.lifetime).toBe(false);
+    expect(migrated.state.lifetime.gold).toBe('1000');
+  });
+
+  it('is a no-op for a v12 save that held no stake', () => {
+    const blob = v12Blob({ gold: '1000' });
+    const migrated = migrateSave(blob);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.lifetime).toEqual((blob.state as Record<string, unknown>).lifetime);
+  });
+});

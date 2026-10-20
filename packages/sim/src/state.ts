@@ -107,15 +107,17 @@ export interface LifetimeState {
    */
   maleficiaPrices: Record<string, number>;
   /**
-   * Gold staked on the Indagatio Search (03 §2.5): liquid gold moved here via Invest / pulled back
-   * via Divest. It grants Indagatio efficiency ALONE, logarithmically
-   * (`indagatioInvestmentEfficiencyMul`, folded into `indagatioEfficiencyMul`), so a bigger stake
-   * scries faster. ONE-SHOT: the next Cast bakes the bonus into its duration and consumes the stake
-   * (`startAction` zeroes it), so it speeds a single search only. Always defined at runtime (default
-   * ZERO); additive-optional on the wire (ADR-023), omitted when zero. Reset with the lifetime at
-   * Katabasis (it is lifetime gold like any other).
+   * The default Indagatio investment (03 §2.5), in whole percentage points (0–100): the share of
+   * the gold held that every Cast pours into the Search. Invest raises it by 2 points, Divest lowers
+   * it by 1; no gold moves until a Search is cast, when `startAction` spends
+   * `indagatioInvestmentGold` (this share of the gold then held) and bakes its logarithmic
+   * efficiency bonus (`indagatioInvestmentEfficiencyMul`, folded into `indagatioEfficiencyMul`) into
+   * that search's duration. The percentage stands for later Casts. Always defined at runtime
+   * (default 0); additive-optional on the wire (ADR-023), omitted when 0. Reset with the lifetime at
+   * Katabasis. (It replaced the schema-v12 gold stake `indagatioInvestment`; `v12-to-v13` refunds
+   * any stake into gold.)
    */
-  indagatioInvestment: BigNum;
+  indagatioInvestPercent: number;
   /** Toggle actions currently active (e.g. 'panvitium', 'bacchanal'). */
   activeToggles: string[];
   /**
@@ -429,7 +431,7 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       maleficia: [],
       emptioList: [],
       maleficiaPrices: {},
-      indagatioInvestment: ZERO,
+      indagatioInvestPercent: 0,
       activeToggles: [],
       toggleDurations: {},
       actionQueue: [],

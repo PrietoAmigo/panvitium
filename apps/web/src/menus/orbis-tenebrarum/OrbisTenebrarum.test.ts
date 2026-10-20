@@ -83,7 +83,9 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        investment: '1,500',
+        investmentPercent: '4%',
+        investmentGold: '1,500',
+        gold: '31,000',
         searching: false,
         onCast: noop,
         onSelect: noop,
@@ -122,7 +124,9 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        investment: '1,500',
+        investmentPercent: '4%',
+        investmentGold: '1,500',
+        gold: '31,000',
         searching: false,
         selectedId: 'ars_serpens',
         onCast: noop,
@@ -161,7 +165,9 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        investment: '1,500',
+        investmentPercent: '4%',
+        investmentGold: '1,500',
+        gold: '31,000',
         searching: false,
         onCast: () => {
           casts += 1;
@@ -182,7 +188,9 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
       root!.render(
         createElement(OrbisTenebrarum, {
           finds: MOCK_FINDS,
-          investment: '1,500',
+          investmentPercent: '4%',
+          investmentGold: '1,500',
+          gold: '31,000',
           searching: true,
           onCast: noop,
           onSelect: noop,
@@ -222,7 +230,9 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        investment: '1,000',
+        investmentPercent: '4%',
+        investmentGold: '1,000',
+        gold: '31,000',
         searching: true,
         searchDuration: '05:00',
         searchRemaining: '02:30',
@@ -242,7 +252,9 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        investment: '1,000',
+        investmentPercent: '4%',
+        investmentGold: '1,000',
+        gold: '31,000',
         searching: false,
         emptioProgress: { id: MOCK_FINDS[0]!.id, fraction: 0.4 },
         onCast: () => {},
@@ -268,7 +280,9 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     mount(
       createElement(OrbisTenebrarum, {
         finds,
-        investment: '9,000',
+        investmentPercent: '4%',
+        investmentGold: '9,000',
+        gold: '31,000',
         searching: false,
         selectedId: 'second_relic', // a different, affordable relic than the one being bought
         emptioProgress: { id: 'ars_serpens', fraction: 0.5 },
@@ -291,7 +305,9 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
     mount(
       createElement(OrbisTenebrarum, {
         finds,
-        investment: '1,000',
+        investmentPercent: '4%',
+        investmentGold: '1,000',
+        gold: '31,000',
         searching: false,
         onCast: () => {},
         onSelect: () => {},
@@ -305,13 +321,15 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
 });
 
 describe('OrbisTenebrarum — Indagatio investment controls', () => {
-  it('shows the Default investment meter and fires Invest / Divest', () => {
+  it('shows the Investment, Gold and Duration meters and fires Invest / Divest', () => {
     let invested = 0;
     let divested = 0;
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        investment: '640',
+        investmentPercent: '12%',
+        investmentGold: '640',
+        gold: '5,333',
         searching: false,
         onCast: noop,
         onSelect: noop,
@@ -325,14 +343,20 @@ describe('OrbisTenebrarum — Indagatio investment controls', () => {
       }),
     );
 
-    // The old Gold meter is now the Investment meter, showing the staked amount.
+    // Left to right: the Investment meter, then the gold held, then the Time left / Duration meter.
     const labels = [...container!.querySelectorAll('.orbis-meter-label')].map((n) =>
       (n.textContent ?? '').trim(),
     );
-    expect(labels).toContain('Investment');
-    expect((container!.querySelector('.orbis-gold-value')?.textContent ?? '').trim()).toBe('640');
-    // Investment sits center-LEFT (before the Time left / Duration meter) after the swap.
-    expect(labels).toEqual(['Investment', 'Duration']);
+    expect(labels).toEqual(['Investment', 'Gold', 'Duration']);
+    // The Investment meter reads the default percentage first, then the live gold in parentheses.
+    const investValue = container!.querySelector('.orbis-invest-value');
+    expect((investValue?.querySelector('.orbis-invest-pct')?.textContent ?? '').trim()).toBe('12%');
+    expect((investValue?.querySelector('.orbis-invest-gold')?.textContent ?? '').trim()).toBe(
+      '(640)',
+    );
+    expect((investValue?.textContent ?? '').trim()).toBe('12% (640)');
+    // The Gold meter shows the gold held.
+    expect((container!.querySelector('.orbis-gold-value')?.textContent ?? '').trim()).toBe('5,333');
 
     const invest = container!.querySelector<HTMLButtonElement>('.orbis-invest-btn');
     const divest = container!.querySelector<HTMLButtonElement>('.orbis-divest-btn');
@@ -344,11 +368,13 @@ describe('OrbisTenebrarum — Indagatio investment controls', () => {
     expect(divested).toBe(1);
   });
 
-  it('disables Invest / Divest when there is nothing to move', () => {
+  it('disables Invest / Divest at the percentage bounds', () => {
     mount(
       createElement(OrbisTenebrarum, {
         finds: MOCK_FINDS,
-        investment: '0',
+        investmentPercent: '4%',
+        investmentGold: '0',
+        gold: '31,000',
         searching: false,
         canInvest: false,
         canDivest: false,

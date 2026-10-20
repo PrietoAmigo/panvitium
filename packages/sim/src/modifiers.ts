@@ -59,7 +59,7 @@ import { type TierModifiers, type Tier } from './probability.js';
 import { boostMaleficiumFactor, countCopies, maleficiaBuffMultipliers } from './maleficia.js';
 import { syngraphaFenusRateMul, syngraphaSurrenderChargeMul } from './syngraphae.js';
 import { aurevoraEfficiencyMul } from './apex.js';
-import { indagatioInvestmentEfficiencyMul } from './indagatio.js';
+import { indagatioInvestmentEfficiencyMul, indagatioInvestmentGold } from './indagatio.js';
 import { callBuffMultipliers } from './callBuffs.js';
 import {
   sigilEffectStack,
@@ -561,12 +561,13 @@ export function computeModifiers(state: GameState): Modifiers {
       more('ars_serpens', ARS_SERPENS_LOGOS_BONUS) * // Ars Serpens: +33% Logos efficiency
       sc('logosEfficiencyMul'),
     // Indagatio efficiency: sigils × the a-good-find call buff × the logarithmic bonus from the gold
-    // investment (03 §2.5) × the maleficia that shorten the Search — Crow Feather (−10% time) and
-    // Obsidian Mirror (−33%) passively, Crossroads Dirt (−15%, single-use buff via `mBuff`).
+    // investment (03 §2.5: the default percentage of the gold held now, which the next Cast spends)
+    // × the maleficia that shorten the Search — Crow Feather (−10% time) and Obsidian Mirror (−33%)
+    // passively, Crossroads Dirt (−15%, single-use buff via `mBuff`).
     indagatioEfficiencyMul:
       sc('indagatioEfficiencyMul') *
       cb.indagatioEfficiencyMul *
-      indagatioInvestmentEfficiencyMul(state.lifetime.indagatioInvestment) *
+      indagatioInvestmentEfficiencyMul(indagatioInvestmentGold(state)) *
       factor('crow_feather', INDAGATIO_TIME_MUL(0.1)) *
       factor('obsidian_mirror', INDAGATIO_TIME_MUL(0.33)) *
       mBuff.indagatioEfficiencyMul,
