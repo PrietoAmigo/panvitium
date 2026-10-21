@@ -148,6 +148,8 @@ export function App(): ReactElement {
   const markCallAnswered = useGameStore((s) => s.markCallAnswered);
   // The answered calls, as a stable primitive join (changes only when a call is picked up).
   const answeredKey = useGameStore((s) => (s.state?.callsAnswered ?? []).join('|'));
+  // The placed outgoing calls, as a stable primitive join (changes only when a dialled number connects).
+  const placedKey = useGameStore((s) => (s.state?.callsPlaced ?? []).join('|'));
   const [jumpscareArmed, setJumpscareArmed] = useState(false);
   const [jumpscare, setJumpscare] = useState(false);
   const doppelgaengerBound = summoned.includes('doppelgaenger');
@@ -228,10 +230,11 @@ export function App(): ReactElement {
   const subliminal = useGameStore((s) => s.subliminalQueue[0] ?? null);
   const flashSubliminal = useGameStore((s) => s.flashSubliminal);
   const dismissSubliminal = useGameStore((s) => s.dismissSubliminal);
-  // The two code plates surface only from Father Stahl's first letter until his call is answered.
+  // The two code plates surface only from Father Stahl's first letter until the player dials the
+  // number they spell (the rectory call is placed).
   const codePlates = useMemo(
-    () => codePlatesShown(callCtx.receivedEmailIds, answeredIds),
-    [callCtx, answeredIds],
+    () => codePlatesShown(callCtx.receivedEmailIds, new Set(placedKey ? placedKey.split('|') : [])),
+    [callCtx, placedKey],
   );
   useRandomSubliminals(
     ready && !titleOpen && katabasisPhase === null && !onCall && !jumpscare && !emptyHandedWarning,

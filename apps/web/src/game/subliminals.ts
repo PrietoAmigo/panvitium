@@ -7,7 +7,7 @@
  *     (fausto-4) has no plate, so the fourth plate belongs to Fausto #5.
  *   - The random plates surface on their own during play, about once every six minutes on average.
  *     Two of them, the code plates (982, then 079: the rectory number, Clare Ashby's last days), are
- *     in the draw only from Father Stahl's first letter until his call has been answered, and then
+ *     in the draw only from Father Stahl's first letter until the player dials that number, and then
  *     each is ten times likelier than any other plate.
  */
 import { ASSET_BASE } from '../menus/degrade.data.js';
@@ -54,14 +54,14 @@ export function isCodeSubliminal(src: string): boolean {
 
 /**
  * Whether the code plates may surface: from Father Stahl's first letter (`fr-stahl-1` received)
- * until his call (`the-ward`) has been answered. Both records are permanent, so the window opens
- * and closes once per game.
+ * until the player has dialled the number they spell (the rectory call, `the-rectory`, placed).
+ * Both records are permanent, so the window opens and closes once per game.
  */
 export function codePlatesShown(
   receivedEmailIds: ReadonlySet<string>,
-  answeredCallIds: ReadonlySet<string>,
+  placedCallIds: ReadonlySet<string>,
 ): boolean {
-  return receivedEmailIds.has('fr-stahl-1') && !answeredCallIds.has('the-ward');
+  return receivedEmailIds.has('fr-stahl-1') && !placedCallIds.has('the-rectory');
 }
 
 /** How long an ordinary random plate holds on screen: a handful of frames, too brief to study. */
