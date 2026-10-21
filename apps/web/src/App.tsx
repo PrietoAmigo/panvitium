@@ -31,6 +31,7 @@ import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio, summonCue } from './audio/audio.js';
 import { strings } from '@panvitium/shared';
+import { ACTIONS, actionUnlocked } from '@panvitium/sim';
 
 /**
  * The full-screen Magna Goetia grimoire, wired to real state. Kept as its own subscriber so its
@@ -88,6 +89,15 @@ export function App(): ReactElement {
   const inboxKey = useGameStore((s) =>
     s.state ? s.state.lifetime.inbox.map((e) => e.id).join('|') : '',
   );
+  // The unlocked Opera actions, as a stable join (changes only when a Sin level unlocks a rite).
+  const unlockedKey = useGameStore((s) => {
+    const state = s.state;
+    if (!state) return '';
+    return Object.values(ACTIONS)
+      .filter((def) => actionUnlocked(state, def))
+      .map((def) => def.id)
+      .join('|');
+  });
 
   // The Studio's red "panvitium" glow while that ritual runs (03 §2.3).
   const signature = useGameStore(
@@ -196,8 +206,9 @@ export function App(): ReactElement {
       katabasisCount,
       fcFriendly,
       receivedEmailIds: new Set(inboxKey ? inboxKey.split('|') : []),
+      unlockedActions: new Set(unlockedKey ? unlockedKey.split('|') : []),
     }),
-    [katabasisCount, fcFriendly, inboxKey],
+    [katabasisCount, fcFriendly, inboxKey, unlockedKey],
   );
   // Only calls whose requirements are met may be drawn (e.g. the mutually-exclusive Succubus/Astiwihad
   // lines, gated on the Fausto branch).

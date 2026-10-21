@@ -30,7 +30,13 @@ function seq(values: number[]): () => number {
 
 /** A permissive context (fresh game): no descents, Fausto friendly, no mail. */
 function freshCtx(over: Partial<CallEligibilityContext> = {}): CallEligibilityContext {
-  return { katabasisCount: 0, fcFriendly: true, receivedEmailIds: new Set(), ...over };
+  return {
+    katabasisCount: 0,
+    fcFriendly: true,
+    receivedEmailIds: new Set(),
+    unlockedActions: new Set(),
+    ...over,
+  };
 }
 
 describe('buildCallInView', () => {
@@ -102,8 +108,11 @@ function expectParity(
 }
 
 describe('the ward (Father Stahl): Imperium', () => {
-  const wardCtx = (emails: string[]): CallEligibilityContext =>
-    freshCtx({ receivedEmailIds: new Set(['fr-stahl-2', 'parish-1', 'parish-2', ...emails]) });
+  const wardCtx = (emails: string[], imperium = true): CallEligibilityContext =>
+    freshCtx({
+      receivedEmailIds: new Set(['fr-stahl-2', 'parish-1', 'parish-2', ...emails]),
+      unlockedActions: new Set(imperium ? ['suggestion', 'logismoi', 'imperium'] : ['suggestion']),
+    });
 
   it('offers only "Hang up" until Father Greaves has written, keeping catalogue indices', () => {
     const before = buildCallInView('the-ward', wardCtx([]))!;
@@ -114,6 +123,11 @@ describe('the ward (Father Stahl): Imperium', () => {
       [0, 'Memento Claram, Aemili'],
       [1, 'Hang up'],
     ]);
+  });
+
+  it('also needs the Imperium rite unlocked, letter or not', () => {
+    const locked = buildCallInView('the-ward', wardCtx(['fr-greaves-1'], false))!;
+    expect(locked.choices.map((c) => c.label)).toEqual(['Hang up']);
   });
 
   it('names Clare, holds three seconds of silence, then offers [IMPERIUM], which ends in its recording', () => {

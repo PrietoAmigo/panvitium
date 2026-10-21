@@ -37,6 +37,9 @@ export interface CallRequirements {
   fcFriendly?: boolean;
   /** Email ids that must already sit in the inbox (e.g. Father Emil Stahl before he calls). */
   emails?: readonly string[];
+  /** Opera action ids that must already be unlocked (the sim's `actionUnlocked`), e.g. `imperium`
+   *  before Father Stahl can be commanded. */
+  actions?: readonly string[];
 }
 
 /**
@@ -340,11 +343,12 @@ export const CALLS_IN: readonly CallInData[] = [
     skippable: false,
     choices: [
       // The secret answer, offered once Father Greaves has written about Clare Ashby (his letter
-      // arrives after the hidden rectory number is dialled): name her, hold three seconds of
-      // silence, then [IMPERIUM]. Stahl, at Maren Holt's side on the ward, kills her and then
-      // himself while `imperium.mp3` plays; the flag sends the local news and its achievement.
+      // arrives after the hidden rectory number is dialled) and the Imperium rite is unlocked: name
+      // her, hold three seconds of silence, then [IMPERIUM]. Stahl, at Maren Holt's side on the
+      // ward, kills her and then himself while `imperium.mp3` plays; the flag sends the local news
+      // and its achievement.
       {
-        requires: { emails: ['fr-greaves-1'] },
+        requires: { emails: ['fr-greaves-1'], actions: ['imperium'] },
         next: {
           silenceSec: 3,
           choices: [

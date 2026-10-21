@@ -57,5 +57,5 @@ Canonical, single-source list of every call you can PLACE and the event it opens
 - Choices:
     - [Scratches on a wall, tells you something?] -> Father Anselm answers (`father_anselm_2.mp3`): "I take it you're a journalist, I already had my decent share of you long time ago. Let me rest, please."
         - [Apologies. In case you have more information, here's my email [...]] -> the call ends.
-- Effect: connecting the call arms Father Greaves's letter (`fr-greaves-1`, "Ashby file", 3 minutes later, `05-email-content.md`), whose arrival opens the Imperium answer to Father Stahl's call (`the-ward`, `PANVITIUM-CALLS-IN.md`). Nothing on the call itself applies state.
+- Effect: connecting the call arms Father Greaves's letter (`fr-greaves-1`, "Ashby file", 3 minutes later, `05-email-content.md`), whose arrival (with the Imperium rite unlocked) opens the Imperium answer to Father Stahl's call (`the-ward`, `PANVITIUM-CALLS-IN.md`). Nothing on the call itself applies state.
 - Notes: the letter arrives whenever the call is placed: early in the game, or after `the-ward` has already been answered (then it only tells the story, for the next playthrough). The call is skippable like any incoming call. The code plates still flash at random from the first minute; holding them back until mid-game as an ordered burst is planned, not built.

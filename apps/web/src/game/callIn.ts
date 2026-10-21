@@ -286,6 +286,8 @@ export interface CallEligibilityContext {
   fcFriendly: boolean;
   /** Ids of the emails currently in the inbox. */
   receivedEmailIds: ReadonlySet<string>;
+  /** Ids of the Opera actions currently unlocked (`actionUnlocked`). */
+  unlockedActions: ReadonlySet<string>;
 }
 
 /** Whether a requirement set (a call's or an option's) is met in the given context. */
@@ -294,6 +296,7 @@ function requirementsMet(ctx: CallEligibilityContext, req: CallRequirements): bo
     return false;
   if (req.fcFriendly !== undefined && ctx.fcFriendly !== req.fcFriendly) return false;
   if (req.emails && !req.emails.every((id) => ctx.receivedEmailIds.has(id))) return false;
+  if (req.actions && !req.actions.every((id) => ctx.unlockedActions.has(id))) return false;
   return true;
 }
 

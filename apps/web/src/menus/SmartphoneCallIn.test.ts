@@ -246,6 +246,7 @@ describe('SmartphoneCallIn — the ward (unskippable, Imperium)', () => {
       katabasisCount: 0,
       fcFriendly: true,
       receivedEmailIds: new Set(greaves ? ['fr-greaves-1'] : []),
+      unlockedActions: new Set(['imperium']),
     })!;
 
   it('cannot be skipped: no hint, and a tap on the stage does nothing', () => {

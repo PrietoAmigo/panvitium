@@ -463,8 +463,8 @@ built. None carry mechanical effects unless stated.
 - **Trigger:** 3 minutes after the player places the outgoing call to the rectory (`callsPlaced`
   contains `the-rectory`: 982079 dialled, `PANVITIUM-CALLS-OUT.md`). Keyed to the call alone: it
   arrives however early in the game, and even after `the-ward` has been answered.
-- **Effect:** its presence in the inbox opens the Imperium answer to Father Stahl's call
-  (`the-ward`, `PANVITIUM-CALLS-IN.md`).
+- **Effect:** its presence in the inbox, with the Imperium rite unlocked (any Sin at III), opens
+  the Imperium answer to Father Stahl's call (`the-ward`, `PANVITIUM-CALLS-IN.md`).
 - *Author note: he took the caller for one more journalist and sends his stock account. The thing
   in Clare is a minor demon that answers to the player now by rank, though nothing here says so.
   Her soul is in Hell; Greaves does not say what he believes. The number she wrote is the one on
