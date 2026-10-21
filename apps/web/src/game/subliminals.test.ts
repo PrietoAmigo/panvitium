@@ -7,12 +7,15 @@ import {
   CODE_SUBLIMINAL_WEIGHT,
   FAUSTO_SUBLIMINALS,
   RANDOM_SUBLIMINALS,
+  SUBLIMINAL_LONG_MS,
+  SUBLIMINAL_MS,
   SUBLIMINAL_MEAN_GAP_MS,
   codePlatesShown,
   faustoSubliminals,
   isCodeSubliminal,
   pickRandomSubliminal,
   subliminalChance,
+  subliminalHoldMs,
 } from './subliminals.js';
 
 describe('subliminals — Fausto', () => {
@@ -103,6 +106,19 @@ describe('subliminals — the code plates', () => {
     for (const src of RANDOM_SUBLIMINALS) {
       expect(counts.get(src), src).toBe(isCodeSubliminal(src) ? 1000 : 100);
     }
+  });
+});
+
+describe('subliminals — how long a plate holds', () => {
+  it("holds the code plates and Fausto's for 160 ms, every other plate for 100 ms", () => {
+    expect(SUBLIMINAL_LONG_MS).toBe(160);
+    expect(SUBLIMINAL_MS).toBe(100);
+    for (const src of [...CODE_SUBLIMINALS, ...Object.values(FAUSTO_SUBLIMINALS)]) {
+      expect(subliminalHoldMs(src), src).toBe(160);
+    }
+    const ordinary = RANDOM_SUBLIMINALS.filter((src) => !isCodeSubliminal(src));
+    expect(ordinary).toHaveLength(14);
+    for (const src of ordinary) expect(subliminalHoldMs(src), src).toBe(100);
   });
 });
 

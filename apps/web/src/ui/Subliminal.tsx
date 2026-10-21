@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { DegradedScene, decodeImage, isImageDecoded } from '../menus/DegradedScene.js';
-import { SUBLIMINAL_MS } from '../game/subliminals.js';
+import { subliminalHoldMs } from '../game/subliminals.js';
 
-/* A subliminal plate (App shows the head of the store's queue). It covers the whole viewport for
-   SUBLIMINAL_MS and clears itself. The plate composites THROUGH the degradation pass (a DegradedScene
+/* A subliminal plate (App shows the head of the store's queue). It covers the whole viewport for its
+   hold (`subliminalHoldMs`: 160 ms for the code plates and Fausto's, 100 ms for the rest) and clears
+   itself. The plate composites THROUGH the degradation pass (a DegradedScene
    backdrop), so it pixelates at the same fidelity as the rooms. It waits, invisible, until the plate
    has decoded, so the flash is never a black frame; a plate that fails to load is skipped. Unlike the
    jumpscare it takes no input (pointer-events off): a click mid-flash still lands on the game. */
@@ -37,9 +38,9 @@ export function Subliminal({
 
   useEffect(() => {
     if (!decoded) return;
-    const timer = window.setTimeout(() => done.current(), SUBLIMINAL_MS);
+    const timer = window.setTimeout(() => done.current(), subliminalHoldMs(src));
     return () => window.clearTimeout(timer);
-  }, [decoded]);
+  }, [decoded, src]);
 
   if (!decoded) return null;
   return (
