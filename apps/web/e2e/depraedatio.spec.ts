@@ -3,10 +3,10 @@ import { test, expect, type Page } from '@playwright/test';
 /**
  * E2E coverage for the Depraedatio panel, the "Counting House" private-bank account (Claude
  * Design): the Portfolio screen's Reserve Account deposit + two-step withdraw (the 15% surrender
- * charge), choosing a relationship-tier contract on the Contracts screen, and Panvitium as the Chthonic
- * Logos's sealed fourth rite (ADR-031). A seeded save (a purse of gold) is written to localStorage
- * before load (an old v5 save, so the load also exercises the migration chain); none of the
- * Depraedatio flows needs Avaritia.
+ * charge), choosing a relationship-tier contract on the Contracts screen, and the Chthonic Logos
+ * carrying only its three temptations (Panvitium retired, ADR-039). A seeded save (a purse of gold)
+ * is written to localStorage before load (an old v5 save, so the load also exercises the migration
+ * chain); none of the Depraedatio flows needs Avaritia.
  */
 
 /** A minimal valid v5 save with 10,000 gold, stamped to "now". */
@@ -119,14 +119,13 @@ test('chooses a Tier I contract with the two-step confirm (free, one per tier)',
   await expect(page.locator('.ch-term--foreclosed')).toHaveCount(2);
 });
 
-test('the Chthonic Logos carries Panvitium as its sealed fourth rite', async ({ page }) => {
+test('the Chthonic Logos carries only its three temptations', async ({ page }) => {
   await enterStudio(page);
   await page.getByRole('button', { name: 'The Chthonic Logos' }).click();
   const scroll = page.getByRole('dialog', { name: 'Chthonic Logos' });
   await expect(scroll).toBeVisible();
-  // Four rows now: the three temptations plus Panvitium, sealed exactly like the other locked
-  // rites (redacted Latin + the gate label) until every Sin reaches level III.
-  await expect(scroll.locator('.logos-row')).toHaveCount(4);
-  await expect(scroll).toContainText('Requires Every Sin III');
-  await expect(scroll).toContainText('Zvorpo Wermurn'); // the redacted seal-name
+  // Panvitium is no longer a rite on the scroll: three rows, no fourth sealed seal-name.
+  await expect(scroll.locator('.logos-row')).toHaveCount(3);
+  await expect(scroll).not.toContainText('Zvorpo Wermurn');
+  await expect(scroll).not.toContainText('Requires Every Sin III');
 });

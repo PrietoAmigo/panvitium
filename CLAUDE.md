@@ -86,8 +86,8 @@ Gaap's `maleficiaBoost` (via `boostMaleficiumFactor`); every invocation cost goe
 `add`, `mul`, …) — souls/gold are `BigNum`, not `number`.
 
 **Editable economy data is separated from logic** (see `DEVELOPMENT.md` "Tuning the economy"): the
-`*.data.ts` files (`actions.data.ts`, `compositum.data.ts`, `invocations.data.ts`,
-`maleficia.data.ts`, `sigils.data.ts`, `constants.ts`) are pure typed tables; the sibling `*.ts`
+`*.data.ts` files (`actions.data.ts`, `invocations.data.ts`, `maleficia.data.ts`,
+`sigils.data.ts`, `constants.ts`) are pure typed tables; the sibling `*.ts`
 holds the behaviour. Tune numbers in the data file; the spreadsheet is the source of truth and inline
 comments record each reconciliation.
 
@@ -100,7 +100,7 @@ and the save **envelope** (`save/schema.ts`: `schemaVersion`, monotonic `saveVer
 **Save migrations (ADR-023, `save/migrations/`).** When the persisted shape changes, bump
 `CURRENT_SCHEMA_VERSION` and add a `vN-to-vN+1.ts` migration — never break old saves. Additive,
 optional fields (`additive-optional`) do not require a bump; structural changes do. Current version
-is **14** (`v1-to-v2`: subtype removal; `v2-to-v3`: Mercatus rework; `v3-to-v4`: Decimatio rite id
+is **15** (`v1-to-v2`: subtype removal; `v2-to-v3`: Mercatus rework; `v3-to-v4`: Decimatio rite id
 `caedis` → `caedes` rewritten in persisted action references; `v4-to-v5`: Mercatus → the
 Faeneratio loop — divest-value gold credit, `mercatusDepths` drop; `v5-to-v6`: invocation roster
 rework — clear active invocations, `pendingMorpheus` → `pendingAstiwihad`, drop `morpheusLockedOut`,
@@ -115,7 +115,8 @@ Black Robe maleficium renamed the Red Robe, `black_robe` → `red_robe` in owned
 listing, rolled prices, an in-flight Emptio target and the safe; `v12-to-v13`: the Indagatio
 investment becomes a default percentage, drop the gold stake `indagatioInvestment` with a gold
 refund; `v13-to-v14`: the first-descent cinematic, seed the permanent `firstDescentSeen` for every
-save that had already descended).
+save that had already descended; `v14-to-v15`: Panvitium retired (ADR-039), drop the ceremony
+toggles `activeToggles` / `toggleDurations` and strip the `the_long_burn` achievement).
 
 ### `apps/web` — the React SPA (the game)
 
@@ -138,7 +139,8 @@ save that had already descended).
   chrome, not diegetic: a crisp DOM layer over the canvas, outside the pass (see `AltarSigil`). The
   light it and its STATUS QUO label cast is the room's, though: `DegradePass.setGlows` paints it
   into the pass from hidden DOM anchors it samples every frame (`menus/altarGlow.ts`), so the CSS
-  still times it while the pass pixelates it.
+  still times it while the pass pixelates it. Once Semet is named the sigil is the gold seal of Semet (no STATUS QUO),
+  and its commit ends the game instead of descending (`ui/PanvitiumEnd.tsx`, ADR-039).
 - `art/` — source for baked art, not imported by the app: the Magna Goetia invocation plates' brush
   and gesture tables. `pnpm --filter @panvitium/web bake:plates` (`scripts/`) rasterizes them to
   the PNGs the grimoire loads; re-bake after any edit (a digest test catches a stale bake), and

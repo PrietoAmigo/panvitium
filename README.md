@@ -97,7 +97,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 ## Status
 
-**Current test count: 1444** (sim 646 · shared 100 · api 20 · web 678). Save schema: **v14**.
+**Current test count: 1428** (sim 629 · shared 102 · api 20 · web 677). Save schema: **v15**.
 
 The game is mechanically complete and playable end-to-end. Phases 2 (infrastructure), 3 (gameplay)
 and 4 (content depth), the economy-parity pass, and the Phase 5 tracks that surfaced the sim, rebuilt
@@ -113,14 +113,14 @@ the merged pull requests; this README lists only what is still open.
 
 Each needs a design or spreadsheet decision before it becomes a coding slice.
 
-**Balance audit 2026-10-08.** Seventeen open findings, ranked and quantified in
-`docs/balance-audit-2026-10-08.md` (its numbers predate the 2026-10-20 Suggestion retune):
+**Balance audit 2026-10-08.** Sixteen open findings, ranked and quantified in
+`docs/balance-audit-2026-10-08.md` (its numbers predate the 2026-10-20 Suggestion retune; its
+Panvitium finding closed with the rite, ADR-039):
 
-- _High:_ Panvitium's harvest (`souls × e^(gold burned / 100,000)`, one long burn ends the game);
-  reserve interest multiplied by `goldRateMul` and compounded by hand (free deposits; Midas ×10
-  doubles the reserve every ~2.3 min); Erinyes's uncapped ×2 player efficiency per descent; the
-  Imperium / Logismoi %-of-flock × efficiency tiers compounding the flock (fed by Aurevora's
-  gold-for-efficiency and Erinyes); the Church culls (Suggestion's Terrible −5% / Apocalyptic −25% of
+- _High:_ reserve interest multiplied by `goldRateMul` and compounded by hand (free deposits;
+  Midas ×10 doubles the reserve every ~2.3 min); Erinyes's uncapped ×2 player efficiency per
+  descent; the Imperium / Logismoi %-of-flock × efficiency tiers compounding the flock (fed by
+  Aurevora's gold-for-efficiency and Erinyes); the Church culls (Suggestion's Terrible −5% / Apocalyptic −25% of
   the whole flock) capping the early flock. The audit measured them taking ~84% of it; since the
   retune a one-hour Suggestion-only run loses ~30% to them (Good's suicides are now the main exit)
   with the flock near ~130, so this one wants re-ranking.
@@ -138,11 +138,11 @@ Each needs a design or spreadsheet decision before it becomes a coding slice.
   the 2026-10-20 retune, Suggestion's Good tier drives 1 to 3 reprobates to suicide and is the main
   early source (~86% of the ~830 souls in a one-hour Suggestion-only run). Otherwise souls come only
   from deaths: the ambient suicide/murder rates (~1 soul per 33 s at 100 reprobates), the death-rate
-  invocations (Imp, Harpy, Banshee, Nightmare), maleficia, the death seals, Panvitium, Erinyes and
-  two incoming-call answers (10% / 15% of the flock). Early Devotion, sigil and invocation pacing all
+  invocations (Imp, Harpy, Banshee, Nightmare), maleficia, the death seals, Erinyes and two
+  incoming-call answers (10% / 15% of the flock). Early Devotion, sigil and invocation pacing all
   read souls and need re-checking.
 - **Gold sinks.** Caedes / Pogrom / Purgatio were the main repeatable sinks; gold now goes only to
-  Emptio, the Indagatio investment, the Depraedatio reserve, Panvitium upkeep, Aurevora, invocation
+  Emptio, the Indagatio investment, the Depraedatio reserve, Aurevora, invocation
   gold upkeep (Imp's 10 gold/s; Behemoth, Fama, Succubus and Specunitas take a share of gold gain)
   and a few incoming-call answers.
 - **Ira (Satan).** The per-level effect is empty (the ledger reads "Its levels carry no effect.");
@@ -167,7 +167,6 @@ Each needs a design or spreadsheet decision before it becomes a coding slice.
   death mints gold.
 - **Katabasis gold carry-over** is only the 5% base, the Avaritia level (+12.5% each) and Purson #20
   (plus Astiwihad's 100%).
-- **Panvitium upkeep** has no Foedus rebate, so the burn is shorter at full price.
 - **Vine #45 / Furcas #50** only cut the surrender charge, a small value: candidates to re-home.
 
 ### Features
@@ -227,6 +226,10 @@ restore test, monitoring is green, and a beta cohort is playing.
 - `docs/02-systems-and-mechanics.md` and `docs/03-content-catalog.md` still describe the loan book
   (§1 population tension, §2.3 Faeneratio loop, Mutuum, Foedus, the Syngraphae table, Plutus and
   Vapula); ADR-037 governs until they are synced.
+- `docs/02-systems-and-mechanics.md` and `docs/03-content-catalog.md` (and the passing mentions in
+  `00`, `01` and `06`) still describe Panvitium and the Vitium Compositum toggle, the Studio's red
+  window and The Long Burn, and 03 §8 does not yet describe the seal of Semet ending the game;
+  ADR-039 governs until they are synced.
 - The project-knowledge copies of the design docs and ADRs (outside this repo) lag `docs/`.
 
 ## License

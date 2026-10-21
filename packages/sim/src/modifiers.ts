@@ -86,8 +86,8 @@ export interface Modifiers {
   readonly influenceRateMul: number;
   /**
    * Additive flat influence-per-second (the Decarabia #69 sigil attaches here once sigil
-   * flat-contributions land). Added to the influence accrual in the tick alongside Vitium Compositum
-   * influence, scaled by `influenceRateMul`, capped at maxInfluence. 0 when no source is active.
+   * flat-contributions land). Added to the influence accrual in the tick, scaled by
+   * `influenceRateMul`, capped at maxInfluence. 0 when no source is active.
    */
   readonly flatInfluencePerSecond: number;
   /**
@@ -164,16 +164,15 @@ export interface Modifiers {
    */
   readonly reprobateGenerationRateMul: number;
   /**
-   * Multiplier on the population-wide reprobate suicide rate (02 §9). Raised by Panvitium, the Doom
-   * Gathering ceremony, the Witch Ladder maleficium, and the suicide sigils (Ronove #27,
-   * Sabnock #43). The old Tristitia per-level 2× was retired in the Sins remap — Tristitia's skill
+   * Multiplier on the population-wide reprobate suicide rate (02 §9). Raised by maleficia (Thirty
+   * Pieces of Silver, Defixio), invocations and the suicide sigils. The old Tristitia per-level 2× was retired in the Sins remap — Tristitia's skill
    * now feeds acolyte efficiency, not suicide.
    */
   readonly reprobateSuicideRateMul: number;
   /**
    * Multiplier on the reprobate murder rate (02 §9). Murder is now a per-capita cull of the whole
-   * population (subtypes removed); this multiplier carries Panvitium and sigil/maleficium/invocation
-   * effects (Aim #23, etc.).
+   * population (subtypes removed); this multiplier carries sigil/maleficium/invocation effects
+   * (Aim #23, etc.).
    */
   readonly murderRateMul: number;
   /**
@@ -347,19 +346,11 @@ export function computeModifiers(state: GameState): Modifiers {
   // player efficiency. Top-level, carries across lifetimes.
   const erinyesStackMul = 2 ** (state.erinyesEfficiencyStacks ?? 0);
 
-  // Panvitium (03 §2.3): the endgame ritual. While active it drives the whole population at once —
-  // generation, suicide, and murder rates are enormous. Its flat generation/conversion/cost come
-  // from its sheet-pinned Vitium Compositum entry; these churn MULTIPLIERS are the one piece the
-  // sheet doesn't pin — genuine tuning values. (It's a single toggle, on or off — not a stack.)
-  const panvitiumActive = state.lifetime.activeToggles.includes('panvitium');
   // Fausto Cescru's curse (05, the adversary): while his fourth letter sits unbroken in the inbox,
   // reprobate generation, influence gain and gold gain each run two-thirds slower (×0.33). Lifted the
   // moment the email is deleted (`flagFaustoCurse` clears) — the in-fiction "as long as these words
   // remain" tell. A single flat multiplier folded into the three affected rates below (ADR-022).
   const faustoCurseMul = state.lifetime.flagFaustoCurse === true ? 0.33 : 1;
-  const PANV_GEN_MUL = 10;
-  const PANV_SUICIDE_MUL = 20;
-  const PANV_MURDER_MUL = 20;
   // Invocation effect magnitudes. Each per-copy factor marked "(× invEff)" is scaled by the
   // all-invocation × per-Sin invocation-effect multiplier (`invEffFor(sin)`) — NOT player efficiency
   // (the player-efficiency coupling was removed; the demonic court now scales only with invocation
@@ -573,10 +564,9 @@ export function computeModifiers(state: GameState): Modifiers {
       mBuff.indagatioEfficiencyMul,
     emptioEfficiencyMul: sc('emptioEfficiencyMul'),
     tierWeightMul,
-    // Reprobate generation: Panvitium amplifies; Luxuria's Seduction skill lifts it continuously
-    // (03 §1); the single-use buffs, the Aamon #7 sigil and the call buffs compose.
+    // Reprobate generation: Luxuria's Seduction skill lifts it continuously (03 §1); the single-use
+    // buffs, the Aamon #7 sigil and the call buffs compose.
     reprobateGenerationRateMul:
-      (panvitiumActive ? PANV_GEN_MUL : 1) *
       mBuff.reprobateGenerationRateMul * // Hand of Glory (+33%) / Black Salt Pouch (+10%), single-use
       skillBonus(luxuriaIntensity) *
       sc('reprobateGenerationRateMul') *
@@ -585,17 +575,14 @@ export function computeModifiers(state: GameState): Modifiers {
 
     // Suicide (sheet rev 2026-06-12): Tristitia no longer touches it — Resignation (the skill) moved
     // to acolyte efficiency, and the per-level doubling is retired. Pressure sources are maleficia
-    // (Thirty Pieces of Silver +200%, Defixio +50% single-use), invocations and sigils. Panvitium
-    // multiplies while active.
+    // (Thirty Pieces of Silver +200%, Defixio +50% single-use), invocations and sigils.
     reprobateSuicideRateMul:
-      (panvitiumActive ? PANV_SUICIDE_MUL : 1) *
       more('thirty_pieces_of_silver', 2) * // Thirty Pieces of Silver: +200% suicide rate
       mBuff.reprobateSuicideRateMul * // Defixio (+50%), single-use
       sc('reprobateSuicideRateMul'),
-    // Murder: Panvitium multiplies while active; Aim #23 sigil composes. Murder is a per-capita cull
-    // of the whole population, lifted by Mark of Cain (+100%), Ritual Dagger (+10%), Galdrabók (+12.5%).
+    // Murder: a per-capita cull of the whole population, lifted by Mark of Cain (+100%), Ritual
+    // Dagger (+10%), Galdrabók (+12.5%); the Aim #23 sigil composes.
     murderRateMul:
-      (panvitiumActive ? PANV_MURDER_MUL : 1) *
       more('mark_of_cain', 1) * // Mark of Cain: +100% murder rate (×2)
       more('ritual_dagger', 0.1) * // Ritual Dagger: +10% murder rate
       more('galdrabok', 0.125) * // Galdrabók: +12.5% murder rate

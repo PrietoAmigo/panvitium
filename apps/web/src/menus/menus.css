@@ -127,31 +127,6 @@ body {
 }
 
 /* Real photoreal backdrops live in backgrounds.css (clean + furnished, inlined). */
-/* Panvitium visual signature (03 §2.3): the Studio window burns red while the ritual runs. */
-.scene-studio.panvitium-active {
-  filter: saturate(1.15) contrast(1.04);
-}
-.scene-studio.panvitium-active::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 12% 42%, rgba(196, 26, 30, 0.5), transparent 46%),
-    linear-gradient(180deg, rgba(120, 14, 18, 0.22), rgba(60, 6, 8, 0.34));
-  mix-blend-mode: screen;
-  animation: ember 5s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes ember {
-  0%,
-  100% {
-    opacity: 0.7;
-  }
-  50% {
-    opacity: 1;
-  }
-}
 
 /* Soft vignette to seat any plate into the candlelit mood */
 .scene::before {
@@ -344,6 +319,11 @@ body {
   animation:
     kat-seal-vibe-strong 0.07s linear infinite,
     kat-seal-breathe-armed 1s ease-in-out infinite;
+}
+/* The seal of Semet (the Ninth named): gold art at its own aspect; the same pulse, shake and armed
+   growth as the Katabasis sigil. Its gold glow is painted by the pass (altarGlow.ts). */
+.altar-sigil-btn.is-semet .altar-sigil-glyph {
+  aspect-ratio: 90 / 98;
 }
 /* Reduced motion: no vibration, no pulse; the glow holds still at the look's first keyframe, and
    the armed seal stays visibly larger. */

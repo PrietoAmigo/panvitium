@@ -16,7 +16,6 @@ export type AudioEvent =
   | 'maleficium-acquired'
   | 'outcome-stellar'
   | 'outcome-apocalyptic'
-  | 'panvitium-activate'
   // A delivered email worth a cue: the Fausto Cescru #5 door-knock (05, ADR-014).
   | 'email-knock'
   // The Banshee's scream: a rare cue on her successful summon (see `summonCue`).

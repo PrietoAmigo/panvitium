@@ -4,8 +4,8 @@
  * spreadsheet, the spreadsheet wins — noted inline.
  *
  * This file holds the cross-cutting SCALARS; the per-system tables (the other editable economy
- * knobs) live alongside their engines as pure data: `actions.data.ts`, `compositum.data.ts`,
- * `invocations.data.ts`, `maleficia.data.ts`, `sigils.data.ts`. See DEVELOPMENT.md "Tuning the
+ * knobs) live alongside their engines as pure data: `actions.data.ts`, `invocations.data.ts`,
+ * `maleficia.data.ts`, `sigils.data.ts`. See DEVELOPMENT.md "Tuning the
  * economy" for the full map.
  */
 
@@ -33,23 +33,8 @@ export const BASE_SUICIDE_RATE_PER_SECOND = 0.0001;
 export const BASE_REPROBATE_GENERATION_PER_SECOND = 0;
 
 /**
- * Panvitium's instantaneous rate base R₀. R(t) = R₀·growthᵗ drives the two surviving coupled
- * effects (soul harvest ∝ current souls, and a flat reprobate-generation increase); t = seconds
- * Panvitium has been active, and the growth base is shared with the cost ramp (compositum.data.ts).
- *
- * Retuned down from 0.01 (with the cost ramp softened from eᵗ, see `costGrowthPerSecond`): the old
- * base-e ramp made the harvest a per-second explosion (R ≈ 220/s after ten seconds), and the paired
- * influence upkeep self-extinguished the ritual in ~3 s so the harvest was never realised. The
- * ∝-souls harvest with a rising rate is inherently tail-heavy — the multiplier climbs steeply with
- * how long the gold hoard sustains the burn (roughly a few-fold at five minutes, far more for a
- * longer, richer burn) — so this base is kept conservative. Spreadsheet-overridable (the sheet's
- * Invocations/Globals block wins on the number; the coupled shape is authoritative).
- */
-export const PANVITIUM_RATE_BASE = 0.001;
-
-/**
  * Base reprobate murder rate (kills / reprobate / second), applied to the whole population, before
- * sigil/maleficium/ceremony modifiers. With reprobate subtypes removed, murder is a per-capita cull
+ * sigil/maleficium/invocation modifiers. With reprobate subtypes removed, murder is a per-capita cull
  * of the single pool (re-anchored from the old per-Choleric rate). Pinned to the Globals sheet
  * (0.0002/s); the SHAPE (per-capita on total population) is likewise authoritative.
  */
@@ -100,8 +85,8 @@ export const ETERNAL_SIN_THRESHOLD = 8398080000;
 /**
  * Aurevora (apex Gula): an exponentially-rising gold sink paid against a similarly-rising boost to
  * the player's action efficiency (03 §2.4). Both ramp with the seconds the invocation has been
- * active — `base × growth^secondsActive` — mirroring Panvitium's duration-scaled cost (and guarded
- * with `Number.isFinite` the same way, so a runaway ramp dispels rather than overflowing). Once the
+ * active — `base × growth^secondsActive` — guarded with `Number.isFinite`, so a runaway ramp
+ * dispels rather than overflowing. Once the
  * drain takes gold to 0 the invocation is dispelled.
  */
 export const AUREVORA_BASE_GOLD_DRAIN_PER_SECOND = 100;

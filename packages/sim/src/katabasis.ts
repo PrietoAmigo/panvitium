@@ -160,8 +160,8 @@ export function markFirstDescentSeen(state: GameState): GameState {
  * systems are torn down — NOT later when they rise. The Depraedatio account closes: the reserve
  * liquidates in full into gold with no surrender charge (so the estate rides the later carry-over
  * roll), and the private item safe is judged here (a safe that is not open at the descent keeps
- * nothing). Toggles stop, the action queue clears,
- * invocations are dispelled, and acolytes drop their assignments. What the commit will roll
+ * nothing). The action queue clears, invocations are dispelled, and acolytes drop their
+ * assignments. What the commit will roll
  * for carry-over (gold, reprobates, maleficia) is left intact and frozen; the store suspends
  * ticking while the menu is open, so nothing accrues during allocation. `commitKatabasis` finishes
  * the descent (the carry-over rolls + lifetime reset) when the player confirms.
@@ -189,8 +189,6 @@ export function enterKatabasis(state: GameState): GameState {
     lifetime: {
       ...rest,
       ...(safeHeld !== undefined ? { safeItem: safeHeld } : {}),
-      activeToggles: [], // toggles stop
-      toggleDurations: {},
       actionQueue: [], // uncompleted player actions fizzle
       autoRepeat: [], // auto-repeating rites stop with the slot
       invocations: {}, // all invocations dispelled (02 §7)
@@ -298,8 +296,6 @@ export function commitKatabasis(
     indagatioInvestPercent: 0, // the new lifetime pours nothing into the Search until set again
     maleficiaBuffs: {}, // single-use maleficia buffs end with the lifetime
     callBuffs: [], // incoming-call timed buffs end with the lifetime
-    activeToggles: [], // toggles stop
-    toggleDurations: {}, // and their duration counters clear
     actionQueue: [], // uncompleted actions fizzle
     autoRepeat: [], // and nothing carries an auto-repeat into the new lifetime
     hoard: ZERO, // liquidated at descent (the payout folded into goldAtDescent)

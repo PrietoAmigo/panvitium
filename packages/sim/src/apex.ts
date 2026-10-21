@@ -7,9 +7,9 @@
  *     active-duration tracked here). When the drain takes gold to 0 the invocation dispels.
  *
  * The rising halves both scale with the seconds Aurevora has been active, tracked in
- * `lifetime.invocationDurations` (mirrors `toggleDurations` for Panvitium). This module owns the
- * curves and the tick pass; the catalog gates/costs live in invocations.ts and the efficiency
- * multiplier is folded into the bundle by modifiers.ts.
+ * `lifetime.invocationDurations`. This module owns the curves and the tick pass; the catalog
+ * gates/costs live in invocations.ts and the efficiency multiplier is folded into the bundle by
+ * modifiers.ts.
  *
  * (Astiwihad's mass-suicide role was retired: Astiwihad is now the world-still apex — the freeze
  * lives in `tick.ts` and its Katabasis carry-over in `invoke`/`commitKatabasis` — so this module no
@@ -83,8 +83,8 @@ export function applyInvocationTickEffects(
 
   // ── Aurevora: exponential gold drain ↔ rising efficiency; dispel at gold 0. ──────────────────
   if ((working.lifetime.invocations.aurevora ?? 0) > 0) {
-    // Evaluate the ramp at the duration BEFORE this tick's increment, mirroring Panvitium's
-    // duration-scaled cost (compositum.ts), then advance the counter by deltaSeconds.
+    // Evaluate the ramp at the duration BEFORE this tick's increment, then advance the counter by
+    // deltaSeconds.
     const prevDuration = working.lifetime.invocationDurations.aurevora ?? 0;
     const drainPerSecond = aurevoraDrainPerSecond(prevDuration, invocationCostMul(working));
     const gold = working.lifetime.gold;
@@ -92,7 +92,7 @@ export function applyInvocationTickEffects(
     let dispel = false;
     let nextGold: BigNum = gold;
     if (!Number.isFinite(drainPerSecond)) {
-      // Runaway ramp — it eats everything this tick (mirrors Panvitium's finite guard).
+      // Runaway ramp — it eats everything this tick.
       dispel = true;
     } else {
       const drain = mul(bn(drainPerSecond), deltaSeconds);

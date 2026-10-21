@@ -14,10 +14,16 @@ import type { ReactElement } from 'react';
 /** The seal's art (the same glyph the prior full-screen gate used). */
 export const ALTAR_SIGIL_SRC = '/assets/panvitium/katabasis/seal-panvitium.png';
 
+/** The golden seal of Semet (#32, the same art the Aether vault and the Ledger use), raised in the
+ *  sigil's place once the Ninth is named. */
+export const SEMET_SIGIL_SRC = '/assets/panvitium/katabasis/sigils/32.png';
+
 /** How the Altar Room shows the sigil: its look, and whether it is fading away. */
 export interface AltarSigilView {
   readonly armed: boolean;
   readonly fading: boolean;
+  /** Semet is named: the golden seal of Semet, whose commit ends the game, not the descent. */
+  readonly semet?: boolean;
 }
 
 interface AltarSigilProps extends AltarSigilView {
@@ -25,22 +31,35 @@ interface AltarSigilProps extends AltarSigilView {
   onStatusQuo: () => void;
 }
 
-export function AltarSigil({ armed, fading, onPress, onStatusQuo }: AltarSigilProps): ReactElement {
+export function AltarSigil({
+  armed,
+  fading,
+  semet = false,
+  onPress,
+  onStatusQuo,
+}: AltarSigilProps): ReactElement {
+  const label = semet
+    ? armed
+      ? 'Confirm — this is the end'
+      : 'Press the seal of Semet'
+    : armed
+      ? 'Confirm the descent — there is no return'
+      : 'Press the sigil';
   return (
     <div className={`altar-sigil${fading ? ' is-fading' : ''}`}>
       <div className="altar-sigil-wrap">
         <button
           type="button"
-          className={`altar-sigil-btn${armed ? ' is-armed' : ''}`}
+          className={`altar-sigil-btn${armed ? ' is-armed' : ''}${semet ? ' is-semet' : ''}`}
           onClick={onPress}
-          aria-label={armed ? 'Confirm the descent — there is no return' : 'Press the sigil'}
+          aria-label={label}
         >
           {/* The span carries the pulse so it composes cleanly with the glyph's own vibration. */}
           <span className="altar-sigil-scale">
             <span className="altar-sigil-aura" aria-hidden="true" />
             <img
               className="altar-sigil-glyph"
-              src={ALTAR_SIGIL_SRC}
+              src={semet ? SEMET_SIGIL_SRC : ALTAR_SIGIL_SRC}
               alt=""
               aria-hidden="true"
               draggable={false}
@@ -48,7 +67,8 @@ export function AltarSigil({ armed, fading, onPress, onStatusQuo }: AltarSigilPr
           </span>
         </button>
       </div>
-      {!armed && (
+      {/* The seal of Semet has no Status Quo: there is no standing left to read, only the end. */}
+      {!armed && !semet && (
         <div className="altar-sq-row">
           <button type="button" className="altar-sq" onClick={onStatusQuo}>
             <span className="altar-sq-bloom" aria-hidden="true" />

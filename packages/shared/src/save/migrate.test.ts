@@ -5,6 +5,7 @@ import { CURRENT_SCHEMA_VERSION, newDeviceId, type SaveBlob } from './schema.js'
 import { migrateSave, SaveMigrationError, type SaveMigration } from './migrate.js';
 import { migrateV3ToV4 } from './migrations/v3-to-v4.js';
 import { migrateV13ToV14 } from './migrations/v13-to-v14.js';
+import { migrateV14ToV15 } from './migrations/v14-to-v15.js';
 
 function currentBlob(): SaveBlob {
   const state = createInitialState('seed', 1000);
@@ -647,5 +648,54 @@ describe('v13 → v14 migration (the first-descent cinematic)', () => {
       expect(migrated.schemaVersion).toBe(14);
       expect('firstDescentSeen' in (migrated.state as Record<string, unknown>)).toBe(false);
     }
+  });
+});
+
+describe('v14 → v15 migration (Panvitium retired, ADR-039)', () => {
+  /** A v14-shaped raw blob: lifetime and top-level state overrides on a current save. */
+  function v14Blob(
+    lifetimeExtra: Record<string, unknown>,
+    stateExtra: Record<string, unknown> = {},
+  ): Record<string, unknown> {
+    const base = currentBlob();
+    const state = base.state as Record<string, unknown>;
+    const lifetime = state.lifetime as Record<string, unknown>;
+    return {
+      ...base,
+      schemaVersion: 14,
+      state: { ...state, ...stateExtra, lifetime: { ...lifetime, ...lifetimeExtra } },
+    };
+  }
+
+  it('drops a burning Panvitium and its duration counter', () => {
+    const migrated = migrateSave(
+      v14Blob({ activeToggles: ['panvitium'], toggleDurations: { panvitium: 42.5 } }),
+    );
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect('activeToggles' in migrated.state.lifetime).toBe(false);
+    expect('toggleDurations' in migrated.state.lifetime).toBe(false);
+  });
+
+  it('drops the empty toggle list every v14 save carried, and nothing else', () => {
+    const blob = v14Blob({ activeToggles: [] });
+    const migrated = migrateSave(blob);
+    const { activeToggles: _drop, ...rest } = (blob.state as Record<string, unknown>)
+      .lifetime as Record<string, unknown>;
+    expect(migrated.state.lifetime).toEqual(rest);
+  });
+
+  it('strips the retired The Long Burn achievement and keeps the rest in order', () => {
+    const migrated = migrateSave(
+      v14Blob(
+        { activeToggles: [] },
+        { achievements: ['first_stain', 'the_long_burn', 'eight_at_the_table'] },
+      ),
+    );
+    expect(migrated.state.achievements).toEqual(['first_stain', 'eight_at_the_table']);
+  });
+
+  it('is defensive about a blob with no state', () => {
+    const migrated = migrateV14ToV15.migrate({ schemaVersion: 14 });
+    expect(migrated).toEqual({ schemaVersion: 15 });
   });
 });

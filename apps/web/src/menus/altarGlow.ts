@@ -54,6 +54,43 @@ export const SEAL_ARMED: SealLook = {
   ],
 };
 
+/** The seal of Semet's glow: gold leaf hugging the strokes, in place of the crimson. */
+export const SEAL_SEMET: SealLook = {
+  fill: 'rgb(216, 182, 88)',
+  rest: [
+    [6, 216, 182, 88, 1],
+    [20, 201, 162, 39, 1],
+    [46, 170, 130, 30, 1],
+  ],
+  swell: [
+    [8, 232, 200, 110, 1],
+    [30, 216, 176, 52, 1],
+    [62, 185, 142, 34, 1],
+  ],
+};
+
+export const SEAL_SEMET_ARMED: SealLook = {
+  fill: 'rgb(226, 194, 102)',
+  rest: [
+    [9, 226, 194, 102, 1],
+    [30, 210, 170, 48, 1],
+    [70, 178, 136, 32, 1],
+  ],
+  swell: [
+    [12, 240, 212, 128, 1],
+    [44, 224, 184, 60, 1],
+    [100, 192, 148, 36, 1],
+  ],
+};
+
+/** The seal of Semet's wide aura: a dim gold, where the Katabasis sigil's is crimson. */
+export const AURA_STOPS_SEMET: EngineGlowStops = [
+  [0, 'rgba(201, 162, 39, 0.5)'],
+  [0.4, 'rgba(170, 130, 30, 0.3)'],
+  [0.7, 'rgba(120, 90, 20, 0.12)'],
+  [1, 'rgba(120, 90, 20, 0)'],
+];
+
 /** The seal's wide aura, filling its anchor's box. */
 export const AURA_STOPS: EngineGlowStops = [
   [0, 'rgba(150, 10, 7, 0.6)'],
@@ -132,16 +169,23 @@ export function altarGlows(root: ParentNode | null): EngineGlow[] {
     };
   };
   const fade = opacityOf(layer);
+  const semet = layer.querySelector('.altar-sigil-btn.is-semet') !== null;
   const glows: EngineGlow[] = [];
 
   const aura = layer.querySelector('.altar-sigil-aura');
   if (aura) {
-    glows.push({ kind: 'ellipse', ...box(aura), stops: AURA_STOPS, alpha: fade * opacityOf(aura) });
+    glows.push({
+      kind: 'ellipse',
+      ...box(aura),
+      stops: semet ? AURA_STOPS_SEMET : AURA_STOPS,
+      alpha: fade * opacityOf(aura),
+    });
   }
 
   const glyph = layer.querySelector<HTMLImageElement>('.altar-sigil-glyph');
   if (glyph && glyph.complete && glyph.naturalWidth > 0 && glyph.offsetWidth > 0) {
-    const look = glyph.closest('.is-armed') ? SEAL_ARMED : SEAL_IDLE;
+    const armed = glyph.closest('.is-armed') !== null;
+    const look = semet ? (armed ? SEAL_SEMET_ARMED : SEAL_SEMET) : armed ? SEAL_ARMED : SEAL_IDLE;
     const breath = clamp01(cssNumber(getComputedStyle(glyph).getPropertyValue('--seal-breath'), 0));
     // The glyph's live box takes its pulse, pointer scale and shake; the art keeps its aspect.
     const b = box(glyph);

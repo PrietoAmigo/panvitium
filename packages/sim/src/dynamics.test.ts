@@ -184,7 +184,7 @@ describe('reprobate dynamics — murder pool (per-capita cull)', () => {
     expect(after.lifetime.murderPool).toBeLessThan(1);
   });
 
-  it('Panvitium-style murder multiplier scales the rate', () => {
+  it('the murder multiplier scales the rate', () => {
     const s = pop(1000);
     const base = reprobateRates(s, NEUTRAL_MODIFIERS).murderPerSecond;
     const boosted = reprobateRates(s, { ...NEUTRAL_MODIFIERS, murderRateMul: 4 }).murderPerSecond;

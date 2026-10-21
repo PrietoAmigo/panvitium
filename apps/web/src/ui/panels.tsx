@@ -29,9 +29,6 @@ import {
   syngraphaeOfTier,
   thesaurusRecoveryFraction,
   vestingPerSecond,
-  compositumById,
-  compositumUnlocked,
-  isToggleActive,
   assignedCount,
   isDelegatable,
   isAutoRepeatable,
@@ -291,9 +288,7 @@ function logosLedgerText(e: OutcomeEvent): string {
 export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
   const act = useGameStore((s) => s.act);
-  const activateCeremony = useGameStore((s) => s.activateCeremony);
   const log = useGameStore((s) => s.log);
-  const [confirmingPanvitium, setConfirmingPanvitium] = useState(false);
   const head = useGameStore(
     (s) => s.state?.lifetime.actionQueue.find((t) => occupiesPlayerSlot(t.actionId)) ?? null,
   );
@@ -357,45 +352,6 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
       ...(hasControls ? { delegation: <RiteControls actionId={id} /> } : {}),
     };
   });
-
-  // Panvitium — the endgame ritual, the scroll's fourth and final temptation (ADR-031: the other
-  // ceremonies retired, and the survivor moved here from the Depraedatio panel). A toggle, not a
-  // timed rite: sealed exactly like the other rows until every Sin reaches level III, and armed
-  // behind a second confirming press (it cannot be stopped by hand once it burns).
-  const panvDef = compositumById('panvitium');
-  if (panvDef) {
-    const locked = !compositumUnlocked(state, panvDef);
-    const burning = isToggleActive(state, 'panvitium');
-    const sealed = locked ? strings.opera.logosSealed.panvitium : undefined;
-    actions.push({
-      id: 'panvitium',
-      numeral: 'IV',
-      glyph: '\u2641',
-      name: locked ? (sealed?.name ?? '') : (strings.opera.panvitium ?? 'Panvitium'),
-      quote: locked ? (sealed?.maxim ?? '') : (strings.opera.logosQuote.panvitium ?? ''),
-      cost: `${(panvDef.costPerSecond.gold ?? 0).toLocaleString('en-US')} ${strings.resources.gold.toLowerCase()}/s \u00b7 ${strings.opera.panvitiumRising}`,
-      cta: burning
-        ? (strings.opera.logosStatus.panvitium ?? '')
-        : confirmingPanvitium
-          ? (strings.opera.logosConfirm ?? '')
-          : (strings.opera.logosCta.panvitium ?? ''),
-      status: strings.opera.logosStatus.panvitium ?? '',
-      locked,
-      active: burning,
-      progress: burning ? 100 : 0,
-      disabled: locked || burning,
-      onTempt: () => {
-        if (burning) return;
-        if (!confirmingPanvitium) {
-          setConfirmingPanvitium(true);
-          return;
-        }
-        activateCeremony('panvitium');
-        setConfirmingPanvitium(false);
-      },
-      lockLabel: `${strings.opera.logosRequires} ${strings.opera.logosPanvitiumGate}`,
-    });
-  }
 
   // The scroll's foot is its ledger: the resolved temptations (this program's rites only), newest
   // first, each an outcome tier chip beside its net resource deltas.

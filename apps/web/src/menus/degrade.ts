@@ -275,11 +275,10 @@ export type EngineGlowSource = () => readonly EngineGlow[];
 
 const NO_GLOWS: EngineGlowSource = () => [];
 
-/** A composed scene: one backdrop plate + any sprites + the studio ritual glow. */
+/** A composed scene: one backdrop plate + any sprites. */
 export interface EngineScene {
   bg: HTMLImageElement | null;
   sprites: EngineSprite[];
-  signature: boolean;
   /** Focal-vignette ink alpha (0..1): darkens the room edges so a bound figure reads as the light
       source. Drawn between the backdrop and the sprites, BEFORE the pass — so it degrades too. */
   focalVignette?: number;
@@ -389,7 +388,7 @@ export class DegradePass {
   private readonly gbctx: CanvasRenderingContext2D;
 
   private s: DegradeSettings = { ...DEFAULT_DEGRADE };
-  private scene: EngineScene = { bg: null, sprites: [], signature: false };
+  private scene: EngineScene = { bg: null, sprites: [] };
 
   // Room-change transition: fade out to black, swap, fade back in.
   private _fade = 0; // 0 = clear, 1 = full black
@@ -571,19 +570,6 @@ export class DegradePass {
     } else {
       ctx.fillStyle = '#0a0807';
       ctx.fillRect(0, 0, w, h);
-    }
-    // Studio "panvitium" signature — the window burns red while the ritual runs.
-    if (scene.signature) {
-      const g = ctx.createRadialGradient(0.12 * w, 0.42 * h, 0, 0.12 * w, 0.42 * h, 0.5 * w);
-      const pulse = 0.5 + 0.5 * Math.sin(t * 1.4);
-      g.addColorStop(0, `rgba(198,28,30,${0.42 + 0.28 * pulse})`);
-      g.addColorStop(0.5, 'rgba(120,14,18,0.12)');
-      g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
-      ctx.restore();
     }
     // Focal vignette — dim the room around a bound figure so it reads as the light source. Drawn
     // before the sprites (which sit ON the light) and before the pass, so it crushes with the frame.
@@ -971,7 +957,7 @@ export class DegradePass {
       tmp.width = VW;
       tmp.height = VH;
       const tctx = tmp.getContext('2d')!;
-      const spriteOnly: EngineScene = { bg: null, sprites: this.scene.sprites, signature: false };
+      const spriteOnly: EngineScene = { bg: null, sprites: this.scene.sprites };
       this._drawScene(tctx, VW, VH, spriteOnly, t, true);
       ctx.drawImage(tmp, 0, 0);
     }

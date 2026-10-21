@@ -451,7 +451,7 @@ describe('gameStore — Katabasis', () => {
     expect(floor((store().state as GameState).souls).toNumber()).toBeGreaterThan(soulsAtEntry);
   });
 
-  it('entering Katabasis liquidates the hoard and stops toggles and invocations immediately', () => {
+  it('entering Katabasis liquidates the hoard and dispels invocations immediately', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
       state: {
@@ -459,7 +459,6 @@ describe('gameStore — Katabasis', () => {
         lifetime: {
           ...s0.lifetime,
           hoard: bn(400),
-          activeToggles: ['panvitium'],
           invocations: { imp: 1 },
         },
       },
@@ -469,7 +468,6 @@ describe('gameStore — Katabasis', () => {
     const st = store().state as GameState;
     expect(st.lifetime.hoard.toNumber()).toBe(0);
     expect(floor(st.lifetime.gold).toNumber()).toBe(goldBefore + 400); // full payout, no penalty
-    expect(st.lifetime.activeToggles).toHaveLength(0);
     expect(Object.keys(st.lifetime.invocations)).toHaveLength(0);
   });
 
@@ -506,6 +504,30 @@ describe('gameStore — title & recap are frozen (no offline progression, ADR-03
     expect(floor(after.souls).toNumber()).toBe(soulsBefore);
     // …and the clock is reconciled to ~now, so the live loop resumes cleanly from here.
     expect(Math.abs(after.lastTickAt - Date.now())).toBeLessThan(5000);
+  });
+
+  it('returnToTitle (the end) wipes the save and raises the title over a fresh game', () => {
+    const s0 = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s0,
+        souls: bn(5000),
+        eternalDevotion: bn(ETERNAL_SIN_THRESHOLD),
+        katabasisCount: 7,
+      },
+    });
+    store().persist();
+    expect(localStorage.getItem('panvitium:save')).not.toBeNull();
+    store().returnToTitle();
+    expect(store().titleOpen).toBe(true);
+    const fresh = store().state as GameState;
+    expect(fresh.katabasisCount).toBe(0);
+    expect(floor(fresh.souls).toNumber()).toBe(0);
+    expect(floor(fresh.eternalDevotion).toNumber()).toBe(0);
+    // The title holds the new game frozen until Continue, like the launch title.
+    const lastTick = fresh.lastTickAt;
+    store().advance(60);
+    expect((store().state as GameState).lastTickAt).toBe(lastTick);
   });
 
   it('both the committed descent and the recap that follows are frozen (no gains)', () => {
@@ -683,29 +705,6 @@ describe('gameStore — auto-repeat wiring', () => {
   });
 });
 
-describe('gameStore — Vitium Compositum ceremonies (Panvitium alone, ADR-031)', () => {
-  it('refuses activation of a retired ceremony id', () => {
-    store().activateCeremony('bacchanal');
-    expect(store().notice).toMatch(/unknown ceremony/);
-    expect((store().state as GameState).lifetime.activeToggles).toEqual([]);
-  });
-
-  it('auto-deactivates and surfaces a notice when upkeep cannot be paid', () => {
-    const s0 = store().state as GameState;
-    const devotion = { ...s0.devotion };
-    for (const k of Object.keys(devotion) as (keyof typeof devotion)[]) devotion[k] = bn(180 ** 3);
-    // Panvitium costs 1000 gold/s at the ramp's foot; an empty purse can't pay the first second.
-    useGameStore.setState({
-      state: { ...s0, devotion, lifetime: { ...s0.lifetime, gold: bn(0) } },
-    });
-    store().activateCeremony('panvitium');
-    store().advance(1);
-    const s = store().state as GameState;
-    expect(s.lifetime.activeToggles).not.toContain('panvitium');
-    expect(store().notice).toMatch(/panvitium/i);
-  });
-});
-
 describe('gameStore — invocations', () => {
   function equipPower(ip: number): void {
     const s = store().state as GameState;
@@ -869,32 +868,6 @@ describe('gameStore — the first-descent cinematic', () => {
     expect(store().firstDescentPlaying).toBe(false);
     expect(store().state?.firstDescentSeen).toBeUndefined();
     expect(store().playFirstDescent()).toBe(true);
-  });
-});
-
-describe('gameStore — Panvitium', () => {
-  function unlockAllSins(): void {
-    const s = store().state as GameState;
-    const devotion = { ...s.devotion };
-    for (const k of Object.keys(devotion) as (keyof typeof devotion)[]) devotion[k] = bn(180 ** 3);
-    useGameStore.setState({
-      state: { ...s, devotion, lifetime: { ...s.lifetime, gold: bn(1e12), influence: bn(1e12) } },
-    });
-  }
-
-  it('activates Panvitium once every Sin is level 3, and refuses manual deactivation', () => {
-    unlockAllSins();
-    store().activateCeremony('panvitium');
-    expect(store().state?.lifetime.activeToggles).toContain('panvitium');
-    store().deactivateCeremony('panvitium');
-    expect(store().state?.lifetime.activeToggles).toContain('panvitium'); // still on
-    expect(store().notice).toMatch(/cannot be stopped/i);
-  });
-
-  it('refuses activation before all Sins are level 3', () => {
-    store().activateCeremony('panvitium');
-    expect(store().state?.lifetime.activeToggles ?? []).not.toContain('panvitium');
-    expect(store().notice).toBeTruthy();
   });
 });
 

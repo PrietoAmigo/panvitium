@@ -100,7 +100,6 @@ describe('commitKatabasis', () => {
         influence: bn(500),
         reprobates: 150,
         invocations: { upir: 3 },
-        activeToggles: ['panvitium'],
         actionQueue: [{ actionId: 'suggestion', remainingSeconds: 4 }],
         emptioList: ['black-robe'],
       },
@@ -118,11 +117,10 @@ describe('commitKatabasis', () => {
     expect(recap.soulsCarried.toString()).toBe('500');
   });
 
-  it('resets the volatile lifetime (influence, invocations, toggles, queue, emptio, max influence)', () => {
+  it('resets the volatile lifetime (influence, invocations, queue, emptio, max influence)', () => {
     const { state } = commitKatabasis(loaded());
     expect(eq(state.lifetime.influence, bn(0))).toBe(true);
     expect(Object.keys(state.lifetime.invocations)).toHaveLength(0);
-    expect(state.lifetime.activeToggles).toHaveLength(0);
     expect(state.lifetime.actionQueue).toHaveLength(0);
     expect(state.lifetime.emptioList).toHaveLength(0);
     expect(eq(state.lifetime.maxInfluence, bn(100))).toBe(true);
@@ -201,8 +199,6 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
         gold: bn(1000),
         reprobates: 50,
         hoard: bn(400),
-        activeToggles: ['panvitium'],
-        toggleDurations: { panvitium: 12 },
         actionQueue: [{ actionId: 'suggestion', remainingSeconds: 4 }],
         invocations: { imp: 1 },
         acolytes: [{ id: 1, assignedAction: 'suggestion', remainingSeconds: 3 }],
@@ -218,10 +214,8 @@ describe('enterKatabasis — teardown on descent (02 §6)', () => {
     expect(after.lifetime.hoard.toNumber()).toBe(0);
   });
 
-  it('stops toggles, fizzles the action queue, and dispels invocations', () => {
+  it('fizzles the action queue and dispels invocations', () => {
     const after = enterKatabasis(loaded());
-    expect(after.lifetime.activeToggles).toHaveLength(0);
-    expect(Object.keys(after.lifetime.toggleDurations)).toHaveLength(0);
     expect(after.lifetime.actionQueue).toHaveLength(0);
     expect(Object.keys(after.lifetime.invocations)).toHaveLength(0);
   });

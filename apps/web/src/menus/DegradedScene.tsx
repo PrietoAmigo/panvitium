@@ -158,7 +158,6 @@ export function DegradedScene({
   figures = NO_FIGURES,
   figureTint = null,
   glows = null,
-  signature = false,
   settings,
   className,
 }: DegradedSceneProps): JSX.Element {
@@ -220,13 +219,12 @@ export function DegradedScene({
     const scene: EngineScene = {
       bg,
       sprites: [...engineSprites, ...figureSprites],
-      signature,
       focalVignette,
     };
     const animate = prevRoom.current !== null && prevRoom.current !== roomId;
     prevRoom.current = roomId;
     pass.setScene(scene, animate);
-  }, [roomId, backdrop, sprites, figures, figureTint, signature, images]);
+  }, [roomId, backdrop, sprites, figures, figureTint, images]);
 
   return (
     <canvas

@@ -51,8 +51,6 @@ additive-optional pattern.
   to greater than 0 this lifetime. "Still active" means it is greater than 0 at fire time.
 - **Thirty Pieces of Silver**: the `thirty_pieces_of_silver` maleficium (×3 gold gain). "In your
   ownership" means it is present in `lifetime.maleficia`.
-- **Panvitium (VC)**: the `panvitium` Vitium Compositum toggle (every Sin at Level 3). "Running for
-  at least 3 seconds" means it has been continuously active for 3 seconds or more.
 - **`flagFatherMad`**: default 0. Set to 1 by Father Tom Brennan #2, Answer (2).
 - **`flagFCThreatSent`**: default 0. Set to 1 when the threat reply to Fausto Cescru #1 (Answer 1) is
   sent, which closes the friendly branch — #2 and #3 never fire, and the arc routes to #4/#5. Left
@@ -422,7 +420,8 @@ built. None carry mechanical effects unless stated.
   > Stahl
 - **Answers:**
   - (1) "this is just the beginning". No mechanical effect.
-- **Trigger:** the Panvitium (VC) toggle has been continuously active for at least 3 seconds.
+- **Trigger:** every sin level 3, delivered 10 minutes after (Stahl #4 always arrives first). Until
+  ADR-039 it was the Panvitium (VC) toggle running for at least 3 seconds; the rite is retired.
 
 ### Parish Newsletter #3
 - **From:** Sacred Heart Parish, `bulletin@sacredheart-parish.org`

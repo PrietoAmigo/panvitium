@@ -89,10 +89,8 @@ const lifetimeSchema = z.object({
   // fresh game's wire form is unchanged. (The schema-v12 gold stake `indagatioInvestment` was
   // REMOVED in schema v13; `v12-to-v13.ts` refunds it into gold.)
   indagatioInvestPercent: z.number().int().min(0).max(100).optional(),
-  activeToggles: z.array(z.string()),
-  // Per-toggle active-duration counters for duration-scaled cost (Panvitium). Additive-optional
-  // (ADR-023): absent in old saves → {} at runtime; omitted from the wire when empty.
-  toggleDurations: z.record(z.string(), z.number().nonnegative()).optional(),
+  // (The ceremony toggles `activeToggles` / `toggleDurations` were REMOVED in schema v15 with
+  // Panvitium, ADR-039; `v14-to-v15.ts` drops them.)
   actionQueue: z.array(actionTimerSchema),
   // Player rites set to auto-repeat (02 §3). Additive-optional (ADR-023): absent → [] at runtime;
   // omitted from the wire when empty.
@@ -254,10 +252,6 @@ export function serializeGameState(state: GameState): SerializedGameState {
       ...(state.lifetime.indagatioInvestPercent > 0
         ? { indagatioInvestPercent: state.lifetime.indagatioInvestPercent }
         : {}),
-      activeToggles: [...state.lifetime.activeToggles],
-      ...(Object.keys(state.lifetime.toggleDurations).length > 0
-        ? { toggleDurations: { ...state.lifetime.toggleDurations } }
-        : {}),
       actionQueue: state.lifetime.actionQueue.map((t) => ({
         actionId: t.actionId,
         remainingSeconds: t.remainingSeconds,
@@ -404,8 +398,6 @@ export function deserializeGameState(s: SerializedGameState): GameState {
       maleficiaPrices: { ...(s.lifetime.maleficiaPrices ?? {}) },
       // Default Indagatio investment: additive-optional (ADR-023) — absent means 0%.
       indagatioInvestPercent: s.lifetime.indagatioInvestPercent ?? 0,
-      activeToggles: [...s.lifetime.activeToggles],
-      toggleDurations: { ...(s.lifetime.toggleDurations ?? {}) },
       actionQueue: s.lifetime.actionQueue.map((t) => ({
         actionId: t.actionId,
         remainingSeconds: t.remainingSeconds,

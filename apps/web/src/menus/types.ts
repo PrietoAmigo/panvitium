@@ -208,7 +208,6 @@ export interface DegradedSceneProps {
   /** Light that crisp chrome over the canvas casts into the room (the altar sigil's glow),
    *  sampled every rendered frame and painted THROUGH the degradation pass; null = none. */
   glows?: EngineGlowSource | null;
-  signature?: boolean;
   settings?: Partial<DegradeSettings>;
   className?: string;
 }

@@ -21,8 +21,6 @@ import {
   signSyngrapha as signSyngraphaSim,
   toggleSafeItem as toggleSafeItemSim,
   computeModifiers,
-  activateToggle,
-  deactivateToggle,
   setDesidia,
   invoke,
   dispel,
@@ -275,13 +273,6 @@ interface GameStore {
   assignAcolyte: (actionId: string) => void;
   /** Remove one acolyte from a delegated action (LIFO — most-recently-assigned first). */
   unassignAcolyte: (actionId: string) => void;
-  /**
-   * Activate a Vitium Compositum ceremony toggle (03 §2.3). Notice on failure (gate unmet, already
-   * active). Upkeep is paid per-tick; the toggle auto-deactivates if it can't pay (02 §3).
-   */
-  activateCeremony: (vcId: string) => void;
-  /** Manually deactivate a Vitium Compositum ceremony toggle. */
-  deactivateCeremony: (vcId: string) => void;
   /** Toggle the Desidia time-acceleration on/off (ADR-033). */
   toggleDesidia: () => void;
   /**
@@ -324,7 +315,7 @@ interface GameStore {
   openKatabasis: () => void;
   /**
    * Commit to the descent (the altar sigil's second press): tear down the lifetime's productive
-   * systems (Mercatūs, toggles, actions, invocations — 02 §6), open the flow on the descent
+   * systems (the account, actions, invocations — 02 §6), open the flow on the descent
    * transition, and freeze ticking while the player allocates. Sigil bindings persist; the
    * carry-over roll + lifetime reset happen on the rise (`confirmKatabasis`).
    */
@@ -375,6 +366,8 @@ interface GameStore {
   hardReset: () => void;
   /** Dismiss the launch title menu (the time it was open is frozen, not paid out). */
   dismissTitle: () => void;
+  /** The game's end (the seal of Semet): wipe the save, start fresh, and raise the title menu. */
+  returnToTitle: () => void;
   /** Open the Settings overlay (from the gear or the title menu). */
   openSettings: () => void;
   /** Close the Settings overlay. */
@@ -522,8 +515,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (emailsDelivered.includes('fausto-5')) audio.play('email-knock');
     // Earning one of Fausto's letters flashes its plate at once, before the letter itself arrives.
     const faustoPatch = subliminalPatch(get().subliminalQueue, faustoSubliminals(emailsTriggered));
-    // A toggle that auto-deactivated this tick surfaces as the transient notice (02 §3). The
-    // sim has already removed it; this just tells the player. Latest wins if several fired.
+    // A system notice from this tick (an invocation dispelled for unpaid upkeep, Aurevora's
+    // departure) surfaces as the transient notice. Latest wins if several fired.
     const noticePatch = notices.length > 0 ? { notice: notices[notices.length - 1]! } : {};
     // A newly-unlocked achievement raises a toast (latest wins if several fired this tick).
     const achievementPatch =
@@ -638,22 +631,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     const result = unassignAcolyteFromAction(current, actionId);
-    if (result.ok) set({ state: result.state, notice: null });
-    else set({ notice: result.reason });
-  },
-
-  activateCeremony: (vcId) => {
-    const current = get().state;
-    if (!current) return;
-    const result = activateToggle(current, vcId);
-    if (result.ok) set({ state: result.state, notice: null });
-    else set({ notice: result.reason });
-  },
-
-  deactivateCeremony: (vcId) => {
-    const current = get().state;
-    if (!current) return;
-    const result = deactivateToggle(current, vcId);
     if (result.ok) set({ state: result.state, notice: null });
     else set({ notice: result.reason });
   },
@@ -863,6 +840,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       titleOpen: false,
       ...(current ? { state: resumeGame(current, Date.now()) } : {}),
     });
+  },
+  returnToTitle: () => {
+    get().hardReset();
+    set({ titleOpen: true });
   },
   openSettings: () => set({ settingsOpen: true }),
   closeSettings: () => set({ settingsOpen: false }),

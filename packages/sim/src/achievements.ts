@@ -2,7 +2,7 @@
  * Achievements (03 §7). Each is a pure predicate over the current `GameState`; the first tick on
  * which a predicate is true records the unlock permanently in `state.achievements` (one-way, carried
  * across lifetimes). Most predicates derive entirely from current state; the two that need history
- * read the dedicated fields added for them (`katabasisCount`, `toggleDurations`).
+ * read the permanent records kept for them (`katabasisCount`, the inbox).
  *
  * Evaluation runs as the last step of `tick` (see tick.ts), so unlocks happen at the 10 Hz cadence.
  * (The game freezes offline (ADR-032), so nothing is crossed while away.) The newly-unlocked ids are
@@ -26,7 +26,6 @@ export interface AchievementDef {
 }
 
 const COURT_OF_SPIRES_INFLUENCE = 10_000;
-const LONG_BURN_SECONDS = 60;
 
 function everySinAtLeast(state: GameState, level: number): boolean {
   for (const s of SINS) if (sinLevel(state.devotion[s]) < level) return false;
@@ -68,10 +67,6 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   },
   { id: 'single_minded', earned: (s) => anySinAtLeast(s, 4) },
   { id: 'eight_at_the_table', earned: (s) => everySinAtLeast(s, 3) },
-  {
-    id: 'the_long_burn',
-    earned: (s) => (s.lifetime.toggleDurations.panvitium ?? 0) >= LONG_BURN_SECONDS,
-  },
   {
     // Father Stahl's ward call answered with Imperium: earned when the local news of it arrives.
     id: 'the_last_rite',

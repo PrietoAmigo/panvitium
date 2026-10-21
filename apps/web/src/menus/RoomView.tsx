@@ -8,12 +8,11 @@ import {
   boundVisualsFor,
 } from './degrade.data.js';
 import { CALL_PLATE_RING } from './calls-in.data.js';
-import { AltarSigil, ALTAR_SIGIL_SRC, type AltarSigilView } from './AltarSigil.js';
+import { AltarSigil, ALTAR_SIGIL_SRC, SEMET_SIGIL_SRC, type AltarSigilView } from './AltarSigil.js';
 import { altarGlows } from './altarGlow.js';
 
 interface RoomViewProps {
   room: RoomDef;
-  signature: boolean; // Studio "panvitium" ritual glow (handled inside the pass)
   summoned: string[];
   /** Whether the one-time Doppelgänger jumpscare has fired — once it has, the Doppelgänger figure is
    *  suppressed for good (it never appears again). Drives `boundVisualsFor`'s Doppelgänger rules. */
@@ -51,7 +50,6 @@ function doorGlyph(id: string): string {
 // painted through the pass, sampled from them every frame (altarGlow.ts).
 export function RoomView({
   room,
-  signature,
   summoned,
   doppelgaengerSeen,
   acolytes,
@@ -106,7 +104,9 @@ export function RoomView({
   // The sigil's art is decoded while the player stands in the Altar Room, so it shows on the very
   // first click rather than a beat later.
   useEffect(() => {
-    if (room.id === 'altar') preloadImage(ALTAR_SIGIL_SRC);
+    if (room.id !== 'altar') return;
+    preloadImage(ALTAR_SIGIL_SRC);
+    preloadImage(SEMET_SIGIL_SRC);
   }, [room.id]);
 
   return (
@@ -117,7 +117,6 @@ export function RoomView({
         figures={boundVisuals}
         figureTint={ROOM_FIGURE_TINTS[room.id] ?? null}
         glows={sigilUp ? sampleAltarGlows : null}
-        signature={room.id === 'studio' && signature}
         settings={degradeSettings}
       />
       {room.hotspots.map((h) => {
@@ -145,6 +144,7 @@ export function RoomView({
         <AltarSigil
           armed={altarSigil.armed}
           fading={altarSigil.fading}
+          semet={altarSigil.semet === true}
           onPress={onSigilPress}
           onStatusQuo={onStatusQuo}
         />

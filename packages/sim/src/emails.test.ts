@@ -175,6 +175,19 @@ describe('emails — reply effects', () => {
 });
 
 describe('emails — the rectory and the ward (the Stahl arc)', () => {
+  it("sends Father Stahl's second letter ten minutes after every Sin reaches III, after the first", () => {
+    const base = createInitialState('seed', 1_000_000);
+    const low = deliverEmails(withAllSins(base, 2), 1_000_000);
+    expect(low.state.lifetime.emailArmedAt['fr-stahl-2']).toBeUndefined();
+
+    const armed = deliverEmails(withAllSins(base, 3), 1_000_000);
+    expect(armed.delivered).toContain('fr-stahl-1');
+    expect(armed.triggered).toContain('fr-stahl-2');
+    expect(armed.state.lifetime.emailArmedAt['fr-stahl-2']).toBe(1_000_000);
+    expect(deliverEmails(armed.state, 1_000_000 + 9 * MIN).delivered).not.toContain('fr-stahl-2');
+    expect(deliverEmails(armed.state, 1_000_000 + 10 * MIN).delivered).toContain('fr-stahl-2');
+  });
+
   it('arms Father Greaves only once the rectory call is placed, and delivers him 3 minutes on', () => {
     const base = createInitialState('seed', 1_000_000);
     expect(

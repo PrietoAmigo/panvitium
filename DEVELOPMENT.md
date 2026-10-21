@@ -46,7 +46,6 @@ the logic that consumes them so a quick tweak never means reading through engine
 
 - `constants.ts` — cross-cutting scalars (base rates, growth factors, thresholds, per-level effects).
 - `actions.data.ts` — Opera action costs/times/gates + tier-weight distributions (`ACTIONS`).
-- `compositum.data.ts` — Vitium Compositum ceremony catalog (`COMPOSITA`).
 - `invocations.data.ts` — invocation catalog (`INVOCATIONS`).
 - `maleficia.data.ts` — Emptio price bands + the 29-item catalog (`MALEFICIA`).
 - `sigils.data.ts` — the 72-sigil catalog (`SIGILS`).
