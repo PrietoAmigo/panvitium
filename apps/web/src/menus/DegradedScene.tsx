@@ -88,15 +88,17 @@ export function isImageDecoded(url: string): boolean {
   return DECODED_IMAGES.has(url);
 }
 
-/** Like `preloadImage`, but resolves once the image is in the decoded cache (rejects if it fails). */
-export function decodeImage(url: string): Promise<void> {
-  if (DECODED_IMAGES.has(url)) return Promise.resolve();
+/** Like `preloadImage`, but resolves with the image once it is in the decoded cache (rejects if it
+ *  fails), for a caller that composites it into a pass of its own (the first-descent cinematic). */
+export function decodeImage(url: string): Promise<HTMLImageElement> {
+  const cached = DECODED_IMAGES.get(url);
+  if (cached) return Promise.resolve(cached);
   if (typeof Image === 'undefined') return Promise.reject(new Error('Image unavailable'));
   return new Promise((resolve, reject) => {
     const im = new Image();
     im.onload = (): void => {
       DECODED_IMAGES.set(url, im);
-      resolve();
+      resolve(im);
     };
     im.onerror = (): void => reject(new Error(`failed to load ${url}`));
     im.src = url;

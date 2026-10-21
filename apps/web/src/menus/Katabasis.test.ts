@@ -5,7 +5,8 @@
  * (the two-press safeguard, preserved), falling into the Abyss descent; STATUS QUO opens the
  * read-only Ledger (Cardinal-Sin standing + bound-sigil effects), whose way back returns to the
  * room; left alone, the sigil fades away. The first commit of a playthrough made with no souls in
- * hand plays the empty-handed warning instead of descending. The recap reads "You Rise" off the committed state, and
+ * hand plays the empty-handed warning instead of descending; the first commit that does descend
+ * plays the first-descent cinematic, whose hand-off begins the descent. The recap reads "You Rise" off the committed state, and
  * the Eternal-Sin reveal overlays the still-mounted flow. The store actions and sim math themselves
  * are covered by their own suites.
  */
@@ -17,6 +18,7 @@ import { useGameStore } from '../store/gameStore.js';
 import { KatabasisModal } from '../ui/KatabasisModal.js';
 import { App } from '../App.js';
 import { EMPTY_HANDED_TOTAL_MS } from '../ui/EmptyHandedWarning.js';
+import { FIRST_DESCENT_TOTAL_MS, FIRST_DESCENT_TRANSIT_MS } from '../ui/FirstDescent.js';
 import { TRANSIT_HOLD_MS } from './Katabasis.js';
 import { boonLabel } from './katabasisShared.js';
 import type { DegradedSceneProps } from './types.js';
@@ -30,6 +32,8 @@ vi.mock('./DegradedScene.js', () => ({
     return null;
   },
   preloadImage: () => undefined,
+  // The first-descent cinematic's plates never decode here: it plays its timeline over the black.
+  decodeImage: () => new Promise(() => undefined),
 }));
 // The sync panel probes the network on mount; the altar needs none of it.
 vi.mock('../ui/SyncPanel.js', () => ({ SyncPanel: () => null }));
@@ -39,6 +43,9 @@ const media = window.HTMLMediaElement.prototype;
 media.play = () => Promise.resolve();
 media.pause = () => undefined;
 media.load = () => undefined;
+// Nor a 2D canvas context: the first-descent cinematic's pass is built to do without one.
+HTMLCanvasElement.prototype.getContext = (() =>
+  null) as unknown as typeof HTMLCanvasElement.prototype.getContext;
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -68,6 +75,7 @@ beforeEach(() => {
     log: [],
     notice: null,
     emptyHandedWarning: false,
+    firstDescentPlaying: false,
     titleOpen: false,
   });
   store().init();
@@ -377,7 +385,8 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
   });
 
   it('arms on the first press, hiding STATUS QUO, and commits the descent on the second', () => {
-    patch({ souls: bn(1) }); // souls in hand: no empty-handed warning
+    // Souls in hand (no empty-handed warning), the first-descent cinematic already seen.
+    patch({ souls: bn(1), firstDescentSeen: true });
     render(App);
     click('The Altar');
     click('Press the sigil');
@@ -390,6 +399,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     expect((store().state as GameState).inKatabasis).toBe(true);
     expect(store().katabasisPhase).toBe('menu');
     expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
+    expect(container!.querySelector('.first-descent')).toBeNull();
     expect(sigilLayer()).toBeNull();
     expect(scene.last?.glows ?? null).toBeNull();
   });
@@ -397,7 +407,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
   it('lands among the Princes once the descent transition has played', () => {
     vi.useFakeTimers();
     try {
-      patch({ souls: bn(1) });
+      patch({ souls: bn(1), firstDescentSeen: true });
       render(App);
       click('The Altar');
       click('Press the sigil');
@@ -428,6 +438,9 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
       expect(sigilLayer()).toBeNull();
       expect(warning()?.textContent).toBe('I should not descend empty-handed.');
       expect((store().state as GameState).emptyHandedWarned).toBe(true);
+      // A stopped commit never descended: the first-descent cinematic is still to come.
+      expect(container!.querySelector('.first-descent')).toBeNull();
+      expect((store().state as GameState).firstDescentSeen).toBeUndefined();
       // Clicks do not skip it.
       act(() => warning()!.click());
       act(() => {
@@ -443,10 +456,15 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
       expect(sigilLayer()).toBeNull();
       click('The Altar');
       expect(seal()?.classList.contains('is-armed')).toBe(false);
-      // The second soulless commit descends.
+      // The second soulless commit descends, through the first-descent cinematic.
       click('Press the sigil');
       click(/there is no return/);
       expect(warning()).toBeNull();
+      expect(container!.querySelector('.first-descent')).not.toBeNull();
+      expect((store().state as GameState).firstDescentSeen).toBe(true);
+      act(() => {
+        vi.advanceTimersByTime(FIRST_DESCENT_TRANSIT_MS);
+      });
       expect((store().state as GameState).inKatabasis).toBe(true);
       expect(store().katabasisPhase).toBe('menu');
     } finally {
@@ -455,7 +473,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
   });
 
   it('descends at once with souls in hand, leaving the warning unplayed', () => {
-    patch({ souls: bn(5) });
+    patch({ souls: bn(5), firstDescentSeen: true });
     render(App);
     click('The Altar');
     click('Press the sigil');
@@ -463,6 +481,91 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     expect(container!.querySelector('.empty-handed')).toBeNull();
     expect((store().state as GameState).inKatabasis).toBe(true);
     expect((store().state as GameState).emptyHandedWarned).toBeUndefined();
+  });
+
+  it('plays the first-descent cinematic on the first real commit, unskippable, then the descent', () => {
+    vi.useFakeTimers();
+    try {
+      patch({ souls: bn(5) });
+      render(App);
+      click('The Altar');
+      click('Press the sigil');
+      click(/there is no return/);
+      // The flag is recorded at the commit; nothing is torn down until the hand-off.
+      const cinematic = (): HTMLElement | null => container!.querySelector('.first-descent');
+      expect(cinematic()).not.toBeNull();
+      expect(container!.querySelector('.empty-handed')).toBeNull();
+      expect((store().state as GameState).firstDescentSeen).toBe(true);
+      expect((store().state as GameState).emptyHandedWarned).toBeUndefined();
+      expect((store().state as GameState).inKatabasis).not.toBe(true);
+      expect(store().katabasisPhase).toBeNull();
+      expect(sigilLayer()).toBeNull();
+      // Clicks and keys do not skip it, and nothing beneath answers them.
+      act(() => cinematic()!.click());
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(FIRST_DESCENT_TRANSIT_MS - 1);
+      });
+      expect((store().state as GameState).inKatabasis).not.toBe(true);
+      expect(container!.querySelector('.transit')).toBeNull();
+      // The hand-off, late in the fall: the descent begins under the still-lifting overlay.
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      expect((store().state as GameState).inKatabasis).toBe(true);
+      expect(store().katabasisPhase).toBe('menu');
+      expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
+      expect(cinematic()).not.toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(FIRST_DESCENT_TOTAL_MS - FIRST_DESCENT_TRANSIT_MS - 1);
+      });
+      expect(cinematic()).not.toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      // Lifted: the transit holds its own 5 s from the hand-off, then the Princes.
+      expect(cinematic()).toBeNull();
+      expect(store().firstDescentPlaying).toBe(false);
+      expect(container!.querySelector('.transit')).not.toBeNull();
+      act(() => {
+        vi.advanceTimersByTime(
+          TRANSIT_HOLD_MS - (FIRST_DESCENT_TOTAL_MS - FIRST_DESCENT_TRANSIT_MS),
+        );
+      });
+      expect(container!.querySelectorAll('.statue').length).toBe(8);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('plays the cinematic once: the next descent goes straight into the Abyss transit', () => {
+    vi.useFakeTimers();
+    try {
+      patch({ souls: bn(5) });
+      render(App);
+      click('The Altar');
+      click('Press the sigil');
+      click(/there is no return/);
+      act(() => {
+        vi.advanceTimersByTime(FIRST_DESCENT_TOTAL_MS);
+      });
+      // Rise into the next lifetime, back in the Altar Room.
+      act(() => store().confirmKatabasis());
+      act(() => store().closeRecap());
+      expect((store().state as GameState).katabasisCount).toBe(1);
+      patch({ souls: bn(5) });
+      click('The Altar');
+      click('Press the sigil');
+      click(/there is no return/);
+      expect(container!.querySelector('.first-descent')).toBeNull();
+      expect((store().state as GameState).inKatabasis).toBe(true);
+      expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('opens the Ledger from STATUS QUO, whose way back returns to the room', () => {

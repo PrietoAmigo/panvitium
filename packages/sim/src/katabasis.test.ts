@@ -15,6 +15,8 @@ import {
   enterKatabasis,
   emptyHandedWarningDue,
   markEmptyHandedWarned,
+  firstDescentDue,
+  markFirstDescentSeen,
 } from './katabasis.js';
 
 const fresh = (souls: number | string): GameState => ({
@@ -404,5 +406,32 @@ describe('the empty-handed warning — once per playthrough (presentation bookke
     const { state } = commitKatabasis(enterKatabasis(markEmptyHandedWarned(fresh(0))));
     expect(state.emptyHandedWarned).toBe(true);
     expect(emptyHandedWarningDue(state)).toBe(false);
+  });
+});
+
+describe('the first-descent cinematic — once per playthrough (presentation bookkeeping)', () => {
+  it('is due on a fresh playthrough, souls or not, until it has played', () => {
+    expect(firstDescentDue(fresh(0))).toBe(true);
+    expect(firstDescentDue(fresh(5))).toBe(true);
+    expect(firstDescentDue(markFirstDescentSeen(fresh(5)))).toBe(false);
+  });
+
+  it('marks the flag purely and idempotently, apart from the empty-handed warning', () => {
+    const base = fresh(0);
+    const seen = markFirstDescentSeen(base);
+    expect(seen.firstDescentSeen).toBe(true);
+    expect(base.firstDescentSeen).toBeUndefined(); // input untouched (purity)
+    expect(markFirstDescentSeen(seen)).toBe(seen);
+    // The warning's flag does not stand in for it (a stopped commit never descended).
+    expect(firstDescentDue(markEmptyHandedWarned(base))).toBe(true);
+    expect(seen.emptyHandedWarned).toBeUndefined();
+  });
+
+  it('survives the descent: a playthrough that has seen it never sees it again', () => {
+    const { state } = commitKatabasis(enterKatabasis(markFirstDescentSeen(fresh(5))));
+    expect(state.firstDescentSeen).toBe(true);
+    expect(firstDescentDue(state)).toBe(false);
+    // A new playthrough starts without it.
+    expect(createInitialState('again', 0).firstDescentSeen).toBeUndefined();
   });
 });

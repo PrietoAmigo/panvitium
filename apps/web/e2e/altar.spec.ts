@@ -6,7 +6,8 @@ import { test, expect, type Page } from '@playwright/test';
  * image over the room's canvas, outside the degradation pass, so no pixelation reaches it; the red
  * light it casts is painted into the canvas, through the pass. Its first press arms it, the second
  * falls into the descent (empty-handed before the playthrough's first descent, the empty-handed
- * warning plays once instead); STATUS QUO opens the Ledger, whose way back returns to the room; left
+ * warning plays once instead; the first commit that does descend plays the first-descent cinematic
+ * before the Abyss transit); STATUS QUO opens the Ledger, whose way back returns to the room; left
  * alone for 4 s, the sigil fades away.
  */
 
@@ -71,6 +72,8 @@ test('the altar raises its sigil over the room, crisp, its glow inside the degra
 test('arms on the first press; empty-handed, the first commit is stopped, the next descends', async ({
   page,
 }) => {
+  // The warning (7.3 s), the first-descent cinematic (8.5 s to its hand-off) and the transit (5 s).
+  test.setTimeout(60_000);
   await enterLair(page);
   await clickAltar(page);
   await page.getByRole('button', { name: 'Press the sigil' }).click();
@@ -85,11 +88,29 @@ test('arms on the first press; empty-handed, the first commit is stopped, the ne
   await expect(warning).toBeVisible();
   await expect(warning).toHaveCount(0, { timeout: 12_000 });
   await expect(page.locator('.katabasis-flow')).toHaveCount(0);
-  // The second commit descends, souls or not.
+  // The second commit descends, souls or not. The playthrough's first true descent plays the
+  // first-descent cinematic first: unskippable, its plates composited through the degradation pass,
+  // its hand-off mounting the Abyss transit underneath late in Plate II's fall.
   await clickAltar(page);
   await page.getByRole('button', { name: 'Press the sigil' }).click();
   await page.getByRole('button', { name: /Confirm the descent/ }).click();
-  await expect(page.locator('.transit-word')).toHaveText('Katabasis');
+  const cinematic = page.locator('.first-descent');
+  await expect(cinematic).toHaveCount(1);
+  await cinematic.click();
+  await expect(page.locator('.transit')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      cinematic.locator('canvas.scene-canvas').evaluate((canvas: HTMLCanvasElement) => {
+        const px = canvas.getContext('2d')?.getImageData(440, 160, 400, 400).data;
+        if (!px) return -1;
+        let lit = 0;
+        for (let i = 0; i < px.length; i += 4) if (px[i]! + px[i + 1]! + px[i + 2]! > 150) lit++;
+        return lit;
+      }),
+    )
+    .toBeGreaterThan(5_000);
+  await expect(page.locator('.transit-word')).toHaveText('Katabasis', { timeout: 12_000 });
+  await expect(cinematic).toHaveCount(0, { timeout: 5_000 });
   await expect(page.locator('.transit-sub')).toHaveText('exspes in ima');
   // The descent holds 5 s and cannot be skipped: a click on it changes nothing.
   await page.locator('.transit').click();

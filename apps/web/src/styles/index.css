@@ -181,6 +181,25 @@ body {
   }
 }
 
+/* The first-descent cinematic (App mounts it; see FirstDescent): fixed over the WHOLE viewport,
+   above the empty-handed warning (9000), but below the jumpscare (9999) and the subliminal plates
+   (10000). It captures all pointer input (pointer-events on, no dismiss handler), so the cinematic
+   can't be skipped. The plates are a DegradePass canvas (.scene-canvas, inset 0), stretched like the
+   jumpscare's; the black curtain over it fades them in and out. The component drives both opacities
+   every animation frame, from the overlay clear over a black curtain. */
+.first-descent {
+  position: fixed;
+  inset: 0;
+  z-index: 9100;
+  background: #000;
+  opacity: 0;
+}
+.first-descent-curtain {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
 /* A subliminal plate (Fausto's, or a random one): fixed over the WHOLE viewport, above everything
    including the jumpscare, for a fraction of a second. It only mounts once its plate has decoded, so
    no black fallback is needed; it takes no pointer input, so a click mid-flash reaches the game. */

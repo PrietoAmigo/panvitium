@@ -394,6 +394,16 @@ export interface GameState {
    */
   emptyHandedWarned?: boolean;
   /**
+   * Set true once the first-descent cinematic has played (Claude Design "First Katabasis"
+   * handoff): the playthrough's first commit that truly descends shows the soul leaving the body
+   * before the Abyss transit. A commit the empty-handed warning stops does not descend, so it does
+   * not set this. Presentation bookkeeping owned by the web app, recorded at the commit through
+   * `markFirstDescentSeen`. Permanent (carried across Katabasis: once per playthrough, not per
+   * lifetime), and absent ≡ false; schema v14 seeds it for every save that had already descended,
+   * so a veteran never sees the cinematic.
+   */
+  firstDescentSeen?: boolean;
+  /**
    * True while the player is mid-descent — the Katabasis menu is open and allocation is underway
    * (02 §6). The lifetime is frozen: `tick` runs no simulation when this is set, so nothing accrues
    * (a reload mid-descent resumes the menu rather than fast-forwarding a torn-down lifetime). Set by

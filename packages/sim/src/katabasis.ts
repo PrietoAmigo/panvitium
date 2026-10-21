@@ -132,6 +132,27 @@ export function markEmptyHandedWarned(state: GameState): GameState {
   return { ...state, emptyHandedWarned: true };
 }
 
+// ── The first-descent cinematic (presentation bookkeeping) ───────────────────
+
+/**
+ * Whether committing the descent now should first play the first-descent cinematic: the
+ * playthrough has never seen it. The empty-handed warning is checked before this (a commit it stops
+ * does not descend, so it never reaches here). The cinematic itself is orchestrated by the web app.
+ */
+export function firstDescentDue(state: GameState): boolean {
+  return state.firstDescentSeen !== true;
+}
+
+/**
+ * Record that the first-descent cinematic has played. Pure: returns a new state with
+ * `firstDescentSeen` set, leaving the input untouched. Idempotent; once set the cinematic never
+ * plays again, and the flag rides through every Katabasis (it is top-level).
+ */
+export function markFirstDescentSeen(state: GameState): GameState {
+  if (state.firstDescentSeen === true) return state;
+  return { ...state, firstDescentSeen: true };
+}
+
 // ── Enter (teardown on descent) ──────────────────────────────────────────────
 
 /**
