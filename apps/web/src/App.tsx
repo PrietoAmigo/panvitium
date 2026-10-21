@@ -27,6 +27,7 @@ import { Jumpscare, JUMPSCARE_IMG } from './ui/Jumpscare.js';
 import { EmptyHandedWarning } from './ui/EmptyHandedWarning.js';
 import { Subliminal } from './ui/Subliminal.js';
 import { useRandomSubliminals } from './game/useRandomSubliminals.js';
+import { codePlatesShown } from './game/subliminals.js';
 import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio, summonCue } from './audio/audio.js';
@@ -227,8 +228,14 @@ export function App(): ReactElement {
   const subliminal = useGameStore((s) => s.subliminalQueue[0] ?? null);
   const flashSubliminal = useGameStore((s) => s.flashSubliminal);
   const dismissSubliminal = useGameStore((s) => s.dismissSubliminal);
+  // The two code plates surface only from Father Stahl's first letter until his call is answered.
+  const codePlates = useMemo(
+    () => codePlatesShown(callCtx.receivedEmailIds, answeredIds),
+    [callCtx, answeredIds],
+  );
   useRandomSubliminals(
     ready && !titleOpen && katabasisPhase === null && !onCall && !jumpscare && !emptyHandedWarning,
+    codePlates,
     flashSubliminal,
   );
   const callInView = answeredCall

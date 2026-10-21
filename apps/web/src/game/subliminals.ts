@@ -6,6 +6,9 @@
  *     is met (the sim's `emailsTriggered`), not its later arrival in the inbox. "Take this with you"
  *     (fausto-4) has no plate, so the fourth plate belongs to Fausto #5.
  *   - The random plates surface on their own during play, about once every six minutes on average.
+ *     Two of them, the code plates (982, then 079: the rectory number, Clare Ashby's last days), are
+ *     in the draw only from Father Stahl's first letter until his call has been answered, and then
+ *     each is ten times likelier than any other plate.
  */
 import { ASSET_BASE } from '../menus/degrade.data.js';
 
@@ -39,6 +42,28 @@ export const RANDOM_SUBLIMINALS: readonly string[] = [
   'sublcode_2',
 ].map((name) => `${BASE}/${name}.png`);
 
+/** The two code plates among the random ones: the halves of the rectory number, 982 then 079. */
+export const CODE_SUBLIMINALS: readonly string[] = ['sublcode_1', 'sublcode_2'].map(
+  (name) => `${BASE}/${name}.png`,
+);
+
+/** Whether `src` is one of the two code plates. */
+export function isCodeSubliminal(src: string): boolean {
+  return CODE_SUBLIMINALS.includes(src);
+}
+
+/**
+ * Whether the code plates may surface: from Father Stahl's first letter (`fr-stahl-1` received)
+ * until his call (`the-ward`) has been answered. Both records are permanent, so the window opens
+ * and closes once per game.
+ */
+export function codePlatesShown(
+  receivedEmailIds: ReadonlySet<string>,
+  answeredCallIds: ReadonlySet<string>,
+): boolean {
+  return receivedEmailIds.has('fr-stahl-1') && !answeredCallIds.has('the-ward');
+}
+
 /** How long a plate holds on screen: a handful of frames, too brief to study. */
 export const SUBLIMINAL_MS = 120;
 
@@ -61,12 +86,27 @@ export function subliminalChance(elapsedMs: number): number {
   return 1 - Math.exp(-Math.max(0, elapsedMs) / SUBLIMINAL_MEAN_GAP_MS);
 }
 
+/** How much likelier each code plate is to be drawn than any other plate, while it is in the draw. */
+export const CODE_SUBLIMINAL_WEIGHT = 10;
+
 /**
  * Pick a random plate from a uniform `roll` in [0, 1), never `previous` again straight away (so the
- * same plate cannot flash twice in a row).
+ * same plate cannot flash twice in a row). The code plates are in the pool only `withCodes`, each
+ * weighted `CODE_SUBLIMINAL_WEIGHT` against 1 for every other plate.
  */
-export function pickRandomSubliminal(roll: number, previous: string | null): string {
-  const pool = RANDOM_SUBLIMINALS.filter((src) => src !== previous);
-  const i = Math.min(pool.length - 1, Math.floor(Math.max(0, roll) * pool.length));
-  return pool[i]!;
+export function pickRandomSubliminal(
+  roll: number,
+  previous: string | null,
+  withCodes: boolean,
+): string {
+  const pool = RANDOM_SUBLIMINALS.filter(
+    (src) => src !== previous && (withCodes || !isCodeSubliminal(src)),
+  );
+  const weight = (src: string): number => (isCodeSubliminal(src) ? CODE_SUBLIMINAL_WEIGHT : 1);
+  let r = Math.max(0, roll) * pool.reduce((sum, src) => sum + weight(src), 0);
+  for (const src of pool) {
+    r -= weight(src);
+    if (r < 0) return src;
+  }
+  return pool[pool.length - 1]!;
 }

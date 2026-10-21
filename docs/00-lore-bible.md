@@ -448,7 +448,8 @@ constraints in §9, and voices and channels follow the matrix in §10.
   inquest said her heart, and her soul went down, not to rest. In her last days she gouged the
   rectory's number into the plaster of her room and, on the final night, wrote it in her own blood
   on the flyleaf torn from Greaves's Rituale. Those two images reach the player as flashbacks among
-  the subliminal plates (982, then 079). They read as the player's own trauma and are not: the
+  the subliminal plates (982, then 079), and only while Stahl is in the player's life: from his
+  first letter until his call. They read as the player's own trauma and are not: the
   protagonist has none (§2). They are Clare's, carried up by the thing that held her. Dialling the
   number they spell is the way into the Stahl story.
 

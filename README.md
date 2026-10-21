@@ -97,7 +97,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 ## Status
 
-**Current test count: 1404** (sim 643 · shared 96 · api 20 · web 645). Save schema: **v13**.
+**Current test count: 1410** (sim 643 · shared 96 · api 20 · web 651). Save schema: **v13**.
 
 The game is mechanically complete and playable end-to-end. Phases 2 (infrastructure), 3 (gameplay)
 and 4 (content depth), the economy-parity pass, and the Phase 5 tracks that surfaced the sim, rebuilt
@@ -177,9 +177,9 @@ Each needs a design or spreadsheet decision before it becomes a coding slice.
   record and the call stage. Still open: the rest of `docs/PANVITIUM-CALLS-OUT.md` (Gideon's line,
   `noise`), effects on outgoing-call choices, and plain boon/info codes (`PHONE_CODES` holds only the
   joke `666`).
-- **Code plates.** The two halves of the rectory number (`sublcode_1` / `sublcode_2`) flash at
-  random from the first minute among the other plates. Planned: hold them back until mid-game, then
-  flash them as one ordered burst (982, then 079), held about 200 ms.
+- **Code plates.** The two halves of the rectory number (`sublcode_1` / `sublcode_2`) flash only from
+  Father Stahl's first letter until his call is answered, each ten times likelier than any other
+  plate meanwhile. Planned: flash them as one ordered burst (982, then 079), held about 200 ms.
 - **Emails polish.** New mail shows only as the unread badge on the PC's Emails tile (Fausto's fifth
   letter also knocks): there is no delivery toast and no indicator on the PC prop in the room.
   Content and trigger tuning remain.
