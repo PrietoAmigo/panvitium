@@ -806,7 +806,7 @@ export const strings = {
         from: 'The Riverside Almanac',
         addr: 'editor@riverside-almanac.com',
         subject: 'A terrible night on the hospital ward',
-        body: 'We do not print news like this, and we wish we did not have to now.\n\nLate last night, on the palliative ward of the county hospital, a nurse was found strangled by a priest who had come to sit with a dying man. He then opened his own throat with a scalpel from the dressing trolley. A patient too weak to leave her bed saw all of it.\n\nPolice say there was no quarrel between them that anyone knows of. Those on shift say Stahl had stepped into the corridor to take a telephone call, and came back without a word.\n\nThe nurse was very active in the community and known for helping people in need. There will be a vigil at Sacred Heart on Sunday.\n\nBe kind to one another.',
+        body: 'We do not print news like this, and we wish we did not have to now.\n\nLate last night, on the palliative ward of the county hospital, a nurse was found strangled by a priest who had come to sit with a dying man. He then opened his own throat with a scalpel from the dressing trolley. A patient too weak to leave her bed saw all of it.\n\nPolice say there was no quarrel between them that anyone knows of.\n\nThe nurse was very active in the community and known for helping people in need. There will be a vigil at Sacred Heart on Sunday.\n\nBe kind to one another.',
       },
 
       // The adversary - Fausto Cescru

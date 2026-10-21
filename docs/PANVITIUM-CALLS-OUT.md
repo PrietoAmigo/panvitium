@@ -49,7 +49,7 @@ Canonical, single-source list of every call you can PLACE and the event it opens
 ### the-rectory
 
 - Number: 982079
-- Source: hidden (the code plates: `sublcode_1` shows 982 gouged into plaster, `sublcode_2` shows 079 written in blood on parchment, two of the random subliminal flashes, read in that order). They flash only from Father Stahl's first letter (`fr-stahl-1`) until his call (`the-ward`) has been answered, each ten times likelier than any other plate meanwhile, and held 160 ms (the other plates 100 ms). The plates are Clare Ashby's last days surfacing as the player's own flashbacks; see `00-lore-bible.md` §11.
+- Source: hidden (the code plates: `sublcode_1` shows 982 gouged into plaster, `sublcode_2` shows 079 written in blood on parchment, two of the random subliminal flashes, read in that order). They flash only from Father Stahl's first letter (`fr-stahl-1`) until this call has been placed, each ten times likelier than any other plate meanwhile, and held 160 ms (the other plates 100 ms). The plates are Clare Ashby's last days surfacing as the player's own flashbacks; see `00-lore-bible.md` §11.
 - Type: one-shot (dialled again: "The rectory line rings out. No one answers.")
 - Requirement: none. It connects at any point in the game, however early.
 - Caller shown: the number, "982 079".
@@ -58,4 +58,4 @@ Canonical, single-source list of every call you can PLACE and the event it opens
     - [Scratches on a wall, tells you something?] -> Father Anselm answers (`father_anselm_2.mp3`): "I take it you're a journalist, I already had my decent share of you long time ago. Let me rest, please."
         - [Apologies. In case you have more information, here's my email [...]] -> the call ends.
 - Effect: connecting the call arms Father Greaves's letter (`fr-greaves-1`, "Ashby file", 3 minutes later, `05-email-content.md`), whose arrival (with the Imperium rite unlocked) opens the Imperium answer to Father Stahl's call (`the-ward`, `PANVITIUM-CALLS-IN.md`). Nothing on the call itself applies state.
-- Notes: the letter arrives whenever the call is placed: early in the game, or after `the-ward` has already been answered (then it only tells the story, for the next playthrough). The call is skippable like any incoming call. The number keeps working after the plates stop: a player who wrote it down can still dial it, then only for the story.
+- Notes: the letter arrives whenever the call is placed: early in the game, or after `the-ward` has already been answered (then it only tells the story, for the next playthrough). The call is skippable like any incoming call. The plates stop for good once the number is dialled.

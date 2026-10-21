@@ -54,7 +54,7 @@ describe('useRandomSubliminals — the code-plate window', () => {
   it('re-picks a staged code plate once the window closes, and never flashes one outside it', () => {
     roll = 0.99;
     render(true); // 079 is staged
-    render(false); // Father Stahl's call was answered
+    render(false); // the player dialled the number
     roll = 0;
     act(() => vi.advanceTimersByTime(1000));
     expect(flashed.length).toBeGreaterThan(0);

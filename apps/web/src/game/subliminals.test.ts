@@ -74,16 +74,17 @@ describe('subliminals — the code plates', () => {
     for (const src of CODE_SUBLIMINALS) expect(RANDOM_SUBLIMINALS).toContain(src);
   });
 
-  it("show from Father Stahl's first letter until his call is answered", () => {
+  it("show from Father Stahl's first letter until the number they spell is dialled", () => {
     const none = new Set<string>();
     const letter = new Set(['fr-stahl-1']);
-    const ward = new Set(['the-ward']);
+    const dialled = new Set(['the-rectory']);
     expect(codePlatesShown(none, none)).toBe(false);
     expect(codePlatesShown(new Set(['fr-stahl-2', 'parish-1']), none)).toBe(false);
     expect(codePlatesShown(letter, none)).toBe(true);
-    expect(codePlatesShown(letter, new Set(['succubus']))).toBe(true);
-    expect(codePlatesShown(letter, ward)).toBe(false);
-    expect(codePlatesShown(none, ward)).toBe(false);
+    // Father Stahl's call no longer closes the window; only dialling the number does.
+    expect(codePlatesShown(new Set(['fr-stahl-1', 'fr-stahl-2']), none)).toBe(true);
+    expect(codePlatesShown(letter, dialled)).toBe(false);
+    expect(codePlatesShown(none, dialled)).toBe(false);
   });
 
   it('are never drawn outside that window', () => {
