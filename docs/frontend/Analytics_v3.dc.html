@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#0a0807;overflow:hidden}
+a{color:#2f4fb0}a:hover{color:#1f3683}
+</style>
+</helmet>
+<div data-screen-label="Analytics v3" style="position:relative;height:100vh;background:#0a0807 url('apps/web/public/assets/panvitium/backgrounds/studio_complete.png') center/cover no-repeat;">
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(4,3,3,0.72);">
+    <div role="dialog" aria-label="The PC" style="width:min(1312px,93vw);height:min(700px,85vh);display:flex;flex-direction:column;background:#fbfbfb;border-radius:12px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.72),0 0 0 1px rgba(0,0,0,0.45);font-family:'Ubuntu',system-ui,-apple-system,sans-serif;">
+      <div style="display:flex;align-items:center;justify-content:space-between;height:48px;flex:0 0 auto;padding:0 10px 0 12px;background:linear-gradient(#34343a,#2b2b30);border-bottom:1px solid #18181b;color:#eaeaea;">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button type="button" style="font-family:'Ubuntu',sans-serif;font-size:0.88rem;color:#ededed;background:#47474c;border:none;border-radius:7px;padding:5px 12px;cursor:pointer;" style-hover="background:#56565c">‹ Files</button>
+          <span style="font-family:'Ubuntu Mono',monospace;font-size:0.95rem;color:#cfcfcf;margin-left:10px;">Analytics</span>
+        </div>
+        <button type="button" aria-label="Close" style="width:30px;height:30px;border-radius:50%;border:none;background:#47474c;color:#ddd;font-size:1.1rem;line-height:1;cursor:pointer;" style-hover="background:#e95420;color:#fff">×</button>
+      </div>
+
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:#f6f5f1;color:#16181d;font-family:'IBM Plex Sans Condensed',system-ui,sans-serif;">
+        <header style="flex:0 0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:0 32px;border-bottom:2px solid #16181d;background:#f6f5f1;">
+          <nav role="tablist" style="display:flex;align-items:flex-end;gap:28px;">
+            <button type="button" role="tab" onClick="{{ toMain }}" style="font-family:'IBM Plex Sans Condensed',sans-serif;font-size:0.95rem;font-weight:600;letter-spacing:0.01em;background:none;border:none;padding:18px 0 12px;margin-bottom:-2px;cursor:pointer;color:{{ navMain.fg }};border-bottom:4px solid {{ navMain.bar }};">Main</button>
+            <button type="button" role="tab" onClick="{{ toActions }}" style="font-family:'IBM Plex Sans Condensed',sans-serif;font-size:0.95rem;font-weight:600;letter-spacing:0.01em;background:none;border:none;padding:18px 0 12px;margin-bottom:-2px;cursor:pointer;color:{{ navActions.fg }};border-bottom:4px solid {{ navActions.bar }};">Actions</button>
+            <sc-if value="{{ riskOpen }}" hint-placeholder-val="{{ true }}">
+              <button type="button" role="tab" onClick="{{ toRisk }}" style="font-family:'IBM Plex Sans Condensed',sans-serif;font-size:0.95rem;font-weight:600;letter-spacing:0.01em;background:none;border:none;padding:18px 0 12px;margin-bottom:-2px;cursor:pointer;color:{{ navRisk.fg }};border-bottom:4px solid {{ navRisk.bar }};">Risk</button>
+            </sc-if>
+          </nav>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:0.66rem;letter-spacing:0.04em;color:#6c6f76;padding-bottom:14px;white-space:nowrap;">{{ subtitle }}</span>
+        </header>
+
+        <div style="flex:1;overflow-y:auto;padding:28px 32px 48px;">
+          <div style="max-width:1080px;margin:0 auto;">
+
+            <sc-if value="{{ isMain }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:36px;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));column-gap:40px;row-gap:24px;">
+                  <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="3">
+                    <div style="display:flex;flex-direction:column;gap:6px;padding-top:12px;border-top:1px solid #16181d;">
+                      <span style="font-size:0.78rem;font-weight:600;letter-spacing:0.02em;color:#16181d;">{{ k.label }}</span>
+                      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+                        <span style="font-size:3.2rem;font-weight:500;line-height:1;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;">{{ k.value }}</span>
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.74rem;color:#6c6f76;">{{ k.cap }}</span>
+                      </div>
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:500;color:#2f4fb0;">{{ k.net }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:40px;">
+                  <section style="min-width:0;">
+                    <h2 style="margin:0 0 10px;font-size:0.78rem;font-weight:600;letter-spacing:0.02em;">Flows <span style="font-family:'JetBrains Mono',monospace;font-weight:400;color:#6c6f76;">· per second</span></h2>
+                    <div role="table" style="display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;column-gap:0;font-variant-numeric:tabular-nums;border-top:1px solid #16181d;">
+                      <span style="font-size:0.7rem;color:#6c6f76;padding:8px 0;border-bottom:1px solid #d8d6cf;"></span>
+                      <span style="font-size:0.7rem;color:#6c6f76;padding:8px 0 8px 32px;border-bottom:1px solid #d8d6cf;text-align:right;">Generation</span>
+                      <span style="font-size:0.7rem;color:#6c6f76;padding:8px 0 8px 32px;border-bottom:1px solid #d8d6cf;text-align:right;">Upkeep</span>
+                      <span style="font-size:0.7rem;color:#16181d;font-weight:600;padding:8px 0 8px 32px;border-bottom:1px solid #d8d6cf;text-align:right;">Net</span>
+                      <sc-for list="{{ flows }}" as="f" hint-placeholder-count="3">
+                        <span style="font-size:0.92rem;font-weight:500;padding:12px 0;border-bottom:1px solid #e6e4dd;">{{ f.label }}</span>
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:#3d4048;padding:12px 0 12px 32px;border-bottom:1px solid #e6e4dd;text-align:right;white-space:nowrap;">{{ f.gen }}</span>
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:#3d4048;padding:12px 0 12px 32px;border-bottom:1px solid #e6e4dd;text-align:right;white-space:nowrap;">{{ f.up }}</span>
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.86rem;font-weight:600;color:#2f4fb0;padding:12px 0 12px 32px;border-bottom:1px solid #e6e4dd;text-align:right;white-space:nowrap;">{{ f.net }}</span>
+                      </sc-for>
+                    </div>
+                  </section>
+                  <section style="min-width:0;">
+                    <h2 style="margin:0 0 10px;font-size:0.78rem;font-weight:600;letter-spacing:0.02em;">Reprobate deaths <span style="font-family:'JetBrains Mono',monospace;font-weight:400;color:#6c6f76;">· per second</span></h2>
+                    <div style="display:flex;flex-direction:column;border-top:1px solid #16181d;">
+                      <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e6e4dd;font-size:0.92rem;"><span>By murder</span><span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:#b3261e;">−0.01/s</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e6e4dd;font-size:0.92rem;"><span>By suicide</span><span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;color:#b3261e;">−0.03/s</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;font-size:0.92rem;font-weight:600;"><span>Total</span><span style="font-family:'JetBrains Mono',monospace;font-size:0.86rem;color:#b3261e;">−0.04/s</span></div>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isActions }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:36px;">
+                <div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,2fr);gap:40px;align-items:end;">
+                  <div style="display:flex;flex-direction:column;gap:6px;padding-top:12px;border-top:1px solid #16181d;">
+                    <span style="font-size:0.78rem;font-weight:600;">Player action efficiency</span>
+                    <span style="font-size:3.2rem;font-weight:500;line-height:1;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;">2.3×</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid #16181d;">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;">
+                      <span style="font-size:0.78rem;font-weight:600;">Player · Suggestion</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:#3d4048;">4s left</span>
+                    </div>
+                    <div style="height:10px;background:#e6e4dd;"><div style="width:62%;height:100%;background:#2f4fb0;"></div></div>
+                  </div>
+                </div>
+
+                <section>
+                  <h2 style="margin:0 0 10px;font-size:0.78rem;font-weight:600;">Acolytes</h2>
+                  <div role="table" style="display:grid;grid-template-columns:auto auto minmax(0,1fr) auto minmax(120px,260px);column-gap:0;align-items:center;border-top:1px solid #16181d;">
+                    <span style="font-size:0.7rem;color:#6c6f76;padding:8px 0;border-bottom:1px solid #d8d6cf;">Acolyte</span>
+                    <span style="font-size:0.7rem;color:#6c6f76;padding:8px 0 8px 32px;border-bottom:1px solid #d8d6cf;text-align:right;">Efficiency</span>
+                    <span style="font-size:0.7rem;color:#6c6f76;padding:8px 0 8px 32px;border-bottom:1px solid #d8d6cf;">Action</span>
+                    <span style="font-size:0.7rem;color:#6c6f76;padding:8px 0 8px 32px;border-bottom:1px solid #d8d6cf;text-align:right;">Remaining</span>
+                    <span style="font-size:0.7rem;color:#6c6f76;padding:8px 0 8px 32px;border-bottom:1px solid #d8d6cf;">Progress</span>
+                    <sc-for list="{{ acolytes }}" as="a" hint-placeholder-count="3">
+                      <span style="font-size:0.92rem;font-weight:500;padding:12px 0;border-bottom:1px solid #e6e4dd;white-space:nowrap;color:{{ a.fg }};">{{ a.name }}</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;padding:12px 0 12px 32px;border-bottom:1px solid #e6e4dd;text-align:right;color:{{ a.fg }};">{{ a.eff }}</span>
+                      <span style="font-size:0.92rem;padding:12px 0 12px 32px;border-bottom:1px solid #e6e4dd;color:{{ a.fg }};">{{ a.action }}</span>
+                      <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;padding:12px 0 12px 32px;border-bottom:1px solid #e6e4dd;text-align:right;white-space:nowrap;color:{{ a.fg }};">{{ a.time }}</span>
+                      <div style="padding:12px 0 12px 32px;border-bottom:1px solid #e6e4dd;"><div style="height:10px;background:#e6e4dd;"><div style="height:100%;background:#2f4fb0;width:{{ a.pct }};"></div></div></div>
+                    </sc-for>
+                  </div>
+                </section>
+
+                <section>
+                  <h2 style="margin:0 0 10px;font-size:0.78rem;font-weight:600;">Invocations <span style="font-family:'JetBrains Mono',monospace;font-weight:400;color:#6c6f76;">· total effect, all copies</span></h2>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));column-gap:0;border-top:1px solid #16181d;">
+                    <sc-for list="{{ invocations }}" as="i" hint-placeholder-count="4">
+                      <div style="display:flex;flex-direction:column;gap:4px;padding:12px 32px 12px 0;border-bottom:1px solid #e6e4dd;">
+                        <span style="font-size:0.92rem;font-weight:600;">{{ i.name }}</span>
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:#3d4048;">{{ i.effect }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </section>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ isRisk }}" hint-placeholder-val="{{ false }}">
+              <div style="overflow-x:auto;">
+                <div role="table" style="display:grid;grid-template-columns:minmax(120px,1fr) repeat(7,minmax(70px,auto));font-variant-numeric:tabular-nums;min-width:720px;border-top:1px solid #16181d;">
+                  <span style="font-size:0.7rem;color:#6c6f76;padding:8px 10px 8px 0;border-bottom:1px solid #16181d;">Action</span>
+                  <sc-for list="{{ tierHeads }}" as="h" hint-placeholder-count="7">
+                    <span style="font-size:0.7rem;font-weight:600;padding:8px 10px;border-bottom:1px solid #16181d;text-align:right;color:{{ h.color }};">{{ h.label }}</span>
+                  </sc-for>
+                  <sc-for list="{{ riskGroups }}" as="g" hint-placeholder-count="3">
+                    <span style="grid-column:1 / -1;font-size:0.7rem;font-weight:600;color:#6c6f76;padding:16px 0 6px;border-bottom:1px solid #d8d6cf;">{{ g.name }}</span>
+                    <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="1">
+                      <span style="font-size:0.92rem;font-weight:500;padding:10px 10px 10px 0;border-bottom:1px solid #e6e4dd;">{{ r.name }}</span>
+                      <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="7">
+                        <span style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;text-align:right;padding:10px;border-bottom:1px solid #e6e4dd;color:{{ c.fg }};font-weight:{{ c.w }};background:{{ c.bg }};">{{ c.v }}</span>
+                      </sc-for>
+                    </sc-for>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;riskOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;State&quot;},&quot;markLikeliest&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Risk tab&quot;}}">
+class Component extends DCLogic {
+  state = { tab: 'main' };
+  renderVals() {
+    const riskOpen = this.props.riskOpen ?? true;
+    const mark = this.props.markLikeliest ?? true;
+    const tab = this.state.tab === 'risk' && !riskOpen ? 'main' : this.state.tab;
+    const go = (t) => () => this.setState({ tab: t });
+    const nav = (t) => tab === t ? { fg: '#16181d', bar: '#2f4fb0' } : { fg: '#6c6f76', bar: 'transparent' };
+    const subtitle = {
+      main: 'Resources, flows and the reprobate population',
+      actions: 'Everything acting on your behalf, right now',
+      risk: 'The odds of every outcome of every action, as they stand right now.',
+    }[tab];
+
+    const TIERS = ['Stellar', 'Excellent', 'Good', 'Neutral', 'Bad', 'Terrible', 'Apocalyptic'];
+    const tone = (i) => (i <= 2 ? '#2f4fb0' : i >= 5 ? '#b3261e' : '#3d4048');
+    const tierHeads = TIERS.map((label, i) => ({ label, color: tone(i) }));
+    const pct = (p) => (p === 0 ? '0%' : p < 0.05 ? '<0.1%' : p.toFixed(1) + '%');
+    const row = (name, p) => {
+      const max = Math.max(...p);
+      return {
+        name,
+        cells: p.map((v, i) => {
+          const top = mark && v === max;
+          return { v: pct(v), fg: tone(i), w: top ? 600 : 400, bg: top ? '#e9e7df' : 'transparent' };
+        }),
+      };
+    };
+
+    return {
+      riskOpen, subtitle,
+      isMain: tab === 'main', isActions: tab === 'actions', isRisk: tab === 'risk',
+      navMain: nav('main'), navActions: nav('actions'), navRisk: nav('risk'),
+      toMain: go('main'), toActions: go('actions'), toRisk: go('risk'),
+      kpis: [
+        { label: 'Influence', value: '1,240', cap: 'of 2,000', net: '+1.95/s net' },
+        { label: 'Gold', value: '48,312', cap: '', net: '+36/s net' },
+        { label: 'Reprobates', value: '132', cap: '', net: '+1.16/s net' },
+      ],
+      flows: [
+        { label: 'Gold', gen: '+46/s', up: '−10/s', net: '+36/s' },
+        { label: 'Influence', gen: '+3.20/s', up: '−1.25/s', net: '+1.95/s' },
+        { label: 'Reprobates', gen: '+1.20/s', up: '−0.04/s', net: '+1.16/s' },
+      ],
+      acolytes: [
+        { name: 'Acolyte 1', eff: '1.5×', action: 'Suggestion', time: '6s', pct: '40%', fg: '#16181d' },
+        { name: 'Acolyte 2', eff: '1.5×', action: 'Logismoi', time: '1m 12s', pct: '70%', fg: '#16181d' },
+        { name: 'Acolyte 3', eff: '1.5×', action: 'idle', time: '–', pct: '0%', fg: '#9a9ca2' },
+      ],
+      invocations: [
+        { name: 'Fama', effect: '+15% influence gain' },
+        { name: 'Kobold', effect: '+20 gold gain/s' },
+        { name: 'Imp', effect: '+1 murders/s' },
+        { name: 'Familiar', effect: '+33% player efficiency' },
+      ],
+      tierHeads,
+      riskGroups: [
+        { name: 'Logos', rows: [
+          row('Suggestion', [0.5, 4.5, 20, 45, 20, 9, 1]),
+          row('Logismoi', [0.8, 6.2, 23, 40, 19, 9.5, 1.5]),
+          row('Imperium', [1, 7, 24, 36, 20, 10, 2]),
+        ]},
+        { name: 'Indagatio', rows: [row('Indagatio', [2, 8, 25, 35, 20, 8, 2])] },
+        { name: 'Emptio', rows: [row('Emptio', [0.04, 5, 30, 40, 17, 7, 1])] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

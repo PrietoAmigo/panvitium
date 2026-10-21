@@ -15,8 +15,8 @@ import {
   playerEfficiency,
   bn,
   mul,
-  type ActionTimer,
   type GameState,
+  type Tier,
 } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
@@ -34,84 +34,243 @@ function effLabel(eff: number): string {
 /** The real minus sign (U+2212) used for signed rate/total readouts, matching the resource lines. */
 const MINUS = '−';
 
-/** One generation/upkeep/net cell trio, pre-formatted for the FlowTable. */
-interface FlowCells {
-  readonly generation: string;
-  readonly upkeep: string;
-  readonly net: string;
-}
+/** The en dash an empty table cell reads as (an idle acolyte's remaining time). */
+const EMPTY_CELL = '\u2013';
+
+/** The middle-dot separator of headings and labels ("Flows · per second", "Player · Suggestion"). */
+const SEP = ' \u00B7 ';
+
+/** Below this, a rate or draw counts as zero (float noise from the flow arithmetic). */
+const EPSILON = 1e-9;
 
 /**
- * Format a {generation, upkeep, net} flow into signed display cells: generation always reads as a
- * gain (+), upkeep as a draw (−, or a bare 0 when nothing is drawn), net signed by its sign. `fmt`
- * renders the magnitude (already absolute) and `suffix` is appended to each ("/s" on the Main tab).
+ * A per-second magnitude (already absolute): two decimals below 10/s so a slow flow still reads
+ * ("1.95", not a floored "1"), grouped whole numbers from there up (`formatBigNum`, which also takes
+ * the M/B/T suffixes once the flows grow).
  */
-function flowCells(
-  flow: { generation: number; upkeep: number; net: number },
-  fmt: (magnitude: number) => string,
-  suffix: string,
-): FlowCells {
-  return {
-    generation: `+${fmt(Math.abs(flow.generation))}${suffix}`,
-    upkeep: flow.upkeep > 1e-9 ? `${MINUS}${fmt(flow.upkeep)}${suffix}` : '0',
-    net: `${flow.net < 0 ? MINUS : '+'}${fmt(Math.abs(flow.net))}${suffix}`,
-  };
+function rateMagnitude(n: number): string {
+  return n < 9.995 ? n.toFixed(2) : formatBigNum(bn(n));
+}
+
+/** A signed per-second rate ("+1.95/s", "−36/s"), the sign taken from the value. */
+function signedRate(n: number): string {
+  return `${n < -EPSILON ? MINUS : '+'}${rateMagnitude(Math.abs(n))}/s`;
+}
+
+/** A per-second draw (upkeep, deaths) read as a loss ("−0.04/s"), or a bare 0 when nothing is drawn. */
+function drawRate(n: number): string {
+  return n > EPSILON ? `${MINUS}${rateMagnitude(n)}/s` : '0';
+}
+
+/** A {generation, upkeep, net} per-second flow (gold, influence, or the reprobate population). */
+interface Flow {
+  readonly generation: number;
+  readonly upkeep: number;
+  readonly net: number;
 }
 
 /** A resource / population row in the generation / upkeep / net flow table. */
-interface FlowRow extends FlowCells {
+interface FlowRow {
   readonly label: string;
+  readonly flow: Flow;
 }
 
-/** The generation / upkeep / net breakdown table (Main tab, per-second). */
+/** One headline figure: a top rule, its label, the big number, an optional cap and a net rate. */
+function Kpi({
+  label,
+  value,
+  cap,
+  net,
+}: {
+  label: string;
+  value: string;
+  cap?: string;
+  net?: number;
+}): ReactElement {
+  return (
+    <div className="an-kpi">
+      <span className="an-kpi-label">{label}</span>
+      <div className="an-kpi-line">
+        <span className="an-kpi-value">{value}</span>
+        {cap !== undefined && <span className="an-kpi-cap">{cap}</span>}
+      </div>
+      {net !== undefined && (
+        <span className={'an-kpi-net' + (net < -EPSILON ? ' an-kpi-net--neg' : '')}>
+          {signedRate(net)} {strings.analytics.netSuffix}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** A section heading with an optional muted mono note ("Flows · per second"). */
+function SectionTitle({ title, note }: { title: string; note?: string }): ReactElement {
+  return (
+    <h2 className="an-h2">
+      {title}
+      {note !== undefined && <span className="an-h2-note">{`${SEP}${note}`}</span>}
+    </h2>
+  );
+}
+
+/** A 10px square progress bar, `pct` in 0..1. */
+function Bar({ pct }: { pct: number }): ReactElement {
+  return (
+    <span className="an-bar">
+      <span className="an-bar-fill" style={{ width: `${(pct * 100).toFixed(0)}%` }} />
+    </span>
+  );
+}
+
+/** The generation / upkeep / net breakdown table (Main tab, per second). */
 function FlowTable({ rows }: { rows: readonly FlowRow[] }): ReactElement {
   const a = strings.analytics;
   return (
-    <div className="analytics-flow" role="table">
-      <div className="analytics-flow-row analytics-flow-head" role="row">
-        <span className="analytics-flow-label" />
-        <span className="analytics-flow-cell">{a.generation}</span>
-        <span className="analytics-flow-cell">{a.upkeep}</span>
-        <span className="analytics-flow-cell">{a.net}</span>
+    <div className="an-table an-flows" role="table">
+      <div className="an-tr" role="row">
+        <span className="an-th" role="columnheader" />
+        <span className="an-th an-r" role="columnheader">
+          {a.generation}
+        </span>
+        <span className="an-th an-r" role="columnheader">
+          {a.upkeep}
+        </span>
+        <span className="an-th an-r an-th--strong" role="columnheader">
+          {a.net}
+        </span>
       </div>
-      {rows.map((r) => (
-        <div className="analytics-flow-row" role="row" key={r.label}>
-          <span className="analytics-flow-label">{r.label}</span>
-          <span className="analytics-flow-cell analytics-flow-gen">{r.generation}</span>
-          <span className="analytics-flow-cell analytics-flow-up">{r.upkeep}</span>
-          <span className="analytics-flow-cell analytics-flow-net">{r.net}</span>
+      {rows.map(({ label, flow }) => (
+        <div className="an-tr" role="row" key={label}>
+          <span className="an-td an-td--label" role="rowheader">
+            {label}
+          </span>
+          <span className="an-td an-num" role="cell">
+            {`+${rateMagnitude(Math.abs(flow.generation))}/s`}
+          </span>
+          <span className="an-td an-num" role="cell">
+            {drawRate(flow.upkeep)}
+          </span>
+          <span
+            className={'an-td an-num an-num--net' + (flow.net < -EPSILON ? ' an-num--neg' : '')}
+            role="cell"
+          >
+            {signedRate(flow.net)}
+          </span>
         </div>
       ))}
     </div>
   );
 }
 
-const NO_TIMERS: readonly ActionTimer[] = [];
-
-/** In-flight Opera timers with progress, so a queued rite is visible while it resolves. The bar
- *  fills 0→100% via the shared `actionProgress` rule (faster at higher efficiency, never offset). */
-function ActiveActions(): ReactElement {
+/**
+ * The Main tab: the three headline figures (Influence against its cap, Gold, the reprobate
+ * population, each with its net rate), then the per-second generation / upkeep / net flows beside the
+ * reprobate deaths by cause. Souls head the Status Quo Ledger and the player's efficiency lives on
+ * the Actions tab, so neither repeats here.
+ */
+function MainTab(): ReactElement {
   const state = useGameStore((s) => s.state);
-  const queue = state?.lifetime.actionQueue ?? NO_TIMERS;
-  if (queue.length === 0) return <div className="active-actions idle">{strings.opera.idle}</div>;
+  if (!state) return <p className="an-empty">{strings.opera.notYet}.</p>;
+  const a = strings.analytics;
+  const mods = computeModifiers(state);
+  const flows = resourceFlows(state);
+  const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
+
+  const repRates = reprobateRates(state, mods);
+  const deaths = repRates.suicidePerSecond + repRates.murderPerSecond;
+  const repFlow: Flow = {
+    generation: repRates.generationPerSecond,
+    upkeep: deaths,
+    net: repRates.generationPerSecond - deaths,
+  };
+
+  const rows: FlowRow[] = [
+    { label: strings.resources.gold, flow: flows.gold },
+    { label: strings.resources.influence, flow: flows.influence },
+    { label: a.reprobates, flow: repFlow },
+  ];
+
   return (
-    <div className="active-actions">
+    <div className="an-main">
+      <div className="an-kpis">
+        <Kpi
+          label={strings.resources.influence}
+          value={formatBigNum(state.lifetime.influence)}
+          cap={`${a.ofMax} ${formatBigNum(effectiveMax)}`}
+          net={flows.influence.net}
+        />
+        <Kpi
+          label={strings.resources.gold}
+          value={formatBigNum(state.lifetime.gold)}
+          net={flows.gold.net}
+        />
+        <Kpi
+          label={a.reprobates}
+          value={Math.floor(state.lifetime.reprobates).toLocaleString('en-US')}
+          net={repFlow.net}
+        />
+      </div>
+      <div className="an-split">
+        <section className="an-section">
+          <SectionTitle title={a.flows} note={a.perSecond} />
+          <FlowTable rows={rows} />
+        </section>
+        <section className="an-section">
+          <SectionTitle title={a.reprobateDeaths} note={a.perSecond} />
+          <div className="an-ledger">
+            <div className="an-ledger-row">
+              <span>{a.byMurder}</span>
+              <span className="an-ledger-val">{drawRate(repRates.murderPerSecond)}</span>
+            </div>
+            <div className="an-ledger-row">
+              <span>{a.bySuicide}</span>
+              <span className="an-ledger-val">{drawRate(repRates.suicidePerSecond)}</span>
+            </div>
+            <div className="an-ledger-row an-ledger-row--total">
+              <span>{a.total}</span>
+              <span className="an-ledger-val">{drawRate(deaths)}</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The player's in-flight work beside the efficiency figure: one ruled block per running timer (the
+ * Logos rite, and a scrying or purchase running alongside it), each with its remaining time and a
+ * progress bar filled 0→100% by the shared `actionProgress` rule. Idle, a muted "Player · idle" block
+ * with an empty bar holds the row's shape.
+ */
+function PlayerRites({ state }: { state: GameState }): ReactElement {
+  const a = strings.analytics;
+  const queue = state.lifetime.actionQueue;
+  if (queue.length === 0) {
+    return (
+      <div className="an-rites">
+        <div className="an-rite an-rite--idle">
+          <div className="an-rite-head">
+            <span className="an-rite-label">{`${a.player}${SEP}${a.idle}`}</span>
+          </div>
+          <Bar pct={0} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="an-rites">
       {queue.map((t, i) => {
         const def = ACTIONS[t.actionId];
-        const eff = state && def ? categoryEfficiency(state, def.category) : 1;
-        const pct = actionProgress(t.actionId, t.remainingSeconds, eff);
-        const name = actionName(t.actionId);
+        const eff = def ? categoryEfficiency(state, def.category) : 1;
+        const left = formatDuration(Math.max(0, Math.ceil(t.remainingSeconds)) * 1000);
         return (
-          <div className="action-progress" key={`${i}-${t.actionId}`}>
-            <span className="action-progress-label">
-              {name} · {Math.ceil(t.remainingSeconds)}s
-            </span>
-            <span className="action-progress-bar">
-              <span
-                className="action-progress-fill"
-                style={{ width: `${(pct * 100).toFixed(0)}%` }}
-              />
-            </span>
+          <div className="an-rite" key={`${i}-${t.actionId}`}>
+            <div className="an-rite-head">
+              <span className="an-rite-label">{`${a.player}${SEP}${actionName(t.actionId)}`}</span>
+              <span className="an-rite-time">{`${left} ${a.left}`}</span>
+            </div>
+            <Bar pct={actionProgress(t.actionId, t.remainingSeconds, eff)} />
           </div>
         );
       })}
@@ -119,190 +278,66 @@ function ActiveActions(): ReactElement {
   );
 }
 
-/** Player action efficiency (Sin levels / skills / invocations), as a labelled list value. */
-function EfficiencyRow(): ReactElement {
-  const eff = useGameStore((s) => (s.state ? playerEfficiency(s.state) : 1));
-  const value = Number.isInteger(eff) ? `${eff}×` : `${eff.toFixed(1)}×`;
-  return <StatRow label={strings.analytics.playerEfficiency} value={value} />;
-}
-
 /**
- * The Main tab (Resources + Reprobates folded together, in this order): the live resource readouts —
- * Influence and Gold (the Souls total now heads the Status Quo Ledger) — then the reprobate population
- * with its generation / death rates. The player
- * action + efficiency now live on the Actions tab (alongside the acolyte / invocation work boards), so
- * the same readout never appears twice.
+ * The acolytes table: one row per acolyte with its action efficiency, its current action, the
+ * remaining cycle time, and a progress bar. Idle acolytes still show their efficiency (it applies the
+ * moment they're assigned) but read muted, with an empty bar.
  */
-function MainTab(): ReactElement {
-  const state = useGameStore((s) => s.state);
-  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const mods = computeModifiers(state);
-  const flows = resourceFlows(state);
-  const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
-
-  const repRates = reprobateRates(state, mods);
-  const deaths = repRates.suicidePerSecond + repRates.murderPerSecond;
-  const reps = state.lifetime.reprobates;
-  const num = (n: number): string => Math.floor(n).toLocaleString('en-US');
-
-  // Magnitude formatters (values already absolute): gold/influence as BigNum, reprobates to 2 dp.
-  const big = (n: number): string => formatBigNum(bn(n));
-  const rep = (n: number): string => n.toFixed(2);
-  const repFlow = {
-    generation: repRates.generationPerSecond,
-    upkeep: deaths,
-    net: repRates.generationPerSecond - deaths,
-  };
-
-  const rows: FlowRow[] = [
-    { label: strings.resources.gold, ...flowCells(flows.gold, big, '/s') },
-    { label: strings.resources.influence, ...flowCells(flows.influence, big, '/s') },
-    { label: strings.analytics.reprobates, ...flowCells(repFlow, rep, '/s') },
-  ];
-
-  return (
-    <div className="analytics-main">
-      <div className="analytics-list">
-        <StatRow
-          label={strings.resources.influence}
-          value={formatBigNum(state.lifetime.influence)}
-          detail={`${strings.analytics.ofMax} ${formatBigNum(effectiveMax)}`}
-        />
-        <StatRow label={strings.resources.gold} value={formatBigNum(state.lifetime.gold)} />
-        <StatRow label={strings.analytics.reprobates} value={num(reps)} />
-      </div>
-      <FlowTable rows={rows} />
-      <div className="analytics-rates">
-        <StatRow
-          label={strings.analytics.byMurder}
-          value={`${MINUS}${rep(repRates.murderPerSecond)}/s`}
-          indent
-        />
-        <StatRow
-          label={strings.analytics.bySuicide}
-          value={`${MINUS}${rep(repRates.suicidePerSecond)}/s`}
-          indent
-        />
-      </div>
-    </div>
-  );
-}
-
-/**
- * The PC's Analytics program (5.4): the live numeric readouts pulled out of the always-on HUD into
- * an on-demand panel. Two tabs: Main (resources + the reprobate population + dynamics rates) and
- * Actions (the unified work board: the player's efficiency + in-flight rite, then each acolyte, then
- * each bound invocation, every one with its efficiency, current action, and progress bar). A third,
- * Risk (every action's live outcome odds), opens once the Depraedatio Risk algos contract is chosen.
- */
-export function AnalyticsGroup(): ReactElement {
-  const [picked, setTab] = useState<AnalyticsTab>('main');
-  const present = useGameStore((s) => s.state !== null);
-  const riskOpen = useGameStore((s) => (s.state ? riskAnalyticsOpen(s.state) : false));
-  if (!present) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  // A Risk tab left selected falls back to Main if the contract lapses (the account closed).
-  const tab: AnalyticsTab = picked === 'risk' && !riskOpen ? 'main' : picked;
-
-  const tabBtn = (id: AnalyticsTab, label: string): ReactElement => (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={tab === id}
-      className={'kat-tab' + (tab === id ? ' kat-tab--active' : '')}
-      onClick={() => setTab(id)}
-    >
-      {label}
-    </button>
-  );
-
-  return (
-    <>
-      <div className="kat-pager" role="tablist">
-        {tabBtn('main', strings.analytics.main)}
-        {tabBtn('actions', strings.analytics.actions)}
-        {riskOpen && tabBtn('risk', strings.analytics.risk)}
-      </div>
-      {tab === 'main' && <MainTab />}
-      {tab === 'actions' && <ActionsTab />}
-      {tab === 'risk' && <RiskTab />}
-    </>
-  );
-}
-
-/** Row: a label, a primary value, and an optional per-second rate / suffix detail. `indent` marks a
- *  sub-row (e.g. a death-cause breakdown nested under its total). */
-function StatRow({
-  label,
-  value,
-  rate,
-  detail,
-  indent,
-}: {
-  label: string;
-  value: string;
-  rate?: string;
-  detail?: string;
-  indent?: boolean;
-}): ReactElement {
-  return (
-    <div className={'analytics-row' + (indent ? ' analytics-row--indent' : '')}>
-      <span className="analytics-label">{label}</span>
-      <span className="analytics-value">{value}</span>
-      {detail !== undefined && <span className="analytics-detail">{detail}</span>}
-      {rate !== undefined && <span className="analytics-rate">{rate}</span>}
-    </div>
-  );
-}
-
-/**
- * One acolyte per row: its action efficiency, its current action, the remaining cycle time, and a
- * progress bar. Idle acolytes still show their efficiency (it applies the moment they're assigned).
- */
-function AcolyteRow({ state, id }: { state: GameState; id: number }): ReactElement | null {
-  const acolyte = state.lifetime.acolytes.find((a) => a.id === id);
-  if (!acolyte) return null;
-  const idle = acolyte.assignedAction === null;
-  const name = idle ? strings.acolytes.idle : actionName(acolyte.assignedAction as string);
+function AcolyteTable({ state }: { state: GameState }): ReactElement {
+  const a = strings.analytics;
   const eff = Math.max(computeModifiers(state).acolyteEfficiencyMul, 1e-9);
-
-  let bar: ReactElement | null = null;
-  let remaining = '';
-  if (!idle && acolyte.remainingSeconds !== null) {
-    const pct = actionProgress(acolyte.assignedAction as string, acolyte.remainingSeconds, eff);
-    remaining = formatDuration(Math.max(0, Math.ceil(acolyte.remainingSeconds)) * 1000);
-    bar = (
-      <span className="analytics-bar">
-        <span className="analytics-bar-fill" style={{ width: `${(pct * 100).toFixed(0)}%` }} />
-      </span>
-    );
-  }
-
   return (
-    <div className={'analytics-acolyte' + (idle ? ' analytics-acolyte--idle' : '')}>
-      <span className="analytics-acolyte-name">
-        {strings.acolytes.acolyte} {id}
-      </span>
-      <span className="analytics-acolyte-eff">{effLabel(eff)}</span>
-      <span className="analytics-acolyte-action">{name}</span>
-      {remaining !== '' && <span className="analytics-acolyte-time">{remaining}</span>}
-      {bar}
-    </div>
-  );
-}
-
-/**
- * One bound invocation per row, with its live quantified total-effect line. Every invocation is
- * passive (the autonomous-runner channel was removed, ADR-036), so there is no action or progress.
- */
-function InvocationRow({ state, id }: { state: GameState; id: string }): ReactElement {
-  // Stackable invocations may hold multiple copies, but we never show the count \u2014 a stacked
-  // invocation reads as a single bound entry, not "name \u00D7N".
-  const countLabel = strings.invocations.names[id] ?? id;
-  const detail = invocationEffectText(state, id);
-  return (
-    <div className="analytics-invocation analytics-invocation--passive">
-      <span className="analytics-inv-name">{countLabel}</span>
-      {detail !== '' && <span className="analytics-inv-detail">{detail}</span>}
+    <div className="an-table an-acolytes" role="table">
+      <div className="an-tr" role="row">
+        <span className="an-th" role="columnheader">
+          {strings.acolytes.acolyte}
+        </span>
+        <span className="an-th an-r" role="columnheader">
+          {a.efficiency}
+        </span>
+        <span className="an-th" role="columnheader">
+          {a.action}
+        </span>
+        <span className="an-th an-r" role="columnheader">
+          {a.remaining}
+        </span>
+        <span className="an-th" role="columnheader">
+          {a.progress}
+        </span>
+      </div>
+      {state.lifetime.acolytes.map((acolyte) => {
+        const action = acolyte.assignedAction;
+        const remaining = action === null ? null : acolyte.remainingSeconds;
+        return (
+          <div
+            className={'an-tr' + (action === null ? ' an-tr--idle' : '')}
+            role="row"
+            key={acolyte.id}
+          >
+            <span className="an-td an-td--name" role="rowheader">
+              {`${strings.acolytes.acolyte} ${acolyte.id}`}
+            </span>
+            <span className="an-td an-num an-r" role="cell">
+              {effLabel(eff)}
+            </span>
+            <span className="an-td an-td--action" role="cell">
+              {action === null ? a.idle : actionName(action)}
+            </span>
+            <span className="an-td an-num an-r" role="cell">
+              {remaining === null
+                ? EMPTY_CELL
+                : formatDuration(Math.max(0, Math.ceil(remaining)) * 1000)}
+            </span>
+            <span className="an-td an-td--bar" role="cell">
+              <Bar
+                pct={
+                  action === null || remaining === null ? 0 : actionProgress(action, remaining, eff)
+                }
+              />
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -321,49 +356,52 @@ function orderedBoundInvocations(state: GameState): string[] {
 }
 
 /**
- * The unified Actions board: three sections in order — the Player (efficiency + the in-flight rite and
- * its progress), each Acolyte's work, then each bound Invocation's work. Every section reads the same
- * efficiency / current-action / progress-bar shape so the player can see, at a glance, everything that
- * is acting on their behalf.
+ * The Actions tab: everything acting on the player's behalf. The player's efficiency beside their
+ * in-flight work, then each acolyte's work, then each bound invocation with its live total effect.
+ * Every invocation is passive (the autonomous-runner channel was removed, ADR-036), so invocations
+ * carry no action or progress; stacked copies read as one entry, never "name ×N".
  */
 function ActionsTab(): ReactElement {
   const state = useGameStore((s) => s.state);
-  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
-  const acolytes = state.lifetime.acolytes;
-  const bound = orderedBoundInvocations(state);
+  if (!state) return <p className="an-empty">{strings.opera.notYet}.</p>;
+  const a = strings.analytics;
+  const eff = playerEfficiency(state);
+  const bound = orderedBoundInvocations(state).filter((id) => invocationById(id) !== undefined);
 
   return (
-    <div className="analytics-actions">
-      <section className="analytics-section">
-        <h4 className="analytics-section-title">{strings.analytics.player}</h4>
-        <div className="analytics-list">
-          <EfficiencyRow />
-        </div>
-        <ActiveActions />
-      </section>
+    <div className="an-actions">
+      <div className="an-actions-top">
+        <Kpi
+          label={a.playerEfficiency}
+          value={Number.isInteger(eff) ? `${eff}×` : `${eff.toFixed(1)}×`}
+        />
+        <PlayerRites state={state} />
+      </div>
 
-      <section className="analytics-section">
-        <h4 className="analytics-section-title">{strings.analytics.acolytes}</h4>
-        {acolytes.length === 0 ? (
-          <p className="pc-empty">{strings.analytics.noAcolytes}</p>
+      <section className="an-section">
+        <SectionTitle title={a.acolytes} />
+        {state.lifetime.acolytes.length === 0 ? (
+          <p className="an-empty">{a.noAcolytes}</p>
         ) : (
-          <div className="analytics-acolytes">
-            {acolytes.map((a) => (
-              <AcolyteRow key={a.id} state={state} id={a.id} />
-            ))}
-          </div>
+          <AcolyteTable state={state} />
         )}
       </section>
 
-      <section className="analytics-section">
-        <h4 className="analytics-section-title">{strings.analytics.invocations}</h4>
+      <section className="an-section">
+        <SectionTitle title={a.invocations} note={a.invocationsNote} />
         {bound.length === 0 ? (
-          <p className="pc-empty">{strings.invocations.noneBound}</p>
+          <p className="an-empty">{strings.invocations.noneBound}</p>
         ) : (
-          <div className="analytics-invocations">
-            {bound.map((id) =>
-              invocationById(id) ? <InvocationRow key={id} state={state} id={id} /> : null,
-            )}
+          <div className="an-invocations">
+            {bound.map((id) => {
+              const effect = invocationEffectText(state, id);
+              return (
+                <div className="an-inv" key={id}>
+                  <span className="an-inv-name">{strings.invocations.names[id] ?? id}</span>
+                  {effect !== '' && <span className="an-inv-effect">{effect}</span>}
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
@@ -382,30 +420,30 @@ function riskPct(p: number): string {
   return `${pct.toFixed(1)}%`;
 }
 
+/** Risk-table cell classes: the tier's colour, plus the likeliest-outcome highlight. */
+function riskCellClass(tier: Tier, top: boolean): string {
+  return `an-risk-cell an-tier--${tier}` + (top ? ' an-risk-cell--top' : '');
+}
+
 /**
  * The Risk tab (the Depraedatio Risk algos contract): every action's live outcome distribution, one
- * row per action grouped by category, one column per outcome tier (Stellar → Apocalyptic). Reads
- * `actionTierDistribution`, the exact weights `resolveAction` draws from, so the odds shown are the
- * odds a cast would roll right now.
+ * row per action grouped by category, one column per outcome tier (Stellar → Apocalyptic), the
+ * likeliest outcome of each row highlighted. Reads `actionTierDistribution`, the exact weights
+ * `resolveAction` draws from, so the odds shown are the odds a cast would roll right now.
  */
 function RiskTab(): ReactElement {
   const state = useGameStore((s) => s.state);
-  if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
+  if (!state) return <p className="an-empty">{strings.opera.notYet}.</p>;
   const a = strings.analytics;
   return (
-    <div className="analytics-risk">
-      <p className="analytics-offline-note">{a.riskIntro}</p>
-      <div className="analytics-risk-table" role="table" aria-label={a.risk}>
-        <div className="analytics-risk-row analytics-risk-head" role="row">
-          <span className="analytics-risk-label" role="columnheader">
-            {a.riskAction}
+    <div className="an-risk-wrap">
+      <div className="an-risk" role="table" aria-label={a.risk}>
+        <div className="an-risk-row an-risk-head" role="row">
+          <span className="an-risk-label" role="columnheader">
+            {a.action}
           </span>
           {TIERS.map((t) => (
-            <span
-              key={t}
-              className={`analytics-risk-cell analytics-risk-tier--${t}`}
-              role="columnheader"
-            >
+            <span key={t} className={riskCellClass(t, false)} role="columnheader">
               {strings.tiers[t]}
             </span>
           ))}
@@ -414,32 +452,87 @@ function RiskTab(): ReactElement {
           const actions = Object.values(ACTIONS).filter((d) => d.category === cat);
           if (actions.length === 0) return null;
           return [
-            <div className="analytics-risk-row analytics-risk-group" role="row" key={cat}>
-              <span className="analytics-risk-category" role="rowheader">
+            <div className="an-risk-row" role="row" key={`group-${cat}`}>
+              <span className="an-risk-group" role="rowheader">
                 {strings.opera[cat]}
               </span>
             </div>,
             ...actions.map((def) => {
               const dist = actionTierDistribution(state, def.id);
+              const odds = TIERS.map((t) => Math.max(0, dist[t] ?? 0));
+              const likeliest = Math.max(...odds);
               return (
-                <div className="analytics-risk-row" role="row" key={def.id}>
-                  <span className="analytics-risk-label" role="rowheader">
+                <div className="an-risk-row" role="row" key={def.id}>
+                  <span className="an-risk-label" role="rowheader">
                     {actionName(def.id)}
                   </span>
-                  {TIERS.map((t) => (
-                    <span
-                      key={t}
-                      className={`analytics-risk-cell analytics-risk-tier--${t}`}
-                      role="cell"
-                    >
-                      {riskPct(dist[t] ?? 0)}
-                    </span>
-                  ))}
+                  {TIERS.map((t, i) => {
+                    const p = odds[i] ?? 0;
+                    return (
+                      <span
+                        key={t}
+                        className={riskCellClass(t, likeliest > 0 && p === likeliest)}
+                        role="cell"
+                      >
+                        {riskPct(p)}
+                      </span>
+                    );
+                  })}
                 </div>
               );
             }),
           ];
         })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The PC's Analytics program (5.4): the live numeric readouts, laid out as a plain printed-report
+ * BI tool that fills the PC window (full-bleed, see FULLBLEED in PcWindow). A fixed header carries the
+ * tab row and the current tab's subtitle over a scrolling page. Main holds the resources, their flows
+ * and the reprobate population; Actions everything acting on the player's behalf (the player, each
+ * acolyte, each bound invocation). A third tab, Risk (every action's live outcome odds), opens once
+ * the Depraedatio Risk algos contract is chosen.
+ */
+export function AnalyticsGroup(): ReactElement {
+  const [picked, setTab] = useState<AnalyticsTab>('main');
+  const riskOpen = useGameStore((s) => (s.state ? riskAnalyticsOpen(s.state) : false));
+  // A Risk tab left selected falls back to Main if the contract lapses (the account closed).
+  const tab: AnalyticsTab = picked === 'risk' && !riskOpen ? 'main' : picked;
+  const a = strings.analytics;
+  const subtitle =
+    tab === 'main' ? a.mainSubtitle : tab === 'actions' ? a.actionsSubtitle : a.riskIntro;
+
+  const tabBtn = (id: AnalyticsTab, label: string): ReactElement => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={tab === id}
+      className={'an-tab' + (tab === id ? ' an-tab--active' : '')}
+      onClick={() => setTab(id)}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="an-root">
+      <header className="an-header">
+        <nav className="an-tabs" role="tablist">
+          {tabBtn('main', a.main)}
+          {tabBtn('actions', a.actions)}
+          {riskOpen && tabBtn('risk', a.risk)}
+        </nav>
+        <span className="an-subtitle">{subtitle}</span>
+      </header>
+      <div className="an-scroll">
+        <div className="an-page">
+          {tab === 'main' && <MainTab />}
+          {tab === 'actions' && <ActionsTab />}
+          {tab === 'risk' && <RiskTab />}
+        </div>
       </div>
     </div>
   );

@@ -85,7 +85,7 @@ test('opens the Analytics program with its live readouts', async ({ page }) => {
 
   // The Main tab folds in the resources and the reprobate readouts. (Souls moved to the Status Quo
   // Ledger, so it is no longer here; Influence and Gold remain.)
-  const main = page.locator('.analytics-main');
+  const main = page.locator('.an-main');
   await expect(main).toContainText('Influence');
   await expect(main).toContainText('Reprobates');
 });

@@ -1,7 +1,13 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { createInitialState, addReprobates, type Acolyte, type GameState } from '@panvitium/sim';
+import {
+  createInitialState,
+  addReprobates,
+  resourceFlows,
+  type Acolyte,
+  type GameState,
+} from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { AnalyticsGroup } from './Analytics.js';
 
@@ -119,9 +125,7 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     expect(text).toContain('influence gain'); // the effect label
     expect(/[+\-\u2212]\d+%/.test(text)).toBe(true); // a computed magnitude, not a static phrase
     // Passive ⇒ no progress bar (those belong to runner channels).
-    expect(
-      container!.querySelectorAll('.analytics-invocation--passive .analytics-bar').length,
-    ).toBe(0);
+    expect(container!.querySelectorAll('.an-inv .an-bar').length).toBe(0);
   });
 
   it('lists a stackable invocation as a passive row (no runner bar/chip) with its live effect', () => {
@@ -137,10 +141,10 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     const text = container!.textContent ?? '';
     expect(text).toContain('Imp');
     expect(text.toLowerCase()).toContain('murders/s'); // its live quantified effect (no runner channel)
-    // No autonomous runner anymore \u2192 no progress bar, no per-copy channel rows, no buttons.
-    expect(container!.querySelectorAll('.analytics-invocation .analytics-bar').length).toBe(0);
-    expect(container!.querySelectorAll('.analytics-inv-channel').length).toBe(0);
-    expect(container!.querySelectorAll('.analytics-invocations button').length).toBe(0);
+    // No autonomous runner anymore \u2192 one entry (no per-copy rows), no progress bar, no buttons.
+    expect(container!.querySelectorAll('.an-inv').length).toBe(1);
+    expect(container!.querySelectorAll('.an-inv .an-bar').length).toBe(0);
+    expect(container!.querySelectorAll('.an-invocations button').length).toBe(0);
   });
 
   it('orders bound invocations by required Sin level (desc) then name (asc)', () => {
@@ -149,7 +153,7 @@ describe('AnalyticsGroup — Actions tab invocations', () => {
     seedLifetime({ invocations: { imp: 1, harpy: 1, midas: 1, doppelgaenger: 1 } });
     render();
     clickTab('Actions');
-    const names = Array.from(container!.querySelectorAll('.analytics-inv-name')).map(
+    const names = Array.from(container!.querySelectorAll('.an-inv-name')).map(
       (n) => n.textContent ?? '',
     );
     const idx = (label: string): number => names.findIndex((n) => n.startsWith(label));
@@ -171,7 +175,7 @@ describe('AnalyticsGroup — Risk tab (the Depraedatio Risk algos contract)', ()
     seedLifetime({ syngraphae: ['risk-algos'] });
     render();
     clickTab('Risk');
-    const table = container!.querySelector('.analytics-risk-table');
+    const table = container!.querySelector('.an-risk');
     expect(table).not.toBeNull();
     const text = table!.textContent ?? '';
     for (const name of ['Suggestion', 'Logismoi', 'Imperium']) {
@@ -195,14 +199,125 @@ describe('AnalyticsGroup — Risk tab (the Depraedatio Risk algos contract)', ()
       expect(text).toContain(tier);
     }
     // One header row + five action rows, each with a cell per tier (7) plus its label.
-    expect(container!.querySelectorAll('.analytics-risk-cell').length).toBe(7 * 6);
+    expect(container!.querySelectorAll('.an-risk-cell').length).toBe(7 * 6);
     // Indagatio's base odds read through: Neutral 50%, Apocalyptic 0.1%.
-    const indagatio = Array.from(table!.querySelectorAll('.analytics-risk-row')).find(
-      (r) => r.querySelector('.analytics-risk-label')?.textContent === 'Indagatio',
+    const indagatio = Array.from(table!.querySelectorAll('.an-risk-row')).find(
+      (r) => r.querySelector('.an-risk-label')?.textContent === 'Indagatio',
     );
-    const cells = Array.from(indagatio!.querySelectorAll('.analytics-risk-cell')).map(
+    const cells = Array.from(indagatio!.querySelectorAll('.an-risk-cell')).map(
       (c) => c.textContent,
     );
     expect(cells).toEqual(['0.1%', '4.9%', '25.0%', '50.0%', '15.0%', '4.9%', '0.1%']);
+  });
+});
+
+describe('AnalyticsGroup — report layout (Claude Design rework)', () => {
+  const subtitle = (): string => container!.querySelector('.an-subtitle')?.textContent ?? '';
+
+  it('heads each tab with its subtitle and marks the selected tab', () => {
+    seedLifetime({ syngraphae: ['risk-algos'] });
+    render();
+    expect(subtitle()).toBe('Resources, flows and the reprobate population');
+    const selected = (): string[] =>
+      Array.from(container!.querySelectorAll('[role="tab"][aria-selected="true"]')).map(
+        (b) => b.textContent ?? '',
+      );
+    expect(selected()).toEqual(['Main']);
+    clickTab('Actions');
+    expect(subtitle()).toBe('Everything acting on your behalf, right now');
+    expect(selected()).toEqual(['Actions']);
+    clickTab('Risk');
+    expect(subtitle()).toBe('The odds of every outcome of every action, as they stand right now.');
+    expect(selected()).toEqual(['Risk']);
+  });
+
+  it('shows slow per-second rates to two decimals rather than flooring them', () => {
+    seed([]);
+    render();
+    const state = useGameStore.getState().state!;
+    const net = resourceFlows(state).influence.net;
+    expect(Math.abs(net)).toBeLessThan(10); // a fresh game's influence flow is a slow one
+    const kpiNets = Array.from(container!.querySelectorAll('.an-kpi-net')).map(
+      (n) => n.textContent ?? '',
+    );
+    // Influence leads the KPI row; its net line carries the two-decimal rate.
+    expect(kpiNets[0]).toBe(`${net < 0 ? '−' : '+'}${Math.abs(net).toFixed(2)}/s net`);
+    expect(kpiNets).toHaveLength(3);
+  });
+
+  it('breaks the reprobate deaths down by cause with a total', () => {
+    seed([]);
+    render();
+    const rows = Array.from(container!.querySelectorAll('.an-ledger-row')).map(
+      (r) => r.firstElementChild?.textContent ?? '',
+    );
+    expect(rows).toEqual(['By murder', 'By suicide', 'Total']);
+  });
+
+  it('reads an idle player as a muted "Player · idle" block with an empty bar', () => {
+    seed([]);
+    render();
+    clickTab('Actions');
+    const rite = container!.querySelector('.an-rite');
+    expect(rite!.classList.contains('an-rite--idle')).toBe(true);
+    expect(rite!.textContent).toBe('Player · idle');
+    expect((rite!.querySelector('.an-bar-fill') as HTMLElement).style.width).toBe('0%');
+  });
+
+  it("shows the player's in-flight rite with its time left", () => {
+    const base = createInitialState('seed', 0);
+    const state: GameState = {
+      ...base,
+      lifetime: {
+        ...base.lifetime,
+        actionQueue: [{ actionId: 'suggestion', remainingSeconds: 3.2 }],
+      },
+    };
+    useGameStore.setState({ state });
+    render();
+    clickTab('Actions');
+    const rite = container!.querySelector('.an-rite');
+    expect(rite!.classList.contains('an-rite--idle')).toBe(false);
+    expect(rite!.querySelector('.an-rite-label')!.textContent).toBe('Player · Suggestion');
+    expect(rite!.querySelector('.an-rite-time')!.textContent).toBe('4s left');
+  });
+
+  it('greys out an idle acolyte with an empty remaining cell and bar', () => {
+    seed([
+      { id: 1, assignedAction: 'suggestion', remainingSeconds: 30 },
+      { id: 2, assignedAction: null, remainingSeconds: null },
+    ]);
+    render();
+    clickTab('Actions');
+    const idle = container!.querySelectorAll('.an-acolytes .an-tr--idle');
+    expect(idle).toHaveLength(1);
+    const cells = Array.from(
+      container!.querySelectorAll('.an-acolytes [role="row"]')[2]!.children,
+    ).map((c) => c.textContent);
+    expect(cells.slice(0, 4)).toEqual(['Acolyte 2', expect.stringMatching(/×$/), 'idle', '–']);
+    const busy = Array.from(container!.querySelectorAll('.an-acolytes [role="row"]')[1]!.children);
+    expect(busy[2]!.textContent).toBe('Suggestion');
+    expect(busy[3]!.textContent).toBe('30s');
+  });
+
+  it('highlights the likeliest outcome of each action on the Risk tab', () => {
+    seedLifetime({ syngraphae: ['risk-algos'] });
+    render();
+    clickTab('Risk');
+    const rows = Array.from(container!.querySelectorAll('.an-risk-row')).filter(
+      (r) => r.querySelector('.an-risk-label') !== null && !r.classList.contains('an-risk-head'),
+    );
+    expect(rows).toHaveLength(5);
+    for (const row of rows) {
+      expect(row.querySelectorAll('.an-risk-cell--top').length).toBeGreaterThanOrEqual(1);
+    }
+    const indagatio = rows.find(
+      (r) => r.querySelector('.an-risk-label')?.textContent === 'Indagatio',
+    );
+    const top = Array.from(indagatio!.querySelectorAll('.an-risk-cell--top'));
+    expect(top.map((c) => c.textContent)).toEqual(['50.0%']);
+    expect(top[0]!.classList.contains('an-tier--neutral')).toBe(true);
+    // The header row is never highlighted.
+    expect(container!.querySelectorAll('.an-risk-head .an-risk-cell--top')).toHaveLength(0);
   });
 });
