@@ -362,9 +362,24 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
             >
               {mask ? '◉' : '◎'}
             </button>
-            <button type="button" className="ch-primary" onClick={() => setView('portfolio')}>
-              {F.transferFunds}
-            </button>
+            <div
+              className={'ch-switch' + (view === 'contracts' ? ' ch-switch--contracts' : '')}
+              role="group"
+              aria-label={F.viewSwitch}
+            >
+              <span className="ch-switch-thumb" aria-hidden="true" />
+              {(['portfolio', 'contracts'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={'ch-switch-opt' + (view === v ? ' ch-switch-opt--active' : '')}
+                  onClick={() => setView(v)}
+                  aria-pressed={view === v}
+                >
+                  {v === 'portfolio' ? F.portfolio : F.contracts}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
 

@@ -136,6 +136,33 @@ describe('DepraedatioGroup — Counting House account', () => {
     expect(chooseButtons).toHaveLength(3);
   });
 
+  it('the header switch flips between Portfolio and Contracts', () => {
+    render();
+    const F = strings.faeneratio;
+    const sw = container!.querySelector<HTMLElement>(`[aria-label="${F.viewSwitch}"]`);
+    expect(sw).not.toBeNull();
+    const opt = (label: string): HTMLButtonElement => {
+      const b = Array.from(sw!.querySelectorAll<HTMLButtonElement>('button')).find(
+        (x) => x.textContent === label,
+      );
+      if (!b) throw new Error(`no switch option "${label}"`);
+      return b;
+    };
+    expect(opt(F.portfolio).getAttribute('aria-pressed')).toBe('true');
+    expect(opt(F.contracts).getAttribute('aria-pressed')).toBe('false');
+    expect(container!.querySelector('.ch-view-title')?.textContent).toBe(F.portfolio);
+
+    act(() => opt(F.contracts).dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(opt(F.contracts).getAttribute('aria-pressed')).toBe('true');
+    expect(container!.querySelector('.ch-view-title')?.textContent).toBe(F.contracts);
+    expect(container!.querySelectorAll('.ch-tier')).toHaveLength(3);
+
+    act(() => opt(F.portfolio).dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(opt(F.portfolio).getAttribute('aria-pressed')).toBe('true');
+    expect(container!.querySelector('.ch-tier')).toBeNull();
+    expect(container!.textContent).not.toContain('Transfer funds');
+  });
+
   it('choosing is a two-step confirm and costs nothing', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
