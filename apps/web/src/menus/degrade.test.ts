@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_DEGRADE, applySpriteTint } from './degrade.js';
+import { DEFAULT_DEGRADE, applySpriteTint, spriteArtSize } from './degrade.js';
 
 // The Fausto-curse "Vertigo" layer is an additive pass gated on `curseVertigo`. The no-curse
 // invariant: the shipped recipe leaves the layer off, so a frame with no curse is byte-for-byte the
@@ -63,5 +63,27 @@ describe('applySpriteTint', () => {
     expect(d[1]!).toBeGreaterThan(d[0]!);
     expect(d[1]!).toBeGreaterThan(d[2]!);
     expect(d[2]!).toBeLessThan(60);
+  });
+});
+
+// A sprite's art is a decoded image or a canvas painted ahead of time (the first-descent dissolve
+// frames); the engine sizes either one, and skips art with nothing to draw yet.
+describe('spriteArtSize', () => {
+  it('sizes a canvas by its bitmap, and skips an empty one', () => {
+    const c = document.createElement('canvas');
+    c.width = 854;
+    c.height = 480;
+    expect(spriteArtSize(c)).toEqual({ w: 854, h: 480 });
+    c.width = 0;
+    expect(spriteArtSize(c)).toBeNull();
+  });
+
+  it('sizes a decoded image by its natural size, and skips one still loading', () => {
+    const im = new Image();
+    expect(spriteArtSize(im)).toBeNull();
+    Object.defineProperty(im, 'complete', { value: true });
+    Object.defineProperty(im, 'naturalWidth', { value: 1672 });
+    Object.defineProperty(im, 'naturalHeight', { value: 941 });
+    expect(spriteArtSize(im)).toEqual({ w: 1672, h: 941 });
   });
 });

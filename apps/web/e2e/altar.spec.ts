@@ -96,6 +96,16 @@ test('arms on the first press; empty-handed, the first commit is stopped, the ne
   await page.getByRole('button', { name: /Confirm the descent/ }).click();
   const cinematic = page.locator('.first-descent');
   await expect(cinematic).toHaveCount(1);
+  // Record whether the falling plate wears its baked dissolve on every frame of the fall: committed
+  // at a player's pace, the bake must still land first (a bare plate shows its hard edges).
+  await cinematic.evaluate((root: HTMLElement) => {
+    const seen: string[] = [];
+    (window as unknown as { dissolveSeen: string[] }).dissolveSeen = seen;
+    new MutationObserver(() => {
+      const v = root.dataset.dissolve ?? '';
+      if (seen[seen.length - 1] !== v) seen.push(v);
+    }).observe(root, { attributes: true, attributeFilter: ['data-dissolve'] });
+  });
   await cinematic.click();
   await expect(page.locator('.transit')).toHaveCount(0);
   await expect
@@ -111,6 +121,9 @@ test('arms on the first press; empty-handed, the first commit is stopped, the ne
     .toBeGreaterThan(5_000);
   await expect(page.locator('.transit-word')).toHaveText('Katabasis', { timeout: 12_000 });
   await expect(cinematic).toHaveCount(0, { timeout: 5_000 });
+  expect(
+    await page.evaluate(() => (window as unknown as { dissolveSeen: string[] }).dissolveSeen),
+  ).toEqual(['baked']);
   await expect(page.locator('.transit-sub')).toHaveText('exspes in ima');
   // The descent holds 5 s and cannot be skipped: a click on it changes nothing.
   await page.locator('.transit').click();
