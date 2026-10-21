@@ -54,32 +54,34 @@ export const SEAL_ARMED: SealLook = {
   ],
 };
 
-/** The seal of Semet's glow: gold leaf hugging the strokes, in place of the crimson. */
+/** The seal of Semet's glow: a deep amber hugging the strokes, in place of the crimson. It stays
+ *  well below the art's gold, so the crisp strokes stand clear of the pixelated glow, as the cream
+ *  seal does on its crimson (a gold-on-gold glow made the sharp art read as pixelated). */
 export const SEAL_SEMET: SealLook = {
-  fill: 'rgb(216, 182, 88)',
+  fill: 'rgb(120, 74, 10)',
   rest: [
-    [6, 216, 182, 88, 1],
-    [20, 201, 162, 39, 1],
-    [46, 170, 130, 30, 1],
+    [6, 130, 82, 12, 1],
+    [20, 140, 90, 14, 1],
+    [46, 110, 66, 10, 1],
   ],
   swell: [
-    [8, 232, 200, 110, 1],
-    [30, 216, 176, 52, 1],
-    [62, 185, 142, 34, 1],
+    [8, 150, 96, 16, 1],
+    [30, 160, 104, 18, 1],
+    [62, 124, 76, 12, 1],
   ],
 };
 
 export const SEAL_SEMET_ARMED: SealLook = {
-  fill: 'rgb(226, 194, 102)',
+  fill: 'rgb(130, 82, 12)',
   rest: [
-    [9, 226, 194, 102, 1],
-    [30, 210, 170, 48, 1],
-    [70, 178, 136, 32, 1],
+    [9, 140, 88, 14, 1],
+    [30, 150, 96, 16, 1],
+    [70, 118, 72, 11, 1],
   ],
   swell: [
-    [12, 240, 212, 128, 1],
-    [44, 224, 184, 60, 1],
-    [100, 192, 148, 36, 1],
+    [12, 160, 104, 18, 1],
+    [44, 170, 112, 20, 1],
+    [100, 132, 82, 13, 1],
   ],
 };
 
