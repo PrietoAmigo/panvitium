@@ -50,6 +50,7 @@ beforeEach(() => {
     subliminalQueue: [],
     notice: null,
     emptyHandedWarning: false,
+    firstDescentPlaying: false,
     katabasisPhase: null,
     recap: null,
     titleOpen: false,
@@ -819,6 +820,55 @@ describe('gameStore — the empty-handed warning', () => {
     store().confirmKatabasis();
     expect(store().state?.emptyHandedWarned).toBe(true);
     expect(store().warnEmptyHanded()).toBe(false);
+  });
+});
+
+describe('gameStore — the first-descent cinematic', () => {
+  it('plays on the first commit: the flag is set at the commit and persisted, nothing descends yet', () => {
+    patchSouls(5);
+    expect(store().playFirstDescent()).toBe(true);
+    expect(store().firstDescentPlaying).toBe(true);
+    expect(store().state?.firstDescentSeen).toBe(true);
+    // No teardown, no freeze: the hand-off begins the descent, not the commit.
+    expect(store().katabasisPhase).toBeNull();
+    expect(store().state?.inKatabasis).not.toBe(true);
+    store().endFirstDescent();
+    expect(store().firstDescentPlaying).toBe(false);
+    // Persisted at once: a reload mid-cinematic cannot replay it.
+    useGameStore.setState({ ready: false });
+    store().init();
+    expect(store().state?.firstDescentSeen).toBe(true);
+    expect(store().playFirstDescent()).toBe(false);
+    expect(store().firstDescentPlaying).toBe(false);
+  });
+
+  it('is not marked by a commit the empty-handed warning stops; the next commit plays it', () => {
+    patchSouls(0);
+    expect(store().warnEmptyHanded()).toBe(true);
+    store().endEmptyHandedWarning();
+    expect(store().state?.firstDescentSeen).toBeUndefined();
+    expect(store().firstDescentPlaying).toBe(false);
+    expect(store().warnEmptyHanded()).toBe(false);
+    expect(store().playFirstDescent()).toBe(true);
+  });
+
+  it('carries the flag through a Katabasis, so the next descent skips it', () => {
+    patchSouls(5);
+    store().playFirstDescent();
+    store().beginKatabasis();
+    store().endFirstDescent();
+    store().confirmKatabasis();
+    expect(store().state?.firstDescentSeen).toBe(true);
+    expect(store().playFirstDescent()).toBe(false);
+  });
+
+  it('a new game drops the overlay and plays it again on its first descent', () => {
+    patchSouls(5);
+    store().playFirstDescent();
+    store().hardReset();
+    expect(store().firstDescentPlaying).toBe(false);
+    expect(store().state?.firstDescentSeen).toBeUndefined();
+    expect(store().playFirstDescent()).toBe(true);
   });
 });
 

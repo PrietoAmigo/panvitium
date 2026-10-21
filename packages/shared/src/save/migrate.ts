@@ -17,6 +17,7 @@ import { migrateV9ToV10 } from './migrations/v9-to-v10.js';
 import { migrateV10ToV11 } from './migrations/v10-to-v11.js';
 import { migrateV11ToV12 } from './migrations/v11-to-v12.js';
 import { migrateV12ToV13 } from './migrations/v12-to-v13.js';
+import { migrateV13ToV14 } from './migrations/v13-to-v14.js';
 
 /** A single forward migration that upgrades a blob from one schema version to the next. */
 export interface SaveMigration {
@@ -43,7 +44,9 @@ export interface SaveMigration {
  * v11 → v12: the Black Robe maleficium renamed the Red Robe — `black_robe` → `red_robe` in the owned
  * relics, the Emptio listing, the rolled prices, an in-flight Emptio target and the safe;
  * v12 → v13: the Indagatio investment rework — the gold stake `indagatioInvestment` is dropped and
- * refunded into gold, superseded by the default percentage `indagatioInvestPercent`). */
+ * refunded into gold, superseded by the default percentage `indagatioInvestPercent`;
+ * v13 → v14: the first-descent cinematic — seed `firstDescentSeen` for every save that had already
+ * descended, so a veteran never sees it). */
 export const SAVE_MIGRATIONS: readonly SaveMigration[] = [
   migrateV1ToV2,
   migrateV2ToV3,
@@ -57,6 +60,7 @@ export const SAVE_MIGRATIONS: readonly SaveMigration[] = [
   migrateV10ToV11,
   migrateV11ToV12,
   migrateV12ToV13,
+  migrateV13ToV14,
 ];
 
 export class SaveMigrationError extends Error {

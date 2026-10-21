@@ -4,6 +4,7 @@ import { serializeGameState } from './state-schema.js';
 import { CURRENT_SCHEMA_VERSION, newDeviceId, type SaveBlob } from './schema.js';
 import { migrateSave, SaveMigrationError, type SaveMigration } from './migrate.js';
 import { migrateV3ToV4 } from './migrations/v3-to-v4.js';
+import { migrateV13ToV14 } from './migrations/v13-to-v14.js';
 
 function currentBlob(): SaveBlob {
   const state = createInitialState('seed', 1000);
@@ -613,5 +614,38 @@ describe('v12 → v13 migration (the Indagatio investment becomes a default perc
     const migrated = migrateSave(blob);
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.state.lifetime).toEqual((blob.state as Record<string, unknown>).lifetime);
+  });
+});
+
+describe('v13 → v14 migration (the first-descent cinematic)', () => {
+  /** A v13-shaped raw blob with the given top-level state overrides. */
+  function v13Blob(extra: Record<string, unknown>): Record<string, unknown> {
+    const base = currentBlob();
+    const state = base.state as Record<string, unknown>;
+    return { ...base, schemaVersion: 13, state: { ...state, ...extra } };
+  }
+
+  it('marks the cinematic seen for a save that had already descended', () => {
+    const migrated = migrateSave(v13Blob({ katabasisCount: 3 }));
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(migrated.state.firstDescentSeen).toBe(true);
+    expect(migrated.state.katabasisCount).toBe(3);
+  });
+
+  it('leaves the flag absent for a save that has not yet descended', () => {
+    const blob = v13Blob({});
+    expect('katabasisCount' in (blob.state as Record<string, unknown>)).toBe(false);
+    const migrated = migrateSave(blob);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect('firstDescentSeen' in migrated.state).toBe(false);
+    expect(migrated.state).toEqual(blob.state);
+  });
+
+  it('treats a zero or malformed count as no descent', () => {
+    for (const katabasisCount of [0, -1, '2', null]) {
+      const migrated = migrateV13ToV14.migrate(v13Blob({ katabasisCount }));
+      expect(migrated.schemaVersion).toBe(14);
+      expect('firstDescentSeen' in (migrated.state as Record<string, unknown>)).toBe(false);
+    }
   });
 });

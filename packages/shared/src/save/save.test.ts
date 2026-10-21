@@ -157,8 +157,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v13 (the Indagatio investment rework bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(13);
+  it('schemaVersion is v14 (the first-descent cinematic bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(14);
   });
 });
 
@@ -272,6 +272,19 @@ describe('emptyHandedWarned — ADR-023 additive-optional round-trip', () => {
     const wire = serializeGameState(warned);
     expect(wire.emptyHandedWarned).toBe(true);
     expect(deserializeGameState(wire).emptyHandedWarned).toBe(true);
+  });
+});
+
+describe('firstDescentSeen — optional round-trip', () => {
+  it('round-trips when set; omitted from the wire (and absent ≡ false) otherwise', () => {
+    const fresh = createInitialState('seed', 0);
+    expect('firstDescentSeen' in serializeGameState(fresh)).toBe(false);
+    expect(deserializeGameState(serializeGameState(fresh)).firstDescentSeen).toBeUndefined();
+
+    const seen: GameState = { ...fresh, firstDescentSeen: true };
+    const wire = serializeGameState(seen);
+    expect(wire.firstDescentSeen).toBe(true);
+    expect(deserializeGameState(wire).firstDescentSeen).toBe(true);
   });
 });
 

@@ -29,6 +29,8 @@ import {
   markDoppelgaengerSeen as markDoppelgaengerSeenSim,
   emptyHandedWarningDue,
   markEmptyHandedWarned,
+  firstDescentDue,
+  markFirstDescentSeen,
   markCallAnswered as markCallAnsweredSim,
   dialCode,
   dialNumber,
@@ -188,6 +190,12 @@ interface GameStore {
    * warning's sequence ends (`endEmptyHandedWarning`).
    */
   emptyHandedWarning: boolean;
+  /**
+   * True while the first-descent cinematic plays over the whole screen (transient): the
+   * playthrough's first commit that truly descends. Its hand-off begins the descent
+   * (`beginKatabasis`); it is cleared when the cinematic ends (`endFirstDescent`).
+   */
+  firstDescentPlaying: boolean;
   /** Which Katabasis screen is open (null = none). */
   katabasisPhase: KatabasisPhase;
   /** How the open flow was entered from the Altar Room (transient; null = not from the room). */
@@ -297,6 +305,16 @@ interface GameStore {
   warnEmptyHanded: () => boolean;
   /** The empty-handed warning has played out: drop the overlay (back in the Altar Room). */
   endEmptyHandedWarning: () => void;
+  /**
+   * The altar sigil's second press, once the empty-handed warning has let it through: when the
+   * playthrough has never seen the first-descent cinematic, record the permanent `firstDescentSeen`
+   * at the commit (persisted at once, so a reload mid-cinematic cannot replay it), raise
+   * `firstDescentPlaying` and return true; the caller must then NOT descend yet, as the cinematic's
+   * hand-off does. Otherwise a no-op returning false: descend as usual.
+   */
+  playFirstDescent: () => boolean;
+  /** The first-descent cinematic has lifted off the Abyss transit: drop the overlay. */
+  endFirstDescent: () => void;
   /**
    * Open the Status Quo Ledger without committing — no teardown and no freeze: the lifetime keeps
    * ticking behind it, since the soul is not yet under. The altar sigil's STATUS QUO routes here;
@@ -452,6 +470,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   notice: null,
   achievementToast: null,
   emptyHandedWarning: false,
+  firstDescentPlaying: false,
   katabasisPhase: null,
   katabasisEntry: null,
   titleOpen: true,
@@ -679,6 +698,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
   endEmptyHandedWarning: () => set({ emptyHandedWarning: false }),
 
+  playFirstDescent: () => {
+    const current = get().state;
+    if (!current || !firstDescentDue(current)) return false;
+    set({ state: markFirstDescentSeen(current), firstDescentPlaying: true });
+    get().persist();
+    return true;
+  },
+  endFirstDescent: () => set({ firstDescentPlaying: false }),
+
   beginKatabasis: () => {
     const current = get().state;
     if (!current) return;
@@ -818,6 +846,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...NO_OBTAINED,
       notice: null,
       emptyHandedWarning: false,
+      firstDescentPlaying: false,
       katabasisPhase: null,
       katabasisEntry: null,
       recap: null,

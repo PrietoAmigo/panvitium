@@ -25,6 +25,7 @@ import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
 import { Jumpscare, JUMPSCARE_IMG } from './ui/Jumpscare.js';
 import { EmptyHandedWarning } from './ui/EmptyHandedWarning.js';
+import { FirstDescent, primeFirstDescent } from './ui/FirstDescent.js';
 import { Subliminal } from './ui/Subliminal.js';
 import { useRandomSubliminals } from './game/useRandomSubliminals.js';
 import { codePlatesShown } from './game/subliminals.js';
@@ -32,7 +33,7 @@ import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio, summonCue } from './audio/audio.js';
 import { strings } from '@panvitium/shared';
-import { ACTIONS, actionUnlocked } from '@panvitium/sim';
+import { ACTIONS, actionUnlocked, emptyHandedWarningDue, firstDescentDue } from '@panvitium/sim';
 
 /**
  * The full-screen Magna Goetia grimoire, wired to real state. Kept as its own subscriber so its
@@ -79,6 +80,14 @@ export function App(): ReactElement {
   const warnEmptyHanded = useGameStore((s) => s.warnEmptyHanded);
   const emptyHandedWarning = useGameStore((s) => s.emptyHandedWarning);
   const endEmptyHandedWarning = useGameStore((s) => s.endEmptyHandedWarning);
+  const playFirstDescent = useGameStore((s) => s.playFirstDescent);
+  const firstDescentPlaying = useGameStore((s) => s.firstDescentPlaying);
+  const endFirstDescent = useGameStore((s) => s.endFirstDescent);
+  // Whether the next commit that the empty-handed warning lets through plays the first-descent
+  // cinematic (a stable primitive, so App does not re-render every tick).
+  const firstDescentNext = useGameStore((s) =>
+    s.state ? firstDescentDue(s.state) && !emptyHandedWarningDue(s.state) : false,
+  );
   const titleOpen = useGameStore((s) => s.titleOpen);
   const ready = useGameStore((s) => s.ready);
 
@@ -168,12 +177,18 @@ export function App(): ReactElement {
   // descent (the teardown + freeze, then the Abyss transition into the flow); STATUS QUO opens the
   // read-only Ledger. Untouched for 4 s, it fades away. A commit made with no souls in hand before
   // the playthrough's first descent does not descend: the sigil goes down and the empty-handed warning plays
-  // instead (checked before any teardown); the next commit descends as usual.
+  // instead (checked before any teardown); the next commit descends as usual. The playthrough's
+  // first commit that does descend plays the first-descent cinematic before the Abyss transit: the
+  // descent itself (teardown, freeze, transit) begins at the cinematic's hand-off, late in its fall.
+  const descend = (): void => {
+    beginKatabasis();
+    audio.play('katabasis');
+  };
   const altarSigil = useAltarSigil({
     onDescend: () => {
       if (warnEmptyHanded()) return;
-      beginKatabasis();
-      audio.play('katabasis');
+      if (playFirstDescent()) return;
+      descend();
     },
     onStatusQuo: () => {
       openKatabasis();
@@ -181,6 +196,12 @@ export function App(): ReactElement {
     },
   });
   const dismissAltarSigil = altarSigil.dismiss;
+  // The cinematic's plates decode, and its dissolve bakes, the moment the sigil rises with the
+  // cinematic next in line, so it never shows an empty frame.
+  const altarSigilUp = altarSigil.phase !== 'off';
+  useEffect(() => {
+    if (altarSigilUp && firstDescentNext) primeFirstDescent();
+  }, [altarSigilUp, firstDescentNext]);
 
   // The descent takes the full screen; close any grimoire panel (and put the sigil away) when it opens.
   useEffect(() => {
@@ -200,7 +221,8 @@ export function App(): ReactElement {
     room === 'studio' &&
     !onCall &&
     !jumpscare &&
-    !emptyHandedWarning;
+    !emptyHandedWarning &&
+    !firstDescentPlaying;
   // The requirement context, read both by the draw and by the answered call's gated options (the
   // Imperium answer to Father Stahl). Memoised off the primitive inputs so it changes only when the
   // gated state does, not every tick.
@@ -225,8 +247,8 @@ export function App(): ReactElement {
   // Subliminal plates (game/subliminals.ts): the head of the store's queue flashes over everything.
   // Fausto's are queued by the tick the moment one of his letters is earned, wherever the player is;
   // the random ones surface about once every six minutes of live play, anywhere but the title, a
-  // descent, an answered call, the jumpscare or the empty-handed warning. Fausto's wait in the queue
-  // while the warning plays.
+  // descent, an answered call, the jumpscare, the empty-handed warning or the first-descent
+  // cinematic. Fausto's wait in the queue while the warning or the cinematic plays.
   const subliminal = useGameStore((s) => s.subliminalQueue[0] ?? null);
   const flashSubliminal = useGameStore((s) => s.flashSubliminal);
   const dismissSubliminal = useGameStore((s) => s.dismissSubliminal);
@@ -237,7 +259,13 @@ export function App(): ReactElement {
     [callCtx, placedKey],
   );
   useRandomSubliminals(
-    ready && !titleOpen && katabasisPhase === null && !onCall && !jumpscare && !emptyHandedWarning,
+    ready &&
+      !titleOpen &&
+      katabasisPhase === null &&
+      !onCall &&
+      !jumpscare &&
+      !emptyHandedWarning &&
+      !firstDescentPlaying,
     codePlates,
     flashSubliminal,
   );
@@ -308,7 +336,12 @@ export function App(): ReactElement {
   const hudVisible =
     katabasisPhase === null && room !== 'altar' && panel !== 'pc' && !onCall && !titleOpen;
   const unveilingVisible =
-    katabasisPhase === null && !onCall && !jumpscare && !emptyHandedWarning && !titleOpen;
+    katabasisPhase === null &&
+    !onCall &&
+    !jumpscare &&
+    !emptyHandedWarning &&
+    !firstDescentPlaying &&
+    !titleOpen;
 
   return (
     <div className="app">
@@ -391,19 +424,27 @@ export function App(): ReactElement {
       {hudVisible && panel !== 'maleficia' && <BuffsHud />}
       {/* The Unveiling (z 88): a maleficium Emptio just brought home, over the room and every menu
           overlay and HUD, under the system modals. It waits (the queue holds in the store) while a
-          descent, an answered call, the jumpscare or the empty-handed warning has the screen. */}
+          descent, an answered call, the jumpscare, the empty-handed warning or the first-descent
+          cinematic has the screen. */}
       {unveilingVisible && <Unveiling />}
       {/* The empty-handed warning (z 9000): the black, the one line, the black lifting. Over the
           room, every menu and the system modals, under the jumpscare and subliminals; it blocks all
           input and clears itself when its timeline ends. See EmptyHandedWarning. */}
       {emptyHandedWarning && <EmptyHandedWarning onDone={endEmptyHandedWarning} />}
+      {/* The first-descent cinematic (z 9100): the soul leaving the body, over the warning's layer,
+          under the jumpscare and subliminals; it blocks all input. Its hand-off begins the descent,
+          which mounts the Abyss transit underneath, and it clears itself once it has lifted off
+          it. See FirstDescent. */}
+      {firstDescentPlaying && (
+        <FirstDescent onTransit={descend} onDone={endFirstDescent} reducedMotion={reducedMotion} />
+      )}
       {/* The one-time Doppelgänger scare covers EVERYTHING (highest layer), blocks all input, and
           clears itself after 2s — see Jumpscare. */}
       {jumpscare && <Jumpscare onDone={() => setJumpscare(false)} />}
       {/* A subliminal plate flashes over even the jumpscare, for a fraction of a second, and takes
-          no input; it holds in the queue while the empty-handed warning plays. Keyed by its seq so
-          each flash mounts fresh. */}
-      {subliminal && !emptyHandedWarning && (
+          no input; it holds in the queue while the empty-handed warning or the first-descent
+          cinematic plays. Keyed by its seq so each flash mounts fresh. */}
+      {subliminal && !emptyHandedWarning && !firstDescentPlaying && (
         <Subliminal
           key={subliminal.seq}
           src={subliminal.src}
