@@ -481,8 +481,7 @@ built. None carry mechanical effects unless stated.
   > a priest who had come to sit with a dying man. He then opened his own throat with a scalpel from
   > the dressing trolley. A patient too weak to leave her bed saw all of it.
   >
-  > Police say there was no quarrel between them that anyone knows of. Those on shift say Stahl had
-  > stepped into the corridor to take a telephone call, and came back without a word.
+  > Police say there was no quarrel between them that anyone knows of.
   >
   > The nurse was very active in the community and known for helping people in need. There will be
   > a vigil at Sacred Heart on Sunday.
@@ -494,9 +493,8 @@ built. None carry mechanical effects unless stated.
   death.
 - *Author note: the same cosy local newsletter as `newsletter-local`, the squash and the lost
   terrier, now carrying this. The nurse is Maren Holt, the priest Father Stahl; the paper names
-  neither, except where the staff call him Stahl. Both earlier parish bulletins thank Maren, and
-  both always arrive before Stahl can call (his call needs them), so nothing contradicts her
-  death.*
+  neither. Both earlier parish bulletins thank Maren, and both always arrive before Stahl can call
+  (his call needs them), so nothing contradicts her death.*
 
 ---
 
