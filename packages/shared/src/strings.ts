@@ -866,7 +866,7 @@ export const strings = {
           {
             text: "You're right about everything, let's meet and I'll explain.",
             effect:
-              'Mints +1 soul and sets flagReubenDead = 1 (ends the mason; stops his later letters).',
+              'Sets flagReubenDead = 1 (ends the mason; stops his later letters). No soul: he dies uncorrupted.',
           },
         ],
       },
@@ -883,7 +883,7 @@ export const strings = {
           {
             text: "You're right about everything, let's meet and I'll explain.",
             effect:
-              'Mints +1 soul and sets flagReubenDead = 1 (ends the mason; stops his later letters).',
+              'Sets flagReubenDead = 1 (ends the mason; stops his later letters). No soul: he dies uncorrupted.',
           },
         ],
       },
