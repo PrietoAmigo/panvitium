@@ -30,6 +30,8 @@ import {
   emptyHandedWarningDue,
   markEmptyHandedWarned,
   markCallAnswered as markCallAnsweredSim,
+  dialCode,
+  dialNumber,
   assignAcolyteToAction,
   unassignAcolyteFromAction,
   setAutoRepeat,
@@ -55,6 +57,7 @@ import {
   type OutcomeEvent,
   type Sin,
   type KatabasisRecap,
+  type DialOutcome,
 } from '@panvitium/sim';
 import {
   loadGame,
@@ -390,6 +393,14 @@ interface GameStore {
    * Idempotent.
    */
   markCallAnswered: (callId: string) => void;
+  /**
+   * Dial a number on the Studio phone (docs/PANVITIUM-CALLS-OUT.md) and return how it resolves, for
+   * the dialer's toast or the call stage. A number that connects records its call in the permanent
+   * `callsPlaced` list (the sim's `dialNumber`), persisted at once like an answered call, so a reload
+   * can neither replay a one-shot line nor lose what the call set in motion. With no game loaded the
+   * code is only classified.
+   */
+  dial: (code: string) => DialOutcome;
   /** Serialize the current game to a portable save string, or null if no game is loaded. */
   exportSave: () => string | null;
   /** Replace the current game with a pasted save string. Returns false if it isn't a valid save. */
@@ -858,6 +869,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!effects || effects.length === 0) return;
     // Tag the timed buffs with this call, so the buffs HUD can name their source.
     set({ state: applyCallEffects(current, effects, callId), notice: null });
+    // A story flag is a once-ever beat (its call is already recorded answered): persist it at once so
+    // a reload inside the autosave window cannot lose it.
+    if (effects.some((e) => e.kind === 'setFlag')) get().persist();
   },
 
   markCallAnswered: (callId) => {
@@ -869,6 +883,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Persist immediately (like the Doppelgänger flag): the record is what keeps an answered once-only
     // call from ringing again, so it must not wait on the debounced autosave and be lost to a reload.
     get().persist();
+  },
+
+  dial: (code) => {
+    const current = get().state;
+    if (!current) return dialCode(code);
+    const { state, outcome } = dialNumber(current, code);
+    if (state !== current) {
+      set({ state });
+      get().persist();
+    }
+    return outcome;
   },
 
   exportSave: () => {

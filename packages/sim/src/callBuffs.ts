@@ -8,7 +8,7 @@
  *
  * Two shapes of effect:
  *   - one-shot state changes applied at answer time (permanent maxInfluence raise, a gold cost, a
- *     reprobate cull/loss);
+ *     reprobate cull/loss, a permanent story flag);
  *   - `timedMul` buffs, appended to `lifetime.callBuffs` and folded into the modifier bundle while
  *     they last. The tick decays them by `simDelta` (the Hand of Glory convention) and drops them at
  *     expiry — so a buff active at a tick's start lifts that whole tick, exactly like Hand of Glory.
@@ -60,16 +60,25 @@ export function isCallBuffField(s: string): s is CallBuffField {
 }
 
 /**
+ * The permanent story flags a call option can set (docs "setFlag(...)"): each a top-level boolean on
+ * `GameState`, carried across lifetimes. `flagMarenDead` is Father Stahl's ward call answered with
+ * Imperium.
+ */
+export type CallStoryFlag = 'flagMarenDead';
+
+/**
  * One mechanical effect of a take-option (docs "-> effects"). The single source for both the
  * displayed explanation (`describeCallInEffects` in the web app) and the applied effect here. A
- * `factor` above 1 reads as a buff, below 1 as a debuff.
+ * `factor` above 1 reads as a buff, below 1 as a debuff. `setFlag` is narrative: it sets a permanent
+ * story flag that later content keys off.
  */
 export type CallInEffect =
   | { kind: 'timedMul'; field: CallBuffField; factor: number; durationSec: number }
   | { kind: 'permanentMul'; field: 'maxInfluence'; factor: number }
   | { kind: 'spendGoldPct'; pct: number }
   | { kind: 'loseReprobatesPct'; pct: number }
-  | { kind: 'killReprobatesPct'; pct: number };
+  | { kind: 'killReprobatesPct'; pct: number }
+  | { kind: 'setFlag'; flag: CallStoryFlag };
 
 /** An active timed call buff on the lifetime: a multiplier on `field`, decaying to expiry. */
 export interface CallBuff {
@@ -174,6 +183,9 @@ function applyEffect(state: GameState, e: CallInEffect, sourceId: string | undef
       const r = loseReprobatesFraction(state, e.pct / 100);
       return mintSouls(r.state, r.removed);
     }
+    case 'setFlag':
+      // Idempotent: an already-set flag returns the input state.
+      return state[e.flag] === true ? state : { ...state, [e.flag]: true };
   }
 }
 

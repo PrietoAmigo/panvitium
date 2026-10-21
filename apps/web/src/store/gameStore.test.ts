@@ -146,6 +146,36 @@ describe('gameStore — answering an incoming call', () => {
     store().answerCall('social-platform', 2); // "Let it go"
     expect(store().state?.lifetime.callBuffs).toEqual([]);
   });
+
+  it("sets the Imperium answer's story flag and persists it at once", () => {
+    store().answerCall('the-ward', 1); // Memento Claram, Aemili.
+    expect(store().state?.flagMarenDead).toBe(true);
+    useGameStore.setState({ ready: false });
+    store().init();
+    expect(store().state?.flagMarenDead).toBe(true);
+  });
+});
+
+describe('gameStore — dialling out', () => {
+  it('connects the rectory once, records the call (persisted), then rings out', () => {
+    expect(store().dial('982079')).toEqual({
+      kind: 'call',
+      code: '982079',
+      callId: 'the-rectory',
+    });
+    expect(store().state?.callsPlaced).toEqual(['the-rectory']);
+    useGameStore.setState({ ready: false });
+    store().init();
+    expect(store().state?.callsPlaced).toEqual(['the-rectory']);
+    expect(store().dial('982079')).toEqual({ kind: 'info', code: '982079' });
+  });
+
+  it('leaves the game untouched for a plain or unknown code', () => {
+    const before = store().state;
+    expect(store().dial('666')).toEqual({ kind: 'error', code: '666' });
+    expect(store().dial('1234')).toEqual({ kind: 'error' });
+    expect(store().state).toBe(before);
+  });
 });
 
 describe('gameStore — the Unveiling queue (maleficia brought home)', () => {

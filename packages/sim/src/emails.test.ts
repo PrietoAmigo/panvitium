@@ -13,6 +13,7 @@ import {
   totalSinLevel,
 } from './emails.js';
 import { computeModifiers } from './modifiers.js';
+import { placeCall } from './phone.js';
 
 const MIN = 60_000; // one minute in ms
 
@@ -167,6 +168,45 @@ describe('emails — reply effects', () => {
     expect(totalSinLevel(high)).toBeGreaterThanOrEqual(20);
     const r = deliverEmails(high, 0);
     expect(r.state.lifetime.emailArmedAt['fausto-2']).toBeUndefined();
+  });
+});
+
+describe('emails — the rectory and the ward (the Stahl arc)', () => {
+  it('arms Father Greaves only once the rectory call is placed, and delivers him 3 minutes on', () => {
+    const base = createInitialState('seed', 1_000_000);
+    expect(
+      deliverEmails(base, 1_000_000).state.lifetime.emailArmedAt['fr-greaves-1'],
+    ).toBeUndefined();
+
+    const called = placeCall(base, 'the-rectory');
+    const armed = deliverEmails(called, 1_000_000);
+    expect(armed.triggered).toContain('fr-greaves-1');
+    expect(deliverEmails(armed.state, 1_000_000 + 2 * MIN).delivered).not.toContain('fr-greaves-1');
+    expect(deliverEmails(armed.state, 1_000_000 + 3 * MIN).delivered).toContain('fr-greaves-1');
+  });
+
+  it('delivers Father Greaves however early, and even after the ward call has passed', () => {
+    // A fresh game (no Sin levels at all) and a player who already answered Father Stahl's call.
+    const late: GameState = {
+      ...placeCall(createInitialState('seed', 0), 'the-rectory'),
+      callsAnswered: ['the-ward'],
+    };
+    const armed = deliverEmails(late, 0);
+    expect(deliverEmails(armed.state, 4 * MIN).delivered).toContain('fr-greaves-1');
+  });
+
+  it('sends the local news of the ward 2 minutes after the Imperium answer, never before', () => {
+    const base = createInitialState('seed', 1_000_000);
+    expect(deliverEmails(base, 1_000_000).state.lifetime.emailArmedAt['newsletter-ward']).toBe(
+      undefined,
+    );
+    const commanded: GameState = { ...base, flagMarenDead: true };
+    const armed = deliverEmails(commanded, 1_000_000);
+    expect(armed.state.lifetime.emailArmedAt['newsletter-ward']).toBe(1_000_000);
+    expect(deliverEmails(armed.state, 1_000_000 + 1 * MIN).delivered).not.toContain(
+      'newsletter-ward',
+    );
+    expect(deliverEmails(armed.state, 1_000_000 + 2 * MIN).delivered).toContain('newsletter-ward');
   });
 });
 

@@ -758,6 +758,18 @@ export const strings = {
         subject: 'Weekly bulletin: what are we for, if not this',
         body: 'Sacred Heart Parish, weekly bulletin.\n\nWe have lost more of our own this year, good people who slid into the bottle, the pill, the screen, the easy ruin, and did not climb back out. It forces the hard question on a parish: what are we for, if not to stand between a soul and that long fall.\n\nWe do not have a clever answer. We have only the old one, that grace is real and the Greater Good is worth the keeping, and we will go on saying so into the dark.\n\nA word of thanks, finally, to our new friend and benefactor Fausto Cescru, whose generosity and steady counsel have carried us through a season we could not have weathered alone. God keep you all.',
       },
+      'fr-greaves-1': {
+        from: 'Fr. Anselm Greaves',
+        addr: 'rectory@stdymphna-parish.org',
+        subject: 'Clare Ashby, as I said I would',
+        body: "I said I would write, and I find I am glad of the excuse, God forgive me. You did not give your name and I will not ask for it again.\n\nTwenty years ago this autumn a family called Ashby brought their daughter to St. Dymphna's. Clare was seventeen. The doctors had done everything doctors do and had nothing left to try, and in the end the bishop gave his leave for the Rite. I was pastor then. Emil Stahl was my curate, not a year ordained and so certain of God that I let him lead. I knelt at his side and held the book.\n\nIt went on nine days. The thing in her would not give its name. It said it was nobody, a servant, and that its master had not yet come. It knew things about Emil that no one could have told it. Clare wrote this number on the walls of her room with her fingernails, over and over, and on the last night she tore the flyleaf from my Rituale and wrote it in her own blood. It was the number Emil had given her mother: call day or night, he told her, I will come.\n\nShe died on the ninth night with Emil holding her hand. The inquest said her heart. The diocese said very little and sent him away for a year. He came back harder, and he has made a hunt of what was a vocation ever since.\n\nHe has not spoken her name in twenty years. If you know Emil, do not say it to him. It is the one door in him that never shut.\n\nI tell myself she is at peace. I have never once believed it.\n\nFr. Anselm Greaves\nPastor emeritus, St. Dymphna's",
+      },
+      'newsletter-ward': {
+        from: 'The Riverside Almanac',
+        addr: 'editor@riverside-almanac.com',
+        subject: 'A terrible night on the hospital ward',
+        body: "We do not print news like this, and we wish we did not have to now.\n\nLate last night, on the palliative ward of the county hospital, nurse Maren Holt was strangled with a priest's stole by Father Emil Stahl of the Aldermoor diocese, who had come to sit with a dying man. He then opened his own throat with a scalpel from the dressing trolley. A patient too weak to leave her bed saw all of it. Both were dead before help reached the room.\n\nPolice say there was no quarrel between them that anyone knows of. Those on shift say Father Stahl had stepped into the corridor to take a telephone call, and came back without a word.\n\nMaren sat with more of this town's dying than any of us could count, and saw them out gently. There is nobody to do that now.\n\nThere will be a vigil at Sacred Heart on Sunday.\n\nBe kind to one another.",
+      },
 
       // The adversary - Fausto Cescru
       'fausto-1': {
@@ -1163,6 +1175,7 @@ export const strings = {
       single_minded: 'Single-Minded',
       eight_at_the_table: 'Eight at the Table',
       the_long_burn: 'The Long Burn',
+      the_last_rite: 'The Last Rite',
       curator: 'Curator',
       crown_of_hell: 'The Crown of Hell',
       semet: 'Semet',
@@ -1179,6 +1192,7 @@ export const strings = {
       single_minded: 'Reach Level IV in any one Cardinal Sin.',
       eight_at_the_table: 'Reach Level III in every Cardinal Sin.',
       the_long_burn: 'Sustain Panvitium for 60 seconds.',
+      the_last_rite: 'Turn an old failure into a command.',
       curator: 'Own every maleficium in the catalog.',
       crown_of_hell: 'Reach Level IV in every Cardinal Sin.',
       semet: 'Reveal the Eternal Sin.',
@@ -1233,7 +1247,7 @@ export const strings = {
   },
   // The smartphone dialer (design handoff: "The Smartphone, Dialer & Code Input"). Device chrome is
   // mundane/flavour; the real boon/info effects + copy arrive with the outgoing-call engine
-  // (docs/PANVITIUM-CALLS-OUT.md), deferred for now.
+  // (docs/PANVITIUM-CALLS-OUT.md), deferred for now, except the outgoing calls in `callOut` below.
   phone: {
     title: 'Phone',
     hotspot: 'The Smartphone',
@@ -1242,6 +1256,8 @@ export const strings = {
     // Result copy keyed by the recognized code id (see `PHONE_CODES` in the sim).
     codes: {
       '666': "you're retarded",
+      // The rectory (a one-shot call-out) dialled again after Father Greaves has answered once.
+      '982079': 'The rectory line rings out. No one answers.',
     } as Record<string, string>,
     // The incoming-call ("calls-in") system. The structural catalogue (which call is a recording,
     // requirements, the decline markers) lives in apps/web's `calls-in.data.ts`; this owns the
@@ -1266,6 +1282,11 @@ export const strings = {
         acolyteEfficiencyMul: 'acolyte efficiency',
         influenceRegenRate: 'influence regeneration',
         desidiaGainMul: 'desidia generation',
+      } as Record<string, string>,
+      // The sub-label of an option that sets a story flag (a narrative effect, no magnitude to state):
+      // it names what the option does in the fiction.
+      flags: {
+        flagMarenDead: 'Imperium',
       } as Record<string, string>,
       // Option labels only; the sub-label under each option is generated from the choice's effects.
       calls: {
@@ -1363,7 +1384,13 @@ export const strings = {
         'the-ward': {
           title: 'The Ward',
           tag: 'the line · Fr. Emil Stahl',
-          choices: [{ label: 'Listen to the end' }, { label: 'Hang up' }],
+          choices: [
+            { label: 'Listen to the end' },
+            // Imperium, offered once Father Greaves has written: "Remember Clare, Emil. Kill her, then
+            // yourself." (Latin left untranslated, ADR-020; `Aemili` is the vocative of Aemilius.)
+            { label: 'Memento Claram, Aemili. Occide eam, deinde te.' },
+            { label: 'Hang up' },
+          ],
         },
         'the-journalist': {
           title: 'The Journalist',
@@ -1402,6 +1429,31 @@ export const strings = {
           title: 'ISP Change',
           tag: 'unknown caller',
           choices: [{ label: 'Mmm... how much cheaper?' }],
+        },
+      } as Record<
+        string,
+        {
+          title: string;
+          tag: string;
+          line?: string;
+          choices: ReadonlyArray<{ label: string }>;
+        }
+      >,
+    },
+    // The outgoing calls ("calls-out"), placed from the dialer and played on the same call stage. The
+    // structural catalogue lives in apps/web's `calls-out.data.ts`; which number reaches which call
+    // is the sim's (`CALL_OUTS`). `tag` is the caller line (the big name is its last `·` segment);
+    // `line` is the typed fallback the stage writes out until the call's mp3 is recorded, and the
+    // script for that recording. Canonical content: docs/PANVITIUM-CALLS-OUT.md.
+    callOut: {
+      // The call stage's accessible name while an outgoing call is on the line.
+      stageLabel: 'Outgoing call',
+      calls: {
+        'the-rectory': {
+          title: 'The Rectory',
+          tag: "the line · 982 079 · St. Dymphna's rectory",
+          line: "St. Dymphna's... Hello? You have rung the rectory. It is very late. ... Who is this? ... Nobody has rung this number in twenty years. It was the number we gave the Ashby family. Father Stahl wrote it out for them himself: day or night, he told them, I will come. ... She wrote it too, you know. Clare. On the walls, at the end, in whatever she had. ... No. I will not speak of her down a telephone line, not at my age and not at this hour. Give me an address and I will write it down, all of it. God knows someone besides me ought to carry it.",
+          choices: [{ label: 'Give him an address' }],
         },
       } as Record<
         string,

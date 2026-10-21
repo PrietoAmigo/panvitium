@@ -23,6 +23,7 @@ import { gte, bn } from './bignum.js';
 import { sinLevel } from './progression.js';
 import { relationshipTier } from './syngraphae.js';
 import { mintSouls } from './population.js';
+import { callPlaced } from './phone.js';
 import { SINS, type GameState, type ReceivedEmail } from './state.js';
 
 /** A catalog email and the (id-keyed) conditions that schedule it. */
@@ -190,6 +191,23 @@ export const EMAIL_DEFS: readonly EmailDef[] = [
   { id: 'parish-2', eligible: (s) => soulsAtLeast(s, 1e7) },
   { id: 'fr-stahl-2', eligible: (s) => toggleSeconds(s, 'panvitium') >= 3 },
   { id: 'parish-3', eligible: (s) => soulsAtLeast(s, 1e8) && fatherMad(s) },
+  {
+    // The rectory: dialling the hidden number (982079, flashed in the code plates) reaches the old
+    // pastor, who will not speak of Clare Ashby down a telephone line, so he writes. Keyed only to
+    // the call: it arrives however early it is placed, and even after Father Stahl's ward call has
+    // passed (a player who learns the story late carries it into the next playthrough). Its arrival
+    // opens the Imperium answer to that call (`the-ward`).
+    id: 'fr-greaves-1',
+    eligible: (s) => callPlaced(s, 'the-rectory'),
+    delaySeconds: 3 * MIN,
+  },
+  {
+    // The local news of the ward: Father Stahl answered with Imperium, and commanded beside Maren
+    // Holt. Its arrival earns "The Last Rite".
+    id: 'newsletter-ward',
+    eligible: (s) => s.flagMarenDead === true,
+    delaySeconds: 2 * MIN,
+  },
 
   // ── The adversary — Fausto Cescru ──
   {

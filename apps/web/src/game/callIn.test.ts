@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildCallInView,
+  buildCallOutView,
   callInSource,
   pickIncomingCall,
   isCallEligible,
@@ -17,6 +18,8 @@ import {
 } from './callIn.js';
 import type { CallInEffect } from '../menus/calls-in.data.js';
 import { CALLS_IN, CALL_IN_BY_ID, isOnceOnly } from '../menus/calls-in.data.js';
+import { CALLS_OUT } from '../menus/calls-out.data.js';
+import { CALL_OUTS } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 
 /** A deterministic `random` that replays a fixed queue (then holds its last value). */
@@ -72,6 +75,61 @@ describe('buildCallInView', () => {
       const v = buildCallInView(data.id);
       expect(v, `view for ${data.id}`).not.toBeNull();
       expect(v!.choices).toHaveLength(data.choices.length);
+    }
+  });
+});
+
+describe('gated options (the Imperium answer to Father Stahl)', () => {
+  const wardCtx = (emails: string[]): CallEligibilityContext =>
+    freshCtx({ receivedEmailIds: new Set(['fr-stahl-2', 'parish-1', 'parish-2', ...emails]) });
+
+  it('hides the option until Father Greaves has written, keeping catalogue indices', () => {
+    const before = buildCallInView('the-ward', wardCtx([]))!;
+    expect(before.choices.map((c) => c.index)).toEqual([0, 2]);
+    expect(before.choices.map((c) => c.label)).toEqual(['Listen to the end', 'Hang up']);
+
+    const after = buildCallInView('the-ward', wardCtx(['fr-greaves-1']))!;
+    expect(after.choices.map((c) => c.index)).toEqual([0, 1, 2]);
+    expect(after.choices[1]!.label).toBe('Memento Claram, Aemili. Occide eam, deinde te.');
+    expect(after.choices[1]!.sub).toBe('Imperium');
+  });
+
+  it('maps the shown Imperium option onto the story-flag effect', () => {
+    const shown = buildCallInView('the-ward', wardCtx(['fr-greaves-1']))!.choices[1]!;
+    expect(CALL_IN_BY_ID['the-ward']!.choices[shown.index]!.effects).toEqual([
+      { kind: 'setFlag', flag: 'flagMarenDead' },
+    ]);
+  });
+
+  it('shows every option with no context (no gate) and numbers ungated calls by position', () => {
+    expect(buildCallInView('the-ward')!.choices).toHaveLength(3);
+    expect(buildCallInView('eager-hands', freshCtx())!.choices.map((c) => c.index)).toEqual([
+      0, 1, 2,
+    ]);
+  });
+});
+
+describe('buildCallOutView (calls placed from the dialer)', () => {
+  it('joins the rectory call: a recording with a typed fallback line and one option', () => {
+    const v = buildCallOutView('the-rectory')!;
+    expect(v.class).toBe('call-out');
+    expect(v.audio).toBe(true);
+    expect(v.caller).toBe("St. Dymphna's rectory");
+    expect(v.line.length).toBeGreaterThan(0);
+    expect(v.choices).toEqual([{ index: 0, label: 'Give him an address', dim: false }]);
+  });
+
+  it('returns null for an unknown id', () => {
+    expect(buildCallOutView('no-such-call')).toBeNull();
+  });
+
+  it('every sim call-out has a stage entry and matching strings', () => {
+    for (const def of CALL_OUTS) {
+      const data = CALLS_OUT.find((c) => c.id === def.id);
+      expect(data, `stage entry for ${def.id}`).toBeDefined();
+      const copy = strings.phone.callOut.calls[def.id];
+      expect(copy, `strings for ${def.id}`).toBeDefined();
+      expect(copy!.choices.length).toBe(data!.choices.length);
     }
   });
 });

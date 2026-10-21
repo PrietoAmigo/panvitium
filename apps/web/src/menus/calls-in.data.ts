@@ -51,6 +51,12 @@ export interface CallRequirements {
 export interface CallInChoiceData {
   /** The "let it go" / "hang up" / "no, thanks" option — readable warm gold, never a faded grey. */
   dim?: boolean;
+  /**
+   * The option is offered only while these are met, checked when the call is answered (the same
+   * predicate as a call's own `requires`); absent ≡ always offered. A hidden option leaves no gap:
+   * the shown options keep their catalogue index for the effect lookup (`CallInChoiceView.index`).
+   */
+  requires?: CallRequirements;
   /** The effects this option applies (the spec for the pending engine; drives the displayed sub-label).
    *  Omitted/empty for a `nothing()` option (decline, lore, easter egg) — those show no sub-label. */
   effects?: readonly CallInEffect[];
@@ -284,7 +290,7 @@ export const CALLS_IN: readonly CallInData[] = [
     ],
   },
 
-  // ── Lore (narrative, no mechanical effect; once-only) ──
+  // ── Lore (narrative, no resource effect; once-only) ──
   {
     id: 'the-ward',
     audio: true,
@@ -293,7 +299,17 @@ export const CALLS_IN: readonly CallInData[] = [
     // "received" record (deduped, survives deletion, persists across Katabasis), so each id's presence
     // is its received-flag; the call requires all three.
     requires: { emails: ['fr-stahl-2', 'parish-1', 'parish-2'] },
-    choices: [{}, { dim: true }],
+    choices: [
+      {},
+      // Imperium, the secret answer: offered once Father Greaves has written about Clare Ashby (his
+      // letter arrives after the hidden rectory number is dialled). Stahl, at Maren Holt's side in
+      // the ward, kills her and then himself; the flag sends the local news and its achievement.
+      {
+        requires: { emails: ['fr-greaves-1'] },
+        effects: [{ kind: 'setFlag', flag: 'flagMarenDead' }],
+      },
+      { dim: true },
+    ],
   },
   {
     id: 'the-journalist',

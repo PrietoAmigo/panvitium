@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { SmartphoneCallIn } from './SmartphoneCallIn.js';
-import { buildCallInView, type CallInView } from '../game/callIn.js';
+import { buildCallInView, buildCallOutView, type CallInView } from '../game/callIn.js';
 import { boundVisualsFor } from './degrade.data.js';
 import type { BoundInvocationVisual } from './types.js';
 
@@ -68,8 +68,8 @@ const TYPED: CallInView = {
   caller: 'the afflicted',
   line: 'Please. Make it quiet.',
   choices: [
-    { label: 'Name a price', dim: false },
-    { label: 'Say nothing', dim: true },
+    { index: 0, label: 'Name a price', dim: false },
+    { index: 1, label: 'Say nothing', dim: true },
   ],
 };
 
@@ -117,6 +117,45 @@ describe('SmartphoneCallIn — recorded call', () => {
     expect(choices).toHaveLength(2);
     expect(choices[0]!.classList.contains('is-dim')).toBe(false);
     expect(choices[1]!.classList.contains('is-dim')).toBe(true);
+  });
+});
+
+describe('SmartphoneCallIn — a recording that cannot play', () => {
+  /** Hand the component a real <audio> element we hold, so the test can fail its load. */
+  function holdAudio(): HTMLAudioElement {
+    const el = document.createElement('audio');
+    vi.spyOn(window, 'Audio').mockImplementation(function () {
+      return el;
+    } as unknown as () => HTMLAudioElement);
+    return el;
+  }
+  afterEach(() => vi.restoreAllMocks());
+
+  it('writes out its typed line instead (the rectory call before it is recorded)', () => {
+    const el = holdAudio();
+    const call = buildCallOutView('the-rectory')!;
+    render({ call, textSpeedMs: 1 });
+    expect(q('.callin-caller')).not.toBeNull(); // speaking: the recording's big name
+    act(() => {
+      el.dispatchEvent(new Event('error'));
+    });
+    expect(q('.callin-caller')).toBeNull();
+    expect(q('.callin-tag')?.textContent).toBe(call.tag);
+    act(() => q('.callin-stage')!.click()); // skip the typewriter
+    expect(q('.callin-text')?.textContent).toBe(call.line);
+    expect(all('.callin-choice').map((c) => c.textContent)).toEqual(['—Give him an address']);
+  });
+
+  it('keeps the safety timer when the recording has no typed line to fall back on', () => {
+    const el = holdAudio();
+    render({ call: buildCallInView('the-cycle-turns')! });
+    act(() => {
+      el.dispatchEvent(new Event('error'));
+    });
+    expect(q('.callin-caller')?.textContent).toBe('Gideon Reyes');
+    expect(q('.callin-text')).toBeNull();
+    advance(4001);
+    expect(all('.callin-choice')).toHaveLength(3);
   });
 });
 

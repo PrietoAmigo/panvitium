@@ -25,7 +25,7 @@ These govern the smartphone:
 - **Triggers & cadence.** Incoming calls are paced, not bursty: **one call arrives roughly every 10 minutes** of eligible active play, drawn from a weighted bag (see `PANVITIUM-CALLS-IN.md` "Selection model"). Only calls whose Requirements are met are eligible, and a **recency cooldown** keeps the same call from recurring within 5 calls. Outgoing calls are player-driven, with no pacing pressure, gated only by call cost and cooldown.
 - **Ring window and miss.** Each incoming call rings for a **15-second** window, then is missed. Missing — or declining, or walking out of the Studio mid-ring — is opportunity-only and costs nothing; there are no punitive incoming calls. A missed once-only call (lore, easter egg) may still ring again later; an *answered* one is consumed for good.
 - **Where it rings, and how you answer.** A call only rings while you are standing in the Studio — the phone is on that desk. A Studio menu does **not** silence the line: the phone keeps ringing behind the PC, the Logos scroll, or the dial-out keypad, so you hear it; close the menu and tap the phone to answer. Tapping the phone while it rings **answers the incoming call**, taking priority over dialling out.
-- **How numbers enter the phone.** Granted via email or hidden (the digits surface in content and you type them on the keypad). This is the single source of every `Source:` line in `PANVITIUM-CALLS-OUT.md`, so the call catalogue never depends on an email that does not exist.
+- **How numbers enter the phone.** Granted via email or hidden (the digits surface in content and you type them on the keypad). This is the single source of every `Source:` line in `PANVITIUM-CALLS-OUT.md`, so the call catalogue never depends on an email that does not exist. The one hidden number so far is the rectory's, 982079, split across the two code plates among the random subliminal flashes (982 gouged into plaster, then 079 in blood): Clare Ashby's last days, surfacing as the player's own flashbacks (`00-lore-bible.md` §11).
 - **Flags and resources are shared.** The phone reads and writes the same state as the PC: the resources, `totalSinLevel`, `totalSoulsObtained`, `katabasisCount`, `maleficiaOwned`, and the narrative flags defined in 05. New phone-only flags follow the ADR-023 additive-optional pattern. The phone never silently changes a flag the email arc owns. The Fausto friendly/hostile branch is read from `flagFCThreatSent` (set when the threat reply to Fausto #1 is sent): `flagFCThreatSent=0` is the friendly branch, `=1` the hostile one.
 
 ## Effect verbs (shared by emails + calls)
@@ -38,11 +38,11 @@ These govern the smartphone:
 
 - **The household.** Gideon by call, the acolytes by call. Servile, fretful, practical, pieces of the truth only.
 - **The hands of Fausto.** In specific, Fausto's invocations (Astiwihad, Succubus) and minions (his newspaper journalist, Marina Zhao — `the-journalist`) call. They want to cause your downfall. The two invocation calls are mutually exclusive on the Fausto branch: Succubus reaches a *friendly*-branch player, Astiwihad a *hostile*-branch one.
-- **The Church.** Father Emil Stahl (`the-ward`), once he has written to you first.
+- **The Church.** Father Emil Stahl (`the-ward`), once he has written to you first. Father Anselm Greaves, pastor emeritus of St. Dymphna's, only when you ring him: the rectory line (`the-rectory`, an outgoing call) is the number his young curate Stahl gave the Ashby family twenty years ago. He answers once and will not speak of Clare down a telephone line; he writes instead (`fr-greaves-1`, 05).
 - **Mundane** help. Trusted-minion register: useful, discreet, and they grasp nothing of the work — e.g. **Mai**, your platforms/operations hand (`doing-nothing`, `ministry`, `social-platform`).
 - **Unknown.** Withheld numbers (`a-name-to-burn`, the easter eggs `tormented-soul` / `ISP-change`, and the unbound-invocation lines).
 
-Who never reaches the phone: the Princes and the Goetia (Hell is silent), your invocations (email or the Lair only, so the Doppelganger and Midas stay on the PC), the parish clergy (their channel is email; the bulletins and Father Tom belong to 05), and Maren Holt (she has no idea you exist and is a parish line and an obituary, not a contact, 00 sec. 11).
+Who never reaches the phone: the Princes and the Goetia (Hell is silent), your invocations (email or the Lair only, so the Doppelganger and Midas stay on the PC), the parish clergy (their channel is email; the bulletins and Father Tom belong to 05; Father Greaves answers only the one call you place), and Maren Holt (she has no idea you exist and is a parish line and a news report, not a contact, 00 sec. 11).
 
 * * *
 
@@ -61,3 +61,16 @@ When a call arrives it does not pop a panel — it takes over the screen as **"t
 - **The scheduler is UI-level**, drawing from `Math.random`, **not** the sim's seeded RNG (ADR-011). It therefore does not touch the deterministic tick or the RNG stream — a save's sequence is unchanged whether or not a call rang. When the effect engine lands, the trigger/draw should move into the tick (so it is deterministic and offline-correct).
 - **The once-only record is persisted:** every call the player picks up is appended to the permanent top-level `callsAnswered` (ADR-023 additive-optional; carried across Katabasis), and the draw excludes an answered lore / easter-egg call for good — across reloads, devices and lifetimes. A miss records nothing.
 - **Per-session state, not yet persisted:** the recency buffer (the last few callers, for the "no repeat within 5 calls" rule). It resets each session today.
+
+* * *
+
+## 5. The dialer and outgoing calls (as built)
+
+The keypad sits behind the phone hotspot whenever no call is ringing. The player keys a number and presses call; the sim classifies it (`dialCode` / `dialNumber`, `packages/sim/src/phone.ts`):
+
+- **An unknown number** shows "Number does not exist" and keeps the digits for editing. **The joke number 666** answers in the same red fashion with its own copy.
+- **A call-out number** (`CALL_OUTS`, catalogued in `PANVITIUM-CALLS-OUT.md`) connects: the dialer closes and the call plays on the same full-screen stage as an incoming call, labelled "Outgoing call". The call is recorded in the permanent `callsPlaced` list at once (ADR-023 additive-optional, carried across Katabasis), and that record is what later content keys off (Father Greaves's letter).
+- **A one-shot line dialled again** rings out unanswered, with its own toast ("The rectory line rings out. No one answers.").
+- **No recording yet.** A recorded outgoing call whose mp3 is missing writes out its typed fallback line on the stage instead, so `the-rectory` plays today before `the-rectory.mp3` exists.
+
+The incoming line is busy while an outgoing call is on the stage: nothing rings, and the random subliminal plates hold.

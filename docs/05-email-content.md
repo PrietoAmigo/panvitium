@@ -64,6 +64,10 @@ additive-optional pattern.
   67% reduction). The debuff is shown in the HUD. Deleting Fausto #4 sets it false and clears the
   debuff. Add as an additive-optional field.
 - **Door-knock SFX**: a one-shot sound played on receipt of Fausto Cescru #5 (Howler, per ADR-014).
+- **`callsPlaced`**: the permanent list of outgoing calls the player has placed from the phone
+  (`PANVITIUM-CALLS-OUT.md`). Father Greaves #1 keys off `the-rectory`. Additive-optional.
+- **`flagMarenDead`**: default 0. Set to 1 when Father Stahl's call (`the-ward`) is answered with
+  Imperium. Sends the Riverside Almanac's report of the ward. Permanent; additive-optional.
 
 ---
 
@@ -434,6 +438,59 @@ built. None carry mechanical effects unless stated.
   > carried us through a season we could not have weathered alone. God keep you all.
 - **Answers:** none.
 - **Trigger:** reaching 100,000,000 `totalSoulsObtained` and `flagFatherMad = 1`.
+
+### Father Anselm Greaves #1
+- **From:** Fr. Anselm Greaves, `rectory@stdymphna-parish.org`
+- **Date:** {received date · year → 2015}
+- **Subject:** Clare Ashby, as I said I would
+- **Body:**
+  > I said I would write, and I find I am glad of the excuse, God forgive me. You did not give your
+  > name and I will not ask for it again. Twenty years ago this autumn a family called Ashby brought
+  > their daughter to St. Dymphna's. Clare was seventeen. The doctors had done everything doctors do
+  > and had nothing left to try, and in the end the bishop gave his leave for the Rite. I was pastor
+  > then. Emil Stahl was my curate, not a year ordained and so certain of God that I let him lead. I
+  > knelt at his side and held the book. It went on nine days. The thing in her would not give its
+  > name. It said it was nobody, a servant, and that its master had not yet come. It knew things
+  > about Emil that no one could have told it. Clare wrote this number on the walls of her room with
+  > her fingernails, over and over, and on the last night she tore the flyleaf from my Rituale and
+  > wrote it in her own blood. It was the number Emil had given her mother: call day or night, he
+  > told her, I will come. She died on the ninth night with Emil holding her hand. The inquest said
+  > her heart. The diocese said very little and sent him away for a year. He came back harder, and
+  > he has made a hunt of what was a vocation ever since. He has not spoken her name in twenty
+  > years. If you know Emil, do not say it to him. It is the one door in him that never shut. I tell
+  > myself she is at peace. I have never once believed it.
+  > Fr. Anselm Greaves
+  > Pastor emeritus, St. Dymphna's
+- **Answers:** none.
+- **Trigger:** 3 minutes after the player places the outgoing call to the rectory (`callsPlaced`
+  contains `the-rectory`: 982079 dialled, `PANVITIUM-CALLS-OUT.md`). Keyed to the call alone: it
+  arrives however early in the game, and even after `the-ward` has been answered.
+- **Effect:** its presence in the inbox opens the Imperium answer to Father Stahl's call
+  (`the-ward`, `PANVITIUM-CALLS-IN.md`).
+- *Author note: the thing in Clare is a minor demon, a servant whose master "had not yet come": now
+  the player, though nothing here says so. Her soul is in Hell; Greaves only suspects it. The
+  number she wrote is the one on the code plates.*
+
+### The Riverside Almanac: the ward
+- **From:** The Riverside Almanac, `editor@riverside-almanac.com`
+- **Date:** {received date · year → 2015}
+- **Subject:** A terrible night on the hospital ward
+- **Body:**
+  > We do not print news like this, and we wish we did not have to now. Late last night, on the
+  > palliative ward of the county hospital, nurse Maren Holt was strangled with a priest's stole by
+  > Father Emil Stahl of the Aldermoor diocese, who had come to sit with a dying man. He then opened
+  > his own throat with a scalpel from the dressing trolley. A patient too weak to leave her bed saw
+  > all of it. Both were dead before help reached the room. Police say there was no quarrel between
+  > them that anyone knows of. Those on shift say Father Stahl had stepped into the corridor to take
+  > a telephone call, and came back without a word. Maren sat with more of this town's dying than
+  > any of us could count, and saw them out gently. There is nobody to do that now. There will be a
+  > vigil at Sacred Heart on Sunday. Be kind to one another.
+- **Answers:** none.
+- **Trigger:** 2 minutes after `flagMarenDead = 1` (Father Stahl's call answered with Imperium).
+- **Effect:** its arrival earns the achievement "The Last Rite".
+- *Author note: the same cosy local newsletter as `newsletter-local`, the squash and the lost
+  terrier, now carrying this. Both earlier parish bulletins thank Maren, and both always arrive
+  before Stahl can call (his call needs them), so nothing contradicts her death.*
 
 ---
 

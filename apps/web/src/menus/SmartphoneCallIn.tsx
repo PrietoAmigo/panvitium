@@ -14,6 +14,8 @@ import type { BoundInvocationVisual } from './types.js';
  *
  *   speaking → ready → done → fading   (a recording: its mp3 plays, options reveal on `ended`)
  *   type     → ready → done → fading   (a typed line: the typewriter writes it out)
+ *   speaking → type → …                (a recording whose mp3 cannot play falls back to its typed
+ *                                       `line`, when it has one: a call can ship before it is recorded)
  *
  * Tap the stage to skip (cut the recording short / reveal the full text + options at once); pick an
  * option to resolve. Purely presentational: it owns only the transient phase/typed/chosen state and
@@ -37,6 +39,8 @@ export interface SmartphoneCallInProps {
   plateOpacity?: number;
   /** Base path for the call recordings (`<id>.mp3`). Default `/assets/panvitium/music/`. */
   audioBase?: string;
+  /** The stage's accessible name. Default "Incoming call"; an outgoing call passes its own. */
+  label?: string;
   /** The Studio's bound invocation figures (`boundVisualsFor('studio', …)`), composited into both
    *  plates so whatever stands in the room stays there while the call is answered. */
   figures?: BoundInvocationVisual[];
@@ -67,11 +71,14 @@ export function SmartphoneCallIn({
   textSpeedMs = 32,
   plateOpacity = 0.66,
   audioBase = CALL_AUDIO_BASE,
+  label = 'Incoming call',
   figures = NO_FIGURES,
 }: SmartphoneCallInProps): ReactElement {
   const [phase, setPhaseState] = useState<Phase>(call.audio ? 'speaking' : 'type');
   const [typed, setTyped] = useState('');
   const [chosen, setChosen] = useState<number | null>(null);
+  // A recording that could not play and is being written out from its typed `line` instead.
+  const [typedFallback, setTypedFallback] = useState(false);
 
   // Event handlers read the live phase off a ref (their closures would otherwise see a stale value).
   const phaseRef = useRef<Phase>(phase);
@@ -114,36 +121,8 @@ export function SmartphoneCallIn({
   // App, so `call.id` is fixed for its mounted life — start exactly once.
   useEffect(() => {
     gen.current = 0;
-    if (call.audio) {
-      const g = ++gen.current;
-      // reveal: stop the recording and show the options. Guarded so only the current generation fires.
-      const reveal = (): void => {
-        if (g !== gen.current) return;
-        clearTimers();
-        stopVoice();
-        gen.current += 1;
-        setPhase('ready');
-      };
-      // Safety / fileless fallback so a missing mp3 (tests, preview) still flows to the options.
-      timers.current.sim = setTimeout(reveal, estimateDuration(call) * 1000);
-      try {
-        const a = new Audio(audioBase + call.id + '.mp3');
-        voice.current = a;
-        a.preload = 'auto';
-        a.addEventListener('ended', reveal);
-        a.addEventListener('loadedmetadata', () => {
-          if (g !== gen.current) return;
-          if (isFinite(a.duration) && a.duration > 0) {
-            if (timers.current.sim) clearTimeout(timers.current.sim);
-            timers.current.sim = setTimeout(reveal, (a.duration + 0.4) * 1000);
-          }
-        });
-        void a.play().catch(() => undefined); // autoplay may be blocked — the safety timer still reveals
-      } catch {
-        /* no Audio (SSR/test) — the safety timer handles the reveal */
-      }
-    } else {
-      // Typewriter: write the line out one char at a time, with punctuation pauses.
+    // Typewriter: write the line out one char at a time, with punctuation pauses.
+    const startTyping = (): void => {
       const line = call.line;
       let i = 0;
       const step = (): void => {
@@ -161,6 +140,48 @@ export function SmartphoneCallIn({
         timers.current.type = setTimeout(step, d);
       };
       timers.current.type = setTimeout(step, textSpeedMs);
+    };
+    if (call.audio) {
+      const g = ++gen.current;
+      // reveal: stop the recording and show the options. Guarded so only the current generation fires.
+      const reveal = (): void => {
+        if (g !== gen.current) return;
+        clearTimers();
+        stopVoice();
+        gen.current += 1;
+        setPhase('ready');
+      };
+      // Safety / fileless fallback so a missing mp3 (tests, preview) still flows to the options.
+      timers.current.sim = setTimeout(reveal, estimateDuration(call) * 1000);
+      try {
+        const a = new Audio(audioBase + call.id + '.mp3');
+        voice.current = a;
+        a.preload = 'auto';
+        a.addEventListener('ended', reveal);
+        // The mp3 is missing or unplayable: a call with a typed `line` writes it out instead; one
+        // without keeps the safety timer, which still reveals the options.
+        a.addEventListener('error', () => {
+          if (g !== gen.current || call.line.length === 0) return;
+          clearTimers();
+          stopVoice();
+          gen.current += 1;
+          setTypedFallback(true);
+          setPhase('type');
+          startTyping();
+        });
+        a.addEventListener('loadedmetadata', () => {
+          if (g !== gen.current) return;
+          if (isFinite(a.duration) && a.duration > 0) {
+            if (timers.current.sim) clearTimeout(timers.current.sim);
+            timers.current.sim = setTimeout(reveal, (a.duration + 0.4) * 1000);
+          }
+        });
+        void a.play().catch(() => undefined); // autoplay may be blocked — the safety timer still reveals
+      } catch {
+        /* no Audio (SSR/test) — the safety timer handles the reveal */
+      }
+    } else {
+      startTyping();
     }
     return () => {
       clearTimers();
@@ -197,7 +218,7 @@ export function SmartphoneCallIn({
 
   // ── Derived presentation (mirrors the design's `renderVals`). ──────────────────────────────────
   const choicesShown = phase === 'ready' || phase === 'done' || phase === 'fading';
-  const isAudio = call.audio;
+  const isAudio = call.audio && !typedFallback;
   const speaking = phase === 'speaking';
   const showCaller = isAudio && (speaking || choicesShown);
   const showTag = !isAudio && phase !== 'speaking';
@@ -211,7 +232,7 @@ export function SmartphoneCallIn({
       className="callin-stage"
       onClick={onStageClick}
       role="dialog"
-      aria-label="Incoming call"
+      aria-label={label}
       aria-live="polite"
     >
       {/* Phase-driven background plates, composited THROUGH the degradation pass (ADR-021) so the

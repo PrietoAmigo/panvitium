@@ -401,6 +401,18 @@ constraints in §9, and voices and channels follow the matrix in §10.
   builds his case across the long game, and is the engine that turns Brennan and Crane against you
   for the endgame, the moment the Church stops being weather and becomes a foe. Voice: courteous,
   probing, cold, escalating from polite inquiry to open accusation.
+  **His wound.** Twenty years ago, not a year ordained, he led the exorcism of Clare Ashby at St.
+  Dymphna's and lost her (below). He came back from it harder and made a hunt of his vocation, and
+  he has not spoken her name since. It is the one door in him that never shut: reminded of her, he
+  breaks for a moment, and in that moment the player can command him (Imperium, on his one call,
+  `the-ward`). Commanded, he kills Maren Holt at the bedside where they sit and then himself, and
+  his case and the Church's endgame turn die with him.
+- **Father Anselm Greaves**, pastor emeritus of St. Dymphna's. Stahl's pastor at the time of the
+  Ashby exorcism; he knelt beside his young curate and held the book, and has carried it alone since.
+  Old, tired, guilty, gentle. He still answers the rectory line, the number Stahl gave the Ashby
+  family, and once, when the player dials it, he answers and then writes the whole story down for a
+  stranger who would not give a name. Voice: an old priest's careful letter, too honest for his own
+  peace.
 
 **The one who suspects**
 
@@ -420,7 +432,23 @@ constraints in §9, and voices and channels follow the matrix in §10.
   track. She should appear perhaps twice in the whole game, almost in passing. She has no idea you
   exist, yet she quietly brings the dying to peace, and the few she settles are gone to rest, past
   anything you will ever reach. Use her sparingly, as the single faint note of grace in a dark world:
-  a parish line, an obituary that reads "passed peacefully," and little more.
+  two parish lines and little more. A player who finds the Ashby story can end her: Stahl, sitting
+  with her on the ward when he rings, kills her under Imperium. The only notice is the local
+  newsletter's report of the murder-suicide. Her death mints no soul, because she goes to rest, the
+  one place the player can never follow (§3.4): the cruelty is chosen and pays nothing, and the town
+  is left with nobody to see its dying out gently.
+
+**The possessed**
+
+- **Clare Ashby**, seventeen, twenty years dead. A minor demon took her (no name worth giving, a
+  servant that said its master "had not yet come"; it answers to the player now by rank, though
+  nothing on screen says so). Young Father Stahl led the Rite for nine days and lost her; the
+  inquest said her heart, and her soul went down, not to rest. In her last days she gouged the
+  rectory's number into the plaster of her room and, on the final night, wrote it in her own blood
+  on the flyleaf torn from Greaves's Rituale. Those two images reach the player as flashbacks among
+  the subliminal plates (982, then 079). They read as the player's own trauma and are not: the
+  protagonist has none (§2). They are Clare's, carried up by the thing that held her. Dialling the
+  number they spell is the way into the Stahl story.
 
 **The invocations you deal with**
 
