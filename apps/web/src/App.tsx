@@ -25,7 +25,7 @@ import { SettingsPanel } from './ui/SettingsPanel.js';
 import { TitleSequence } from './ui/TitleSequence.js';
 import { Jumpscare, JUMPSCARE_IMG } from './ui/Jumpscare.js';
 import { EmptyHandedWarning } from './ui/EmptyHandedWarning.js';
-import { FirstDescent, primeFirstDescent } from './ui/FirstDescent.js';
+import { FirstDescent, primeFirstDescent, releaseFirstDescent } from './ui/FirstDescent.js';
 import { Subliminal } from './ui/Subliminal.js';
 import { useRandomSubliminals } from './game/useRandomSubliminals.js';
 import { codePlatesShown } from './game/subliminals.js';
@@ -197,10 +197,15 @@ export function App(): ReactElement {
   });
   const dismissAltarSigil = altarSigil.dismiss;
   // The cinematic's plates decode, and its dissolve bakes, the moment the sigil rises with the
-  // cinematic next in line, so it never shows an empty frame.
+  // cinematic next in line, so it never shows an empty frame. Put away with no commit, the sigil
+  // lets the baked frames go; a commit leaves them to the cinematic, which lets them go at its end.
   const altarSigilUp = altarSigil.phase !== 'off';
   useEffect(() => {
-    if (altarSigilUp && firstDescentNext) primeFirstDescent();
+    if (!altarSigilUp || !firstDescentNext) return undefined;
+    primeFirstDescent();
+    return () => {
+      if (!useGameStore.getState().firstDescentPlaying) releaseFirstDescent();
+    };
   }, [altarSigilUp, firstDescentNext]);
 
   // The descent takes the full screen; close any grimoire panel (and put the sigil away) when it opens.

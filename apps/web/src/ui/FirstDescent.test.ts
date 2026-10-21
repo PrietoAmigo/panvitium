@@ -3,10 +3,11 @@
  * reads off it (overlay, curtain, plate swap, the accelerating shrink), the dissolve's per-pixel
  * mask, and the overlay itself: it swallows clicks and keys without skipping, hands off to the
  * descent at exactly `fall0 + 0.72 · F`, lifts at the end, and does not restart when a re-render
- * hands it fresh callbacks.
+ * hands it fresh callbacks. Its baked art outlives StrictMode's rehearsal unmount and is let go
+ * only at the end.
  */
 import { describe, it, expect, afterEach, beforeAll, afterAll, vi } from 'vitest';
-import { act, createElement } from 'react';
+import { act, createElement, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import {
   FirstDescent,
@@ -22,6 +23,8 @@ import {
   fallWidth,
   firstDescentFrame,
   firstDescentTimeline,
+  primeFirstDescent,
+  releaseFirstDescent,
 } from './FirstDescent.js';
 
 let container: HTMLDivElement | null = null;
@@ -41,6 +44,7 @@ afterEach(() => {
   if (container) container.remove();
   root = null;
   container = null;
+  releaseFirstDescent();
   vi.useRealTimers();
 });
 
@@ -215,6 +219,30 @@ describe('the dissolve', () => {
 });
 
 describe('FirstDescent (the overlay)', () => {
+  it('keeps the art primed ahead through StrictMode’s rehearsal, letting it go only at its end', () => {
+    vi.useFakeTimers();
+    const art = primeFirstDescent();
+    expect(primeFirstDescent()).toBe(art); // idempotent while held
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    // StrictMode mounts, unmounts and remounts: the bake under way must survive it.
+    act(() => {
+      root!.render(
+        createElement(
+          StrictMode,
+          null,
+          createElement(FirstDescent, { onTransit: () => undefined, onDone: () => undefined }),
+        ),
+      );
+    });
+    expect(primeFirstDescent()).toBe(art);
+    advance(FIRST_DESCENT_TOTAL_MS - 1);
+    expect(primeFirstDescent()).toBe(art);
+    advance(1);
+    expect(primeFirstDescent()).not.toBe(art);
+  });
+
   it('cannot be skipped: clicks and keys do nothing; the hand-off and the end come on time', () => {
     vi.useFakeTimers();
     const onTransit = vi.fn();

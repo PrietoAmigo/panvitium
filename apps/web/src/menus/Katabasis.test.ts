@@ -18,14 +18,19 @@ import { useGameStore } from '../store/gameStore.js';
 import { KatabasisModal } from '../ui/KatabasisModal.js';
 import { App } from '../App.js';
 import { EMPTY_HANDED_TOTAL_MS } from '../ui/EmptyHandedWarning.js';
-import { FIRST_DESCENT_TOTAL_MS, FIRST_DESCENT_TRANSIT_MS } from '../ui/FirstDescent.js';
+import {
+  FIRST_DESCENT_TOTAL_MS,
+  FIRST_DESCENT_TRANSIT_MS,
+  releaseFirstDescent,
+} from '../ui/FirstDescent.js';
+import { ALTAR_SIGIL_FADE_MS, ALTAR_SIGIL_IDLE_MS } from '../game/useAltarSigil.js';
 import { TRANSIT_HOLD_MS } from './Katabasis.js';
 import { boonLabel } from './katabasisShared.js';
 import type { DegradedSceneProps } from './types.js';
 
 // The room's canvas pass needs a real 2D context (none under jsdom): stub it, keeping the props the
 // room hands it, so a test can read back what the pass is (and is not) given.
-const scene = vi.hoisted(() => ({ last: null as DegradedSceneProps | null }));
+const scene = vi.hoisted(() => ({ last: null as DegradedSceneProps | null, decodes: 0 }));
 vi.mock('./DegradedScene.js', () => ({
   DegradedScene: (props: DegradedSceneProps) => {
     scene.last = props;
@@ -33,7 +38,10 @@ vi.mock('./DegradedScene.js', () => ({
   },
   preloadImage: () => undefined,
   // The first-descent cinematic's plates never decode here: it plays its timeline over the black.
-  decodeImage: () => new Promise(() => undefined),
+  decodeImage: () => {
+    scene.decodes++;
+    return new Promise(() => undefined);
+  },
 }));
 // The sync panel probes the network on mount; the altar needs none of it.
 vi.mock('../ui/SyncPanel.js', () => ({ SyncPanel: () => null }));
@@ -79,6 +87,8 @@ beforeEach(() => {
     titleOpen: false,
   });
   store().init();
+  releaseFirstDescent();
+  scene.decodes = 0;
 });
 
 afterEach(() => {
@@ -539,6 +549,44 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('bakes the cinematic as the sigil rises; a commit keeps the art, walking away lets it go', () => {
+    vi.useFakeTimers();
+    try {
+      patch({ souls: bn(5) });
+      render(App);
+      expect(scene.decodes).toBe(0);
+      // The sigil rises with the cinematic next: both plates start decoding (then the bake).
+      click('The Altar');
+      expect(scene.decodes).toBe(2);
+      click('The Altar'); // a second click only restarts the sigil's wait
+      expect(scene.decodes).toBe(2);
+      // Left alone, the sigil goes down and lets the art go; raised again, it primes afresh.
+      act(() => {
+        vi.advanceTimersByTime(ALTAR_SIGIL_IDLE_MS);
+      });
+      act(() => {
+        vi.advanceTimersByTime(ALTAR_SIGIL_FADE_MS);
+      });
+      expect(sigilLayer()).toBeNull();
+      click('The Altar');
+      expect(scene.decodes).toBe(4);
+      // Committed: the cinematic plays on the art already under way, nothing primed anew.
+      click('Press the sigil');
+      click(/there is no return/);
+      expect(container!.querySelector('.first-descent')).not.toBeNull();
+      expect(scene.decodes).toBe(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('primes nothing while the empty-handed warning is next in line', () => {
+    patch({ souls: bn(0) });
+    render(App);
+    click('The Altar');
+    expect(scene.decodes).toBe(0);
   });
 
   it('plays the cinematic once: the next descent goes straight into the Abyss transit', () => {

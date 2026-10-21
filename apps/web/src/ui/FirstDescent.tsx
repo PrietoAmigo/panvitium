@@ -1,5 +1,10 @@
 import { useEffect, useRef, type ReactElement } from 'react';
-import { DegradePass, DEFAULT_DEGRADE, type EngineSprite } from '../menus/degrade.js';
+import {
+  DegradePass,
+  DEFAULT_DEGRADE,
+  spriteArtSize,
+  type EngineSprite,
+} from '../menus/degrade.js';
 import { decodeImage } from '../menus/DegradedScene.js';
 import { ASSET_BASE } from '../menus/degrade.data.js';
 
@@ -163,7 +168,9 @@ export function dissolveIndex(p: number, count: number): number {
 /** Size a centred plate sprite to `w` of the stage width. Its `y` is its baseline (bottom edge), so
  *  centring puts the baseline half the plate's height below the middle. */
 function placePlate(sprite: EngineSprite, w: number): void {
-  const aspect = sprite.img.naturalHeight / sprite.img.naturalWidth;
+  const size = spriteArtSize(sprite.img);
+  if (!size) return;
+  const aspect = size.h / size.w;
   sprite.w = w;
   sprite.y = 0.5 + (w * STAGE_W * aspect) / STAGE_H / 2;
 }
@@ -231,31 +238,13 @@ export function dissolveFrame(
   }
 }
 
-/** A baked frame as a decoded image: the pass reads a sprite's `naturalWidth`/`naturalHeight`. */
-function canvasToImage(canvas: HTMLCanvasElement): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('dissolve frame could not be encoded'));
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const im = new Image();
-      im.onload = (): void => {
-        URL.revokeObjectURL(url);
-        resolve(im);
-      };
-      im.onerror = (): void => {
-        URL.revokeObjectURL(url);
-        reject(new Error('dissolve frame could not be decoded'));
-      };
-      im.src = url;
-    }, 'image/png');
-  });
-}
-
-/** Bake Plate II's dissolve, one frame per task so the work never takes a frame's budget. */
-async function bakeDissolve(plate: HTMLImageElement): Promise<HTMLImageElement[]> {
+/**
+ * Bake Plate II's dissolve, one frame per task so the work never takes a frame's budget. Each
+ * frame is a canvas the pass draws directly: the pixel work for all forty takes ~130 ms, while
+ * round-tripping each through a PNG (`toBlob`, then an `Image`) took 6 to 10 s, longer than the 6.35
+ * s before the fall, which then fell undissolved, its hard edges showing.
+ */
+async function bakeDissolve(plate: HTMLImageElement): Promise<HTMLCanvasElement[]> {
   const w = DISSOLVE_WIDTH;
   const h = Math.round((w * plate.naturalHeight) / plate.naturalWidth);
   const canvas = document.createElement('canvas');
@@ -269,12 +258,17 @@ async function bakeDissolve(plate: HTMLImageElement): Promise<HTMLImageElement[]
   const radii = dissolveRadii(w, h);
   const noise = dissolveNoise(w, h);
   const out = ctx.createImageData(w, h);
-  const frames: HTMLImageElement[] = [];
+  const frames: HTMLCanvasElement[] = [];
   for (let n = 1; n <= FIRST_DESCENT_DISSOLVE_STEPS; n++) {
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
     dissolveFrame(src, out.data, w, h, n / FIRST_DESCENT_DISSOLVE_STEPS, radii, noise);
-    ctx.putImageData(out, 0, 0);
-    frames.push(await canvasToImage(canvas));
+    const frame = document.createElement('canvas');
+    frame.width = w;
+    frame.height = h;
+    const fctx = frame.getContext('2d');
+    if (!fctx) throw new Error('2D context unavailable');
+    fctx.putImageData(out, 0, 0);
+    frames.push(frame);
   }
   return frames;
 }
@@ -284,15 +278,16 @@ interface FirstDescentArt {
   /** Plates I and II, once both have decoded. */
   plates: readonly [HTMLImageElement, HTMLImageElement] | null;
   /** Plate II's dissolve frames, once all are baked; until then the plate falls undissolved. */
-  dissolve: readonly HTMLImageElement[] | null;
+  dissolve: readonly HTMLCanvasElement[] | null;
 }
 
 let primed: FirstDescentArt | null = null;
 
 /**
  * Decode both plates and bake the dissolve ahead of time, so the cinematic never shows an empty
- * frame. App calls it as soon as the altar sigil rises with the cinematic due; the cinematic calls
- * it again on mount. Idempotent while the art is held; a failed decode lets a later call retry.
+ * frame. App calls it as soon as the altar sigil rises with the cinematic due (decoding the plates
+ * and baking take about a second, the fall begins 6.35 s after the commit); the cinematic calls it
+ * again on mount. Idempotent while the art is held; a failed decode lets a later call retry.
  */
 export function primeFirstDescent(): FirstDescentArt {
   if (primed) return primed;
@@ -315,8 +310,11 @@ export function primeFirstDescent(): FirstDescentArt {
   return art;
 }
 
-/** Let the baked frames go once the cinematic has played (it plays once per playthrough). */
-function releaseFirstDescent(): void {
+/**
+ * Let the baked frames go (~65 MB of canvases): once the cinematic has played (it plays once per
+ * playthrough), or when the altar sigil goes down with no commit (App primes it again next time).
+ */
+export function releaseFirstDescent(): void {
   primed = null;
 }
 
@@ -350,7 +348,12 @@ export function FirstDescent({
     const tl = firstDescentTimeline(reduced.current);
     const timers = [
       window.setTimeout(() => transit.current(), tl.transitAt),
-      window.setTimeout(() => done.current(), tl.end),
+      window.setTimeout(() => {
+        // Released here, at the real end, not on unmount: StrictMode's rehearsal unmount would
+        // otherwise throw the pre-baked frames away and start the bake over.
+        releaseFirstDescent();
+        done.current();
+      }, tl.end),
     ];
     const art = primeFirstDescent();
     // The pass needs a 2D context; without one the black and its timeline still run.
@@ -389,6 +392,9 @@ export function FirstDescent({
         const next = frames ? frames[dissolveIndex(f.fall, frames.length)] : undefined;
         if (next) sprite.img = next;
         placePlate(sprite, fallWidth(f.fall));
+        // Whether the falling plate wears its dissolve ('baked') or falls bare ('pending'), for the
+        // e2e check that the bake always lands before the fall.
+        if (rootRef.current) rootRef.current.dataset.dissolve = next ? 'baked' : 'pending';
       }
       if (t < tl.end) raf = requestAnimationFrame(frame);
     };
@@ -398,7 +404,6 @@ export function FirstDescent({
       timers.forEach((id) => window.clearTimeout(id));
       cancelAnimationFrame(raf);
       pass?.stop();
-      releaseFirstDescent();
     };
   }, []);
 

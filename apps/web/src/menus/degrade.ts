@@ -140,9 +140,24 @@ export function applySpriteTint(d: Uint8ClampedArray, tint: SpriteTint): void {
   }
 }
 
+/** A sprite's art: a decoded image, or a canvas painted ahead of time (the first-descent
+    cinematic's pre-baked dissolve frames, which skip an encode/decode round trip per frame). */
+export type SpriteArt = HTMLImageElement | HTMLCanvasElement;
+
+/** The art's pixel size, or null while it has nothing to draw (an image not yet decoded, an empty
+    canvas). */
+export function spriteArtSize(art: SpriteArt): { w: number; h: number } | null {
+  if (art instanceof HTMLCanvasElement) {
+    return art.width > 0 && art.height > 0 ? { w: art.width, h: art.height } : null;
+  }
+  return art.complete && art.naturalWidth > 0
+    ? { w: art.naturalWidth, h: art.naturalHeight }
+    : null;
+}
+
 /** A diegetic sprite the engine composites into the scene before degrading. */
 export interface EngineSprite {
-  img: HTMLImageElement;
+  img: SpriteArt;
   /** Centre X, fraction of width 0..1. */
   x: number;
   /** Baseline (feet) Y, fraction of height 0..1. */
@@ -399,10 +414,7 @@ export class DegradePass {
   private _glows: EngineGlowSource = NO_GLOWS;
 
   // Each tinted sprite's art, filtered once and kept per image with the tint it was filtered by.
-  private readonly _tinted = new WeakMap<
-    HTMLImageElement,
-    { tint: SpriteTint; art: CanvasImageSource }
-  >();
+  private readonly _tinted = new WeakMap<SpriteArt, { tint: SpriteTint; art: CanvasImageSource }>();
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -510,13 +522,17 @@ export class DegradePass {
 
   /** `img` with `tint` laid over it (see `SpriteTint`), filtered on first use and cached until the
       sprite asks for another tint. Falls back to the art as drawn if its pixels can't be read. */
-  private _tintedArt(img: HTMLImageElement, tint: SpriteTint): CanvasImageSource {
+  private _tintedArt(
+    img: SpriteArt,
+    size: { w: number; h: number },
+    tint: SpriteTint,
+  ): CanvasImageSource {
     const hit = this._tinted.get(img);
     if (hit && hit.tint === tint) return hit.art;
     let art: CanvasImageSource = img;
     const c = document.createElement('canvas');
-    c.width = img.naturalWidth;
-    c.height = img.naturalHeight;
+    c.width = size.w;
+    c.height = size.h;
     const cx = c.getContext('2d');
     if (cx) {
       try {
@@ -590,9 +606,10 @@ export class DegradePass {
     if (!withSprites) return;
     for (const sp of scene.sprites) {
       const img = sp.img;
-      if (!img.complete || !img.naturalWidth) continue;
+      const size = spriteArtSize(img);
+      if (!size) continue;
       const drawW = sp.w * w;
-      const drawH = drawW * (img.naturalHeight / img.naturalWidth);
+      const drawH = drawW * (size.h / size.w);
       // Idle motion so a sprite animates THROUGH the pass. A bound figure (`float`) levitates on a
       // slower, larger cadence with a faint roll; ordinary creatures get the gentle bob/breathe.
       const floatStill = sp.float === true && this.s.reducedMotion;
@@ -615,7 +632,7 @@ export class DegradePass {
       const dx = cx - dw / 2;
       const dy = baseY - dh;
       // The figure as drawn, through the room's colour filter when it carries one.
-      const art = sp.tint && sp.tint.density > 0 ? this._tintedArt(img, sp.tint) : img;
+      const art = sp.tint && sp.tint.density > 0 ? this._tintedArt(img, size, sp.tint) : img;
       // Flat contact/ground shadow — a soft dark pool pinned to the floor at the figure's baseline
       // (the cast of an overhead light). Drawn BEFORE the figure so the feet sit ON it, and off the
       // UN-bobbed baseline (sp.y, not baseY) so it stays put on the ground while the figure moves.
@@ -750,7 +767,7 @@ export class DegradePass {
    */
   private _drawFireAura(
     ctx: CanvasRenderingContext2D,
-    img: HTMLImageElement,
+    img: SpriteArt,
     dx: number,
     dy: number,
     dw: number,
