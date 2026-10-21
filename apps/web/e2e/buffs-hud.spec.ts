@@ -99,7 +99,7 @@ test('stands a ring per live buff between the vessels, with its card on hover', 
   await expect(card).toHaveCount(0);
   await rings.nth(2).hover();
   await expect(card).toContainText('Social Platform');
-  await expect(card).toContainText('Call · Mai');
+  await expect(card).not.toContainText('Mai');
   await expect(card).toContainText('Influence regeneration doubles');
   await expect(card).toContainText('Reprobate generation halves');
   await expect(card).toContainText(/51m \d+s remaining/);

@@ -137,7 +137,7 @@ describe('Buffs HUD', () => {
     expect(card()).toBeNull(); // nothing shows by default
     hover(tiles()[0]!);
     expect(card()?.querySelector('.buffs-hud-card-name')?.textContent).toBe('Social Platform');
-    expect(card()?.querySelector('.buffs-hud-card-kind')?.textContent).toBe('Call · Mai');
+    expect(card()?.textContent).not.toContain('Mai'); // no origin label: the name says enough
     const effects = [...card()!.querySelectorAll('.buffs-hud-card-effect')];
     expect(effects.map((e) => e.textContent)).toEqual([
       'Influence regeneration doubles',

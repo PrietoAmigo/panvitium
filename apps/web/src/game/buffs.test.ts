@@ -8,7 +8,7 @@ import {
   type GameState,
 } from '@panvitium/sim';
 import { CALL_IN_BY_ID } from '../menus/calls-in.data.js';
-import { buffAriaLabel, buffKindLabel, buildBuffs, ringFraction, type BuffView } from './buffs.js';
+import { buffAriaLabel, buildBuffs, ringFraction, type BuffView } from './buffs.js';
 
 function withLifetime(patch: Partial<GameState['lifetime']>): GameState {
   const s = createInitialState('buffs-test', 0);
@@ -45,7 +45,6 @@ describe('buildBuffs: the single-use maleficia', () => {
     expect(ring.img).toContain('black_salt_pouch.png');
     // "Single-use:" and "for an hour" drop away; the number stays.
     expect(ring.effects).toEqual([{ text: '+10% reprobate generation', debuff: false }]);
-    expect(ring.caller).toBeUndefined();
   });
 
   it('sets a reduction with a true minus sign, as the Loculi does', () => {
@@ -67,12 +66,11 @@ describe('buildBuffs: the single-use maleficia', () => {
 });
 
 describe('buildBuffs: the answered calls', () => {
-  it('names a call ring from the catalogue, with its caller and dominant multiplier', () => {
+  it('names a call ring from the catalogue, with its dominant multiplier', () => {
     const ring = only(buildBuffs(answer(withLifetime({}), 'the-shipment')));
     expect(ring).toMatchObject({
       kind: 'call',
       name: 'The Shipment',
-      caller: 'an acolyte',
       glyph: '×2',
       remainingSec: 3600,
       durationSec: 3600,
@@ -84,7 +82,6 @@ describe('buildBuffs: the answered calls', () => {
   it("reads one answer's two effects as one ring, the cut in the debuff colour", () => {
     const ring = only(buildBuffs(answer(withLifetime({}), 'social-platform')));
     expect(ring.name).toBe('Social Platform');
-    expect(ring.caller).toBe('Mai');
     expect(ring.glyph).toBe('×2'); // the buff dominates the halving
     expect(ring.effects).toEqual([
       { text: 'Influence regeneration doubles', debuff: false },
@@ -134,7 +131,6 @@ describe('buildBuffs: the answered calls', () => {
     ];
     const ring = only(buildBuffs(withLifetime({ callBuffs: legacy })));
     expect(ring.name).toBe('The line');
-    expect(ring.caller).toBeUndefined();
     expect(ring.effects).toHaveLength(2); // one old answer still reads as one ring
     expect(ring.durationSec).toBe(3600);
   });
@@ -184,21 +180,7 @@ describe('ringFraction', () => {
   });
 });
 
-describe('the hover card and accessible name', () => {
-  it('labels the source kind', () => {
-    const [mal, call] = buildBuffs(
-      answer(withLifetime({ maleficiaBuffs: { defixio: 1084 } }), 'social-platform'),
-    );
-    expect(buffKindLabel(mal!)).toBe('Maleficium');
-    expect(buffKindLabel(call!)).toBe('Call · Mai');
-    const legacy = only(
-      buildBuffs(
-        withLifetime({ callBuffs: [{ field: 'goldGainMul', factor: 2, remainingSeconds: 60 }] }),
-      ),
-    );
-    expect(buffKindLabel(legacy)).toBe('Call');
-  });
-
+describe('the accessible name', () => {
   it('names a ring by its source, every effect and the short time left', () => {
     const ring = only(buildBuffs(answer(withLifetime({}), 'social-platform')));
     expect(buffAriaLabel(ring)).toBe(

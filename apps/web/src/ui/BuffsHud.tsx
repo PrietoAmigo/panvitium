@@ -1,12 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
-import {
-  buffAriaLabel,
-  buffKindLabel,
-  buildBuffs,
-  ringFraction,
-  type BuffView,
-} from '../game/buffs.js';
+import { buffAriaLabel, buildBuffs, ringFraction, type BuffView } from '../game/buffs.js';
 import { formatDuration, formatShortDuration } from '../game/format.js';
 import { PixelSprite } from '../menus/PixelRelic.js';
 import { RARITY } from '../menus/relics.js';
@@ -42,10 +36,7 @@ function RingArt({ ring }: { ring: BuffView }): ReactElement {
 function BuffCard({ ring }: { ring: BuffView }): ReactElement {
   return (
     <div className="buffs-hud-card" aria-hidden="true">
-      <div className="buffs-hud-card-head">
-        <span className="buffs-hud-card-name">{ring.name}</span>
-        <span className="buffs-hud-card-kind">{buffKindLabel(ring)}</span>
-      </div>
+      <span className="buffs-hud-card-name">{ring.name}</span>
       {ring.effects.map((e, i) => (
         <span key={i} className={'buffs-hud-card-effect' + (e.debuff ? ' is-debuff' : '')}>
           {e.text}
@@ -63,8 +54,8 @@ function BuffCard({ ring }: { ring: BuffView }): ReactElement {
  * countdown rings between the Influence and Desidia vessels, one per live single-use maleficium or
  * answered call (maleficia first, each group soonest to expire first), wrapping into a further column
  * when the band is full. Each ring drains as its timer runs down and carries the relic art (or the
- * call's multiplier) with a short countdown beneath; hovering or focusing it opens a card with the
- * source, its effect lines and the exact time left. Renders nothing while no buff runs.
+ * call's multiplier) with a short countdown beneath; hovering or focusing it opens a card with its
+ * name, its effect lines and the exact time left. Renders nothing while no buff runs.
  *
  * Reads the stable `state` and derives the rings in render (the repo's Zustand guidance); the store's
  * 10 Hz tick redraws the countdowns, and a ring leaves on the tick its buff expires. Mounting and

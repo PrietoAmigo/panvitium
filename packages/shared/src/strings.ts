@@ -82,13 +82,9 @@ export const strings = {
   // The temporary-buffs HUD: a countdown ring per live single-use maleficium or answered call, in
   // the left column between the Influence and Desidia vessels. The effect lines are not authored
   // here; they come from the maleficia catalog copy and the call-in effect generator, numbers and
-  // all. `kind` labels the source on the hover card ("Call · Mai").
+  // all.
   buffs: {
     label: 'Temporary buffs',
-    kind: {
-      maleficium: 'Maleficium',
-      call: 'Call',
-    },
     // A call buff kept from a save made before calls were named on their buffs.
     unknownCall: 'The line',
   },

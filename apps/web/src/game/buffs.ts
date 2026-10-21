@@ -25,8 +25,6 @@ export interface BuffView {
   readonly id: string;
   readonly kind: 'maleficium' | 'call';
   readonly name: string;
-  /** Who called (the big caller name, e.g. "Mai"); a call's only, when the call is known. */
-  readonly caller?: string;
   /** The relic art; a maleficium's only, when it has art (Hand of Glory has none). */
   readonly img?: string;
   /** The relic's rarity, which colours its pixel outline as in the Loculi; maleficia only. */
@@ -123,7 +121,6 @@ function callRings(state: GameState): BuffView[] {
       id: `call:${key}:${n}`,
       kind: 'call',
       name: source?.title ?? strings.buffs.unknownCall,
-      ...(source ? { caller: source.caller } : {}),
       glyph: callGlyph(buffs),
       effects: buffs.map((b) => ({
         text: describeCallBuff(b.field, b.factor),
@@ -151,13 +148,6 @@ export function buildBuffs(state: GameState): BuffView[] {
 export function ringFraction(b: BuffView): number {
   if (b.durationSec <= 0) return 0;
   return Math.min(1, Math.max(0, b.remainingSec / b.durationSec));
-}
-
-/** The hover card's source label: "Maleficium", or "Call · Mai" ("Call" when the caller is unknown). */
-export function buffKindLabel(b: BuffView): string {
-  const K = strings.buffs.kind;
-  if (b.kind === 'maleficium') return K.maleficium;
-  return b.caller ? `${K.call} · ${b.caller}` : K.call;
 }
 
 /**
