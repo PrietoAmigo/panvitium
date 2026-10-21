@@ -541,19 +541,36 @@ export const strings = {
     invocations: 'Invocations',
     generation: 'Generation',
     deaths: 'Deaths',
-    byMurder: 'by murder',
-    bySuicide: 'by suicide',
+    byMurder: 'By murder',
+    bySuicide: 'By suicide',
+    total: 'Total',
     noAcolytes: 'No acolytes recruited yet.',
     ofMax: 'of',
     playerEfficiency: 'Player action efficiency',
+    // Per-tab subtitles, set right of the tab row (the Risk tab's is `riskIntro`).
+    mainSubtitle: 'Resources, flows and the reprobate population',
+    actionsSubtitle: 'Everything acting on your behalf, right now',
+    // Main: the flow table and the reprobate deaths, both per second.
+    flows: 'Flows',
+    reprobateDeaths: 'Reprobate deaths',
+    perSecond: 'per second',
+    // Trails a headline figure's signed rate: "+1.95/s net".
+    netSuffix: 'net',
     // Flow-table column headers (Main): gross generation, the upkeep drawn against it, and the net
     // (generation minus upkeep), per second.
     upkeep: 'Upkeep',
     net: 'Net',
+    // Actions: the player's in-flight rite ("4s left") and the acolyte table's column headers.
+    left: 'left',
+    idle: 'idle',
+    efficiency: 'Efficiency',
+    action: 'Action',
+    remaining: 'Remaining',
+    progress: 'Progress',
+    invocationsNote: 'total effect, all copies',
     // The Risk tab (the Depraedatio Risk algos contract): every action's live outcome odds.
     risk: 'Risk',
     riskIntro: 'The odds of every outcome of every action, as they stand right now.',
-    riskAction: 'Action',
   },
   emails: {
     title: 'Emails',

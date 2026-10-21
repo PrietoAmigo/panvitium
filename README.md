@@ -97,7 +97,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 ## Status
 
-**Current test count: 1397** (sim 643 · shared 96 · api 20 · web 638). Save schema: **v13**.
+**Current test count: 1404** (sim 643 · shared 96 · api 20 · web 645). Save schema: **v13**.
 
 The game is mechanically complete and playable end-to-end. Phases 2 (infrastructure), 3 (gameplay)
 and 4 (content depth), the economy-parity pass, and the Phase 5 tracks that surfaced the sim, rebuilt

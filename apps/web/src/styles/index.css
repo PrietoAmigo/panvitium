@@ -2185,244 +2185,435 @@ body {
   margin-top: 0.4rem;
 }
 
-/* ---------- Analytics PC program (Phase 5.4) ---------- */
-.analytics-list,
-.analytics-rates,
-.analytics-acolytes {
+/* ─────────────────────────────────────────────────────────────────────────
+   Analytics PC program (Phase 5.4; Claude Design rework, docs/frontend/
+   Analytics_handoff.md). A mundane, printed-report corporate BI tool rendered
+   full-bleed inside the PC window (see FULLBLEED in PcWindow): a fixed header
+   (the tab row and the tab's subtitle over a heavy rule) above a scrolling page
+   of KPIs and ruled tables. Deliberately not the Counting House skin: no
+   sidebar, no rounded cards, no teal, no shadows; radius 0 throughout.
+   Ruled tables are grids with column-gap 0 whose rows are `display: contents`,
+   so every cell carries its own bottom rule and the rules run unbroken; the
+   column spacing is each non-first cell's 32px left padding.
+   ───────────────────────────────────────────────────────────────────────── */
+.an-root {
+  --an-paper: #f6f5f1;
+  --an-ink: #16181d;
+  --an-ink-2: #3d4048;
+  --an-muted: #6c6f76;
+  --an-disabled: #9a9ca2;
+  --an-rule-head: #d8d6cf;
+  --an-rule-row: #e6e4dd;
+  --an-highlight: #e9e7df;
+  --an-accent: #2f4fb0;
+  --an-neg: #b3261e;
+  --an-sans: 'IBM Plex Sans Condensed', system-ui, sans-serif;
+  --an-mono: 'JetBrains Mono', monospace;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  margin-top: 0.8rem;
-}
-.analytics-rates {
-  padding-bottom: 0.7rem;
-  margin-bottom: 0.3rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-.analytics-row {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  font-size: 0.92rem;
-}
-.analytics-row--indent {
-  padding-left: 1.2rem;
-  font-size: 0.84rem;
-  opacity: 0.85;
-}
-.analytics-label {
-  flex: 1 1 auto;
-  letter-spacing: 0.04em;
-  opacity: 0.8;
-}
-.analytics-value {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-.analytics-detail {
-  font-size: 0.78rem;
-  opacity: 0.55;
-  font-variant-numeric: tabular-nums;
-}
-.analytics-offline-note {
-  margin: 0 0 0.7rem;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  opacity: 0.65;
-  font-style: italic;
-}
-/* Generation / upkeep / net flow table (Main + Offline). A 4-column grid; each row is a
-   `display: contents` wrapper so its label + three cells drop straight into the grid tracks. */
-.analytics-flow {
-  display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  column-gap: 0.9rem;
-  row-gap: 0.3rem;
-  margin-top: 0.8rem;
-  padding-bottom: 0.7rem;
-  margin-bottom: 0.3rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-}
-.analytics-flow-row {
-  display: contents;
-}
-.analytics-flow-label {
-  letter-spacing: 0.04em;
-  opacity: 0.8;
-}
-.analytics-flow-cell {
-  text-align: right;
-  white-space: nowrap;
-}
-.analytics-flow-head .analytics-flow-label,
-.analytics-flow-head .analytics-flow-cell {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.5;
-}
-.analytics-flow-gen {
-  color: var(--candle);
-}
-.analytics-flow-up {
-  opacity: 0.7;
-}
-.analytics-flow-net {
-  font-weight: 600;
-}
-/* The Risk tab (Depraedatio Risk algos): an action x outcome-tier odds table. An 8-column grid (the
-   action, then Stellar → Apocalyptic); rows are `display: contents` so every cell lands on the same
-   tracks and the percentages align in columns. A category row spans the full width. */
-.analytics-risk-table {
-  display: grid;
-  grid-template-columns: minmax(6.5rem, 1fr) repeat(7, auto);
-  column-gap: 0.8rem;
-  row-gap: 0.3rem;
-  font-size: 0.86rem;
-  font-variant-numeric: tabular-nums;
-  overflow-x: auto;
-}
-.analytics-risk-row {
-  display: contents;
-}
-.analytics-risk-label {
-  letter-spacing: 0.04em;
-  opacity: 0.85;
-  white-space: nowrap;
-}
-.analytics-risk-cell {
-  text-align: right;
-  white-space: nowrap;
-}
-.analytics-risk-head .analytics-risk-label,
-.analytics-risk-head .analytics-risk-cell {
-  font-size: 0.66rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.55;
-}
-.analytics-risk-category {
-  grid-column: 1 / -1;
-  margin-top: 0.5rem;
-  padding-top: 0.4rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  opacity: 0.6;
-}
-.analytics-risk-tier--stellar,
-.analytics-risk-tier--excellent,
-.analytics-risk-tier--good {
-  color: var(--candle);
-}
-.analytics-risk-tier--terrible,
-.analytics-risk-tier--apocalyptic {
-  /* A lifted blood red: --blood-bright is too dark to read on the Analytics card. */
-  color: #d9584f;
-}
-.analytics-offline-windows {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.6rem;
-}
-.analytics-buffs {
-  margin-top: 0.9rem;
-}
-.analytics-rate {
-  font-size: 0.8rem;
-  color: var(--candle);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.analytics-acolyte {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  font-size: 0.9rem;
-}
-.analytics-acolyte--idle {
-  opacity: 0.5;
-}
-.analytics-acolyte-name {
-  font-family: var(--font-display, Georgia, serif);
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-.analytics-acolyte-action {
-  flex: 1 1 auto;
-  opacity: 0.9;
-}
-.analytics-acolyte-time {
-  font-variant-numeric: tabular-nums;
-  opacity: 0.8;
-  white-space: nowrap;
-}
-.analytics-bar {
-  flex-basis: 100%;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: 2px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: var(--an-paper);
+  color: var(--an-ink);
+  font-family: var(--an-sans);
   overflow: hidden;
 }
-.analytics-bar-fill {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--candle-soft), var(--candle));
-}
 
-/* ---------- Analytics → Actions tab (Player / Acolytes / Invocations) ---------- */
-.analytics-section {
-  margin-top: 1rem;
+/* ── Header: the tab row and the current tab's subtitle ── */
+.an-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 32px;
+  border-bottom: 2px solid var(--an-ink);
+  background: var(--an-paper);
 }
-.analytics-section:first-child {
-  margin-top: 0.4rem;
+.an-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
 }
-.analytics-section-title {
-  margin: 0 0 0.1rem;
-  font-family: var(--font-display, Georgia, serif);
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  opacity: 0.6;
+.an-tab {
+  font-family: var(--an-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--an-muted);
+  background: none;
+  border: none;
+  border-bottom: 4px solid transparent;
+  border-radius: 0;
+  padding: 18px 0 12px;
+  /* The 4px bar sits over the header's 2px rule. */
+  margin-bottom: -2px;
+  cursor: pointer;
 }
-/* Efficiency chip on acolyte rows. */
-.analytics-acolyte-eff {
-  font-variant-numeric: tabular-nums;
-  font-size: 0.82rem;
-  color: var(--candle);
+.an-tab:hover {
+  color: var(--an-ink);
+}
+.an-tab--active {
+  color: var(--an-ink);
+  border-bottom-color: var(--an-accent);
+}
+.an-subtitle {
+  min-width: 0;
+  padding-bottom: 14px;
+  font-family: var(--an-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--an-muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.analytics-invocations {
+/* ── The scrolling page ── */
+.an-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 28px 32px 48px;
+}
+.an-page {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.an-main,
+.an-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 36px;
 }
-.analytics-invocation {
+.an-section {
+  min-width: 0;
+}
+.an-h2 {
+  margin: 0 0 10px;
+  font-family: var(--an-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.an-h2-note {
+  font-family: var(--an-mono);
+  font-weight: 400;
+  color: var(--an-muted);
+}
+.an-empty {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--an-ink);
+  font-size: 0.92rem;
+  color: var(--an-muted);
+}
+
+/* ── KPI: a top rule, a label, the big figure, an optional cap and net rate ── */
+.an-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  column-gap: 40px;
+  row-gap: 24px;
+}
+.an-kpi {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  font-size: 0.9rem;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--an-ink);
 }
-.analytics-inv-name {
-  font-family: var(--font-display, Georgia, serif);
-  letter-spacing: 0.06em;
+.an-kpi-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.an-kpi-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.an-kpi-value {
+  font-size: 3.2rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.an-kpi-cap {
+  font-family: var(--an-mono);
+  font-size: 0.74rem;
+  color: var(--an-muted);
+}
+.an-kpi-net {
+  font-family: var(--an-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--an-accent);
+}
+.an-kpi-net--neg {
+  color: var(--an-neg);
+}
+
+/* ── Progress bar: 10px, square, accent fill on the row-rule track ── */
+.an-bar {
+  display: block;
+  height: 10px;
+  background: var(--an-rule-row);
+}
+.an-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--an-accent);
+}
+
+/* ── Ruled tables (Flows, Acolytes) ── */
+.an-table {
+  display: grid;
+  column-gap: 0;
+  border-top: 1px solid var(--an-ink);
+  font-variant-numeric: tabular-nums;
+}
+.an-tr {
+  display: contents;
+}
+.an-th {
+  padding: 8px 0 8px 32px;
+  border-bottom: 1px solid var(--an-rule-head);
+  font-size: 0.7rem;
+  color: var(--an-muted);
+}
+.an-th--strong {
+  font-weight: 600;
+  color: var(--an-ink);
+}
+.an-td {
+  padding: 12px 0 12px 32px;
+  border-bottom: 1px solid var(--an-rule-row);
+}
+.an-tr > :first-child {
+  padding-left: 0;
+}
+.an-r {
+  text-align: right;
+}
+.an-td--label {
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.an-num {
+  font-family: var(--an-mono);
+  font-size: 0.82rem;
+  color: var(--an-ink-2);
+  text-align: right;
   white-space: nowrap;
 }
-.analytics-inv-detail {
-  flex: 1 1 auto;
+.an-num--net {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--an-accent);
+}
+.an-num--net.an-num--neg {
+  color: var(--an-neg);
+}
+
+/* Main: the flows beside the reprobate deaths. */
+.an-split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 40px;
+}
+.an-flows {
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+}
+.an-ledger {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--an-ink);
+}
+.an-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--an-rule-row);
+  font-size: 0.92rem;
+}
+.an-ledger-row--total {
+  font-weight: 600;
+  border-bottom: none;
+}
+.an-ledger-val {
+  font-family: var(--an-mono);
   font-size: 0.82rem;
-  opacity: 0.78;
+  color: var(--an-neg);
+}
+.an-ledger-row--total .an-ledger-val {
+  font-size: 0.86rem;
+}
+
+/* Actions: the efficiency figure beside the player's in-flight work. */
+.an-actions-top {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr);
+  gap: 40px;
+  align-items: end;
+}
+.an-rites {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.an-rite {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--an-ink);
+}
+.an-rite-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.an-rite-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.an-rite--idle .an-rite-label {
+  color: var(--an-disabled);
+}
+.an-rite-time {
+  font-family: var(--an-mono);
+  font-size: 0.78rem;
+  color: var(--an-ink-2);
+}
+
+/* The acolyte table centres each cell's content vertically inside the stretched cell, so the row
+   rules stay continuous across the mixed type sizes. Idle acolytes read greyed throughout. */
+.an-acolytes {
+  grid-template-columns: auto auto minmax(0, 1fr) auto minmax(120px, 260px);
+}
+.an-acolytes .an-td {
+  display: flex;
+  align-items: center;
+}
+.an-acolytes .an-td.an-r {
+  justify-content: flex-end;
+}
+.an-acolytes .an-num {
+  color: var(--an-ink);
+}
+.an-td--name {
+  font-size: 0.92rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.an-td--action {
+  font-size: 0.92rem;
+}
+.an-td--bar .an-bar {
+  flex: 1 1 auto;
+}
+.an-acolytes .an-tr--idle .an-td {
+  color: var(--an-disabled);
+}
+
+/* Invocations: a ruled grid of name + live total effect. */
+.an-invocations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  column-gap: 0;
+  border-top: 1px solid var(--an-ink);
+}
+.an-inv {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 32px 12px 0;
+  border-bottom: 1px solid var(--an-rule-row);
+}
+.an-inv-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.an-inv-effect {
+  font-family: var(--an-mono);
+  font-size: 0.78rem;
+  color: var(--an-ink-2);
+}
+
+/* ── Risk (the Depraedatio Risk algos contract): action × outcome-tier odds ── */
+.an-risk-wrap {
+  overflow-x: auto;
+}
+.an-risk {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) repeat(7, minmax(70px, auto));
+  min-width: 720px;
+  border-top: 1px solid var(--an-ink);
   font-variant-numeric: tabular-nums;
+}
+.an-risk-row {
+  display: contents;
+}
+.an-risk-label {
+  padding: 10px 10px 10px 0;
+  border-bottom: 1px solid var(--an-rule-row);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.an-risk-cell {
+  padding: 10px;
+  border-bottom: 1px solid var(--an-rule-row);
+  font-family: var(--an-mono);
+  font-size: 0.82rem;
+  text-align: right;
+}
+.an-risk-head .an-risk-label,
+.an-risk-head .an-risk-cell {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  border-bottom-color: var(--an-ink);
+  font-size: 0.7rem;
+}
+.an-risk-head .an-risk-label {
+  font-weight: 400;
+  color: var(--an-muted);
+}
+.an-risk-head .an-risk-cell {
+  font-family: var(--an-sans);
+  font-weight: 600;
+}
+.an-risk-group {
+  grid-column: 1 / -1;
+  padding: 16px 0 6px;
+  border-bottom: 1px solid var(--an-rule-head);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--an-muted);
+}
+/* The likeliest outcome of each action. */
+.an-risk-cell--top {
+  font-weight: 600;
+  background: var(--an-highlight);
+}
+.an-tier--stellar,
+.an-tier--excellent,
+.an-tier--good {
+  color: var(--an-accent);
+}
+.an-tier--neutral,
+.an-tier--bad {
+  color: var(--an-ink-2);
+}
+.an-tier--terrible,
+.an-tier--apocalyptic {
+  color: var(--an-neg);
 }
 
 /* ---------- Emails PC program (Phase 5.2) ---------- */
@@ -2512,14 +2703,6 @@ body {
   color: var(--gold-leaf);
   text-shadow: 0 0 12px rgba(201, 162, 39, 0.35);
   pointer-events: none;
-}
-
-/* Analytics → Main tab: the ambient status moved off the HUD. */
-.analytics-main {
-  margin-top: 0.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
 }
 
 /* ── Launch title menu ──────────────────────────────────────────────────────
