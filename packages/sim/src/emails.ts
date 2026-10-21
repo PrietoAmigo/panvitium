@@ -22,7 +22,6 @@
 import { gte, bn } from './bignum.js';
 import { sinLevel } from './progression.js';
 import { relationshipTier } from './syngraphae.js';
-import { mintSouls } from './population.js';
 import { callPlaced } from './phone.js';
 import { SINS, type GameState, type ReceivedEmail } from './state.js';
 
@@ -356,7 +355,7 @@ export function unreadCount(state: GameState): number {
 
 /**
  * Apply the persistent consequence of answering an email (05 reply effects). Pure and deterministic;
- * idempotent where it mutates permanent flags / mints souls, so re-answering the same email never
+ * idempotent (each branch only sets a permanent flag), so re-answering the same email never
  * double-applies. The human-readable spec for each branch is the reply's `effect` string in the
  * strings catalog (`strings.emails.catalog[id].replies[idx].effect`).
  */
@@ -365,11 +364,11 @@ export function applyEmailReplyEffect(state: GameState, id: string, replyIdx: nu
     // Father Tom #2, answer (2): the cruel reply turns the priest mad against the player.
     case 'fr-tom-2':
       return replyIdx === 1 ? { ...state, flagFatherMad: true } : state;
-    // Reuben #2 / #3, answer (2): agreeing to "meet and explain" ends the mason — +1 soul minted,
-    // and the flag stops the later Reuben letters. Guarded so re-answering can't mint twice.
+    // Reuben #2 / #3, answer (2): agreeing to "meet and explain" ends the mason, and the flag stops
+    // the later Reuben letters. No soul: he dies uncorrupted, so there is nothing to claim.
     case 'reuben-2':
     case 'reuben-3':
-      return replyIdx === 1 ? meetReuben(state) : state;
+      return replyIdx === 1 ? { ...state, flagReubenDead: true } : state;
     // Fausto #1, answer (1): the threat reply closes the friendly branch (#2/#3 never fire).
     case 'fausto-1':
       return replyIdx === 0
@@ -380,16 +379,10 @@ export function applyEmailReplyEffect(state: GameState, id: string, replyIdx: nu
   }
 }
 
-/** Agreeing to meet Reuben: mint one soul and set the flag, once. Idempotent on the flag. */
-function meetReuben(state: GameState): GameState {
-  if (reubenDead(state)) return state; // already resolved — no double-mint on a re-answer
-  return { ...mintSouls(state, 1), flagReubenDead: true };
-}
-
 /**
  * Record the player's chosen reply to an email: store the reply index, mark the message read if it
  * wasn't, then apply the reply effect. Idempotent — re-answering overwrites the recorded index and
- * re-runs the (guarded) effect. No-op (same reference) if the id isn't a live inbox entry.
+ * re-runs the (idempotent) effect. No-op (same reference) if the id isn't a live inbox entry.
  */
 export function answerEmail(
   state: GameState,

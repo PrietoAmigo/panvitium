@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bn, gt } from './bignum.js';
+import { bn } from './bignum.js';
 import { createInitialState, SINS, type GameState } from './state.js';
 import { devotionForLevel } from './progression.js';
 import {
@@ -148,15 +148,18 @@ describe('emails — reply effects', () => {
     expect(applyEmailReplyEffect(s, 'fr-tom-2', 1).flagFatherMad).toBe(true);
   });
 
-  it('agreeing to meet Reuben mints exactly one soul and is idempotent', () => {
+  it('agreeing to meet Reuben ends the mason without minting a soul (he is not corrupted)', () => {
     const s = createInitialState('seed', 0);
-    const once = applyEmailReplyEffect(s, 'reuben-2', 1);
-    expect(once.flagReubenDead).toBe(true);
-    expect(gt(once.souls, s.souls)).toBe(true);
-    expect(once.souls.toNumber()).toBe(1);
-    // Re-answering (or answering reuben-3 too) does not mint again.
-    const twice = applyEmailReplyEffect(once, 'reuben-3', 1);
-    expect(twice.souls.toNumber()).toBe(1);
+    for (const id of ['reuben-2', 'reuben-3']) {
+      const met = applyEmailReplyEffect(s, id, 1);
+      expect(met.flagReubenDead).toBe(true);
+      expect(met.souls.toNumber()).toBe(0);
+      expect(met.totalSoulsObtained.toNumber()).toBe(0);
+    }
+    // Re-answering (or answering reuben-3 too) still mints nothing.
+    const twice = applyEmailReplyEffect(applyEmailReplyEffect(s, 'reuben-2', 1), 'reuben-3', 1);
+    expect(twice.flagReubenDead).toBe(true);
+    expect(twice.souls.toNumber()).toBe(0);
   });
 
   it('Fausto #1 threat reply closes the friendly branch (#2/#3 suppressed)', () => {

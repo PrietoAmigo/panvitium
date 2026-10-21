@@ -57,8 +57,8 @@ additive-optional pattern.
 - **`flagFCThreatSent`**: default 0. Set to 1 when the threat reply to Fausto Cescru #1 (Answer 1) is
   sent, which closes the friendly branch — #2 and #3 never fire, and the arc routes to #4/#5. Left
   unsent it stays 0, and the friendly branch (#2/#3) opens.
-- **`flagReubenDead`**: default 0. Set to 1 (and +1 soul minted) by Reuben Marsh #2 Answer (2) or
-  Reuben Marsh #3 Answer (2).
+- **`flagReubenDead`**: default 0. Set to 1 by Reuben Marsh #2 Answer (2) or Reuben Marsh #3
+  Answer (2). No soul is minted: Reuben dies uncorrupted, so there is no soul to claim.
 - **`flagFaustoCurse`**: default false. New. Set true on receipt of Fausto Cescru #4. While true,
   reprobate generation rate, influence gain rate and gold gain rate are each multiplied by 0.33 (a
   67% reduction). The debuff is shown in the HUD. Deleting Fausto #4 sets it false and clears the
@@ -635,8 +635,8 @@ built. None carry mechanical effects unless stated.
   > Reuben Marsh
 - **Answers:**
   - (1) "If you contact me again I'll call the police.". No mechanical effect.
-  - (2) "You're right about everything, let's meet and I'll explain.". Effect: +1 soul (mint 1), set
-    `flagReubenDead = 1`.
+  - (2) "You're right about everything, let's meet and I'll explain.". Effect: set `flagReubenDead = 1`
+    (no soul: he dies uncorrupted).
 - **Trigger:** 39 minutes after `totalSinLevel >= 15`.
 - *Author note: the first letters of the sentences spell **OBSIDIAN**, the coded easter egg, and the
   "black slab" line foreshadows the obsidian monolith that pays off in #4.*
@@ -660,8 +660,8 @@ built. None carry mechanical effects unless stated.
 - **Answers:**
   - (1) "Stop writing to me. Go pester your Spanish friend and leave me out of your maps.". No
     mechanical effect.
-  - (2) "You're right about everything, let's meet and I'll explain.". Effect: +1 soul (mint 1), set
-    `flagReubenDead = 1`.
+  - (2) "You're right about everything, let's meet and I'll explain.". Effect: set `flagReubenDead = 1`
+    (no soul: he dies uncorrupted).
 - **Trigger:** 39 minutes after `totalSinLevel >= 25`, while `flagReubenDead = 0`.
 
 ### Reuben Marsh #4
