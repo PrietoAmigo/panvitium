@@ -320,11 +320,6 @@ body {
     kat-seal-vibe-strong 0.07s linear infinite,
     kat-seal-breathe-armed 1s ease-in-out infinite;
 }
-/* The seal of Semet (the Ninth named): gold art at its own aspect; the same pulse, shake and armed
-   growth as the Katabasis sigil. Its gold glow is painted by the pass (altarGlow.ts). */
-.altar-sigil-btn.is-semet .altar-sigil-glyph {
-  aspect-ratio: 90 / 98;
-}
 /* Reduced motion: no vibration, no pulse; the glow holds still at the look's first keyframe, and
    the armed seal stays visibly larger. */
 @media (prefers-reduced-motion: reduce) {

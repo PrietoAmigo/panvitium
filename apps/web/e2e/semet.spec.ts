@@ -85,7 +85,7 @@ test('the seal of Semet ends the game and returns to the title over a fresh save
   await clickAltar(page);
   const seal = page.getByRole('button', { name: 'Press the seal of Semet' });
   await expect(seal).toBeVisible();
-  await expect(page.locator('.altar-sigil img[src*="sigils/32.png"]')).toBeVisible();
+  await expect(page.locator('.altar-sigil img[src*="seal-semet"]')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Status Quo' })).toHaveCount(0);
 
   await seal.click();

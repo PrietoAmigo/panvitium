@@ -1370,9 +1370,9 @@ end is now the altar's, not a ritual's.
   It still opens the ward call (`the-ward`) with the parish bulletins, so the Stahl arc and *The Last
   Rite* stay reachable.
 - **The seal of Semet.** Once Semet is named (`eternalSinRevealed`), clicking the altar raises the
-  golden seal of Semet (sigil #32's art) in the Katabasis sigil's place, through the same show → arm
-  → commit machine (`useAltarSigil`), with its glow painted through the pass in gold
-  (`altarGlow.ts`) and **no STATUS QUO** beneath it. The first press arms it; the second ends the
+  golden seal of Semet (`seal-semet.png`, #32's seal drawn at the Katabasis seal's size) in the
+  Katabasis sigil's place, through the same show → arm → commit machine (`useAltarSigil`), with its
+  glow painted through the pass in gold (`altarGlow.ts`) and **no STATUS QUO** beneath it. The first press arms it; the second ends the
   game (`PanvitiumEnd`): black over everything, the gold PANVITIUM wordmark after 1 s, set exactly
   where the title menu sets it, then after 5 s the save is wiped (as New Game, `returnToTitle`) and
   the title menu rises beneath as the black lifts over 1.2 s. Calls, subliminals and the Unveiling
