@@ -100,7 +100,12 @@ test('chooses a Tier I contract with the two-step confirm (free, one per tier)',
   // Reach Relationship Tier I: 100 gold in reserve.
   await page.getByLabel('Deposit to reserve').fill('100');
   await page.getByRole('button', { name: 'Deposit', exact: true }).click();
-  await page.getByRole('button', { name: 'Contracts' }).click();
+  // The header switch (not the sidebar nav, which carries a second "Contracts" button).
+  await page
+    .getByRole('group', { name: 'Switch view' })
+    .getByRole('button', { name: 'Contracts' })
+    .click();
+  await expect(page.locator('.ch-view-title')).toHaveText('Contracts');
 
   // Three relationship-tier rows of three contracts each.
   await expect(page.locator('.ch-tier')).toHaveCount(3);

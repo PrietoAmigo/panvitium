@@ -209,7 +209,8 @@ export const strings = {
     // Header bar
     portfolioSubtitle: 'Depraedatio \u00b7 discretionary managed account',
     contractsSubtitle: 'Standing terms with the counting house',
-    transferFunds: 'Transfer funds',
+    /** Accessible label of the header's Portfolio / Contracts switch. */
+    viewSwitch: 'Switch view',
     togglePrivacy: 'Toggle privacy',
 
     // Balance summary card
@@ -321,7 +322,10 @@ export const strings = {
       'custody-vip': 'Custody VIP',
       'risk-algos': 'Risk algos',
     } as Record<string, string>,
-    /** One line per contract, shown on its card. Numbers first, so the gain is never a riddle. */
+    /**
+     * One line per contract, shown on its card. Numbers first, so the gain is never a riddle; the
+     * Tier III lines (PI, Custody VIP, Risk algos) are deliberately terse banking blurbs instead.
+     */
     contractEffects: {
       'interest-rate': 'Interest rate \u00d71.33.',
       'long-term': 'Interest rate +10% per hour since account inception.',
@@ -329,11 +333,9 @@ export const strings = {
       compounding: 'Surrender charge increased by 50%. 1% of interest is reinvested automatically.',
       vesting: '1% of the reserve vests to cash each second as interest, free of surrender charge.',
       annuity: 'Interest rate \u00d71.1666. Manual surrender is barred.',
-      pi: 'Automatic asset tracing: a free Indagatio every 2.5 minutes. Only Desidia hastens it.',
-      'custody-vip':
-        'Private item safe: one maleficium, stored from the Loculi, passes the next Katabasis with 100% chance.',
-      'risk-algos':
-        'Risk analytics: the odds of every outcome of every action, in a new Analytics tab.',
+      pi: 'Asset tracing.',
+      'custody-vip': 'Private single-item safe.',
+      'risk-algos': 'Risk analytics enablement with proprietary algorithms.',
     } as Record<string, string>,
   },
   acolytes: {
