@@ -1,0 +1,32 @@
+name: Render Steam capsule concepts
+
+on:
+  push:
+    branches:
+      - design/steam-header-capsule-options
+    paths:
+      - marketing/steam-capsules/**
+      - .github/workflows/render-steam-capsules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install art dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-ebgaramond
+          python3 -m pip install --quiet --break-system-packages Pillow numpy
+      - name: Render both 920x430 PNGs
+        run: python3 marketing/steam-capsules/render.py
+      - name: Upload capsules
+        uses: actions/upload-artifact@v4
+        with:
+          name: panvitium-steam-header-options
+          path: marketing/steam-capsules/output/*.png
+          retention-days: 30
