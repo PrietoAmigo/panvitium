@@ -236,6 +236,26 @@ describe('offline Desidia (re-homed doing-nothing buff, ADR-034)', () => {
   });
 });
 
+describe('applyCallEffects — the setFlag story effect', () => {
+  const imperium: CallInEffect[] = [{ kind: 'setFlag', flag: 'flagMarenDead' }];
+
+  it('sets the permanent flag, touching nothing else (no RNG, no resources)', () => {
+    const base = stateWith();
+    const next = applyCallEffects(base, imperium, 'the-ward');
+    expect(next.flagMarenDead).toBe(true);
+    expect(base.flagMarenDead).toBeUndefined();
+    expect(next.rngState).toBe(base.rngState);
+    expect(next.lifetime).toBe(base.lifetime);
+    expect(next.souls).toBe(base.souls);
+  });
+
+  it('is idempotent and survives Katabasis', () => {
+    const once = applyCallEffects(stateWith(), imperium);
+    expect(applyCallEffects(once, imperium)).toBe(once);
+    expect(commitKatabasis(once).state.flagMarenDead).toBe(true);
+  });
+});
+
 describe('markCallAnswered — the permanent answered-calls record', () => {
   it('appends the id in answer order, leaving the input untouched (pure)', () => {
     const base = createInitialState('seed', 0);

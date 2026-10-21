@@ -40,7 +40,6 @@ import {
   ACHIEVEMENTS,
   isUnlocked,
   unreadCount,
-  dialCode,
   type OutcomeEvent,
   type Tier,
 } from '@panvitium/sim';
@@ -826,14 +825,27 @@ export function PcDesk({ onClose }: { onClose: () => void }): ReactElement {
 /**
  * The Studio desk smartphone (Claude Design, Direction A). A self-framed full-screen overlay (mounted
  * by App like Magna Goetia / the PC / the Chthonic Logos, NOT via PanelShell): the player keys a code on
- * the dialer and submits it. The sim owns the valid-code set (`dialCode`); this wrapper turns the
- * sim's outcome into the toast the dialer renders, with copy from `strings`. The boon EFFECTS are a
- * documented empty hook awaiting the outgoing-call engine (docs/PANVITIUM-CALLS-OUT.md) — today a
- * recognized code only surfaces its placeholder copy and changes no game state.
+ * the dialer and submits it. The sim owns the valid-code set and the outgoing calls; the store's
+ * `dial` applies a number to the game. A number that connects hands its call to `onCall` (App closes
+ * the dialer and raises the call stage, docs/PANVITIUM-CALLS-OUT.md); anything else becomes the toast
+ * the dialer renders, with copy from `strings`. The boon EFFECTS of plain codes are still a
+ * documented empty hook: a recognized code only surfaces its copy.
  */
-export function PhoneDialer({ onClose }: { onClose: () => void }): ReactElement {
+export function PhoneDialer({
+  onClose,
+  onCall,
+}: {
+  onClose: () => void;
+  /** A dialled number connected: place the outgoing call `callId`. */
+  onCall: (callId: string) => void;
+}): ReactElement {
+  const dial = useGameStore((s) => s.dial);
   const onDial = (raw: string): DialResult => {
-    const outcome = dialCode(raw);
+    const outcome = dial(raw);
+    if (outcome.kind === 'call') {
+      onCall(outcome.callId);
+      return { kind: 'boon', message: '' };
+    }
     if (outcome.kind === 'error') {
       // A recognized joke number (e.g. 666) carries its own copy; an unknown number is rejected.
       const message = outcome.code
@@ -841,7 +853,8 @@ export function PhoneDialer({ onClose }: { onClose: () => void }): ReactElement 
         : strings.phone.unrecognized;
       return { kind: 'error', message };
     }
-    // TODO(wire): apply the code's real effect through the store once the call engine lands.
+    // A one-shot line dialled again rings out (`info`, its own copy keyed by the number). A plain
+    // boon code still only shows its copy: its effect is a hook for the outgoing-call engine.
     return { kind: outcome.kind, message: strings.phone.codes[outcome.code] ?? '' };
   };
   return <SmartphoneDialer onClose={onClose} onDial={onDial} />;

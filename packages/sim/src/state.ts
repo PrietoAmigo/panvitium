@@ -369,6 +369,22 @@ export interface GameState {
    */
   callsAnswered?: string[];
   /**
+   * Ids of the outgoing calls the player has placed from the Studio phone (a dialled number that
+   * connected, docs/PANVITIUM-CALLS-OUT.md), deduped, in the order placed. A one-shot line connects
+   * once: dialled again after it is recorded here, nobody answers. It is also the trigger record for
+   * what a call sets in motion (placing `the-rectory` arms Father Greaves's letter). Recorded through
+   * `placeCall`. Permanent (carried across Katabasis), additive-optional on the wire (ADR-023);
+   * absent ≡ empty.
+   */
+  callsPlaced?: string[];
+  /**
+   * Set true once the player answers Father Emil Stahl's call (`the-ward`) with Imperium, reminding
+   * him of Clare Ashby and commanding him, beside Maren Holt in the hospital ward. Delivers the local
+   * news of the murder-suicide and its achievement. Permanent (a game-long story flag), carried
+   * across lifetimes. Additive-optional on the wire (ADR-023); absent ≡ false.
+   */
+  flagMarenDead?: boolean;
+  /**
    * Set true once the empty-handed warning has played: when the player commits the playthrough's
    * first Katabasis holding no souls, the descent is stopped and "I should not descend
    * empty-handed." shows instead (Claude Design "Empty-Handed Warning" handoff). Once set, the next

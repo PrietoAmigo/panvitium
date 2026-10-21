@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildCallInView,
+  buildCallOutView,
   callInSource,
   pickIncomingCall,
   isCallEligible,
@@ -15,9 +16,11 @@ import {
   describeCallInEffects,
   type CallEligibilityContext,
 } from './callIn.js';
-import type { CallInEffect } from '../menus/calls-in.data.js';
-import { CALLS_IN, CALL_IN_BY_ID, isOnceOnly } from '../menus/calls-in.data.js';
-import { strings } from '@panvitium/shared';
+import type { CallInChoiceData, CallInEffect } from '../menus/calls-in.data.js';
+import { CALLS_IN, CALL_IN_BY_ID, choiceAtPath, isOnceOnly } from '../menus/calls-in.data.js';
+import { CALLS_OUT } from '../menus/calls-out.data.js';
+import { CALL_OUTS } from '@panvitium/sim';
+import { strings, type CallChoiceCopy } from '@panvitium/shared';
 
 /** A deterministic `random` that replays a fixed queue (then holds its last value). */
 function seq(values: number[]): () => number {
@@ -27,7 +30,13 @@ function seq(values: number[]): () => number {
 
 /** A permissive context (fresh game): no descents, Fausto friendly, no mail. */
 function freshCtx(over: Partial<CallEligibilityContext> = {}): CallEligibilityContext {
-  return { katabasisCount: 0, fcFriendly: true, receivedEmailIds: new Set(), ...over };
+  return {
+    katabasisCount: 0,
+    fcFriendly: true,
+    receivedEmailIds: new Set(),
+    unlockedActions: new Set(),
+    ...over,
+  };
 }
 
 describe('buildCallInView', () => {
@@ -64,14 +73,129 @@ describe('buildCallInView', () => {
     expect(v!.choices[2]!.dim).toBe(true); // "Let it go"
   });
 
-  it('every catalogue call has matching strings with the same choice count', () => {
+  it('every catalogue call has matching strings with the same choice count, at every beat', () => {
     for (const data of CALLS_IN) {
       const copy = strings.phone.callIn.calls[data.id];
       expect(copy, `strings for ${data.id}`).toBeDefined();
-      expect(copy!.choices.length, `choice count for ${data.id}`).toBe(data.choices.length);
+      expectParity(data.id, data.choices, copy!.choices);
       const v = buildCallInView(data.id);
       expect(v, `view for ${data.id}`).not.toBeNull();
       expect(v!.choices).toHaveLength(data.choices.length);
+    }
+  });
+
+  it('opens on the call id as its recording and is skippable unless the catalogue says not', () => {
+    const v = buildCallInView('the-cycle-turns')!;
+    expect(v.recording).toBe('the-cycle-turns');
+    expect(v.skippable).toBe(true);
+    expect(buildCallInView('the-ward')!.skippable).toBe(false);
+  });
+});
+
+/** Pin the strings to the catalogue choice for choice, down every beat a pick leads to. */
+function expectParity(
+  where: string,
+  data: readonly CallInChoiceData[],
+  copy: readonly CallChoiceCopy[],
+): void {
+  expect(copy.length, `choice count for ${where}`).toBe(data.length);
+  data.forEach((c, i) => {
+    const text = copy[i]!;
+    expect(text.label.length, `label for ${where}[${i}]`).toBeGreaterThan(0);
+    expect(text.next !== undefined, `next beat for ${where}[${i}]`).toBe(c.next !== undefined);
+    if (c.next && text.next) expectParity(`${where}[${i}]`, c.next.choices, text.next.choices);
+  });
+}
+
+describe('the ward (Father Stahl): Imperium', () => {
+  const wardCtx = (emails: string[], imperium = true): CallEligibilityContext =>
+    freshCtx({
+      receivedEmailIds: new Set(['fr-stahl-2', 'parish-1', 'parish-2', ...emails]),
+      unlockedActions: new Set(imperium ? ['suggestion', 'logismoi', 'imperium'] : ['suggestion']),
+    });
+
+  it('offers only "Hang up" until Father Greaves has written, keeping catalogue indices', () => {
+    const before = buildCallInView('the-ward', wardCtx([]))!;
+    expect(before.choices.map((c) => [c.index, c.label])).toEqual([[1, 'Hang up']]);
+
+    const after = buildCallInView('the-ward', wardCtx(['fr-greaves-1']))!;
+    expect(after.choices.map((c) => [c.index, c.label])).toEqual([
+      [0, 'Memento Claram, Aemili'],
+      [1, 'Hang up'],
+    ]);
+  });
+
+  it('also needs the Imperium rite unlocked, letter or not', () => {
+    const locked = buildCallInView('the-ward', wardCtx(['fr-greaves-1'], false))!;
+    expect(locked.choices.map((c) => c.label)).toEqual(['Hang up']);
+  });
+
+  it('names Clare, holds three seconds of silence, then offers [IMPERIUM], which ends in its recording', () => {
+    const memento = buildCallInView('the-ward', wardCtx(['fr-greaves-1']))!.choices[0]!;
+    expect(memento.sub).toBeUndefined();
+    expect(memento.next).toEqual({
+      recording: null,
+      silenceSec: 3,
+      line: '',
+      choices: [
+        {
+          index: 0,
+          label: '[IMPERIUM]',
+          dim: false,
+          next: { recording: 'imperium', silenceSec: 0, line: '', choices: [] },
+        },
+      ],
+    });
+  });
+
+  it('puts the story flag on [IMPERIUM] alone (catalogue path [0, 0])', () => {
+    const ward = CALL_IN_BY_ID['the-ward']!;
+    expect(choiceAtPath(ward.choices, [0])!.effects).toBeUndefined();
+    expect(choiceAtPath(ward.choices, [0, 0])!.effects).toEqual([
+      { kind: 'setFlag', flag: 'flagMarenDead' },
+    ]);
+    expect(choiceAtPath(ward.choices, [1])!.dim).toBe(true);
+    expect(choiceAtPath(ward.choices, [0, 1])).toBeUndefined();
+    expect(choiceAtPath(ward.choices, [2])).toBeUndefined();
+  });
+
+  it('shows every option with no context (no gate) and numbers ungated calls by position', () => {
+    expect(buildCallInView('the-ward')!.choices).toHaveLength(2);
+    expect(buildCallInView('eager-hands', freshCtx())!.choices.map((c) => c.index)).toEqual([
+      0, 1, 2,
+    ]);
+  });
+});
+
+describe('buildCallOutView (calls placed from the dialer)', () => {
+  it('joins the rectory call: Father Anselm twice, one answer each', () => {
+    const v = buildCallOutView('the-rectory')!;
+    expect(v.class).toBe('call-out');
+    expect(v.audio).toBe(true);
+    expect(v.recording).toBe('father_anselm_1');
+    expect(v.caller).toBe('982 079');
+    expect(v.line).toBe('Father Anselm speaking.');
+    expect(v.choices).toHaveLength(1);
+    const ask = v.choices[0]!;
+    expect(ask.label).toBe('Scratches on a wall, tells you something?');
+    expect(ask.next?.recording).toBe('father_anselm_2');
+    expect(ask.next?.choices.map((c) => c.label)).toEqual([
+      "Apologies. In case you have more information, here's my email [...]",
+    ]);
+    expect(ask.next?.choices[0]!.next).toBeUndefined(); // the last answer ends the call
+  });
+
+  it('returns null for an unknown id', () => {
+    expect(buildCallOutView('no-such-call')).toBeNull();
+  });
+
+  it('every sim call-out has a stage entry and matching strings, at every beat', () => {
+    for (const def of CALL_OUTS) {
+      const data = CALLS_OUT.find((c) => c.id === def.id);
+      expect(data, `stage entry for ${def.id}`).toBeDefined();
+      const copy = strings.phone.callOut.calls[def.id];
+      expect(copy, `strings for ${def.id}`).toBeDefined();
+      expectParity(def.id, data!.choices, copy!.choices);
     }
   });
 });

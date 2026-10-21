@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useGameLoop } from './game/useGameLoop.js';
 import { useIncomingCall } from './game/useIncomingCall.js';
 import { useAltarSigil } from './game/useAltarSigil.js';
-import { buildCallInView, eligibleCallIds } from './game/callIn.js';
+import { buildCallInView, buildCallOutView, eligibleCallIds } from './game/callIn.js';
 import { ROOMS } from './menus/menus.data.js';
 import { RoomView } from './menus/RoomView.js';
 import { SmartphoneCallIn } from './menus/SmartphoneCallIn.js';
@@ -30,6 +30,8 @@ import { useRandomSubliminals } from './game/useRandomSubliminals.js';
 import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
 import { audio, summonCue } from './audio/audio.js';
+import { strings } from '@panvitium/shared';
+import { ACTIONS, actionUnlocked } from '@panvitium/sim';
 
 /**
  * The full-screen Magna Goetia grimoire, wired to real state. Kept as its own subscriber so its
@@ -66,6 +68,10 @@ export function App(): ReactElement {
   // The incoming call the player has answered (its id), shown as the full-screen call-in stage; null
   // when no call is on the line.
   const [answeredCall, setAnsweredCall] = useState<string | null>(null);
+  // The outgoing call the player placed from the dialer (docs/PANVITIUM-CALLS-OUT.md), played on the
+  // same stage; null when none. At most one of the two is ever set: the line is busy while either is.
+  const [placedCall, setPlacedCall] = useState<string | null>(null);
+  const onCall = answeredCall !== null || placedCall !== null;
   const katabasisPhase = useGameStore((s) => s.katabasisPhase);
   const openKatabasis = useGameStore((s) => s.openKatabasis);
   const beginKatabasis = useGameStore((s) => s.beginKatabasis);
@@ -83,6 +89,15 @@ export function App(): ReactElement {
   const inboxKey = useGameStore((s) =>
     s.state ? s.state.lifetime.inbox.map((e) => e.id).join('|') : '',
   );
+  // The unlocked Opera actions, as a stable join (changes only when a Sin level unlocks a rite).
+  const unlockedKey = useGameStore((s) => {
+    const state = s.state;
+    if (!state) return '';
+    return Object.values(ACTIONS)
+      .filter((def) => actionUnlocked(state, def))
+      .map((def) => def.id)
+      .join('|');
+  });
 
   // The Studio's red "panvitium" glow while that ritual runs (03 §2.3).
   const signature = useGameStore(
@@ -180,21 +195,24 @@ export function App(): ReactElement {
     katabasisPhase === null &&
     !titleOpen &&
     room === 'studio' &&
-    answeredCall === null &&
+    !onCall &&
     !jumpscare &&
     !emptyHandedWarning;
-  // Only calls whose requirements are met may be drawn (e.g. the mutually-exclusive Succubus/Astiwihad
-  // lines, gated on the Fausto branch). Memoised off the primitive inputs so it changes only when the
+  // The requirement context, read both by the draw and by the answered call's gated options (the
+  // Imperium answer to Father Stahl). Memoised off the primitive inputs so it changes only when the
   // gated state does, not every tick.
-  const eligibleIds = useMemo(
-    () =>
-      eligibleCallIds({
-        katabasisCount,
-        fcFriendly,
-        receivedEmailIds: new Set(inboxKey ? inboxKey.split('|') : []),
-      }),
-    [katabasisCount, fcFriendly, inboxKey],
+  const callCtx = useMemo(
+    () => ({
+      katabasisCount,
+      fcFriendly,
+      receivedEmailIds: new Set(inboxKey ? inboxKey.split('|') : []),
+      unlockedActions: new Set(unlockedKey ? unlockedKey.split('|') : []),
+    }),
+    [katabasisCount, fcFriendly, inboxKey, unlockedKey],
   );
+  // Only calls whose requirements are met may be drawn (e.g. the mutually-exclusive Succubus/Astiwihad
+  // lines, gated on the Fausto branch).
+  const eligibleIds = useMemo(() => eligibleCallIds(callCtx), [callCtx]);
   const answeredIds = useMemo(
     () => new Set(answeredKey ? answeredKey.split('|') : []),
     [answeredKey],
@@ -210,25 +228,27 @@ export function App(): ReactElement {
   const flashSubliminal = useGameStore((s) => s.flashSubliminal);
   const dismissSubliminal = useGameStore((s) => s.dismissSubliminal);
   useRandomSubliminals(
-    ready &&
-      !titleOpen &&
-      katabasisPhase === null &&
-      answeredCall === null &&
-      !jumpscare &&
-      !emptyHandedWarning,
+    ready && !titleOpen && katabasisPhase === null && !onCall && !jumpscare && !emptyHandedWarning,
     flashSubliminal,
   );
-  const callInView = answeredCall ? buildCallInView(answeredCall) : null;
-  // Defensive: an answered id that has no view (would never happen for catalogue ids) must not strand
-  // the line — clear it so a new call can ring.
+  const callInView = answeredCall
+    ? buildCallInView(answeredCall, callCtx)
+    : placedCall
+      ? buildCallOutView(placedCall)
+      : null;
+  // Defensive: a call id that has no view (would never happen for catalogue ids) must not strand the
+  // line — clear it so a new call can ring.
   useEffect(() => {
-    if (answeredCall !== null && callInView === null) setAnsweredCall(null);
-  }, [answeredCall, callInView]);
-  // Decode the answered plate while the call is still ringing, so the degraded answering scene paints
-  // on its first frame when the player picks up (no black flash).
+    if (onCall && callInView === null) {
+      setAnsweredCall(null);
+      setPlacedCall(null);
+    }
+  }, [onCall, callInView]);
+  // Decode the answered plate while a call is ringing or the dialer is open, so the degraded answering
+  // scene paints on its first frame when the player picks up or a dialled number connects.
   useEffect(() => {
-    if (ringing !== null) preloadImage(CALL_PLATE_ANSWERING);
-  }, [ringing]);
+    if (ringing !== null || panel === 'phone') preloadImage(CALL_PLATE_ANSWERING);
+  }, [ringing, panel]);
 
   const handleAction = (action: HotspotAction): void => {
     // While armed, the player's very next interaction is replaced by the one-time Doppelgänger scare
@@ -276,17 +296,9 @@ export function App(): ReactElement {
   // both hold `katabasisPhase !== null`), and not behind the launch title menu. It mounts at the app
   // level (below) so it layers over those menu overlays rather than under them.
   const hudVisible =
-    katabasisPhase === null &&
-    room !== 'altar' &&
-    panel !== 'pc' &&
-    answeredCall === null &&
-    !titleOpen;
+    katabasisPhase === null && room !== 'altar' && panel !== 'pc' && !onCall && !titleOpen;
   const unveilingVisible =
-    katabasisPhase === null &&
-    answeredCall === null &&
-    !jumpscare &&
-    !emptyHandedWarning &&
-    !titleOpen;
+    katabasisPhase === null && !onCall && !jumpscare && !emptyHandedWarning && !titleOpen;
 
   return (
     <div className="app">
@@ -323,20 +335,36 @@ export function App(): ReactElement {
       {panel === 'magna-goetia' && <GoetiaBook onClose={closePanel} />}
       {panel === 'pc' && <PcDesk onClose={closePanel} />}
       {panel === 'logos' && <ChthonicLogos onClose={closePanel} />}
-      {panel === 'phone' && <PhoneDialer onClose={closePanel} />}
-      {/* The answered incoming call — a full-screen stage that takes over until the call resolves.
-          Keyed by id so each call mounts fresh (its FSM starts at the answer). `onChoose` applies the
+      {panel === 'phone' && (
+        <PhoneDialer
+          onClose={closePanel}
+          onCall={(id) => {
+            setPanel(null);
+            setPlacedCall(id);
+          }}
+        />
+      )}
+      {/* The call on the line — a full-screen stage that takes over until the call resolves: an
+          answered incoming call, or an outgoing one placed from the dialer. Keyed by id so each call
+          mounts fresh (its FSM starts at the answer). For an incoming call `onChoose` applies the
           picked option's effects to the game state (docs/PANVITIUM-CALLS-IN.md): a timed buff, a
-          one-shot cost/cull, or a permanent maxInfluence raise. A decline resolves with no effect. */}
+          one-shot cost/cull, a permanent maxInfluence raise or a story flag. Options are looked up by
+          their catalogue path (a gated option may be hidden, and a pick may lead to a further beat). A
+          decline resolves with no effect; an outgoing call's work was done when it connected (the
+          sim's `dialNumber`). */}
       {callInView && (
         <SmartphoneCallIn
-          key={answeredCall ?? ''}
+          key={answeredCall ?? placedCall ?? ''}
           call={callInView}
           figures={studioFigures}
-          onChoose={(i) => {
-            if (answeredCall) answerCall(answeredCall, i);
+          {...(placedCall !== null ? { label: strings.phone.callOut.stageLabel } : {})}
+          onChoose={(path) => {
+            if (answeredCall) answerCall(answeredCall, path);
           }}
-          onDone={() => setAnsweredCall(null)}
+          onDone={() => {
+            setAnsweredCall(null);
+            setPlacedCall(null);
+          }}
         />
       )}
       {/* Rendered last (a sibling of the menu overlays above) so it layers over the Maleficia / Ars

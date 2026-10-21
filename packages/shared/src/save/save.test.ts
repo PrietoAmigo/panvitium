@@ -288,6 +288,33 @@ describe('flagDoppelgaengerSeen — ADR-023 additive-optional round-trip', () =>
   });
 });
 
+describe('callsPlaced + flagMarenDead — ADR-023 additive-optional round-trip', () => {
+  it('(a/b) a fresh save omits both from the wire, and absent ≡ empty / false at load', () => {
+    const fresh = createInitialState('seed', 0);
+    const wire = serializeGameState(fresh);
+    expect('callsPlaced' in wire).toBe(false);
+    expect('flagMarenDead' in wire).toBe(false);
+    const back = deserializeGameState(wire);
+    expect(back.callsPlaced).toBeUndefined();
+    expect(back.flagMarenDead).toBeUndefined();
+    expect('callsPlaced' in serializeGameState({ ...fresh, callsPlaced: [] })).toBe(false);
+  });
+
+  it('(c) populated values round-trip exactly', () => {
+    const played: GameState = {
+      ...createInitialState('seed', 0),
+      callsPlaced: ['the-rectory'],
+      flagMarenDead: true,
+    };
+    const wire = serializeGameState(played);
+    expect(wire.callsPlaced).toEqual(['the-rectory']);
+    expect(wire.flagMarenDead).toBe(true);
+    const back = deserializeGameState(wire);
+    expect(back.callsPlaced).toEqual(['the-rectory']);
+    expect(back.flagMarenDead).toBe(true);
+  });
+});
+
 describe('callsAnswered — ADR-023 additive-optional round-trip', () => {
   it('(a/b) a fresh save omits it from the wire, and absent ≡ empty at load', () => {
     const fresh = createInitialState('seed', 0);

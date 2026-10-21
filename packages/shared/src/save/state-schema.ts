@@ -178,6 +178,13 @@ export const serializedGameStateSchema = z.object({
   // Answered incoming-call ids (presentation bookkeeping): an answered once-only call never rings
   // again. Permanent; carried across lifetimes. Additive-optional (ADR-023): absent ≡ empty.
   callsAnswered: z.array(z.string()).optional(),
+  // Placed outgoing-call ids (docs/PANVITIUM-CALLS-OUT.md): a one-shot line connects once, and a
+  // placed call arms what it sets in motion. Permanent; carried across lifetimes. Additive-optional
+  // (ADR-023): absent ≡ empty.
+  callsPlaced: z.array(z.string()).optional(),
+  // Permanent story flag (05): Father Stahl's ward call answered with Imperium. Additive-optional
+  // (ADR-023): absent ≡ false; omitted from the wire when false.
+  flagMarenDead: z.boolean().optional(),
   // The once-per-playthrough empty-handed warning has played (presentation bookkeeping). Permanent;
   // carried across lifetimes. Additive-optional (ADR-023): absent ≡ false.
   emptyHandedWarned: z.boolean().optional(),
@@ -338,6 +345,11 @@ export function serializeGameState(state: GameState): SerializedGameState {
     ...(state.callsAnswered && state.callsAnswered.length > 0
       ? { callsAnswered: [...state.callsAnswered] }
       : {}),
+    // Placed calls: omit when empty (the minimal wire form), like the answered calls.
+    ...(state.callsPlaced && state.callsPlaced.length > 0
+      ? { callsPlaced: [...state.callsPlaced] }
+      : {}),
+    ...(state.flagMarenDead === true ? { flagMarenDead: true } : {}),
     ...(typeof state.erinyesEfficiencyStacks === 'number' && state.erinyesEfficiencyStacks > 0
       ? { erinyesEfficiencyStacks: state.erinyesEfficiencyStacks }
       : {}),
@@ -466,6 +478,9 @@ export function deserializeGameState(s: SerializedGameState): GameState {
     ...(s.callsAnswered && s.callsAnswered.length > 0
       ? { callsAnswered: [...s.callsAnswered] }
       : {}),
+    // Placed calls: absent ≡ empty; the Maren flag: absent ≡ false (conditional spreads, EOPT).
+    ...(s.callsPlaced && s.callsPlaced.length > 0 ? { callsPlaced: [...s.callsPlaced] } : {}),
+    ...(s.flagMarenDead === true ? { flagMarenDead: true } : {}),
     ...(typeof s.erinyesEfficiencyStacks === 'number' && s.erinyesEfficiencyStacks > 0
       ? { erinyesEfficiencyStacks: s.erinyesEfficiencyStacks }
       : {}),

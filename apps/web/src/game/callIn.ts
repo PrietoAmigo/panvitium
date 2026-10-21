@@ -1,26 +1,47 @@
-// View-model + selection for the incoming-call ("calls-in") system. Pure functions only — no React,
-// no DOM, no timers — so the catalogue join and the weighted draw are unit-testable on their own
+// View-model + selection for the incoming-call ("calls-in") system, plus the view of an outgoing call
+// placed from the dialer (the same call stage plays both). Pure functions only — no React, no DOM, no
+// timers — so the catalogue join and the weighted draw are unit-testable on their own
 // (callIn.test.ts). The component (`SmartphoneCallIn`) consumes a `CallInView`; the scheduler hook
 // (`useIncomingCall`) consumes `pickIncomingCall`.
 
-import { strings } from '@panvitium/shared';
+import { strings, type CallChoiceCopy, type CallCopy } from '@panvitium/shared';
 import {
   CALLS_IN,
   CALL_IN_BY_ID,
   isOnceOnly,
+  type CallInChoiceData,
   type CallInClass,
   type CallInData,
   type CallInEffect,
+  type CallRequirements,
 } from '../menus/calls-in.data.js';
+import { CALL_OUT_BY_ID, type CallOutData } from '../menus/calls-out.data.js';
 
 /** One presented choice: the label, the generated effect sub-label, and the decline marker. */
 export interface CallInChoiceView {
+  /** The choice's index in the catalogue (and its strings), for the effect lookup on answer. Equal to
+   *  its position on screen unless a gated option before it is hidden. */
+  index: number;
   label: string;
   /** Natural-language description of the option's effect, generated from its `effects` (absent for a
    *  decline / lore / easter-egg option that does nothing). See `describeCallInEffects`. */
   sub?: string;
   /** The decline / hang-up option (readable warm gold, never a faded grey). */
   dim: boolean;
+  /** The beat the pick leads to; absent: the pick ends the call. */
+  next?: CallBeatView;
+}
+
+/** A beat of the call after a pick: the caller's next recording, or a silence, then its choices. */
+export interface CallBeatView {
+  /** The recording's file stem (`<recording>.mp3`), or null for a silent beat. */
+  recording: string | null;
+  /** A silent beat's length in seconds, counted from the pick (0 for a recording). */
+  silenceSec: number;
+  /** The recording's typed fallback, written out if its mp3 cannot play ('' for none). */
+  line: string;
+  /** The choices once the beat is over; empty: the call ends with it. */
+  choices: CallInChoiceView[];
 }
 
 /** Everything the call stage needs for one call, with text joined from `strings`. */
@@ -28,13 +49,19 @@ export interface CallInView {
   id: string;
   /** A recording plays vs. a typed line is written out. */
   audio: boolean;
-  class: CallInClass;
+  /** The incoming call's selection class, or `call-out` for a call the player placed. */
+  class: CallInClass | 'call-out';
   /** Raw caller line (e.g. "the line · Gideon Reyes"), with the channel prefix stripped for display. */
   tag: string;
   /** The big caller name shown for a recording (the last `·` segment of the display tag). */
   caller: string;
-  /** Spoken text, only non-empty for a typed (fileless) call; recordings render no line. */
+  /** Spoken text: the typed line of a fileless call, or a recording's typed fallback (written out
+   *  when its mp3 cannot play). Empty for a recording with no fallback. */
   line: string;
+  /** The opening recording's file stem (the call's id unless the catalogue names another). */
+  recording: string;
+  /** Whether tapping the stage may cut a recording or a silence short (Stahl's call may not). */
+  skippable: boolean;
   choices: CallInChoiceView[];
 }
 
@@ -171,31 +198,80 @@ export function callInSource(id: string): { title: string; caller: string } | nu
 }
 
 /**
- * Join one catalogue row with its strings into a render-ready `CallInView`. Returns `null` for an
- * unknown id or one missing its strings entry (keeps a typo from throwing at render time).
+ * Join one beat's choices with their strings, recursing into each pick's next beat. Options whose
+ * `requires` fail `ctx` are left out; each kept option carries its catalogue index.
  */
-export function buildCallInView(id: string): CallInView | null {
-  const data: CallInData | undefined = CALL_IN_BY_ID[id];
-  const copy = CATALOG[id];
-  if (!data || !copy) return null;
-  const choices: CallInChoiceView[] = data.choices.map((c, i) => {
-    const text = copy.choices[i];
+function joinChoices(
+  data: readonly CallInChoiceData[],
+  copy: readonly CallChoiceCopy[],
+  ctx: CallEligibilityContext | null,
+): CallInChoiceView[] {
+  const choices: CallInChoiceView[] = [];
+  data.forEach((c, index) => {
+    if (ctx !== null && c.requires && !requirementsMet(ctx, c.requires)) return;
+    const text = copy[index];
     const sub = describeCallInEffects(c.effects ?? []);
-    return {
+    const next: CallBeatView | undefined = c.next && {
+      recording: c.next.recording ?? null,
+      silenceSec: c.next.silenceSec ?? 0,
+      line: text?.next?.line ?? '',
+      choices: joinChoices(c.next.choices, text?.next?.choices ?? [], ctx),
+    };
+    choices.push({
+      index,
       label: text?.label ?? '',
       ...(sub ? { sub } : {}),
       dim: c.dim === true,
-    };
+      ...(next ? { next } : {}),
+    });
   });
+  return choices;
+}
+
+/** Join a call's structural row with its strings (see `joinChoices` for the gate). */
+function joinCallView(
+  data: CallInData | CallOutData,
+  copy: CallCopy,
+  ctx: CallEligibilityContext | null,
+): CallInView {
   return {
-    id,
+    id: data.id,
     audio: data.audio,
-    class: data.class,
+    class: 'class' in data ? data.class : 'call-out',
     tag: displayTag(copy.tag),
     caller: callerName(copy.tag),
     line: copy.line ?? '',
-    choices,
+    recording: data.recording ?? data.id,
+    skippable: data.skippable !== false,
+    choices: joinChoices(data.choices, copy.choices, ctx),
   };
+}
+
+/**
+ * Join one catalogue row with its strings into a render-ready `CallInView`. Returns `null` for an
+ * unknown id or one missing its strings entry (keeps a typo from throwing at render time). With a
+ * `ctx`, an option whose `requires` is unmet is hidden (the Imperium answer to `the-ward`); without
+ * one, every option is shown (no gate, as `pickIncomingCall` treats an absent `eligible`).
+ */
+export function buildCallInView(
+  id: string,
+  ctx: CallEligibilityContext | null = null,
+): CallInView | null {
+  const data: CallInData | undefined = CALL_IN_BY_ID[id];
+  const copy = CATALOG[id];
+  if (!data || !copy) return null;
+  return joinCallView(data, copy, ctx);
+}
+
+/**
+ * Join an outgoing call (docs/PANVITIUM-CALLS-OUT.md), placed from the dialer, with its strings into
+ * the same `CallInView` the call stage renders. `null` for an unknown id or missing strings.
+ */
+export function buildCallOutView(id: string): CallInView | null {
+  const data: CallOutData | undefined = CALL_OUT_BY_ID[id];
+  const copy = strings.phone.callOut.calls[id];
+  if (!data || !copy) return null;
+  return joinCallView(data, copy, null);
 }
 
 /**
@@ -210,17 +286,23 @@ export interface CallEligibilityContext {
   fcFriendly: boolean;
   /** Ids of the emails currently in the inbox. */
   receivedEmailIds: ReadonlySet<string>;
+  /** Ids of the Opera actions currently unlocked (`actionUnlocked`). */
+  unlockedActions: ReadonlySet<string>;
 }
 
-/** Whether a call's requirements are met right now. A call with no `requires` is always eligible. */
-export function isCallEligible(ctx: CallEligibilityContext, data: CallInData): boolean {
-  const req = data.requires;
-  if (!req) return true;
+/** Whether a requirement set (a call's or an option's) is met in the given context. */
+function requirementsMet(ctx: CallEligibilityContext, req: CallRequirements): boolean {
   if (req.katabasisCountMin !== undefined && ctx.katabasisCount < req.katabasisCountMin)
     return false;
   if (req.fcFriendly !== undefined && ctx.fcFriendly !== req.fcFriendly) return false;
   if (req.emails && !req.emails.every((id) => ctx.receivedEmailIds.has(id))) return false;
+  if (req.actions && !req.actions.every((id) => ctx.unlockedActions.has(id))) return false;
   return true;
+}
+
+/** Whether a call's requirements are met right now. A call with no `requires` is always eligible. */
+export function isCallEligible(ctx: CallEligibilityContext, data: CallInData): boolean {
+  return data.requires ? requirementsMet(ctx, data.requires) : true;
 }
 
 /** The set of call ids whose requirements are met in the given context. */

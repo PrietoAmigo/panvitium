@@ -96,6 +96,14 @@ describe('Predicates fire under the right condition', () => {
     expect(earned(s).has('the_long_burn')).toBe(false);
   });
 
+  it('The Last Rite on the arrival of the ward news, not on the command itself', () => {
+    const commanded = { ...fresh(), flagMarenDead: true };
+    expect(earned(commanded).has('the_last_rite')).toBe(false);
+    const s = fresh();
+    s.lifetime.inbox = [{ id: 'newsletter-ward', receivedAt: 0, readAt: null }];
+    expect(earned(s).has('the_last_rite')).toBe(true);
+  });
+
   it('Semet on the Eternal Sin reveal', () => {
     const s = { ...fresh(), eternalDevotion: bn('9000000000') }; // > threshold
     expect(earned(s).has('semet')).toBe(true);

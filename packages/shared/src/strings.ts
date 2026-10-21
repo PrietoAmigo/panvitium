@@ -29,6 +29,27 @@
  */
 const SIGIL_DORMANT = 'Dormant: this seal grants no effect while bound.';
 
+/** The copy of one call option: its label and, when the pick goes on, the next beat's copy. */
+export interface CallChoiceCopy {
+  readonly label: string;
+  readonly next?: CallBeatCopy;
+}
+
+/** The copy of a beat after a pick: a recording's typed fallback (its transcript) and its options. */
+export interface CallBeatCopy {
+  readonly line?: string;
+  readonly choices: ReadonlyArray<CallChoiceCopy>;
+}
+
+/** The copy of one call, incoming or outgoing: `tag` is the caller line (the big name is its last
+ *  `·` segment); `line` is a typed call's text, or a recording's typed fallback. */
+export interface CallCopy {
+  readonly title: string;
+  readonly tag: string;
+  readonly line?: string;
+  readonly choices: ReadonlyArray<CallChoiceCopy>;
+}
+
 export const strings = {
   appName: 'Panvitium',
   menu: {
@@ -758,6 +779,18 @@ export const strings = {
         subject: 'Weekly bulletin: what are we for, if not this',
         body: 'Sacred Heart Parish, weekly bulletin.\n\nWe have lost more of our own this year, good people who slid into the bottle, the pill, the screen, the easy ruin, and did not climb back out. It forces the hard question on a parish: what are we for, if not to stand between a soul and that long fall.\n\nWe do not have a clever answer. We have only the old one, that grace is real and the Greater Good is worth the keeping, and we will go on saying so into the dark.\n\nA word of thanks, finally, to our new friend and benefactor Fausto Cescru, whose generosity and steady counsel have carried us through a season we could not have weathered alone. God keep you all.',
       },
+      'fr-greaves-1': {
+        from: 'Fr. Anselm Greaves',
+        addr: 'rectory@stdymphna-parish.org',
+        subject: 'Ashby file',
+        body: "Below I copy-paste the same email I have sent multiple times.\n\nTwenty years ago this autumn a family called Ashby brought their daughter to St. Dymphna's. Clare was seventeen. The doctors had done everything doctors do and had nothing left to try, and in the end the bishop gave his leave for the Rite. I was pastor then. Emil Stahl was my curate, not a year ordained and so certain of God that I let him lead. I knelt at his side and held the book.\n\nIt went on nine days. It knew things about Emil that no one could have told it. She died on the ninth night with Emil holding her hand. The inquest said her heart.\n\nShare this with all your colleagues so no one asks me anymore.\n\nFr. Anselm Greaves\nPastor emeritus, St. Dymphna's",
+      },
+      'newsletter-ward': {
+        from: 'The Riverside Almanac',
+        addr: 'editor@riverside-almanac.com',
+        subject: 'A terrible night on the hospital ward',
+        body: 'We do not print news like this, and we wish we did not have to now.\n\nLate last night, on the palliative ward of the county hospital, a nurse was found strangled by a priest who had come to sit with a dying man. He then opened his own throat with a scalpel from the dressing trolley. A patient too weak to leave her bed saw all of it.\n\nPolice say there was no quarrel between them that anyone knows of. Those on shift say Stahl had stepped into the corridor to take a telephone call, and came back without a word.\n\nThe nurse was very active in the community and known for helping people in need. There will be a vigil at Sacred Heart on Sunday.\n\nBe kind to one another.',
+      },
 
       // The adversary - Fausto Cescru
       'fausto-1': {
@@ -1163,6 +1196,7 @@ export const strings = {
       single_minded: 'Single-Minded',
       eight_at_the_table: 'Eight at the Table',
       the_long_burn: 'The Long Burn',
+      the_last_rite: 'The Last Rite',
       curator: 'Curator',
       crown_of_hell: 'The Crown of Hell',
       semet: 'Semet',
@@ -1179,6 +1213,7 @@ export const strings = {
       single_minded: 'Reach Level IV in any one Cardinal Sin.',
       eight_at_the_table: 'Reach Level III in every Cardinal Sin.',
       the_long_burn: 'Sustain Panvitium for 60 seconds.',
+      the_last_rite: 'Turn an old failure into a command.',
       curator: 'Own every maleficium in the catalog.',
       crown_of_hell: 'Reach Level IV in every Cardinal Sin.',
       semet: 'Reveal the Eternal Sin.',
@@ -1233,7 +1268,7 @@ export const strings = {
   },
   // The smartphone dialer (design handoff: "The Smartphone, Dialer & Code Input"). Device chrome is
   // mundane/flavour; the real boon/info effects + copy arrive with the outgoing-call engine
-  // (docs/PANVITIUM-CALLS-OUT.md), deferred for now.
+  // (docs/PANVITIUM-CALLS-OUT.md), deferred for now, except the outgoing calls in `callOut` below.
   phone: {
     title: 'Phone',
     hotspot: 'The Smartphone',
@@ -1242,6 +1277,8 @@ export const strings = {
     // Result copy keyed by the recognized code id (see `PHONE_CODES` in the sim).
     codes: {
       '666': "you're retarded",
+      // The rectory (a one-shot call-out) dialled again after Father Greaves has answered once.
+      '982079': 'The rectory line rings out. No one answers.',
     } as Record<string, string>,
     // The incoming-call ("calls-in") system. The structural catalogue (which call is a recording,
     // requirements, the decline markers) lives in apps/web's `calls-in.data.ts`; this owns the
@@ -1363,7 +1400,16 @@ export const strings = {
         'the-ward': {
           title: 'The Ward',
           tag: 'the line · Fr. Emil Stahl',
-          choices: [{ label: 'Listen to the end' }, { label: 'Hang up' }],
+          choices: [
+            // Offered once Father Greaves has written: "Remember Clare, Emil." (Latin left
+            // untranslated, ADR-020; `Aemili` is the vocative of Aemilius.) Three seconds of silence
+            // follow, then the command; the call ends when `imperium.mp3` does.
+            {
+              label: 'Memento Claram, Aemili',
+              next: { choices: [{ label: '[IMPERIUM]', next: { choices: [] } }] },
+            },
+            { label: 'Hang up' },
+          ],
         },
         'the-journalist': {
           title: 'The Journalist',
@@ -1403,15 +1449,38 @@ export const strings = {
           tag: 'unknown caller',
           choices: [{ label: 'Mmm... how much cheaper?' }],
         },
-      } as Record<
-        string,
-        {
-          title: string;
-          tag: string;
-          line?: string;
-          choices: ReadonlyArray<{ label: string }>;
-        }
-      >,
+      } as Record<string, CallCopy>,
+    },
+    // The outgoing calls ("calls-out"), placed from the dialer and played on the same call stage. The
+    // structural catalogue lives in apps/web's `calls-out.data.ts`; which number reaches which call
+    // is the sim's (`CALL_OUTS`). `tag` is the caller line (the big name is its last `·` segment);
+    // `line` is the typed fallback the stage writes out until the call's mp3 is recorded, and the
+    // script for that recording. Canonical content: docs/PANVITIUM-CALLS-OUT.md.
+    callOut: {
+      // The call stage's accessible name while an outgoing call is on the line.
+      stageLabel: 'Outgoing call',
+      calls: {
+        // Each `line` is the transcript of its recording (`father_anselm_1` / `_2`), typed out
+        // only if the mp3 cannot play.
+        'the-rectory': {
+          title: 'The Rectory',
+          tag: 'the line · 982 079',
+          line: 'Father Anselm speaking.',
+          choices: [
+            {
+              label: 'Scratches on a wall, tells you something?',
+              next: {
+                line: "I take it you're a journalist, I already had my decent share of you long time ago. Let me rest, please.",
+                choices: [
+                  {
+                    label: "Apologies. In case you have more information, here's my email [...]",
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      } as Record<string, CallCopy>,
     },
   },
 } as const;

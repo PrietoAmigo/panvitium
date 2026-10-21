@@ -64,6 +64,10 @@ additive-optional pattern.
   67% reduction). The debuff is shown in the HUD. Deleting Fausto #4 sets it false and clears the
   debuff. Add as an additive-optional field.
 - **Door-knock SFX**: a one-shot sound played on receipt of Fausto Cescru #5 (Howler, per ADR-014).
+- **`callsPlaced`**: the permanent list of outgoing calls the player has placed from the phone
+  (`PANVITIUM-CALLS-OUT.md`). Father Greaves #1 keys off `the-rectory`. Additive-optional.
+- **`flagMarenDead`**: default 0. Set to 1 when Father Stahl's call (`the-ward`) is answered with
+  [IMPERIUM]. Sends the Riverside Almanac's report of the ward. Permanent; additive-optional.
 
 ---
 
@@ -434,6 +438,65 @@ built. None carry mechanical effects unless stated.
   > carried us through a season we could not have weathered alone. God keep you all.
 - **Answers:** none.
 - **Trigger:** reaching 100,000,000 `totalSoulsObtained` and `flagFatherMad = 1`.
+
+### Father Anselm Greaves #1
+- **From:** Fr. Anselm Greaves, `rectory@stdymphna-parish.org`
+- **Date:** {received date · year → 2015}
+- **Subject:** Ashby file
+- **Body:**
+  > Below I copy-paste the same email I have sent multiple times.
+  >
+  > Twenty years ago this autumn a family called Ashby brought their daughter to St. Dymphna's.
+  > Clare was seventeen. The doctors had done everything doctors do and had nothing left to try, and
+  > in the end the bishop gave his leave for the Rite. I was pastor then. Emil Stahl was my curate,
+  > not a year ordained and so certain of God that I let him lead. I knelt at his side and held the
+  > book.
+  >
+  > It went on nine days. It knew things about Emil that no one could have told it. She died on the
+  > ninth night with Emil holding her hand. The inquest said her heart.
+  >
+  > Share this with all your colleagues so no one asks me anymore.
+  >
+  > Fr. Anselm Greaves
+  > Pastor emeritus, St. Dymphna's
+- **Answers:** none.
+- **Trigger:** 3 minutes after the player places the outgoing call to the rectory (`callsPlaced`
+  contains `the-rectory`: 982079 dialled, `PANVITIUM-CALLS-OUT.md`). Keyed to the call alone: it
+  arrives however early in the game, and even after `the-ward` has been answered.
+- **Effect:** its presence in the inbox, with the Imperium rite unlocked (any Sin at III), opens
+  the Imperium answer to Father Stahl's call (`the-ward`, `PANVITIUM-CALLS-IN.md`).
+- *Author note: he took the caller for one more journalist and sends his stock account. The thing
+  in Clare is a minor demon that answers to the player now by rank, though nothing here says so.
+  Her soul is in Hell; Greaves does not say what he believes. The number she wrote is the one on
+  the code plates.*
+
+### The Riverside Almanac: the ward
+- **From:** The Riverside Almanac, `editor@riverside-almanac.com`
+- **Date:** {received date · year → 2015}
+- **Subject:** A terrible night on the hospital ward
+- **Body:**
+  > We do not print news like this, and we wish we did not have to now.
+  >
+  > Late last night, on the palliative ward of the county hospital, a nurse was found strangled by
+  > a priest who had come to sit with a dying man. He then opened his own throat with a scalpel from
+  > the dressing trolley. A patient too weak to leave her bed saw all of it.
+  >
+  > Police say there was no quarrel between them that anyone knows of. Those on shift say Stahl had
+  > stepped into the corridor to take a telephone call, and came back without a word.
+  >
+  > The nurse was very active in the community and known for helping people in need. There will be
+  > a vigil at Sacred Heart on Sunday.
+  >
+  > Be kind to one another.
+- **Answers:** none.
+- **Trigger:** 2 minutes after `flagMarenDead = 1` (Father Stahl's call answered with [IMPERIUM]).
+- **Effect:** its arrival earns the achievement "The Last Rite". No soul is minted for either
+  death.
+- *Author note: the same cosy local newsletter as `newsletter-local`, the squash and the lost
+  terrier, now carrying this. The nurse is Maren Holt, the priest Father Stahl; the paper names
+  neither, except where the staff call him Stahl. Both earlier parish bulletins thank Maren, and
+  both always arrive before Stahl can call (his call needs them), so nothing contradicts her
+  death.*
 
 ---
 

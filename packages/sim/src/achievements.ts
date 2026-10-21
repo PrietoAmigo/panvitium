@@ -72,6 +72,11 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     id: 'the_long_burn',
     earned: (s) => (s.lifetime.toggleDurations.panvitium ?? 0) >= LONG_BURN_SECONDS,
   },
+  {
+    // Father Stahl's ward call answered with Imperium: earned when the local news of it arrives.
+    id: 'the_last_rite',
+    earned: (s) => s.lifetime.inbox.some((e) => e.id === 'newsletter-ward'),
+  },
   { id: 'curator', earned: ownsEveryMaleficium },
   { id: 'crown_of_hell', earned: (s) => everySinAtLeast(s, 4) },
   { id: 'semet', earned: eternalSinRevealed },
