@@ -14,9 +14,9 @@ import type { ReactElement } from 'react';
 /** The seal's art (the same glyph the prior full-screen gate used). */
 export const ALTAR_SIGIL_SRC = '/assets/panvitium/katabasis/seal-panvitium.png';
 
-/** The golden seal of Semet (#32, the same art the Aether vault and the Ledger use), raised in the
- *  sigil's place once the Ninth is named. */
-export const SEMET_SIGIL_SRC = '/assets/panvitium/katabasis/sigils/32.png';
+/** The golden seal of Semet, raised in the sigil's place once the Ninth is named: the seal of #32
+ *  drawn at the Katabasis seal's size (495 × 561), in the title wordmark's gold. */
+export const SEMET_SIGIL_SRC = '/assets/panvitium/katabasis/seal-semet.png';
 
 /** How the Altar Room shows the sigil: its look, and whether it is fading away. */
 export interface AltarSigilView {
