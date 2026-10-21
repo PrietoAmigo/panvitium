@@ -38,7 +38,7 @@ These govern the smartphone:
 
 - **The household.** Gideon by call, the acolytes by call. Servile, fretful, practical, pieces of the truth only.
 - **The hands of Fausto.** In specific, Fausto's invocations (Astiwihad, Succubus) and minions (his newspaper journalist, Marina Zhao — `the-journalist`) call. They want to cause your downfall. The two invocation calls are mutually exclusive on the Fausto branch: Succubus reaches a *friendly*-branch player, Astiwihad a *hostile*-branch one.
-- **The Church.** Father Emil Stahl (`the-ward`), once he has written to you first. Father Anselm Greaves, pastor emeritus of St. Dymphna's, only when you ring him: the rectory line (`the-rectory`, an outgoing call) is the number his young curate Stahl gave the Ashby family twenty years ago. He answers once and will not speak of Clare down a telephone line; he writes instead (`fr-greaves-1`, 05).
+- **The Church.** Father Emil Stahl (`the-ward`), once he has written to you first. Father Anselm Greaves, pastor emeritus of St. Dymphna's, only when you ring him: the rectory line (`the-rectory`, an outgoing call) is the number his young curate Stahl gave the Ashby family twenty years ago. He answers once ("Father Anselm speaking."), takes the caller for a journalist when asked about scratches on a wall, and later emails his stock account of the case (`fr-greaves-1`, 05).
 - **Mundane** help. Trusted-minion register: useful, discreet, and they grasp nothing of the work — e.g. **Mai**, your platforms/operations hand (`doing-nothing`, `ministry`, `social-platform`).
 - **Unknown.** Withheld numbers (`a-name-to-burn`, the easter eggs `tormented-soul` / `ISP-change`, and the unbound-invocation lines).
 
@@ -69,8 +69,8 @@ When a call arrives it does not pop a panel — it takes over the screen as **"t
 The keypad sits behind the phone hotspot whenever no call is ringing. The player keys a number and presses call; the sim classifies it (`dialCode` / `dialNumber`, `packages/sim/src/phone.ts`):
 
 - **An unknown number** shows "Number does not exist" and keeps the digits for editing. **The joke number 666** answers in the same red fashion with its own copy.
-- **A call-out number** (`CALL_OUTS`, catalogued in `PANVITIUM-CALLS-OUT.md`) connects: the dialer closes and the call plays on the same full-screen stage as an incoming call, labelled "Outgoing call". The call is recorded in the permanent `callsPlaced` list at once (ADR-023 additive-optional, carried across Katabasis), and that record is what later content keys off (Father Greaves's letter).
+- **A call-out number** (`CALL_OUTS`, catalogued in `PANVITIUM-CALLS-OUT.md`) connects: the dialer closes and the call plays on the same full-screen stage as an incoming call, labelled "Outgoing call", as a conversation in beats (a recording, the player's answer, the next recording, …). The call is recorded in the permanent `callsPlaced` list at once (ADR-023 additive-optional, carried across Katabasis), and that record is what later content keys off (Father Greaves's letter).
 - **A one-shot line dialled again** rings out unanswered, with its own toast ("The rectory line rings out. No one answers.").
-- **No recording yet.** A recorded outgoing call whose mp3 is missing writes out its typed fallback line on the stage instead, so `the-rectory` plays today before `the-rectory.mp3` exists.
+- **A recording that cannot play.** If a beat's mp3 is missing or unplayable, the stage writes out that beat's typed line (its transcript) instead.
 
 The incoming line is busy while an outgoing call is on the stage: nothing rings, and the random subliminal plates hold.

@@ -405,14 +405,16 @@ constraints in §9, and voices and channels follow the matrix in §10.
   Dymphna's and lost her (below). He came back from it harder and made a hunt of his vocation, and
   he has not spoken her name since. It is the one door in him that never shut: reminded of her, he
   breaks for a moment, and in that moment the player can command him (Imperium, on his one call,
-  `the-ward`). Commanded, he kills Maren Holt at the bedside where they sit and then himself, and
-  his case and the Church's endgame turn die with him.
+  `the-ward`: "Memento Claram, Aemili", a silence, then the command). Commanded, he strangles Maren
+  Holt with his stole at the bedside where they sit and then opens his own throat, and his case and
+  the Church's endgame turn die with him. Neither death mints a soul.
 - **Father Anselm Greaves**, pastor emeritus of St. Dymphna's. Stahl's pastor at the time of the
   Ashby exorcism; he knelt beside his young curate and held the book, and has carried it alone since.
-  Old, tired, guilty, gentle. He still answers the rectory line, the number Stahl gave the Ashby
-  family, and once, when the player dials it, he answers and then writes the whole story down for a
-  stranger who would not give a name. Voice: an old priest's careful letter, too honest for his own
-  peace.
+  Old, tired, guilty, worn down. He still answers the rectory line, the number Stahl gave the Ashby
+  family. When the player dials it and asks about scratches on a wall, he takes the caller for one
+  more journalist come to pick at the old case, asks to be left to rest, and then sends the same
+  short account he has sent to all the others ("Ashby file"). Voice: brief, weary, a man who has
+  told it too many times.
 
 **The one who suspects**
 
@@ -434,9 +436,9 @@ constraints in §9, and voices and channels follow the matrix in §10.
   anything you will ever reach. Use her sparingly, as the single faint note of grace in a dark world:
   two parish lines and little more. A player who finds the Ashby story can end her: Stahl, sitting
   with her on the ward when he rings, kills her under Imperium. The only notice is the local
-  newsletter's report of the murder-suicide. Her death mints no soul, because she goes to rest, the
-  one place the player can never follow (§3.4): the cruelty is chosen and pays nothing, and the town
-  is left with nobody to see its dying out gently.
+  newsletter's report of the murder-suicide, which does not even give her name. Her death mints no
+  soul, because she goes to rest, the one place the player can never follow (§3.4): the cruelty is
+  chosen and pays nothing, and the town is left with nobody to see its dying out gently.
 
 **The possessed**
 

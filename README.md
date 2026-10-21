@@ -97,7 +97,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 ## Status
 
-**Current test count: 1390** (sim 643 · shared 96 · api 20 · web 631). Save schema: **v13**.
+**Current test count: 1396** (sim 643 · shared 96 · api 20 · web 637). Save schema: **v13**.
 
 The game is mechanically complete and playable end-to-end. Phases 2 (infrastructure), 3 (gameplay)
 and 4 (content depth), the economy-parity pass, and the Phase 5 tracks that surfaced the sim, rebuilt
@@ -175,9 +175,8 @@ Each needs a design or spreadsheet decision before it becomes a coding slice.
 - **Phone codes and outgoing calls.** The first outgoing call ships: the rectory (982079, the code
   plates), on `CALL_OUTS` / `dialNumber` (`packages/sim/src/phone.ts`), the permanent `callsPlaced`
   record and the call stage. Still open: the rest of `docs/PANVITIUM-CALLS-OUT.md` (Gideon's line,
-  `noise`), effects on outgoing-call choices, plain boon/info codes (`PHONE_CODES` holds only the joke
-  `666`), and the recording `the-rectory.mp3` (until it exists the stage types out its script,
-  `strings.phone.callOut.calls['the-rectory'].line`).
+  `noise`), effects on outgoing-call choices, and plain boon/info codes (`PHONE_CODES` holds only the
+  joke `666`).
 - **Code plates.** The two halves of the rectory number (`sublcode_1` / `sublcode_2`) flash at
   random from the first minute among the other plates. Planned: hold them back until mid-game, then
   flash them as one ordered burst (982, then 079), held about 200 ms.

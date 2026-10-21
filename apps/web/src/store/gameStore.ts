@@ -75,7 +75,7 @@ import {
 } from './preferences.js';
 import { resumeGame } from '../game/session.js';
 import { faustoSubliminals } from '../game/subliminals.js';
-import { CALL_IN_BY_ID } from '../menus/calls-in.data.js';
+import { CALL_IN_BY_ID, choiceAtPath } from '../menus/calls-in.data.js';
 import {
   CURRENT_SCHEMA_VERSION,
   serializeGameState,
@@ -379,13 +379,15 @@ interface GameStore {
   /** Delete an email (a hide-flag; the entry is kept so it can't re-trigger). */
   deleteEmail: (id: string) => void;
   /**
-   * Apply a chosen incoming-call option's effects (docs/PANVITIUM-CALLS-IN.md). Looks up the call's
-   * `choiceIndex` effects and applies them via the sim's `applyCallEffects`: timed buffs append to
-   * `lifetime.callBuffs`, one-shot effects (gold cost, reprobate cull/loss, permanent maxInfluence)
-   * apply at once. A no-op for an unknown call/choice or a decline (no effects). Relies on the
-   * debounced autosave (ADR-006), like `act` / `summon`.
+   * Apply a chosen incoming-call option's effects (docs/PANVITIUM-CALLS-IN.md). Looks up the option
+   * the catalogue `path` names (its index at each beat of the call, e.g. `[0, 0]` for the first
+   * option of the beat the first pick led to) and applies its effects via the sim's
+   * `applyCallEffects`: timed buffs append to `lifetime.callBuffs`, one-shot effects (gold cost,
+   * reprobate cull/loss, permanent maxInfluence, a story flag) apply at once. A no-op for an unknown
+   * call/path or an option with no effects. Relies on the debounced autosave (ADR-006), like `act` /
+   * `summon`, except a story flag, which persists at once.
    */
-  answerCall: (callId: string, choiceIndex: number) => void;
+  answerCall: (callId: string, path: readonly number[]) => void;
   /**
    * Record that the player picked up the incoming call `callId` (docs/PANVITIUM-CALLS-IN.md
    * "Once-only"). Appends it to the permanent `callsAnswered` list, so an answered once-only call
@@ -861,10 +863,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (s) set({ state: deleteEmailSim(s, id) });
   },
 
-  answerCall: (callId, choiceIndex) => {
+  answerCall: (callId, path) => {
     const current = get().state;
     if (!current) return;
-    const effects = CALL_IN_BY_ID[callId]?.choices[choiceIndex]?.effects;
+    const call = CALL_IN_BY_ID[callId];
+    const effects = call ? choiceAtPath(call.choices, path)?.effects : undefined;
     // Unknown call/choice, or a decline / lore / easter-egg option (no effects) — nothing to apply.
     if (!effects || effects.length === 0) return;
     // Tag the timed buffs with this call, so the buffs HUD can name their source.

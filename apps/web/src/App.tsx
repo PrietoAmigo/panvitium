@@ -338,17 +338,17 @@ export function App(): ReactElement {
           mounts fresh (its FSM starts at the answer). For an incoming call `onChoose` applies the
           picked option's effects to the game state (docs/PANVITIUM-CALLS-IN.md): a timed buff, a
           one-shot cost/cull, a permanent maxInfluence raise or a story flag. Options are looked up by
-          their catalogue index, since a gated option may be hidden. A decline resolves with no effect;
-          an outgoing call's work was done when it connected (the sim's `dialNumber`). */}
+          their catalogue path (a gated option may be hidden, and a pick may lead to a further beat). A
+          decline resolves with no effect; an outgoing call's work was done when it connected (the
+          sim's `dialNumber`). */}
       {callInView && (
         <SmartphoneCallIn
           key={answeredCall ?? placedCall ?? ''}
           call={callInView}
           figures={studioFigures}
           {...(placedCall !== null ? { label: strings.phone.callOut.stageLabel } : {})}
-          onChoose={(i) => {
-            const choice = callInView.choices[i];
-            if (answeredCall && choice) answerCall(answeredCall, choice.index);
+          onChoose={(path) => {
+            if (answeredCall) answerCall(answeredCall, path);
           }}
           onDone={() => {
             setAnsweredCall(null);

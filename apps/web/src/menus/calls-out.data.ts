@@ -5,9 +5,9 @@
 // call stage plays. The English (caller tag, typed fallback line, option labels) lives in
 // `strings.phone.callOut.calls`, joined here by id in `game/callIn.ts` (`buildCallOutView`).
 //
-// A recorded call plays `<id>.mp3` from the same `music/` folder as the incoming calls. Until that file
-// exists, the stage writes out the call's typed `line` instead (its fallback), so a call can ship
-// before it is recorded. The choice arrays MUST stay the same length and order as the matching
+// A recorded call plays its recordings from the same `music/` folder as the incoming calls. If one is
+// missing or cannot play, the stage writes out that beat's typed `line` instead (its fallback and
+// transcript). The choice arrays, at every beat, MUST stay the same length and order as the matching
 // `strings` choices (`callIn.test.ts` pins that).
 
 import type { CallInChoiceData } from './calls-in.data.js';
@@ -18,16 +18,25 @@ export interface CallOutData {
   id: string;
   /** A recording plays (falling back to the typed line while the mp3 is missing) vs. typed only. */
   audio: boolean;
-  /** Ordered choices, index-aligned with the strings catalogue. */
+  /** The opening recording's file stem, when it is not the call's id. */
+  recording?: string;
+  /** Whether tapping the stage may cut a recording or a silence short. Absent ≡ true. */
+  skippable?: boolean;
+  /** Ordered choices, index-aligned with the strings catalogue; a choice's `next` continues the call. */
   choices: readonly CallInChoiceData[];
 }
 
 /** The outgoing calls, in catalogue order (docs/PANVITIUM-CALLS-OUT.md). */
 export const CALLS_OUT: readonly CallOutData[] = [
-  // The rectory (982079, the code plates): Father Greaves will not speak of Clare Ashby down a
-  // telephone line. The one option ends the call; his letter follows (`fr-greaves-1`), armed by the
-  // sim the moment the call connected.
-  { id: 'the-rectory', audio: true, choices: [{}] },
+  // The rectory (982079, the code plates): Father Anselm answers, the player asks about the
+  // scratches on a wall, and he takes the caller for one more journalist. Two recordings, one answer
+  // each. His letter follows (`fr-greaves-1`), armed by the sim the moment the call connected.
+  {
+    id: 'the-rectory',
+    audio: true,
+    recording: 'father_anselm_1',
+    choices: [{ next: { recording: 'father_anselm_2', choices: [{}] } }],
+  },
 ] as const;
 
 /** Index by id for O(1) lookup in the view-model. */

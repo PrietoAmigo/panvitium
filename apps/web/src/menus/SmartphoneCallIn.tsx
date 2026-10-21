@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
-import type { CallInView } from '../game/callIn.js';
+import type { CallBeatView, CallInView } from '../game/callIn.js';
 import { CALL_AUDIO_BASE, CALL_PLATE_ANSWERING, CALL_PLATE_BASE } from './calls-in.data.js';
 import { DegradedScene } from './DegradedScene.js';
 import type { BoundInvocationVisual } from './types.js';
@@ -10,34 +10,39 @@ import type { BoundInvocationVisual } from './types.js';
  * Call-In System"). A self-framed full-viewport overlay (mounted by App like Magna Goetia / the PC /
  * the dialer, NOT via PanelShell). It is opened ALREADY ANSWERED — the `ring` phase lives in the
  * room (the studio backdrop swaps + the phone vibrates; see `useIncomingCall`), and tapping the
- * phone there is the answer gesture that mounts this. From here the call walks its own FSM:
+ * phone there is the answer gesture that mounts this. An outgoing call placed from the dialer plays
+ * here too. From here the call walks its own FSM, one beat at a time:
  *
  *   speaking → ready → done → fading   (a recording: its mp3 plays, options reveal on `ended`)
  *   type     → ready → done → fading   (a typed line: the typewriter writes it out)
  *   speaking → type → …                (a recording whose mp3 cannot play falls back to its typed
  *                                       `line`, when it has one: a call can ship before it is recorded)
+ *   … → done → speaking | silence → …  (a pick with a `next` beat: the caller's next recording, or a
+ *                                       silence counted from the pick, then that beat's options)
  *
- * Tap the stage to skip (cut the recording short / reveal the full text + options at once); pick an
- * option to resolve. Purely presentational: it owns only the transient phase/typed/chosen state and
- * the imperative audio/timer handles; the choice EFFECT is the integrator's `onChoose` hook (App
- * routes it to the store's `answerCall`, which applies the option's effects — docs/PANVITIUM-CALLS-IN.md),
- * and `onDone` unmounts the overlay once the call has faded.
+ * A beat with no options ends the call when it does. Tap the stage to skip (cut the recording or the
+ * silence short / reveal the full text + options at once), unless the call is unskippable; pick an
+ * option to go on or resolve. Purely presentational: it owns only the transient beat/phase/typed/
+ * chosen state and the imperative audio/timer handles; the choice EFFECT is the integrator's
+ * `onChoose` hook (App routes it to the store's `answerCall`, which applies the option's effects —
+ * docs/PANVITIUM-CALLS-IN.md), and `onDone` unmounts the overlay once the call has faded.
  */
 
-type Phase = 'speaking' | 'type' | 'ready' | 'done' | 'fading';
+type Phase = 'speaking' | 'type' | 'silence' | 'ready' | 'done' | 'fading';
 
 export interface SmartphoneCallInProps {
   /** The resolved call (caller, tag, line, choices) — see `buildCallInView`. */
   call: CallInView;
-  /** Fired the instant an option is picked (index into `call.choices`). The effect hook lands here. */
-  onChoose: (choiceIndex: number) => void;
+  /** Fired the instant an option is picked, with the catalogue path to it: the picked choice's
+   *  catalogue index at each beat so far (e.g. `[0]`, then `[0, 0]`). The effect hook lands here. */
+  onChoose: (path: readonly number[]) => void;
   /** Fired when the call has fully resolved (after the ~1.65s fade cadence) — unmount the overlay. */
   onDone: () => void;
   /** Typewriter base interval (ms/char) for typed calls. Default 32. */
   textSpeedMs?: number;
   /** Answered-plate translucency (scrim alpha = value × 0.6). Keep < 1 so the room shows through. */
   plateOpacity?: number;
-  /** Base path for the call recordings (`<id>.mp3`). Default `/assets/panvitium/music/`. */
+  /** Base path for the call recordings (`<recording>.mp3`). Default `/assets/panvitium/music/`. */
   audioBase?: string;
   /** The stage's accessible name. Default "Incoming call"; an outgoing call passes its own. */
   label?: string;
@@ -52,16 +57,34 @@ const NO_FIGURES: BoundInvocationVisual[] = [];
 // Choose → reset cadence (design): pick → `done` at once; +950ms → `fading`; +1650ms → resolved.
 const DONE_TO_FADING_MS = 950;
 const DONE_TO_RESOLVED_MS = 1650;
+// A pick that goes on holds lit this long before the next beat starts.
+const PICK_HOLD_MS = 950;
 // Typewriter punctuation pauses, as multiples of the base interval — the cadence of speech.
 const SENTENCE_PAUSE = 14; // after . ! ?
 const CLAUSE_PAUSE = 7; // after , ; : —
 
 /** Audio safety-reveal fallback (s) when the mp3's real duration is unknown: ~0.42s/word, 4–12s.
- *  Recordings carry no `line`, so this floors at 4s; the real `ended`/`loadedmetadata` events drive
- *  the reveal when the audio is present. */
-function estimateDuration(call: CallInView): number {
-  const words = call.line.trim().split(/\s+/).filter(Boolean).length;
+ *  A recording's `line` is only its typed fallback, so this usually floors at 4s; the real
+ *  `ended`/`loadedmetadata` events drive the reveal when the audio is present. */
+function estimateDuration(line: string): number {
+  const words = line.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(4, Math.min(12, words * 0.42));
+}
+
+/** The call's opening beat: its first recording (or typed line) and its first options. */
+function openingBeat(call: CallInView): CallBeatView {
+  return {
+    recording: call.audio ? call.recording : null,
+    silenceSec: 0,
+    line: call.line,
+    choices: call.choices,
+  };
+}
+
+/** The phase a beat opens in: a recording speaks, a silence holds, anything else is typed. */
+function beatPhase(beat: CallBeatView): Phase {
+  if (beat.recording !== null) return 'speaking';
+  return beat.silenceSec > 0 ? 'silence' : 'type';
 }
 
 export function SmartphoneCallIn({
@@ -74,11 +97,16 @@ export function SmartphoneCallIn({
   label = 'Incoming call',
   figures = NO_FIGURES,
 }: SmartphoneCallInProps): ReactElement {
-  const [phase, setPhaseState] = useState<Phase>(call.audio ? 'speaking' : 'type');
+  // The beat on stage (the opening, then each pick's `next`), mirrored on a ref for the handlers.
+  const [beat, setBeatState] = useState<CallBeatView>(() => openingBeat(call));
+  const beatRef = useRef<CallBeatView>(beat);
+  const [phase, setPhaseState] = useState<Phase>(() => beatPhase(beat));
   const [typed, setTyped] = useState('');
   const [chosen, setChosen] = useState<number | null>(null);
   // A recording that could not play and is being written out from its typed `line` instead.
   const [typedFallback, setTypedFallback] = useState(false);
+  // The catalogue path picked so far (see `onChoose`).
+  const path = useRef<number[]>([]);
 
   // Event handlers read the live phase off a ref (their closures would otherwise see a stale value).
   const phaseRef = useRef<Phase>(phase);
@@ -88,7 +116,7 @@ export function SmartphoneCallIn({
   };
 
   // Imperative handles to tear down. A generation counter guards async callbacks (audio `ended`, the
-  // safety timer) so a stale timer from a skipped/finished call can never reveal options into a new
+  // safety timer) so a stale timer from a skipped/finished beat can never reveal options into a new
   // phase — preserved from the design.
   const gen = useRef(0);
   const timers = useRef<{
@@ -117,57 +145,76 @@ export function SmartphoneCallIn({
     }
   };
 
-  // ── Kick the call off on mount; tear everything down on unmount. The component is keyed per call in
-  // App, so `call.id` is fixed for its mounted life — start exactly once.
-  useEffect(() => {
-    gen.current = 0;
-    // Typewriter: write the line out one char at a time, with punctuation pauses.
-    const startTyping = (): void => {
-      const line = call.line;
-      let i = 0;
-      const step = (): void => {
-        if (phaseRef.current !== 'type') return;
-        i += 1;
-        setTyped(line.slice(0, i));
-        if (i >= line.length) {
-          setPhase('ready');
-          return;
-        }
-        const ch = line[i - 1] ?? '';
-        let d = textSpeedMs;
-        if ('.!?'.includes(ch)) d = textSpeedMs * SENTENCE_PAUSE;
-        else if (',;:—'.includes(ch)) d = textSpeedMs * CLAUSE_PAUSE;
-        timers.current.type = setTimeout(step, d);
-      };
-      timers.current.type = setTimeout(step, textSpeedMs);
+  // The call ends: the stage fades, then resolves.
+  const endCall = (): void => {
+    setPhase('done');
+    timers.current.fade = setTimeout(() => setPhase('fading'), DONE_TO_FADING_MS);
+    timers.current.arm = setTimeout(() => onDone(), DONE_TO_RESOLVED_MS);
+  };
+
+  // A beat is over: offer its options, or end the call when it has none.
+  const finishBeat = (b: CallBeatView): void => {
+    if (b.choices.length > 0) setPhase('ready');
+    else endCall();
+  };
+
+  // Typewriter: write the beat's line out one char at a time, with punctuation pauses.
+  const startTyping = (b: CallBeatView): void => {
+    const line = b.line;
+    let i = 0;
+    const step = (): void => {
+      if (phaseRef.current !== 'type') return;
+      i += 1;
+      setTyped(line.slice(0, i));
+      if (i >= line.length) {
+        finishBeat(b);
+        return;
+      }
+      const ch = line[i - 1] ?? '';
+      let d = textSpeedMs;
+      if ('.!?'.includes(ch)) d = textSpeedMs * SENTENCE_PAUSE;
+      else if (',;:—'.includes(ch)) d = textSpeedMs * CLAUSE_PAUSE;
+      timers.current.type = setTimeout(step, d);
     };
-    if (call.audio) {
-      const g = ++gen.current;
-      // reveal: stop the recording and show the options. Guarded so only the current generation fires.
-      const reveal = (): void => {
-        if (g !== gen.current) return;
-        clearTimers();
-        stopVoice();
-        gen.current += 1;
-        setPhase('ready');
-      };
-      // Safety / fileless fallback so a missing mp3 (tests, preview) still flows to the options.
-      timers.current.sim = setTimeout(reveal, estimateDuration(call) * 1000);
+    timers.current.type = setTimeout(step, textSpeedMs);
+  };
+
+  // Put a beat on stage and run it. `heldMs` is how long the pick that led here already held, which
+  // a silence (counted from the pick) has already spent.
+  const enterBeat = (b: CallBeatView, heldMs: number): void => {
+    beatRef.current = b;
+    setBeatState(b);
+    setChosen(null);
+    setTyped('');
+    setTypedFallback(false);
+    const g = ++gen.current;
+    // reveal: the beat is over. Guarded so only the current generation fires.
+    const reveal = (): void => {
+      if (g !== gen.current) return;
+      clearTimers();
+      stopVoice();
+      gen.current += 1;
+      finishBeat(b);
+    };
+    if (b.recording !== null) {
+      setPhase('speaking');
+      // Safety / fileless fallback so a missing mp3 (tests, preview) still flows on.
+      timers.current.sim = setTimeout(reveal, estimateDuration(b.line) * 1000);
       try {
-        const a = new Audio(audioBase + call.id + '.mp3');
+        const a = new Audio(audioBase + b.recording + '.mp3');
         voice.current = a;
         a.preload = 'auto';
         a.addEventListener('ended', reveal);
-        // The mp3 is missing or unplayable: a call with a typed `line` writes it out instead; one
-        // without keeps the safety timer, which still reveals the options.
+        // The mp3 is missing or unplayable: a beat with a typed `line` writes it out instead; one
+        // without keeps the safety timer, which still moves the call on.
         a.addEventListener('error', () => {
-          if (g !== gen.current || call.line.length === 0) return;
+          if (g !== gen.current || b.line.length === 0) return;
           clearTimers();
           stopVoice();
           gen.current += 1;
           setTypedFallback(true);
           setPhase('type');
-          startTyping();
+          startTyping(b);
         });
         a.addEventListener('loadedmetadata', () => {
           if (g !== gen.current) return;
@@ -180,9 +227,20 @@ export function SmartphoneCallIn({
       } catch {
         /* no Audio (SSR/test) — the safety timer handles the reveal */
       }
+    } else if (b.silenceSec > 0) {
+      setPhase('silence');
+      timers.current.sim = setTimeout(reveal, Math.max(0, b.silenceSec * 1000 - heldMs));
     } else {
-      startTyping();
+      setPhase('type');
+      startTyping(b);
     }
+  };
+
+  // ── Kick the call off on mount; tear everything down on unmount. The component is keyed per call in
+  // App, so `call.id` is fixed for its mounted life — start exactly once.
+  useEffect(() => {
+    gen.current = 0;
+    enterBeat(beatRef.current, 0);
     return () => {
       clearTimers();
       stopVoice();
@@ -190,40 +248,53 @@ export function SmartphoneCallIn({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- start once per mounted call (keyed by id)
   }, [call.id]);
 
-  // ── Tap-to-skip (the stage). Options handle their own clicks; ready/done/fading ignore stage taps.
+  // ── Tap-to-skip (the stage), unless the call is unskippable. Options handle their own clicks;
+  // ready/done/fading ignore stage taps.
   const onStageClick = (): void => {
+    if (!call.skippable) return;
     const p = phaseRef.current;
-    if (p === 'speaking') {
-      gen.current += 1; // invalidate the recording's pending reveal
+    if (p === 'speaking' || p === 'silence') {
+      gen.current += 1; // invalidate the beat's pending reveal
       clearTimers();
       stopVoice();
-      setPhase('ready');
+      finishBeat(beatRef.current);
     } else if (p === 'type') {
       clearTimers();
-      setTyped(call.line);
-      setPhase('ready');
+      setTyped(beatRef.current.line);
+      finishBeat(beatRef.current);
     }
   };
 
   const choose = (i: number): void => {
     if (phaseRef.current !== 'ready') return;
+    const choice = beatRef.current.choices[i];
+    if (!choice) return;
     clearTimers();
     stopVoice();
     setPhase('done');
     setChosen(i);
-    onChoose(i);
+    path.current = [...path.current, choice.index];
+    onChoose(path.current);
+    const next = choice.next;
+    if (next) {
+      // The pick holds lit for a moment, then the conversation goes on.
+      timers.current.fade = setTimeout(() => enterBeat(next, PICK_HOLD_MS), PICK_HOLD_MS);
+      return;
+    }
     timers.current.fade = setTimeout(() => setPhase('fading'), DONE_TO_FADING_MS);
     timers.current.arm = setTimeout(() => onDone(), DONE_TO_RESOLVED_MS);
   };
 
   // ── Derived presentation (mirrors the design's `renderVals`). ──────────────────────────────────
   const choicesShown = phase === 'ready' || phase === 'done' || phase === 'fading';
-  const isAudio = call.audio && !typedFallback;
+  // A recording or a silence shows the big caller name; a typed beat (or fallback) shows its text.
+  const isAudio = (beat.recording !== null || beat.silenceSec > 0) && !typedFallback;
   const speaking = phase === 'speaking';
-  const showCaller = isAudio && (speaking || choicesShown);
+  const silence = phase === 'silence';
+  const showCaller = isAudio && (speaking || silence || choicesShown);
   const showTag = !isAudio && phase !== 'speaking';
   const showText = !isAudio && phase !== 'speaking';
-  const answeringBg = speaking || phase === 'type' || phase === 'ready' ? 1 : 0;
+  const answeringBg = speaking || silence || phase === 'type' || phase === 'ready' ? 1 : 0;
   const overlayOpacity = phase === 'fading' ? 0 : 1;
   const scrimBg = `rgba(8,6,5,${(plateOpacity * 0.6).toFixed(3)})`;
 
@@ -271,7 +342,9 @@ export function SmartphoneCallIn({
           {showCaller && (
             <div className="callin-caller-block">
               <div className="callin-caller">{call.caller}</div>
-              {speaking && <div className="callin-hint">{strings.phone.callIn.skip}</div>}
+              {speaking && call.skippable && (
+                <div className="callin-hint">{strings.phone.callIn.skip}</div>
+              )}
             </div>
           )}
 
@@ -279,7 +352,7 @@ export function SmartphoneCallIn({
 
           {choicesShown && (
             <div className="callin-choices">
-              {call.choices.map((c, i) => {
+              {beat.choices.map((c, i) => {
                 const cls =
                   'callin-choice' +
                   (c.dim ? ' is-dim' : '') +

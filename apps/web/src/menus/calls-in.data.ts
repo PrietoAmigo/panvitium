@@ -60,6 +60,40 @@ export interface CallInChoiceData {
   /** The effects this option applies (the spec for the pending engine; drives the displayed sub-label).
    *  Omitted/empty for a `nothing()` option (decline, lore, easter egg) — those show no sub-label. */
   effects?: readonly CallInEffect[];
+  /** What the pick leads to: a further beat of the conversation. Absent: the pick ends the call. */
+  next?: CallBeatData;
+}
+
+/**
+ * A beat of a call after a pick: the caller's next recording, or a silence, then the beat's own
+ * choices. A beat with no choices ends the call when it does. Its copy (a recording's typed
+ * fallback, the choice labels) sits under the picked choice's `next` in the strings.
+ */
+export interface CallBeatData {
+  /** The recording that plays (`<recording>.mp3` in `music/`). Absent: a silent beat. */
+  recording?: string;
+  /** A silent beat's length in seconds, counted from the pick. */
+  silenceSec?: number;
+  /** The choices offered once the beat is over; empty: the call ends with it. */
+  choices: readonly CallInChoiceData[];
+}
+
+/**
+ * The choice a catalogue `path` names: the index picked at each beat, from the opening choices on.
+ * `undefined` when the path leaves the tree.
+ */
+export function choiceAtPath(
+  choices: readonly CallInChoiceData[],
+  path: readonly number[],
+): CallInChoiceData | undefined {
+  let level = choices;
+  let found: CallInChoiceData | undefined;
+  for (const i of path) {
+    found = level[i];
+    if (!found) return undefined;
+    level = found.next?.choices ?? [];
+  }
+  return found;
 }
 
 const HOUR = 3600;
@@ -71,6 +105,10 @@ export interface CallInData {
   /** A recording plays (`speaking`) vs. a typed line is written out (`type`). Every real call is a
    *  recording; the typed path stays supported for any future fileless call. */
   audio: boolean;
+  /** The opening recording's file stem, when it is not the call's id. */
+  recording?: string;
+  /** Whether tapping the stage may cut a recording or a silence short. Absent ≡ true. */
+  skippable?: boolean;
   /** Weighted-draw class. */
   class: CallInClass;
   /** Eligibility predicate; omitted ≡ always eligible. */
@@ -297,16 +335,25 @@ export const CALLS_IN: readonly CallInData[] = [
     class: 'lore',
     // Gated on the three set-up emails having been received. The inbox is a permanent, per-email
     // "received" record (deduped, survives deletion, persists across Katabasis), so each id's presence
-    // is its received-flag; the call requires all three.
+    // is its received-flag; the call requires all three. No part of it can be skipped.
     requires: { emails: ['fr-stahl-2', 'parish-1', 'parish-2'] },
+    skippable: false,
     choices: [
-      {},
-      // Imperium, the secret answer: offered once Father Greaves has written about Clare Ashby (his
-      // letter arrives after the hidden rectory number is dialled). Stahl, at Maren Holt's side in
-      // the ward, kills her and then himself; the flag sends the local news and its achievement.
+      // The secret answer, offered once Father Greaves has written about Clare Ashby (his letter
+      // arrives after the hidden rectory number is dialled): name her, hold three seconds of
+      // silence, then [IMPERIUM]. Stahl, at Maren Holt's side on the ward, kills her and then
+      // himself while `imperium.mp3` plays; the flag sends the local news and its achievement.
       {
         requires: { emails: ['fr-greaves-1'] },
-        effects: [{ kind: 'setFlag', flag: 'flagMarenDead' }],
+        next: {
+          silenceSec: 3,
+          choices: [
+            {
+              effects: [{ kind: 'setFlag', flag: 'flagMarenDead' }],
+              next: { recording: 'imperium', choices: [] },
+            },
+          ],
+        },
       },
       { dim: true },
     ],

@@ -123,7 +123,7 @@ describe('gameStore — maleficia activation (5.1)', () => {
 
 describe('gameStore — answering an incoming call', () => {
   it("applies the chosen option's timed buffs, tagged with the call they came from", () => {
-    store().answerCall('social-platform', 0); // influence regeneration ×2, reprobate generation ×0.5
+    store().answerCall('social-platform', [0]); // influence regeneration ×2, reprobate generation ×0.5
     expect(store().state?.lifetime.callBuffs).toEqual([
       {
         field: 'influenceRegenRate',
@@ -143,12 +143,14 @@ describe('gameStore — answering an incoming call', () => {
   });
 
   it('adds nothing for a decline', () => {
-    store().answerCall('social-platform', 2); // "Let it go"
+    store().answerCall('social-platform', [2]); // "Let it go"
     expect(store().state?.lifetime.callBuffs).toEqual([]);
   });
 
-  it("sets the Imperium answer's story flag and persists it at once", () => {
-    store().answerCall('the-ward', 1); // Memento Claram, Aemili.
+  it('sets the story flag on [IMPERIUM] (not on naming Clare) and persists it at once', () => {
+    store().answerCall('the-ward', [0]); // Memento Claram, Aemili: no effect of its own
+    expect(store().state?.flagMarenDead).toBeUndefined();
+    store().answerCall('the-ward', [0, 0]); // [IMPERIUM]
     expect(store().state?.flagMarenDead).toBe(true);
     useGameStore.setState({ ready: false });
     store().init();

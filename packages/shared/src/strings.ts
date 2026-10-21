@@ -29,6 +29,27 @@
  */
 const SIGIL_DORMANT = 'Dormant: this seal grants no effect while bound.';
 
+/** The copy of one call option: its label and, when the pick goes on, the next beat's copy. */
+export interface CallChoiceCopy {
+  readonly label: string;
+  readonly next?: CallBeatCopy;
+}
+
+/** The copy of a beat after a pick: a recording's typed fallback (its transcript) and its options. */
+export interface CallBeatCopy {
+  readonly line?: string;
+  readonly choices: ReadonlyArray<CallChoiceCopy>;
+}
+
+/** The copy of one call, incoming or outgoing: `tag` is the caller line (the big name is its last
+ *  `·` segment); `line` is a typed call's text, or a recording's typed fallback. */
+export interface CallCopy {
+  readonly title: string;
+  readonly tag: string;
+  readonly line?: string;
+  readonly choices: ReadonlyArray<CallChoiceCopy>;
+}
+
 export const strings = {
   appName: 'Panvitium',
   menu: {
@@ -761,14 +782,14 @@ export const strings = {
       'fr-greaves-1': {
         from: 'Fr. Anselm Greaves',
         addr: 'rectory@stdymphna-parish.org',
-        subject: 'Clare Ashby, as I said I would',
-        body: "I said I would write, and I find I am glad of the excuse, God forgive me. You did not give your name and I will not ask for it again.\n\nTwenty years ago this autumn a family called Ashby brought their daughter to St. Dymphna's. Clare was seventeen. The doctors had done everything doctors do and had nothing left to try, and in the end the bishop gave his leave for the Rite. I was pastor then. Emil Stahl was my curate, not a year ordained and so certain of God that I let him lead. I knelt at his side and held the book.\n\nIt went on nine days. The thing in her would not give its name. It said it was nobody, a servant, and that its master had not yet come. It knew things about Emil that no one could have told it. Clare wrote this number on the walls of her room with her fingernails, over and over, and on the last night she tore the flyleaf from my Rituale and wrote it in her own blood. It was the number Emil had given her mother: call day or night, he told her, I will come.\n\nShe died on the ninth night with Emil holding her hand. The inquest said her heart. The diocese said very little and sent him away for a year. He came back harder, and he has made a hunt of what was a vocation ever since.\n\nHe has not spoken her name in twenty years. If you know Emil, do not say it to him. It is the one door in him that never shut.\n\nI tell myself she is at peace. I have never once believed it.\n\nFr. Anselm Greaves\nPastor emeritus, St. Dymphna's",
+        subject: 'Ashby file',
+        body: "Below I copy-paste the same email I have sent multiple times.\n\nTwenty years ago this autumn a family called Ashby brought their daughter to St. Dymphna's. Clare was seventeen. The doctors had done everything doctors do and had nothing left to try, and in the end the bishop gave his leave for the Rite. I was pastor then. Emil Stahl was my curate, not a year ordained and so certain of God that I let him lead. I knelt at his side and held the book.\n\nIt went on nine days. It knew things about Emil that no one could have told it. She died on the ninth night with Emil holding her hand. The inquest said her heart.\n\nShare this with all your colleagues so no one asks me anymore.\n\nFr. Anselm Greaves\nPastor emeritus, St. Dymphna's",
       },
       'newsletter-ward': {
         from: 'The Riverside Almanac',
         addr: 'editor@riverside-almanac.com',
         subject: 'A terrible night on the hospital ward',
-        body: "We do not print news like this, and we wish we did not have to now.\n\nLate last night, on the palliative ward of the county hospital, nurse Maren Holt was strangled with a priest's stole by Father Emil Stahl of the Aldermoor diocese, who had come to sit with a dying man. He then opened his own throat with a scalpel from the dressing trolley. A patient too weak to leave her bed saw all of it. Both were dead before help reached the room.\n\nPolice say there was no quarrel between them that anyone knows of. Those on shift say Father Stahl had stepped into the corridor to take a telephone call, and came back without a word.\n\nMaren sat with more of this town's dying than any of us could count, and saw them out gently. There is nobody to do that now.\n\nThere will be a vigil at Sacred Heart on Sunday.\n\nBe kind to one another.",
+        body: 'We do not print news like this, and we wish we did not have to now.\n\nLate last night, on the palliative ward of the county hospital, a nurse was found strangled by a priest who had come to sit with a dying man. He then opened his own throat with a scalpel from the dressing trolley. A patient too weak to leave her bed saw all of it.\n\nPolice say there was no quarrel between them that anyone knows of. Those on shift say Stahl had stepped into the corridor to take a telephone call, and came back without a word.\n\nThe nurse was very active in the community and known for helping people in need. There will be a vigil at Sacred Heart on Sunday.\n\nBe kind to one another.',
       },
 
       // The adversary - Fausto Cescru
@@ -1283,11 +1304,6 @@ export const strings = {
         influenceRegenRate: 'influence regeneration',
         desidiaGainMul: 'desidia generation',
       } as Record<string, string>,
-      // The sub-label of an option that sets a story flag (a narrative effect, no magnitude to state):
-      // it names what the option does in the fiction.
-      flags: {
-        flagMarenDead: 'Imperium',
-      } as Record<string, string>,
       // Option labels only; the sub-label under each option is generated from the choice's effects.
       calls: {
         // ── Positive buffs ──
@@ -1385,10 +1401,13 @@ export const strings = {
           title: 'The Ward',
           tag: 'the line · Fr. Emil Stahl',
           choices: [
-            { label: 'Listen to the end' },
-            // Imperium, offered once Father Greaves has written: "Remember Clare, Emil. Kill her, then
-            // yourself." (Latin left untranslated, ADR-020; `Aemili` is the vocative of Aemilius.)
-            { label: 'Memento Claram, Aemili. Occide eam, deinde te.' },
+            // Offered once Father Greaves has written: "Remember Clare, Emil." (Latin left
+            // untranslated, ADR-020; `Aemili` is the vocative of Aemilius.) Three seconds of silence
+            // follow, then the command; the call ends when `imperium.mp3` does.
+            {
+              label: 'Memento Claram, Aemili',
+              next: { choices: [{ label: '[IMPERIUM]', next: { choices: [] } }] },
+            },
             { label: 'Hang up' },
           ],
         },
@@ -1430,15 +1449,7 @@ export const strings = {
           tag: 'unknown caller',
           choices: [{ label: 'Mmm... how much cheaper?' }],
         },
-      } as Record<
-        string,
-        {
-          title: string;
-          tag: string;
-          line?: string;
-          choices: ReadonlyArray<{ label: string }>;
-        }
-      >,
+      } as Record<string, CallCopy>,
     },
     // The outgoing calls ("calls-out"), placed from the dialer and played on the same call stage. The
     // structural catalogue lives in apps/web's `calls-out.data.ts`; which number reaches which call
@@ -1449,21 +1460,27 @@ export const strings = {
       // The call stage's accessible name while an outgoing call is on the line.
       stageLabel: 'Outgoing call',
       calls: {
+        // Each `line` is the transcript of its recording (`father_anselm_1` / `_2`), typed out
+        // only if the mp3 cannot play.
         'the-rectory': {
           title: 'The Rectory',
-          tag: "the line · 982 079 · St. Dymphna's rectory",
-          line: "St. Dymphna's... Hello? You have rung the rectory. It is very late. ... Who is this? ... Nobody has rung this number in twenty years. It was the number we gave the Ashby family. Father Stahl wrote it out for them himself: day or night, he told them, I will come. ... She wrote it too, you know. Clare. On the walls, at the end, in whatever she had. ... No. I will not speak of her down a telephone line, not at my age and not at this hour. Give me an address and I will write it down, all of it. God knows someone besides me ought to carry it.",
-          choices: [{ label: 'Give him an address' }],
+          tag: 'the line · 982 079',
+          line: 'Father Anselm speaking.',
+          choices: [
+            {
+              label: 'Scratches on a wall, tells you something?',
+              next: {
+                line: "I take it you're a journalist, I already had my decent share of you long time ago. Let me rest, please.",
+                choices: [
+                  {
+                    label: "Apologies. In case you have more information, here's my email [...]",
+                  },
+                ],
+              },
+            },
+          ],
         },
-      } as Record<
-        string,
-        {
-          title: string;
-          tag: string;
-          line?: string;
-          choices: ReadonlyArray<{ label: string }>;
-        }
-      >,
+      } as Record<string, CallCopy>,
     },
   },
 } as const;

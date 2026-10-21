@@ -4,11 +4,12 @@
 // (callIn.test.ts). The component (`SmartphoneCallIn`) consumes a `CallInView`; the scheduler hook
 // (`useIncomingCall`) consumes `pickIncomingCall`.
 
-import { strings } from '@panvitium/shared';
+import { strings, type CallChoiceCopy, type CallCopy } from '@panvitium/shared';
 import {
   CALLS_IN,
   CALL_IN_BY_ID,
   isOnceOnly,
+  type CallInChoiceData,
   type CallInClass,
   type CallInData,
   type CallInEffect,
@@ -27,6 +28,20 @@ export interface CallInChoiceView {
   sub?: string;
   /** The decline / hang-up option (readable warm gold, never a faded grey). */
   dim: boolean;
+  /** The beat the pick leads to; absent: the pick ends the call. */
+  next?: CallBeatView;
+}
+
+/** A beat of the call after a pick: the caller's next recording, or a silence, then its choices. */
+export interface CallBeatView {
+  /** The recording's file stem (`<recording>.mp3`), or null for a silent beat. */
+  recording: string | null;
+  /** A silent beat's length in seconds, counted from the pick (0 for a recording). */
+  silenceSec: number;
+  /** The recording's typed fallback, written out if its mp3 cannot play ('' for none). */
+  line: string;
+  /** The choices once the beat is over; empty: the call ends with it. */
+  choices: CallInChoiceView[];
 }
 
 /** Everything the call stage needs for one call, with text joined from `strings`. */
@@ -43,12 +58,15 @@ export interface CallInView {
   /** Spoken text: the typed line of a fileless call, or a recording's typed fallback (written out
    *  when its mp3 cannot play). Empty for a recording with no fallback. */
   line: string;
+  /** The opening recording's file stem (the call's id unless the catalogue names another). */
+  recording: string;
+  /** Whether tapping the stage may cut a recording or a silence short (Stahl's call may not). */
+  skippable: boolean;
   choices: CallInChoiceView[];
 }
 
 const CATALOG = strings.phone.callIn.calls;
 const FIELDS = strings.phone.callIn.fields;
-const FLAGS = strings.phone.callIn.flags;
 
 // ── Natural-language effect descriptions (the generated option sub-labels) ───────────────────────
 // The line under an option reads out its real effect, e.g. buff(reprobateGenMul, ×1.33, 1 hour) →
@@ -134,8 +152,6 @@ function costOrKillClause(e: CallInEffect): string {
       return `you lose ${e.pct}% of your reprobates`;
     case 'killReprobatesPct':
       return `kills ${e.pct}% of your reprobates`;
-    case 'setFlag': // a narrative effect: the line names what the option does in the fiction
-      return FLAGS[e.flag] ?? '';
     default:
       return '';
   }
@@ -181,30 +197,43 @@ export function callInSource(id: string): { title: string; caller: string } | nu
   return { title: copy.title, caller: callerName(copy.tag) };
 }
 
-/** The strings shape of one call (incoming or outgoing): what `joinCallView` reads. */
-interface CallCopy {
-  tag: string;
-  line?: string;
-  choices: readonly { label: string }[];
+/**
+ * Join one beat's choices with their strings, recursing into each pick's next beat. Options whose
+ * `requires` fail `ctx` are left out; each kept option carries its catalogue index.
+ */
+function joinChoices(
+  data: readonly CallInChoiceData[],
+  copy: readonly CallChoiceCopy[],
+  ctx: CallEligibilityContext | null,
+): CallInChoiceView[] {
+  const choices: CallInChoiceView[] = [];
+  data.forEach((c, index) => {
+    if (ctx !== null && c.requires && !requirementsMet(ctx, c.requires)) return;
+    const text = copy[index];
+    const sub = describeCallInEffects(c.effects ?? []);
+    const next: CallBeatView | undefined = c.next && {
+      recording: c.next.recording ?? null,
+      silenceSec: c.next.silenceSec ?? 0,
+      line: text?.next?.line ?? '',
+      choices: joinChoices(c.next.choices, text?.next?.choices ?? [], ctx),
+    };
+    choices.push({
+      index,
+      label: text?.label ?? '',
+      ...(sub ? { sub } : {}),
+      dim: c.dim === true,
+      ...(next ? { next } : {}),
+    });
+  });
+  return choices;
 }
 
-/** Join a call's structural row with its strings. Options whose `requires` fail `ctx` are left out. */
+/** Join a call's structural row with its strings (see `joinChoices` for the gate). */
 function joinCallView(
   data: CallInData | CallOutData,
   copy: CallCopy,
   ctx: CallEligibilityContext | null,
 ): CallInView {
-  const choices: CallInChoiceView[] = [];
-  data.choices.forEach((c, index) => {
-    if (ctx !== null && c.requires && !requirementsMet(ctx, c.requires)) return;
-    const sub = describeCallInEffects(c.effects ?? []);
-    choices.push({
-      index,
-      label: copy.choices[index]?.label ?? '',
-      ...(sub ? { sub } : {}),
-      dim: c.dim === true,
-    });
-  });
   return {
     id: data.id,
     audio: data.audio,
@@ -212,7 +241,9 @@ function joinCallView(
     tag: displayTag(copy.tag),
     caller: callerName(copy.tag),
     line: copy.line ?? '',
-    choices,
+    recording: data.recording ?? data.id,
+    skippable: data.skippable !== false,
+    choices: joinChoices(data.choices, copy.choices, ctx),
   };
 }
 
