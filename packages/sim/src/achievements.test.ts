@@ -88,12 +88,8 @@ describe('Predicates fire under the right condition', () => {
     expect(earned(s).has('court_of_spires')).toBe(true);
   });
 
-  it('The Long Burn reads the Panvitium toggle duration', () => {
-    const s = fresh();
-    s.lifetime.toggleDurations = { panvitium: 60 };
-    expect(earned(s).has('the_long_burn')).toBe(true);
-    s.lifetime.toggleDurations = { panvitium: 59 };
-    expect(earned(s).has('the_long_burn')).toBe(false);
+  it('The Long Burn retired with Panvitium (ADR-039)', () => {
+    expect(ACHIEVEMENT_IDS).not.toContain('the_long_burn');
   });
 
   it('The Last Rite on the arrival of the ward news, not on the command itself', () => {

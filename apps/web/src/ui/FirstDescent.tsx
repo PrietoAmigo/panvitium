@@ -385,7 +385,7 @@ export function FirstDescent({
         shown = f.plate;
         sprite = { img: plate, x: 0.5, y: 1, w: 1, phase: 0, still: true };
         placePlate(sprite, 1);
-        pass.setScene({ bg: null, sprites: [sprite], signature: false }, false);
+        pass.setScene({ bg: null, sprites: [sprite] }, false);
       }
       if (sprite && shown === 1 && f.fall > 0) {
         const frames = art.dissolve;

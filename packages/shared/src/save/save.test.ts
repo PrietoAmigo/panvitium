@@ -157,8 +157,8 @@ describe('reprobate-dynamics pools — ADR-023 additive-optional', () => {
     expect(back.lifetime.murderPool).toBeCloseTo(0.001, 10);
   });
 
-  it('schemaVersion is v14 (the first-descent cinematic bumped it again)', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(14);
+  it('schemaVersion is v15 (the Panvitium retirement bumped it again)', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(15);
   });
 });
 
@@ -500,41 +500,14 @@ describe('Acolyte schema — additive-optional remainingSeconds', () => {
   });
 });
 
-describe('toggleDurations — ADR-023 additive-optional', () => {
-  it('a pre-Panvitium save without toggleDurations loads with an empty map', () => {
-    const fresh = createInitialState('seed', 0);
-    const serialized = serializeGameState(fresh);
-    const { toggleDurations, ...rest } = serialized.lifetime;
-    void toggleDurations;
-    const parsed = serializedGameStateSchema.safeParse({
-      ...serialized,
-      lifetime: rest,
-    });
-    expect(parsed.success).toBe(true);
-    if (!parsed.success) return;
-    const back = deserializeGameState(parsed.data);
-    expect(back.lifetime.toggleDurations).toEqual({});
-  });
-
-  it('a fresh save omits toggleDurations from the wire', () => {
-    const serialized = serializeGameState(createInitialState('seed', 0));
-    expect('toggleDurations' in serialized.lifetime).toBe(false);
-  });
-
-  it('a Panvitium burst mid-flight round-trips its duration', () => {
-    const fresh = createInitialState('seed', 0);
-    const live: GameState = {
-      ...fresh,
-      lifetime: {
-        ...fresh.lifetime,
-        activeToggles: ['panvitium'],
-        toggleDurations: { panvitium: 42.5 },
-      },
-    };
-    const wire = serializeGameState(live);
-    expect(wire.lifetime.toggleDurations).toEqual({ panvitium: 42.5 });
-    const back = deserializeGameState(wire);
-    expect(back.lifetime.toggleDurations.panvitium).toBe(42.5);
+describe('the ceremony toggles — removed with Panvitium (v14 → v15, ADR-039)', () => {
+  it('no save carries activeToggles or toggleDurations any more', () => {
+    const wire = serializeGameState(createInitialState('seed', 0));
+    expect('activeToggles' in wire.lifetime).toBe(false);
+    expect('toggleDurations' in wire.lifetime).toBe(false);
+    const back = deserializeGameState(wire).lifetime as unknown as Record<string, unknown>;
+    expect('activeToggles' in back).toBe(false);
+    expect('toggleDurations' in back).toBe(false);
   });
 });
 

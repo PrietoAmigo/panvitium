@@ -54,7 +54,6 @@ function makeBlob(overrides: Partial<SaveBlob> = {}): SaveBlob {
         invocations: {},
         maleficia: [],
         emptioList: [],
-        activeToggles: [],
         actionQueue: [],
       },
       rngState: 1,

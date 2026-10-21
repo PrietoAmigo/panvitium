@@ -118,7 +118,6 @@ export const strings = {
     emptioEmpty: 'The market shows nothing. Indagatio surfaces what can be obtained.',
     indagatioCta: 'Begin the search',
     depraedatioIntro: 'Coin seeded among the damned returns swollen.',
-    compositumBlurb: 'Multi-Sin ceremonies. Bind a rite to warp the world.',
     sinLocked: 'Locked',
 
     // The Chthonic Logos: the scroll on the Studio table holding the Logos rites, written by the
@@ -132,23 +131,18 @@ export const strings = {
       suggestion: 'A word left where a thought will find it.',
       logismoi: 'Intruding voices, the sinner\u2019s own.',
       imperium: 'No longer asked.',
-      panvitium: 'Sicut in inferno, et in terra',
     } as Record<string, string>,
     // Per-temptation verb on the action button.
     logosCta: {
       suggestion: 'Speak',
       logismoi: 'Infiltrate',
       imperium: 'Command',
-      panvitium: 'Unleash',
     } as Record<string, string>,
-    // Panvitium is irreversible while it burns, so the Unleash verb takes a second, confirming press.
-    logosConfirm: 'Let it burn?',
     // The flicker line shown while a temptation is underway.
     logosStatus: {
       suggestion: 'A word is being left\u2026',
       logismoi: 'The voices press in, and will not relent\u2026',
       imperium: 'The command takes hold\u2026',
-      panvitium: 'Burning\u2026 you cannot stop.',
     } as Record<string, string>,
     // A locked temptation is sealed: its name and maxim show as unreadable, redacted Latin.
     // Seal names belong to these action IDs, regardless of which other rites are unlocked.
@@ -161,10 +155,6 @@ export const strings = {
         name: 'Xherum Oneytan',
         maxim: '...ut nescias quod petat.',
       },
-      panvitium: {
-        name: 'Zvorpo Wermurn',
-        maxim: '...donec omnia ardeant.',
-      },
     } as Record<string, { name: string; maxim: string }>,
     // Gate prefix for a sealed row, e.g. \u201cRequires Any Sin III\u201d.
     logosRequires: 'Requires',
@@ -172,11 +162,6 @@ export const strings = {
     // specific Sin), so the sealed-row requirement reads "Requires Any Sin III" and the locked
     // auto/delegate hint reads "Any Sin I".
     anySin: 'Any Sin',
-    // Panvitium's gate on the Chthonic Logos (all eight Sins at level III).
-    logosPanvitiumGate: 'Every Sin III',
-    // Panvitium on the scroll: its open name and the ramping-cost suffix on the cost line.
-    panvitium: 'Panvitium',
-    panvitiumRising: 'and rising',
     // The Chthonic Logos's outcome ledger: resolved temptations, newest first, below the rites.
     // Box-drawing rule (U+2500), never a dash (hard copy rule 2).
     logosLedgerHeading: '\u2500 INDEX SVASIONVM \u2500',
@@ -1208,7 +1193,6 @@ export const strings = {
       court_of_spires: 'Court of Spires',
       single_minded: 'Single-Minded',
       eight_at_the_table: 'Eight at the Table',
-      the_long_burn: 'The Long Burn',
       the_last_rite: 'The Last Rite',
       curator: 'Curator',
       crown_of_hell: 'The Crown of Hell',
@@ -1225,7 +1209,6 @@ export const strings = {
       court_of_spires: 'Reach 10,000 maximum influence.',
       single_minded: 'Reach Level IV in any one Cardinal Sin.',
       eight_at_the_table: 'Reach Level III in every Cardinal Sin.',
-      the_long_burn: 'Sustain Panvitium for 60 seconds.',
       the_last_rite: 'Turn an old failure into a command.',
       curator: 'Own every maleficium in the catalog.',
       crown_of_hell: 'Reach Level IV in every Cardinal Sin.',

@@ -20,7 +20,6 @@ export * from './maleficia.js';
 export * from './dynamics.js';
 export * from './faeneratio.js';
 export * from './syngraphae.js';
-export * from './compositum.js';
 export * from './desidia.js';
 export * from './callBuffs.js';
 export * from './acolytes.js';

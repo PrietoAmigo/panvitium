@@ -22,7 +22,6 @@ import {
   BASE_SUICIDE_RATE_PER_SECOND,
   BASE_MURDER_RATE_PER_SECOND,
 } from './constants.js';
-import { panvitiumRate } from './compositum.js';
 import { computeModifiers, type Modifiers } from './modifiers.js';
 import { addReprobates, mintSouls, removeReprobates } from './population.js';
 import { type GameState, totalReprobates } from './state.js';
@@ -32,7 +31,7 @@ import { type GameState, totalReprobates } from './state.js';
  * tick computes these once and feeds them into the pool drain.
  */
 export interface ReprobateRates {
-  /** Births per second (passive base + ceremony/sigil contributions × generation mul). */
+  /** Births per second (passive base + sigil contributions × generation mul). */
   readonly generationPerSecond: number;
   /** Suicides per second across the whole population. */
   readonly suicidePerSecond: number;
@@ -43,13 +42,10 @@ export interface ReprobateRates {
 /** Compute the rates from the state, given a precomputed Modifiers bundle (tick already has it). */
 export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRates {
   const population = totalReprobates(state);
-  // The Mercatus `genPerDepth × d` channel retired with the trades (Depraedatio gold rework §6)
-  // and the ceremony generation channel with the lesser ceremonies (ADR-031); any compensation is
-  // a base-constant decision on the sheet.
-  const baseGen =
-    BASE_REPROBATE_GENERATION_PER_SECOND +
-    panvitiumRate(state) + // Panvitium: R(t) = 0.01·eᵗ is also a flat generation increase
-    mods.flatGenerationPerSecond; // Ose #57 — flat births/s from the sigil channel
+  // The Mercatus `genPerDepth × d` channel retired with the trades (Depraedatio gold rework §6),
+  // the ceremony generation channel with the lesser ceremonies (ADR-031) and Panvitium's with the
+  // rite (ADR-039); any compensation is a base-constant decision on the sheet.
+  const baseGen = BASE_REPROBATE_GENERATION_PER_SECOND + mods.flatGenerationPerSecond; // Ose #57 — flat births/s from the sigil channel
   // The flat per-capita additions: Nightmares + Sabnock #43 (suicide), Glasya-Labolas #25 (murder).
   const suicideBase = BASE_SUICIDE_RATE_PER_SECOND + mods.flatBaseSuicideRatePerSecond;
   const murderBase = BASE_MURDER_RATE_PER_SECOND + mods.flatBaseMurderRatePerSecond;

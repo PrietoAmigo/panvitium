@@ -123,8 +123,8 @@ export function LogosPanel({
 
             <div className="logos-rows">
               {actions.map((a, i) => {
-                // Imperium and Panvitium — the crowned rites get the spinning inner ring.
-                const apex = a.id === 'imperium' || a.id === 'panvitium';
+                // Imperium, the crowned rite, gets the spinning inner ring.
+                const apex = a.id === 'imperium';
                 const twoRings = i >= 1; // the later rites carry a second concentric ring.
                 const rowClass =
                   'logos-row' +

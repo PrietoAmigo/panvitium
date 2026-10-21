@@ -89,9 +89,9 @@ export interface LifetimeState {
   /** Active invocations as type -> count (most stack; the apex ones are capped at 1). */
   invocations: Record<string, number>;
   /**
-   * Seconds each duration-scaled invocation has been active, keyed by invocation id (mirrors
-   * `toggleDurations`). Used by apex invocations whose effect ramps with how long they have been
-   * summoned — Aurevora's exponential gold-drain ↔ rising-efficiency (03 §2.4). Accrued each tick
+   * Seconds each duration-scaled invocation has been active, keyed by invocation id. Used by apex
+   * invocations whose effect ramps with how long they have been summoned — Aurevora's exponential
+   * gold-drain ↔ rising-efficiency (03 §2.4). Accrued each tick
    * while active, cleared on dispel and on Katabasis. Additive-optional on the wire (ADR-023),
    * empty by default.
    */
@@ -118,14 +118,6 @@ export interface LifetimeState {
    * any stake into gold.)
    */
   indagatioInvestPercent: number;
-  /** Toggle actions currently active (e.g. 'panvitium', 'bacchanal'). */
-  activeToggles: string[];
-  /**
-   * Seconds each active toggle has been running, keyed by toggle id. Used by toggles whose cost
-   * ramps with duration (Panvitium's exponential upkeep). Survivors accrue, deactivated ones are
-   * cleared. Additive-optional on the wire (ADR-023); empty by default.
-   */
-  toggleDurations: Record<string, number>;
   /** In-flight timed actions. */
   actionQueue: ActionTimer[];
   /**
@@ -294,7 +286,7 @@ export interface GameState {
   souls: BigNum;
   /**
    * Monotonic, never-decreasing running total of every soul ever MINTED across the whole game
-   * (spans lifetimes) — bumped wherever souls are minted (`mintSouls`, the Panvitium harvest), never
+   * (spans lifetimes) — bumped wherever souls are minted (`mintSouls`), never
    * decremented by spending. Drives the parish / adversary soul-threshold emails (05). Permanent.
    * Additive-optional on the wire (ADR-023); old saves default it to the current `souls`.
    */
@@ -458,8 +450,6 @@ export function createInitialState(seed: string, now: number = Date.now()): Game
       emptioList: [],
       maleficiaPrices: {},
       indagatioInvestPercent: 0,
-      activeToggles: [],
-      toggleDurations: {},
       actionQueue: [],
       autoRepeat: [],
       hoard: ZERO,

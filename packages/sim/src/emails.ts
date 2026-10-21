@@ -63,10 +63,6 @@ function allSinsAtLeast(state: GameState, n: number): boolean {
 /** Living count of an invocation (0 when absent). */
 const invCount = (state: GameState, id: string): number => state.lifetime.invocations[id] ?? 0;
 
-/** Seconds the named toggle has been continuously active this run (0 when off). */
-const toggleSeconds = (state: GameState, id: string): number =>
-  state.lifetime.toggleDurations[id] ?? 0;
-
 const soulsAtLeast = (state: GameState, threshold: number): boolean =>
   gte(state.totalSoulsObtained, bn(threshold));
 
@@ -188,7 +184,14 @@ export const EMAIL_DEFS: readonly EmailDef[] = [
       (allSinsAtLeast(s, 3) && !fatherMad(s)) || (allSinsAtLeast(s, 2) && fatherMad(s)),
   },
   { id: 'parish-2', eligible: (s) => soulsAtLeast(s, 1e7) },
-  { id: 'fr-stahl-2', eligible: (s) => toggleSeconds(s, 'panvitium') >= 3 },
+  {
+    // Father Stahl has seen the city turn: every Sin at level III, ten minutes on. Stahl #1 always
+    // arrives first (it fires at every Sin III, or at II once the priest is mad). The letter once
+    // answered a three-second burn of Panvitium, retired with the rite (ADR-039).
+    id: 'fr-stahl-2',
+    eligible: (s) => allSinsAtLeast(s, 3),
+    delaySeconds: 10 * MIN,
+  },
   { id: 'parish-3', eligible: (s) => soulsAtLeast(s, 1e8) && fatherMad(s) },
   {
     // The rectory: dialling the hidden number (982079, flashed in the code plates) reaches the old

@@ -920,7 +920,8 @@ preserving reprobates matter to the economy.
 ## ADR-031: The gating rebalance, numeric contract copy, and the Vitium Compositum retirement
 
 **Status.** Accepted [2026-07-04]. Amends ADR-030 (the Faeneratio gates) and supersedes the
-ceremony half of ADR-025/ADR-027 (the lesser Vitium Compositum ceremonies).
+ceremony half of ADR-025/ADR-027 (the lesser Vitium Compositum ceremonies). Its Panvitium survivor (the
+toggle engine, the scroll's fourth rite) is superseded by ADR-039.
 
 **Context.** Playtesting feedback on the Depraedatio gold rework: the Avaritia-I gate put the
 whole gold loop behind the first Devotion offering, the Syngraphae effect copy read as riddles
@@ -1335,6 +1336,68 @@ lever, a Retribution success shift, seven seals, a PC program) existed to serve 
   sigil / Panvitium multipliers, Erinyes, Astiwihad). Early soul income is the ambient death rate
   alone (0.0003 per reprobate per second at base), and gold loses its main early sink. See the
   README's Remaining list for every gap this opens; each needs a design or sheet decision.
+
+---
+
+## ADR-039: Panvitium removed — the seal of Semet ends the game
+
+**Status.** Accepted [2026-10-21]. Supersedes the Panvitium half of ADR-031 (the toggle engine and
+Panvitium's place on the Chthonic Logos) and every Panvitium mention in ADR-025 / ADR-027 / ADR-030 /
+ADR-037 / ADR-038.
+
+**Context.** Design decision (player request, with the Claude Design "Semet ending" handoff): the
+*Panvitium* rite, the Chthonic Logos's sealed fourth temptation and the last surviving Vitium
+Compositum ceremony, will not be used. Separately, the Eternal Sin reveal had no ending of its own:
+once Semet was named the player rose and went on descending. The two meet at the altar: the game's
+end is now the altar's, not a ritual's.
+
+**Decision.**
+
+- **Panvitium is removed, and with it the toggle engine that served it alone.** `COMPOSITA`,
+  `compositum.ts` / `compositum.data.ts` (`activateToggle`, `deactivateToggle`, `advanceToggles`,
+  `panvitiumRate`), `PANVITIUM_RATE_BASE`, the tick's upkeep step and soul harvest, its flat
+  generation term in `reprobateRates`, and its ×10 / ×20 / ×20 generation / suicide / murder
+  multipliers in `computeModifiers` all go. `LifetimeState` loses `activeToggles` and
+  `toggleDurations`.
+- **The surface goes too.** The scroll shows only Suggestion, Logismoi and Imperium; Panvitium's
+  strings (its name, maxim, verb, confirm, status, the redacted seal-name *Zvorpo Wermurn* and the
+  "Every Sin III" gate), the store's `activateCeremony` / `deactivateCeremony`, the Studio's red
+  window glow (the degradation pass's `signature` channel and its CSS), the unused
+  `panvitium-activate` audio event and the old ritual-row CSS are deleted.
+- **The Long Burn** ("Sustain Panvitium for 60 seconds") leaves the achievement catalog.
+- **Father Stahl's second letter is re-gated.** It answered a three-second burn of Panvitium; it now
+  arms once every Sin reaches level III and arrives ten minutes later (Stahl #1 always precedes it).
+  It still opens the ward call (`the-ward`) with the parish bulletins, so the Stahl arc and *The Last
+  Rite* stay reachable.
+- **The seal of Semet.** Once Semet is named (`eternalSinRevealed`), clicking the altar raises the
+  golden seal of Semet (sigil #32's art) in the Katabasis sigil's place, through the same show → arm
+  → commit machine (`useAltarSigil`), with its glow painted through the pass in gold
+  (`altarGlow.ts`) and **no STATUS QUO** beneath it. The first press arms it; the second ends the
+  game (`PanvitiumEnd`): black over everything, the gold PANVITIUM wordmark after 1 s, set exactly
+  where the title menu sets it, then after 5 s the save is wiped (as New Game, `returnToTitle`) and
+  the title menu rises beneath as the black lifts over 1.2 s. Calls, subliminals and the Unveiling
+  hold while it plays.
+
+**Consequences.**
+
+- Save schema **v14 → v15** (ADR-023): `migrations/v14-to-v15.ts` drops `activeToggles` /
+  `toggleDurations` (a burn in flight simply ends; its upkeep was paid per second, nothing is owed
+  back) and strips `the_long_burn` from `achievements`.
+- Determinism (ADR-011): Panvitium drew no RNG, so no stream changes for any save.
+- Once Semet is named there is no further descent and no Status Quo Ledger (STATUS QUO was its
+  only door): the altar offers only the end.
+- `gameEnded` is UI state, not saved: a reload during the 7.2 s ending returns to the room un-reset,
+  and the seal can be pressed again.
+- Balance: the balance audit's top finding (Panvitium's unbounded harvest) is closed by removal.
+  Souls lose the harvest and gold loses the upkeep sink; the README's open-work list is updated.
+- The Katabasis sigil's art keeps its file name (`seal-panvitium.png`): it is the game's seal, not
+  the rite's.
+- `02` / `03` still describe Panvitium and the Compositum; this ADR governs until they are synced.
+
+**Alternatives considered.** *Hiding Panvitium from the UI only* (the handoff's caveat) — rejected:
+a sim system, a modifier term and a save field kept alive for an unreachable rite is the same dead
+bookkeeping ADR-031 removed from the lesser ceremonies. *Persisting a game-ended flag* so a reload
+mid-ending still wipes — deferred: the ending is 7.2 s and pressing the seal again finishes it.
 
 ---
 

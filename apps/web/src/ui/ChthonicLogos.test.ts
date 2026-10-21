@@ -118,13 +118,8 @@ describe('ChthonicLogos — sealed action names', () => {
       expect(rows.map((row) => row.classList.contains('logos-row--locked'))).toEqual(locked);
     }
 
-    const sealedNames = [
-      strings.opera.suggestion,
-      'Vhorrus Exneth',
-      'Xherum Oneytan',
-      'Zvorpo Wermurn',
-    ];
-    expectRites(sealedNames, [false, true, true, true]);
+    const sealedNames = [strings.opera.suggestion, 'Vhorrus Exneth', 'Xherum Oneytan'];
+    expectRites(sealedNames, [false, true, true]);
 
     act(() => {
       useGameStore.setState({
@@ -132,8 +127,8 @@ describe('ChthonicLogos — sealed action names', () => {
       });
     });
     expectRites(
-      [strings.opera.suggestion, strings.opera.logismoi, 'Xherum Oneytan', 'Zvorpo Wermurn'],
-      [false, false, true, true],
+      [strings.opera.suggestion, strings.opera.logismoi, 'Xherum Oneytan'],
+      [false, false, true],
     );
 
     act(() => {
@@ -142,8 +137,8 @@ describe('ChthonicLogos — sealed action names', () => {
       });
     });
     expectRites(
-      [strings.opera.suggestion, strings.opera.logismoi, strings.opera.imperium, 'Zvorpo Wermurn'],
-      [false, false, false, true],
+      [strings.opera.suggestion, strings.opera.logismoi, strings.opera.imperium],
+      [false, false, false],
     );
 
     act(() => {
@@ -153,17 +148,13 @@ describe('ChthonicLogos — sealed action names', () => {
       }
       useGameStore.setState({ state: { ...initial, devotion } });
     });
+    // Every Sin at III no longer adds a fourth rite: Panvitium is gone from the scroll.
     expectRites(
-      [
-        strings.opera.suggestion,
-        strings.opera.logismoi,
-        strings.opera.imperium,
-        strings.opera.panvitium,
-      ],
-      [false, false, false, false],
+      [strings.opera.suggestion, strings.opera.logismoi, strings.opera.imperium],
+      [false, false, false],
     );
 
     act(() => useGameStore.setState({ state: initial }));
-    expectRites(sealedNames, [false, true, true, true]);
+    expectRites(sealedNames, [false, true, true]);
   });
 });

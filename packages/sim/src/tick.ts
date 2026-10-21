@@ -31,7 +31,6 @@ import {
   vestingPerSecond,
 } from './faeneratio.js';
 import { assetTracingInterval } from './syngraphae.js';
-import { advanceToggles, panvitiumRate } from './compositum.js';
 import { advanceCallBuffs } from './callBuffs.js';
 import { DESIDIA_BASE_COST_PER_SECOND, DESIDIA_BASE_SPEED, desidiaMax } from './desidia.js';
 import { BASE_GOLD_PER_SECOND, BASE_INFLUENCE_RATE } from './constants.js';
@@ -49,10 +48,9 @@ export interface TickResult {
   readonly state: GameState;
   readonly events: OutcomeEvent[];
   /**
-   * Transient one-line system messages produced this tick (not part of the outcome log yet).
-   * Used for Vitium Compositum auto-deactivation ("X ended — upkeep unpaid"). The store surfaces
-   * the most recent. A future slice promotes these to proper log entries alongside Panvitium's
-   * "ended" message via a discriminated log union.
+   * Transient one-line system messages produced this tick (not part of the outcome log yet): an
+   * invocation dispelled for unpaid upkeep, Aurevora's departure. The store surfaces the most
+   * recent. A future slice may promote these to proper log entries via a discriminated log union.
    */
   readonly notices: string[];
   /**
@@ -85,7 +83,6 @@ export interface PerSecondRates {
  * The current passive income rates, mirroring this file's income block without advancing the state.
  * Zero while frozen (mid-descent or under Astiwihad), since nothing accrues then. Influence is the
  * gross generation rate — it represents economy throughput, not the net change once the cap is hit.
- * (The percentage-VC base-rate machinery retired with the lesser ceremonies — ADR-031.)
  */
 export function perSecondRates(state: GameState): PerSecondRates {
   if (state.inKatabasis === true || (state.lifetime.invocations.astiwihad ?? 0) > 0) {
@@ -231,7 +228,7 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   // each REAL second and advances the whole sim by an accelerated `simDelta`; `lastTickAt` still
   // advances by the real delta (step 6) so the offline anchor stays wall-clock-honest. Charged like
   // a toggle: the tick it can no longer pay, it drains the remainder and switches off, running that
-  // tick at normal speed (no partial, no refund — cf. Vitium Compositum). Desidia never runs offline
+  // tick at normal speed (no partial, no refund). Desidia never runs offline
   // (resumeGame does not tick) or while frozen (handled by the early returns above), so `deltaSeconds`
   // here is always a live 100 ms step.
   let simDelta = deltaSeconds;
@@ -246,27 +243,14 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
     }
   }
 
-  // 0. Vitium Compositum upkeep (02 §3). Deduct each active toggle's per-second cost BEFORE any
-  //    income is applied, so a toggle never earns on a tick it couldn't afford. Toggles that
-  //    cannot pay auto-deactivate; collect a notice per deactivation. We reassign `state` here so
-  //    the rest of the tick (modifiers, income, dynamics) sees the post-upkeep toggle set.
   const notices: string[] = [];
-  {
-    const toggled = advanceToggles(state, simDelta);
-    state = toggled.state;
-    for (const id of toggled.deactivated) {
-      notices.push(`${id} ended \u2014 upkeep unpaid.`);
-    }
-  }
-
   const mods = computeModifiers(state);
 
   // 1. Passive generation (02 §1) with modifier bundle applied.
   //    Gold/s = (base + reserve interest × faenerationOutputMul + flat) × goldRateMul.
   //    Influence gain = (proportional base + flat sources) × influenceRateMul, capped at
   //    effectiveMax = base × maxInfluenceMul. The account's interest obeys the same multipliers as
-  //    base so Avaritia / Silver / Acclaim scale it too. The ceremony income and percentage-VC terms
-  //    retired with the lesser ceremonies (ADR-031 — Panvitium yields souls, not gold or influence).
+  //    base so Avaritia / Silver / Acclaim scale it too.
   //    Resources are natural numbers (02 §1) but accumulate fractionally per 100 ms tick — floored
   //    only at display/spend/comparison boundary.
   const effectiveMax = mul(state.lifetime.maxInfluence, mods.maxInfluenceMul);
@@ -491,24 +475,6 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   //    births / suicides / murders (02 §9). Each death mints 1 soul. The pools live on the
   //    lifetime state and persist across save/load (ADR-023 additive optional).
   working = applyReprobateDynamics(working, simDelta);
-
-  // 4b. Panvitium soul harvest (03 §2.3): while the ritual burns, it mints souls each second in
-  //     proportion to the current soul total — R(t) × souls — compounding the hoard for as long as
-  //     the exponential upkeep can be sustained. Accrued fractionally on `souls` (BigNum), floored
-  //     only at display/spend per ADR-005. R(t) reads the post-upkeep duration set at step 0.
-  {
-    const panvRate = panvitiumRate(working);
-    if (panvRate > 0) {
-      // Souls minted this tick = souls × R(t) × δ; accrue them on the pool AND on the monotonic
-      // totalSoulsObtained tally (05 soul-threshold emails), so the harvest counts like any mint.
-      const harvested = mul(working.souls, panvRate * simDelta);
-      working = {
-        ...working,
-        souls: add(working.souls, harvested),
-        totalSoulsObtained: add(working.totalSoulsObtained, harvested),
-      };
-    }
-  }
 
   // 4c. Single-use maleficia buffs (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt) decay
   //     in real time: each lifted this tick's modifiers (evaluated at the start of the interval like
