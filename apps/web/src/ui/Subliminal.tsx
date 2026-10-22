@@ -3,7 +3,7 @@ import { DegradedScene, decodeImage, isImageDecoded } from '../menus/DegradedSce
 import { subliminalHoldMs } from '../game/subliminals.js';
 
 /* A subliminal plate (App shows the head of the store's queue). It covers the whole viewport for its
-   hold (`subliminalHoldMs`: 160 ms for the code plates and Fausto's, 100 ms for the rest) and clears
+   hold (`subliminalHoldMs`: 160 ms for the code plates and Fausto's, 50 ms for the rest) and clears
    itself. The plate composites THROUGH the degradation pass (a DegradedScene
    backdrop), so it pixelates at the same fidelity as the rooms. It waits, invisible, until the plate
    has decoded, so the flash is never a black frame; a plate that fails to load is skipped. Unlike the
