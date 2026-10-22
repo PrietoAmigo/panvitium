@@ -297,13 +297,13 @@ describe('Invocation modifier effects (baseline invocation efficiency = 1)', () 
     expect(mid.tierWeightMul.apocalyptic).toBeCloseTo(10, 6);
   });
 
-  it('Doppelgaenger: +100% player efficiency; Wendigo: +2%/copy; both flat (no invEff scaling)', () => {
+  it('Doppelgaenger: +100% player efficiency; Wendigo: +5%/copy; both flat (no invEff scaling)', () => {
     const base = computeModifiers(fresh()).playerEfficiencyMul;
     expect(
       computeModifiers(withInvocation(fresh(), 'doppelgaenger', 1)).playerEfficiencyMul,
     ).toBeCloseTo(base * 2, 6);
     expect(computeModifiers(withInvocation(fresh(), 'wendigo', 5)).playerEfficiencyMul).toBeCloseTo(
-      base * (1 + 0.02 * 5),
+      base * (1 + 0.05 * 5),
       6,
     );
   });

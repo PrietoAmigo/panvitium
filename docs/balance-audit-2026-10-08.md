@@ -75,7 +75,9 @@ Ranked by how much they bend the game. Suggested directions are options, not dec
 7. **Efficiency below ×2 does nothing for Suggestion's yield.** Whole units only: the Familiar's
    +33%, up to +20% from ten Wendigos, The Dadu's +5% and the first Gula skill tier add nothing until
    the total reaches 2. F2 stops them costing extra; they are still dead weight for Suggestion (they
-   do lift Logismoi/Imperium's % tiers and the Indagatio/Emptio timers). Same remedy as 6.
+   do lift Logismoi/Imperium's % tiers and the Indagatio/Emptio timers). Same remedy as 6. **Eased
+   (2026-10-22, player tuning):** each Wendigo now gives +5% (ten: +50%), so the Familiar, ten
+   Wendigos and The Dadu together reach ×2.09 and the second whole unit.
 8. **Sin-1 invocation upkeep outruns base influence regeneration.** Wendigo/Kobold/Banshee cost
    1 influence/s and Blob/Empusa 2/s, against 0.5/s base regen (0.5% of the 100 cap). With F1
    reverted, ~2–33 souls in Decarabia quietly pay for them again; without Decarabia, the influence

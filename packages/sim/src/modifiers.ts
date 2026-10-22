@@ -315,7 +315,7 @@ export function computeModifiers(state: GameState): Modifiers {
   // gates and costs, this module owns what each does — mirroring how maleficia effects are coded).
   const inv = state.lifetime.invocations;
   const hasFamiliar = (inv.familiar ?? 0) > 0; // +33% player efficiency
-  const wendigoCount = inv.wendigo ?? 0; // each: +2% player efficiency (flat, not efficiency-scaled)
+  const wendigoCount = inv.wendigo ?? 0; // each: +5% player efficiency (flat, not efficiency-scaled)
   const famaCount = inv.fama ?? 0; // each: +7.5% influence gain (× invEff)
   const nightmareCount = inv.nightmare ?? 0; // each: additive to base suicide rate (× invEff)
   const behemothCount = inv.behemoth ?? 0; // each: additive to Stellar chance (× invEff)
@@ -361,7 +361,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const NIGHTMARE_SUICIDE_FACTOR = 0.005; // each Nightmare: +0.005/s base reprobate suicide rate
   const HARPY_MURDER_FACTOR = 0.005; // each Harpy: +0.005/s base reprobate murder rate
   const BEHEMOTH_STELLAR_FLAT = 0.00025; // each Behemoth: +0.00025 flat Stellar chance (0.025 pp)
-  const WENDIGO_PLAYER_EFF_FACTOR = 0.02; // each Wendigo: +2% player efficiency (flat)
+  const WENDIGO_PLAYER_EFF_FACTOR = 0.05; // each Wendigo: +5% player efficiency (flat; player tuning: was +2%)
   const NARCISSUS_POSITIVE_FACTOR = 0.01; // each Narcissus: +1% every positive outcome weight (flat)
   const UPIR_NEGATIVE_FACTOR = 0.01; // each Upir: −1% every negative outcome weight (× invEff)
   const IMP_MURDERS_PER_SECOND = 1; // each Imp: +1 murder/s
@@ -439,7 +439,7 @@ export function computeModifiers(state: GameState): Modifiers {
   const playerEff =
     skillBonus(gulaIntensity) *
     (hasDoppel ? 2 : 1) * // Doppelgänger: +100% player efficiency
-    (1 + WENDIGO_PLAYER_EFF_FACTOR * wendigoCount) * // each Wendigo: +2% player efficiency (flat)
+    (1 + WENDIGO_PLAYER_EFF_FACTOR * wendigoCount) * // each Wendigo: +5% player efficiency (flat)
     more('the_dadu', 0.05) * // The Dadu: +5% player efficiency (Maleficia)
     (hasFamiliar ? 1 + 0.33 * invEffForInv('familiar') : 1) *
     aurevoraEff *

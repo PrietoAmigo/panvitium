@@ -33,7 +33,8 @@ export const INVOCATIONS: Readonly<Record<string, InvocationDef>> = {
     sinLevel: 1,
     maxActive: 10,
     upkeep: { influence: 1 }, // 1 influence/s
-    // Effect (modifiers.ts): +2% player efficiency per copy (flat, not efficiency-scaled).
+    // Effect (modifiers.ts): +5% player efficiency per copy (flat, not efficiency-scaled).
+    // (Player tuning: up from +2%.)
   },
   blob: {
     id: 'blob',

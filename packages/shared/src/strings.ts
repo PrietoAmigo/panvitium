@@ -449,7 +449,7 @@ export const strings = {
      *  sim (invocations.data.ts, modifiers.ts, apex.ts, constants.ts). */
     effects: {
       familiar: '+33% player efficiency.',
-      wendigo: '+2% player efficiency per copy.',
+      wendigo: '+5% player efficiency per copy.',
       imp: '+1 murder/s per copy, scaled by invocation efficiency.',
       banshee: '+1 suicide/s per copy, scaled by invocation efficiency.',
       blob: '+0.00625 desidia/s per copy, scaled by invocation efficiency.',
