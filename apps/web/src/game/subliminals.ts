@@ -64,8 +64,8 @@ export function codePlatesShown(
   return receivedEmailIds.has('fr-stahl-1') && !placedCallIds.has('the-rectory');
 }
 
-/** How long an ordinary random plate holds on screen: a handful of frames, too brief to study. */
-export const SUBLIMINAL_MS = 100;
+/** How long an ordinary random plate holds on screen: three frames or so, too brief to study. */
+export const SUBLIMINAL_MS = 50;
 
 /** How long a code plate or one of Fausto's holds: a little longer, so it can just be caught. */
 export const SUBLIMINAL_LONG_MS = 160;
@@ -75,7 +75,7 @@ export function isFaustoSubliminal(src: string): boolean {
   return Object.values(FAUSTO_SUBLIMINALS).includes(src);
 }
 
-/** How long the plate `src` holds on screen: the code plates and Fausto's 160 ms, the rest 100 ms. */
+/** How long the plate `src` holds on screen: the code plates and Fausto's 160 ms, the rest 50 ms. */
 export function subliminalHoldMs(src: string): number {
   return isCodeSubliminal(src) || isFaustoSubliminal(src) ? SUBLIMINAL_LONG_MS : SUBLIMINAL_MS;
 }

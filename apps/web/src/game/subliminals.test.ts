@@ -111,15 +111,15 @@ describe('subliminals — the code plates', () => {
 });
 
 describe('subliminals — how long a plate holds', () => {
-  it("holds the code plates and Fausto's for 160 ms, every other plate for 100 ms", () => {
+  it("holds the code plates and Fausto's for 160 ms, every other plate for 50 ms", () => {
     expect(SUBLIMINAL_LONG_MS).toBe(160);
-    expect(SUBLIMINAL_MS).toBe(100);
+    expect(SUBLIMINAL_MS).toBe(50);
     for (const src of [...CODE_SUBLIMINALS, ...Object.values(FAUSTO_SUBLIMINALS)]) {
       expect(subliminalHoldMs(src), src).toBe(160);
     }
     const ordinary = RANDOM_SUBLIMINALS.filter((src) => !isCodeSubliminal(src));
     expect(ordinary).toHaveLength(14);
-    for (const src of ordinary) expect(subliminalHoldMs(src), src).toBe(100);
+    for (const src of ordinary) expect(subliminalHoldMs(src), src).toBe(50);
   });
 });
 
