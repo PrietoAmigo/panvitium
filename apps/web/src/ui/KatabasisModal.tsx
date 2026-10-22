@@ -1,8 +1,8 @@
 import { type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
-import { eternalSinRevealed, gameRuntimeMs, type GameState } from '@panvitium/sim';
+import { eternalSinRevealed } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
-import { formatBigNum, formatDuration } from '../game/format.js';
+import { formatBigNum } from '../game/format.js';
 import { Katabasis } from '../menus/Katabasis.js';
 
 function RecapLine({
@@ -55,44 +55,13 @@ function KatabasisRecapView(): ReactElement {
 }
 
 /**
- * The Eternal-Sin reveal (03 §8, 01) — the name beneath the ink resolves to Semet, with the closing
- * Latin verse. Rendered as an overlay ON TOP of the live flow so the player's place in the descent
- * (the end-state Princes / the open Eternal takeover) is preserved when they close the book.
- */
-function EternalRevealOverlay({ state }: { state: GameState }): ReactElement {
-  const dismiss = useGameStore((s) => s.dismissEternalReveal);
-  return (
-    <div className="katabasis-flow katabasis-flow--overlay">
-      <div className="reveal" role="dialog" aria-label={strings.eternal.name}>
-        <h1 className="reveal-name">{strings.eternal.name}</h1>
-        <p className="reveal-verse">{strings.eternal.verse}</p>
-        <div className="reveal-time">
-          <span className="reveal-time-label">{strings.eternal.runtimeLabel}</span>
-          <span className="reveal-time-value">{formatDuration(gameRuntimeMs(state))}</span>
-        </div>
-        <button type="button" className="reveal-dismiss" onClick={() => dismiss()}>
-          {strings.eternal.dismiss}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Phase orchestrator for the full-screen Katabasis flow + the Eternal-Sin reveal. The `menu` phase
- * renders the cinematic descent (`menus/Katabasis`); the `recap` phase renders "You Rise"; the
- * reveal layers above whichever is showing (so the descent stays mounted underneath).
+ * Phase orchestrator for the full-screen Katabasis flow. The `menu` phase renders the cinematic
+ * descent (`menus/Katabasis`); the `recap` phase renders "You Rise". Naming Semet raises no screen
+ * of its own: the Ninth's modal turns to its named face in place (ADR-040).
  */
 export function KatabasisModal(): ReactElement | null {
   const phase = useGameStore((s) => s.katabasisPhase);
-  const eternalReveal = useGameStore((s) => s.eternalReveal);
-  const state = useGameStore((s) => s.state);
-  if (phase === null && !eternalReveal) return null;
-  return (
-    <>
-      {phase === 'menu' && <Katabasis />}
-      {phase === 'recap' && <KatabasisRecapView />}
-      {eternalReveal && state && <EternalRevealOverlay state={state} />}
-    </>
-  );
+  if (phase === 'menu') return <Katabasis />;
+  if (phase === 'recap') return <KatabasisRecapView />;
+  return null;
 }

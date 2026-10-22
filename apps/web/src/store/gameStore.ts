@@ -40,7 +40,6 @@ import {
   bindSigil as bindSigilSim,
   offerDevotion,
   offerEternal as offerEternalSim,
-  eternalSinRevealed,
   commitKatabasis,
   enterKatabasis,
   markEmailRead as markEmailReadSim,
@@ -212,12 +211,6 @@ interface GameStore {
   preferences: Preferences;
   /** The recap produced by the last descent, shown on the recap screen. */
   recap: KatabasisRecap | null;
-  /**
-   * True when an Eternal-Sin offering has just crossed the reveal threshold — the credits screen
-   * is showing. Set once on the crossing; cleared by `dismissEternalReveal`. Revealed-ness itself
-   * is derived from state (eternalSinRevealed), so this flag is only the one-time "show it now".
-   */
-  eternalReveal: boolean;
   /** Load (or start) the game. Idempotent. */
   init: () => void;
   /** Advance the sim by `deltaSeconds`, folding its outcomes into the log and the Unveilings. */
@@ -337,11 +330,9 @@ interface GameStore {
   unbindAll: () => void;
   /**
    * Offer souls to the Eternal Sin (03 §8). No-op until every Cardinal Sin is maxed. Crossing the
-   * reveal threshold raises `eternalReveal` to trigger the credits screen.
+   * reveal threshold names Semet (derived, `eternalSinRevealed`); no screen of its own (ADR-040).
    */
   offerEternal: (amount: BigNum | number) => void;
-  /** Dismiss the Eternal-Sin reveal screen (the game continues in its post-reveal state). */
-  dismissEternalReveal: () => void;
   /** Commit the descent: reset the lifetime (clock risen to now) and show the recap. */
   confirmKatabasis: () => void;
   /** Close the Katabasis menu without descending. */
@@ -470,7 +461,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   settingsOpen: false,
   preferences: DEFAULT_PREFERENCES,
   recap: null,
-  eternalReveal: false,
   user: null,
   authReady: false,
   syncStatus: 'idle',
@@ -747,13 +737,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   offerEternal: (amount) => {
     const current = get().state;
     if (!current) return;
-    const before = eternalSinRevealed(current);
-    const next = offerEternalSim(current, amount);
-    const crossed = !before && eternalSinRevealed(next);
-    set({ state: next, notice: null, ...(crossed ? { eternalReveal: true } : {}) });
+    set({ state: offerEternalSim(current, amount), notice: null });
   },
-
-  dismissEternalReveal: () => set({ eternalReveal: false }),
 
   confirmKatabasis: () => {
     const current = get().state;

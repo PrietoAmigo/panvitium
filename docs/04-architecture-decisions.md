@@ -1403,6 +1403,36 @@ mid-ending still wipes — deferred: the ending is 7.2 s and pressing the seal a
 
 ---
 
+## ADR-040: Naming Semet raises no reveal screen
+
+**Status.** Accepted [2026-10-22]. Supersedes the reveal / credits screen of `01` ("After the Eternal
+Sin") and `03` §8.
+
+**Context.** Design decision (player request): naming Semet showed two Semet screens in a row. The
+pour that crossed the Eternal Sin's threshold laid a full-screen reveal over the descent (the name,
+the closing Latin verse, the runtime, *Accept*); dismissed, it uncovered the Ninth's modal, which had
+already turned to its named face (Semet, *Peccatum Æternum*, the runtime). With ADR-039 the game's
+end is the seal of Semet at the altar, so the reveal no longer has to carry the close.
+
+**Decision.**
+
+- **The reveal overlay is removed.** Once the player finishes pouring souls into the obelisk, the
+  Ninth's modal turns to its named face in place: that is the only Semet screen. The store's
+  one-shot `eternalReveal` flag and `dismissEternalReveal` go; `offerEternal` only offers, and the
+  reveal stays derived (`eternalSinRevealed`).
+- The overlay's strings (the Latin `verse`, the *Accept* `dismiss`) and its CSS (`.reveal`,
+  `.reveal-verse`, `.reveal-dismiss`, `.katabasis-flow--overlay`, with the already unused
+  `.reveal-kicker` / `.reveal-gloss`) are deleted.
+
+**Consequences.**
+
+- The runtime score is still shown, on the named modal. The Latin verse no longer appears in the
+  game; `03` §8 keeps its text.
+- No sim, save or RNG change: `eternalReveal` was UI state, never persisted.
+- `01` / `03` §8 still describe the reveal screen; this ADR governs until they are synced.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.

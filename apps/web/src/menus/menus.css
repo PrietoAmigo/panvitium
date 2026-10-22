@@ -2187,9 +2187,6 @@ body {
   --purple: #b489e6;
   --eternal: #ff2a1a;
 }
-.katabasis-flow--overlay {
-  z-index: 90;
-}
 .katabasis-flow button {
   font-family: inherit;
   color: inherit;
@@ -3890,24 +3887,6 @@ body {
   background: linear-gradient(var(--blood), #6e1013);
   box-shadow: 0 0 38px rgba(200, 30, 30, 0.6);
 }
-.katabasis-flow .reveal {
-  position: absolute;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 8vh 8vw;
-  background: radial-gradient(ellipse at 50% 40%, rgba(60, 4, 4, 0.72), #000 70%);
-}
-.katabasis-flow .reveal-kicker {
-  font-family: var(--font-inscribe);
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
 .katabasis-flow .reveal-name {
   font-family: var(--font-display);
   font-weight: 700;
@@ -3919,23 +3898,6 @@ body {
   text-shadow:
     0 0 50px rgba(255, 40, 20, 0.8),
     0 0 16px rgba(255, 90, 50, 0.9);
-}
-.katabasis-flow .reveal-gloss {
-  font-family: var(--font-inscribe);
-  font-style: italic;
-  color: var(--bone);
-  max-width: 40ch;
-  line-height: 1.6;
-  text-wrap: pretty;
-}
-.katabasis-flow .reveal-verse {
-  font-family: var(--font-body);
-  color: var(--dim);
-  max-width: 56ch;
-  line-height: 1.7;
-  margin: 1.8rem auto 0;
-  font-style: italic;
-  text-wrap: pretty;
 }
 .katabasis-flow .reveal-subtitle {
   font-family: var(--font-display);
@@ -3964,24 +3926,6 @@ body {
   letter-spacing: 0.14em;
   font-size: 1.4rem;
   color: var(--ember);
-}
-.katabasis-flow .reveal-dismiss {
-  margin-top: 2.6rem;
-  font-family: var(--font-display);
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  background: transparent;
-  border: 1px solid var(--blood);
-  color: var(--ember);
-  border-radius: 4px;
-  padding: 0.8rem 2.2rem;
-  transition:
-    background 0.2s,
-    color 0.2s;
-}
-.katabasis-flow .reveal-dismiss:hover {
-  background: var(--blood);
-  color: #fff;
 }
 
 /* ── reduced motion ───────────────────────────────────────────────────────── */
