@@ -128,7 +128,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Flood a place] -> buff(reprobateGenMul, ×2, 1 hour); resource(gold, -33%) — "Reprobate generation doubles for 1 hour, but costs a third of your gold and reserve"
+    - [Flood a place] -> buff(reprobateGenMul, ×2, 1 hour); resource(gold, -16.5%) — "Reprobate generation doubles for 1 hour, but costs a sixth of your gold and reserve"
     - [Let it go] -> nothing()
 
 ### a-name-to-burn
@@ -137,7 +137,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Acolyte
 - Requirements: flagFCThreatSent=1
 - Choices:
-    - [Always, with everything] -> resource(gold, -100%); maxInfluence x 1.1 permanently. — "Permanently raises maximum influence by 10%, but spends all your gold and reserve"
+    - [Always, with everything] -> resource(gold, -50%); maxInfluence x 1.1 permanently. — "Permanently raises maximum influence by 10%, but costs half your gold and reserve"
     - [Let it go] -> nothing()
 
 ### parish
@@ -146,7 +146,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Acolyte
 - Requirements: none
     - [Work behind the light] -> buff(reprobateGenMul, ×2.0, 1 hour); debuff(influenceRegenRate, -50%, 1 hour). — "Reprobate generation doubles for 1 hour, but influence regeneration halves"
-    - [Patronize] -> buff(reprobateGenMul, ×2.0, 1 hour); resource(gold, -<50%>). — "Reprobate generation doubles for 1 hour, but costs half your gold and reserve"
+    - [Patronize] -> buff(reprobateGenMul, ×2.0, 1 hour); resource(gold, -25%). — "Reprobate generation doubles for 1 hour, but costs a quarter of your gold and reserve"
     - [Let it go] -> nothing()
  
 ### ministry
@@ -164,7 +164,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Mai
 - Requirements: none
     - [Keep these retards hooked] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour). — "Influence regeneration doubles for 1 hour, but reprobate generation halves"
-    - [New features!] -> buff(influenceRegenRate, ×2.0, 1 hour); resource(gold, -50%). — "Influence regeneration doubles for 1 hour, but costs half your gold and reserve"
+    - [New features!] -> buff(influenceRegenRate, ×2.0, 1 hour); resource(gold, -25%). — "Influence regeneration doubles for 1 hour, but costs a quarter of your gold and reserve"
     - [Let it go] -> nothing()
 
 * * *

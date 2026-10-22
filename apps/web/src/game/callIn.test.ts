@@ -73,6 +73,21 @@ describe('buildCallInView', () => {
     expect(v!.choices[2]!.dim).toBe(true); // "Let it go"
   });
 
+  it('generates the halved gold costs of the catalogue calls (gold and reserve alike)', () => {
+    expect(buildCallInView('the-shipment')!.choices[0]!.sub).toBe(
+      'Reprobate generation doubles for 1 hour, but costs a sixth of your gold and reserve',
+    );
+    expect(buildCallInView('a-name-to-burn')!.choices[0]!.sub).toBe(
+      'Permanently raises maximum influence by 10%, but costs half your gold and reserve',
+    );
+    expect(buildCallInView('parish')!.choices[1]!.sub).toBe(
+      'Reprobate generation doubles for 1 hour, but costs a quarter of your gold and reserve',
+    );
+    expect(buildCallInView('social-platform')!.choices[1]!.sub).toBe(
+      'Influence regeneration doubles for 1 hour, but costs a quarter of your gold and reserve',
+    );
+  });
+
   it('every catalogue call has matching strings with the same choice count, at every beat', () => {
     for (const data of CALLS_IN) {
       const copy = strings.phone.callIn.calls[data.id];
