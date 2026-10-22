@@ -232,7 +232,7 @@ describe('describeCallInEffects', () => {
     ).toBe('Gold gain doubles for 1 hour, but you lose 10% of your reprobates');
     expect(
       describeCallInEffects([timedMul('reprobateGenMul', 2), { kind: 'spendGoldPct', pct: 33 }]),
-    ).toBe('Reprobate generation doubles for 1 hour, but costs a third of your gold');
+    ).toBe('Reprobate generation doubles for 1 hour, but costs a third of your gold and reserve');
   });
 
   it('describes a standalone cull and a permanent boost', () => {
@@ -244,7 +244,7 @@ describe('describeCallInEffects', () => {
         { kind: 'permanentMul', field: 'maxInfluence', factor: 1.1 },
         { kind: 'spendGoldPct', pct: 100 },
       ]),
-    ).toBe('Permanently raises maximum influence by 10%, but spends all your gold');
+    ).toBe('Permanently raises maximum influence by 10%, but spends all your gold and reserve');
   });
 
   it('returns an empty string when there are no effects', () => {

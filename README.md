@@ -97,7 +97,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 ## Status
 
-**Current test count: 1428** (sim 629 · shared 102 · api 20 · web 677). Save schema: **v15**.
+**Current test count: 1430** (sim 631 · shared 102 · api 20 · web 677). Save schema: **v15**.
 
 The game is mechanically complete and playable end-to-end. Phases 2 (infrastructure), 3 (gameplay)
 and 4 (content depth), the economy-parity pass, and the Phase 5 tracks that surfaced the sim, rebuilt
@@ -113,7 +113,7 @@ the merged pull requests; this README lists only what is still open.
 
 Each needs a design or spreadsheet decision before it becomes a coding slice.
 
-**Balance audit 2026-10-08.** Sixteen open findings, ranked and quantified in
+**Balance audit 2026-10-08.** Fifteen open findings, ranked and quantified in
 `docs/balance-audit-2026-10-08.md` (its numbers predate the 2026-10-20 Suggestion retune; its
 Panvitium finding closed with the rite, ADR-039):
 
@@ -130,7 +130,7 @@ Panvitium finding closed with the rite, ADR-039):
   gold-loss tiers.
 - _Low:_ Gusion #11 is pure downside; the duplicate seals (Bael = Balam, Naberius = Bifrons,
   Vine = Furcas, Dantalion ⊃ Zagan, Amy = Bifrons + Seere); Aamon #7 does nothing early; Astiwihad's
-  freeze costs nothing; Forneus #30 rounds generously; Ira's levels do nothing (below).
+  freeze costs nothing; Ira's levels do nothing (below).
 
 **Gaps left by the Decimatio removal (ADR-038).**
 

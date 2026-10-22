@@ -7,8 +7,8 @@
  * core (ADR-022). The store, on answer, hands `applyCallEffects` the chosen option's `effects`.
  *
  * Two shapes of effect:
- *   - one-shot state changes applied at answer time (permanent maxInfluence raise, a gold cost, a
- *     reprobate cull/loss, a permanent story flag);
+ *   - one-shot state changes applied at answer time (permanent maxInfluence raise, a gold cost
+ *     taken from both liquid gold and the reserve, a reprobate cull/loss, a permanent story flag);
  *   - `timedMul` buffs, appended to `lifetime.callBuffs` and folded into the modifier bundle while
  *     they last. The tick decays them by `simDelta` (the Hand of Glory convention) and drops them at
  *     expiry — so a buff active at a tick's start lifts that whole tick, exactly like Hand of Glory.
@@ -17,7 +17,12 @@
  * no per-reprobate roll), so answering a call never shifts the save's sequence.
  */
 import { mul } from './bignum.js';
-import { loseGoldFraction, loseReprobatesFraction, mintSouls } from './population.js';
+import {
+  loseGoldFraction,
+  loseReprobatesFraction,
+  loseReserveFraction,
+  mintSouls,
+} from './population.js';
 import { type GameState } from './state.js';
 
 /**
@@ -173,7 +178,9 @@ function applyEffect(state: GameState, e: CallInEffect, sourceId: string | undef
       };
     }
     case 'spendGoldPct':
-      return loseGoldFraction(state, e.pct / 100);
+      // The cost takes the same fraction of liquid gold AND of the Thesaurus reserve
+      // (`lifetime.hoard`): gold placed with the counting house is no shelter from a call's price.
+      return loseReserveFraction(loseGoldFraction(state, e.pct / 100), e.pct / 100);
     case 'loseReprobatesPct':
       // Lost, not culled: reprobates leave the pool but mint NO souls (only a cull yields souls, one
       // for one — docs "The cull is one for one, and nothing buffs it").

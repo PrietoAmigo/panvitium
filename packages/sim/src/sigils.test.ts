@@ -374,11 +374,12 @@ describe('Per-Sin invocation-effectiveness sigils (S4)', () => {
 
 describe('Flat-generator sigils (S6)', () => {
   it('Haagenti #48 generates gold/s on a log curve matching the sheet', () => {
-    // Sheet rev 2026-06-12: base coeff 3, N=100 → 3 × ln(101) ≈ 13.845 gold/s.
+    // Player tuning rev 2026-10-22: coeff 0.3 (a tenth of the sheet's 3), N=100 → 0.3 × ln(101)
+    // ≈ 1.385 gold/s.
     const strength = sigilStrength(sigilById(48)!, bn(100));
-    expect(strength).toBeCloseTo(3 * Math.log(101), 6);
+    expect(strength).toBeCloseTo(0.3 * Math.log(101), 6);
     const m = computeModifiers(bound(48, 100));
-    expect(m.flatGoldPerSecond).toBeCloseTo(3 * Math.log(101), 6);
+    expect(m.flatGoldPerSecond).toBeCloseTo(0.3 * Math.log(101), 6);
     expect(m.flatInfluencePerSecond).toBe(0);
   });
 
@@ -392,11 +393,10 @@ describe('Flat-generator sigils (S6)', () => {
   });
 
   it('Haagenti gold flows into the tick (scaled by goldRateMul)', () => {
-    const s = bound(48, 100);
-    const before = fresh().lifetime.gold.toNumber();
-    const after = tick(s, 1).state.lifetime.gold.toNumber();
-    // One second of base gold + Haagenti's ~13.85/s (both × goldRateMul = 1 at baseline).
-    expect(after - before).toBeGreaterThan(12);
+    const before = tick(fresh(), 1).state.lifetime.gold.toNumber();
+    const after = tick(bound(48, 100), 1).state.lifetime.gold.toNumber();
+    // One second of Haagenti's ~1.385/s on top of the base gold (goldRateMul = 1 at baseline).
+    expect(after - before).toBeCloseTo(0.3 * Math.log(101), 6);
   });
 
   it('Ose #57, Sabnock #43, and Glasya-Labolas #25 feed the new flat dynamics channels', () => {
@@ -414,12 +414,15 @@ describe('Flat-generator sigils (S6)', () => {
 describe('Flat invoking-power sigil (S7)', () => {
   it('Forneus #30 adds rounded invoking power on a log curve, counting toward the gates', () => {
     expect(sigilInvokingPower(fresh())).toBe(0);
-    // 0.5 × ln(1e8 + 1) ≈ 9.21 → rounds to 9.
-    expect(sigilInvokingPower(bound(30, 100_000_000))).toBe(9);
-    // 0.5 × ln(1001) ≈ 3.45 → rounds to 3.
-    expect(sigilInvokingPower(bound(30, 1000))).toBe(3);
+    // Player tuning rev 2026-10-22: coeff 0.1 (a fifth of the sheet's 0.5).
+    // 0.1 × ln(1e8 + 1) ≈ 1.84 → rounds to 2.
+    expect(sigilInvokingPower(bound(30, 100_000_000))).toBe(2);
+    // 0.1 × ln(1001) ≈ 0.69 → rounds to 1.
+    expect(sigilInvokingPower(bound(30, 1000))).toBe(1);
+    // 0.1 × ln(101) ≈ 0.46 → rounds to 0: a small binding no longer buys any power.
+    expect(sigilInvokingPower(bound(30, 100))).toBe(0);
     // Folds into the gate total (no maleficia here, so it is the whole of it).
-    expect(currentInvokingPower(bound(30, 100_000_000))).toBe(9);
+    expect(currentInvokingPower(bound(30, 100_000_000))).toBe(2);
     // Andrealphus #65 left the invoking-power channel for a composite (ADR-035): it contributes 0.
     expect(sigilInvokingPower(bound(65, 100_000_000))).toBe(0);
   });

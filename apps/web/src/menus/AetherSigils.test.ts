@@ -68,8 +68,8 @@ describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
   });
 
   it('shows rounded invoking power for Forneus #30 (log curve)', () => {
-    // coefficient 0.5 × ln(1e8 + 1) ≈ 9.21 → +9 invoking power (Andrealphus #65 vacated this niche)
-    expect(effectDisplay(sigilById(30), bn(100_000_000))).toBe('+9 invoking power');
+    // coefficient 0.1 × ln(1e8 + 1) ≈ 1.84 → +2 invoking power (Andrealphus #65 vacated this niche)
+    expect(effectDisplay(sigilById(30), bn(100_000_000))).toBe('+2 invoking power');
   });
 
   it('shows both legs of a composite seal, each signed (ADR-035)', () => {

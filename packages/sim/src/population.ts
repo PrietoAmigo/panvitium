@@ -38,6 +38,16 @@ export function loseGoldFraction(state: GameState, fraction: number): GameState 
 }
 
 /**
+ * Lose a fraction of the Thesaurus reserve (`lifetime.hoard`, clamped to [0,1]); the reserve stays
+ * a BigNum. No surrender charge applies: the fraction simply leaves the account.
+ */
+export function loseReserveFraction(state: GameState, fraction: number): GameState {
+  if (fraction <= 0) return state;
+  const keep = 1 - Math.min(1, fraction);
+  return { ...state, lifetime: { ...state.lifetime, hoard: mul(state.lifetime.hoard, keep) } };
+}
+
+/**
  * Remove up to `n` reprobates from the pool. Returns the new state and the number actually
  * removed (clamped to the current population). Deterministic — with a single pool there is no
  * subtype to draw, so no RNG is consumed.

@@ -33,6 +33,22 @@ describe('applyCallEffects — one-shot effects', () => {
     expect(s.lifetime.gold.toNumber()).toBeCloseTo(670, 6); // 1000 × (1 − 0.33)
   });
 
+  it('spendGoldPct takes the same fraction of the reserve, with no surrender charge', () => {
+    const s = applyCallEffects(stateWith({ hoard: bn(20_000) }), [
+      { kind: 'spendGoldPct', pct: 50 },
+    ]);
+    expect(s.lifetime.gold.toNumber()).toBeCloseTo(500, 6); // 1000 × (1 − 0.5)
+    expect(s.lifetime.hoard.toNumber()).toBeCloseTo(10_000, 6); // 20,000 × (1 − 0.5), all lost
+  });
+
+  it('spendGoldPct at 100% empties both gold and the reserve', () => {
+    const s = applyCallEffects(stateWith({ hoard: bn(20_000) }), [
+      { kind: 'spendGoldPct', pct: 100 },
+    ]);
+    expect(s.lifetime.gold.toNumber()).toBe(0);
+    expect(s.lifetime.hoard.toNumber()).toBe(0);
+  });
+
   it('killReprobatesPct culls the fraction AND mints one soul per death', () => {
     const s = applyCallEffects(stateWith(), [{ kind: 'killReprobatesPct', pct: 10 }]);
     expect(s.lifetime.reprobates).toBe(90);
