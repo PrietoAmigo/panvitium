@@ -254,7 +254,7 @@ export const CALLS_IN: readonly CallInData[] = [
       {
         effects: [
           { kind: 'timedMul', field: 'reprobateGenMul', factor: 2, durationSec: HOUR },
-          { kind: 'spendGoldPct', pct: 33 },
+          { kind: 'spendGoldPct', pct: 16.5 },
         ],
       },
       { dim: true },
@@ -269,7 +269,7 @@ export const CALLS_IN: readonly CallInData[] = [
       {
         effects: [
           { kind: 'permanentMul', field: 'maxInfluence', factor: 1.1 },
-          { kind: 'spendGoldPct', pct: 100 },
+          { kind: 'spendGoldPct', pct: 50 },
         ],
       },
       { dim: true },
@@ -289,7 +289,7 @@ export const CALLS_IN: readonly CallInData[] = [
       {
         effects: [
           { kind: 'timedMul', field: 'reprobateGenMul', factor: 2, durationSec: HOUR },
-          { kind: 'spendGoldPct', pct: 50 },
+          { kind: 'spendGoldPct', pct: 25 },
         ],
       },
       { dim: true },
@@ -324,7 +324,7 @@ export const CALLS_IN: readonly CallInData[] = [
       {
         effects: [
           { kind: 'timedMul', field: 'influenceRegenRate', factor: 2, durationSec: HOUR },
-          { kind: 'spendGoldPct', pct: 50 },
+          { kind: 'spendGoldPct', pct: 25 },
         ],
       },
       { dim: true },

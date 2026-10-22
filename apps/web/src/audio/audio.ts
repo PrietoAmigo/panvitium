@@ -27,18 +27,72 @@ const CUE_SRC: Partial<Record<AudioEvent, string>> = {
   'banshee-scream': `${ASSET_BASE}/music/banshee_scream.mp3`,
 };
 
-/** Chance that a successful Banshee summon lets out her scream. */
-export const BANSHEE_SCREAM_CHANCE = 0.05;
+/** Chance that a successful Banshee summon lets out her scream, once she is ready to scream. */
+export const BANSHEE_SCREAM_CHANCE = 0.1;
+
+/**
+ * She screams at most once in every this many Banshee summons: a scream silences the next 32
+ * summons, and the 33rd after it may scream again.
+ */
+export const BANSHEE_SCREAM_EVERY = 33;
+
+/** The count at which she may scream again (also the cap, and the start before any scream). */
+const SCREAM_READY = BANSHEE_SCREAM_EVERY - 1;
+
+/**
+ * The Banshee summons since her last scream, kept on this device under its own key. Like the
+ * Settings switches (`store/preferences.ts`) it is presentation, not game state: it never enters the
+ * save. Reading never throws (absent, corrupt or blocked reads as ready), and a failed write is
+ * ignored.
+ */
+const SCREAM_KEY = 'panvitium:banshee-scream';
+
+function loadSummonsSinceScream(): number {
+  try {
+    const raw = localStorage.getItem(SCREAM_KEY);
+    if (raw === null) return SCREAM_READY;
+    const n = Number(raw);
+    return Number.isInteger(n) && n >= 0 ? Math.min(n, SCREAM_READY) : SCREAM_READY;
+  } catch {
+    return SCREAM_READY;
+  }
+}
+
+function saveSummonsSinceScream(n: number): void {
+  try {
+    localStorage.setItem(SCREAM_KEY, String(n));
+  } catch {
+    // Best effort: a full or blocked store only loosens the lockout.
+  }
+}
+
+/**
+ * One successful Banshee summon's scream decision (pure): she screams on a roll under
+ * `BANSHEE_SCREAM_CHANCE`, but only once `BANSHEE_SCREAM_EVERY − 1` summons have passed since her
+ * last scream. Returns whether she screams and the new count (0 after a scream, else one more,
+ * capped at ready).
+ */
+export function bansheeScream(
+  summonsSinceScream: number,
+  roll: number,
+): { scream: boolean; summonsSinceScream: number } {
+  if (summonsSinceScream >= SCREAM_READY && roll < BANSHEE_SCREAM_CHANCE) {
+    return { scream: true, summonsSinceScream: 0 };
+  }
+  return { scream: false, summonsSinceScream: Math.min(summonsSinceScream + 1, SCREAM_READY) };
+}
 
 /**
  * The cue (if any) a successful summon of `invocationId` sounds (the caller rolls it only once
- * the summon has taken). Presentation only: the roll is the
- * browser's `Math.random`, never the sim's seeded RNG (ADR-011), so a scream leaves the save's
- * sequence untouched. `roll` is injectable for tests.
+ * the summon has taken). A Banshee summon advances her device-local scream count. Presentation
+ * only: the roll is the browser's `Math.random`, never the sim's seeded RNG (ADR-011), so a scream
+ * leaves the save's sequence untouched. `roll` is injectable for tests.
  */
 export function summonCue(invocationId: string, roll: number = Math.random()): AudioEvent | null {
-  if (invocationId === 'banshee' && roll < BANSHEE_SCREAM_CHANCE) return 'banshee-scream';
-  return null;
+  if (invocationId !== 'banshee') return null;
+  const next = bansheeScream(loadSummonsSinceScream(), roll);
+  saveSummonsSinceScream(next.summonsSinceScream);
+  return next.scream ? 'banshee-scream' : null;
 }
 
 const CUE_VOLUME = 0.7;

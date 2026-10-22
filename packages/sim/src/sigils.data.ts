@@ -12,7 +12,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   1: {
     id: 1,
     name: 'Bael',
-    coefficient: 1,
+    coefficient: 0.2, // player tuning (rev 2026-10-22): a fifth of the standard 1
     // Sigils sheet (rev 2026-06-12): −Opera negative outcome chance (all categories).
     effect: { kind: 'tierGroup', tiers: ['bad', 'terrible', 'apocalyptic'], direction: 'decrease' },
   },
@@ -243,7 +243,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 30,
     name: 'Forneus',
     curve: 'log',
-    coefficient: 0.5,
+    coefficient: 0.1, // player tuning (rev 2026-10-22): a fifth of the sheet's 0.5
     // Sigils sheet (rev 2026-06-12): +invoking power (flat).
     effect: { kind: 'invokingPower' },
   },
@@ -393,7 +393,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 48,
     name: 'Haagenti',
     curve: 'log',
-    coefficient: 3,
+    coefficient: 0.3, // player tuning (rev 2026-10-22): a tenth of the sheet's 3
     // Sigils sheet (rev 2026-06-12): +gold/s (flat).
     effect: { kind: 'flatGen', resource: 'gold' },
   },
@@ -554,7 +554,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   67: {
     id: 67,
     name: 'Amdusias',
-    coefficient: 1,
+    coefficient: 0.2, // player tuning (rev 2026-10-22): a fifth of the standard 1
     // Sigils sheet (rev 2026-06-12): +positive outcome chance (all Opera).
     effect: { kind: 'tierGroup', tiers: ['stellar', 'excellent', 'good'], direction: 'increase' },
   },

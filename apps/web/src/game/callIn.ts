@@ -143,11 +143,13 @@ function costOrKillClause(e: CallInEffect): string {
     case 'timedMul': // a debuff (factor < 1)
       return `${fieldName(e.field)} ${mulVerb(e.factor)}`;
     case 'spendGoldPct':
-      if (e.pct >= 100) return 'spends all your gold';
-      if (e.pct === 50) return 'costs half your gold';
-      if (e.pct === 33) return 'costs a third of your gold';
-      if (e.pct === 25) return 'costs a quarter of your gold';
-      return `costs ${e.pct}% of your gold`;
+      // The cost bites the reserve as well as liquid gold (the sim's `applyCallEffects`), so say so.
+      if (e.pct >= 100) return 'spends all your gold and reserve';
+      if (e.pct === 50) return 'costs half your gold and reserve';
+      if (e.pct === 33) return 'costs a third of your gold and reserve';
+      if (e.pct === 25) return 'costs a quarter of your gold and reserve';
+      if (e.pct === 16.5) return 'costs a sixth of your gold and reserve';
+      return `costs ${e.pct}% of your gold and reserve`;
     case 'loseReprobatesPct':
       return `you lose ${e.pct}% of your reprobates`;
     case 'killReprobatesPct':

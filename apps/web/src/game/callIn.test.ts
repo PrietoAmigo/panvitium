@@ -73,6 +73,21 @@ describe('buildCallInView', () => {
     expect(v!.choices[2]!.dim).toBe(true); // "Let it go"
   });
 
+  it('generates the halved gold costs of the catalogue calls (gold and reserve alike)', () => {
+    expect(buildCallInView('the-shipment')!.choices[0]!.sub).toBe(
+      'Reprobate generation doubles for 1 hour, but costs a sixth of your gold and reserve',
+    );
+    expect(buildCallInView('a-name-to-burn')!.choices[0]!.sub).toBe(
+      'Permanently raises maximum influence by 10%, but costs half your gold and reserve',
+    );
+    expect(buildCallInView('parish')!.choices[1]!.sub).toBe(
+      'Reprobate generation doubles for 1 hour, but costs a quarter of your gold and reserve',
+    );
+    expect(buildCallInView('social-platform')!.choices[1]!.sub).toBe(
+      'Influence regeneration doubles for 1 hour, but costs a quarter of your gold and reserve',
+    );
+  });
+
   it('every catalogue call has matching strings with the same choice count, at every beat', () => {
     for (const data of CALLS_IN) {
       const copy = strings.phone.callIn.calls[data.id];
@@ -232,7 +247,7 @@ describe('describeCallInEffects', () => {
     ).toBe('Gold gain doubles for 1 hour, but you lose 10% of your reprobates');
     expect(
       describeCallInEffects([timedMul('reprobateGenMul', 2), { kind: 'spendGoldPct', pct: 33 }]),
-    ).toBe('Reprobate generation doubles for 1 hour, but costs a third of your gold');
+    ).toBe('Reprobate generation doubles for 1 hour, but costs a third of your gold and reserve');
   });
 
   it('describes a standalone cull and a permanent boost', () => {
@@ -244,7 +259,7 @@ describe('describeCallInEffects', () => {
         { kind: 'permanentMul', field: 'maxInfluence', factor: 1.1 },
         { kind: 'spendGoldPct', pct: 100 },
       ]),
-    ).toBe('Permanently raises maximum influence by 10%, but spends all your gold');
+    ).toBe('Permanently raises maximum influence by 10%, but spends all your gold and reserve');
   });
 
   it('returns an empty string when there are no effects', () => {

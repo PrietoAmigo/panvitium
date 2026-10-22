@@ -2,7 +2,7 @@
 
 Canonical, single-source list of every call you can RECEIVE and the event it opens when answered. One entry per incoming call, fixed format. A call RINGS for a 15 s window during active play only (never offline; the phone is dark during Katabasis, see `06-smartphone-content.md`). Weights and magnitudes are sheet-pinned placeholders.
 
-**Implementation status.** The calls-in *front-end* is built: the catalogue lives in `apps/web/src/menus/calls-in.data.ts`, the copy in `strings.phone.callIn.<id>`, selection/eligibility in `apps/web/src/game/callIn.ts`, the arrival scheduler in `useIncomingCall`, and answering raises the "voice in the room" overlay (`SmartphoneCallIn`). The **buff / cost / cull effects are now applied**: answering routes App's `onChoose` to the store's `answerCall`, which hands the chosen option's `-> effects` to the sim's `applyCallEffects` (framework-free, ADR-022, `packages/sim/src/callBuffs.ts`). Timed buffs join `lifetime.callBuffs` and fold into the modifier bundle via `callBuffMultipliers` (decayed each tick like Hand of Glory); one-shot effects (gold cost, reprobate cull/loss, permanent maxInfluence) apply at once. **Still pending:** the spreadsheet-pinned weights, and moving the trigger/draw into the tick (deterministic + offline-correct). The story-flag `setFlag` is built (for the Imperium answer to `the-ward`), as are multi-beat calls and unskippable calls. See "Implementation notes" at the foot of this file for the flags, the cadence/recency settings, and the determinism caveat.
+**Implementation status.** The calls-in *front-end* is built: the catalogue lives in `apps/web/src/menus/calls-in.data.ts`, the copy in `strings.phone.callIn.<id>`, selection/eligibility in `apps/web/src/game/callIn.ts`, the arrival scheduler in `useIncomingCall`, and answering raises the "voice in the room" overlay (`SmartphoneCallIn`). The **buff / cost / cull effects are now applied**: answering routes App's `onChoose` to the store's `answerCall`, which hands the chosen option's `-> effects` to the sim's `applyCallEffects` (framework-free, ADR-022, `packages/sim/src/callBuffs.ts`). Timed buffs join `lifetime.callBuffs` and fold into the modifier bundle via `callBuffMultipliers` (decayed each tick like Hand of Glory); one-shot effects (gold cost, reprobate cull/loss, permanent maxInfluence) apply at once. A gold cost (`resource(gold, -N%)`) takes the same N% of liquid gold **and** of the Thesaurus reserve (`lifetime.hoard`), with no surrender charge. **Still pending:** the spreadsheet-pinned weights, and moving the trigger/draw into the tick (deterministic + offline-correct). The story-flag `setFlag` is built (for the Imperium answer to `the-ward`), as are multi-beat calls and unskippable calls. See "Implementation notes" at the foot of this file for the flags, the cadence/recency settings, and the determinism caveat.
 
 **Out of scope: sigils and Princes.** Sigils and the Princes are never interacted with from earth. They belong to the altar and the descent, not to a phone on a desk. So no call here frames a reward as binding a soul to a sigil, feeding a seal, or giving Devotion to a Prince. The phone speaks only of the mundane vice lines, the invocations, the household and its culling, the search, money, and standing.
 
@@ -128,7 +128,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Acolyte
 - Requirements: none
 - Choices:
-    - [Flood a place] -> buff(reprobateGenMul, ×2, 1 hour); resource(gold, -33%) — "Reprobate generation doubles for 1 hour, but costs a third of your gold"
+    - [Flood a place] -> buff(reprobateGenMul, ×2, 1 hour); resource(gold, -16.5%) — "Reprobate generation doubles for 1 hour, but costs a sixth of your gold and reserve"
     - [Let it go] -> nothing()
 
 ### a-name-to-burn
@@ -137,7 +137,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Acolyte
 - Requirements: flagFCThreatSent=1
 - Choices:
-    - [Always, with everything] -> resource(gold, -100%); maxInfluence x 1.1 permanently. — "Permanently raises maximum influence by 10%, but spends all your gold"
+    - [Always, with everything] -> resource(gold, -50%); maxInfluence x 1.1 permanently. — "Permanently raises maximum influence by 10%, but costs half your gold and reserve"
     - [Let it go] -> nothing()
 
 ### parish
@@ -146,7 +146,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Acolyte
 - Requirements: none
     - [Work behind the light] -> buff(reprobateGenMul, ×2.0, 1 hour); debuff(influenceRegenRate, -50%, 1 hour). — "Reprobate generation doubles for 1 hour, but influence regeneration halves"
-    - [Patronize] -> buff(reprobateGenMul, ×2.0, 1 hour); resource(gold, -<50%>). — "Reprobate generation doubles for 1 hour, but costs half your gold"
+    - [Patronize] -> buff(reprobateGenMul, ×2.0, 1 hour); resource(gold, -25%). — "Reprobate generation doubles for 1 hour, but costs a quarter of your gold and reserve"
     - [Let it go] -> nothing()
  
 ### ministry
@@ -164,7 +164,7 @@ The quoted text after a take-option (— "…") is the **player-facing sub-label
 - Caller: Mai
 - Requirements: none
     - [Keep these retards hooked] -> buff(influenceRegenRate, ×2.0, 1 hour); debuff(reprobateGenMul, -50%, 1 hour). — "Influence regeneration doubles for 1 hour, but reprobate generation halves"
-    - [New features!] -> buff(influenceRegenRate, ×2.0, 1 hour); resource(gold, -50%). — "Influence regeneration doubles for 1 hour, but costs half your gold"
+    - [New features!] -> buff(influenceRegenRate, ×2.0, 1 hour); resource(gold, -25%). — "Influence regeneration doubles for 1 hour, but costs a quarter of your gold and reserve"
     - [Let it go] -> nothing()
 
 * * *
