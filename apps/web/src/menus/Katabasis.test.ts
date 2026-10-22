@@ -7,13 +7,14 @@
  * room; left alone, the sigil fades away. The first commit of a playthrough made with no souls in
  * hand plays the empty-handed warning instead of descending; the first commit that does descend
  * plays the first-descent cinematic, whose hand-off begins the descent. The recap reads "You Rise" off the committed state, and
- * the Eternal-Sin reveal overlays the still-mounted flow. The store actions and sim math themselves
- * are covered by their own suites.
+ * pouring the Eternal Sin's threshold into the obelisk turns the Ninth's modal to Semet in place,
+ * with no reveal screen of its own. The store actions and sim math themselves are covered by their
+ * own suites.
  */
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { act, createElement, type FunctionComponent } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { bn, type GameState } from '@panvitium/sim';
+import { bn, ETERNAL_SIN_THRESHOLD, SINS, type GameState } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { KatabasisModal } from '../ui/KatabasisModal.js';
 import { App } from '../App.js';
@@ -79,7 +80,6 @@ beforeEach(() => {
     katabasisPhase: null,
     katabasisEntry: null,
     recap: null,
-    eternalReveal: false,
     log: [],
     notice: null,
     emptyHandedWarning: false,
@@ -148,14 +148,28 @@ describe('Katabasis flow — orchestrator', () => {
     expect(rows.some((t) => t.includes('Ranks held'))).toBe(false);
   });
 
-  it('overlays the Eternal-Sin reveal on top of the still-mounted flow', () => {
-    useGameStore.setState({ katabasisPhase: 'menu', eternalReveal: true });
+  it('pouring the threshold into the obelisk turns the Ninth to Semet, with no reveal screen', () => {
+    // Every Sin mastered, down among the Princes, with the threshold in hand.
+    const devotion = { ...(store().state as GameState).devotion };
+    for (const sin of SINS) devotion[sin] = bn(180 ** 4);
+    patch({ devotion, inKatabasis: true, souls: bn(ETERNAL_SIN_THRESHOLD + 100) });
+    useGameStore.setState({ katabasisPhase: 'menu' });
     render();
-    // The reveal names Semet…
-    expect(container!.querySelector('.reveal-name')?.textContent).toBe('Semet');
-    // …and the menu flow is still mounted underneath (place preserved).
-    expect(container!.querySelector('.ledger')).not.toBeNull();
-    expect(container!.querySelectorAll('.katabasis-flow').length).toBeGreaterThanOrEqual(2);
+    click('The Ninth');
+    expect(button('Offer souls to the Ninth')).not.toBeNull();
+    expect(container!.querySelector('.reveal-name')).toBeNull();
+    // The pour crosses the threshold: the modal turns to its named face in place…
+    act(() => store().offerEternal(ETERNAL_SIN_THRESHOLD));
+    expect(container!.querySelector('.takeover--eternal .reveal-name')?.textContent).toBe('Semet');
+    expect(container!.querySelector('.takeover--eternal .reveal-subtitle')?.textContent).toBe(
+      'Peccatum \u00C6ternum',
+    );
+    expect(button('Offer souls to the Ninth')).toBeNull();
+    // …and no Semet screen with the Latin verse (or its Accept) is laid over the flow.
+    expect(container!.querySelectorAll('.katabasis-flow').length).toBe(1);
+    expect(container!.querySelector('.reveal')).toBeNull();
+    expect(container!.textContent).not.toContain('Iam pridem');
+    expect(button('Accept')).toBeNull();
   });
 
   it('openKatabasis opens the flow on the Ledger without tearing down the lifetime', () => {

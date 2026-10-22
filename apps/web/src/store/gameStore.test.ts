@@ -6,6 +6,7 @@ import {
   sinLevel,
   SINS,
   ETERNAL_SIN_THRESHOLD,
+  eternalSinRevealed,
   computeModifiers,
   devotionForLevel,
   type GameState,
@@ -883,7 +884,7 @@ describe('gameStore — Eternal Sin', () => {
     patchSouls(1_000_000);
     store().offerEternal(1000);
     expect(store().state?.eternalDevotion.toNumber()).toBe(0);
-    expect(store().eternalReveal).toBe(false);
+    expect(eternalSinRevealed(store().state!)).toBe(false);
   });
 
   it('offers to the Eternal Sin once all Sins are maxed', () => {
@@ -894,18 +895,16 @@ describe('gameStore — Eternal Sin', () => {
     expect(floor(store().state!.souls).toNumber()).toBe(3000);
   });
 
-  it('crossing the threshold raises the reveal flag exactly once', () => {
+  it('crossing the threshold names Semet, with no reveal screen of its own (ADR-040)', () => {
     maxAllSins();
     patchSouls(ETERNAL_SIN_THRESHOLD + 100);
     store().offerEternal(ETERNAL_SIN_THRESHOLD - 1);
-    expect(store().eternalReveal).toBe(false); // not yet
+    expect(eternalSinRevealed(store().state!)).toBe(false); // not yet
     store().offerEternal(1); // crosses
-    expect(store().eternalReveal).toBe(true);
-    // Dismiss, then offer more — it must not re-trigger.
-    store().dismissEternalReveal();
-    expect(store().eternalReveal).toBe(false);
-    store().offerEternal(50);
-    expect(store().eternalReveal).toBe(false);
+    expect(eternalSinRevealed(store().state!)).toBe(true);
+    // The store no longer carries a one-shot reveal flag or its dismiss action.
+    expect(store()).not.toHaveProperty('eternalReveal');
+    expect(store()).not.toHaveProperty('dismissEternalReveal');
   });
 });
 

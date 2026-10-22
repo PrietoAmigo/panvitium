@@ -1228,12 +1228,9 @@ export const strings = {
     // The reveal / credits screen.
     revealKicker: 'The name beneath the ink resolves.',
     gloss: 'Semet, "oneself." There was never another prince. There was only you.',
-    verse:
-      'Iam pridem scis te perditum esse. Quiescere non potes, sed nihil agis: nihil enim venenum acerbissimum est, ornamentum gravissimum, quod cervicem premit nec umquam deponi patitur. At inter has tenebras amor eorum iustus ignem accendit, eaque sola flamma, quamvis tenuis, viam tibi monstrat.',
     scoreLabel: 'Time to ascend',
     // Total wall-clock time since this game began, to the reveal (lastTickAt minus startedAt).
     runtimeLabel: 'Time',
-    dismiss: 'Accept',
   },
   sync: {
     title: 'Cloud Archive',
