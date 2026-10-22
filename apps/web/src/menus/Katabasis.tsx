@@ -756,9 +756,7 @@ function Ledger({ state, onBack }: { state: GameState; onBack: () => void }): Re
           <div className="ls-rule" aria-hidden="true" />
         </div>
         {boundSigils.length === 0 ? (
-          <p className="ledger-sigils-empty">
-            No seals burn yet. Bind souls to the Goetia and their effects will surface here.
-          </p>
+          <p className="ledger-sigils-empty">No seals burn yet.</p>
         ) : (
           <div className="ledger-sigils">
             {boundSigils.map((g) => (
