@@ -3027,28 +3027,60 @@ body {
   );
 }
 .katabasis-flow .bg-end {
+  /* The Court art under the red cloud ("Red Cloud" handoff). Inset past the frame so its blur
+     (inline: density × 9px, after #kat-degrade) never shows an edge. At 47.5% the painted obelisk
+     stays near the centre at any aspect, under the .obelisk column. */
   position: absolute;
-  inset: 0;
+  inset: -20px;
   background-size: cover;
-  background-position: center bottom;
+  background-position: 47.5% 100%;
   opacity: 1;
   filter: url(#kat-degrade);
 }
-.katabasis-flow .end-glow {
+/* The red cloud, bottom to top: the multiply wash (inline opacity: density × 0.55), then two noise
+   canvases (RedCloud.tsx), each two seamless tiles wide. One tile spans 1960px of a 720px-tall
+   scene (272.2vh, or the full width on a wider screen), so the browser's upscale softens the
+   noise; panning by one tile (-50% of the canvas) loops without a seam. Left to right only. The
+   scene's vignette (.hell::after) and the chrome's scanlines and grain sit above both. */
+.katabasis-flow .cloud-wash {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  mix-blend-mode: screen;
-  background: radial-gradient(ellipse at 50% 14%, rgba(255, 40, 20, 0.3), transparent 50%);
-  animation: kat-end-pulse 5s ease-in-out infinite;
+  background: #5a0a0a;
+  mix-blend-mode: multiply;
 }
-@keyframes kat-end-pulse {
+.katabasis-flow .cloud-fog {
+  --fog-tile: max(272.222vh, 100vw);
+  position: absolute;
+  left: 0;
+  top: calc(var(--fog-tile) * -0.08163);
+  width: calc(var(--fog-tile) * 2);
+  height: calc(var(--fog-tile) * 0.53061);
+  pointer-events: none;
+  will-change: transform;
+  animation: kat-fog-pan 7s linear infinite;
+}
+.katabasis-flow .cloud-fog--b {
+  will-change: transform, opacity;
+  animation:
+    kat-fog-pan 4s linear infinite,
+    kat-fog-breathe 3s ease-in-out infinite;
+}
+@keyframes kat-fog-pan {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes kat-fog-breathe {
   0%,
   100% {
-    opacity: 0.6;
+    opacity: 0.5;
   }
   50% {
-    opacity: 1;
+    opacity: 0.85;
   }
 }
 .katabasis-flow .statue-field {
@@ -3091,17 +3123,21 @@ body {
   margin-top: 0.15rem;
   font-size: 0.72rem;
 }
+/* The end-state hold target: an invisible column over the painted obelisk (centred at 50% at any
+   aspect, 11.5% wide), from the top down to the hell floor (11vh, at least 80px) so the floor
+   never takes the press. No hover visual: the cloud thinning is the only response. */
 .katabasis-flow .obelisk {
   position: absolute;
-  transform: translate(-50%, -50%);
+  top: 0;
+  bottom: max(11vh, 80px);
+  left: 44.25%;
+  width: 11.5%;
   z-index: 22;
   border: 0;
   background: transparent;
   padding: 0;
-  border-radius: 12% / 4%;
+  touch-action: none;
 }
-/* Revealed Semet carries no hover hotspot and no candle flame (it is the statue in the end-state
-   art, not a lit drop target); the button stays an invisible click region into the Eternal modal. */
 .katabasis-flow .hell-caption {
   position: absolute;
   top: 13vh;
@@ -3308,9 +3344,6 @@ body {
   background: linear-gradient(90deg, var(--blood), var(--ember));
   box-shadow: 0 0 14px rgba(255, 80, 45, 0.7);
   transition: width 0.18s ease;
-}
-.katabasis-flow .tk-meter-fill--eternal {
-  background: linear-gradient(90deg, #8a0a0a, var(--eternal));
 }
 .katabasis-flow .tk-meter-cap {
   display: flex;
@@ -3927,12 +3960,55 @@ body {
   font-size: 1.4rem;
   color: var(--ember);
 }
+/* The Semet screen rises over the cleared Court a beat after the naming pour, so the clear scene
+   reads first; hidden (so unclickable) until it fades in. Accept is its one way out. */
+.katabasis-flow .takeover--semet {
+  animation: kat-semet-in 1.4s ease 1.2s both;
+}
+.katabasis-flow .takeover--semet .takeover-body {
+  animation: none;
+}
+.katabasis-flow .takeover--semet .tk-info-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+@keyframes kat-semet-in {
+  from {
+    opacity: 0;
+    visibility: hidden;
+  }
+  to {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+.katabasis-flow .reveal-accept {
+  margin-top: 2.6rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--blood);
+  color: var(--ember);
+  border-radius: 4px;
+  padding: 0.8rem 2.2rem;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.katabasis-flow .reveal-accept:hover {
+  background: var(--blood);
+  color: #fff;
+}
 
 /* ── reduced motion ───────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .katabasis-flow .bg-strike,
   .katabasis-flow .bg-whiteflash,
-  .katabasis-flow .end-glow,
+  .katabasis-flow .cloud-fog,
+  .katabasis-flow .takeover--semet,
   .katabasis-flow .slab-torch,
   .katabasis-flow .sigil-cell--bound .sigil-cell-glow,
   .katabasis-flow .slab-molten,
@@ -3943,6 +4019,10 @@ body {
   }
   .katabasis-flow .bg-silhouette {
     opacity: 0.5;
+  }
+  /* The cloud holds still but keeps its density: layer B rests at its breathe's mean. */
+  .katabasis-flow .cloud-fog--b {
+    opacity: 0.675;
   }
 }
 

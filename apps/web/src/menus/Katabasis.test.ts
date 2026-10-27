@@ -6,10 +6,11 @@
  * read-only Ledger (Cardinal-Sin standing + bound-sigil effects), whose way back returns to the
  * room; left alone, the sigil fades away. The first commit of a playthrough made with no souls in
  * hand plays the empty-handed warning instead of descending; the first commit that does descend
- * plays the first-descent cinematic, whose hand-off begins the descent. The recap reads "You Rise" off the committed state, and
- * pouring the Eternal Sin's threshold into the obelisk turns the Ninth's modal to Semet in place,
- * with no reveal screen of its own. The store actions and sim math themselves are covered by their
- * own suites.
+ * plays the first-descent cinematic, whose hand-off begins the descent. The recap reads "You Rise" off the committed state.
+ * Once every Prince is mastered the ended scene is the feeding screen (the "Red Cloud" handoff): no
+ * statue opens, and holding the obelisk thins the cloud; the pour that crosses the threshold raises
+ * the Semet screen, whose Accept rises at once through Anabasis. The store actions and sim math
+ * themselves are covered by their own suites.
  */
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { act, createElement, type FunctionComponent } from 'react';
@@ -148,28 +149,130 @@ describe('Katabasis flow — orchestrator', () => {
     expect(rows.some((t) => t.includes('Ranks held'))).toBe(false);
   });
 
-  it('pouring the threshold into the obelisk turns the Ninth to Semet, with no reveal screen', () => {
-    // Every Sin mastered, down among the Princes, with the threshold in hand.
+  /** Every Sin mastered, down among the Princes, with `souls` in hand. */
+  function endState(souls: number): void {
     const devotion = { ...(store().state as GameState).devotion };
     for (const sin of SINS) devotion[sin] = bn(180 ** 4);
-    patch({ devotion, inKatabasis: true, souls: bn(ETERNAL_SIN_THRESHOLD + 100) });
+    patch({ devotion, inKatabasis: true, souls: bn(souls) });
     useGameStore.setState({ katabasisPhase: 'menu' });
+  }
+
+  it('the ended scene is the feeding screen: no statue opens, the Court sits under a red cloud', () => {
+    endState(1000);
     render();
-    click('The Ninth');
-    expect(button('Offer souls to the Ninth')).not.toBeNull();
-    expect(container!.querySelector('.reveal-name')).toBeNull();
-    // The pour crosses the threshold: the modal turns to its named face in place…
-    act(() => store().offerEternal(ETERNAL_SIN_THRESHOLD));
-    expect(container!.querySelector('.takeover--eternal .reveal-name')?.textContent).toBe('Semet');
-    expect(container!.querySelector('.takeover--eternal .reveal-subtitle')?.textContent).toBe(
-      'Peccatum \u00C6ternum',
+    // The Princes are only the painting now: no statue hotspot, no Prince to open.
+    expect(container!.querySelectorAll('.statue').length).toBe(0);
+    expect(container!.querySelector('.takeover')).toBeNull();
+    // No title, no meter, no glow: the Court, the wash and the two drifting fields.
+    expect(container!.querySelector('.hell--ended')).not.toBeNull();
+    expect(container!.querySelector('.hell-caption')).toBeNull();
+    expect(container!.querySelector('.end-glow')).toBeNull();
+    expect(container!.querySelector('.tk-meter')).toBeNull();
+    expect(container!.querySelectorAll('.cloud-fog').length).toBe(2);
+    // Nothing poured yet: the cloud is at full density (wash 0.55, the Court blurred 9px).
+    const wash = (): number =>
+      Number(container!.querySelector<HTMLElement>('.cloud-wash')!.style.opacity);
+    expect(wash()).toBeCloseTo(0.55, 5);
+    expect(container!.querySelector<HTMLElement>('.bg-end')!.style.filter).toContain(
+      'blur(9.00px)',
     );
-    expect(button('Offer souls to the Ninth')).toBeNull();
-    // …and no Semet screen with the Latin verse (or its Accept) is laid over the flow.
-    expect(container!.querySelectorAll('.katabasis-flow').length).toBe(1);
-    expect(container!.querySelector('.reveal')).toBeNull();
-    expect(container!.textContent).not.toContain('Iam pridem');
-    expect(button('Accept')).toBeNull();
+    // The obelisk is the one target, and the HUD and the floor stay.
+    expect(button('Offer souls')).not.toBeNull();
+    expect(button('The Ninth')).toBeNull();
+    expect(container!.querySelector('.kat-hud')).not.toBeNull();
+    expect(container!.querySelector('.floor')).not.toBeNull();
+    // A pour thins the cloud along the log curve.
+    act(() => store().offerEternal(1000));
+    expect(wash()).toBeLessThan(0.55);
+    expect(wash()).toBeGreaterThan(0);
+  });
+
+  it('holding the obelisk pours souls through the hold ramp, and stops on release', () => {
+    vi.useFakeTimers({
+      toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'],
+    });
+    try {
+      endState(1000);
+      render();
+      const obelisk = button('Offer souls')!;
+      act(() => {
+        obelisk.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(20);
+      });
+      // One step on press: the ramp's base of 8 souls, out of the pool into the Eternal.
+      expect((store().state as GameState).eternalDevotion.toNumber()).toBe(8);
+      expect((store().state as GameState).souls.toNumber()).toBe(992);
+      act(() => {
+        window.dispatchEvent(new Event('pointerup'));
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect((store().state as GameState).eternalDevotion.toNumber()).toBe(8);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('an empty pool makes the hold do nothing', () => {
+    vi.useFakeTimers({
+      toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'],
+    });
+    try {
+      endState(0);
+      render();
+      act(() => {
+        button('Offer souls')!.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect((store().state as GameState).eternalDevotion.toNumber()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('pouring the threshold raises the Semet screen, whose Accept rises through Anabasis', () => {
+    vi.useFakeTimers();
+    try {
+      endState(ETERNAL_SIN_THRESHOLD + 100);
+      render();
+      expect(container!.querySelector('.reveal-name')).toBeNull();
+      // The pour crosses the threshold: the cloud is gone, and Semet is named over the Court.
+      act(() => store().offerEternal(ETERNAL_SIN_THRESHOLD));
+      expect(Number(container!.querySelector<HTMLElement>('.cloud-wash')!.style.opacity)).toBe(0);
+      const semet = container!.querySelector('.takeover--semet');
+      expect(semet?.querySelector('.reveal-name')?.textContent).toBe('Semet');
+      expect(semet?.querySelector('.reveal-subtitle')?.textContent).toBe('Peccatum \u00C6ternum');
+      // No more pouring, no floor: Accept is the one way out, and no verse is laid over it.
+      expect(button('Offer souls')).toBeNull();
+      expect(container!.querySelector('.floor')).toBeNull();
+      expect(container!.textContent).not.toContain('Iam pridem');
+      click('Accept');
+      // Accept rises at once: the Anabasis, then the commit after its hold.
+      expect(container!.querySelector('.transit')?.getAttribute('data-dir')).toBe('up');
+      expect(container!.querySelector('.transit-word')?.textContent).toBe('Anabasis');
+      expect(store().katabasisPhase).toBe('menu');
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS);
+      });
+      expect(store().katabasisPhase).toBe('recap');
+      expect((store().state as GameState).inKatabasis).not.toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a descent reopened after the naming resumes on the Semet screen', () => {
+    endState(100);
+    patch({ eternalDevotion: bn(ETERNAL_SIN_THRESHOLD) });
+    render();
+    expect(container!.querySelector('.takeover--semet .reveal-name')?.textContent).toBe('Semet');
+    expect(button('Accept')).not.toBeNull();
+    expect(container!.querySelector('.floor')).toBeNull();
   });
 
   it('openKatabasis opens the flow on the Ledger without tearing down the lifetime', () => {
