@@ -804,15 +804,15 @@ function HellFloor({
           <span className="claw down">{'\u25BE'}</span> to the sealed Demons
         </span>
       </button>
+      {/* Armed by the first press, the rise keeps its words: only its glow and pulse change. */}
       <button
         type="button"
         className={`floor-half floor-rise${riseArmed ? ' is-armed' : ''}`}
         onClick={onRise}
       >
-        <span className="floor-lead">{riseArmed ? 'Let go your grip' : 'Fall upwards'}</span>
+        <span className="floor-lead">Fall upwards</span>
         <span className="floor-sub">
-          <span className="claw up">{'\u25B4'}</span>{' '}
-          {riseArmed ? 'press again \u2014 rise from Katabasis' : 'Anabasis'}
+          <span className="claw up">{'\u25B4'}</span> Anabasis
         </span>
       </button>
     </div>

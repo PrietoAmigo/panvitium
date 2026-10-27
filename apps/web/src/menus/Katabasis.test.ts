@@ -368,7 +368,12 @@ describe('Katabasis flow — orchestrator', () => {
         vi.advanceTimersByTime(TRANSIT_HOLD_MS);
       });
       click(/^Fall upwards/);
-      click(/^Let go your grip/);
+      // Armed, the rise reads as before (only its glow changes); the second press rises.
+      expect(container!.querySelector('.floor-rise.is-armed')).not.toBeNull();
+      expect(container!.querySelector('.floor-rise .floor-lead')?.textContent).toBe('Fall upwards');
+      expect(container!.querySelector('.floor-rise .floor-sub')?.textContent).toMatch(/Anabasis$/);
+      expect(container!.textContent).not.toMatch(/Let go your grip|press again/i);
+      click(/^Fall upwards/);
       const transit = (): HTMLElement | null => container!.querySelector('.transit');
       expect(transit()?.getAttribute('data-dir')).toBe('up');
       expect(container!.querySelector('.transit-word')?.textContent).toBe('Anabasis');
