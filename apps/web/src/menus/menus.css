@@ -3894,9 +3894,6 @@ body {
   font-variant-numeric: tabular-nums;
   color: #e9ddd4;
 }
-.katabasis-flow .recap-line .v.ember {
-  color: var(--ember);
-}
 .katabasis-flow .recap-line .v.white {
   color: #fff;
 }

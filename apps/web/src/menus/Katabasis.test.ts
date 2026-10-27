@@ -261,6 +261,9 @@ describe('Katabasis flow — orchestrator', () => {
       });
       expect(store().katabasisPhase).toBe('recap');
       expect((store().state as GameState).inKatabasis).not.toBe(true);
+      // The recap reads only what carried over: no line for the Ninth.
+      expect(container!.querySelector('.recap')).not.toBeNull();
+      expect(container!.querySelector('.recap')!.textContent).not.toMatch(/Ninth|Named/);
     } finally {
       vi.useRealTimers();
     }

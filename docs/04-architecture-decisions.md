@@ -1461,8 +1461,9 @@ from Katabasis at once.
 - **The Semet screen rises.** The pour that crosses the threshold leaves the Court clear; a beat
   later (1.2 s, then a 1.4 s fade) the Semet screen (Semet, *Peccatum Æternum*, the runtime) rises
   over it, with the hell floor withdrawn. Its one control is *Accept* (`strings.eternal.accept`),
-  which starts the Anabasis at once; the rise commits after its hold as any other, and the recap
-  reads "The Ninth: Named". A descent reopened after the naming resumes on the Semet screen.
+  which starts the Anabasis at once; the rise commits after its hold as any other. The "You Rise"
+  recap does not mention the naming (its "The Ninth: Named" line is removed [2026-10-27], player
+  request). A descent reopened after the naming resumes on the Semet screen.
 
 **Consequences.**
 
