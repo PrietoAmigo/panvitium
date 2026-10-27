@@ -1220,7 +1220,6 @@ export const strings = {
     herald:
       'Something stands above the eight. It has no name you can read, yet it takes what you give.',
     unknown: '\u2588\u2588\u2588\u2588\u2588',
-    ninth: 'The Ninth',
     complete: 'It knows your name. It was always yours.',
     // Revealed identity.
     name: 'Semet',
@@ -1231,6 +1230,8 @@ export const strings = {
     scoreLabel: 'Time to ascend',
     // Total wall-clock time since this game began, to the reveal (lastTickAt minus startedAt).
     runtimeLabel: 'Time',
+    // The Semet screen's one way out: it rises from Katabasis at once (the Anabasis).
+    accept: 'Accept',
   },
   sync: {
     title: 'Cloud Archive',

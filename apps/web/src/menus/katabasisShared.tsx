@@ -26,28 +26,21 @@ const HOLD_RAMP_MS = 550;
 const HOLD_STEP_MS = 60;
 const HOLD_MAX_STEP = 2.5e9;
 
-export function HoldButton({
-  onStep,
+/**
+ * The press-and-hold pour, apart from any element: `begin` (wire it to `onPointerDown`) starts the
+ * ramp, stepping `onStep` every HOLD_STEP_MS; it stops on pointerup / pointercancel anywhere in the
+ * window, or on `stop` (wire it to `onPointerLeave`). While `disabled` a press does nothing. The
+ * HoldButton is one target; the end-state obelisk, an invisible hotspot, is another.
+ */
+export function useHoldPour(
+  onStep: (delta: number) => void,
   disabled = false,
-  variant = 'blood',
-  children,
-  ariaLabel,
-  onHoldChange,
-}: {
-  onStep: (delta: number) => void;
-  disabled?: boolean;
-  variant?: 'blood' | 'ash';
-  children: ReactNode;
-  ariaLabel?: string;
-  onHoldChange?: (holding: boolean) => void;
-}): ReactElement {
+): { holding: boolean; begin: () => void; stop: () => void } {
   const rafRef = useRef<number | null>(null);
   const startRef = useRef(0);
   const lastRef = useRef(0);
   const onStepRef = useRef(onStep);
   onStepRef.current = onStep;
-  const onHoldChangeRef = useRef(onHoldChange);
-  onHoldChangeRef.current = onHoldChange;
   const [holding, setHolding] = useState(false);
 
   const stop = useCallback(() => {
@@ -58,7 +51,6 @@ export function HoldButton({
     window.removeEventListener('pointerup', stop);
     window.removeEventListener('pointercancel', stop);
     setHolding(false);
-    onHoldChangeRef.current?.(false);
   }, []);
 
   const frame = useCallback((now: number) => {
@@ -81,13 +73,30 @@ export function HoldButton({
     startRef.current = now;
     lastRef.current = now - HOLD_STEP_MS; // one step immediately on press
     setHolding(true);
-    onHoldChangeRef.current?.(true);
     rafRef.current = requestAnimationFrame(frame);
     window.addEventListener('pointerup', stop);
     window.addEventListener('pointercancel', stop);
   }, [disabled, frame, stop]);
 
   useEffect(() => stop, [stop]);
+
+  return { holding, begin, stop };
+}
+
+export function HoldButton({
+  onStep,
+  disabled = false,
+  variant = 'blood',
+  children,
+  ariaLabel,
+}: {
+  onStep: (delta: number) => void;
+  disabled?: boolean;
+  variant?: 'blood' | 'ash';
+  children: ReactNode;
+  ariaLabel?: string;
+}): ReactElement {
+  const { holding, begin, stop } = useHoldPour(onStep, disabled);
 
   return (
     <button

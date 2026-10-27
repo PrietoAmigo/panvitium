@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=EB+Garamond:ital,wght@0,400;0,500;1,400&amp;family=IM+Fell+English:ital@0;1&amp;family=IM+Fell+English+SC&amp;display=swap" rel="stylesheet">
+<style>
+html{background:#0d0b0b}body{margin:0;background:#0d0b0b;color:#c9c4bc;-webkit-font-smoothing:antialiased}
+a{color:#ff7a4a}a:hover{color:#ff5a3a}
+button{font-family:inherit;color:inherit;cursor:pointer}
+@keyframes fog-drift{0%{transform:translate(-90px,-24px)}100%{transform:translate(90px,24px)}}
+@keyframes fog-roll-1{0%{transform:translate(-260px,-40px) scale(1.05)}50%{transform:translate(0px,30px) scale(1.12)}100%{transform:translate(260px,-30px) scale(1.05)}}
+@keyframes fog-roll-2{0%{transform:translate(240px,30px) scale(1.3) rotate(2deg)}50%{transform:translate(0,-36px) scale(1.22) rotate(0deg)}100%{transform:translate(-240px,24px) scale(1.3) rotate(-2deg)}}
+@keyframes fog-pan{0%{transform:translateX(-1960px)}100%{transform:translateX(0)}}
+@keyframes fog-breathe{0%,100%{opacity:.5}50%{opacity:.85}}
+@keyframes fog-drift-2{0%{transform:translate(70px,20px) scale(1.15)}100%{transform:translate(-70px,-20px) scale(1.15)}}
+</style>
+</helmet>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <filter id="kat-degrade" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feFlood x="1" y="1" width="1" height="1" flood-color="#fff" flood-opacity="1"></feFlood>
+    <feComposite width="3" height="3"></feComposite>
+    <feTile result="cellGrid"></feTile>
+    <feComposite in="SourceGraphic" in2="cellGrid" operator="in"></feComposite>
+    <feMorphology operator="dilate" radius="1.5"></feMorphology>
+    <feComponentTransfer>
+      <feFuncR type="discrete" tableValues="0 0.13 0.27 0.42 0.58 0.75 1"></feFuncR>
+      <feFuncG type="discrete" tableValues="0 0.13 0.27 0.42 0.58 0.75 1"></feFuncG>
+      <feFuncB type="discrete" tableValues="0 0.13 0.27 0.42 0.58 0.75 1"></feFuncB>
+    </feComponentTransfer>
+  </filter>
+</svg>
+
+
+
+<section style="padding:64px 64px 32px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px">
+    <div style="font-family:'IM Fell English SC',serif;letter-spacing:.3em;text-transform:uppercase;font-size:14px;color:#6a635c">Turn 4 · The red cloud</div>
+    <div style="font-family:'EB Garamond',serif;font-size:19px;line-height:1.5;color:#8f8780;text-wrap:pretty">Once every Prince is mastered you stand inside a red cloud. Feeding the stone burns it away until the Court is clear. The cloud is the only feedback. Each screen starts with most of the cloud still in place. <a href="#4a">4a</a> thins it evenly and brings the picture into focus. <a href="#4b">4b</a> parts it outward from the stone. <a href="#4c">4c</a> blows it back while you hold and lets part of it drift back when you let go.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <div id="4a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">4a</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Thinning</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">The cloud loses density all at once and the blurred Court comes into focus behind it.</span>
+      </div>
+      <div data-screen-label="4a Thinning" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:-20px;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:cover;background-position:47.5% 100%;filter:url(#kat-degrade) blur({{ q.blur }})"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:#5a0a0a;mix-blend-mode:multiply;opacity:{{ q.wash }}"></div>
+        <canvas ref="{{ fog.q1 }}" width="640" height="180" style="position:absolute;left:0;top:-160px;width:3920px;height:1040px;pointer-events:none;animation:fog-pan 7s linear infinite;will-change:transform"></canvas>
+        <canvas ref="{{ fog.q2 }}" width="640" height="180" style="position:absolute;left:0;top:-160px;width:3920px;height:1040px;pointer-events:none;animation:fog-pan 4s linear infinite, fog-breathe 3s ease-in-out infinite;will-change:transform,opacity"></canvas>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 36%, transparent 38%, rgba(0,0,0,.5) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ q.begin }}" style="position:absolute;top:0;height:720px;left:540px;width:140px;border:0;padding:0;background:transparent;touch-action:none;cursor:pointer"></button>
+                <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ q.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+    <div id="4b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">4b</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Parting</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">The cloud opens around the stone first, then rolls outward until the Princes at the edges are clear.</span>
+      </div>
+      <div data-screen-label="4b Parting" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:cover;background-position:47.5% 100%;filter:url(#kat-degrade)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;-webkit-mask-image:radial-gradient(ellipse {{ r.mw }} {{ r.mh }} at 47.5% 50%, transparent 40%, #000 100%);mask-image:radial-gradient(ellipse {{ r.mw }} {{ r.mh }} at 47.5% 50%, transparent 40%, #000 100%)">
+          <div style="position:absolute;inset:0;background:#5a0a0a;mix-blend-mode:multiply;opacity:{{ r.wash }}"></div>
+          <canvas ref="{{ fog.r1 }}" width="320" height="180" style="position:absolute;left:-180px;top:-90px;width:1640px;height:900px;pointer-events:none;animation:fog-drift 38s ease-in-out infinite alternate;will-change:transform"></canvas>
+          <canvas ref="{{ fog.r2 }}" width="320" height="180" style="position:absolute;left:-180px;top:-90px;width:1640px;height:900px;pointer-events:none;opacity:.6;animation:fog-drift-2 52s ease-in-out infinite alternate;will-change:transform"></canvas>
+        </div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 36%, transparent 38%, rgba(0,0,0,.5) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ r.begin }}" style="position:absolute;top:0;height:720px;left:540px;width:140px;border:0;padding:0;background:transparent;touch-action:none;cursor:pointer"></button>
+        <div style="position:absolute;left:0;right:0;top:46%;display:flex;justify-content:center;pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:52px;letter-spacing:.32em;color:#f3e7df;text-shadow:0 2px 10px #000;opacity:{{ r.vOpacity }}">{{ r.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ r.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+    <div id="4c" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">4c</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Gust</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">Holding drives the cloud back hard. Let go and part of it rolls back in; what stays clear is what you've earned.</span>
+      </div>
+      <div data-screen-label="4c Gust" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:cover;background-position:47.5% 100%;filter:url(#kat-degrade)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:#5a0a0a;mix-blend-mode:multiply;opacity:{{ g.wash }}"></div>
+        <canvas ref="{{ fog.g1 }}" width="320" height="180" style="position:absolute;left:-180px;top:-90px;width:1640px;height:900px;pointer-events:none;animation:fog-drift 38s ease-in-out infinite alternate;will-change:transform"></canvas>
+        <canvas ref="{{ fog.g2 }}" width="320" height="180" style="position:absolute;left:-180px;top:-90px;width:1640px;height:900px;pointer-events:none;opacity:.6;animation:fog-drift-2 52s ease-in-out infinite alternate;will-change:transform"></canvas>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 36%, transparent 38%, rgba(0,0,0,.5) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ g.begin }}" style="position:absolute;top:0;height:720px;left:540px;width:140px;border:0;padding:0;background:transparent;touch-action:none;cursor:pointer"></button>
+        <div style="position:absolute;left:0;right:0;top:46%;display:flex;justify-content:center;pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:52px;letter-spacing:.32em;color:#f3e7df;text-shadow:0 2px 10px #000;opacity:{{ g.vOpacity }}">{{ g.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ g.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <filter id="kat-degrade-3c" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feFlood x="1" y="1" width="1" height="1" flood-color="#fff" flood-opacity="1"></feFlood>
+    <feComposite width="{{ m.cell }}" height="{{ m.cell }}"></feComposite>
+    <feTile result="cellGrid"></feTile>
+    <feComposite in="SourceGraphic" in2="cellGrid" operator="in"></feComposite>
+    <feMorphology operator="dilate" radius="{{ m.rad }}"></feMorphology>
+    <feComponentTransfer>
+      <feFuncR type="discrete" tableValues="{{ m.table }}"></feFuncR>
+      <feFuncG type="discrete" tableValues="{{ m.table }}"></feFuncG>
+      <feFuncB type="discrete" tableValues="{{ m.table }}"></feFuncB>
+    </feComponentTransfer>
+  </filter>
+</svg>
+
+<section style="padding:64px 64px 32px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px">
+    <div style="font-family:'IM Fell English SC',serif;letter-spacing:.3em;text-transform:uppercase;font-size:14px;color:#6a635c">Turn 3 · Variations on the approach</div>
+    <div style="font-family:'EB Garamond',serif;font-size:19px;line-height:1.5;color:#8f8780;text-wrap:pretty">Built on <a href="#2c">2c</a>. Each pour brings you closer, and only the camera and the image itself react. There are no added glows or overlays. <a href="#3a">3a</a> sinks the eye to the plinth. <a href="#3b">3b</a> lunges and shakes while you hold. <a href="#3c">3c</a> breaks the picture into coarser blocks the closer you get.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <div id="3a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">3a</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Kneel</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">As you close in, the eye sinks toward the plinth. In the end the stone rises out of frame above you.</span>
+      </div>
+      <div data-screen-label="3a Kneel" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto {{ k.size }};background-position:47.5% {{ k.posY }};filter:url(#kat-degrade)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 36%, transparent 38%, rgba(0,0,0,.5) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ k.begin }}" style="position:absolute;top:0;height:720px;left:{{ k.hitX }};width:{{ k.hitW }};border:0;padding:0;background:transparent;touch-action:none;cursor:pointer"></button>
+        <div style="position:absolute;left:0;right:0;top:46%;display:flex;justify-content:center;pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:52px;letter-spacing:.32em;color:#f3e7df;text-shadow:0 2px 10px #000;opacity:{{ k.vOpacity }}">{{ k.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ k.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+    <div id="3b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">3b</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Lunge</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">Holding throws you at the stone and the frame shakes. Let go and you ease back, but never as far as before.</span>
+      </div>
+      <div data-screen-label="3b Lunge" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:-24px;transform:translate({{ l.jx }}, {{ l.jy }});background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto {{ l.size }};background-position:47.5% 30%;filter:url(#kat-degrade)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 36%, transparent 38%, rgba(0,0,0,.5) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ l.begin }}" style="position:absolute;top:0;height:720px;left:{{ l.hitX }};width:{{ l.hitW }};border:0;padding:0;background:transparent;touch-action:none;cursor:pointer"></button>
+        <div style="position:absolute;left:0;right:0;top:46%;display:flex;justify-content:center;pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:52px;letter-spacing:.32em;color:#f3e7df;text-shadow:0 2px 10px #000;opacity:{{ l.vOpacity }}">{{ l.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ l.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+    <div id="3c" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">3c</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Corrupt</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">The same pixel filter as the descent, pushed harder the closer you get: bigger blocks, fewer tones. Holding makes it stutter.</span>
+      </div>
+      <div data-screen-label="3c Corrupt" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto {{ m.size }};background-position:47.5% 30%;filter:url(#kat-degrade-3c)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 36%, transparent 38%, rgba(0,0,0,.5) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ m.begin }}" style="position:absolute;top:0;height:720px;left:{{ m.hitX }};width:{{ m.hitW }};border:0;padding:0;background:transparent;touch-action:none;cursor:pointer"></button>
+        <div style="position:absolute;left:0;right:0;top:46%;display:flex;justify-content:center;pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:52px;letter-spacing:.32em;color:#f3e7df;text-shadow:0 2px 10px #000;opacity:{{ m.vOpacity }}">{{ m.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ m.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:32px 64px 32px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px">
+    <div style="font-family:'IM Fell English SC',serif;letter-spacing:.3em;text-transform:uppercase;font-size:14px;color:#6a635c">Turn 2 · The monolith is the button</div>
+    <div style="font-family:'EB Garamond',serif;font-size:19px;line-height:1.5;color:#8f8780;text-wrap:pretty">Building on <a href="#1a">1a</a>. The only thing you can press is the stone itself, inside its outline. There are no meters, numbers, names or drawn shapes: every effect is the painting itself, relit. The stone keeps a lasting mark of how much it has taken. <a href="#2a">2a</a> heats where you touch it. <a href="#2b">2b</a> lets the halo bleed down into it. <a href="#2c">2c</a> draws you closer with every pour.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <div id="2a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">2a</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Heat</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">Holding heats the stone from your hand outward. Let go and it cools, but never fully.</span>
+      </div>
+      <div data-screen-label="2a Heat" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto 165%;background-position:50% 30%;filter:url(#kat-degrade) brightness(0.5) saturate(0.75)"></div>
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto 165%;background-position:50% 30%;filter:url(#kat-degrade) brightness(2.3) contrast(1.25) saturate(1.3);pointer-events:none;opacity:{{ e.residual }};-webkit-mask-image:radial-gradient(ellipse 8% 50% at 47.5% 55%, #000 0%, transparent 100%);mask-image:radial-gradient(ellipse 8% 50% at 47.5% 55%, #000 0%, transparent 100%)"></div>
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto 165%;background-position:50% 30%;filter:url(#kat-degrade) brightness(2.3) contrast(1.25) saturate(1.3);pointer-events:none;opacity:{{ e.heat }};-webkit-mask-image:radial-gradient(circle {{ e.radius }} at {{ e.hx }} {{ e.hy }}, #000 0%, transparent 100%);mask-image:radial-gradient(circle {{ e.radius }} at {{ e.hx }} {{ e.hy }}, #000 0%, transparent 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,.8) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ e.begin }}" style="position:absolute;inset:0;border:0;padding:0;background:transparent;touch-action:none;cursor:pointer;left:545px;width:190px;inset:auto;top:0;height:720px"></button>
+        <div style="position:absolute;left:{{ e.hx }};top:{{ e.hy }};transform:translate(-50%,-150%);pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:26px;letter-spacing:.3em;color:#f3e7df;text-shadow:0 0 18px rgba(255,40,20,.95),0 1px 3px #000;opacity:{{ e.vOpacity }}">{{ e.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ e.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+    <div id="2b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">2b</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Bleed</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">The red halo above seeps down into the stone as you feed it, crown first, base last.</span>
+      </div>
+      <div data-screen-label="2b Bleed" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto 165%;background-position:50% 30%;filter:url(#kat-degrade) brightness(0.5) saturate(0.75)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;-webkit-mask-image:radial-gradient(ellipse 9% 75% at 47.5% 45%, #000 35%, transparent 100%);mask-image:radial-gradient(ellipse 9% 75% at 47.5% 45%, #000 35%, transparent 100%)">
+          <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto 165%;background-position:50% 30%;filter:url(#kat-degrade) brightness(2.3) contrast(1.25) saturate(1.3);-webkit-mask-image:linear-gradient(to bottom, #000 0%, #000 {{ f.edge }}, transparent {{ f.edge2 }});mask-image:linear-gradient(to bottom, #000 0%, #000 {{ f.edge }}, transparent {{ f.edge2 }})"></div>
+        </div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,.8) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ f.begin }}" style="position:absolute;inset:0;border:0;padding:0;background:transparent;touch-action:none;cursor:pointer;left:545px;width:190px;inset:auto;top:0;height:720px"></button>
+        <div style="position:absolute;left:0;right:0;bottom:48px;display:flex;justify-content:center;pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:38px;letter-spacing:.3em;line-height:1;color:#f3e7df;text-shadow:0 0 26px rgba(255,40,20,.85),0 2px 8px #000;opacity:{{ f.vOpacity }}">{{ f.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ f.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+    <div id="2c" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">2c</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Approach</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">Opens on the whole Court. Every soul brings you closer; the Princes slip out of frame.</span>
+      </div>
+      <div data-screen-label="2c Approach" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto {{ z.size }};background-position:47.5% 30%;filter:url(#kat-degrade)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(ellipse at 50% 14%, rgba(255,40,20,.3), transparent 50%);opacity:.8"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 48% 45%, transparent {{ z.vig }}, rgba(0,0,0,.9) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <button aria-label="Offer souls" onPointerDown="{{ z.begin }}" style="position:absolute;inset:0;border:0;padding:0;background:transparent;touch-action:none;cursor:pointer;inset:auto;top:0;height:720px;left:{{ z.hitX }};width:{{ z.hitW }}"></button>
+        <div style="position:absolute;left:0;right:0;top:46%;display:flex;justify-content:center;pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:52px;letter-spacing:.32em;color:#f3e7df;text-shadow:0 0 30px rgba(255,40,20,.95),0 2px 10px #000;opacity:{{ z.vOpacity }}">{{ z.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ z.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:32px 64px 32px;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px">
+    <div style="font-family:'IM Fell English SC',serif;letter-spacing:.3em;text-transform:uppercase;font-size:14px;color:#6a635c">Turn 1 · Feeding the Ninth</div>
+    <div style="font-family:'EB Garamond',serif;font-size:19px;line-height:1.5;color:#8f8780;text-wrap:pretty">Three replacements for the Eternal takeover. All are live: hold to pour souls (same exponential ramp as <span style="font-family:monospace;font-size:15px">HoldButton</span>), progress uses the real log curve toward 8.40B. <a href="#1a">1a</a> makes the monolith itself the button. <a href="#1b">1b</a> fills Semet's blacked-out seal and shows the scale in orders of magnitude. <a href="#1c">1c</a> has you bite the stone away.</div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px">
+
+    <!-- 1a -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">1a</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">The Monolith</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">No modal. Hold the stone; the glow climbs it rung by rung.</span>
+      </div>
+      <div data-screen-label="1a The Monolith" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:auto 165%;background-position:50% 30%;filter:url(#kat-degrade) brightness(0.55) saturate(0.8)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(ellipse 22% 60% at 50% 55%, rgba(255,42,26,.55), transparent 70%);opacity:{{ a.glow }}"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(0,0,0,.78) 100%)"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;z-index:40">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ a.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center;z-index:40" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+
+        <button aria-label="Offer souls to the Ninth" onPointerDown="{{ a.begin }}" style="position:absolute;left:490px;top:0;width:300px;height:720px;background:transparent;border:0;padding:0;z-index:20;touch-action:none" style-hover="background:radial-gradient(ellipse 50% 40% at 50% 60%, rgba(255,90,58,.08), transparent 70%)"></button>
+
+        <div style="position:absolute;left:820px;top:96px;bottom:150px;width:150px;display:flex;flex-direction:column-reverse;justify-content:space-between;z-index:25;pointer-events:none">
+          <sc-for list="{{ a.rungs }}" as="r" hint-placeholder-count="10">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="width:{{ r.w }};height:1px;background:{{ r.line }};box-shadow:{{ r.shadow }}"></span>
+              <span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:.12em;color:{{ r.color }}">{{ r.roman }}</span>
+              <span style="font-family:'IM Fell English SC',serif;font-size:12px;color:#6a635c;font-variant-numeric:tabular-nums">{{ r.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="position:absolute;left:812px;top:96px;bottom:150px;width:2px;background:rgba(255,255,255,.06);z-index:25;pointer-events:none">
+          <div style="position:absolute;left:0;right:0;bottom:0;height:{{ a.pct }};background:linear-gradient(to top,#8a0a0a,#ff2a1a);box-shadow:0 0 12px rgba(255,42,26,.9)"></div>
+        </div>
+
+        <div style="position:absolute;left:0;right:0;bottom:44px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:30;pointer-events:none">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:44px;letter-spacing:.3em;text-transform:uppercase;line-height:1;color:{{ a.verbColor }};text-shadow:0 0 30px rgba(255,40,20,.7),0 2px 8px #000">{{ a.verb }}</div>
+          <div style="font-family:'IM Fell English SC',serif;font-size:14px;letter-spacing:.28em;text-transform:uppercase;color:#8f8780">The Ninth · {{ a.pctText }} taken form</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1b -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">1b</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">The Black Seal</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">Keeps the takeover. The seal fills; ten magnitudes replace the bar.</span>
+      </div>
+      <div data-screen-label="1b The Black Seal" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:cover;background-position:center bottom;filter:url(#kat-degrade)"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 42%, rgba(34,3,3,.93), rgba(1,0,0,.99) 70%)"></div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;z-index:40">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ b.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center;z-index:40" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="font-family:'IM Fell English SC',serif;letter-spacing:.3em;text-transform:uppercase;font-size:12.5px;color:#6a635c">Peccatum Æternum</div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:44px;line-height:1;color:#6a605c;text-shadow:0 0 34px rgba(150,40,40,.45),0 2px 8px #000">The Ninth</div>
+          </div>
+          <button aria-label="Offer souls to the Ninth" onPointerDown="{{ b.begin }}" style="position:relative;width:250px;height:284px;background:transparent;border:0;padding:0;touch-action:none" style-active="transform:scale(.98)">
+            <img src="apps/web/public/assets/panvitium/katabasis/seal-semet.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:brightness(0) drop-shadow(0 0 1px rgba(160,120,110,.55)) drop-shadow(0 0 18px rgba(120,10,10,.5))">
+            <img src="apps/web/public/assets/panvitium/katabasis/seal-semet.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:brightness(0) invert(1) sepia(1) saturate(30) hue-rotate(-25deg) brightness(.9) drop-shadow(0 0 14px rgba(255,42,26,.8));clip-path:inset({{ b.clip }} 0 0 0)">
+          </button>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <div style="display:flex;gap:6px">
+              <sc-for list="{{ b.rungs }}" as="r" hint-placeholder-count="10">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:46px">
+                  <span style="width:46px;height:5px;border-radius:1px;background:{{ r.line }};box-shadow:{{ r.shadow }}"></span>
+                  <span style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:.08em;color:{{ r.color }}">{{ r.roman }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-family:'IM Fell English SC',serif;font-size:13.5px;color:#8f8780;font-variant-numeric:tabular-nums">{{ b.devoted }} of 8.40B devoted · {{ b.next }} to the next magnitude</div>
+          </div>
+          <div style="height:22px;font-family:'Cinzel',serif;font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:{{ b.verbColor }}">{{ b.verb }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1c -->
+    <div id="1c" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#060304;background:#ff5a3a;padding:4px 10px;border-radius:3px">1c</span>
+        <span style="font-family:'Cinzel',serif;font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:#d6cfc6">Teeth and Nails</span>
+        <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">Close on the stone face. Wherever you hold, it chips away.</span>
+      </div>
+      <div data-screen-label="1c Teeth and Nails" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+        <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%, #ff2a1a 0%, #7c1417 35%, #2a0506 75%, #060304 100%)"></div>
+        <canvas ref="{{ stoneRef }}" width="1280" height="720" onPointerDown="{{ c.begin }}" onPointerMove="{{ c.move }}" style="position:absolute;inset:0;width:1280px;height:720px;touch-action:none;cursor:crosshair"></canvas>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+        <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0,0,0,.7) 100%)"></div>
+        <div style="position:absolute;left:{{ c.vx }};top:{{ c.vy }};transform:translate(-50%,-160%);pointer-events:none;font-family:'Cinzel',serif;font-weight:700;font-size:22px;letter-spacing:.3em;color:#f3e7df;text-shadow:0 0 16px rgba(255,40,20,.9),0 1px 3px #000;opacity:{{ c.vOpacity }}">{{ c.verb }}</div>
+        <div style="position:absolute;top:0;left:0;padding:24px 30px;display:flex;flex-direction:column;gap:3px;pointer-events:none">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ c.souls }}</span>
+        </div>
+        <button aria-label="Turn away" style="position:absolute;top:24px;right:30px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.4);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17px;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a">✕</button>
+        <div style="position:absolute;left:30px;right:30px;bottom:26px;display:flex;align-items:flex-end;justify-content:space-between;pointer-events:none">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;line-height:1;color:#6a605c;text-shadow:0 2px 8px #000">The Ninth</span>
+            <span style="font-family:'IM Fell English SC',serif;font-size:13px;letter-spacing:.1em;color:#8f8780">Hold anywhere on the stone</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+            <span style="font-family:'Cinzel',serif;font-size:30px;line-height:1;color:#ff2a1a;font-variant-numeric:tabular-nums;text-shadow:0 0 20px rgba(255,40,20,.6)">{{ c.pctText }}</span>
+            <span style="font-family:'IM Fell English SC',serif;font-size:13px;letter-spacing:.1em;color:#8f8780">taking form</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section style="padding:32px 64px 80px;display:flex;flex-direction:column;gap:14px">
+  <div id="current" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#d6cfc6;border:1px solid #4a3a36;padding:3px 10px;border-radius:3px">Current</span>
+      <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:17px;color:#8f8780">EternalModal as shipped (Katabasis.tsx), for reference.</span>
+    </div>
+    <div data-screen-label="Current EternalModal" style="position:relative;width:1280px;height:720px;overflow:hidden;background:#000;color:#c9c4bc;user-select:none">
+      <div style="position:absolute;inset:0;background-image:url(apps/web/public/assets/panvitium/katabasis/katabasis_end.png);background-size:cover;background-position:center bottom;filter:url(#kat-degrade)"></div>
+      <div style="position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(ellipse at 50% 14%, rgba(255,40,20,.3), transparent 50%);opacity:.8"></div>
+      <div style="position:absolute;inset:0;pointer-events:none;z-index:15;background:radial-gradient(ellipse at 50% 36%, transparent 38%, rgba(0,0,0,.5) 100%)"></div>
+      <div style="position:absolute;inset:0;pointer-events:none;z-index:16;background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,.24) 0 1px, rgba(0,0,0,0) 1px 3px);mix-blend-mode:multiply"></div>
+      <div style="position:absolute;top:0;left:0;right:0;padding:24px 30.4px;z-index:40;pointer-events:none;display:flex">
+        <div style="display:flex;flex-direction:column;gap:2.9px">
+          <span style="font-family:'IM Fell English SC',serif;font-size:11.5px;letter-spacing:.32em;text-transform:uppercase;color:#6a635c">Souls</span>
+          <span style="font-family:'Cinzel',serif;font-weight:600;font-size:27.2px;line-height:1;color:#efe6df;font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(180,140,90,.35)">{{ cur.souls }}</span>
+        </div>
+      </div>
+      <div style="position:absolute;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:43px 64px;background:radial-gradient(ellipse at 50% 42%, rgba(34,3,3,.93), rgba(1,0,0,.99) 70%)">
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;max-width:600px;width:100%">
+          <button aria-label="Turn away" style="position:absolute;top:-41.6px;right:0;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.04);border:1px solid rgba(160,140,120,.3);color:#8f8780;font-size:17.6px;line-height:1;display:flex;align-items:center;justify-content:center" style-hover="color:#d6cfc6;border-color:#ff5a3a;transform:rotate(90deg)">✕</button>
+          <div style="flex:1 1 auto;min-width:0">
+            <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:56px;line-height:1;margin:6.4px 0 5.6px;color:#6a605c;text-shadow:0 0 34px rgba(150,40,40,.45),0 2px 8px #000">The Ninth</h1>
+            <div style="height:1px;margin:20.8px 0;background:linear-gradient(90deg, rgba(160,120,110,.5), transparent)"></div>
+            <div style="margin-top:17.6px;max-width:410px">
+              <div style="height:9px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid rgba(120,90,80,.45);overflow:hidden">
+                <span style="display:block;height:100%;width:{{ cur.pct }};background:linear-gradient(90deg,#8a0a0a,#ff2a1a);box-shadow:0 0 14px rgba(255,80,45,.7)"></span>
+              </div>
+              <div style="display:flex;justify-content:space-between;gap:16px;margin-top:6.4px;font-family:'IM Fell English SC',serif;font-size:12.5px;color:#8f8780">
+                <span>Taking form</span>
+                <span style="font-variant-numeric:tabular-nums;white-space:nowrap">{{ cur.pctText }}</span>
+              </div>
+            </div>
+            <div style="margin-top:25.6px;display:flex;flex-direction:column;gap:9.6px;align-items:flex-start">
+              <button aria-label="Offer souls to the Ninth" onPointerDown="{{ cur.begin }}" style="position:relative;display:inline-flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:14.4px;letter-spacing:.1em;text-transform:uppercase;color:#f3e7df;background:linear-gradient(#7c1417,#4e0c0e);border:1px solid #a01e22;border-radius:3px;padding:13.6px 24px;touch-action:none;overflow:hidden" style-hover="background:linear-gradient(#a01e22,#6e1013)" style-active="transform:scale(.97);background:linear-gradient(#ff5a3a,#a01e22);color:#fff;box-shadow:0 0 26px rgba(255,70,40,.85), inset 0 0 14px rgba(0,0,0,.4)">{{ cur.verb }}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  T = 8398080000;
+  VERBS = ['GNAW', 'LICK', 'CLUTCH', 'SQUEEZE', 'SCRAPE', 'IGNORE', 'CARESS', 'SPIT'];
+  ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  stoneRef = React.createRef();
+  ptr = { x: 640, y: 360 };
+  state = {
+    sims: { cur: { s: 2.4e9, d: 1.8e5 }, a: { s: 2.4e9, d: 1.8e5 }, b: { s: 2.4e9, d: 1.8e5 }, c: { s: 2.4e9, d: 1.8e5 }, e: { s: 2.4e9, d: 1.8e5 }, f: { s: 2.4e9, d: 1.8e5 }, z: { s: 2.4e9, d: 1.8e5 }, k: { s: 2.4e9, d: 1.8e5 }, l: { s: 2.4e9, d: 1.8e5 }, m: { s: 2.4e9, d: 1.8e5 } },
+    heat: 0, lunge: 0, hp: { x: 640, y: 400 }, jitter: 0,
+    holding: null,
+    verb: 'GNAW',
+  };
+
+  fog = { q1: React.createRef(), q2: React.createRef(), r1: React.createRef(), r2: React.createRef(), g1: React.createRef(), g2: React.createRef() };
+  fogPainted = {};
+  componentDidMount() { this.drawStone(); this.noise = [this.makeNoise(7), this.makeNoise(21)]; this.paintFog(); }
+  componentDidUpdate() { this.paintFog(); }
+  makeNoise(seed) {
+    const W = 320, H = 180; let t = seed;
+    const rnd = () => { t = (t * 16807) % 2147483647; return t / 2147483647; };
+    const out = new Float32Array(W * H);
+    let amp = 1, total = 0;
+    for (const cell of [64, 32, 16, 8]) {
+      const gw = W / cell, gh = Math.ceil(H / cell) + 2;
+      const g = Array.from({ length: gw * gh }, rnd);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const fx = x / cell, fy = y / cell, ix = Math.floor(fx), iy = Math.floor(fy);
+        const sx = fx - ix, sy = fy - iy, ux = sx * sx * (3 - 2 * sx), uy = sy * sy * (3 - 2 * sy);
+        const ix1 = (ix + 1) % gw; const a = g[iy * gw + ix], b = g[iy * gw + ix1], c = g[(iy + 1) * gw + ix], d = g[(iy + 1) * gw + ix1];
+        out[y * W + x] += amp * (a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy);
+      }
+      total += amp; amp *= 0.5;
+    }
+    for (let i = 0; i < out.length; i++) out[i] /= total;
+    return out;
+  }
+  paintFog() {
+    if (!this.noise) this.noise = [this.makeNoise(7), this.makeNoise(21)];
+    const v = this.lastFog || {};
+    for (const k of ['q', 'r', 'g']) {
+      const i = v[k]; if (i === undefined || this.fogPainted[k] === i) continue;
+      this.fogPainted[k] = i;
+      [1, 2].forEach((n) => {
+        const cv = this.fog[k + n].current; if (!cv) return;
+        const ctx = cv.getContext('2d'); const cw = cv.width; const img = ctx.createImageData(cw, 180); const src = this.noise[n - 1]; const px = img.data;
+        for (let y = 0; y < 180; y++) for (let x = 0; x < cw; x++) {
+          const a = Math.max(0, Math.min(1, 3 * src[y * 320 + (x % 320)] + +i)); const j = (y * cw + x) * 4;
+          px[j] = 158; px[j + 1] = 15; px[j + 2] = 13; px[j + 3] = a * 255;
+        }
+        ctx.putImageData(img, 0, 0);
+      });
+    }
+  }
+  componentWillUnmount() { this.stop(); }
+
+  drawStone() {
+    const cv = this.stoneRef.current; if (!cv) return;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#0b0809'; g.fillRect(0, 0, 1280, 720);
+    for (let i = 0; i < 9000; i++) {
+      const v = 8 + Math.random() * 22;
+      g.fillStyle = `rgb(${v + 4},${v},${v})`;
+      const s = 2 + Math.random() * 7;
+      g.fillRect(Math.random() * 1280, Math.random() * 720, s, s);
+    }
+    g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 1.5;
+    for (let i = 0; i < 26; i++) {
+      g.beginPath(); let x = Math.random() * 1280, y = Math.random() * 720; g.moveTo(x, y);
+      for (let k = 0; k < 6; k++) { x += (Math.random() - .5) * 120; y += (Math.random() - .5) * 120; g.lineTo(x, y); }
+      g.stroke();
+    }
+  }
+
+  chip(amt) {
+    const cv = this.stoneRef.current; if (!cv) return;
+    const g = cv.getContext('2d');
+    g.save(); g.globalCompositeOperation = 'destination-out';
+    const n = Math.min(14, 2 + Math.log10(amt + 1) * 1.4);
+    const spread = 10 + Math.log10(amt + 1) * 6;
+    for (let i = 0; i < n; i++) {
+      const x = this.ptr.x + (Math.random() - .5) * spread * 2, y = this.ptr.y + (Math.random() - .5) * spread * 2;
+      g.beginPath(); const r = 2 + Math.random() * (3 + spread * .25);
+      const sides = 5 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < sides; k++) { const a = (k / sides) * Math.PI * 2, rr = r * (.6 + Math.random() * .6); g.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+      g.closePath(); g.fill();
+    }
+    g.restore();
+  }
+
+  prog(d) { return d <= 1 ? 0 : Math.min(1, Math.log(d) / Math.log(this.T)); }
+  fmt(n) {
+    if (n < 1000) return String(Math.floor(n));
+    const u = ['K', 'M', 'B', 'T', 'Qa']; let i = -1;
+    while (n >= 1000 && i < u.length - 1) { n /= 1000; i++; }
+    return (n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)) + u[i];
+  }
+
+  begin(key, e) {
+    const s = this.state.sims[key];
+    if (Math.floor(s.s) <= 0) return;
+    this.stop();
+    if (e && key === 'c') this.setPtr(e);
+    if (e && key === 'e') {
+      const r = e.currentTarget.parentElement.getBoundingClientRect();
+      this.setState({ hp: { x: ((e.clientX - r.left) / r.width) * 1280, y: ((e.clientY - r.top) / r.height) * 720 } });
+    }
+    if (this.cool) { clearInterval(this.cool); this.cool = null; }
+    const start = performance.now(); let last = start - 60;
+    this.setState({ holding: key });
+    const frame = (now) => {
+      if (now - last >= 60) {
+        last = now;
+        const amt = Math.min(2.5e9, Math.max(8, Math.floor(8 * Math.pow(22, (now - start) / 550))));
+        this.setState((st) => {
+          const cur = st.sims[key]; const give = Math.min(amt, Math.floor(cur.s));
+          return { sims: { ...st.sims, [key]: { s: cur.s - give, d: cur.d + give } }, heat: key === 'e' ? Math.min(1, st.heat + 0.05) : st.heat, lunge: key === 'l' ? Math.min(1, st.lunge + 0.07) : st.lunge, gust: key === 'g' ? Math.min(1, (st.gust || 0) + 0.06) : (st.gust || 0), jitter: Math.random() };
+        });
+        if (key === 'c') this.chip(amt);
+      }
+      this.raf = requestAnimationFrame(frame);
+    };
+    this.raf = requestAnimationFrame(frame);
+    this.verbTimer = setInterval(() => {
+      this.setState((st) => { let v = st.verb; while (v === st.verb) v = this.VERBS[Math.floor(Math.random() * this.VERBS.length)]; return { verb: v }; });
+    }, 100);
+    this.up = () => this.stop();
+    window.addEventListener('pointerup', this.up);
+    window.addEventListener('pointercancel', this.up);
+  }
+
+  stop() {
+    if (this.raf) cancelAnimationFrame(this.raf); this.raf = null;
+    if (this.verbTimer) clearInterval(this.verbTimer); this.verbTimer = null;
+    if (this.up) { window.removeEventListener('pointerup', this.up); window.removeEventListener('pointercancel', this.up); this.up = null; }
+    if (this.state.holding) this.setState({ holding: null, jitter: 0 });
+    if ((this.state.heat > 0 || this.state.lunge > 0 || this.state.gust > 0) && !this.cool) {
+      this.cool = setInterval(() => {
+        this.setState((st) => ({ heat: Math.max(0, st.heat - 0.025), lunge: Math.max(0, st.lunge * 0.9 - 0.004), gust: Math.max(0, (st.gust || 0) * 0.94 - 0.003) }));
+        if (this.state.heat <= 0 && this.state.lunge <= 0 && !(this.state.gust > 0)) { clearInterval(this.cool); this.cool = null; }
+      }, 40);
+    }
+  }
+
+  setPtr(e) {
+    const r = e.currentTarget.getBoundingClientRect();
+    this.ptr = { x: ((e.clientX - r.left) / r.width) * 1280, y: ((e.clientY - r.top) / r.height) * 720 };
+  }
+
+  rungs(p, vertical) {
+    return this.ROMAN.map((roman, i) => {
+      const lit = p >= (i + 1) / 10, part = !lit && p > i / 10;
+      return {
+        roman,
+        value: this.fmt(Math.pow(this.T, (i + 1) / 10)),
+        w: vertical ? (lit ? '34px' : '18px') : '46px',
+        line: lit ? '#ff2a1a' : part ? '#7c1417' : 'rgba(255,255,255,.09)',
+        shadow: lit ? '0 0 10px rgba(255,42,26,.8)' : 'none',
+        color: lit ? '#ff5a3a' : part ? '#c9c4bc' : '#4a3a36',
+      };
+    });
+  }
+
+  renderVals() {
+    const { sims, holding, verb } = this.state;
+    for (const k of ['cur', 'a', 'b', 'c', 'e', 'f', 'z', 'k', 'l', 'm']) if (!sims[k]) sims[k] = { s: 2.4e9, d: 1.8e5 };
+    for (const k of ['q', 'r', 'g']) if (!sims[k]) sims[k] = { s: 2.4e9, d: 2e3 };
+    const base = (k) => {
+      const p = this.prog(sims[k].d);
+      return { p, souls: this.fmt(sims[k].s), pct: (p * 100) + '%', pctText: (p * 100).toFixed(1) + '%', begin: (e) => this.begin(k, e), held: holding === k };
+    };
+    const cur = base('cur'), a = base('a'), b = base('b'), c = base('c');
+    const nextMag = Math.pow(this.T, Math.min(10, Math.floor(b.p * 10) + 1) / 10);
+    return {
+      stoneRef: this.stoneRef,
+      cur: { ...cur, verb: cur.held ? verb : 'GNAW' },
+      a: { ...a, rungs: this.rungs(a.p, true), glow: 0.15 + a.p * 0.85, verb: a.held ? verb : 'Hold the stone', verbColor: a.held ? '#ff2a1a' : '#6a605c' },
+      b: { ...b, rungs: this.rungs(b.p, false), clip: ((1 - b.p) * 100) + '%', devoted: this.fmt(sims.b.d), next: this.fmt(Math.max(0, nextMag - sims.b.d)), verb: b.held ? verb : 'Hold the seal', verbColor: b.held ? '#ff2a1a' : '#6a635c' },
+      e: (() => { const e = base('e'); return { ...e, verb, vOpacity: e.held ? 1 : 0, residual: 0.08 + e.p * 0.55, heat: this.state.heat, radius: (60 + this.state.heat * 260) + 'px', hx: this.state.hp.x + 'px', hy: this.state.hp.y + 'px' }; })(),
+      f: (() => { const f = base('f'); const edge = 6 + f.p * 90 + (f.held ? this.state.jitter * 3 : 0); return { ...f, verb, vOpacity: f.held ? 1 : 0, edge: edge + '%', edge2: (edge + 14) + '%' }; })(),
+      z: (() => { const z = base('z'); const size = 100 + z.p * 160; const scale = (size / 100) * 720 / 941; const imgW = 1672 * scale; const offX = (1280 - imgW) * 0.475; const hitW = 0.1 * imgW; return { ...z, verb, vOpacity: z.held ? 1 : 0, size: size + '%', vig: (20 + z.p * 25) + '%', hitW: hitW + 'px', hitX: (offX + 0.4755 * imgW - hitW / 2) + 'px' }; })(),
+      ...(() => {
+        const hit = (size, pad) => { const scale = (size / 100) * (720 + pad) / 941; const imgW = 1672 * scale; const W = 1280 + pad; const offX = (W - imgW) * 0.475 - pad / 2; const hitW = 0.1 * imgW; return { hitW: hitW + 'px', hitX: (offX + 0.4755 * imgW - hitW / 2) + 'px' }; };
+        const k = base('k'), l = base('l'), m = base('m');
+        const kSize = 100 + k.p * 160;
+        const lSize = 100 + l.p * 140 + this.state.lunge * 45;
+        const sh = l.held ? this.state.lunge * 7 : 0;
+        const steps = Math.max(3, 7 - Math.round(m.p * 4));
+        const table = Array.from({ length: steps }, (_, i) => (i / (steps - 1)).toFixed(2)).join(' ');
+        const cell = 3 + Math.round(m.p * 9) + (m.held ? Math.round(this.state.jitter * 3) : 0);
+        return {
+          k: { ...k, verb, vOpacity: k.held ? 1 : 0, size: kSize + '%', posY: (30 + k.p * 60) + '%', ...hit(kSize, 0) },
+          l: { ...l, verb, vOpacity: l.held ? 1 : 0, size: lSize + '%', jx: ((this.state.jitter - .5) * sh) + 'px', jy: ((Math.random() - .5) * sh) + 'px', ...hit(lSize, 48) },
+          m: { ...m, verb, vOpacity: m.held ? 1 : 0, size: (100 + m.p * 160) + '%', cell, rad: cell / 2, table, ...hit(100 + m.p * 160, 0) },
+        };
+      })(),
+      ...(() => {
+        const fog = (k, extra) => { const b = base(k); const d = Math.max(0, 1 - b.p - (extra || 0)); return { ...b, verb, vOpacity: b.held ? 1 : 0, d, i: (-2.6 + d * 3.6).toFixed(3), wash: (d * 0.55).toFixed(3) }; };
+        const q = fog('q'); q.blur = (q.d * 9).toFixed(2) + 'px';
+        const r = fog('r', 0); const open = 1 - r.d; r.i = (-2.6 + Math.max(0.35, r.d) * 3.6).toFixed(3); r.mw = (4 + open * 120) + '%'; r.mh = (8 + open * 150) + '%';
+        const g = fog('g', (this.state.gust || 0) * 0.55);
+        this.lastFog = { q: q.i, r: r.i, g: g.i };
+        return { q, r, g, fog: this.fog };
+      })(),
+      c: { ...c, verb, vOpacity: c.held ? 1 : 0, vx: this.ptr.x + 'px', vy: this.ptr.y + 'px', move: (e) => this.setPtr(e) },
+    };
+  }
+}
+</script>
+</body>
+</html>

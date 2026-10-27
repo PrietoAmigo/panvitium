@@ -35,7 +35,8 @@ import {
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
 import { AetherSigils, effectDisplay, toRoman } from './AetherSigils.js';
-import { HoldButton, boonLabel } from './katabasisShared.js';
+import { HoldButton, boonLabel, useHoldPour } from './katabasisShared.js';
+import { RedCloud } from './RedCloud.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
 // the two carved-slab layers are placed here on apply (they live at the repo root + the design zip).
@@ -58,7 +59,8 @@ function Pips({ level, max }: { level: number; max: number }): ReactElement {
 const pct = (v: number): string => `${v * 100}%`;
 const poolEmpty = (state: GameState): boolean => isZero(floor(state.souls));
 
-// ── Geometry: statue / obelisk hotspots over the painted frame (fractions) ───
+// ── Geometry: statue hotspots over the painted frame (fractions) ─────────────
+// The end-state obelisk is a CSS column (`.obelisk`): it runs from the top down to the hell floor.
 interface Pos {
   x: number;
   y: number;
@@ -75,7 +77,6 @@ const STATUE_POS: Record<Sin, Pos> = {
   vanagloria: { x: 0.792, y: 0.55, w: 0.08, h: 0.86 },
   superbia: { x: 0.93, y: 0.58, w: 0.09, h: 0.8 },
 };
-const ETERNAL_POS: Pos = { x: 0.5, y: 0.55, w: 0.115, h: 0.78 };
 
 // ── Imperative lightning: sharp strikes that flash the bright frames, then snap to dark ──────────
 function Lightning({ intensity, paused }: { intensity: number; paused: boolean }): ReactElement {
@@ -276,96 +277,52 @@ function PrinceModal({
   );
 }
 
-// ── The Eternal — the Ninth, the centre column (end-state only) ──────────────────────────────────
-// While the offer button is held its verb churns — a new word every 0.25 s — so the act of feeding
-// the Ninth never settles into a single intent.
-const ETERNAL_HOLD_VERBS = [
-  'GNAW',
-  'LICK',
-  'CLUTCH',
-  'SQUEEZE',
-  'SCRAPE',
-  'IGNORE',
-  'CARESS',
-  'SPIT',
-] as const;
-const ETERNAL_HOLD_VERB_MS = 100;
-
-function EternalModal({ state, onClose }: { state: GameState; onClose: () => void }): ReactElement {
+// ── The Eternal: the obelisk at the Court's centre (end-state only) ──────────────────────────────
+// Once all eight Princes are mastered the ended scene IS the feeding screen (Claude Design "Red
+// Cloud"): no modal, meter, title or verb. Holding the obelisk pours souls through the same ramp as
+// the HoldButton, and the cloud thinning is the only response. Pouring does nothing on an empty pool.
+function EternalHold({ state }: { state: GameState }): ReactElement {
   const offerEternal = useGameStore((s) => s.offerEternal);
-  const revealed = eternalSinRevealed(state);
-  const prog = eternalProgress(state);
-  const [holding, setHolding] = useState(false);
-  const [verb, setVerb] = useState<string>(ETERNAL_HOLD_VERBS[0]);
+  const { begin, stop } = useHoldPour((d) => offerEternal(d), poolEmpty(state));
+  return (
+    <button
+      type="button"
+      className="obelisk"
+      onPointerDown={begin}
+      onPointerLeave={stop}
+      aria-label="Offer souls"
+    />
+  );
+}
 
-  useEffect(() => {
-    if (!holding) return;
-    const id = window.setInterval(() => {
-      setVerb((cur) => {
-        let next = cur;
-        while (next === cur) {
-          next = ETERNAL_HOLD_VERBS[Math.floor(Math.random() * ETERNAL_HOLD_VERBS.length)] ?? cur;
-        }
-        return next;
-      });
-    }, ETERNAL_HOLD_VERB_MS);
-    return () => window.clearInterval(id);
-  }, [holding]);
-
+/**
+ * The Ninth named (Semet, Peccatum Æternum, the runtime), raised over the cleared Court a beat
+ * after the pour that crossed the threshold. It has one way out: Accept rises at once (Anabasis).
+ */
+function SemetScreen({
+  state,
+  onAccept,
+}: {
+  state: GameState;
+  onAccept: () => void;
+}): ReactElement {
   return (
     <div
-      className="takeover takeover--eternal"
+      className="takeover takeover--eternal takeover--semet"
       role="dialog"
-      aria-label={strings.eternal.ninth}
-      onClick={onClose}
+      aria-label={strings.eternal.name}
     >
-      <div className="takeover-body takeover-body--solo" onClick={(e) => e.stopPropagation()}>
-        <button className="takeover-close" onClick={onClose} aria-label="Turn away">
-          {'\u2715'}
-        </button>
+      <div className="takeover-body takeover-body--solo">
         <div className="tk-info-col">
-          {revealed ? (
-            <>
-              <h1 className="reveal-name">{strings.eternal.name}</h1>
-              <div className="reveal-subtitle">{`Peccatum \u00C6ternum`}</div>
-              <div className="reveal-time">
-                <span className="reveal-time-label">{strings.eternal.runtimeLabel}</span>
-                <span className="reveal-time-value">{formatDuration(gameRuntimeMs(state))}</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <h1 className="tk-name tk-name--eternal" style={{ color: '#6a605c' }}>
-                {strings.eternal.ninth}
-              </h1>
-
-              <div className="tk-rule" />
-
-              <div className="tk-meter">
-                <div className="tk-meter-track">
-                  <span
-                    className="tk-meter-fill tk-meter-fill--eternal"
-                    style={{ width: pct(prog) }}
-                  />
-                </div>
-                <div className="tk-meter-cap">
-                  <span>Taking form</span>
-                  <span>{(prog * 100).toFixed(1)}%</span>
-                </div>
-              </div>
-
-              <div className="tk-actions">
-                <HoldButton
-                  onStep={(d) => offerEternal(d)}
-                  disabled={poolEmpty(state)}
-                  ariaLabel="Offer souls to the Ninth"
-                  onHoldChange={setHolding}
-                >
-                  {verb}
-                </HoldButton>
-              </div>
-            </>
-          )}
+          <h1 className="reveal-name">{strings.eternal.name}</h1>
+          <div className="reveal-subtitle">{`Peccatum \u00C6ternum`}</div>
+          <div className="reveal-time">
+            <span className="reveal-time-label">{strings.eternal.runtimeLabel}</span>
+            <span className="reveal-time-value">{formatDuration(gameRuntimeMs(state))}</span>
+          </div>
+          <button type="button" className="reveal-accept" onClick={onAccept}>
+            {strings.eternal.accept}
+          </button>
         </div>
       </div>
     </div>
@@ -378,14 +335,16 @@ function StatuesPlace({
   ended,
   showCaption,
   onModalChange,
+  onAccept,
 }: {
   state: GameState;
   ended: boolean;
   showCaption: boolean;
   onModalChange: (open: boolean) => void;
+  onAccept: () => void;
 }): ReactElement {
-  const [sel, setSel] = useState<Sin | 'eternal' | null>(null);
-  const open = (key: Sin | 'eternal'): void => {
+  const [sel, setSel] = useState<Sin | null>(null);
+  const open = (key: Sin): void => {
     setSel(key);
     onModalChange(true);
   };
@@ -393,13 +352,23 @@ function StatuesPlace({
     setSel(null);
     onModalChange(false);
   };
+  const named = ended && eternalSinRevealed(state);
+  // The cloud's density: solid on arrival, thinning along the Eternal's log curve, clear at the name.
+  const density = Math.min(1, Math.max(0, 1 - eternalProgress(state)));
 
   return (
     <div className={`scene hell${ended ? ' hell--ended' : ''}`}>
       {ended ? (
         <>
-          <div className="bg-end" style={{ backgroundImage: `url(${ASSET}/katabasis_end.png)` }} />
-          <div className="end-glow" />
+          {/* The Court comes into focus as the cloud thins: its blur falls from 9px to none. */}
+          <div
+            className="bg-end"
+            style={{
+              backgroundImage: `url(${ASSET}/katabasis_end.png)`,
+              filter: `url(#kat-degrade) blur(${(density * 9).toFixed(2)}px)`,
+            }}
+          />
+          <RedCloud density={density} />
         </>
       ) : (
         <>
@@ -413,63 +382,50 @@ function StatuesPlace({
 
       <div className="kat-degrade-chrome" aria-hidden="true" />
 
-      {showCaption && (
+      {/* The ended scene carries no title: the painting and the cloud are the whole of it. */}
+      {showCaption && !ended && (
         <div className="hell-caption">
-          <div className="t">{ended ? 'The Eternal Sin' : 'The Court of Spires'}</div>
-          <div className="s">{ended ? 'The Princes bow.' : 'Bow before the Princes.'}</div>
+          <div className="t">The Court of Spires</div>
+          <div className="s">Bow before the Princes.</div>
         </div>
       )}
 
       <div className="statue-field">
-        {SINS.map((sin) => {
-          const p = STATUE_POS[sin];
-          const lvl = sinLevel(state.devotion[sin]);
-          const info = strings.sins[sin];
-          const style: CSSProperties = {
-            left: pct(p.x),
-            top: pct(p.y),
-            width: pct(p.w),
-            height: pct(p.h),
-          };
-          return (
-            <button
-              key={sin}
-              className={`statue${lvl >= MAX_SIN_LEVEL ? ' statue--maxed' : ''}`}
-              style={style}
-              onClick={() => open(sin)}
-              aria-label={`${info.prince} \u2014 ${info.english}`}
-            >
-              <span className="statue-tag">
-                {info.prince}
-                <span className="pip">
-                  <Pips level={lvl} max={MAX_SIN_LEVEL} />
+        {/* Once all eight are mastered the Princes are only the painting: no statue opens. */}
+        {!ended &&
+          SINS.map((sin) => {
+            const p = STATUE_POS[sin];
+            const lvl = sinLevel(state.devotion[sin]);
+            const info = strings.sins[sin];
+            const style: CSSProperties = {
+              left: pct(p.x),
+              top: pct(p.y),
+              width: pct(p.w),
+              height: pct(p.h),
+            };
+            return (
+              <button
+                key={sin}
+                className={`statue${lvl >= MAX_SIN_LEVEL ? ' statue--maxed' : ''}`}
+                style={style}
+                onClick={() => open(sin)}
+                aria-label={`${info.prince} \u2014 ${info.english}`}
+              >
+                <span className="statue-tag">
+                  {info.prince}
+                  <span className="pip">
+                    <Pips level={lvl} max={MAX_SIN_LEVEL} />
+                  </span>
                 </span>
-              </span>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
 
-        {ended && (
-          <button
-            className="obelisk"
-            style={{
-              left: pct(ETERNAL_POS.x),
-              top: pct(ETERNAL_POS.y),
-              width: pct(ETERNAL_POS.w),
-              height: pct(ETERNAL_POS.h),
-            }}
-            onClick={() => open('eternal')}
-            aria-label="The Ninth"
-          >
-            {/* Once all eight are maxed and Semet stands revealed in the end-state art, the monolith
-                carries no candle flame and no hover hotspot — it is the statue itself, not a lit
-                drop target. The button stays as an (invisible) click region into the Eternal modal. */}
-          </button>
-        )}
+        {ended && !named && <EternalHold state={state} />}
       </div>
 
-      {sel !== null && sel !== 'eternal' && <PrinceModal sin={sel} state={state} onClose={close} />}
-      {sel === 'eternal' && <EternalModal state={state} onClose={close} />}
+      {sel !== null && <PrinceModal sin={sel} state={state} onClose={close} />}
+      {named && <SemetScreen state={state} onAccept={onAccept} />}
     </div>
   );
 }
@@ -950,16 +906,18 @@ export function Katabasis(): ReactElement {
     setRiseArmed(false);
     setScreen('statues');
   };
+  const rise = (): void => {
+    setRiseArmed(false);
+    setScreen('ascending');
+  };
   const armOrRise = (): void => {
-    if (riseArmed) {
-      setRiseArmed(false);
-      setScreen('ascending');
-    } else {
-      setRiseArmed(true);
-    }
+    if (riseArmed) rise();
+    else setRiseArmed(true);
   };
 
   const inHell = screen === 'statues' || screen === 'sigils';
+  // Once Semet is named the Princes' scene holds only the Semet screen, whose Accept is the rise.
+  const semetUp = screen === 'statues' && eternalSinRevealed(state);
 
   return (
     <div className="katabasis-flow" role="dialog" aria-label={strings.katabasis.title}>
@@ -1002,12 +960,13 @@ export function Katabasis(): ReactElement {
           ended={ended}
           showCaption={caption}
           onModalChange={setModalOpen}
+          onAccept={rise}
         />
       )}
       {screen === 'sigils' && <AetherSigils state={state} onModalChange={setModalOpen} />}
 
       {inHell && <Hud souls={state.souls} />}
-      {inHell && !modalOpen && (
+      {inHell && !modalOpen && !semetUp && (
         <HellFloor
           screen={screen}
           riseArmed={riseArmed}

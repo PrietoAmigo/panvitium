@@ -1433,6 +1433,49 @@ end is the seal of Semet at the altar, so the reveal no longer has to carry the 
 
 ---
 
+## ADR-041: The Eternal is fed inside a red cloud; Semet's Accept rises
+
+**Status.** Accepted [2026-10-27]. Supersedes ADR-040's "the Ninth's modal turns to its named face
+in place" (the modal is gone); ADR-040's removal of the reveal overlay and its verse stands.
+
+**Context.** Design decision (Claude Design "Red Cloud" handoff, option 4a, kept in
+`docs/frontend/Eternal_Red_Cloud_handoff.md` with its canvas `Monolith_Feed.dc.html`): feeding the
+Eternal Sin was a takeover modal over the ended Court (a title, a meter with a percentage, a hold
+button whose verb churned). The designer replaces it with the scene itself. Player requests on top:
+the eight statues stop opening once every Prince is mastered, and the Semet screen's *Accept* rises
+from Katabasis at once.
+
+**Decision.**
+
+- **The ended scene is the feeding screen.** Once `eternalSinVisible`, the Princes' scene shows the
+  end-state Court under a drifting red cloud (`menus/RedCloud.tsx`), with no modal, meter,
+  percentage, title (the arrival caption included), verb or added glow (`.end-glow` goes). Its
+  density is `1 − eternalProgress(state)`: it drives the Court's blur (9 px to none), a red
+  multiply wash and two value-noise fields painted once per density into small canvases that drift
+  by compositor transform only (a live `feTurbulence` filter was too slow). No new store state.
+- **The obelisk is the hold target.** An invisible column over the painted obelisk, from the top
+  down to the hell floor, pours through the HoldButton ramp, factored out as `useHoldPour`. An empty
+  pool makes the hold do nothing. `ETERNAL_HOLD_VERBS` and HoldButton's `onHoldChange` go.
+- **No statue opens in the ended scene.** The eight Prince hotspots are not rendered once every Sin
+  is at `MAX_SIN_LEVEL`: their ranks are complete and the painting is the whole of the scene.
+- **The Semet screen rises.** The pour that crosses the threshold leaves the Court clear; a beat
+  later (1.2 s, then a 1.4 s fade) the Semet screen (Semet, *Peccatum Æternum*, the runtime) rises
+  over it, with the hell floor withdrawn. Its one control is *Accept* (`strings.eternal.accept`),
+  which starts the Anabasis at once; the rise commits after its hold as any other, and the recap
+  reads "The Ninth: Named". A descent reopened after the naming resumes on the Semet screen.
+
+**Consequences.**
+
+- No sim, save or RNG change: the cloud, the hold and the Semet screen all derive from
+  `eternalDevotion`.
+- Once Semet is named the descent's only way on is up, and the altar then raises the seal of Semet
+  (ADR-039): naming leads straight to the end.
+- The hold column follows the painting, not the handoff's 42.2% estimate: the obelisk stands at the
+  centre at any aspect, so the column reuses the old `ETERNAL_POS` span (44.25% to 55.75%).
+- `strings.eternal.ninth` is orphaned by the modal's removal and deleted.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.
