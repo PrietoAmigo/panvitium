@@ -791,7 +791,7 @@ function HellFloor({
       <button type="button" className="floor floor--single" onClick={onPrinces}>
         <span className="floor-lead">Crawl back</span>
         <span className="floor-sub">
-          <span className="claw up">{'\u25B4'}</span> up to the Princes in the lightning
+          <span className="claw up">{'\u25B4'}</span> to the Princes
         </span>
       </button>
     );
@@ -801,7 +801,7 @@ function HellFloor({
       <button type="button" className="floor-half floor-crawl" onClick={onGoetia}>
         <span className="floor-lead">Crawl back</span>
         <span className="floor-sub">
-          <span className="claw down">{'\u25BE'}</span> down to the seals of the Goetia
+          <span className="claw down">{'\u25BE'}</span> to the sealed Demons
         </span>
       </button>
       <button
@@ -812,9 +812,7 @@ function HellFloor({
         <span className="floor-lead">{riseArmed ? 'Let go your grip' : 'Fall upwards'}</span>
         <span className="floor-sub">
           <span className="claw up">{'\u25B4'}</span>{' '}
-          {riseArmed
-            ? 'press again \u2014 rise from Katabasis'
-            : 'rise from Katabasis, back to the world'}
+          {riseArmed ? 'press again \u2014 rise from Katabasis' : 'Anabasis'}
         </span>
       </button>
     </div>

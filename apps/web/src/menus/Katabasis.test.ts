@@ -337,6 +337,28 @@ describe('Katabasis flow — orchestrator', () => {
     }
   });
 
+  it('the hell floor names where each way leads: the sealed Demons, Anabasis, the Princes', () => {
+    vi.useFakeTimers();
+    try {
+      act(() => store().beginKatabasis());
+      render();
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS);
+      });
+      const sub = (sel: string): string =>
+        (container!.querySelector(`${sel} .floor-sub`)?.textContent ?? '').replace(/^\W+/, '');
+      // Among the Princes: down to the seals, or up and out.
+      expect(sub('.floor-crawl')).toBe('to the sealed Demons');
+      expect(sub('.floor-rise')).toBe('Anabasis');
+      // Among the seals: the one way back.
+      click(/^Crawl back/);
+      expect(container!.querySelector('.floor-crawl')).toBeNull();
+      expect(sub('.floor--single')).toBe('to the Princes');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('rises through Anabasis over "Auctus ex imis", committing after exactly 5 s, unskippable', () => {
     vi.useFakeTimers();
     try {
