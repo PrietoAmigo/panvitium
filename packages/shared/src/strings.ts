@@ -349,7 +349,7 @@ export const strings = {
     /** Shown on the (disabled) delegation control before the rite's toggle Sin level is reached. */
     delegateLocked: 'Delegation unlocks at',
     /** Shown on the (disabled) delegation control once delegatable but no acolytes exist yet. */
-    noAcolytes: 'No acolytes yet',
+    noAcolytes: 'No acolytes yet: each level of Ira grants one',
   },
   autoRepeat: {
     /** The control's label when the rite is NOT looping (click to start). */
@@ -525,7 +525,7 @@ export const strings = {
     byMurder: 'By murder',
     bySuicide: 'By suicide',
     total: 'Total',
-    noAcolytes: 'No acolytes recruited yet.',
+    noAcolytes: 'No acolytes recruited yet. Each level of Ira grants one.',
     ofMax: 'of',
     playerEfficiency: 'Player action efficiency',
     // Per-tab subtitles, set right of the tab row (the Risk tab's is `riskIntro`).
@@ -998,10 +998,10 @@ export const strings = {
       english: 'Wrath',
       epithet: 'The Adversary',
       skill: 'Retribution',
-      // ADR-038: Retribution kept its invocation half when Decimatio retired; the levels, which
-      // doubled Decimatio efficiency, are an empty slot pending a re-home.
+      // ADR-038: Retribution kept its invocation half when Decimatio retired. ADR-042: the levels,
+      // which doubled Decimatio efficiency, now each grant one acolyte.
       skillEffect: 'Multiplies invocation efficiency by 1 + intensity.',
-      levelEffect: 'Its levels carry no effect.',
+      levelEffect: 'Each level grants +1 acolyte (base 0).',
     },
     acedia: {
       prince: 'Belphegor',

@@ -429,6 +429,7 @@ describe('tick outcome source tagging (player-only PC log)', () => {
     const base = fresh('source-tag', 0);
     const s: GameState = {
       ...base,
+      devotion: { ...base.devotion, ira: bn(180) }, // Ira I: the one acolyte's cap (ADR-042)
       lifetime: {
         ...base.lifetime,
         actionQueue: [{ actionId: 'indagatio', remainingSeconds: 0.05 }], // player → untagged

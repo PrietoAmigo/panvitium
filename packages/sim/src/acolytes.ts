@@ -1,13 +1,14 @@
 /**
  * Acolyte system (02 §10). Acolytes are your followers — they run delegated actions in an
  * autonomous channel that does not occupy the player's action slot. Each tick:
- *   - `autoRecruitAcolytes` brings the acolyte count up to `maxAcolytes(state)`, which is
- *     `floor(log100(total Devotion))`. Recruitment is automatic, free, immediate.
+ *   - `autoRecruitAcolytes` brings the acolyte count to `maxAcolytes(state)`, which is Ira's
+ *     level: each level grants one acolyte (ADR-042). Recruitment is automatic, free, immediate.
  *   - `advanceAcolytes` decrements each assigned acolyte's timer; on completion, the action
  *     resolves at the acolyte's efficiency and the timer is reset for the next cycle.
  *
  * Acolytes are not lost to outcomes (per the user's correction: no Bad-tier loss). They are
- * lost only at Katabasis, where the lifetime acolyte list is reset to empty (see `katabasis.ts`).
+ * lost only at Katabasis, where the lifetime acolyte list is reset to empty (see `katabasis.ts`),
+ * and a save from before ADR-042 sheds any surplus above its Ira level on its first tick.
  *
  * Delegation covers Indagatio (time-mode) plus Logos (cost-outcome). Acolytes carry
  * out their delegated actions WITHOUT spending resources — a delegated cycle pays no gold/influence
@@ -17,53 +18,44 @@
 import { ACTIONS, isAutoRepeatable, runnerCycleDuration } from './actions.js';
 import { computeModifiers } from './modifiers.js';
 import { advanceRunnerCycles } from './runner.js';
-import { type BigNum, ZERO, add, bn, floor, gte, mul } from './bignum.js';
+import { sinLevel } from './progression.js';
 import { type Rng } from './rng.js';
-import { SINS, type Acolyte, type GameState } from './state.js';
+import { type Acolyte, type GameState } from './state.js';
 import type { OutcomeEvent } from './events.js';
 
 /**
- * Total Devotion across all eight Cardinal Sins: the "devoted souls" (souls offered to the Sins),
- * as opposed to the free `souls` pool or souls bound to sigils. Drives the acolyte capacity.
- */
-function totalDevotion(state: GameState): BigNum {
-  let sum = ZERO;
-  for (const sin of SINS) sum = add(sum, state.devotion[sin]);
-  return sum;
-}
-
-/**
- * Maximum acolytes given the current state: `floor(log100(total devoted souls))` (player tuning).
- * Devoted souls = the sum of Devotion across all Sins (NOT the free `souls` pool, NOT sigil-bound
- * souls). So the Nth acolyte unlocks at 100^N devoted souls (100 -> 1, 10 000 -> 2, 1 000 000 -> 3,
- * ...); a fresh lifetime (0 Devotion) has 0. Devotion PERSISTS across Katabasis, so this capacity
- * does too: the lifetime's acolyte list is cleared at rebirth but re-recruited to the cap on the
- * next tick. Computed as a BigNum threshold loop (floored Devotion vs 100^N) rather than a float
- * log, so it never drifts at an exact power of 100 (the bignum gotcha, ADR-005); the loop
- * self-terminates once 100^N outgrows the finite Devotion total.
+ * Maximum acolytes given the current state: Ira's level (ADR-042). Each level of Ira grants one
+ * acolyte, so the retinue runs 0..MAX_SIN_LEVEL (0 at a fresh game, four at Ira IV) and its size
+ * matches the Altar's per-count plates exactly. Devotion PERSISTS across Katabasis, so the cap does
+ * too: the lifetime's acolyte list is cleared at rebirth but re-recruited to the cap on the next
+ * tick. `sinLevel` floors Devotion against floored thresholds, so an exact 180^N never drifts below
+ * its level (the bignum gotcha, ADR-005).
  */
 export function maxAcolytes(state: GameState): number {
-  const devoted = floor(totalDevotion(state));
-  const HUNDRED = bn(100);
-  let count = 0;
-  let threshold = HUNDRED; // 100^(count + 1)
-  while (gte(devoted, threshold)) {
-    count++;
-    threshold = mul(threshold, HUNDRED);
-  }
-  return count;
+  return sinLevel(state.devotion.ira);
 }
 
 /**
- * Bring the acolyte list up to `maxAcolytes(state)`. Pure: returns the input unchanged if the
- * current count already meets the target. New acolytes start idle (no assignment) with
- * sequential ids that are unique per lifetime — ids never repeat within a lifetime because the
- * list is append-only until Katabasis clears it.
+ * Bring the acolyte list to `maxAcolytes(state)`. Pure: returns the input unchanged if the count
+ * already matches. New acolytes start idle (no assignment) with sequential ids that are unique per
+ * lifetime: ids never repeat within a lifetime because the list is append-only until Katabasis
+ * clears it.
+ *
+ * Ira's level never falls (Devotion only grows), so in play the list only ever grows. A surplus can
+ * only come from a save made before ADR-042, when the cap followed total Devotion: those acolytes
+ * are dismissed from the top of the list (the highest ids, the last recruited), dropping whatever
+ * they were delegated to. No RNG is drawn either way.
  */
 export function autoRecruitAcolytes(state: GameState): GameState {
   const target = maxAcolytes(state);
   const current = state.lifetime.acolytes.length;
-  if (current >= target) return state;
+  if (current === target) return state;
+  if (current > target) {
+    return {
+      ...state,
+      lifetime: { ...state.lifetime, acolytes: state.lifetime.acolytes.slice(0, target) },
+    };
+  }
   const additions: Acolyte[] = [];
   for (let i = current; i < target; i++) {
     additions.push({ id: i + 1, assignedAction: null, remainingSeconds: null });

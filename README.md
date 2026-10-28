@@ -113,9 +113,10 @@ the merged pull requests; this README lists only what is still open.
 
 Each needs a design or spreadsheet decision before it becomes a coding slice.
 
-**Balance audit 2026-10-08.** Fifteen open findings, ranked and quantified in
+**Balance audit 2026-10-08.** Fourteen open findings, ranked and quantified in
 `docs/balance-audit-2026-10-08.md` (its numbers predate the 2026-10-20 Suggestion retune; its
-Panvitium finding closed with the rite, ADR-039):
+Panvitium finding closed with the rite, ADR-039, and its Ira finding with the acolyte grant,
+ADR-042):
 
 - _High:_ reserve interest multiplied by `goldRateMul` and compounded by hand (free deposits;
   Midas ×10 doubles the reserve every ~2.3 min); Erinyes's uncapped ×2 player efficiency per
@@ -130,7 +131,7 @@ Panvitium finding closed with the rite, ADR-039):
   gold-loss tiers.
 - _Low:_ Gusion #11 is pure downside; the duplicate seals (Bael = Balam, Naberius = Bifrons,
   Vine = Furcas, Dantalion ⊃ Zagan, Amy = Bifrons + Seere); Aamon #7 does nothing early; Astiwihad's
-  freeze costs nothing; Ira's levels do nothing (below).
+  freeze costs nothing.
 
 **Gaps left by the Decimatio removal (ADR-038).**
 
@@ -145,8 +146,6 @@ Panvitium finding closed with the rite, ADR-039):
   Emptio, the Indagatio investment, the Depraedatio reserve, Aurevora, invocation
   gold upkeep (Imp's 10 gold/s; Behemoth, Fama, Succubus and Specunitas take a share of gold gain)
   and a few incoming-call answers.
-- **Ira (Satan).** The per-level effect is empty (the ledger reads "Its levels carry no effect.");
-  Retribution lifts invocation efficiency only.
 - **Dormant seals** (`inert`, souls still bindable and recoverable) awaiting a re-home: Beleth #13,
   Marax #21, Ipos #22, Raum #40, Focalor #41, Haures #64.
 - **Dantalion #71** lost its −Decimatio cost: a free +Logos efficiency boon duplicating Zagan #61.

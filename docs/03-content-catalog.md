@@ -29,7 +29,7 @@ Each Prince is a school of vice with its own temper, pacing, and economy
 | **Asmodeus** | *Luxuria* | Lust | Seduction | Increases the reprobate generation rate. | Multiplies overall *Logos* efficiency per level; unlocks the *Logos* actions and their toggles. |
 | **Mammon** | *Avaritia* | Greed | Golden Hand | Increases the gold gain rate. | Increases the Katabasis remaining-gold percentage per level. |
 | **Leviathan** | *Tristitia* | Sorrow | Resignation | Increases acolyte efficiency. | Increases the Katabasis remaining-reprobate percentage per level. |
-| **Satan** | *Ira* | Wrath | Retribution | Increases invocation efficiency. | **None** (an empty slot since ADR-038 retired *Decimatio*, whose efficiency it multiplied). Its levels still count toward the max-Sin-level gates. |
+| **Satan** | *Ira* | Wrath | Retribution | Increases invocation efficiency. | Grants one acolyte per level (ADR-042; the slot was empty since ADR-038 retired *Decimatio*, whose efficiency it multiplied). Its levels also count toward the max-Sin-level gates. |
 | **Belphegor** | *Acedia* | Sloth | Procrastination | Increases offline player efficiency. | Each level applies a compounding multiplier to offline gains, growing with both the offline stretch and the level (curve in the spreadsheet; its time input saturates per ADR-004's amendment). |
 | **Rosier** | *Vanagloria* | Vainglory | Acclaim | Increases maximum influence. | Multiplies the influence gain rate per level. |
 | **Lucifer** | *Superbia* | Pride | Morning Star | Increases overall Stellar outcome probability. | Increases the Katabasis remaining-maleficia chance per level. |
@@ -351,9 +351,10 @@ Sigil #58 (*Amy*) is authored in the sheet with a sign worth confirming at imple
 
 ## 6. Acolytes
 
-The mechanics live in `02 §10` (count from influence thresholds, delegation, efficiency,
-limits). The content-level catalog is the set of modifiers that touch them:
+The mechanics live in `02 §10` (count from Ira's level, delegation, efficiency, limits). The
+content-level catalog is the set of sources that touch them:
 
+- **Satan** (*Ira* levels) — each level grants one acolyte (ADR-042).
 - **Resignation** (Leviathan / *Tristitia* skill) — increases acolyte efficiency.
 - **Bathin** (#18) — increases acolyte action efficiency.
 
@@ -421,9 +422,9 @@ None of these block the current build; all should be tracked.
   freeze) are all wired onto the Desidia levers and the live economy. The catalog
   is the full Goetia 1..72, every seal named.
 - **Decimatio gaps** (opened by ADR-038): six seals are dormant (Beleth #13, Marax #21, Ipos #22,
-  Raum #40, Focalor #41, Haures #64), Dantalion #71 lost its cost, Ira has no per-level effect,
-  Retribution lost its success half, and the early soul economy has no player-driven cull. Each
-  needs a design or sheet decision; the README's Remaining list tracks them.
+  Raum #40, Focalor #41, Haures #64), Dantalion #71 lost its cost, Retribution lost its success
+  half, and the early soul economy has no player-driven cull. Each needs a design or sheet
+  decision; the README's Remaining list tracks them.
 - **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
 - **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)
   has its channels in the Studio (`02 §12`) but its message catalog is unwritten; the Katabasis
