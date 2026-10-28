@@ -68,11 +68,11 @@ would lose meaningful progress.
 
 - **Source:** generated passively as a *proportion of maximum influence*, capped at maximum
   influence. Base rate and base maximum are in the spreadsheet (`Globals`).
-- **Role:** the social budget. Drives maximum acolyte count (§10) and is consumed by *Logos*,
-  the *Panvitium* toggle, and several invocations.
+- **Role:** the social budget. Consumed by *Logos*, the *Panvitium* toggle, and several
+  invocations.
 - **Maximum influence** is itself a modifiable value (Vanagloria's Acclaim skill, Spear of
   Longinus, Marchosias #35).
-- **Reset on Katabasis:** yes — back to the base maximum and zero acolytes.
+- **Reset on Katabasis:** yes — back to the base maximum.
 
 ---
 
@@ -424,19 +424,18 @@ throughput, `03 §2.3`), plus the flat and percentage modifiers above.
 
 Lesser practitioners who do the work's lower offices (`00-lore-bible.md` §9). Mechanically:
 
-- **Count is `floor(log100(total devoted souls))`** (player tuning). Devoted souls are the souls
-  offered to the Cardinal Sins (the sum of Devotion across all Sins), not the free `souls` pool and
-  not souls bound to sigils. The Nth acolyte unlocks at 100^N devoted souls (100, 10 000, 1 000 000,
-  ...). Devotion PERSISTS across Katabasis, so the capacity does too: the lifetime's retinue is
-  cleared at rebirth but re-recruited to this cap on the next tick.
+- **Count is Ira's level** (ADR-042): each level of Ira grants one acolyte, so a fresh game has
+  none and Ira IV commands four. Devotion offered to the other Sins grants none. Recruitment is
+  automatic, free and immediate. Devotion PERSISTS across Katabasis, so the capacity does too: the
+  lifetime's retinue is cleared at rebirth but re-recruited to this cap on the next tick.
 - **Delegation.** Each acolyte runs at most one delegated action at the acolyte efficiency (base
   fraction in `Globals`, raised by Tristitia's Resignation skill and Bathin #18). Delegation
   **loops**: the acolyte runs its action cycle after cycle — for free, consuming no gold/influence —
   and stays assigned until the player recalls it (or Katabasis clears the retinue). Because a
   delegated cycle costs nothing, it never stalls on an empty treasury. It is set-and-forget
   automation, not a single errand.
-- **Limits.** Acolytes cannot run actions that require specific maleficia. At most four are
-  visualized in the Altar room (per-count background plates); further acolytes work unseen.
+- **Limits.** Acolytes cannot run actions that require specific maleficia. There are at most
+  four (Ira's level cap), each shown in the Altar room by its per-count background plate.
 - **Desertion** is a Katabasis-time fiction beat (the unfaithful loot what is portable) — it is
   *expressed* through the carry-over rolls (§6), not simulated per-acolyte.
 

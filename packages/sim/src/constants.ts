@@ -100,9 +100,10 @@ export const AUREVORA_EFFICIENCY_GROWTH_PER_SECOND = 1.05;
  *   ×(1 − 0.2·L), level 4 → 20% of the negative weight remains; freed mass renormalizes across
  *   the rest).
  * - Luxuria: ×2 overall Logos efficiency per level.
- * - Ira: none. Its levels doubled Decimatio efficiency until that category was retired (ADR-038);
- *   the slot is empty pending a re-home. The old ×1.33 Ira acolyte/invocation ladder is retired
- *   too: those channels are now the Tristitia (acolytes) and Ira (invocations) SKILL intensities.
+ * - Ira: each level grants one acolyte (`maxAcolytes`, ADR-042). Its levels doubled Decimatio
+ *   efficiency until that category was retired (ADR-038). The old ×1.33 Ira acolyte/invocation
+ *   efficiency ladder is retired too: those channels are now the Tristitia (acolytes) and Ira
+ *   (invocations) SKILL intensities.
  */
 export const GULA_NEGATIVE_TIER_REDUCTION_PER_LEVEL = 0.2;
 export const LUXURIA_LOGOS_EFF_PER_LEVEL = 2;

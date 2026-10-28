@@ -9,8 +9,8 @@
  *                 Gula → strips negative tier weight (−20% / level; L4 → 20% remains)
  *                 Luxuria → logosEfficiencyMul (×2 / level)
  *                 Vanagloria → influenceRateMul (×1.33 / level)
- *                 (Ira's levels fed the retired Decimatio efficiency; they carry no effect now,
- *                 ADR-038.)
+ *                 (Ira's levels fed the retired Decimatio efficiency, ADR-038; they now set the
+ *                 acolyte cap, `maxAcolytes` in acolytes.ts, ADR-042, not a modifier.)
  *   - Sin SKILLS:  Avaritia  (Golden Hand)    → goldRateMul
  *                 Vanagloria (Acclaim)        → maxInfluenceMul
  *                 Tristitia  (Resignation)    → acolyteEfficiencyMul (+ Logos success, per-category)

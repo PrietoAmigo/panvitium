@@ -2,7 +2,8 @@
  * Sin-effect parity tests (Sins & Devotion sheet rev 2026-06-12):
  *   - Luxuria's **Seduction** skill lifts `reprobateGenerationRateMul` by (1 + intensity).
  *   - Tristitia's **Resignation** skill lifts `acolyteEfficiencyMul` by (1 + intensity).
- *   - Ira's **Retribution** skill lifts `invocationEfficiencyMul` by (1 + intensity).
+ *   - Ira's **Retribution** skill lifts `invocationEfficiencyMul` by (1 + intensity); its LEVELS
+ *     each grant one acolyte (ADR-042) and leave the modifier bundle alone.
  *   (Acedia's Sloth effects modified offline gains and are dormant pending the desidia rework,
  *   ADR-032, so there is no Acedia parity case here.)
  *
@@ -13,6 +14,7 @@ import {
   bn,
   computeModifiers,
   createInitialState,
+  maxAcolytes,
   sinLevel,
   skillIntensity,
   type GameState,
@@ -73,11 +75,12 @@ describe('Tristitia / Ira SKILLS — acolyte and invocation efficiency (sheet re
     expect(m.acolyteEfficiencyMul).toBeCloseTo(0.33, 9);
   });
 
-  it('Ira LEVELS carry no effect: the Decimatio slot is empty (ADR-038)', () => {
+  it('Ira LEVELS grant one acolyte each and touch no modifier (ADR-042)', () => {
     const s = withSinLevel(fresh(), 'ira', 3);
     expect(sinLevel(s.devotion.ira)).toBe(3);
-    // Only the skill (Retribution → invocation efficiency) moves with Ira Devotion; no
-    // level-driven field does.
+    expect(maxAcolytes(s)).toBe(3);
+    // Only the skill (Retribution → invocation efficiency) moves the bundle with Ira Devotion;
+    // the levels act through the acolyte cap, not a modifier.
     const { invocationEfficiencyMul: _lifted, ...m } = computeModifiers(s);
     const { invocationEfficiencyMul: _base, ...base } = computeModifiers(fresh());
     expect(m).toEqual(base);

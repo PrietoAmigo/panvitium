@@ -1,8 +1,9 @@
 /**
  * Acolyte system tests (02 §10). Pins:
- *   - maxAcolytes = floor(log100(total Devotion)): 0 at a fresh lifetime, the Nth acolyte at 100^N
- *     devoted souls (100 / 10 000 / 1 000 000 / ...), summed across all Sins
- *   - autoRecruitAcolytes appends idle acolytes up to the target, never removes
+ *   - maxAcolytes = Ira's level (ADR-042): 0 at a fresh game, one more acolyte per level (Ira I at
+ *     180 Ira Devotion ... four at Ira IV); Devotion offered to the other Sins grants none
+ *   - autoRecruitAcolytes appends idle acolytes up to the target, and dismisses only the surplus a
+ *     pre-ADR-042 save carries (highest ids first)
  *   - assignAcolyteToAction takes the LOWEST-id idle acolyte and starts its timer
  *   - unassignAcolyteFromAction takes the HIGHEST-id assigned (LIFO)
  *   - assignedCount accurately reflects current assignments
@@ -41,15 +42,19 @@ function fresh(seed = 'acolyte', t = 0): GameState {
   return createInitialState(seed, t);
 }
 
-/** Set total Devotion (all on one Sin) to `v` devoted souls — drives the cap floor(log100(v)). */
-function withDevotion(s: GameState, v: number): GameState {
-  return { ...s, devotion: { ...s.devotion, superbia: bn(v) } };
+/** Set a single Sin to a given level (180^level cumulative Devotion). */
+function setSin(s: GameState, sin: Sin, level: number): GameState {
+  return { ...s, devotion: { ...s.devotion, [sin]: bn(180 ** level) } };
 }
 
-/** Fresh lifetime with Devotion raised to unlock exactly `n` acolytes (100^n devoted souls), then
- *  auto-recruited. */
+/** Set Ira's Devotion to `v` souls: Ira's level is the acolyte cap (ADR-042). */
+function withIra(s: GameState, v: number): GameState {
+  return { ...s, devotion: { ...s.devotion, ira: bn(v) } };
+}
+
+/** Fresh lifetime with Ira raised to level `n` (exactly `n` acolytes), then auto-recruited. */
 function recruited(n = 1): GameState {
-  return autoRecruitAcolytes(withDevotion(fresh(), 100 ** n));
+  return autoRecruitAcolytes(setSin(fresh(), 'ira', n));
 }
 
 /** Recruited + the Sin toggle level (Luxuria 1) that enables Logos delegation. */
@@ -58,77 +63,91 @@ function delegatable(n = 1): GameState {
   return { ...s, devotion: { ...s.devotion, luxuria: bn(180) } };
 }
 
-/** Set a single Sin to a given level (180^level cumulative Devotion). */
-function setSin(s: GameState, sin: Sin, level: number): GameState {
-  return { ...s, devotion: { ...s.devotion, [sin]: bn(180 ** level) } };
-}
-
-describe('maxAcolytes', () => {
-  it('is 0 at a fresh lifetime (0 Devotion)', () => {
+describe('maxAcolytes — each level of Ira grants one acolyte (ADR-042)', () => {
+  it('is 0 at a fresh game (Ira 0)', () => {
     expect(maxAcolytes(fresh())).toBe(0);
   });
 
-  it('unlocks the Nth acolyte at 100^N devoted souls (floor(log100))', () => {
-    expect(maxAcolytes(withDevotion(fresh(), 100))).toBe(1);
-    expect(maxAcolytes(withDevotion(fresh(), 10_000))).toBe(2);
-    expect(maxAcolytes(withDevotion(fresh(), 1_000_000))).toBe(3);
-    expect(maxAcolytes(withDevotion(fresh(), 100_000_000))).toBe(4);
+  it("is exactly Ira's level: one acolyte per level, four at Ira IV", () => {
+    for (let level = 0; level <= 4; level++) {
+      expect(maxAcolytes(setSin(fresh(), 'ira', level))).toBe(level);
+    }
   });
 
-  it('does not advance until the next power of 100 is reached', () => {
-    expect(maxAcolytes(withDevotion(fresh(), 99))).toBe(0);
-    expect(maxAcolytes(withDevotion(fresh(), 9_999))).toBe(1);
-    expect(maxAcolytes(withDevotion(fresh(), 999_999))).toBe(2);
+  it('does not advance until the next Ira level is reached (180^N Ira Devotion)', () => {
+    expect(maxAcolytes(withIra(fresh(), 179))).toBe(0);
+    expect(maxAcolytes(withIra(fresh(), 180))).toBe(1);
+    expect(maxAcolytes(withIra(fresh(), 180 ** 2 - 1))).toBe(1);
+    expect(maxAcolytes(withIra(fresh(), 180 ** 2))).toBe(2);
+    expect(maxAcolytes(withIra(fresh(), 180 ** 3 - 1))).toBe(2);
   });
 
-  it('keeps climbing with Devotion (5th at 100^5 = 1e10)', () => {
-    expect(maxAcolytes(withDevotion(fresh(), 10_000_000_000))).toBe(5);
+  it('lands on the level at the exact threshold despite break_infinity drift (180^4)', () => {
+    // bn(180)^4 computes to 1049760000.0000002; the floored threshold still grants the fourth.
+    expect(maxAcolytes(withIra(fresh(), 1_049_760_000))).toBe(4);
   });
 
-  it('sums Devotion across all Sins, not just one', () => {
-    // 60 + 40 across two Sins = 100 devoted souls = the first acolyte.
-    const s = { ...fresh(), devotion: { ...fresh().devotion, luxuria: bn(60), ira: bn(40) } };
-    expect(maxAcolytes(s)).toBe(1);
+  it('stops at four: Devotion past the Ira IV threshold grants no fifth acolyte', () => {
+    expect(maxAcolytes(withIra(fresh(), 1e30))).toBe(4);
   });
 
-  it('is 0 below the first threshold (1 or 0 devoted souls)', () => {
-    expect(maxAcolytes(withDevotion(fresh(), 1))).toBe(0);
-    expect(maxAcolytes(withDevotion(fresh(), 0))).toBe(0);
+  it('ignores Devotion offered to every other Sin', () => {
+    let s = fresh();
+    for (const sin of ['gula', 'luxuria', 'avaritia', 'tristitia', 'acedia'] as const) {
+      s = setSin(s, sin, 4);
+    }
+    s = setSin(setSin(s, 'vanagloria', 4), 'superbia', 4);
+    expect(maxAcolytes(s)).toBe(0);
+    expect(maxAcolytes(setSin(s, 'ira', 2))).toBe(2);
   });
 });
 
 describe('autoRecruitAcolytes', () => {
-  it('leaves a fresh lifetime (0 Devotion) with 0 acolytes', () => {
+  it('leaves a fresh game (Ira 0) with 0 acolytes', () => {
     const s = autoRecruitAcolytes(fresh());
     expect(s.lifetime.acolytes).toHaveLength(0);
   });
 
-  it('recruits the first acolyte once Devotion reaches the first threshold (100)', () => {
-    const s = autoRecruitAcolytes(withDevotion(fresh(), 100));
+  it('recruits the first acolyte once Ira reaches level 1 (180 Devotion)', () => {
+    const s = autoRecruitAcolytes(withIra(fresh(), 180));
     expect(s.lifetime.acolytes).toHaveLength(1);
     expect(s.lifetime.acolytes[0]!.assignedAction).toBeNull();
     expect(s.lifetime.acolytes[0]!.remainingSeconds).toBeNull();
   });
 
-  it('appends one more when Devotion crosses the next threshold (100 → 10 000)', () => {
-    let s = autoRecruitAcolytes(withDevotion(fresh(), 100)); // 1 acolyte
-    s = withDevotion(s, 10_000);
+  it('appends one more when Ira reaches its next level (I → II)', () => {
+    let s = autoRecruitAcolytes(setSin(fresh(), 'ira', 1)); // 1 acolyte
+    s = setSin(s, 'ira', 2);
     s = autoRecruitAcolytes(s);
     expect(s.lifetime.acolytes).toHaveLength(2);
     expect(s.lifetime.acolytes[1]!.id).toBe(2); // sequential ids
   });
 
   it('does nothing when the count already meets the target', () => {
-    const s = autoRecruitAcolytes(withDevotion(fresh(), 100));
+    const s = autoRecruitAcolytes(setSin(fresh(), 'ira', 1));
     const same = autoRecruitAcolytes(s);
     expect(same).toBe(s); // reference equality — no churn
   });
 
-  it('never removes existing acolytes when Devotion drops (which it cannot in play)', () => {
-    let s = autoRecruitAcolytes(withDevotion(fresh(), 1_000_000)); // 3 acolytes
-    s = withDevotion(s, 50); // back below the first threshold
+  it('dismisses a pre-ADR-042 surplus from the top (highest ids), keeping the rest as they were', () => {
+    // A save from when the cap followed total Devotion: three acolytes, one of them delegated, but
+    // only Ira I to back them.
+    let s = setSin(fresh(), 'ira', 1);
+    s = {
+      ...s,
+      lifetime: {
+        ...s.lifetime,
+        acolytes: [
+          { id: 1, assignedAction: 'indagatio', remainingSeconds: 42 },
+          { id: 2, assignedAction: 'indagatio', remainingSeconds: 7 },
+          { id: 3, assignedAction: null, remainingSeconds: null },
+        ],
+      },
+    };
     const after = autoRecruitAcolytes(s);
-    expect(after.lifetime.acolytes).toHaveLength(3); // no demotion
+    expect(after.lifetime.acolytes).toEqual([
+      { id: 1, assignedAction: 'indagatio', remainingSeconds: 42 },
+    ]);
   });
 });
 
@@ -301,13 +320,13 @@ describe('advanceAcolytes — Indagatio (looping, one acolyte)', () => {
 });
 
 describe('tick — acolyte system end-to-end', () => {
-  it('a fresh game (0 Devotion) recruits no acolyte on tick', () => {
+  it('a fresh game (Ira 0) recruits no acolyte on tick', () => {
     const after = tick(fresh(), 0.1).state;
     expect(after.lifetime.acolytes).toHaveLength(0);
   });
 
-  it('auto-recruits the first acolyte on tick once Devotion reaches the first threshold (100)', () => {
-    const s = withDevotion(fresh(), 100);
+  it('auto-recruits the first acolyte on tick once Ira reaches level 1', () => {
+    const s = setSin(fresh(), 'ira', 1);
     expect(s.lifetime.acolytes).toHaveLength(0);
     const after = tick(s, 0.1).state;
     expect(after.lifetime.acolytes).toHaveLength(1);
@@ -325,16 +344,16 @@ describe('tick — acolyte system end-to-end', () => {
   });
 });
 
-describe('Katabasis — the acolyte list resets but Devotion (the cap) persists', () => {
-  it('rebirth clears the acolyte list; the next tick re-recruits to the persistent Devotion cap', () => {
-    let s = autoRecruitAcolytes(withDevotion(fresh(), 1_000_000)); // 3 acolytes (log100(1e6) = 3)
+describe('Katabasis — the acolyte list resets but Ira (the cap) persists', () => {
+  it('rebirth clears the acolyte list; the next tick re-recruits to the persistent Ira cap', () => {
+    let s = recruited(3); // Ira III → 3 acolytes
     const r = assignAcolyteToAction(s, 'indagatio');
     if (!r.ok) throw new Error('assign');
     s = r.state;
     const { state: after } = commitKatabasis(s);
     expect(after.lifetime.acolytes).toHaveLength(0); // the lifetime list is wiped at rebirth
-    // Devotion carries across Katabasis, so the cap is unchanged: the next tick re-recruits all
-    // three acolytes, idle again.
+    // Devotion carries across Katabasis, so Ira's level (the cap) is unchanged: the next tick
+    // re-recruits all three acolytes, idle again.
     const ticked = tick(after, 0.1).state;
     expect(ticked.lifetime.acolytes).toHaveLength(3);
     expect(ticked.lifetime.acolytes.every((a) => a.assignedAction === null)).toBe(true);
@@ -380,8 +399,9 @@ function withReprobates(s: GameState, n: number): GameState {
 
 describe('cost-outcome delegation (Logos)', () => {
   it('refuses to delegate a rite below its toggle Sin level', () => {
-    // recruited() leaves every Sin at 0, so Suggestion (toggle level 1) cannot be delegated yet.
-    const r = assignAcolyteToAction(withInfluence(recruited(), 100), 'suggestion');
+    // recruited() raises only Ira; at Ira I the max Sin level already reaches Suggestion's toggle
+    // level (1), so Imperium (toggle level 4) is the rite still out of reach.
+    const r = assignAcolyteToAction(withInfluence(recruited(), 100), 'imperium');
     expect(r.ok).toBe(false);
   });
 

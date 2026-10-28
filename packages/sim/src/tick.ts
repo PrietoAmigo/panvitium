@@ -493,11 +493,10 @@ export function tick(state: GameState, deltaSeconds: number): TickResult {
   //     dropped at expiry. Decays by `simDelta` like Hand of Glory (Desidia-invariant total benefit).
   working = advanceCallBuffs(working, simDelta);
 
-  // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; unlocks on a
-  //    ×1.5 effective-maxInfluence threshold series — 0 at base, first at 110). Then advance each
-  //    assigned acolyte's timer; completed cycles
-  //    resolve at the acolyte's efficiency and immediately start the next cycle. Acolyte events
-  //    fold into the same outcome stream as player events.
+  // 5. Acolytes (02 §10). Auto-recruit up to maxAcolytes(state) (free, immediate; one per Ira
+  //    level, ADR-042: 0 at a fresh game, four at Ira IV). Then advance each assigned acolyte's
+  //    timer; completed cycles resolve at the acolyte's efficiency and immediately start the next
+  //    cycle. Acolyte events fold into the same outcome stream as player events.
   working = autoRecruitAcolytes(working);
   const acoResult = advanceAcolytes(working, simDelta, rng);
   working = acoResult.state;

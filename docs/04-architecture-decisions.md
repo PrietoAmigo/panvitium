@@ -1309,7 +1309,8 @@ lever, a Retribution success shift, seven seals, a PC program) existed to serve 
   or delegating a retired id fails as an unknown action.
 - **The lever is removed.** `decimatioEfficiencyMul` leaves the `Modifiers` bundle, the
   sigil-targetable fields and `categoryEfficiency`; `IRA_DECIMATIO_EFF_PER_LEVEL` is deleted.
-- **Ira's levels carry no effect** (the slot is empty, pending a re-home). They still count toward
+- **Ira's levels carry no effect** (the slot is empty, pending a re-home; re-homed by ADR-042, each
+  level now grants an acolyte). They still count toward
   the max-Sin-level availability and toggle gates. **Retribution** keeps only its invocation half:
   `categoryTierModifiers` no longer shifts any category for Ira.
 - **Dormant seals.** A new `SigilEffect` kind, `{ kind: 'inert' }` (ADR-024's holding pattern),
@@ -1474,6 +1475,45 @@ from Katabasis at once.
 - The hold column follows the painting, not the handoff's 42.2% estimate: the obelisk stands at the
   centre at any aspect, so the column reuses the old `ETERNAL_POS` span (44.25% to 55.75%).
 - `strings.eternal.ninth` is orphaned by the modal's removal and deleted.
+
+---
+
+## ADR-042: Each level of Ira grants an acolyte
+
+**Status.** Accepted [2026-10-28]. Supersedes the `02 §10` acolyte count (`floor(log100(total
+devoted souls))`, player tuning) and fills the Ira per-level slot ADR-038 left empty.
+
+**Context.** Design decision (player request): acolytes are enabled by Ira, not by Devotion in
+general. Their cap followed the sum of Devotion across all eight Sins (the Nth acolyte at 100^N
+devoted souls), so they arrived as a side effect of any offering and kept coming without limit,
+while Ira's levels did nothing at all since *Decimatio* retired.
+
+**Decision.**
+
+- **The cap is Ira's level.** `maxAcolytes(state) = sinLevel(devotion.ira)`: none at a fresh game,
+  one at Ira I (180 Ira Devotion), four at Ira IV. Devotion offered to the other Sins grants none.
+  Recruitment is unchanged: automatic, free, immediate, on the tick; the list clears at Katabasis
+  and is re-recruited on the next tick, since Devotion persists.
+- **No modifier.** The grant is a count, not a multiplier, so it lives in `acolytes.ts`, not in
+  `computeModifiers` (ADR-022); the Retribution skill still lifts invocation efficiency alone.
+- **A surplus is dismissed.** `autoRecruitAcolytes` brings the list *to* the cap rather than only
+  up to it: acolytes above it are dismissed from the top (highest ids), dropping their delegations.
+  Ira's level never falls (Devotion only grows), so this fires only for a save made under the old
+  rule, on its first tick.
+- **The ledger.** Ira's Level line reads "Each level grants +1 acolyte (base 0)." with the live
+  count beside it (`+N`).
+
+**Consequences.**
+
+- No save schema change (ADR-023): the persisted shape is unchanged, and the old-rule surplus is
+  reconciled by the tick rather than by a migration.
+- Determinism (ADR-011): no new RNG draw. A dismissed acolyte stops drawing for its delegated
+  rite, so an old save with a surplus diverges from its old sequence from the first tick.
+- The cap is four, matching the Altar's per-count plates (0–4) exactly: no acolyte works unseen.
+- Balance: the first acolyte now costs 180 souls offered to Ira (it was 100 offered anywhere), and
+  each further one a whole Ira level (32,400 / 5,832,000 / 1,049,760,000 cumulative). A player
+  who never offers to Ira has no acolytes, and with them no free Logos casting (the balance audit's
+  acolyte finding) and no delegated Indagatio.
 
 ---
 

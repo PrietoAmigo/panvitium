@@ -285,7 +285,7 @@ export function commitKatabasis(
     influence: ZERO,
     maxInfluence: bn(BASE_MAX_INFLUENCE), // sin/sigil/maleficia modifiers raise this once they exist
     reprobates,
-    acolytes: [], // re-grow from influence
+    acolytes: [], // re-recruited to the Ira cap on the next tick (ADR-042)
     invocations: {}, // all invocations dispelled (02 §7)
     invocationDurations: {}, // …and any apex duration counters (Aurevora) clear
     maleficia: maleficiaKept,

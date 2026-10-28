@@ -478,11 +478,11 @@ const sealSrc = (id: number): string => `${ASSET}/sigils/${String(id).padStart(2
 const VANAGLORIA_INFLUENCE_PER_LEVEL = 1.33;
 
 // The live numeric magnitude of a Sin's per-rank (Level) effect, in its natural unit, matching the
-// modifier engine exactly. Returns '' while the rank contributes nothing (Rank 0), and always for
-// Ira, whose levels carry no effect since the Decimatio efficiency they doubled retired (ADR-038).
+// sim exactly. Returns '' while the rank contributes nothing (Rank 0).
 // Units differ by Sin: the multiplicative efficiency ladders read '×N', the descent carry-over
-// fractions read the rank's marginal '+X%', Gula strips the negative tiers ('−X%'), and Acedia
-// doubles the Desidia cap each rank ('×N' the base, ADR-033).
+// fractions read the rank's marginal '+X%', Gula strips the negative tiers ('−X%'), Acedia
+// doubles the Desidia cap each rank ('×N' the base, ADR-033), and Ira counts the acolytes its
+// ranks grant ('+N', one per rank: `maxAcolytes`, ADR-042).
 function sinLevelEffectValue(sin: Sin, level: number): string {
   if (level <= 0) return '';
   switch (sin) {
@@ -491,7 +491,7 @@ function sinLevelEffectValue(sin: Sin, level: number): string {
     case 'luxuria':
       return `×${LUXURIA_LOGOS_EFF_PER_LEVEL ** level}`;
     case 'ira':
-      return '';
+      return `+${level}`;
     case 'vanagloria':
       return `×${(VANAGLORIA_INFLUENCE_PER_LEVEL ** level).toFixed(2)}`;
     case 'avaritia':
