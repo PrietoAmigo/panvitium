@@ -88,7 +88,7 @@ every Faeneratio gate one level down, so the old Avaritia-I unlock became no gat
   the hoard pays **Fenus** interest into *liquid* gold: `interest/s = FENUS_RATE × fenusRateMul ×
   hoard`. Deposits are instant and floored (ADR-005). **Withdrawal is punitive**: the full amount
   leaves the hoard and only `THESAURUS_RECOVERY × thesaurusRecoveryMul` (base 0.25 — the Globals
-  shutdown-recovery constant, lifted by the Custodia contracts and Vine #45 / Furcas #50, capped
+  shutdown-recovery constant, lifted by the Custodia contracts and Furcas #50, capped
   at 0.9 effective) returns. The miser's trap is the design: hoard everything and grow fastest
   while affording nothing.
 - **Katabasis liquidation:** on descent the hoard liquidates **in full** (no recovery penalty —
@@ -281,20 +281,20 @@ coefficients are in the `Sigils` sheet.
 | 8 | **Barbatos** | Songs of animals | Increases *Gula* invocation effectiveness. |
 | 9 | **Paimon** | Loyalty; returning servants | Reduces influence costs. |
 | 10 | **Buer** | Good familiars | Increases Familiar effectiveness. |
-| 11 | **Gusion** | Reconciles enemies | Reduces the player's own influence generation rate (a cursed seal). |
+| 11 | **Gusion** | Reconciles enemies | Lengthens an incoming call's boons (its timed buffs above ×1; debuffs keep their length). (ADR-043; was a pure curse: reduced the player's own influence generation.) |
 | 12 | **Sitri** | Love | Increases the offline Desidia gain rate. |
-| 13 | **Beleth** | Attended by trumpets | **Dormant** (ADR-038; was: increases *Decimatio* positive outcome chance). |
+| 13 | **Beleth** | Attended by trumpets | Chance each death draws a mourner into the flock (rate level, at most one per death). (ADR-043; dormant since ADR-038.) |
 | 14 | **Leraie** | Putrefies wounds | Chance a murder triggers a suicide. |
 | 15 | **Eligos** | Favour of important people | Reduces Emptio purchase costs. |
-| 16 | **Zepar** | Makes barren | Reduces overall invocation costs (a third of the standard strength). |
+| 16 | **Zepar** | Makes barren | Generates Desidia while the game runs (flat). (ADR-043; was: reduced invocation costs, Orobas's twin.) |
 | 17 | **Botis** | Past and future | Reduces *Logos* negative outcome chance. |
 | 18 | **Bathin** | Transport | Increases acolyte action efficiency. |
 | 19 | **Sallos** | Peace, idleness | Reduces the Desidia drain rate (composes with Lemure). |
 | 20 | **Purson** | Hidden treasures | Increases the Katabasis remaining-gold % (flat). [log] |
-| 21 | **Marax** | Stops, delays | **Dormant** (ADR-038; was: increases *Decimatio* action efficiency at a third of the standard strength). |
-| 22 | **Ipos** | Valiant, tactical | **Dormant** (ADR-038; was: reduces *Decimatio* negative outcome chance). |
+| 21 | **Marax** | Stops, delays | Lengthens each single-use maleficium activation. (ADR-043; dormant since ADR-038.) |
+| 22 | **Ipos** | Valiant, tactical | Reduces the gold an *Indagatio* investment spends (the efficiency bonus still reads the whole share). (ADR-043; dormant since ADR-038.) |
 | 23 | **Aim** | Sets fire | Increases the murder rate. |
-| 24 | **Naberius** | Arts and rhetoric | Reduces Indagatio time (a time-mode efficiency lift). |
+| 24 | **Naberius** | Arts and rhetoric | Starting gold each lifetime (flat, on top of the gold kept). (ADR-043; was: Indagatio efficiency, Bifrons's twin.) |
 | 25 | **Glasya-Labolas** | Manslaughter | Increases the murder rate (flat). [log] |
 | 26 | **Bune** | Wisdom | Increases *Vanagloria* invocation effectiveness. |
 | 27 | **Ronove** | Harvests souls near death | Increases the suicide rate. |
@@ -310,42 +310,43 @@ coefficients are in the `Sigils` sheet.
 | 37 | **Phenex** | Phoenix; sings | Reduces *Emptio* negative outcome chance. |
 | 38 | **Halphas** | Builds towers, arms | Reduces the chance of Common and Rare finds. |
 | 39 | **Malphas** | Builds, demolishes; deceives | Chance to duplicate the output of *Logos*. |
-| 40 | **Raum** | Steals; destroys cities | **Dormant** (ADR-038; was a tradeoff seal: increases *Decimatio* efficiency, dampens *Logos* efficiency. The Logos penalty alone would be a pure curse, so the whole seal sleeps). |
-| 41 | **Focalor** | Kills by drowning | **Dormant** (ADR-038; was: chance to duplicate the output of *Decimatio*). |
+| 40 | **Raum** | Steals; destroys cities | Gold with every soul a death yields (flat). (ADR-043; dormant since ADR-038.) |
+| 41 | **Focalor** | Kills by drowning | A share of the reprobates the descent leaves behind drowns, one soul each. (ADR-043; dormant since ADR-038.) |
 | 42 | **Vepar** | Putrefying wounds | Increases *Ira* invocation effectiveness. |
 | 43 | **Sabnock** | Wounds and sores | Increases the suicide rate (flat). [log] |
 | 44 | **Shax** | Deafness; takes money | Increases *Avaritia* invocation effectiveness. |
-| 45 | **Vine** | Reveals witches; walls | Increases the Thesaurus withdrawal recovery fraction (re-pinned from the Mercatus divest, same niche and magnitude). |
+| 45 | **Vine** | Reveals witches; walls | Reduces the gold *Indagatio*'s failure tiers bite. (ADR-043; was: the reserve surrender charge, Furcas's twin.) |
 | 46 | **Bifrons** | Sciences, herbs | Increases *Indagatio* action efficiency. |
 | 47 | **Vual** | Love of women; all times | Increases *Logos* Stellar chance. |
 | 48 | **Haagenti** | Metal to gold | Generates gold per second (flat). [log] |
 | 49 | **Crocell** | Geometry; warms waters | Chance *Indagatio* finds two. |
-| 50 | **Furcas** | Pyromancy | Increases the Thesaurus withdrawal recovery fraction (composes with Vine). |
-| 51 | **Balam** | All times; invisibility | Reduces negative outcome chance across the Opera. |
+| 50 | **Furcas** | Pyromancy | Reduces the reserve's surrender charge (the only seal on it since ADR-043). |
+| 51 | **Balam** | All times; invisibility | Reduces the reprobates *Logos*'s failure tiers take. (ADR-043; was: negative outcome chance across the Opera, Bael's twin.) |
 | 52 | **Alloces** | Astronomy; familiars | Increases *Acedia* invocation effectiveness. |
 | 53 | **Camio** | Disputation | Increases the Katabasis remaining-reprobate % (flat). [log] |
 | 54 | **Murmur** | Summons dead souls | Increases overall invocation effectiveness. |
 | 55 | **Orobas** | Faithful; all times | Reduces the cost of all invocations. |
 | 56 | **Gremory** | Treasures; love | Increases *Logos* positive outcome chance. |
 | 57 | **Ose** | Changes shape | Generates reprobates (flat). [log] |
-| 58 | **Amy** | Treasures | Increases *Indagatio* and *Emptio* action efficiency. |
+| 58 | **Amy** | Treasures | Returns part of a failed *Emptio* deal's price and softens the bait's bite. (ADR-043; was: Indagatio and Emptio efficiency, Bifrons + Seere.) |
 | 59 | **Orias** | Transformations | Increases the maximum Desidia (on top of the Acedia doubling). |
 | 60 | **Vapula** | Mechanical arts | Increases the Faeneratio gold output (Mutuum + Thesaurus interest). |
 | 61 | **Zagan** | Fools wise | Increases Logos action efficiency (a third of the standard strength). |
 | 62 | **Volac** | Treasures; serpents | Reduces *Indagatio* negative outcome chance. |
 | 63 | **Andras** | Sows discord | Increases *Emptio* Stellar chance. |
-| 64 | **Haures** | Destroys enemies | **Dormant** (ADR-038; was: increases *Decimatio* Stellar chance). |
-| 65 | **Andrealphus** | Mensuration | Reduces all invocation costs and quickens Desidia (a dual seal). |
+| 64 | **Haures** | Destroys enemies | A share of the reprobates *Logos*'s failures take burns, one soul each. (ADR-043; dormant since ADR-038.) |
+| 65 | **Andrealphus** | Mensuration | Increases the whole invoking power by a percentage. (ADR-043; was: invocation costs and Desidia speed, Orobas + Foras.) |
 | 66 | **Cimejes** | Lost things; treasures | Increases the Katabasis remaining-maleficia chance. [log] |
 | 67 | **Amdusias** | Harsh music | Increases positive outcome chance across the Opera. |
 | 68 | **Belial** | Favour; preferments | Increases the influence gain rate. |
 | 69 | **Decarabia** | Stones and herbs | Generates influence per second (flat). [log] |
 | 70 | **Seere** | Brings things suddenly | Increases *Emptio* action efficiency. |
-| 71 | **Dantalion** | All human thoughts | Increases *Logos* efficiency. (Its *Decimatio* penalty, the tradeoff's cost, went with ADR-038; pending a rebalance.) |
+| 71 | **Dantalion** | All human thoughts | Starting reprobates each lifetime (flat, on top of the reprobates kept). (ADR-043; was: Logos efficiency, Zagan's twin.) |
 | 72 | **Andromalius** | Returns stolen; reveals plots | Increases *Emptio* positive outcome chance. |
 
-Sigil #58 (*Amy*) is authored in the sheet with a sign worth confirming at implementation time
-(the sheet reads "−Indagatio & Emptio action efficiency"); flag it in the next tuning pass.
+No two seals share an effect (ADR-043): a seal's lever, or each lever of a composite, belongs to
+it alone. *Semet*'s boon line is withheld once its gate opens ("It resonates but you cannot
+interpret yet"); its live magnitude still shows.
 
 ---
 
@@ -421,11 +422,9 @@ None of these block the current build; all should be tracked.
   plus Eligos #15, Zepar #16, Sallos #19, Marax #21 and Foras #31 from the ADR-032 offline
   freeze) are all wired onto the Desidia levers and the live economy. The catalog
   is the full Goetia 1..72, every seal named.
-- **Decimatio gaps** (opened by ADR-038): six seals are dormant (Beleth #13, Marax #21, Ipos #22,
-  Raum #40, Focalor #41, Haures #64), Dantalion #71 lost its cost, Retribution lost its success
-  half, and the early soul economy has no player-driven cull. Each needs a design or sheet
-  decision; the README's Remaining list tracks them.
-- **Sigil sign check** — confirm the intended sign of Amy #58 (see §5 note).
+- **Decimatio gaps** (opened by ADR-038): Retribution lost its success half, and the early soul
+  economy has no player-driven cull; the README's open-work list tracks them. (The six dormant
+  seals and Dantalion #71 were re-homed by ADR-043.)
 - **Email / phone content set** — the sender-voiced content system (`00-lore-bible.md` §10–11)
   has its channels in the Studio (`02 §12`) but its message catalog is unwritten; the Katabasis
   liquidation and the Panvitium burn are natural trigger beats.

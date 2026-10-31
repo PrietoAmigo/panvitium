@@ -13,7 +13,8 @@
 import { add, clamp, floor, isZero, mul, sub, ZERO, bn, type BigNum } from './bignum.js';
 import { liquidateThesaurus } from './faeneratio.js';
 import { privateSafeOpen, safeItem } from './syngraphae.js';
-import { sigilKatabasisBonus, sigilStrengthMul } from './sigils.js';
+import { sigilKatabasisBonus, sigilLifetimeSeed, sigilStrengthMul } from './sigils.js';
+import { mintSouls } from './population.js';
 import {
   BASE_MAX_INFLUENCE,
   BASE_REMAINING_GOLD,
@@ -202,7 +203,11 @@ export function enterKatabasis(state: GameState): GameState {
 
 // ── Commit ───────────────────────────────────────────────────────────────────
 
-/** What the player comes back with, for the recap screen (01 "The Katabasis recap", 02 §6). */
+/**
+ * What the player comes back with, for the recap screen (01 "The Katabasis recap", 02 §6). The gold
+ * and reprobates are what the new lifetime starts with (Naberius #24's and Dantalion #71's seeds
+ * included), and the souls carried include any Focalor #41 drowned at the descent (ADR-043).
+ */
 export interface KatabasisRecap {
   readonly goldKept: BigNum;
   readonly reprobatesKept: number;
@@ -238,19 +243,40 @@ export function commitKatabasis(
   // roll, so the estate participates in the remaining-gold % and not at face value.
   // `enterKatabasis` already liquidated; this defensive repeat is a no-op on an empty reserve.
   state = liquidateThesaurus(state);
+  // The shared sigil-strength multiplier (the sigil-effect relics, Gaap #33, Semet #32) scales every
+  // descent seal, like every other sigil channel (ADR-036).
+  const sigilEffectMul = sigilStrengthMul(state);
+
+  // Remaining reprobates: a fraction of the pool survives the descent. Camio #53 lifts it.
+  const reprobatesHeld = state.lifetime.reprobates;
+  const reprobatesKept = Math.floor(
+    reprobatesHeld *
+      remainingReprobateFraction(state, sigilKatabasisBonus(state, 'reprobate', sigilEffectMul)),
+  );
+  // Focalor #41 (ADR-043): a share of the reprobates LEFT BEHIND drowns at the descent, one soul
+  // each (floored, no RNG). Minted before the gold is judged, so a Raum #40 bounty on the drowned
+  // joins the estate the remaining-gold roll reads.
+  const drowned = Math.floor(
+    (reprobatesHeld - reprobatesKept) *
+      clamp01(sigilKatabasisBonus(state, 'drowning', sigilEffectMul)),
+  );
+  if (drowned > 0) state = mintSouls(state, drowned);
   const goldAtDescent = state.lifetime.gold;
 
   // Remaining gold: a fraction of the gold held at this Katabasis (02 §6), inclusive of the
   // reserve liquidation folded in above. Purson #20 lifts the fraction; Erinyes/Astiwihad override it
-  // outright. The shared sigil-strength multiplier (the sigil-effect relics, Gaap #33, Semet #32)
-  // scales every carry-over seal, like every other sigil channel (ADR-036).
-  const sigilEffectMul = sigilStrengthMul(state);
+  // outright.
   const goldFraction = pendingErinyes
     ? 0
     : pendingAstiwihad
       ? 1
       : remainingGoldFraction(state, sigilKatabasisBonus(state, 'gold', sigilEffectMul));
-  const goldKept = floor(mul(floor(goldAtDescent), goldFraction));
+  // Naberius #24 (ADR-043) seeds the new lifetime with flat gold on top of what is kept; Erinyes's
+  // descent keeps no gold at all, the seed included.
+  const goldSeed = pendingErinyes
+    ? 0
+    : Math.floor(sigilLifetimeSeed(state, 'gold', sigilEffectMul));
+  const goldKept = add(floor(mul(floor(goldAtDescent), goldFraction)), goldSeed);
 
   // Remaining maleficia: each rolls independently against the remaining chance (02 §6/§8). Cimejes
   // #66 lifts the chance; Erinyes zeros it, Astiwihad maxes it.
@@ -274,11 +300,9 @@ export function commitKatabasis(
     else maleficiaLost.push(m);
   }
 
-  // Remaining reprobates: a fraction of the pool survives the descent. Camio #53 lifts it.
-  const reprobates = Math.floor(
-    state.lifetime.reprobates *
-      remainingReprobateFraction(state, sigilKatabasisBonus(state, 'reprobate', sigilEffectMul)),
-  );
+  // The reprobates the new lifetime starts with: those kept, plus Dantalion #71's flat seed (ADR-043).
+  const reprobates =
+    reprobatesKept + Math.floor(sigilLifetimeSeed(state, 'reprobates', sigilEffectMul));
 
   const lifetime: LifetimeState = {
     gold: goldKept,

@@ -97,7 +97,7 @@ becomes unbearably noisy, loosen one of those two flags rather than `strict` as 
 
 ## Status
 
-**Current test count: 1445** (sim 631 · shared 102 · api 20 · web 692). Save schema: **v15**.
+**Current test count: 1456** (sim 640 · shared 102 · api 20 · web 694). Save schema: **v15**.
 
 The game is mechanically complete and playable end-to-end. Phases 2 (infrastructure), 3 (gameplay)
 and 4 (content depth), the economy-parity pass, and the Phase 5 tracks that surfaced the sim, rebuilt
@@ -113,10 +113,10 @@ the merged pull requests; this README lists only what is still open.
 
 Each needs a design or spreadsheet decision before it becomes a coding slice.
 
-**Balance audit 2026-10-08.** Fourteen open findings, ranked and quantified in
+**Balance audit 2026-10-08.** Twelve open findings, ranked and quantified in
 `docs/balance-audit-2026-10-08.md` (its numbers predate the 2026-10-20 Suggestion retune; its
-Panvitium finding closed with the rite, ADR-039, and its Ira finding with the acolyte grant,
-ADR-042):
+Panvitium finding closed with the rite, ADR-039, its Ira finding with the acolyte grant, ADR-042,
+and its Gusion and duplicate-seal findings with the re-homed seals, ADR-043):
 
 - _High:_ reserve interest multiplied by `goldRateMul` and compounded by hand (free deposits;
   Midas ×10 doubles the reserve every ~2.3 min); Erinyes's uncapped ×2 player efficiency per
@@ -129,9 +129,7 @@ ADR-042):
   for Suggestion's yield; Sin-1 invocation upkeep outrunning the 0.5/s base influence regen without
   Decarabia; Behemoth and Arachne as trap invocations; Halphas #38 / Stolas #36 raising Indagatio's
   gold-loss tiers.
-- _Low:_ Gusion #11 is pure downside; the duplicate seals (Bael = Balam, Naberius = Bifrons,
-  Vine = Furcas, Dantalion ⊃ Zagan, Amy = Bifrons + Seere); Aamon #7 does nothing early; Astiwihad's
-  freeze costs nothing.
+- _Low:_ Aamon #7 does nothing early; Astiwihad's freeze costs nothing.
 
 **Gaps left by the Decimatio removal (ADR-038).**
 
@@ -146,9 +144,6 @@ ADR-042):
   Emptio, the Indagatio investment, the Depraedatio reserve, Aurevora, invocation
   gold upkeep (Imp's 10 gold/s; Behemoth, Fama, Succubus and Specunitas take a share of gold gain)
   and a few incoming-call answers.
-- **Dormant seals** (`inert`, souls still bindable and recoverable) awaiting a re-home: Beleth #13,
-  Marax #21, Ipos #22, Raum #40, Focalor #41, Haures #64.
-- **Dantalion #71** lost its −Decimatio cost: a free +Logos efficiency boon duplicating Zagan #61.
 - **Acolytes** delegate only Suggestion / Logismoi / Imperium and Indagatio; no gold-cost rite remains.
 - **Gold-loss tails.** Only Indagatio and Emptio still bite gold.
 - **Title About copy** (`strings.menu.aboutBody`) still says "cull them for their souls", which now
@@ -159,14 +154,15 @@ ADR-042):
 - **Plutus** and **Vapula #60** now reach the reserve interest only, so they do nothing without a
   reserve.
 - **Early gold pacing.** Without the population-coupled loan income, passive gold before a reserve is
-  the base rate plus Haagenti #48, Kobold and maleficia; the gold prices (Emptio, the 100-gold
+  the base rate plus Haagenti #48, Kobold, maleficia and Raum #40's bounty per death (ADR-043); the
+  gold prices (Emptio, the 100-gold
   Tier I deposit) and the Indagatio investment curve (now a share of gold held) need re-checking on
   the sheet.
-- **Culling has no economic cost** any more (every reprobate used to be a debtor, 03 §1), and no
-  death mints gold.
+- **Culling has no economic cost** any more (every reprobate used to be a debtor, 03 §1); only Raum
+  #40 (ADR-043) pays gold for a death.
 - **Katabasis gold carry-over** is only the 5% base, the Avaritia level (+12.5% each) and Purson #20
-  (plus Astiwihad's 100%).
-- **Vine #45 / Furcas #50** only cut the surrender charge, a small value: candidates to re-home.
+  (plus Astiwihad's 100%); Naberius #24 adds a flat starting sum on top (ADR-043).
+- **Furcas #50** only cuts the surrender charge, a small value: a candidate to re-home.
 
 ### Features
 

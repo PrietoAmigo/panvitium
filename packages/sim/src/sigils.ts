@@ -4,10 +4,10 @@
  * 1k, ~31% at 100k, ~50% at ~39M, then keeps creeping up with NO cap — meaningful early, gentle
  * late, and far tamer than the old √ default (which was near-zero early and exploded late).
  * A standard sigil carries `coefficient: 1` (so its strength IS the curve); a weaker sigil scales it
- * down (Paimon 0.5; Bael #1 / Amdusias #67 at 0.2; Zepar #16 / Marax #21 / Zagan #61 at 1/3).
- * Some sigils override the curve to `log` (the flat generators, Forneus #30's invoking power, Semet,
- * Gaap, Katabasis carry-over); the `linear` and `sqrt` curves are supported but no seal currently
- * uses them.
+ * down (Paimon 0.5; Bael #1 / Amdusias #67 at 0.2; Zagan #61 at 1/3).
+ * Some sigils override the curve to `log` (the flat generators and seeds, Raum #40's gold per death,
+ * Forneus #30's invoking power, Semet, Gaap, the Katabasis seals); the `linear` and `sqrt` curves are
+ * supported but no seal currently uses them.
  * `bindingMagnitude` returns the bare magnitude; a per-sigil coefficient multiplies it into a
  * concrete effect strength.
  *
@@ -83,8 +83,12 @@ export type ScalarModifierField =
   | 'desidiaSpeedMul'
   | 'desidiaDrainMul';
 
-/** Which Katabasis carry-over roll a sigil's bonus feeds. */
-export type KatabasisRoll = 'gold' | 'reprobate' | 'maleficia';
+/**
+ * Which descent share a Katabasis sigil's bonus feeds: the three carry-over rolls (gold, reprobates,
+ * maleficia kept), or `drowning`, the share of the reprobates LEFT BEHIND that drown at the descent,
+ * each minting a soul (Focalor #41, ADR-043).
+ */
+export type KatabasisRoll = 'gold' | 'reprobate' | 'maleficia' | 'drowning';
 
 /**
  * One modifier effect: multiply a scalar modifier-bundle field by `(1 + strength)` (increase) or
@@ -107,10 +111,25 @@ export interface CostReductionEffect {
  * or `1/(1 + strength)` (decrease) — the same convention as Sin skills (ADR-022). `katabasis` adds
  * `strength` (a flat fraction) to one or more carry-over rolls. `composite` (ADR-035) bundles several
  * modifier / cost-reduction parts onto one seal, ALL sharing the seal's single strength: a tradeoff
- * seal that lifts one lever while it softens another, or a dual seal that spans two systems at once
- * (Andrealphus #65). `inert` is a DORMANT seal: its catalog id, name and art are kept, but it does
- * nothing while bound (the Decimatio seals since that category retired, ADR-038; the same holding
- * pattern ADR-024 used). Every channel filters by kind, so a dormant seal is skipped everywhere.
+ * seal that lifts one lever while it softens another, or a dual seal that spans two systems at once.
+ * `modifierMulti` lifts several fields at one strength. Since ADR-043 no seal carries either (the
+ * last, Andrealphus #65 and Amy #58, duplicated other seals' levers); both kinds stay supported.
+ * `inert` is a DORMANT seal: its catalog id, name and art are kept, but it does nothing while bound
+ * (the holding pattern ADR-024 and ADR-038 used). No seal is dormant since ADR-043 re-homed the last
+ * six; the kind stays for the next retirement. Every channel filters by kind, so a dormant seal is
+ * skipped everywhere.
+ *
+ * The ADR-043 kinds, each with exactly one seal (no two seals share an effect):
+ *   - `lossReduction`: what one Opera category's failure tiers take is cut by `1/(1 + strength)`:
+ *     the reprobates Logos loses (Balam #51), the gold Indagatio's traps bite (Vine #45), the gold a
+ *     failed Emptio deal keeps (Amy #58).
+ *   - `logosLossSouls`: a share of the reprobates Logos's failures take burns, one soul each (Haures #64).
+ *   - `goldPerDeath`: flat gold minted with every death's soul (Raum #40).
+ *   - `deathRecruit`: the chance each death draws a mourner into the flock (Beleth #13).
+ *   - `maleficiaDuration`: single-use maleficia last `(1 + strength)` longer (Marax #21).
+ *   - `callBoonDuration`: an incoming call's boons last `(1 + strength)` longer (Gusion #11).
+ *   - `invokingPowerMul`: the whole invoking power `× (1 + strength)` (Andrealphus #65).
+ *   - `lifetimeSeed`: flat gold / reprobates each new lifetime starts with (Naberius #24, Dantalion #71).
  */
 export type SigilEffect =
   | ModifierEffect
@@ -133,7 +152,13 @@ export type SigilEffect =
   | { readonly kind: 'invocationSin'; readonly sin: Sin }
   | {
       readonly kind: 'flatGen';
-      readonly resource: 'gold' | 'influence' | 'generation' | 'suicideRate' | 'murderRate';
+      readonly resource:
+        | 'gold'
+        | 'influence'
+        | 'generation'
+        | 'suicideRate'
+        | 'murderRate'
+        | 'desidia';
     }
   | { readonly kind: 'invokingPower' }
   | CostReductionEffect
@@ -149,19 +174,28 @@ export type SigilEffect =
       readonly kind: 'composite';
       readonly effects: readonly (ModifierEffect | CostReductionEffect)[];
     }
+  | { readonly kind: 'lossReduction'; readonly category: SigilCategory }
+  | { readonly kind: 'logosLossSouls' }
+  | { readonly kind: 'goldPerDeath' }
+  | { readonly kind: 'deathRecruit' }
+  | { readonly kind: 'maleficiaDuration' }
+  | { readonly kind: 'callBoonDuration' }
+  | { readonly kind: 'invokingPowerMul' }
+  | { readonly kind: 'lifetimeSeed'; readonly resource: 'gold' | 'reprobates' }
   | { readonly kind: 'inert' };
 
 /** The three Opera action categories a per-category tier sigil can target. */
 export type SigilCategory = 'logos' | 'indagatio' | 'emptio';
 
 /**
- * A cost a sigil can soften (Paimon/Orobas/Zepar/Andrealphus/Eligos). `influence` = action influence
- * costs, `invocation` = ALL invocation costs (every per-second upkeep drain, flat or %-of-gain, and
+ * A cost a sigil can soften (Paimon/Orobas/Eligos/Ipos). `influence` = action influence costs,
+ * `invocation` = ALL invocation costs (every per-second upkeep drain, flat or %-of-gain, and
  * Aurevora's gold drain; ADR-035/036, composed by `invocationCostMul`), `emptioGold` = the Emptio
- * purchase gold. Each sigil divides its cost by `(1 + strength)` (never below zero, never an
- * increase).
+ * purchase gold, `indagatioInvestment` = the gold a Search pours into itself (its efficiency bonus
+ * still reads the whole share; ADR-043). Each sigil divides its cost by `(1 + strength)` (never
+ * below zero, never an increase).
  */
-export type CostChannel = 'influence' | 'invocation' | 'emptioGold';
+export type CostChannel = 'influence' | 'invocation' | 'emptioGold' | 'indagatioInvestment';
 
 export interface SigilDef {
   readonly id: SigilId;
@@ -236,18 +270,18 @@ export function sigilModifierContributions(state: GameState, effectMul = 1): Sig
     if (!def) continue;
     const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
-    // `composite` (Andrealphus #65) folds each of its modifier parts here at the seal's single
-    // strength; its cost-reduction part is picked up by the cost function.
+    // A `composite` seal folds each of its modifier parts here at the seal's single strength; its
+    // cost-reduction parts are picked up by the cost function.
     for (const part of effectParts(def.effect)) {
       if (part.kind === 'modifier') {
         const mul = part.direction === 'increase' ? 1 + s : 1 / (1 + s);
         scalar[part.field] = (scalar[part.field] ?? 1) * mul;
       } else if (part.kind === 'modifierMulti') {
-        // Amy #58 — one binding, several fields, the same strength on each (cursed: 'decrease').
+        // One binding, several fields, the same strength on each (no seal uses it since ADR-043).
         const mul = part.direction === 'increase' ? 1 + s : 1 / (1 + s);
         for (const f of part.fields) scalar[f] = (scalar[f] ?? 1) * mul;
       } else if (part.kind === 'tierGroup') {
-        // Bael #1 / Balam #51 / Amdusias #67 — a whole tier group, ALL Opera categories.
+        // Bael #1 / Amdusias #67 — a whole tier group, ALL Opera categories.
         const mul = part.direction === 'increase' ? 1 + s : 1 / (1 + s);
         for (const t of part.tiers) tier[t] = (tier[t] ?? 1) * mul;
       }
@@ -304,7 +338,7 @@ export function sigilInvocationSinContributions(
 /**
  * Flat per-second resource generation from the log-curve generator sigils (Haagenti #48 → gold,
  * Decarabia #69 → influence, Ose #57 → births, Sabnock #43 / Glasya-Labolas #25 → the per-capita
- * suicide / murder base). Each contributes its `coefficient × ln(1 + souls)` directly (additive, not
+ * suicide / murder base, Zepar #16 → Desidia accrued while the game runs, ADR-043). Each contributes its `coefficient × ln(1 + souls)` directly (additive, not
  * a multiplier). Consumed by `computeModifiers` → the matching flat fields, which the tick and the
  * dynamics accrue. `effectMul` carries the sigil enhancers.
  */
@@ -317,8 +351,9 @@ export function sigilFlatGeneration(
   generation: number;
   suicideRate: number;
   murderRate: number;
+  desidia: number;
 } {
-  const out = { gold: 0, influence: 0, generation: 0, suicideRate: 0, murderRate: 0 };
+  const out = { gold: 0, influence: 0, generation: 0, suicideRate: 0, murderRate: 0, desidia: 0 };
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
     if (bound === undefined) continue;
     const def = sigilById(Number(idStr));
@@ -347,7 +382,7 @@ export function sigilInvokingPower(state: GameState, effectMul = 1): number {
 }
 
 /**
- * Per-channel cost-reduction divisors from bound sigils (Paimon/Orobas/Amy). Each value is a
+ * Per-channel cost-reduction divisors from bound sigils (Paimon/Orobas/Eligos/Ipos). Each value is a
  * `(1 + strength)` factor (≥ 1; default 1 = no reduction) that the corresponding cost site divides by.
  * `effectMul` carries the sigil enhancers.
  */
@@ -362,8 +397,8 @@ export function sigilCostReductionByChannel(
     if (!def) continue;
     const s = sigilStrength(def, bound) * effectMul;
     if (s <= 0) continue;
-    // Andrealphus #65 carries its cost-reduction as one part of a composite; iterate parts so it
-    // composes with the pure cost-reduction seals (Paimon #9, Orobas #55, Zepar #16, Eligos #15).
+    // A composite seal may carry its cost-reduction as one part; iterate parts so it would compose
+    // with the pure cost-reduction seals (Paimon #9, Orobas #55, Eligos #15, Ipos #22).
     for (const part of effectParts(def.effect)) {
       if (part.kind !== 'costReduction') continue;
       out[part.channel] = (out[part.channel] ?? 1) * (1 + s);
@@ -373,7 +408,7 @@ export function sigilCostReductionByChannel(
 }
 
 /**
- * Probability that an Indagatio search surfaces a SECOND maleficium (Furcas #50). Sums each bound
+ * Probability that an Indagatio search surfaces a SECOND maleficium (Crocell #49). Sums each bound
  * such sigil's strength, clamped to [0, 1]; consumed by `resolveIndagatio` in `actions.ts`. `effectMul`
  * carries the sigil enhancers.
  */
@@ -389,8 +424,7 @@ export function sigilIndagatioDoubleFindChance(state: GameState, effectMul = 1):
 }
 
 /**
- * Per-invocation effectiveness multipliers from bound sigils (Buer #10 → Familiar, Sitri #12 →
- * Succubus). Each is a `(1 + strength)` factor on that specific invocation's effect coefficient,
+ * Per-invocation effectiveness multipliers from bound sigils (Buer #10 → Familiar). Each is a `(1 + strength)` factor on that specific invocation's effect coefficient,
  * keyed by invocation id (distinct from the per-Sin `invocationSin` sigils). Consumed in
  * `computeModifiers` via `invEffForInv(id)`. `effectMul` carries the sigil enhancers.
  */
@@ -411,8 +445,8 @@ export function sigilInvocationEffectContributions(
 }
 
 /**
- * The reserve-surrender softening from bound `shutdownRefund` sigils (Vine #45, Furcas #50; the
- * "recovery" niche they held for the Mercatus divest). Composed `(1 + strength)`; 1× when none are
+ * The reserve-surrender softening from bound `shutdownRefund` sigils (Furcas #50 alone since Vine
+ * #45 moved to Indagatio's gold losses, ADR-043; the "recovery" niche of the Mercatus divest). Composed `(1 + strength)`; 1× when none are
  * bound. `computeModifiers` DIVIDES `surrenderChargeMul` by it (the asymptotic cut), so the
  * charge softens toward zero but never inverts.
  */
@@ -429,8 +463,9 @@ export function sigilShutdownRefundMul(state: GameState, effectMul = 1): number 
 }
 
 /**
- * The Katabasis carry-over bonus one roll receives from bound sigils, as a FRACTION added to that
- * roll's kept-fraction (Purson→gold, Camio→reprobate, Cimejes→maleficia). Each sigil's `sigilStrength`
+ * The Katabasis bonus one descent share receives from bound sigils, as a FRACTION: added to a
+ * carry-over roll's kept-fraction (Purson→gold, Camio→reprobate, Cimejes→maleficia), or, for
+ * `drowning`, the share of the abandoned flock that drowns into souls (Focalor #41, ADR-043). Each sigil's `sigilStrength`
  * is the Sigils sheet's raw yield (`coeff × curve(bound)`), which the sheet defines to apply "as a
  * percentage" (Camio at 100 souls yields ln(101) ≈ 4.6, i.e. +4.6 percentage points), so it is
  * divided by 100 before being added to a [0,1] carry-over fraction. Without the ÷100 a few bound
@@ -447,13 +482,20 @@ export function sigilKatabasisBonus(state: GameState, roll: KatabasisRoll, effec
   return (bonus / 100) * effectMul;
 }
 
-/** Convenience for tests/UI: the maximum Sin level any gate could require. */
+/** The parameterless effect kinds whose strengths simply add across bound sigils. */
+type SummedKind =
+  | 'murderTriggersSuicide'
+  | 'maleficiaEffect'
+  | 'sigilEffect'
+  | 'logosLossSouls'
+  | 'goldPerDeath'
+  | 'deathRecruit'
+  | 'maleficiaDuration'
+  | 'callBoonDuration'
+  | 'invokingPowerMul';
+
 /** Σ strengths of one parameterless chance/strength kind across bound sigils. */
-function sumKind(
-  state: GameState,
-  kind: 'murderTriggersSuicide' | 'maleficiaEffect' | 'sigilEffect',
-  effectMul = 1,
-): number {
+function sumKind(state: GameState, kind: SummedKind, effectMul = 1): number {
   let total = 0;
   for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
     if (bound === undefined) continue;
@@ -489,6 +531,91 @@ export function sigilDuplicateOutputChance(
 /** Leraie #14: the chance each murder also drives a witness to the rope (a coupled suicide). */
 export function sigilMurderTriggersSuicideChance(state: GameState, effectMul = 1): number {
   return Math.min(1, sumKind(state, 'murderTriggersSuicide', effectMul));
+}
+
+// ── The ADR-043 channels (each fed by exactly one seal) ──────────────────────
+
+/**
+ * The multiplier on what one Opera category's FAILURE tiers take (the `lossReduction` seals: Balam
+ * #51 → the reprobates Logos loses, Vine #45 → the gold Indagatio's traps bite, Amy #58 → the gold a
+ * failed Emptio deal keeps). Each bound seal divides by `1 + strength`, so the loss softens toward
+ * zero and never inverts; 1 when none is bound. Read at resolution (`actions.ts`).
+ */
+export function sigilLossMul(state: GameState, category: SigilCategory, effectMul = 1): number {
+  let div = 1;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'lossReduction' || def.effect.category !== category) continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s > 0) div *= 1 + s;
+  }
+  return 1 / div;
+}
+
+/**
+ * Haures #64: the share (clamped to [0, 1]) of the reprobates a Logos failure takes that burn, each
+ * minting one soul. Applied as a floored fraction of the taken count, so no RNG is drawn.
+ */
+export function sigilLogosLossSoulsFraction(state: GameState, effectMul = 1): number {
+  return Math.min(1, sumKind(state, 'logosLossSouls', effectMul));
+}
+
+/**
+ * Raum #40: the flat gold minted with every soul a death yields (log curve). Read by `mintSouls`,
+ * the one helper every death passes through. Not scaled by the gold-rate multipliers: it is a bounty
+ * per body, not an income rate.
+ */
+export function sigilGoldPerDeath(state: GameState, effectMul = 1): number {
+  return sumKind(state, 'goldPerDeath', effectMul);
+}
+
+/**
+ * Beleth #13: the chance (clamped to [0, 1]) each death draws a mourner into the flock. Folded into
+ * the modifier bundle (`deathRecruitChance`) and applied at the rate level in `reprobateRates`, so
+ * it draws no RNG; capped at 1 so the dead are at most replaced, never multiplied.
+ */
+export function sigilDeathRecruitChance(state: GameState, effectMul = 1): number {
+  return Math.min(1, sumKind(state, 'deathRecruit', effectMul));
+}
+
+/** Marax #21: the multiplier on a single-use maleficium's duration, `1 + strength` (1 unbound). */
+export function sigilMaleficiaDurationMul(state: GameState, effectMul = 1): number {
+  return 1 + sumKind(state, 'maleficiaDuration', effectMul);
+}
+
+/**
+ * Gusion #11: the multiplier on the duration of an incoming call's boons (its timed buffs above ×1;
+ * a call's debuffs are untouched), `1 + strength`. Applied when the answer is chosen.
+ */
+export function sigilCallBoonDurationMul(state: GameState, effectMul = 1): number {
+  return 1 + sumKind(state, 'callBoonDuration', effectMul);
+}
+
+/** Andrealphus #65: the multiplier on the whole invoking power, `1 + strength` (1 unbound). */
+export function sigilInvokingPowerMul(state: GameState, effectMul = 1): number {
+  return 1 + sumKind(state, 'invokingPowerMul', effectMul);
+}
+
+/**
+ * The flat amount a new lifetime starts with from the `lifetimeSeed` seals (log curve): Naberius
+ * #24 → gold, Dantalion #71 → reprobates. Added at `commitKatabasis` on top of the carry-over
+ * rolls; the caller floors it to whole units.
+ */
+export function sigilLifetimeSeed(
+  state: GameState,
+  resource: 'gold' | 'reprobates',
+  effectMul = 1,
+): number {
+  let total = 0;
+  for (const [idStr, bound] of Object.entries(state.sigilBindings)) {
+    if (bound === undefined) continue;
+    const def = sigilById(Number(idStr));
+    if (!def || def.effect.kind !== 'lifetimeSeed' || def.effect.resource !== resource) continue;
+    const s = sigilStrength(def, bound) * effectMul;
+    if (s > 0) total += s;
+  }
+  return total;
 }
 
 /**
@@ -542,7 +669,7 @@ export function sigilEffectMulFor(state: GameState, def: SigilDef): number {
 /**
  * The multiplier on EVERY invocation cost (ADR-035/036): each per-second upkeep drain, flat or
  * %-of-gain/%-of-pool, and Aurevora's exponential gold drain. The invocation cost channel (Orobas
- * #55, Zepar #16, Andrealphus #65) divides by `1 + strength`, and Black Vessel adds its own
+ * #55 alone since ADR-043) divides by `1 + strength`, and Black Vessel adds its own
  * `1/(1 + k)` cut (−7% at base, deepened by Gaap). 1 when no source is present.
  */
 export function invocationCostMul(
@@ -553,4 +680,5 @@ export function invocationCostMul(
   return maleficiaInvocationCostMul(state.lifetime.maleficia, stack.maleficiaBoost) / red;
 }
 
+/** Convenience for tests/UI: the maximum Sin level any gate could require. */
 export const SIGIL_MAX_GATE = MAX_SIN_LEVEL;

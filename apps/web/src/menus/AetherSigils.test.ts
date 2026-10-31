@@ -12,7 +12,7 @@ import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { strings } from '@panvitium/shared';
-import { bn, sigilById, type GameState } from '@panvitium/sim';
+import { bn, sigilById, type GameState, type SigilDef } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { AetherSigils, toRoman, effectDisplay, browseEffectText } from './AetherSigils.js';
 import { boonLabel } from './katabasisShared.js';
@@ -32,10 +32,10 @@ describe('browseEffectText (the browse bar\u2019s effect line)', () => {
   it('reads the Status Quo label: the boon text with its arrows, no magnitude', () => {
     // idx is zero-based: seal #33 (Gaap) is idx 32.
     expect(browseEffectText(32, true)).toBe('Maleficia effects \u2191');
-    expect(browseEffectText(10, true)).toBe('Influence gain \u2193'); // Gusion #11, a reduction
+    expect(browseEffectText(54, true)).toBe('Invocation costs \u2193'); // Orobas #55, a reduction
     expect(browseEffectText(24, true)).toBe('Murder rate \u2191'); // Glasya-Labolas #25, "(flat)" dropped
-    // Andrealphus #65: both legs keep their arrows.
-    expect(browseEffectText(64, true)).toBe('Invocation costs \u2193, Desidia speed \u2191');
+    expect(browseEffectText(23, true)).toBe('Starting gold each lifetime \u2191'); // Naberius #24, "(flat)" dropped
+    expect(browseEffectText(50, true)).toBe('Logos reprobate losses \u2193'); // Balam #51 (ADR-043)
   });
 
   it('matches the ledger\u2019s label for every seal', () => {
@@ -49,9 +49,9 @@ describe('browseEffectText (the browse bar\u2019s effect line)', () => {
     expect(browseEffectText(-1, true)).toBe('');
   });
 
-  it('names the gate, not the boon, while Semet is sealed', () => {
+  it('names the gate, not the boon, while Semet is sealed; once unsealed its boon will not resolve', () => {
     expect(browseEffectText(31, false)).toBe('Sealed until every Cardinal Sin reaches Rank II');
-    expect(browseEffectText(31, true)).toBe('Sigil effects \u2191');
+    expect(browseEffectText(31, true)).toBe('It resonates but you cannot interpret yet');
   });
 });
 
@@ -73,17 +73,47 @@ describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
   });
 
   it('shows both legs of a composite seal, each signed (ADR-035)', () => {
-    // Andrealphus #65: the cost-reduction leg reads '−', the Desidia-speed increase reads '+'.
-    const and = effectDisplay(sigilById(65), bn(100_000_000));
-    expect(and.startsWith('−')).toBe(true);
-    expect(and).toContain(' / +');
-    expect(and.endsWith('%')).toBe(true);
+    // No seal is composite since ADR-043; the display still supports one (a literal def).
+    const def: SigilDef = {
+      id: 65,
+      name: 'Composite',
+      coefficient: 1,
+      effect: {
+        kind: 'composite',
+        effects: [
+          { kind: 'costReduction', channel: 'invocation' },
+          { kind: 'modifier', field: 'desidiaSpeedMul', direction: 'increase' },
+        ],
+      },
+    };
+    const both = effectDisplay(def, bn(100_000_000));
+    expect(both.startsWith('−')).toBe(true);
+    expect(both).toContain(' / +');
+    expect(both.endsWith('%')).toBe(true);
   });
 
   it('shows no magnitude for a dormant seal, however many souls it holds (ADR-038)', () => {
-    // Beleth, Marax, Ipos, Raum, Focalor and Haures served only Decimatio and now sleep.
-    for (const id of [13, 21, 22, 40, 41, 64]) {
-      expect(effectDisplay(sigilById(id), bn(100_000_000))).toBe('\u2014');
+    // No seal is dormant since ADR-043; a literal def pins the display of the kind.
+    const def: SigilDef = { id: 13, name: 'Dormant', coefficient: 1, effect: { kind: 'inert' } };
+    expect(effectDisplay(def, bn(100_000_000))).toBe('\u2014');
+  });
+
+  it('shows the ADR-043 magnitudes in their own units', () => {
+    // Raum #40: coefficient 1 × ln(1001) ≈ 6.91 gold per death.
+    expect(effectDisplay(sigilById(40), bn(1_000))).toBe('+6.91 gold/death');
+    // Naberius #24 / Dantalion #71 seed whole units: 100 × ln(1001) ≈ 690.8, 10 × ln(1001) ≈ 69.1.
+    expect(effectDisplay(sigilById(24), bn(1_000))).toBe('+690 gold');
+    expect(effectDisplay(sigilById(71), bn(1_000))).toBe('+69 reprobates');
+    // Zepar #16: 0.001 × ln(1001) ≈ 0.0069 desidia per second.
+    expect(effectDisplay(sigilById(16), bn(1_000))).toBe('+0.0069 desidia/s');
+    // Focalor #41 reads percentage points like the carry-over seals: ln(1001) ≈ 6.9.
+    expect(effectDisplay(sigilById(41), bn(1_000))).toBe('+6.9%');
+    // The loss cuts read as reductions; the chances and durations as lifts.
+    for (const id of [45, 51, 58]) {
+      expect(effectDisplay(sigilById(id), bn(1_000_000)).startsWith('\u2212')).toBe(true);
+    }
+    for (const id of [11, 13, 21, 64, 65]) {
+      expect(effectDisplay(sigilById(id), bn(1_000_000))).toBe('+38.2%');
     }
   });
 
@@ -116,9 +146,9 @@ describe('effectDisplay — real per-seal magnitude (pending #2)', () => {
       expect(out.startsWith('\u2212')).toBe(true); // U+2212 MINUS SIGN
       expect(out).toContain('%');
     }
-    // `increase` effects read with a plus: Amdusias #67 (tier) and Amy #58 (now a boon, modifierMulti).
+    // `increase` effects read with a plus: Amdusias #67 (tier) and Aamon #7 (modifier).
     expect(effectDisplay(sigilById(67), bn(1_000_000)).startsWith('+')).toBe(true);
-    expect(effectDisplay(sigilById(58), bn(1_000_000)).startsWith('+')).toBe(true);
+    expect(effectDisplay(sigilById(7), bn(1_000_000)).startsWith('+')).toBe(true);
   });
 
   it('labels flat death rates as per-capita (Sabnock #43)', () => {

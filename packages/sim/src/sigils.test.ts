@@ -11,24 +11,35 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  activateMaleficium,
+  applyCallEffects,
   BASE_GOLD_PER_SECOND,
   bindingMagnitude,
   bindSigil,
   bn,
   categoryEfficiency,
   categoryTierModifiers,
+  commitKatabasis,
   computeModifiers,
   createInitialState,
   currentInvokingPower,
   effectParts,
+  enterKatabasis,
   grantDesidiaForOffline,
+  indagatioInvestmentCost,
   invocationUpkeep,
+  logosBadLoss,
+  logosLossMul,
+  MALEFICIA_BUFF_DURATION_SECONDS,
+  maleficiaBuffDuration,
   makeRng,
+  mintSouls,
   NEUTRAL_MODIFIERS,
   remainingGoldFraction,
   remainingReprobateFraction,
   reprobateRates,
   resolveAction,
+  resolveEmptio,
   resolveIndagatio,
   resolveSuggestion,
   surrenderCharge,
@@ -42,6 +53,7 @@ import {
   sigilInvocationEffectContributions,
   sigilInvokingPower,
   sigilKatabasisBonus,
+  sigilLossMul,
   sigilModifierContributions,
   sigilMurderTriggersSuicideChance,
   sigilShutdownRefundMul,
@@ -57,6 +69,7 @@ import {
   totalReprobates,
   type GameState,
   type Rng,
+  type SigilEffect,
 } from './index.js';
 
 function fresh(seed = 'sigils', t = 0): GameState {
@@ -138,15 +151,6 @@ describe('In-lifetime modifier contributions', () => {
     expect(computeModifiers(s).goldRateMul).toBeCloseTo(base * (1 + strength), 6);
   });
 
-  it('Amy #58 (a boon, player tuning) lifts Indagatio AND Emptio efficiency by (1 + strength)', () => {
-    const s = bound(58, 1_000_000);
-    const strength = sigilStrength(sigilById(58)!, bn(1_000_000));
-    const m = computeModifiers(s);
-    expect(m.indagatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
-    expect(m.emptioEfficiencyMul).toBeCloseTo(1 + strength, 6);
-    expect(m.indagatioEfficiencyMul).toBeGreaterThan(1); // faster searches, not slower
-  });
-
   it('Bael #1 (tierGroup decrease) damps all three negative tiers at once', () => {
     const s = bound(1, 1_000_000);
     const strength = sigilStrength(sigilById(1)!, bn(1_000_000));
@@ -157,17 +161,18 @@ describe('In-lifetime modifier contributions', () => {
     expect(m.stellar).toBeUndefined();
   });
 
-  it('two sigils on the same field compose multiplicatively', () => {
-    // Aamon #7 lifts generation; Amy #58 has no generation leg, so compose Aamon with
-    // Bael #1 vs Balam #51 on the SAME tier group instead — both damp the negative tiers.
+  it('two sigils on the same weight compose multiplicatively', () => {
+    // No two seals share an effect (ADR-043), but distinct effects can still meet on one weight:
+    // Vassago #3 (Stellar + Excellent) and Astaroth #29 (Stellar alone) both lift Indagatio Stellar.
     let s = fresh();
     s = { ...s, souls: bn(2_000_000) };
-    s = bindSigil(s, 1, 10_000); // Bael: negative tiers down
-    s = bindSigil(s, 51, 1_000_000); // Balam: negative tiers down again
-    const a = sigilStrength(sigilById(1)!, bn(10_000));
-    const b = sigilStrength(sigilById(51)!, bn(1_000_000));
-    const expected = (1 / (1 + a)) * (1 / (1 + b));
-    expect(computeModifiers(s).tierWeightMul.terrible).toBeCloseTo(expected, 5);
+    s = bindSigil(s, 3, 10_000);
+    s = bindSigil(s, 29, 1_000_000);
+    const a = sigilStrength(sigilById(3)!, bn(10_000));
+    const b = sigilStrength(sigilById(29)!, bn(1_000_000));
+    const out = sigilCategoryTierContributions(s, 'indagatio');
+    expect(out.stellar).toBeCloseTo((1 + a) * (1 + b), 5);
+    expect(out.excellent).toBeCloseTo(1 + a, 5); // only Vassago reaches Excellent
   });
 
   it('the sigil-effect multiplier scales a contribution strength', () => {
@@ -195,13 +200,6 @@ describe('In-lifetime modifier contributions', () => {
       1 + strength,
       6,
     );
-  });
-
-  it('Balam #51 damps the whole negative tier group', () => {
-    const strength = sigilStrength(sigilById(51)!, bn(10_000));
-    const m = computeModifiers(bound(51, 10_000)).tierWeightMul;
-    expect(m.terrible).toBeCloseTo(1 / (1 + strength), 6);
-    expect(m.bad).toBeCloseTo(1 / (1 + strength), 6);
   });
 
   it('Bifrons #46 lifts Indagatio efficiency (folds onto player efficiency)', () => {
@@ -440,12 +438,15 @@ describe('Cost-reduction sigils (S8)', () => {
       1 + sigilStrength(sigilById(55)!, bn(100_000_000)),
       6,
     );
-    // Andrealphus #65's composite carries a cost-reduction part on the same `invocation` channel.
-    expect(sigilCostReductionByChannel(bound(65, 100_000_000)).invocation).toBeCloseTo(
-      1 + sigilStrength(sigilById(65)!, bn(100_000_000)),
+    // Ipos #22 softens the Indagatio investment on its own channel (ADR-043).
+    expect(sigilCostReductionByChannel(bound(22, 100_000_000)).indagatioInvestment).toBeCloseTo(
+      1 + sigilStrength(sigilById(22)!, bn(100_000_000)),
       6,
     );
-    // Amy #58 is not a cost-reduction sigil (it lifts Indagatio & Emptio action efficiency instead).
+    // Since ADR-043 Orobas is the only seal on the invocation channel: Zepar #16 and Andrealphus
+    // #65 left it, and Amy #58 is no cost-reduction seal.
+    expect(sigilCostReductionByChannel(bound(16, 100_000_000)).invocation).toBeUndefined();
+    expect(sigilCostReductionByChannel(bound(65, 100_000_000)).invocation).toBeUndefined();
     expect(sigilCostReductionByChannel(bound(58, 1_000_000)).emptioGold).toBeUndefined();
   });
 
@@ -595,12 +596,6 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
     expect(sigilById(61)!.name).toBe('Zagan');
   });
 
-  it("Gusion #11 softens the player's own influence generation (a cursed decrease)", () => {
-    const strength = sigilStrength(sigilById(11)!, bn(100_000_000));
-    const { scalar } = sigilModifierContributions(bound(11, 100_000_000));
-    expect(scalar.influenceRateMul).toBeCloseTo(1 / (1 + strength), 6);
-  });
-
   it('Sitri #12 lifts the offline Desidia-gain rate, banking more over the same span', () => {
     const strength = sigilStrength(sigilById(12)!, bn(100_000_000));
     const { scalar } = sigilModifierContributions(bound(12, 100_000_000));
@@ -614,17 +609,12 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
     expect(sitri).toBeCloseTo(hour * DESIDIA_PER_SECOND * (1 + strength), 6);
   });
 
-  it('Eligos #15 cuts Emptio gold costs; Zepar #16 cuts invocation costs at 1/3 strength', () => {
+  it('Eligos #15 cuts Emptio gold costs; Zagan #61 keeps its third strength', () => {
     expect(sigilCostReductionByChannel(bound(15, 100_000_000)).emptioGold).toBeCloseTo(
       1 + sigilStrength(sigilById(15)!, bn(100_000_000)),
       6,
     );
-    expect(sigilCostReductionByChannel(bound(16, 100_000_000)).invocation).toBeCloseTo(
-      1 + sigilStrength(sigilById(16)!, bn(100_000_000)),
-      6,
-    );
-    // Zepar #16 and Zagan #61 each carry a third of the standard pct strength (ADR-034).
-    expect(sigilById(16)!.coefficient).toBeCloseTo(1 / 3, 12);
+    // Zagan #61 carries a third of the standard pct strength (ADR-034).
     expect(sigilById(61)!.coefficient).toBeCloseTo(1 / 3, 12);
   });
 
@@ -635,12 +625,6 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
       1 / (1 + strength),
       6,
     );
-  });
-
-  it('Naberius #24 shortens Indagatio (a time-mode lift on indagatioEfficiencyMul)', () => {
-    const strength = sigilStrength(sigilById(24)!, bn(100_000_000));
-    const { scalar } = sigilModifierContributions(bound(24, 100_000_000));
-    expect(scalar.indagatioEfficiencyMul).toBeCloseTo(1 + strength, 6);
   });
 
   it('Foras #31 accelerates Desidia time (composes with Acedia Procrastination)', () => {
@@ -668,33 +652,17 @@ describe('ADR-034: the ten reactivated seals (names + effects)', () => {
 });
 
 describe('Composite (multi-effect) seals (S17 — ADR-035)', () => {
-  it('Dantalion #71 keeps only its Logos lift once its Decimatio cost retired (ADR-038)', () => {
-    expect(sigilById(71)!.effect).toEqual({
-      kind: 'modifier',
-      field: 'logosEfficiencyMul',
-      direction: 'increase',
-    });
-    const strength = sigilStrength(sigilById(71)!, bn(100_000_000));
-    const { scalar } = sigilModifierContributions(bound(71, 100_000_000));
-    expect(scalar.logosEfficiencyMul).toBeCloseTo(1 + strength, 6);
-  });
-
-  it('Andrealphus #65 is a dual seal: softens invocation costs AND quickens Desidia', () => {
-    expect(sigilById(65)!.effect.kind).toBe('composite');
-    const strength = sigilStrength(sigilById(65)!, bn(100_000_000));
-    // Cost-reduction leg -> the invocation channel.
-    expect(sigilCostReductionByChannel(bound(65, 100_000_000)).invocation).toBeCloseTo(
-      1 + strength,
-      6,
-    );
-    // Modifier leg -> desidiaSpeedMul (composes with Foras #31; alone it is exactly the lift).
-    const { scalar } = sigilModifierContributions(bound(65, 100_000_000));
-    expect(scalar.desidiaSpeedMul).toBeCloseTo(1 + strength, 6);
-    expect(computeModifiers(bound(65, 100_000_000)).desidiaSpeedMul).toBeCloseTo(1 + strength, 6);
-  });
-
   it('effectParts flattens a composite and passes a single effect through unchanged', () => {
-    expect(effectParts(sigilById(65)!.effect)).toHaveLength(2); // Andrealphus: two parts
+    // No seal carries a composite since ADR-043 (Andrealphus #65, the last, duplicated Orobas #55
+    // and Foras #31); the kind stays supported, so pin its flattening on a literal effect.
+    const composite = {
+      kind: 'composite',
+      effects: [
+        { kind: 'costReduction', channel: 'invocation' },
+        { kind: 'modifier', field: 'desidiaSpeedMul', direction: 'increase' },
+      ],
+    } as const;
+    expect(effectParts(composite)).toEqual(composite.effects);
     const valefor = sigilById(6)!; // a plain single-effect seal
     expect(effectParts(valefor.effect)).toEqual([valefor.effect]);
   });
@@ -786,32 +754,27 @@ describe('Sigil one-offs (S16): the new mechanics (sheet rev 2026-06-12)', () =>
     );
   });
 
-  it('Vine #45 softens the reserve surrender charge (asymptotic cut); Furcas composes', () => {
+  it('Furcas #50 softens the reserve surrender charge (asymptotic cut)', () => {
     // Re-pinned from the withdrawal recovery to the surrender charge (the relationship-tier rework):
-    // the charge divides by 1 + Vine's pct strength, so it softens toward zero but never inverts.
-    expect(sigilById(45)!.effect).toEqual({ kind: 'shutdownRefund' });
-    const vineMul = 1 + sigilStrength(sigilById(45)!, bn(100_000_000));
-    expect(sigilShutdownRefundMul(bound(45, 100_000_000))).toBeCloseTo(vineMul, 6);
+    // the charge divides by 1 + Furcas's pct strength, so it softens toward zero but never inverts.
+    // Furcas is the only seal on it since Vine #45 moved to Indagatio's gold losses (ADR-043).
+    expect(sigilById(50)!.effect).toEqual({ kind: 'shutdownRefund' });
+    const furcasMul = 1 + sigilStrength(sigilById(50)!, bn(100_000_000));
+    expect(sigilShutdownRefundMul(bound(50, 100_000_000))).toBeCloseTo(furcasMul, 6);
+    expect(sigilShutdownRefundMul(bound(45, 100_000_000))).toBe(1); // Vine no longer reaches it
     expect(surrenderCharge(computeModifiers(fresh()))).toBeCloseTo(0.15, 9);
-    expect(surrenderCharge(computeModifiers(bound(45, 100_000_000)))).toBeCloseTo(
-      0.15 / vineMul,
+    expect(surrenderCharge(computeModifiers(bound(50, 100_000_000)))).toBeCloseTo(
+      0.15 / furcasMul,
       6,
     );
-    expect(thesaurusRecoveryFraction(computeModifiers(bound(45, 100_000_000)))).toBeCloseTo(
-      1 - 0.15 / vineMul,
+    expect(thesaurusRecoveryFraction(computeModifiers(bound(50, 100_000_000)))).toBeCloseTo(
+      1 - 0.15 / furcasMul,
       6,
     );
     // A vast binding drives the charge toward zero, never below it.
-    const huge = surrenderCharge(computeModifiers(bound(45, 1e50)));
+    const huge = surrenderCharge(computeModifiers(bound(50, 1e50)));
     expect(huge).toBeGreaterThan(0);
     expect(huge).toBeLessThan(0.15);
-    // Vine + Furcas on the same channel compose multiplicatively (same strength at the same souls).
-    let both = fresh();
-    both = { ...both, souls: bn(200_000_000) };
-    both = bindSigil(both, 45, 100_000_000);
-    both = bindSigil(both, 50, 100_000_000);
-    expect(sigilShutdownRefundMul(both)).toBeCloseTo(vineMul * vineMul, 6);
-    expect(computeModifiers(both).surrenderChargeMul).toBeCloseTo(1 / (vineMul * vineMul), 6);
   });
 
   it('Semet #32 scales the other sigils; Gaap #33 inflates the maleficia enhancer stack', () => {
@@ -937,69 +900,297 @@ describe('Sigil-effect maleficia reach every sigil channel', () => {
     ).toHaveLength(2);
   });
 
-  it('the ring lifts the Vine #45 / Furcas #50 surrender-charge cut', () => {
-    const strength = sigilStrength(sigilById(45)!, bn(SOULS));
-    for (const id of [45, 50]) {
-      expect(computeModifiers(bound(id, SOULS)).surrenderChargeMul).toBeCloseTo(
-        1 / (1 + strength),
-        6,
-      );
-      expect(computeModifiers(ring(bound(id, SOULS))).surrenderChargeMul).toBeCloseTo(
-        1 / (1 + 1.66 * strength),
-        6,
-      );
-    }
-    expect(surrenderCharge(computeModifiers(ring(bound(45, SOULS))))).toBeCloseTo(
+  it('the ring lifts the Furcas #50 surrender-charge cut', () => {
+    const strength = sigilStrength(sigilById(50)!, bn(SOULS));
+    expect(computeModifiers(bound(50, SOULS)).surrenderChargeMul).toBeCloseTo(
+      1 / (1 + strength),
+      6,
+    );
+    expect(computeModifiers(ring(bound(50, SOULS))).surrenderChargeMul).toBeCloseTo(
+      1 / (1 + 1.66 * strength),
+      6,
+    );
+    expect(surrenderCharge(computeModifiers(ring(bound(50, SOULS))))).toBeCloseTo(
       0.15 / (1 + 1.66 * strength),
       6,
     );
   });
+
+  it('the ring lifts the ADR-043 channels (a loss cut, a per-death bounty)', () => {
+    const balam = sigilStrength(sigilById(51)!, bn(SOULS));
+    expect(sigilLossMul(ring(bound(51, SOULS)), 'logos', 1.66)).toBeCloseTo(
+      1 / (1 + 1.66 * balam),
+      6,
+    );
+    const raum = sigilStrength(sigilById(40)!, bn(SOULS));
+    const s = mintSouls(ring(bound(40, SOULS)), 10);
+    expect(s.lifetime.gold.toNumber()).toBeCloseTo(10 * raum * 1.66, 6);
+  });
 });
 
-describe('Dormant seals (ADR-038: the Decimatio seals)', () => {
-  // Beleth #13, Marax #21, Ipos #22, Raum #40, Focalor #41 and Haures #64 served only the retired
-  // Decimatio category (Raum's other leg, a Logos penalty, would have left it a pure curse). Their
-  // ids, names and art stay; the effect is `inert` until each is re-homed.
-  const DORMANT: readonly number[] = [13, 21, 22, 40, 41, 64];
-  const NAMES: Readonly<Record<number, string>> = {
-    13: 'Beleth',
-    21: 'Marax',
-    22: 'Ipos',
-    40: 'Raum',
-    41: 'Focalor',
-    64: 'Haures',
-  };
+describe('ADR-043: the re-homed seals (no two seals share an effect)', () => {
+  /** One key per atomic lever a seal pulls; a composite / multi-field seal pulls several. */
+  function levers(effect: SigilEffect): string[] {
+    return effectParts(effect).flatMap((p): string[] => {
+      if (p.kind === 'modifier') return [`modifier:${p.field}:${p.direction}`];
+      if (p.kind === 'modifierMulti') return p.fields.map((f) => `modifier:${f}:${p.direction}`);
+      if (p.kind === 'tierGroup')
+        return [`tierGroup:${[...p.tiers].sort().join('+')}:${p.direction}`];
+      if (p.kind === 'categoryTier') {
+        return [`categoryTier:${p.category}:${[...p.tiers].sort().join('+')}:${p.direction}`];
+      }
+      if (p.kind === 'katabasis') return p.rolls.map((r) => `katabasis:${r}`);
+      return [JSON.stringify(p)];
+    });
+  }
 
-  it('keeps each id and name, with an inert effect', () => {
-    for (const id of DORMANT) {
-      expect(sigilById(id)!.name).toBe(NAMES[id]);
-      expect(sigilById(id)!.effect).toEqual({ kind: 'inert' });
-      expect(effectParts(sigilById(id)!.effect)).toEqual([{ kind: 'inert' }]);
-    }
-  });
-
-  it('a heavily bound dormant seal changes no modifier, tier, cost or chance', () => {
-    let s = { ...fresh(), souls: bn(6e9) };
-    for (const id of DORMANT) s = bindSigil(s, id, 1e9);
-    expect(computeModifiers(s)).toEqual(computeModifiers(fresh()));
-    for (const cat of ['logos', 'indagatio', 'emptio'] as const) {
-      expect(categoryTierModifiers(s, cat)).toEqual({});
-      expect(categoryEfficiency(s, cat)).toBe(categoryEfficiency(fresh(), cat));
-    }
-    expect(sigilCostReductionByChannel(s)).toEqual(sigilCostReductionByChannel(fresh()));
-    expect(sigilInvokingPower(s)).toBe(0);
-    // No duplicate-output roll is drawn for a dormant seal (ADR-011: the stream stays untouched).
-    const rng = makeRng(fresh().rngState);
-    resolveAction(s, 'suggestion', rng, { forcedTier: 'good', efficiency: 1 });
-    const ref = makeRng(fresh().rngState);
-    resolveSuggestion(s, 'good', ref);
-    expect(rng.state).toBe(ref.state);
-  });
-
-  it('only the dormant seals are inert: the other 66 all carry an effect', () => {
-    const inert = SIGIL_IDS.filter((id) => sigilById(id)!.effect.kind === 'inert');
-    expect(inert).toEqual([...DORMANT]);
+  it('no seal is dormant, and no lever is pulled by two seals', () => {
     expect(SIGIL_IDS).toHaveLength(72);
+    expect(SIGIL_IDS.filter((id) => sigilById(id)!.effect.kind === 'inert')).toEqual([]);
+    const owner = new Map<string, number>();
+    for (const id of SIGIL_IDS) {
+      for (const key of levers(sigilById(id)!.effect)) {
+        expect(owner.get(key), `${key} is pulled by #${owner.get(key)} and #${id}`).toBeUndefined();
+        owner.set(key, id);
+      }
+    }
+  });
+
+  it('keeps every re-homed seal its Goetia name', () => {
+    const names: Readonly<Record<number, string>> = {
+      11: 'Gusion',
+      13: 'Beleth',
+      16: 'Zepar',
+      21: 'Marax',
+      22: 'Ipos',
+      24: 'Naberius',
+      40: 'Raum',
+      41: 'Focalor',
+      45: 'Vine',
+      51: 'Balam',
+      58: 'Amy',
+      64: 'Haures',
+      65: 'Andrealphus',
+      71: 'Dantalion',
+    };
+    for (const [id, name] of Object.entries(names)) expect(sigilById(Number(id))!.name).toBe(name);
+  });
+
+  it('Gusion #11 lengthens an incoming call’s boons, never its debuffs', () => {
+    const strength = sigilStrength(sigilById(11)!, bn(1_000_000));
+    const effects = [
+      { kind: 'timedMul', field: 'goldGainMul', factor: 1.5, durationSec: 600 },
+      { kind: 'timedMul', field: 'influenceGainMul', factor: 0.5, durationSec: 600 },
+    ] as const;
+    const plain = applyCallEffects(fresh(), effects).lifetime.callBuffs;
+    expect(plain.map((b) => b.remainingSeconds)).toEqual([600, 600]);
+    const [boon, debuff] = applyCallEffects(bound(11, 1_000_000), effects).lifetime.callBuffs;
+    expect(boon!.remainingSeconds).toBeCloseTo(600 * (1 + strength), 6);
+    expect(boon!.durationSec).toBeCloseTo(600 * (1 + strength), 6); // the HUD ring reads true
+    expect(debuff!.remainingSeconds).toBe(600);
+  });
+
+  it('Beleth #13 draws a mourner into the flock for a share of the deaths (rate level, capped)', () => {
+    const flock = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: 1_000 },
+    });
+    const p = sigilStrength(sigilById(13)!, bn(1_000_000));
+    const base = reprobateRates(flock(fresh()), computeModifiers(flock(fresh())));
+    expect(base.generationPerSecond).toBe(0);
+    const s = flock(bound(13, 1_000_000));
+    const r = reprobateRates(s, computeModifiers(s));
+    expect(r.generationPerSecond).toBeCloseTo(p * (r.suicidePerSecond + r.murderPerSecond), 12);
+    // An empty flock mourns no one; a vast binding at most replaces the dead.
+    const empty = bound(13, 1_000_000);
+    expect(reprobateRates(empty, computeModifiers(empty)).generationPerSecond).toBe(0);
+    expect(computeModifiers(bound(13, 1e300)).deathRecruitChance).toBe(1);
+  });
+
+  it('Zepar #16 accrues Desidia while the game runs (flat, log curve)', () => {
+    const rate = 0.001 * Math.log(1 + 1_000_000);
+    const s = bound(16, 1_000_000);
+    expect(computeModifiers(s).flatDesidiaPerSecond).toBeCloseTo(rate, 9);
+    expect(tick(s, 10).state.desidia).toBeCloseTo(10 * rate, 9);
+    expect(tick(fresh(), 10).state.desidia).toBe(0);
+  });
+
+  it('Marax #21 lengthens each single-use maleficium activation', () => {
+    const strength = sigilStrength(sigilById(21)!, bn(1_000_000));
+    const withDirt = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, maleficia: ['crossroads_dirt'] },
+    });
+    expect(maleficiaBuffDuration(fresh())).toBe(MALEFICIA_BUFF_DURATION_SECONDS);
+    const r = activateMaleficium(withDirt(bound(21, 1_000_000)), 'crossroads_dirt');
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.state.lifetime.maleficiaBuffs.crossroads_dirt).toBeCloseTo(
+      MALEFICIA_BUFF_DURATION_SECONDS * (1 + strength),
+      6,
+    );
+  });
+
+  it('Ipos #22 cuts the gold a Search pours, not the speed it buys', () => {
+    const rich = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, gold: bn(10_000), indagatioInvestPercent: 50 },
+    });
+    const strength = sigilStrength(sigilById(22)!, bn(1_000_000));
+    expect(indagatioInvestmentCost(rich(fresh())).toNumber()).toBe(5_000);
+    const ipos = rich(bound(22, 1_000_000));
+    expect(indagatioInvestmentCost(ipos).toNumber()).toBe(Math.ceil(5_000 / (1 + strength)));
+    const plain = startAction(rich(fresh()), 'indagatio');
+    const cut = startAction(ipos, 'indagatio');
+    if (!plain.ok || !cut.ok) throw new Error('start failed');
+    expect(plain.state.lifetime.gold.toNumber()).toBe(5_000);
+    expect(cut.state.lifetime.gold.toNumber()).toBe(10_000 - Math.ceil(5_000 / (1 + strength)));
+    // The efficiency bonus (and so the search time) still reads the whole 5,000-gold share.
+    expect(cut.state.lifetime.actionQueue[0]!.remainingSeconds).toBeCloseTo(
+      plain.state.lifetime.actionQueue[0]!.remainingSeconds,
+      9,
+    );
+  });
+
+  it('Naberius #24 and Dantalion #71 seed each new lifetime (flat, on top of the carry-over)', () => {
+    let s = { ...fresh(), souls: bn(2_000_000) };
+    s = bindSigil(s, 24, 1_000_000);
+    s = bindSigil(s, 71, 1_000_000);
+    s = { ...s, lifetime: { ...s.lifetime, gold: bn(1_000), reprobates: 1_000 } };
+    const seedGold = Math.floor(100 * Math.log(1 + 1_000_000));
+    const seedRepro = Math.floor(10 * Math.log(1 + 1_000_000));
+    const { state, recap } = commitKatabasis(enterKatabasis(s));
+    expect(state.lifetime.gold.toNumber()).toBe(Math.floor(1_000 * 0.05) + seedGold);
+    expect(state.lifetime.reprobates).toBe(Math.floor(1_000 * 0.05) + seedRepro);
+    expect(recap.goldKept.toNumber()).toBe(state.lifetime.gold.toNumber());
+    expect(recap.reprobatesKept).toBe(state.lifetime.reprobates);
+    // Erinyes's descent keeps no gold at all, the seed included.
+    const erinyes = { ...s, lifetime: { ...s.lifetime, pendingErinyes: true } };
+    expect(commitKatabasis(enterKatabasis(erinyes)).state.lifetime.gold.toNumber()).toBe(0);
+  });
+
+  it('Raum #40 mints gold with every soul a death yields', () => {
+    const bounty = Math.log(1 + 1_000_000);
+    expect(mintSouls(fresh(), 10).lifetime.gold.toNumber()).toBe(0);
+    const s = mintSouls(bound(40, 1_000_000), 10);
+    expect(s.souls.toNumber()).toBe(10);
+    expect(s.lifetime.gold.toNumber()).toBeCloseTo(10 * bounty, 6);
+    // A Good Suggestion's suicides pay it too (they mint through the same helper).
+    const flock = { ...bound(40, 1_000_000), lifetime: { ...bound(40, 1_000_000).lifetime } };
+    flock.lifetime.reprobates = 100;
+    const good = resolveSuggestion(flock, 'good', makeRng(1));
+    expect(good.lifetime.gold.toNumber()).toBeCloseTo(good.souls.toNumber() * bounty, 6);
+  });
+
+  it('Focalor #41 drowns a share of the flock the descent leaves behind, one soul each', () => {
+    let s = bound(41, 1_000_000);
+    s = { ...s, lifetime: { ...s.lifetime, reprobates: 1_000 } };
+    const share = Math.log(1 + 1_000_000) / 100;
+    const kept = Math.floor(1_000 * 0.05);
+    const drowned = Math.floor((1_000 - kept) * share);
+    const { state, recap } = commitKatabasis(enterKatabasis(s));
+    expect(drowned).toBeGreaterThan(0);
+    expect(state.lifetime.reprobates).toBe(kept); // the kept are spared
+    expect(state.souls.toNumber()).toBe(drowned);
+    expect(recap.soulsCarried.toNumber()).toBe(drowned);
+    const plain = { ...fresh(), lifetime: { ...fresh().lifetime, reprobates: 1_000 } };
+    expect(commitKatabasis(enterKatabasis(plain)).state.souls.toNumber()).toBe(0);
+  });
+
+  it('Vine #45 cuts the gold Indagatio’s failure tiers bite', () => {
+    const rich = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, gold: bn(1_000) },
+    });
+    const cut = 1 / (1 + sigilStrength(sigilById(45)!, bn(1_000_000)));
+    const rng = (): Rng => makeRng(7);
+    const plain = resolveIndagatio(rich(fresh()), 'terrible', rng()).state.lifetime.gold;
+    const vine = resolveIndagatio(rich(bound(45, 1_000_000)), 'terrible', rng()).state.lifetime
+      .gold;
+    expect(plain.toNumber()).toBeCloseTo(1_000 * (1 - 0.15), 6);
+    expect(vine.toNumber()).toBeCloseTo(1_000 * (1 - 0.15 * cut), 6);
+  });
+
+  it('Balam #51 cuts the reprobates Logos’s failures take', () => {
+    const flock = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: 1_000 },
+    });
+    const cut = 1 / (1 + sigilStrength(sigilById(51)!, bn(1_000_000)));
+    expect(logosLossMul(bound(51, 1_000_000))).toBeCloseTo(cut, 12);
+    const rng = (): Rng => makeRng(7);
+    expect(resolveSuggestion(flock(fresh()), 'terrible', rng()).lifetime.reprobates).toBe(950);
+    expect(
+      resolveSuggestion(flock(bound(51, 1_000_000)), 'terrible', rng()).lifetime.reprobates,
+    ).toBe(1_000 - Math.floor(1_000 * 0.05 * cut));
+    // A Bad rejection rounds after the cut, so a light binding keeps a one-unit loss, a runner's
+    // floored zero stays zero, and an uncut loss is the old floor exactly.
+    expect(logosBadLoss(1, 1, 1)).toBe(1);
+    expect(logosBadLoss(1, 1, 0.8)).toBe(1);
+    expect(logosBadLoss(4, 1, 0.8)).toBe(3);
+    expect(logosBadLoss(1, 0.33, 1)).toBe(0);
+  });
+
+  it('Amy #58 returns part of a failed Emptio deal and softens the bait', () => {
+    const listed = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, gold: bn(10_000), emptioList: ['red_robe'] },
+    });
+    const cut = 1 / (1 + sigilStrength(sigilById(58)!, bn(1_000_000)));
+    const back = Math.floor(1_000 * (1 - cut));
+    const gold = (s: GameState, tier: 'bad' | 'terrible' | 'apocalyptic'): number =>
+      resolveEmptio(s, tier, 'red_robe', 1_000).state.lifetime.gold.toNumber();
+    expect(gold(listed(fresh()), 'bad')).toBe(10_000);
+    expect(gold(listed(bound(58, 1_000_000)), 'bad')).toBe(10_000 + back);
+    expect(gold(listed(bound(58, 1_000_000)), 'terrible')).toBe(10_000 + back);
+    expect(gold(listed(fresh()), 'apocalyptic')).toBeCloseTo(5_000, 6);
+    expect(gold(listed(bound(58, 1_000_000)), 'apocalyptic')).toBeCloseTo(
+      10_000 * (1 - 0.5 * cut) + back,
+      6,
+    );
+  });
+
+  it('Haures #64 burns a share of what Logos’s failures take into souls', () => {
+    const flock = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, reprobates: 1_000 },
+    });
+    const p = sigilStrength(sigilById(64)!, bn(1_000_000));
+    const rng = (): Rng => makeRng(7);
+    expect(resolveSuggestion(flock(fresh()), 'terrible', rng()).souls.toNumber()).toBe(0);
+    const burned = resolveSuggestion(flock(bound(64, 1_000_000)), 'apocalyptic', rng());
+    expect(burned.lifetime.reprobates).toBe(750); // the loss itself is unchanged
+    expect(burned.souls.toNumber()).toBe(Math.floor(250 * p));
+  });
+
+  it('Andrealphus #65 lifts the whole invoking power by a percentage', () => {
+    const relics = ['crow_feather', 'the_dadu', 'hollow_effigy', 'red_robe', 'ars_serpens'];
+    const armed = (s: GameState): GameState => ({
+      ...s,
+      lifetime: { ...s.lifetime, maleficia: relics },
+    });
+    const base = currentInvokingPower(armed(fresh()));
+    expect(base).toBe(6);
+    const strength = sigilStrength(sigilById(65)!, bn(1e9));
+    expect(currentInvokingPower(armed(bound(65, 1e9)))).toBe(Math.round(6 * (1 + strength)));
+    expect(currentInvokingPower(bound(65, 1e9))).toBe(0); // a percentage of nothing is nothing
+  });
+
+  it('the re-homed seals draw no RNG (ADR-011: the stream stays byte-identical)', () => {
+    const ids = [11, 13, 16, 21, 22, 24, 40, 41, 45, 51, 58, 64, 65, 71];
+    let s: GameState = { ...fresh(), souls: bn(14e9) };
+    for (const id of ids) s = bindSigil(s, id, 1e9);
+    const withFlock = (g: GameState): GameState => ({
+      ...g,
+      lifetime: { ...g.lifetime, reprobates: 1_000, influence: bn(100) },
+    });
+    for (const tier of ['good', 'bad', 'terrible', 'apocalyptic'] as const) {
+      const a = makeRng(fresh().rngState);
+      resolveAction(withFlock(s), 'suggestion', a, { forcedTier: tier, efficiency: 1 });
+      const b = makeRng(fresh().rngState);
+      resolveAction(withFlock(fresh()), 'suggestion', b, { forcedTier: tier, efficiency: 1 });
+      expect(a.state).toBe(b.state);
+    }
+    expect(tick(withFlock(s), 1).state.rngState).toBe(tick(withFlock(fresh()), 1).state.rngState);
   });
 });
 

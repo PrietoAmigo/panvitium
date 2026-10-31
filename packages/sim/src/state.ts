@@ -52,7 +52,7 @@ export interface ActionTimer {
   /** Action-specific payload — e.g. the maleficium id targeted by an Emptio purchase. */
   readonly target?: string;
   /**
-   * The gold actually deducted at `startAction` (Emptio only): the rolled price after the Amy #58
+   * The gold actually deducted at `startAction` (Emptio only): the rolled price after the Eligos #15
    * cost reduction. `resolveEmptio` computes its tiered refunds against this, so a refund always
    * matches what was paid even if the reduction changes while the purchase is in flight.
    * Additive-optional on the wire (ADR-023); an in-flight timer from an older save falls back to

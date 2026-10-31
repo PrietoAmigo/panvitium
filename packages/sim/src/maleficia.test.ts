@@ -3,7 +3,6 @@ import {
   MALEFICIA,
   MALEFICIUM_IDS,
   MALEFICIUM_PRICE_RANGE,
-  activateMaleficium,
   canSurface,
   countCopies,
   findableIds,
@@ -15,6 +14,7 @@ import {
   MALEFICIA_BUFF_DURATION_SECONDS,
   SINGLE_USE_MALEFICIA,
 } from './maleficia.js';
+import { activateMaleficium } from './consumables.js';
 import { createInitialState, type GameState } from './state.js';
 import { computeModifiers } from './modifiers.js';
 import { tick } from './tick.js';

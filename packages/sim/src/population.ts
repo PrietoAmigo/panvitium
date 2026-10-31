@@ -4,20 +4,31 @@
  * (1 person = 1 soul); souls and gold are BigNum.
  */
 import { add, mul } from './bignum.js';
+import { sigilGoldPerDeath, sigilStrengthMul } from './sigils.js';
 import { type GameState, totalReprobates } from './state.js';
 
 /**
  * Mint `n` souls (1 soul per corrupted death; 03 §3). The minted amount also accrues into
  * `totalSoulsObtained` — the monotonic lifetime-spanning tally that drives the soul-threshold
- * emails (05) — so every mint site feeds it through this one helper.
+ * emails (05) — so every mint site feeds it through this one helper. Every death passes through
+ * here, so Raum #40's bounty is paid here too: each soul brings `sigilGoldPerDeath` gold (scaled by
+ * the shared sigil-strength multiplier, ADR-036/043). No RNG is drawn.
  */
 export function mintSouls(state: GameState, n: number): GameState {
   if (n <= 0) return state;
   const minted = Math.floor(n);
+  // The bounty's sum is linear in the sigil multiplier, so the (costlier) stack is read only when a
+  // Raum binding exists.
+  const bounty = sigilGoldPerDeath(state);
+  const gold =
+    bounty > 0 && minted > 0
+      ? add(state.lifetime.gold, minted * bounty * sigilStrengthMul(state))
+      : state.lifetime.gold;
   return {
     ...state,
     souls: add(state.souls, minted),
     totalSoulsObtained: add(state.totalSoulsObtained, minted),
+    ...(gold === state.lifetime.gold ? {} : { lifetime: { ...state.lifetime, gold } }),
   };
 }
 

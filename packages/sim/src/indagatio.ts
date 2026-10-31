@@ -6,8 +6,9 @@
  * 0–100), not a sum: each Invest press raises it by `INDAGATIO_INVEST_STEP_PERCENT` (2 points), each
  * Divest press lowers it by `INDAGATIO_DIVEST_STEP_PERCENT` (1 point). Setting it moves no gold.
  * Instead every Cast pours that share of the gold held AT THAT MOMENT into the Search
- * (`indagatioInvestmentGold`, floored to whole coins): `startAction('indagatio')` deducts it, and its
- * efficiency bonus is baked into that search's duration. The percentage stands, so the next Cast
+ * (`indagatioInvestmentGold`, floored to whole coins): `startAction('indagatio')` deducts it (less
+ * Ipos #22's cut, `indagatioInvestmentCost`), and its efficiency bonus is baked into that search's
+ * duration. The percentage stands, so the next Cast
  * pours the same share of whatever gold is then held; the sum it represents floats with the
  * treasury.
  *
@@ -25,7 +26,8 @@
  * they are allowed under the Astiwihad freeze (the Cast itself is still refused there). The
  * percentage lives in `lifetime`, so a descent resets it to 0 with the rest of the lifetime.
  */
-import { div, floor, gt, mul, ONE, ZERO, type BigNum } from './bignum.js';
+import { ceil, div, floor, gt, min, mul, ONE, ZERO, type BigNum } from './bignum.js';
+import { sigilCostReductionByChannel, sigilStrengthMul } from './sigils.js';
 import { type GameState } from './state.js';
 
 /**
@@ -65,6 +67,20 @@ export function indagatioInvestmentGold(state: GameState): BigNum {
   if (percent <= 0) return ZERO;
   // Multiply by the whole percentage first, then divide: exact for whole-coin balances.
   return floor(div(mul(floor(state.lifetime.gold), percent), 100));
+}
+
+/**
+ * The gold the next Cast would actually SPEND on its investment: the share above, softened by Ipos
+ * #22 (the `indagatioInvestment` cost channel, `÷ (1 + strength)`, rounded up to whole coins and
+ * never above the share; ADR-043). The efficiency bonus still reads the whole share
+ * (`indagatioInvestmentGold`), so Ipos buys the same speed for less gold. Equal to the share when
+ * Ipos is unbound. `startAction` deducts this; the Search panel shows it.
+ */
+export function indagatioInvestmentCost(state: GameState): BigNum {
+  const share = indagatioInvestmentGold(state);
+  if (!gt(share, ZERO)) return share;
+  const red = sigilCostReductionByChannel(state, sigilStrengthMul(state)).indagatioInvestment;
+  return red ? min(share, ceil(div(share, red))) : share;
 }
 
 export type IndagatioInvestResult =

@@ -17,6 +17,7 @@ export * from './actions.js';
 export * from './indagatio.js';
 export * from './modifiers.js';
 export * from './maleficia.js';
+export * from './consumables.js';
 export * from './dynamics.js';
 export * from './faeneratio.js';
 export * from './syngraphae.js';

@@ -109,15 +109,17 @@ const FLAT_UNIT: Record<string, string> = {
   // magnitude isn't misread as "n bodies per second".
   suicideRate: 'suicides/reprobate·s',
   murderRate: 'murders/reprobate·s',
+  desidia: 'desidia/s', // Zepar #16, accrued while the game runs (ADR-043)
 };
 
 /**
- * The sign a seal's magnitude reads with: a reduction (a `decrease` modifier/tier, or any cost
- * reduction) shows as `−X.X%`, matching the ↓ of the seal's own description, which the ledger
- * shows beside it. Everything else lifts its target and reads `+`.
+ * The sign a seal's magnitude reads with: a reduction (a `decrease` modifier/tier, any cost
+ * reduction, or a cut on what an Opera failure takes) shows as `−X.X%`, matching the ↓ of the
+ * seal's own description, which the ledger shows beside it. Everything else lifts its target and
+ * reads `+`.
  */
 function effectSign(e: SigilDef['effect']): '+' | '−' {
-  if (e.kind === 'costReduction') return '−';
+  if (e.kind === 'costReduction' || e.kind === 'lossReduction') return '−';
   if (
     (e.kind === 'modifier' ||
       e.kind === 'modifierMulti' ||
@@ -147,9 +149,10 @@ function fmtFlat(s: number): string {
  * strength; `effectMul` is the sigil-effect stack that scales it in play (callers pass
  * `sigilEffectMulFor(state, def)`), so the number shown is the one the sim applies: a fraction for
  * the multiplier / chance / percentage-point sigils (shown as ±X.X% per `effectSign`), a flat
- * per-second amount for the generators (Haagenti, Decarabia, …), or rounded invoking power. The boon
- * *text* already says what the seal does; this is its magnitude. A dormant seal (`inert`, ADR-038)
- * has none, so it reads as an em dash however many souls it holds.
+ * per-second amount for the generators (Haagenti, Decarabia, …), a flat amount per death (Raum) or
+ * per new lifetime (Naberius, Dantalion), or rounded invoking power. The boon *text* already says
+ * what the seal does; this is its magnitude. A dormant seal (`inert`, ADR-038) has none, so it reads
+ * as an em dash however many souls it holds.
  */
 export function effectDisplay(def: SigilDef | undefined, bound: BigNum, effectMul = 1): string {
   if (!def || def.effect.kind === 'inert') return '\u2014';
@@ -157,7 +160,10 @@ export function effectDisplay(def: SigilDef | undefined, bound: BigNum, effectMu
   const e = def.effect;
   if (e.kind === 'flatGen') return `+${fmtFlat(s)} ${FLAT_UNIT[e.resource] ?? '/s'}`;
   if (e.kind === 'invokingPower') return `+${Math.round(s)} invoking power`;
-  // A composite seal's parts (Andrealphus #65) all scale by the one strength; show each part's
+  if (e.kind === 'goldPerDeath') return `+${fmtFlat(s)} gold/death`;
+  // A new lifetime's seed is paid in whole units (`commitKatabasis` floors it).
+  if (e.kind === 'lifetimeSeed') return `+${formatBigNum(bn(Math.floor(s)))} ${e.resource}`;
+  // A composite seal's parts (none since ADR-043) all scale by the one strength; show each part's
   // signed percentage, joined — the boon text says which is which.
   if (e.kind === 'composite') {
     return e.effects.map((p) => `${effectSign(p)}${(s * 100).toFixed(1)}%`).join(' / ');
