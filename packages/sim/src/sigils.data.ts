@@ -5,6 +5,8 @@
  * stay in `sigils.ts`. Curve defaults to the `pct` percentage curve unless noted; on it a
  * `coefficient` of 1 is the standard strength (log base 33: ~5% at 33 souls, ~50% at ~39M, no cap), 0.5 is half.
  * '(flat)' effects use the `log` curve with their own coefficients and read as flat amounts.
+ * No two seals share an effect (ADR-043, which re-homed the six dormant seals, Gusion and one seal of
+ * each duplicate pair): a new seal needs a lever no other seal pulls.
  */
 import { type SigilDef } from './sigils.js';
 
@@ -93,8 +95,10 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 11,
     name: 'Gusion',
     coefficient: 1,
-    // ADR-034: −influence generation rate (a cursed seal — it softens the player's own influence).
-    effect: { kind: 'modifier', field: 'influenceRateMul', direction: 'decrease' },
+    // ADR-043: +incoming-call boon duration (he answers all questions). Every timed boon an answer
+    // grants (a buff above ×1) lasts ×(1 + strength) longer; a call's debuffs keep their length.
+    // Was a pure curse, −influence generation (ADR-034).
+    effect: { kind: 'callBoonDuration' },
   },
   12: {
     id: 12,
@@ -107,9 +111,10 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 13,
     name: 'Beleth',
     coefficient: 1,
-    // ADR-038: dormant. It lifted Decimatio positive outcome chance (Sigils sheet rev 2026-06-12);
-    // that category is retired, so the seal awaits a re-home.
-    effect: { kind: 'inert' },
+    // ADR-043: +chance each death draws a mourner into the flock (he causes all the love that may
+    // be). Rate-level, clamped to 1: the dead are at most replaced. Dormant since ADR-038 (it lifted
+    // the retired Decimatio's positive outcomes).
+    effect: { kind: 'deathRecruit' },
   },
   14: {
     id: 14,
@@ -128,10 +133,11 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   16: {
     id: 16,
     name: 'Zepar',
-    coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
-    // ADR-034/035: −overall invocation costs (the `invocation` channel, now covering every cost;
-    // composes with Orobas #55 and Andrealphus #65).
-    effect: { kind: 'costReduction', channel: 'invocation' },
+    curve: 'log',
+    coefficient: 0.001,
+    // ADR-043: +Desidia/s (flat) accrued while the game runs; Sitri #12 lifts the offline accrual
+    // instead. Was −invocation costs at a third strength, an exact twin of Orobas #55 since ADR-035.
+    effect: { kind: 'flatGen', resource: 'desidia' },
   },
   17: {
     id: 17,
@@ -170,18 +176,20 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   21: {
     id: 21,
     name: 'Marax',
-    coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
-    // ADR-038: dormant. It lifted Decimatio action efficiency (ADR-034); that category is retired,
-    // so the seal awaits a re-home.
-    effect: { kind: 'inert' },
+    coefficient: 1,
+    // ADR-043: +single-use maleficia duration (the sheet's "Stops, delays"; he knows the virtues of
+    // herbs and stones): each activation lasts ×(1 + strength) of its hour. Dormant since ADR-038
+    // (it lifted the retired Decimatio's efficiency).
+    effect: { kind: 'maleficiaDuration' },
   },
   22: {
     id: 22,
     name: 'Ipos',
     coefficient: 1,
-    // ADR-038: dormant. It softened Decimatio negative outcome chance (Sigils sheet rev
-    // 2026-06-12); that category is retired, so the seal awaits a re-home.
-    effect: { kind: 'inert' },
+    // ADR-043: −Indagatio investment cost (he knows what is to come, so the Search needs less
+    // gold): a Cast pours ÷(1 + strength) of its share, while the efficiency bonus still reads the
+    // whole share. Dormant since ADR-038 (it softened the retired Decimatio's failures).
+    effect: { kind: 'costReduction', channel: 'indagatioInvestment' },
   },
   23: {
     id: 23,
@@ -193,10 +201,11 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   24: {
     id: 24,
     name: 'Naberius',
-    coefficient: 1,
-    // ADR-034: −Indagatio time. Indagatio is a `time`-mode action, so lifting its efficiency
-    // shortens the duration (composes with Bifrons #46).
-    effect: { kind: 'modifier', field: 'indagatioEfficiencyMul', direction: 'increase' },
+    curve: 'log',
+    coefficient: 100,
+    // ADR-043: +starting gold each lifetime (flat; he restores lost dignities and honours), added
+    // on top of the gold kept. Was +Indagatio efficiency, an exact twin of Bifrons #46 (ADR-034).
+    effect: { kind: 'lifetimeSeed', resource: 'gold' },
   },
   25: {
     id: 25,
@@ -331,19 +340,21 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   40: {
     id: 40,
     name: 'Raum',
+    curve: 'log',
     coefficient: 1,
-    // ADR-038: dormant. It was a tradeoff seal (ADR-035): +Decimatio efficiency for −Logos
-    // efficiency. With Decimatio retired only the Logos penalty would remain, a pure curse, so the
-    // whole seal sleeps until it is re-homed.
-    effect: { kind: 'inert' },
+    // ADR-043: +gold per death (flat; he steals treasure out of kings' houses): every soul a death
+    // mints brings this much gold with it. Dormant since ADR-038 (a Decimatio/Logos tradeoff).
+    effect: { kind: 'goldPerDeath' },
   },
   41: {
     id: 41,
     name: 'Focalor',
+    curve: 'log',
     coefficient: 1,
-    // ADR-038: dormant. It duplicated Decimatio output (Sigils sheet rev 2026-06-12); that category
-    // is retired, so the seal awaits a re-home.
-    effect: { kind: 'inert' },
+    // ADR-043: +share of the abandoned flock drowned at the descent (he drowns men): of the
+    // reprobates the carry-over leaves behind, this share (flat percentage points, like Camio #53)
+    // dies, one soul each. Dormant since ADR-038 (it duplicated the retired Decimatio's output).
+    effect: { kind: 'katabasis', rolls: ['drowning'] },
   },
   42: {
     id: 42,
@@ -371,9 +382,10 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 45,
     name: 'Vine',
     coefficient: 1,
-    // Re-pinned (Depraedatio relationship-tier rework): −reserve surrender charge, in the asymptotic
-    // ×1/(1 + strength) form (formerly +withdrawal recovery; the Mercatus divest before that).
-    effect: { kind: 'shutdownRefund' },
+    // ADR-043: −Indagatio gold losses (he reveals witches and hidden things, so the Search's traps
+    // are seen): the gold the Terrible and Apocalyptic tiers bite is cut ×1/(1 + strength). Was
+    // −reserve surrender charge, an exact twin of Furcas #50.
+    effect: { kind: 'lossReduction', category: 'indagatio' },
   },
   46: {
     id: 46,
@@ -408,15 +420,19 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 50,
     name: 'Furcas',
     coefficient: 1,
-    // Re-pinned (Depraedatio relationship-tier rework): −reserve surrender charge (composes with Vine).
+    // Re-pinned (Depraedatio relationship-tier rework): −reserve surrender charge, in the asymptotic
+    // ×1/(1 + strength) form (formerly +withdrawal recovery; the Mercatus divest before that). The
+    // only surrender-charge seal since Vine #45 moved (ADR-043).
     effect: { kind: 'shutdownRefund' },
   },
   51: {
     id: 51,
     name: 'Balam',
     coefficient: 1,
-    // Sigils sheet (rev 2026-06-12): −negative outcome chance (all Opera).
-    effect: { kind: 'tierGroup', tiers: ['bad', 'terrible', 'apocalyptic'], direction: 'decrease' },
+    // ADR-043: −Logos reprobate losses (he makes men invisible, so the Church cannot find them): the
+    // reprobates Bad, Terrible and Apocalyptic take are cut ×1/(1 + strength). Was −negative outcome
+    // chance (all Opera), an exact twin of Bael #1 (which keeps it at its tuned 0.2).
+    effect: { kind: 'lossReduction', category: 'logos' },
   },
   52: {
     id: 52,
@@ -471,13 +487,10 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 58,
     name: 'Amy',
     coefficient: 1,
-    // +Indagatio & Emptio action efficiency (player tuning: a boon, so both searches finish faster;
-    // the sheet framed Amy as a cursed −efficiency, overridden here to an improvement).
-    effect: {
-      kind: 'modifierMulti',
-      fields: ['indagatioEfficiencyMul', 'emptioEfficiencyMul'],
-      direction: 'increase',
-    },
+    // ADR-043: −Emptio gold losses (he betrays the treasure the spirits keep): a failed deal (Bad,
+    // Terrible, Apocalyptic) returns 1 − 1/(1 + strength) of the price paid, and the bait's bite is
+    // cut ×1/(1 + strength). Was +Indagatio & Emptio efficiency, Bifrons #46 + Seere #70 in one seal.
+    effect: { kind: 'lossReduction', category: 'emptio' },
   },
   59: {
     id: 59,
@@ -498,7 +511,7 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 61,
     name: 'Zagan',
     coefficient: 1 / 3, // a third of the standard pct strength (ADR-034)
-    // ADR-034: +Logos action efficiency (composes with Dantalion #71).
+    // ADR-034: +Logos action efficiency (the only Logos-efficiency seal since ADR-043).
     effect: { kind: 'modifier', field: 'logosEfficiencyMul', direction: 'increase' },
   },
   62: {
@@ -524,24 +537,19 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
     id: 64,
     name: 'Haures',
     coefficient: 1,
-    // ADR-038: dormant. It lifted Decimatio Stellar chance (Sigils sheet rev 2026-06-12); that
-    // category is retired, so the seal awaits a re-home.
-    effect: { kind: 'inert' },
+    // ADR-043: +share of Logos losses burned into souls (he burns the exorcist's enemies): of the
+    // reprobates a Logos failure takes, this share (clamped to 1, floored) dies, one soul each.
+    // Dormant since ADR-038 (it lifted the retired Decimatio's Stellar chance).
+    effect: { kind: 'logosLossSouls' },
   },
   65: {
     id: 65,
     name: 'Andrealphus',
     coefficient: 1,
-    // ADR-035: a dual seal on the default pct curve (its old sqrt invoking-power role stays with
-    // Forneus #30). Softens ALL invocation costs (the `invocation` channel, composing with Zepar #16
-    // and Orobas #55) AND quickens Desidia (composes with Foras #31 on desidiaSpeedMul).
-    effect: {
-      kind: 'composite',
-      effects: [
-        { kind: 'costReduction', channel: 'invocation' },
-        { kind: 'modifier', field: 'desidiaSpeedMul', direction: 'increase' },
-      ],
-    },
+    // ADR-043: +invoking power, as a percentage of the whole (the sheet's own "+invoking power";
+    // he teaches mensuration): the maleficia's power plus Forneus #30's flat grant, ×(1 + strength),
+    // rounded. Was −invocation costs / +Desidia speed (ADR-035), Orobas #55 + Foras #31 in one seal.
+    effect: { kind: 'invokingPowerMul' },
   },
   66: {
     id: 66,
@@ -583,11 +591,12 @@ export const SIGILS: Readonly<Record<number, SigilDef>> = {
   71: {
     id: 71,
     name: 'Dantalion',
-    coefficient: 1,
-    // ADR-035 made it a tradeoff seal (+Logos efficiency for −Decimatio efficiency, Raum #40's
-    // mirror). ADR-038 retired Decimatio, so only the Logos lift remains: the seal has lost its
-    // cost and awaits a rebalance.
-    effect: { kind: 'modifier', field: 'logosEfficiencyMul', direction: 'increase' },
+    curve: 'log',
+    coefficient: 10,
+    // ADR-043: +starting reprobates each lifetime (flat; he knows the thoughts of all men and changes
+    // them at will), added on top of the reprobates kept. Was +Logos efficiency, Zagan #61 at three
+    // times the strength once ADR-038 removed its Decimatio cost.
+    effect: { kind: 'lifetimeSeed', resource: 'reprobates' },
   },
   72: {
     id: 72,

@@ -1320,7 +1320,7 @@ lever, a Retribution success shift, seven seals, a PC program) existed to serve 
   Logos penalty, and a pure curse is worse than nothing for a player who had bound it. **Dantalion
   #71** keeps its Logos lift alone (a plain modifier, no longer composite). The ledger reads a
   dormant seal's boon as "Dormant" with no magnitude. Bindings are recoverable, so souls already on
-  a dormant seal can be unbound.
+  a dormant seal can be unbound. (All six, and Dantalion, were re-homed by ADR-043.)
 - **The surface is removed.** The PC's *Decimatio* program ("The Breathing Dark"), its strings and
   CSS, its label/oracle/Risk-tab entries and the unused `effectLabels.decimatioEff` go.
 
@@ -1514,6 +1514,78 @@ while Ira's levels did nothing at all since *Decimatio* retired.
   each further one a whole Ira level (32,400 / 5,832,000 / 1,049,760,000 cumulative). A player
   who never offers to Ira has no acolytes, and with them no free Logos casting (the balance audit's
   acolyte finding) and no delegated Indagatio.
+
+---
+
+## ADR-043: No two seals share an effect — the six dormant seals, Gusion and the duplicate twins re-homed
+
+**Status.** Accepted [2026-10-31]. Supersedes the ADR-038 dormant entries (Beleth #13, Marax #21,
+Ipos #22, Raum #40, Focalor #41, Haures #64), the ADR-034 entries of Gusion #11, Zepar #16 and
+Naberius #24, the ADR-035 entries of Andrealphus #65 and Dantalion #71, and the Depraedatio re-pin
+of Vine #45. Closes the balance audit's Low findings 12 (Gusion is pure downside) and 13 (the
+duplicate seals).
+
+**Context.** Design decision (player request): give the six dormant seals and Gusion new effects,
+and give one seal of each duplicate pair a new one, so that no two seals share an effect. The
+audit listed five duplicates (Bael = Balam, Naberius = Bifrons, Vine = Furcas, Dantalion ⊃ Zagan,
+Amy = Bifrons + Seere). Two more meet the same test and are re-homed with them: Zepar #16 was
+Orobas #55 at a third of the strength (both on the `invocation` cost channel since ADR-035), and
+Andrealphus #65 was Orobas + Foras in one seal, as Amy was Bifrons + Seere.
+
+**Decision.** Fourteen seals take a lever no other seal pulls. Of each pair, the seal kept is the
+one closer to the sheet or to the player's tuning (Bael keeps its tuned 0.2 strength; Bifrons,
+Furcas, Zagan, Orobas, Seere and Foras keep their levers). Each new effect follows the seal's
+Goetic office:
+
+| # | Seal | New effect | Kind | Curve, coefficient |
+|---|---|---|---|---|
+| 11 | Gusion (answers all questions) | An incoming call's boons (timed buffs above ×1) last ×(1 + s); its debuffs keep their length | `callBoonDuration` | pct, 1 |
+| 13 | Beleth (causes love) | Each death draws a mourner into the flock with chance s (≤ 1) | `deathRecruit` | pct, 1 |
+| 16 | Zepar | Desidia accrued while the game runs (flat /s) | `flatGen: desidia` | log, 0.001 |
+| 21 | Marax (stops, delays) | Each single-use maleficium activation lasts ×(1 + s) | `maleficiaDuration` | pct, 1 |
+| 22 | Ipos (knows what is to come) | An Indagatio investment spends ÷(1 + s); its bonus still reads the whole share | `costReduction: indagatioInvestment` | pct, 1 |
+| 24 | Naberius (restores lost honours) | Starting gold each lifetime (flat, on top of the gold kept) | `lifetimeSeed: gold` | log, 100 |
+| 40 | Raum (steals treasure) | Gold with every soul a death yields (flat, per death) | `goldPerDeath` | log, 1 |
+| 41 | Focalor (drowns men) | A share s (percentage points) of the reprobates the descent leaves behind drowns, one soul each | `katabasis: drowning` | log, 1 |
+| 45 | Vine (reveals witches) | The gold Indagatio's Terrible / Apocalyptic tiers bite ×1/(1 + s) | `lossReduction: indagatio` | pct, 1 |
+| 51 | Balam (makes men invisible) | The reprobates Logos's Bad / Terrible / Apocalyptic tiers take ×1/(1 + s) | `lossReduction: logos` | pct, 1 |
+| 58 | Amy (betrays the spirits' treasure) | A failed Emptio deal returns 1 − 1/(1 + s) of its price; the bait's bite ×1/(1 + s) | `lossReduction: emptio` | pct, 1 |
+| 64 | Haures (burns enemies) | A floored share s (≤ 1) of the reprobates Logos's failures take burns, one soul each | `logosLossSouls` | pct, 1 |
+| 65 | Andrealphus (mensuration) | The whole invoking power ×(1 + s), rounded (the sheet's own "+invoking power") | `invokingPowerMul` | pct, 1 |
+| 71 | Dantalion (changes men's thoughts) | Starting reprobates each lifetime (flat, on top of those kept) | `lifetimeSeed: reprobates` | log, 10 |
+
+- **Where each is consumed.** The loss cuts and Haures at resolution (`actions.ts`, and the
+  Suggestion / Indagatio forecast mirrors them); Raum in `mintSouls`, the one helper every death
+  passes through; Beleth at the rate level in `reprobateRates` (folded into the bundle as
+  `deathRecruitChance`, like Leraie), and only while the flock is not empty; Zepar on
+  `flatDesidiaPerSecond`; Focalor and the seeds at `commitKatabasis` (Focalor mints before the gold
+  is judged, so a Raum bounty on the drowned joins the estate; Erinyes's descent keeps no gold, the
+  seed included; the recap reports what the new lifetime starts with); Gusion in
+  `applyCallEffects`; Marax in `activateMaleficium`, moved to `consumables.ts` so it can read the
+  seal without a sigils ⇄ maleficia cycle (`maleficiaBuffDuration` also sets the buffs HUD ring);
+  Ipos in `startAction` through `indagatioInvestmentCost`; Andrealphus in `currentInvokingPower`.
+  Every channel takes the shared sigil-strength multiplier (ADR-036).
+- **Balam's Bad tier rounds after the cut**, so a light binding does not erase a one-unit rejection
+  outright; with no cut the count is the old floor exactly.
+- **The `inert`, `composite` and `modifierMulti` kinds stay supported** with no seal carrying them.
+  The dormant boon string goes; the unit test that guards this ADR asserts no seal is dormant and
+  that no lever (each part of a composite or multi-field effect counted separately) has two seals.
+- **Semet's unlocked boon line is withheld** (player request): once its gate opens it reads "It
+  resonates but you cannot interpret yet", with no ↑ terminal (the one exception to the
+  sigil-terminal copy rule); the ledger and the seal panel still show its live magnitude, and its
+  effect is unchanged.
+
+**Consequences.**
+
+- No save-schema change (ADR-023): bindings are unchanged and every effect is derived. Souls bound
+  to a re-homed seal now feed its new effect; bindings stay recoverable.
+- Determinism (ADR-011): no new RNG draw; every new effect is a rate, a multiplier or a floored
+  share. The duplicate-output / double-find gates are untouched.
+- Balance: the loss cuts and Haures soften the Church culls (audit High 5) and the gold-loss tails;
+  Raum, Beleth and Focalor add death-driven gold, flock and souls; the seeds speed a lifetime's
+  opening. Orobas is now the only seal on invocation costs and Foras the only one on Desidia speed,
+  so a heavy cost or speed stack is weaker than before. The magnitudes are proposals; the `Sigils`
+  sheet has not been updated and should be reconciled in the next tuning pass.
 
 ---
 

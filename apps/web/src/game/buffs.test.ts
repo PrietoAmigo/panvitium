@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   advanceCallBuffs,
   applyCallEffects,
+  bn,
   createInitialState,
+  sigilById,
+  sigilStrength,
   tick,
   type CallBuff,
   type GameState,
@@ -45,6 +48,13 @@ describe('buildBuffs: the single-use maleficia', () => {
     expect(ring.img).toContain('black_salt_pouch.png');
     // "Single-use:" and "for an hour" drop away; the number stays.
     expect(ring.effects).toEqual([{ text: '+10% reprobate generation', debuff: false }]);
+  });
+
+  it('lengthens the ring to one Marax-lengthened activation (ADR-043)', () => {
+    const base = withLifetime({ maleficiaBuffs: { black_salt_pouch: 2537 } });
+    const marax = { ...base, sigilBindings: { 21: bn(1_000_000) } };
+    const strength = sigilStrength(sigilById(21)!, bn(1_000_000));
+    expect(only(buildBuffs(marax)).durationSec).toBeCloseTo(3600 * (1 + strength), 6);
   });
 
   it('sets a reduction with a true minus sign, as the Loculi does', () => {

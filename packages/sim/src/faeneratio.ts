@@ -32,7 +32,7 @@ export const FENUS_RATE = 0.0005;
 /**
  * The base surrender charge: the fraction of a manual withdrawal the counting house keeps (0.15, a
  * fifth of the old 0.75 charge, i.e. 85% returned). Scaled by `mods.surrenderChargeMul` (Active
- * management ×0.67, Compounding ×1.5, Vine #45 / Furcas #50 soften it), clamped to [0, 1].
+ * management ×0.67, Compounding ×1.5, Furcas #50 softens it), clamped to [0, 1].
  */
 export const BASE_SURRENDER_CHARGE = 0.15;
 

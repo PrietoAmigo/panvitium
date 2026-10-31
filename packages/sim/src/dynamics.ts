@@ -31,7 +31,7 @@ import { type GameState, totalReprobates } from './state.js';
  * tick computes these once and feeds them into the pool drain.
  */
 export interface ReprobateRates {
-  /** Births per second (passive base + sigil contributions × generation mul). */
+  /** Births per second (passive base + sigil contributions × generation mul, + Beleth's mourners). */
   readonly generationPerSecond: number;
   /** Suicides per second across the whole population. */
   readonly suicidePerSecond: number;
@@ -58,8 +58,14 @@ export function reprobateRates(state: GameState, mods: Modifiers): ReprobateRate
     suicideBase * population * mods.reprobateSuicideRateMul +
     mods.murderTriggersSuicideChance * murderPerSecond +
     mods.flatSuicidesPerSecond;
+  // Beleth #13: each death draws a mourner into the flock with probability p (ADR-043) — at the
+  // rate level, births gain p × the death rate, unscaled by the generation multiplier (mirroring
+  // Leraie's coupling). p ≤ 1, so the dead are at most replaced. An empty flock has no dead to
+  // mourn (the absolute invocation deaths only pool against it), so it recruits nobody.
+  const recruitsPerSecond =
+    population > 0 ? mods.deathRecruitChance * (suicidePerSecond + murderPerSecond) : 0;
   return {
-    generationPerSecond: Math.max(0, baseGen) * mods.reprobateGenerationRateMul,
+    generationPerSecond: Math.max(0, baseGen) * mods.reprobateGenerationRateMul + recruitsPerSecond,
     suicidePerSecond,
     murderPerSecond,
   };

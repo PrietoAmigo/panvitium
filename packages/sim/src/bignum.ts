@@ -52,6 +52,11 @@ export function floor(a: BigNumInput): BigNum {
   return new Decimal(a).floor();
 }
 
+/** Ceil toward positive infinity (a softened price rounds up to whole coins, never down). */
+export function ceil(a: BigNumInput): BigNum {
+  return new Decimal(a).ceil();
+}
+
 export function max(a: BigNumInput, b: BigNumInput): BigNum {
   return Decimal.max(new Decimal(a), new Decimal(b));
 }

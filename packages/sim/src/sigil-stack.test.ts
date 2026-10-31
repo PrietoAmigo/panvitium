@@ -6,7 +6,7 @@
  *     sigil-effect relics), with cuts in the asymptotic form so a boosted cut never inverts; alone it
  *     does nothing.
  *   - EVERY invocation cost (each upkeep drain and Aurevora's gold drain) is cut by 1/(1 + x) for
- *     each of Orobas #55, Zepar #16, Andrealphus #65 and Black Vessel.
+ *     each of Orobas #55 (the one cost-channel seal since ADR-043) and Black Vessel.
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -31,6 +31,7 @@ import {
   sigilById,
   sigilEffectStack,
   sigilStrength,
+  sigilLossMul,
   sigilStrengthMul,
   tick,
   totalReprobates,
@@ -142,9 +143,19 @@ describe('Semet #32 reaches every seal (ADR-036)', () => {
     expect(find(withSemet({ 49: SOULS }))).toBe(2);
   });
 
-  it('scales the surrender-charge seals (Vine #45)', () => {
-    expect(computeModifiers(withSemet({ 45: SOULS })).surrenderChargeMul).toBeCloseTo(
-      1 / (1 + str(45) * (1 + semet)),
+  it('scales the surrender-charge seal (Furcas #50)', () => {
+    expect(computeModifiers(withSemet({ 50: SOULS })).surrenderChargeMul).toBeCloseTo(
+      1 / (1 + str(50) * (1 + semet)),
+      9,
+    );
+  });
+
+  it('scales the ADR-043 seals (a Logos loss cut, a Desidia generator)', () => {
+    expect(
+      sigilLossMul(withSemet({ 51: SOULS }), 'logos', sigilStrengthMul(withSemet({ 51: SOULS }))),
+    ).toBeCloseTo(1 / (1 + str(51) * (1 + semet)), 9);
+    expect(computeModifiers(withSemet({ 16: SOULS })).flatDesidiaPerSecond).toBeCloseTo(
+      str(16) * (1 + semet),
       9,
     );
   });
@@ -246,12 +257,15 @@ describe('Every invocation cost is cut by 1/(1 + x) (ADR-035/036)', () => {
   const lemure = summon(fresh(), { lemure: 1 });
   const lemureCost = (s: GameState): number => invocationUpkeep(s).influenceGainFraction;
 
+  it('Orobas #55 divides the 25%-of-influence-gain upkeep by (1 + strength)', () => {
+    expect(lemureCost(withSeals(lemure, { 55: SOULS }))).toBeCloseTo(0.25 / (1 + str(55)), 9);
+  });
+
   it.each([
-    [55, 'Orobas'],
     [16, 'Zepar'],
     [65, 'Andrealphus'],
-  ])('seal #%i (%s) divides the 25%%-of-influence-gain upkeep by (1 + strength)', (id) => {
-    expect(lemureCost(withSeals(lemure, { [id]: SOULS }))).toBeCloseTo(0.25 / (1 + str(id)), 9);
+  ])('seal #%i (%s) no longer touches invocation costs (ADR-043)', (id) => {
+    expect(lemureCost(withSeals(lemure, { [id]: SOULS }))).toBeCloseTo(0.25, 9);
   });
 
   it('Black Vessel cuts it in the same 1/(1 + x) form, exactly −7% at base', () => {

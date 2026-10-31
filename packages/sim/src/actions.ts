@@ -23,7 +23,7 @@ import {
   resolveTier,
 } from './probability.js';
 import { categoryEfficiency, categoryTierModifiers, computeModifiers } from './modifiers.js';
-import { indagatioInvestmentGold } from './indagatio.js';
+import { indagatioInvestmentCost } from './indagatio.js';
 import {
   addReprobates,
   loseGoldFraction,
@@ -44,7 +44,10 @@ import {
 import {
   sigilCostReductionByChannel,
   sigilDuplicateOutputChance,
+  sigilGoldPerDeath,
   sigilIndagatioDoubleFindChance,
+  sigilLogosLossSoulsFraction,
+  sigilLossMul,
   sigilStrengthMul,
 } from './sigils.js';
 // The action catalog + tier-weight distributions live in `actions.data.ts` (the editable economy
@@ -154,7 +157,7 @@ export function costOutcomeCostMultiplier(category: ActionDef['category'], eff: 
  * shared by `startAction` (what it deducts) and the UI (what it displays and gates the button on),
  * so the two can never drift. Mirrors `startAction`'s cost pipeline exactly: the cost-outcome
  * multiplier (`costOutcomeCostMultiplier`, log for Logos), Emptio's per-target
- * rolled price softened by the Amy #58 gold reduction, and the Paimon #9 influence reduction. Time-mode
+ * rolled price softened by the Eligos #15 gold reduction, and the Paimon #9 influence reduction. Time-mode
  * actions (Indagatio/Emptio) don't scale cost by efficiency. For Emptio with no/unknown target the
  * gold cost is 0 (the caller supplies the target).
  */
@@ -257,7 +260,7 @@ export function startAction(
   }
   // The exact amounts to deduct — the same pipeline the UI reads (`plannedActionCost`): the
   // cost-outcome multiplier (log for Logos), Emptio's rolled per-target price
-  // softened by Amy #58, and the Paimon #9 influence reduction.
+  // softened by Eligos #15, and the Paimon #9 influence reduction.
   const { gold: goldCost, influence: influenceCost } = plannedActionCost(state, actionId, {
     ...options,
     efficiency: eff,
@@ -278,13 +281,14 @@ export function startAction(
     target === undefined
       ? { actionId: def.id, remainingSeconds: duration }
       : // Emptio: carry the gold actually paid so the tiered refunds at resolution are computed
-        // against it (not a recompute that could drift if the Amy reduction changes mid-flight).
+        // against it (not a recompute that could drift if the Eligos reduction changes mid-flight).
         { actionId: def.id, remainingSeconds: duration, target, paidGold: goldCost };
   // The Indagatio investment (03 §2.5): a Search pours the default percentage of the gold held now
   // into itself. Its efficiency bonus is already baked into `duration` above (via `eff`, read from
   // this same state), and the gold is spent here, not refunded. The percentage itself stands, so the
-  // next Cast pours the same share of whatever gold is then held. Never more than the gold held.
-  const invested = actionId === 'indagatio' ? indagatioInvestmentGold(state) : ZERO;
+  // next Cast pours the same share of whatever gold is then held. Never more than the gold held;
+  // Ipos #22 softens what is actually spent (ADR-043) while the bonus reads the whole share.
+  const invested = actionId === 'indagatio' ? indagatioInvestmentCost(state) : ZERO;
   const lifetime = {
     ...state.lifetime,
     gold: sub(sub(state.lifetime.gold, goldCost), invested),
@@ -506,27 +510,59 @@ const uniform = (lo: number, hi: number, k: number): Dim => {
   return { m: (k * (lo + hi)) / 2, v: k * k * ((n * n - 1) / 12) };
 };
 
-function suggestionTierDelta(tier: Tier, units: number, pop: number, loss: number): TierDelta {
+/**
+ * The seals a Logos forecast reads (ADR-043): Balam #51's `cut` on what a failure takes, Haures
+ * #64's `burn` share of it minted as souls, and Raum #40's `bounty` of gold per soul minted.
+ */
+interface LogosSeals {
+  readonly cut: number;
+  readonly burn: number;
+  readonly bounty: number;
+}
+
+/** A dimension scaled by a constant `k`: mean ×k, variance ×k². */
+const scaleDim = (d: Dim, k: number): Dim => ({ m: d.m * k, v: d.v * k * k });
+
+/** A Logos failure that takes `removed` reprobates: Haures burns a floored share into souls. */
+function logosLossDelta(removed: number, seals: LogosSeals): TierDelta {
+  const souls = fixed(Math.floor(removed * seals.burn));
+  return {
+    ...NO_DELTA,
+    souls,
+    reprobates: fixed(-removed),
+    gold: scaleDim(souls, seals.bounty),
+  };
+}
+
+function suggestionTierDelta(
+  tier: Tier,
+  units: number,
+  pop: number,
+  loss: number,
+  seals: LogosSeals,
+): TierDelta {
   switch (tier) {
     case 'stellar':
       return { ...NO_DELTA, reprobates: uniform(10, 25, units) };
     case 'excellent':
       return { ...NO_DELTA, reprobates: uniform(2, 9, units) };
     case 'good': {
-      // randint(1,3) × units suicides, capped at the living flock: −k reprobates, +k souls.
+      // randint(1,3) × units suicides, capped at the living flock: −k reprobates, +k souls (and Raum's
+      // bounty of gold per soul).
       const deaths = [1, 2, 3].map((r) => Math.min(r * units, pop));
       const m = deaths.reduce((a, d) => a + d, 0) / 3;
       const v = deaths.reduce((a, d) => a + d * d, 0) / 3 - m * m;
-      return { ...NO_DELTA, souls: { m, v }, reprobates: { m: -m, v } };
+      const souls = { m, v };
+      return { ...NO_DELTA, souls, reprobates: { m: -m, v }, gold: scaleDim(souls, seals.bounty) };
     }
     case 'neutral':
       return { ...NO_DELTA, reprobates: fixed(units) };
     case 'bad':
-      return { ...NO_DELTA, reprobates: fixed(-Math.min(Math.floor(units * loss), pop)) };
+      return logosLossDelta(Math.min(logosBadLoss(units, loss, seals.cut), pop), seals);
     case 'terrible':
-      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.05 * loss * pop)) };
+      return logosLossDelta(Math.floor(0.05 * loss * seals.cut * pop), seals);
     case 'apocalyptic':
-      return { ...NO_DELTA, reprobates: fixed(-Math.floor(0.25 * loss * pop)) };
+      return logosLossDelta(Math.floor(0.25 * loss * seals.cut * pop), seals);
     default:
       return NO_DELTA;
   }
@@ -538,8 +574,8 @@ function indagatioTierDelta(state: GameState, tier: Tier, gold: number, loss: nu
       (r) => findableIds(r, state.lifetime.maleficia, state.lifetime.emptioList).length > 0,
     );
   // Mirrors resolveIndagatio: each surfacing tier finds one item along its rarity chain (the rare
-  // Furcas double-find is not modeled); the failure tiers bite gold instead (scaled by the runner's
-  // efficiency, matching the resolver).
+  // Crocell double-find is not modeled); the failure tiers bite gold instead (scaled by the runner's
+  // efficiency and Vine #45's cut, matching the resolver).
   switch (tier) {
     case 'stellar':
       return {
@@ -572,14 +608,22 @@ export function actionOutcomeForecast(
   const loss = lossScale(efficiency); // negative-outcome scale, matching the resolvers
   const pop = totalReprobates(state);
   const gold = floor(state.lifetime.gold).toNumber();
+  // The ADR-043 seals the resolvers read: Balam / Haures / Raum on Logos, Vine on Indagatio's bite.
+  const sigMul = sigilStrengthMul(state);
+  const logosSeals: LogosSeals = {
+    cut: logosLossMul(state),
+    burn: sigilLogosLossSoulsFraction(state, sigMul),
+    bounty: sigilGoldPerDeath(state, sigMul),
+  };
+  const indagatioLoss = loss * sigilLossMul(state, 'indagatio', sigMul);
   const dist: TierWeights = forcedTier
     ? (Object.fromEntries(TIERS.map((t) => [t, t === forcedTier ? 1 : 0])) as TierWeights)
     : actionTierDistribution(state, actionId);
   const tierDelta = (tier: Tier): TierDelta =>
     actionId === 'suggestion'
-      ? suggestionTierDelta(tier, units, pop, loss)
+      ? suggestionTierDelta(tier, units, pop, loss, logosSeals)
       : actionId === 'indagatio'
-        ? indagatioTierDelta(state, tier, gold, loss)
+        ? indagatioTierDelta(state, tier, gold, indagatioLoss)
         : NO_DELTA;
 
   // Mixture moments via the law of total variance: across tiers, mean = Σ pₜ·mₜ and
@@ -730,6 +774,35 @@ export function lossScale(efficiency: number): number {
   return Math.min(1, Math.max(0, efficiency));
 }
 
+/**
+ * The cut on what a Logos failure takes: Balam #51's `1/(1 + strength)` (ADR-043), 1 unbound.
+ * Composes with `lossScale` (a runner's softening) on the Terrible / Apocalyptic culls.
+ */
+export function logosLossMul(state: GameState): number {
+  return sigilLossMul(state, 'logos', sigilStrengthMul(state));
+}
+
+/**
+ * The reprobates a Logos Bad tier rejects: the runner-scaled whole units (`floor(units × loss)`, as
+ * before), then Balam's cut, ROUNDED so a light binding does not erase a one-unit rejection outright
+ * (a floor would turn any cut below 1 into no loss at all). Exactly the old count when `cut` is 1.
+ */
+export function logosBadLoss(units: number, loss: number, cut: number): number {
+  return Math.round(Math.floor(units * loss) * cut);
+}
+
+/**
+ * Finish a Logos failure's removal: Haures #64 burns a floored share of the reprobates it took, one
+ * soul each (ADR-043). Deterministic (no RNG draw); the input state is returned when nothing burns.
+ */
+function burnLogosLoss(state: GameState, r: { state: GameState; removed: number }): GameState {
+  if (r.removed <= 0) return r.state;
+  const burned = Math.floor(
+    r.removed * sigilLogosLossSoulsFraction(state, sigilStrengthMul(state)),
+  );
+  return burned > 0 ? mintSouls(r.state, burned) : r.state;
+}
+
 /** Suggestion outcome effects (exported for direct testing of each tier). */
 export function resolveSuggestion(
   state: GameState,
@@ -739,6 +812,7 @@ export function resolveSuggestion(
 ): GameState {
   const units = Math.max(1, Math.floor(efficiency));
   const loss = lossScale(efficiency);
+  const cut = logosLossMul(state); // Balam #51 (ADR-043); Haures #64 burns a share of what is taken
   switch (tier) {
     case 'stellar':
       // major sin → +randint(10,25) unconverted reprobates (player tuning); efficiency scales the count.
@@ -754,12 +828,12 @@ export function resolveSuggestion(
     }
     case 'neutral':
       return addReprobates(state, units); // the reliable +1 (player tuning)
-    case 'bad':
-      return removeReprobates(state, Math.floor(units * loss)).state; // rejects + redeems another
-    case 'terrible':
-      return loseReprobatesFraction(state, 0.05 * loss).state; // Church intervention (player tuning)
-    case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.25 * loss).state; // mass apostasy (player tuning)
+    case 'bad': // rejects + redeems another
+      return burnLogosLoss(state, removeReprobates(state, logosBadLoss(units, loss, cut)));
+    case 'terrible': // Church intervention (player tuning)
+      return burnLogosLoss(state, loseReprobatesFraction(state, 0.05 * loss * cut));
+    case 'apocalyptic': // mass apostasy (player tuning)
+      return burnLogosLoss(state, loseReprobatesFraction(state, 0.25 * loss * cut));
     default:
       return state;
   }
@@ -769,6 +843,7 @@ export function resolveSuggestion(
 export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
   const loss = lossScale(efficiency);
+  const cut = logosLossMul(state);
   switch (tier) {
     case 'stellar':
       // the word catches fire → +5% of the current population (player tuning); efficiency scales.
@@ -780,12 +855,12 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
       return addReprobates(state, randint(rng, 41, 74) * units); // player tuning
     case 'good':
       return addReprobates(state, randint(rng, 14, 39) * units);
-    case 'bad':
-      return removeReprobates(state, Math.floor(units * loss)).state; // reject + redeem
-    case 'terrible':
-      return loseReprobatesFraction(state, 0.01 * loss).state; // Church intervention (player tuning)
-    case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.05 * loss).state; // mass apostasy (player tuning)
+    case 'bad': // reject + redeem
+      return burnLogosLoss(state, removeReprobates(state, logosBadLoss(units, loss, cut)));
+    case 'terrible': // Church intervention (player tuning)
+      return burnLogosLoss(state, loseReprobatesFraction(state, 0.01 * loss * cut));
+    case 'apocalyptic': // mass apostasy (player tuning)
+      return burnLogosLoss(state, loseReprobatesFraction(state, 0.05 * loss * cut));
     case 'neutral':
     default:
       return state;
@@ -800,6 +875,7 @@ export function resolveLogismoi(state: GameState, tier: Tier, rng: Rng, efficien
 export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficiency = 1): GameState {
   const units = Math.max(1, Math.floor(efficiency));
   const loss = lossScale(efficiency);
+  const cut = logosLossMul(state);
   switch (tier) {
     case 'stellar':
       return addReprobates(
@@ -814,11 +890,11 @@ export function resolveImperium(state: GameState, tier: Tier, rng: Rng, efficien
     case 'good':
       return addReprobates(state, randint(rng, 100, 1000) * units);
     case 'bad':
-      return removeReprobates(state, Math.floor(units * loss)).state;
+      return burnLogosLoss(state, removeReprobates(state, logosBadLoss(units, loss, cut)));
     case 'terrible':
-      return loseReprobatesFraction(state, 0.025 * loss).state;
+      return burnLogosLoss(state, loseReprobatesFraction(state, 0.025 * loss * cut));
     case 'apocalyptic':
-      return loseReprobatesFraction(state, 0.1 * loss).state;
+      return burnLogosLoss(state, loseReprobatesFraction(state, 0.1 * loss * cut));
     case 'neutral':
     default:
       return state;
@@ -941,8 +1017,9 @@ export function resolveIndagatio(
   // Failure tiers bite gold (Indagatio & Emptio sheet): Terrible (Church trap) −15%, Apocalyptic
   // (Higher-Power agent) −80%. Scaled by the runner's efficiency so a background scry (the Familiar
   // at ~0.01) can't torch most of the player's gold on an unattended Apocalyptic; a hand cast at
-  // efficiency ≥ 1 takes the full bite. Bad (false lead) and any unfindable rarity fall through.
-  const loss = lossScale(efficiency);
+  // efficiency ≥ 1 takes the full bite. Vine #45 cuts the bite ×1/(1 + strength) (ADR-043). Bad
+  // (false lead) and any unfindable rarity fall through.
+  const loss = lossScale(efficiency) * sigilLossMul(state, 'indagatio', sigilStrengthMul(state));
   if (tier === 'terrible') {
     return { state: loseGoldFraction(state, 0.15 * loss), surfaced: [] };
   }
@@ -979,7 +1056,7 @@ export function resolveEmptio(
   if (!target || !MALEFICIA[target]) return { state, acquired: [], lostFromList: [] };
   const def = MALEFICIA[target];
   // Refunds are relative to the gold actually PAID at startAction — the in-band rolled price
-  // (Maleficia sheet Randint per rarity), softened by the Amy Emptio-gold reduction — NOT the flat
+  // (Maleficia sheet Randint per rarity), softened by the Eligos #15 Emptio-gold reduction — NOT the flat
   // catalog `def.cost`. The timer carries that amount (`paidGold`) so a Stellar "full refund"
   // truly zeroes the purchase and the partial tiers refund the right fraction of it even if the
   // reduction changed mid-flight. An in-flight timer from an older save lacks the field; recompute
@@ -998,6 +1075,16 @@ export function resolveEmptio(
       lostFromList: [],
     };
   }
+  // Amy #58 (ADR-043): a failed deal (Bad / Terrible / Apocalyptic) returns `1 − cut` of the price
+  // paid, and the bait's extra bite is cut ×`cut` (cut = 1/(1 + strength); 1 unbound, so nothing
+  // changes without the seal).
+  const cut = sigilLossMul(state, 'emptio', sigilStrengthMul(state));
+  const failureRefund = (st: GameState): GameState => {
+    const back = Math.floor(paid * (1 - cut));
+    return back > 0
+      ? { ...st, lifetime: { ...st.lifetime, gold: add(st.lifetime.gold, back) } }
+      : st;
+  };
   // Remove ONE matching entry from the list (stackable items can have multiple copies listed).
   const dropIndex = state.lifetime.emptioList.indexOf(target);
   const trimmedList = [
@@ -1059,20 +1146,22 @@ export function resolveEmptio(
       return { state: next, acquired: [target], lostFromList: [] };
     }
     case 'bad': {
-      // Gold lost (already paid), item stays on the list — try again with more.
-      return { state, acquired: [], lostFromList: [] };
+      // Gold lost (already paid, less Amy's refund), item stays on the list — try again with more.
+      return { state: failureRefund(state), acquired: [], lostFromList: [] };
     }
     case 'terrible': {
-      // Gold lost, item snatched away — leaves the list entirely.
+      // Gold lost (less Amy's refund), item snatched away — leaves the list entirely.
+      const refunded = failureRefund(state);
       const next: GameState = {
-        ...state,
-        lifetime: { ...state.lifetime, emptioList: trimmedList },
+        ...refunded,
+        lifetime: { ...refunded.lifetime, emptioList: trimmedList },
       };
       return { state: next, acquired: [], lostFromList: [target] };
     }
     case 'apocalyptic': {
-      // Bait (Indagatio & Emptio sheet): gold already lost, item gone, plus a 50%-of-total bite.
-      const punished = loseGoldFraction(state, 0.5);
+      // Bait (Indagatio & Emptio sheet): gold already lost, item gone, plus a 50%-of-total bite. Amy
+      // cuts the bite, then her refund returns after it (the refund is never bitten).
+      const punished = failureRefund(loseGoldFraction(state, 0.5 * cut));
       const next: GameState = {
         ...punished,
         lifetime: { ...punished.lifetime, emptioList: trimmedList },

@@ -4,7 +4,7 @@
 // read together on one ring). Pure, no React or DOM, so the order, the grouping and the copy are
 // unit-testable (buffs.test.ts); `ui/BuffsHud` renders what this returns. No game logic: it only
 // surfaces the timers the sim already keeps.
-import { MALEFICIA_BUFF_DURATION_SECONDS, type CallBuff, type GameState } from '@panvitium/sim';
+import { maleficiaBuffDuration, type CallBuff, type GameState } from '@panvitium/sim';
 import { strings } from '@panvitium/shared';
 import { parseEffect } from '../menus/relics.js';
 import type { Rarity } from '../menus/types.js';
@@ -52,6 +52,8 @@ function consumableClause(effect: string): string {
 
 function maleficiumRings(state: GameState): BuffView[] {
   const rings: BuffView[] = [];
+  // One activation's length, Marax #21 included (ADR-043): the ring's denominator.
+  const durationSec = maleficiaBuffDuration(state);
   for (const [id, remaining] of Object.entries(state.lifetime.maleficiaBuffs)) {
     const view = maleficiumView(id);
     if (!view || remaining <= 0) continue;
@@ -64,7 +66,7 @@ function maleficiumRings(state: GameState): BuffView[] {
       glyph: parseEffect(view.effect).headline || view.name.charAt(0),
       effects: [{ text: consumableClause(view.effect), debuff: false }],
       remainingSec: remaining,
-      durationSec: MALEFICIA_BUFF_DURATION_SECONDS,
+      durationSec,
     });
   }
   return rings;

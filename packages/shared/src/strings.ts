@@ -22,13 +22,6 @@
  *    or parentheses. Hyphens (-), the minus sign (−) in numeric deltas, and the middle dot
  *    (·) as a separator are all fine.
  */
-/**
- * The boon line of a DORMANT seal (sigil effect kind `inert`): the seal keeps its id, name and art
- * but does nothing while bound (ADR-038 put the Decimatio seals to sleep). It is not an effect line,
- * so it carries no number and no \u2191/\u2193 terminal.
- */
-const SIGIL_DORMANT = 'Dormant: this seal grants no effect while bound.';
-
 /** The copy of one call option: its label and, when the pick goes on, the next beat's copy. */
 export interface CallChoiceCopy {
   readonly label: string;
@@ -1099,9 +1092,10 @@ export const strings = {
     // Hard copy rule 1 note: a sigil's magnitude scales with the souls bound to it, so no static
     // number can live in these strings. The number channel is the UI: the ledger renders the LIVE
     // computed magnitude beside the \u2191/\u2193 terminal, which stays to give the direction.
-    // Keep every entry ending in its \u2191/\u2193 terminal; never replace the terminal with prose. The one exception is a DORMANT
-    // seal (effect kind `inert`, ADR-038): it has no effect and so no magnitude, and its line says so
-    // plainly with no terminal.
+    // Keep every entry ending in its \u2191/\u2193 terminal; never replace the terminal with prose. The one exception is
+    // Semet #32 (player request): its boon is withheld as "It resonates but you cannot interpret
+    // yet", while the ledger and the seal panel still show its live magnitude beside it. (No seal is
+    // dormant since ADR-043; a dormant one would read plainly, with no terminal, as Semet does.)
     descriptions: {
       1: 'Opera negative outcomes \u2193',
       2: 'Indagatio double-output chance \u2191',
@@ -1113,20 +1107,20 @@ export const strings = {
       8: 'Gula invocation effect \u2191',
       9: 'Influence costs \u2193',
       10: 'Familiar effect \u2191',
-      11: 'Influence gain \u2193',
+      11: 'Incoming-call boon duration \u2191',
       12: 'Desidia gain \u2191',
-      13: SIGIL_DORMANT,
+      13: 'Death \u2192 new reprobate chance \u2191',
       14: 'Murder \u2192 suicide chance \u2191',
       15: 'Emptio costs \u2193',
-      16: 'Invocation costs \u2193',
+      16: 'Flat Desidia generation \u2191',
       17: 'Logos negative outcomes \u2193',
       18: 'Acolyte efficiency \u2191',
       19: 'Desidia drain \u2193',
       20: 'Gold kept on descent \u2191',
-      21: SIGIL_DORMANT,
-      22: SIGIL_DORMANT,
+      21: 'Single-use maleficia duration \u2191',
+      22: 'Indagatio investment cost \u2193',
       23: 'Murder rate \u2191',
-      24: 'Indagatio time \u2193',
+      24: 'Starting gold each lifetime \u2191 (flat)',
       25: 'Murder rate \u2191 (flat)',
       26: 'Vanagloria invocation effect \u2191',
       27: 'Suicide rate \u2191',
@@ -1134,7 +1128,7 @@ export const strings = {
       29: 'Indagatio Stellar chance \u2191',
       30: 'Invoking power \u2191 (flat)',
       31: 'Desidia time acceleration \u2191',
-      32: 'Sigil effects \u2191',
+      32: 'It resonates but you cannot interpret yet',
       33: 'Maleficia effects \u2191',
       34: 'Luxuria invocation effect \u2191',
       35: 'Maximum influence \u2191',
@@ -1142,38 +1136,38 @@ export const strings = {
       37: 'Emptio negative outcomes \u2193',
       38: 'Common & rare find chance \u2193',
       39: 'Logos double-output chance \u2191',
-      40: SIGIL_DORMANT,
-      41: SIGIL_DORMANT,
+      40: 'Gold per death \u2191 (flat)',
+      41: 'Abandoned reprobates drowned on descent \u2191',
       42: 'Ira invocation effect \u2191',
       43: 'Suicide rate \u2191 (flat)',
       44: 'Avaritia invocation effect \u2191',
-      45: 'Reserve surrender charge \u2193',
+      45: 'Indagatio gold losses \u2193',
       46: 'Indagatio efficiency \u2191',
       47: 'Logos Stellar chance \u2191',
       48: 'Flat gold generation \u2191',
       49: 'Indagatio double-find chance \u2191',
       50: 'Reserve surrender charge \u2193',
-      51: 'All Opera negative outcomes \u2193',
+      51: 'Logos reprobate losses \u2193',
       52: 'Acedia invocation effect \u2191',
       53: 'Reprobates kept on descent \u2191',
       54: 'Overall invocation effect \u2191',
       55: 'Invocation costs \u2193',
       56: 'Logos positive outcomes \u2191',
       57: 'Flat reprobate generation \u2191',
-      58: 'Indagatio & Emptio efficiency \u2191',
+      58: 'Emptio gold losses \u2193',
       59: 'Maximum Desidia \u2191',
       60: 'Account income \u2191',
       61: 'Logos efficiency \u2191',
       62: 'Indagatio negative outcomes \u2193',
       63: 'Emptio Stellar chance \u2191',
-      64: SIGIL_DORMANT,
-      65: 'Invocation costs \u2193, Desidia speed \u2191',
+      64: 'Logos losses burned into souls \u2191',
+      65: 'Total invoking power \u2191',
       66: 'Maleficia kept on descent \u2191',
       67: 'All Opera positive outcomes \u2191',
       68: 'Influence gain \u2191',
       69: 'Flat influence generation \u2191',
       70: 'Emptio efficiency \u2191',
-      71: 'Logos efficiency \u2191',
+      71: 'Starting reprobates each lifetime \u2191 (flat)',
       72: 'Emptio positive outcomes \u2191',
     } as Record<number, string>,
   },

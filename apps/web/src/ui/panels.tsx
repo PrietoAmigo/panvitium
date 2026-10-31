@@ -13,7 +13,7 @@ import {
   countCopies,
   MALEFICIA,
   computeModifiers,
-  indagatioInvestmentGold,
+  indagatioInvestmentCost,
   INDAGATIO_INVEST_MAX_PERCENT,
   FENUS_RATE,
   MAX_RELATIONSHIP_TIER,
@@ -481,7 +481,7 @@ export function IndagatioEmptioProgram(): ReactElement {
     : null;
 
   // The Investment meter shows the default percentage every Search pours into itself, then the gold
-  // that share of the treasury amounts to right now (the same sum the next Cast would spend).
+  // the next Cast would spend on it right now (that share of the treasury, less Ipos #22's cut).
   // Invest/Divest step the percentage (+2 / -1 points); disable each at its bound.
   const investPercent = state.lifetime.indagatioInvestPercent;
 
@@ -499,7 +499,7 @@ export function IndagatioEmptioProgram(): ReactElement {
       finds={finds}
       tierChances={tierChances}
       investmentPercent={`${investPercent}%`}
-      investmentGold={formatBigNum(indagatioInvestmentGold(state))}
+      investmentGold={formatBigNum(indagatioInvestmentCost(state))}
       gold={formatBigNum(state.lifetime.gold)}
       searching={indagatioTimer !== null}
       searchDuration={formatDuration(actualSec)}

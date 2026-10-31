@@ -16,7 +16,7 @@
  * longer draws RNG. Morpheus's reprobate→desidia conversion is a modifier-bundle field
  * (`flatDesidiaPerSecond`) applied in the tick, and its reprobate upkeep is charged in tick 1a.)
  *
- * The drain is an invocation cost, so it takes `invocationCostMul` (the Orobas / Zepar / Andrealphus
+ * The drain is an invocation cost, so it takes `invocationCostMul` (the Orobas #55
  * cost channel and Black Vessel, ADR-035/036) exactly like every upkeep drain.
  *
  * Pure with respect to `state`. No dependency on the modifier bundle — avoids a cycle, since

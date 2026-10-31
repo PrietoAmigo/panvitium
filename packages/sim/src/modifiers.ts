@@ -65,6 +65,7 @@ import {
   sigilEffectStack,
   sigilModifierContributions,
   sigilMurderTriggersSuicideChance,
+  sigilDeathRecruitChance,
   sigilStrengthMul,
   sigilCategoryTierContributions,
   sigilInvocationSinContributions,
@@ -126,8 +127,8 @@ export interface Modifiers {
   readonly flatSuicidesPerSecond: number;
   /**
    * Flat desidia generated per second by invocations (each Blob, plus Morpheus's per-consumed-
-   * reprobate yield), efficiency-scaled. Added to the top-level desidia pool in the tick (clamped
-   * to `desidiaMax`). Default 0.
+   * reprobate yield), efficiency-scaled, and by Zepar #16 (log curve, ADR-043). Added to the
+   * top-level desidia pool in the tick (clamped to `desidiaMax`). Default 0.
    */
   readonly flatDesidiaPerSecond: number;
   /**
@@ -135,6 +136,12 @@ export interface Modifiers {
    * suicides/s += chance × murders/s. Default 0.
    */
   readonly murderTriggersSuicideChance: number;
+  /**
+   * Chance each death (suicide or murder) draws a mourner into the flock (Beleth #13, ADR-043).
+   * Applied at the rate level: births/s += chance × deaths/s, unscaled by the generation
+   * multiplier, clamped to 1 so the dead are at most replaced. Default 0.
+   */
+  readonly deathRecruitChance: number;
   /**
    * Flat additive to the Stellar outcome CHANCE (probability), applied GLOBALLY at action resolution
    * AFTER the weighted distribution is normalized (probability.ts `addFlatTierChance`) — an absolute
@@ -147,7 +154,7 @@ export interface Modifiers {
   readonly maxInfluenceMul: number;
   /** Multiplier on the player's own action efficiency (Gula). Stacks with category eff. */
   readonly playerEfficiencyMul: number;
-  /** Multiplier on Logos-category action efficiency (Leviathan / Resignation). */
+  /** Multiplier on Logos-category action efficiency (Luxuria levels, Ars Serpens, Zagan #61). */
   readonly logosEfficiencyMul: number;
   /**
    * Multiplier on Indagatio-category action efficiency (time-mode → scales speed). Sources: Bifrons
@@ -188,8 +195,8 @@ export interface Modifiers {
   readonly fenusRateMul: number;
   /**
    * Multiplier on the reserve's surrender charge (base 0.15, clamped to [0, 1] effective). Sources:
-   * the contracts in force (Active management ×0.67, Compounding ×1.5) and Vine #45 / Furcas #50,
-   * which soften it in the asymptotic "decrease" form ×1/(1 + strength). Default 1×.
+   * the contracts in force (Active management ×0.67, Compounding ×1.5) and Furcas #50, which
+   * softens it in the asymptotic "decrease" form ×1/(1 + strength). Default 1×.
    */
   readonly surrenderChargeMul: number;
   /**
@@ -243,6 +250,7 @@ export const NEUTRAL_MODIFIERS: Modifiers = {
   flatSuicidesPerSecond: 0,
   flatDesidiaPerSecond: 0,
   murderTriggersSuicideChance: 0,
+  deathRecruitChance: 0,
   flatStellarChance: 0,
   flatGoldPerSecond: 0,
   maxInfluenceMul: 1,
@@ -414,7 +422,7 @@ export function computeModifiers(state: GameState): Modifiers {
     bumpTier('excellent', f);
     bumpTier('good', f);
   }
-  for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Bael #1, Balam #51, Amdusias #67
+  for (const [t, mul] of Object.entries(sig.tier)) bumpTier(t as Tier, mul); // Bael #1, Amdusias #67
   const tierWeightMul: TierModifiers = {};
   for (const [t, mul] of Object.entries(tierAcc)) if (mul !== 1) tierWeightMul[t as Tier] = mul;
 
@@ -540,9 +548,12 @@ export function computeModifiers(state: GameState): Modifiers {
           totalReprobates(state) *
           MORPHEUS_DESIDIA_PER_REPROBATE *
           morpheusCount) *
-      invEffFor('acedia'),
+        invEffFor('acedia') +
+      flatGen.desidia, // Zepar #16 (log curve, ADR-043)
     // Leraie #14: chance each murder also triggers a suicide (rate-level coupling in dynamics).
     murderTriggersSuicideChance: sigilMurderTriggersSuicideChance(state, sigMul),
+    // Beleth #13: chance each death draws a mourner into the flock (rate-level, in dynamics).
+    deathRecruitChance: sigilDeathRecruitChance(state, sigMul),
     // Behemoth (Superbia): each copy adds a flat Stellar-chance bump, invocation-efficiency-scaled;
     // applied post-normalization at resolution time (actions.ts → addFlatTierChance).
     flatStellarChance: BEHEMOTH_STELLAR_FLAT * invEffFor('superbia') * behemothCount,
@@ -596,7 +607,7 @@ export function computeModifiers(state: GameState): Modifiers {
     // investing, Annuity), each only while the reserve holds its relationship tier.
     fenusRateMul: syngraphaFenusRateMul(state),
     // The surrender charge: the contracts in force (Active management, Compounding) × the
-    // recovery sigils (Vine #45, Furcas #50), which cut the charge in the asymptotic ×1/mul form.
+    // recovery sigil (Furcas #50), which cuts the charge in the asymptotic ×1/mul form.
     surrenderChargeMul: syngraphaSurrenderChargeMul(state) / sigilShutdownRefundMul(state, sigMul),
     // Acolyte efficiency: 0.33 baseline (02 §10); Tristitia's Resignation SKILL lifts it
     // continuously (sheet rev 2026-06-12); Bathin #18 sigil composes on top.

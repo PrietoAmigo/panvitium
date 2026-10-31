@@ -858,14 +858,16 @@ describe('boonLabel (ledger label)', () => {
   });
 
   it('keeps EVERY arrow of a composite label', () => {
-    // Andrealphus #65: two legs, one arrow each.
+    // A composite seal's label (Andrealphus #65 before ADR-043): two legs, one arrow each.
     expect(boonLabel(`Invocation costs ${DOWN}, Desidia speed ${UP}`)).toBe(
       `Invocation costs ${DOWN}, Desidia speed ${UP}`,
     );
   });
 
-  it('leaves a dormant seal\u2019s line as written', () => {
+  it('leaves a line with no terminal as written (a dormant seal; Semet, which will not resolve)', () => {
     const dormant = 'Dormant: this seal grants no effect while bound.';
     expect(boonLabel(dormant)).toBe(dormant);
+    const semet = 'It resonates but you cannot interpret yet';
+    expect(boonLabel(semet)).toBe(semet);
   });
 });

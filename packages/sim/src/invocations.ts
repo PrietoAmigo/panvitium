@@ -7,7 +7,7 @@
  * cost — no souls minted), and a **desidia** drain. A flat drain the pool can't sustain dispels
  * the invocation; %-costs only zero a gain or shrink a pool, never bankrupt. Most are persistent and
  * dispellable at will; on Katabasis all are dispelled (katabasis.ts — `invocations` reset to {}).
- * Every cost is softened by `invocationCostMul` (the Orobas / Zepar / Andrealphus cost channel and
+ * Every cost is softened by `invocationCostMul` (the Orobas #55 cost channel and
  * Black Vessel, each a `1/(1 + x)` cut; ADR-035/036).
  *
  * Visibility (02 §12): an invocation appears in the Magna Goetia list once the player has at least
@@ -28,7 +28,12 @@
  *       reprobate and zeroes the Katabasis carry-over (×2 player-efficiency stack); Astiwihad holds
  *       the world still (tick freeze) and maxes the carry-over. Both set a `pending*` flag at invoke.
  */
-import { invocationCostMul, sigilInvokingPower, sigilStrengthMul } from './sigils.js';
+import {
+  invocationCostMul,
+  sigilInvokingPower,
+  sigilInvokingPowerMul,
+  sigilStrengthMul,
+} from './sigils.js';
 import { totalInvokingPower } from './maleficia.js';
 import { mintSouls } from './population.js';
 import { sinLevel } from './progression.js';
@@ -83,12 +88,16 @@ export function invocationById(id: string): InvocationDef | undefined {
   return INVOCATIONS[id];
 }
 
-/** Current invoking power: equipped maleficia + Forneus #30 sigil (02 §7). */
+/**
+ * Current invoking power (02 §7): equipped maleficia + Forneus #30's flat grant, the whole lifted by
+ * Andrealphus #65's `× (1 + strength)` and rounded to a whole number (ADR-043). Exactly the plain
+ * sum when Andrealphus is unbound.
+ */
 export function currentInvokingPower(state: GameState): number {
-  return (
-    totalInvokingPower(state.lifetime.maleficia) +
-    sigilInvokingPower(state, sigilStrengthMul(state))
-  );
+  const mul = sigilStrengthMul(state);
+  const base = totalInvokingPower(state.lifetime.maleficia) + sigilInvokingPower(state, mul);
+  const lift = sigilInvokingPowerMul(state, mul);
+  return lift === 1 ? base : Math.round(base * lift);
 }
 
 /** How many of `id` are currently active. */
@@ -143,7 +152,7 @@ export interface InvocationUpkeep {
  *
  * EVERY upkeep cost (ADR-035/036) — the flat gold/influence/reprobate/desidia drains AND the
  * %-of-gain / %-of-pool drains (the apex tradeoffs) alike — is multiplied by `invocationCostMul`:
- * the cost channel ("− cost of all invocations": Orobas #55, Zepar #16, Andrealphus #65) divides by
+ * the cost channel ("− cost of all invocations": Orobas #55) divides by
  * `1 + strength`, and Black Vessel applies its own `1/(1 + k)` cut. So a Lemure's "25% of influence
  * gain/s" reads 25% / ((1 + strength)(1 + k)).
  */

@@ -156,12 +156,16 @@ export function maleficiaInvocationCostMul(owned: readonly string[], boost = 1):
 
 // ── Single-use timed buffs ────────────────────────────────────────────────────
 // The consumable maleficia (Hand of Glory, Black Salt Pouch, Defixio, Crossroads Dirt) each grant a
-// one-hour multiplier on a single modifier field when activated. Activation consumes one owned copy
-// and (re)fills that id's timer in `lifetime.maleficiaBuffs` (a fresh use EXTENDS the timer, as Hand
-// of Glory always has); the tick decays each timer by `simDelta` and drops it at 0. `computeModifiers`
-// folds the active buffs into their fields via `maleficiaBuffMultipliers`.
+// one-hour multiplier on a single modifier field when activated. Activation (`activateMaleficium`,
+// in `consumables.ts` so it can read Marax #21 without a sigils ⇄ maleficia cycle) consumes one owned
+// copy and (re)fills that id's timer in `lifetime.maleficiaBuffs` (a fresh use EXTENDS the timer, as
+// Hand of Glory always has); the tick decays each timer by `simDelta` and drops it at 0.
+// `computeModifiers` folds the active buffs into their fields via `maleficiaBuffMultipliers`.
 
-/** How long a single-use maleficium's buff lasts per activation (Maleficia sheet: one hour). */
+/**
+ * How long a single-use maleficium's buff lasts per activation (Maleficia sheet: one hour), before
+ * Marax #21 lengthens it (`maleficiaBuffDuration` in `consumables.ts`, ADR-043).
+ */
 export const MALEFICIA_BUFF_DURATION_SECONDS = 3600;
 
 /** The modifier fields a single-use maleficia buff can lift. */
@@ -223,39 +227,4 @@ export function maleficiaBuffMultipliers(state: GameState, boost = 1): Maleficia
     if (def) out[def.field] *= boostMaleficiumFactor(def.factor, boost);
   }
   return out;
-}
-
-export type ActivateResult =
-  | { readonly ok: true; readonly state: GameState }
-  | { readonly ok: false; readonly reason: string };
-
-/**
- * Activate a single-use maleficium from the owned inventory. Consumes one copy and (re)fills that
- * id's one-hour timer in `lifetime.maleficiaBuffs`; a repeat activation extends the timer while the
- * buff's magnitude stays fixed (the Hand of Glory convention). Non-consumable items can't be used
- * this way.
- */
-export function activateMaleficium(state: GameState, id: string): ActivateResult {
-  if (!MALEFICIA_BUFFS[id]) return { ok: false, reason: 'This maleficium cannot be used.' };
-  const idx = state.lifetime.maleficia.indexOf(id);
-  if (idx === -1) {
-    const def = MALEFICIA[id];
-    return { ok: false, reason: `You hold no ${def ? def.name : 'such maleficium'}.` };
-  }
-  const maleficia = [
-    ...state.lifetime.maleficia.slice(0, idx),
-    ...state.lifetime.maleficia.slice(idx + 1),
-  ];
-  const remaining = (state.lifetime.maleficiaBuffs[id] ?? 0) + MALEFICIA_BUFF_DURATION_SECONDS;
-  return {
-    ok: true,
-    state: {
-      ...state,
-      lifetime: {
-        ...state.lifetime,
-        maleficia,
-        maleficiaBuffs: { ...state.lifetime.maleficiaBuffs, [id]: remaining },
-      },
-    },
-  };
 }

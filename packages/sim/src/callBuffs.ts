@@ -23,6 +23,7 @@ import {
   loseReserveFraction,
   mintSouls,
 } from './population.js';
+import { sigilCallBoonDurationMul, sigilStrengthMul } from './sigils.js';
 import { type GameState } from './state.js';
 
 /**
@@ -156,11 +157,17 @@ function applyEffect(state: GameState, e: CallInEffect, sourceId: string | undef
     case 'timedMul': {
       // An inert factor or non-positive duration adds nothing — never store a dead buff.
       if (e.factor === 1 || e.durationSec <= 0) return state;
+      // Gusion #11 (ADR-043): a BOON (a factor above 1) lasts ×(1 + strength) longer; a debuff keeps
+      // its printed length. The stored duration is the lengthened one, so the HUD ring reads true.
+      const duration =
+        e.factor > 1
+          ? e.durationSec * sigilCallBoonDurationMul(state, sigilStrengthMul(state))
+          : e.durationSec;
       const buff: CallBuff = {
         field: e.field,
         factor: e.factor,
-        remainingSeconds: e.durationSec,
-        durationSec: e.durationSec,
+        remainingSeconds: duration,
+        durationSec: duration,
         ...(sourceId !== undefined ? { sourceId } : {}),
       };
       return {

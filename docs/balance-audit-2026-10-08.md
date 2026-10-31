@@ -97,9 +97,12 @@ Ranked by how much they bend the game. Suggested directions are options, not dec
 ### Low
 
 12. **Gusion #11 is pure downside** (influence gain ↓, no upside): nobody should ever bind it.
+    **Resolved (2026-10-31, ADR-043):** Gusion now lengthens an incoming call's boons.
 13. **Duplicate seals**: Bael #1 = Balam #51, Naberius #24 = Bifrons #46, Vine #45 = Furcas #50;
     Dantalion #71 is Zagan #61 at 3× strength since ADR-038 removed its cost; Amy #58 is Bifrons +
-    Seere in one seal.
+    Seere in one seal. **Resolved (2026-10-31, ADR-043):** Balam, Naberius, Vine, Dantalion and Amy
+    took new effects, as did two twins this list missed (Zepar #16 = Orobas #55 at a third of the
+    strength; Andrealphus #65 = Orobas + Foras #31), so no two seals share an effect.
 14. **Aamon #7 does nothing early**: it multiplies passive generation, which is 0 until a flat source
     (Ose, Empusa, Lamia, Succubus, relics) exists. Its 33-soul run was identical to the baseline.
 15. **Astiwihad's freeze never costs anything**: invoking it the moment before descending (or
