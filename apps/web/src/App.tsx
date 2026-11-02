@@ -29,6 +29,7 @@ import { FirstDescent, primeFirstDescent, releaseFirstDescent } from './ui/First
 import { Subliminal } from './ui/Subliminal.js';
 import { PanvitiumEnd } from './ui/PanvitiumEnd.js';
 import { useRandomSubliminals } from './game/useRandomSubliminals.js';
+import { useImperiumSubliminal } from './game/useImperiumSubliminal.js';
 import { codePlatesShown } from './game/subliminals.js';
 import { preloadImage } from './menus/DegradedScene.js';
 import { useGameStore } from './store/gameStore.js';
@@ -271,6 +272,7 @@ export function App(): ReactElement {
   // plays.
   const subliminal = useGameStore((s) => s.subliminalQueue[0] ?? null);
   const flashSubliminal = useGameStore((s) => s.flashSubliminal);
+  const onRecordingEnded = useImperiumSubliminal(flashSubliminal);
   const dismissSubliminal = useGameStore((s) => s.dismissSubliminal);
   // The two code plates surface only from Father Stahl's first letter until the player dials the
   // number they spell (the rectory call is placed).
@@ -424,6 +426,7 @@ export function App(): ReactElement {
         <SmartphoneCallIn
           key={answeredCall ?? placedCall ?? ''}
           call={callInView}
+          onRecordingEnded={onRecordingEnded}
           figures={studioFigures}
           {...(placedCall !== null ? { label: strings.phone.callOut.stageLabel } : {})}
           onChoose={(path) => {

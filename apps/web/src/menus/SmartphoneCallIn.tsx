@@ -38,6 +38,8 @@ export interface SmartphoneCallInProps {
   onChoose: (path: readonly number[]) => void;
   /** Fired when the call has fully resolved (after the ~1.65s fade cadence) — unmount the overlay. */
   onDone: () => void;
+  /** Actual audio completion only, never a skip or safety timeout. May schedule work after the call. */
+  onRecordingEnded?: (recording: string) => void;
   /** Typewriter base interval (ms/char) for typed calls. Default 32. */
   textSpeedMs?: number;
   /** Answered-plate translucency (scrim alpha = value × 0.6). Keep < 1 so the room shows through. */
@@ -91,6 +93,7 @@ export function SmartphoneCallIn({
   call,
   onChoose,
   onDone,
+  onRecordingEnded,
   textSpeedMs = 32,
   plateOpacity = 0.66,
   audioBase = CALL_AUDIO_BASE,
@@ -126,6 +129,8 @@ export function SmartphoneCallIn({
     arm: ReturnType<typeof setTimeout> | null;
   }>({ type: null, sim: null, fade: null, arm: null });
   const voice = useRef<HTMLAudioElement | null>(null);
+  const recordingEnded = useRef(onRecordingEnded);
+  recordingEnded.current = onRecordingEnded;
 
   const clearTimers = (): void => {
     for (const k of ['type', 'sim', 'fade', 'arm'] as const) {
@@ -197,14 +202,19 @@ export function SmartphoneCallIn({
       finishBeat(b);
     };
     if (b.recording !== null) {
+      const recording = b.recording;
       setPhase('speaking');
       // Safety / fileless fallback so a missing mp3 (tests, preview) still flows on.
       timers.current.sim = setTimeout(reveal, estimateDuration(b.line) * 1000);
       try {
-        const a = new Audio(audioBase + b.recording + '.mp3');
+        const a = new Audio(audioBase + recording + '.mp3');
         voice.current = a;
         a.preload = 'auto';
-        a.addEventListener('ended', reveal);
+        a.addEventListener('ended', () => {
+          if (g !== gen.current) return;
+          reveal();
+          recordingEnded.current?.(recording);
+        });
         // The mp3 is missing or unplayable: a beat with a typed `line` writes it out instead; one
         // without keeps the safety timer, which still moves the call on.
         a.addEventListener('error', () => {
@@ -239,9 +249,9 @@ export function SmartphoneCallIn({
   // ── Kick the call off on mount; tear everything down on unmount. The component is keyed per call in
   // App, so `call.id` is fixed for its mounted life — start exactly once.
   useEffect(() => {
-    gen.current = 0;
     enterBeat(beatRef.current, 0);
     return () => {
+      gen.current += 1;
       clearTimers();
       stopVoice();
     };

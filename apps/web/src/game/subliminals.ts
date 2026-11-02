@@ -1,7 +1,8 @@
 /**
  * The subliminal plates (presentation only; nothing here touches the sim, the RNG or the save). A
  * plate flashes over the whole screen for a fraction of a second, through the degradation pass like
- * the rooms. Two kinds:
+ * the rooms. Three kinds:
+ *   - Imperium's ward tableau flashes five seconds after its recording ends, outside the random draw.
  *   - Fausto's plates mark the moment the player EARNS one of his letters: the tick its requirement
  *     is met (the sim's `emailsTriggered`), not its later arrival in the inbox. "Take this with you"
  *     (fausto-4) has no plate, so the fourth plate belongs to Fausto #5.
@@ -13,6 +14,10 @@
 import { ASSET_BASE } from '../menus/degrade.data.js';
 
 const BASE = `${ASSET_BASE}/subliminals`;
+
+/** The ward tableau, shown only after Imperium's recording has actually finished. */
+export const IMPERIUM_SUBLIMINAL = `${BASE}/imperium.png`;
+export const IMPERIUM_SUBLIMINAL_DELAY_MS = 5000;
 
 /** Fausto's plates, keyed by the email whose requirement summons them. */
 export const FAUSTO_SUBLIMINALS: Readonly<Record<string, string>> = {
@@ -67,7 +72,7 @@ export function codePlatesShown(
 /** How long an ordinary random plate holds on screen: three frames or so, too brief to study. */
 export const SUBLIMINAL_MS = 50;
 
-/** How long a code plate or one of Fausto's holds: a little longer, so it can just be caught. */
+/** How long a code, Fausto or Imperium plate holds: a little longer, so it can just be caught. */
 export const SUBLIMINAL_LONG_MS = 160;
 
 /** Whether `src` is one of Fausto's plates. */
@@ -75,9 +80,11 @@ export function isFaustoSubliminal(src: string): boolean {
   return Object.values(FAUSTO_SUBLIMINALS).includes(src);
 }
 
-/** How long the plate `src` holds on screen: the code plates and Fausto's 160 ms, the rest 50 ms. */
+/** The code plates, Fausto's and Imperium hold for 160 ms; ordinary random plates hold for 50 ms. */
 export function subliminalHoldMs(src: string): number {
-  return isCodeSubliminal(src) || isFaustoSubliminal(src) ? SUBLIMINAL_LONG_MS : SUBLIMINAL_MS;
+  return isCodeSubliminal(src) || isFaustoSubliminal(src) || src === IMPERIUM_SUBLIMINAL
+    ? SUBLIMINAL_LONG_MS
+    : SUBLIMINAL_MS;
 }
 
 /** Random plates arrive as a Poisson process averaging one every six minutes of play. */

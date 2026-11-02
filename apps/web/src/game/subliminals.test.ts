@@ -6,6 +6,7 @@ import {
   CODE_SUBLIMINALS,
   CODE_SUBLIMINAL_WEIGHT,
   FAUSTO_SUBLIMINALS,
+  IMPERIUM_SUBLIMINAL,
   RANDOM_SUBLIMINALS,
   SUBLIMINAL_LONG_MS,
   SUBLIMINAL_MS,
@@ -111,15 +112,21 @@ describe('subliminals — the code plates', () => {
 });
 
 describe('subliminals — how long a plate holds', () => {
-  it("holds the code plates and Fausto's for 160 ms, every other plate for 50 ms", () => {
+  it("holds the code plates, Fausto's and Imperium for 160 ms, ordinary plates for 50 ms", () => {
     expect(SUBLIMINAL_LONG_MS).toBe(160);
     expect(SUBLIMINAL_MS).toBe(50);
-    for (const src of [...CODE_SUBLIMINALS, ...Object.values(FAUSTO_SUBLIMINALS)]) {
+    for (const src of [
+      ...CODE_SUBLIMINALS,
+      ...Object.values(FAUSTO_SUBLIMINALS),
+      IMPERIUM_SUBLIMINAL,
+    ]) {
       expect(subliminalHoldMs(src), src).toBe(160);
     }
     const ordinary = RANDOM_SUBLIMINALS.filter((src) => !isCodeSubliminal(src));
     expect(ordinary).toHaveLength(14);
     for (const src of ordinary) expect(subliminalHoldMs(src), src).toBe(50);
+    expect(RANDOM_SUBLIMINALS).not.toContain(IMPERIUM_SUBLIMINAL);
+    expect(Object.values(FAUSTO_SUBLIMINALS)).not.toContain(IMPERIUM_SUBLIMINAL);
   });
 });
 
@@ -127,7 +134,11 @@ describe('subliminals — assets', () => {
   const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../public');
 
   it('ships every plate it names', () => {
-    for (const src of [...Object.values(FAUSTO_SUBLIMINALS), ...RANDOM_SUBLIMINALS]) {
+    for (const src of [
+      ...Object.values(FAUSTO_SUBLIMINALS),
+      ...RANDOM_SUBLIMINALS,
+      IMPERIUM_SUBLIMINAL,
+    ]) {
       expect(existsSync(join(PUBLIC_DIR, src)), src).toBe(true);
     }
   });
