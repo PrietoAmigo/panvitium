@@ -371,16 +371,17 @@ export const strings = {
     noAcolytes: 'No acolytes yet: each level of Ira grants one',
   },
   autoRepeat: {
-    /** The control's label when the rite is NOT looping (click to start). */
-    start: 'Auto',
+    /** The control's label when the rite is NOT looping (click to start). Lower-case, as the
+     *  Chthonic Logos whispers it; the PC ledgers set it in capitals. */
+    start: 'repeat',
     /** …and when it IS looping (click to stop). */
-    stop: 'Auto · on',
+    stop: 'repeating',
     /** Accessible / tooltip text. */
     label: 'Repeat this rite automatically',
-    /** Shown on the (disabled) auto toggle before the rite's toggle Sin level is reached. */
-    locked: 'Auto unlocks at',
-    /** The (disabled) auto toggle's own label until then; the gate rides along as its tooltip. */
-    lockedShort: 'Auto · locked',
+    /** Shown on the (disabled) repeat toggle before the rite's toggle Sin level is reached. */
+    locked: 'Repeat unlocks at',
+    /** The (disabled) repeat toggle's own label until then; the gate rides along as its tooltip. */
+    lockedShort: 'repeat · locked',
   },
   invocations: {
     intro: 'Names called up from below.',

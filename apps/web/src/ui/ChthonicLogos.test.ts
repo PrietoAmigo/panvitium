@@ -137,6 +137,21 @@ describe('ChthonicLogos — rite controls', () => {
     expect(auto!.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
     expect(auto!.title).toBe(`${strings.autoRepeat.locked} ${strings.opera.anySin} I`);
   });
+
+  it('calls the unlocked toggle repeat, and repeating once it loops', () => {
+    const initial = store().state!;
+    useGameStore.setState({
+      state: { ...initial, devotion: { ...initial.devotion, luxuria: bn(180) } },
+    });
+    render();
+    const toggle = (): HTMLButtonElement =>
+      container!.querySelector<HTMLButtonElement>('.logos-row .auto-repeat-btn')!;
+    expect(toggle().disabled).toBe(false);
+    expect(toggle().textContent).toBe(`\u21bb ${strings.autoRepeat.start}`);
+    act(() => toggle().click());
+    expect(toggle().getAttribute('aria-pressed')).toBe('true');
+    expect(toggle().textContent).toBe(`\u21bb ${strings.autoRepeat.stop}`);
+  });
 });
 
 describe('ChthonicLogos — sealed action names', () => {
