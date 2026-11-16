@@ -15,9 +15,13 @@ import { LogosPanel, type LogosActionView } from './LogosPanel.js';
 import {
   buildLogosThoughts,
   logosEchoes,
+  logosPathKeyframes,
+  sampleLogosPath,
   LOGOS_ECHO_COUNT,
   LOGOS_LATIN,
+  LOGOS_PATHS,
   LOGOS_PATH_COUNT,
+  LOGOS_PATH_STEPS,
   LOGOS_THOUGHT_COUNT,
 } from './logosThoughts.js';
 
@@ -250,6 +254,32 @@ describe('Chthonic Logos (Obsessio)', () => {
     const drift = container!.querySelector('.logos-drift')!;
     expect(drift.getAttribute('aria-hidden')).toBe('true');
     expect(drift.querySelectorAll('.logos-mote').length).toBe(LOGOS_THOUGHT_COUNT);
+    // The drift's keyframes ship with the panel.
+    expect(container!.querySelector('style')?.textContent).toContain('@keyframes logos-path-1');
+  });
+
+  it('animates nothing under a live blur filter or a faded wrapper (both cost a pass per frame)', () => {
+    render({
+      actions: [
+        baseAction({ id: 'suggestion', active: true, progress: 40, disabled: true }),
+        baseAction({ id: 'imperium', name: 'Xherum Oneytan', locked: true, disabled: true }),
+      ],
+      onClose: () => {},
+    });
+    const styled = Array.from(
+      container!.querySelectorAll<HTMLElement>('.logos-thought, .logos-thought *, .logos-echo'),
+    );
+    expect(styled.length).toBeGreaterThan(LOGOS_THOUGHT_COUNT);
+    for (const el of styled) {
+      expect(el.style.filter).toBe('');
+      expect(el.style.opacity).toBe('');
+    }
+    // Softness is drawn as a text-shadow over a clear fill instead.
+    const soft = buildLogosThoughts().filter((t) => t.blur > 0).length;
+    const motes = Array.from(container!.querySelectorAll<HTMLElement>('.logos-mote'));
+    expect(motes.filter((m) => m.style.textShadow !== '').length).toBe(soft);
+    const echo = container!.querySelector<HTMLElement>('.logos-echo')!;
+    expect(echo.style.textShadow.toLowerCase()).toContain('currentcolor');
   });
 });
 
@@ -286,6 +316,46 @@ describe('Chthonic Logos thoughts', () => {
     expect(new Set(field.map((t) => t.rotate)).size).toBeGreaterThan(20);
     expect(new Set(field.map((t) => t.fontSize)).size).toBeGreaterThan(15);
     expect(new Set(field.map((t) => t.duration)).size).toBeGreaterThan(30);
+  });
+
+  it('samples each path evenly from its start to its end, turning without a jump', () => {
+    for (const { d, reverse } of LOGOS_PATHS) {
+      const samples = sampleLogosPath(d, reverse, LOGOS_PATH_STEPS);
+      expect(samples.length).toBe(LOGOS_PATH_STEPS + 1);
+      const start = d.match(/-?\d+/g)!.slice(0, 2).map(Number);
+      const end = d.match(/-?\d+/g)!.slice(-2).map(Number);
+      expect(samples[0]!.x).toBeCloseTo(start[0]!, 1);
+      expect(samples[0]!.y).toBeCloseTo(start[1]!, 1);
+      expect(samples[LOGOS_PATH_STEPS]!.x).toBeCloseTo(end[0]!, 1);
+      expect(samples[LOGOS_PATH_STEPS]!.y).toBeCloseTo(end[1]!, 1);
+      const steps = samples
+        .slice(1)
+        .map((p, k) => Math.hypot(p.x - samples[k]!.x, p.y - samples[k]!.y));
+      const mean = steps.reduce((a, b) => a + b, 0) / steps.length;
+      // Even by arc length (chords shorten a little on the tightest curls).
+      for (const step of steps) expect(Math.abs(step - mean) / mean).toBeLessThan(0.3);
+      // The heading never wraps (a 359° to 1° step would spin the word): the tightest curl turns
+      // under a third of a turn between samples.
+      for (let k = 1; k < samples.length; k++) {
+        expect(Math.abs(samples[k]!.angle - samples[k - 1]!.angle)).toBeLessThan(120);
+      }
+      // A reversed path is ridden upright: it starts heading back the way it runs.
+      const heading = ((samples[1]!.angle % 360) + 360) % 360;
+      expect(heading > 90 && heading < 270).toBe(false);
+    }
+  });
+
+  it('builds the drift from transform and opacity keyframes only, fading in and out', () => {
+    const css = logosPathKeyframes();
+    expect(css).not.toContain('offset-');
+    expect(css).not.toContain('filter');
+    for (let n = 1; n <= LOGOS_PATH_COUNT; n++) {
+      expect(css).toContain(`@keyframes logos-path-${n}{0%{opacity:0;transform:`);
+      expect(css).toContain(`.logos-path-${n}{animation-name:logos-path-${n}}`);
+    }
+    const props = new Set(Array.from(css.matchAll(/[{;]([a-z-]+):/g), (m) => m[1]));
+    expect([...props].sort()).toEqual(['animation-name', 'opacity', 'transform']);
+    expect(css.match(/100%\{opacity:0;/g)?.length).toBe(LOGOS_PATH_COUNT);
   });
 
   it('lights echoes in proportion to progress, and spreads them when dwelt on', () => {

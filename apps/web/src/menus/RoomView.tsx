@@ -34,6 +34,9 @@ interface RoomViewProps {
   /** STATUS QUO, beneath the sigil, was clicked. */
   onStatusQuo: () => void;
   onAction: (action: HotspotAction) => void;
+  /** An opaque full-surface menu covers the room (the Chthonic Logos): its degradation pass holds
+   *  still rather than rendering frames no one can see. */
+  covered?: boolean;
 }
 
 function doorGlyph(id: string): string {
@@ -61,6 +64,7 @@ export function RoomView({
   onSigilPress,
   onStatusQuo,
   onAction,
+  covered = false,
 }: RoomViewProps): ReactElement {
   // Aurevora's hold on the invocation room: latched the moment it is seen bound there, released
   // only when the player walks out. While held, no other invocation figure shows in that room, even
@@ -118,6 +122,7 @@ export function RoomView({
         figureTint={ROOM_FIGURE_TINTS[room.id] ?? null}
         glows={sigilUp ? sampleAltarGlows : null}
         settings={degradeSettings}
+        paused={covered}
       />
       {room.hotspots.map((h) => {
         const isDoor = h.action.type === 'door';

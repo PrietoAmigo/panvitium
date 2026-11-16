@@ -391,6 +391,7 @@ export function App(): ReactElement {
           onSigilPress={altarSigil.press}
           onStatusQuo={altarSigil.statusQuo}
           onAction={handleAction}
+          covered={panel === 'logos'}
         />
       </main>
       <AchievementToast />

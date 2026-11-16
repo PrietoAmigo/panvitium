@@ -210,4 +210,7 @@ export interface DegradedSceneProps {
   glows?: EngineGlowSource | null;
   settings?: Partial<DegradeSettings>;
   className?: string;
+  /** The scene is fully covered (an opaque full-surface menu is open): hold the pass on its last
+   *  frame instead of rendering frames no one can see. Rendering resumes when it is uncovered. */
+  paused?: boolean;
 }
