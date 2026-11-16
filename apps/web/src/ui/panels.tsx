@@ -188,7 +188,7 @@ function AutoRepeatToggle({ actionId }: { actionId: string }): ReactElement | nu
         title={label}
         aria-label={label}
       >
-        {'🔒'} {strings.autoRepeat.start}
+        {strings.autoRepeat.lockedShort}
       </button>
     );
   }
@@ -220,26 +220,23 @@ function RiteControls({ actionId }: { actionId: string }): ReactElement {
   );
 }
 
-/** The three temptations in scroll order, with their alchemical sigils (☿ Mercury, ✴ the eight
- * voices, ☉ the crowned Sun) and Roman numerals. Logos always presents exactly these three. */
+/** The three temptations in scroll order. Logos always presents exactly these three. */
 const LOGOS_ORDER = ['suggestion', 'logismoi', 'imperium'] as const;
-const LOGOS_GLYPHS: Record<string, string> = {
-  suggestion: '\u263F',
-  logismoi: '\u2734',
-  imperium: '\u2609',
-};
-const LOGOS_NUMERALS = ['I', 'II', 'III'] as const;
 
-/** Per-tier colour for the Logos ledger's outcome chip — the scroll's candle-gold palette fading to
- *  ash. Keyed by the real OutcomeEvent tier. */
+/** How many resolved temptations replay on the scroll; the full record is the PC's Logs. */
+const LOGOS_LEDGER_LINES = 5;
+
+/** Per-tier colour for the Logos ledger's outcome chip — candle-gold for the successes, warming
+ *  to ember for the failures, light enough to read on the scroll's red-black. Keyed by the real
+ *  OutcomeEvent tier. */
 const LOGOS_TIER_COLOR: Record<Tier, string> = {
   stellar: '#e6c04a',
   excellent: '#d2a63f',
   good: '#c9a227',
   neutral: '#a08a5e',
-  bad: '#8a6a4a',
-  terrible: '#7a4a3a',
-  apocalyptic: '#8a3a2a',
+  bad: '#a07a58',
+  terrible: '#b0624a',
+  apocalyptic: '#c4513a',
 };
 
 /** The success tiers. On a Logos rite, a reprobate loss at one of these is a suicide (Suggestion's
@@ -275,15 +272,16 @@ function logosLedgerText(e: OutcomeEvent): string {
 }
 
 /**
- * The Chthonic Logos (Studio), the Logos rites' scroll (Claude Design rework).
+ * The Chthonic Logos (Studio), the Logos rites' scroll, drawn as the player's mind (Obsessio).
  * The Chthonic Logos is the scroll on the Studio table that holds the Logos rites. The player is
  * writing it themselves, from their notes on worldly and otherworldly experience (the Katabasis
  * descents among them); its purpose is the mastery of eloquence and persuasion.
  *
  * A self-framed, full-surface overlay (mounted by App like Magna Goetia / the PC, NOT via PanelShell):
- * it feeds the designed parchment with the real action, cost, and live progress, and preserves
- * acolyte delegation per delegatable rite. A sealed (locked) rite shows redacted Latin + its Sin
- * gate. Resolved outcomes live in the PC's Logs program, not on the scroll.
+ * it feeds the designed rites with the real action, cost, and live progress, and preserves the
+ * auto-repeat and acolyte delegation controls per rite. A sealed (locked) rite shows its seal-name
+ * + Sin gate. The last few resolved temptations replay low on the right; the full record is the
+ * PC's Logs program.
  */
 export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElement {
   const state = useGameStore((s) => s.state);
@@ -295,7 +293,6 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
 
   const headerProps = {
     title: strings.opera.logosTitle,
-    maxim: strings.opera.logosMaxim,
     closeLabel: strings.opera.logosClose,
     onClose,
   };
@@ -310,7 +307,7 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
     imperium: strings.opera.imperium,
   };
 
-  const actions: LogosActionView[] = LOGOS_ORDER.map((id, i) => {
+  const actions: LogosActionView[] = LOGOS_ORDER.map((id) => {
     const def = ACTIONS[id]!;
     // The exact influence the cast would take — the same pipeline startAction deducts (the log-scaled
     // Logos cost and the Paimon #9 reduction), so the printed cost and the affordability gate match.
@@ -330,8 +327,6 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
     const hasControls = !locked;
     return {
       id,
-      numeral: LOGOS_NUMERALS[i] ?? '',
-      glyph: LOGOS_GLYPHS[id] ?? '',
       name: locked ? (sealed?.name ?? '') : (names[id] ?? def.id),
       quote: locked ? (sealed?.maxim ?? '') : (strings.opera.logosQuote[id] ?? ''),
       cost: `${influenceCost} ${strings.resources.influence} · ${def.baseTimeSeconds}s`,
@@ -353,9 +348,11 @@ export function ChthonicLogos({ onClose }: { onClose: () => void }): ReactElemen
     };
   });
 
-  // The scroll's foot is its ledger: the resolved temptations (this program's rites only), newest
-  // first, each an outcome tier chip beside its net resource deltas.
-  const ledgerRows = log.filter((e) => (LOGOS_ORDER as readonly string[]).includes(e.actionId));
+  // The scroll's ledger: the last few resolved temptations (this program's rites only), newest
+  // first, each an outcome tier beside its net resource deltas.
+  const ledgerRows = log
+    .filter((e) => (LOGOS_ORDER as readonly string[]).includes(e.actionId))
+    .slice(0, LOGOS_LEDGER_LINES);
   const ledger = (
     <div className="logos-ledger">
       <div className="logos-ledger-head">{strings.opera.logosLedgerHeading}</div>

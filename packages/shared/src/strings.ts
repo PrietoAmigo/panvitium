@@ -122,10 +122,29 @@ export const strings = {
 
     // The Chthonic Logos: the scroll on the Studio table holding the Logos rites, written by the
     // player from their notes on worldly and otherworldly experience (the Katabasis among them) to
-    // master eloquence and persuasion (Claude Design rework).
+    // master eloquence and persuasion. Drawn as the player's mind (Obsessio): the title is the
+    // dialog's accessible name, not a visible heading.
     logosTitle: 'Chthonic Logos',
-    logosMaxim: 'Veritatis simplex oratio est',
     logosClose: 'Close the scroll',
+    // The player's own intrusive thoughts, drifting behind the rites (decorative, never read aloud).
+    // The untranslated Latin fragments they mingle with live beside the panel.
+    logosThoughts: [
+      'again',
+      'say it again',
+      'again again',
+      'he will',
+      'they are listening',
+      'it is not enough',
+      'more',
+      'deeper',
+      'who else knows',
+      'it was my idea',
+      'I can hear him thinking',
+      'do not stop now',
+      'louder',
+      'one more',
+      'he will, he will, he will',
+    ] as readonly string[],
     // Each temptation\u2019s flavour line, spoken on the parchment.
     logosQuote: {
       suggestion: 'A word left where a thought will find it.',
@@ -162,9 +181,9 @@ export const strings = {
     // specific Sin), so the sealed-row requirement reads "Requires Any Sin III" and the locked
     // auto/delegate hint reads "Any Sin I".
     anySin: 'Any Sin',
-    // The Chthonic Logos's outcome ledger: resolved temptations, newest first, below the rites.
-    // Box-drawing rule (U+2500), never a dash (hard copy rule 2).
-    logosLedgerHeading: '\u2500 INDEX SVASIONVM \u2500',
+    // The Chthonic Logos's outcome ledger: the last few resolved temptations, newest first, low on
+    // the right of the scroll.
+    logosLedgerHeading: 'INDEX SVASIONVM',
     logosEmptyLedger: 'No temptation has been spoken yet.',
     logosNoYield: 'no soul stirred',
     // The fate glossed, in parentheses, onto a ledger line's reprobate loss. A Logos rite kills
@@ -352,14 +371,17 @@ export const strings = {
     noAcolytes: 'No acolytes yet: each level of Ira grants one',
   },
   autoRepeat: {
-    /** The control's label when the rite is NOT looping (click to start). */
-    start: 'Auto',
+    /** The control's label when the rite is NOT looping (click to start). Lower-case, as the
+     *  Chthonic Logos whispers it; the PC ledgers set it in capitals. */
+    start: 'repeat',
     /** …and when it IS looping (click to stop). */
-    stop: 'Auto · on',
+    stop: 'repeating',
     /** Accessible / tooltip text. */
     label: 'Repeat this rite automatically',
-    /** Shown on the (disabled) auto toggle before the rite's toggle Sin level is reached. */
-    locked: 'Auto unlocks at',
+    /** Shown on the (disabled) repeat toggle before the rite's toggle Sin level is reached. */
+    locked: 'Repeat unlocks at',
+    /** The (disabled) repeat toggle's own label until then; the gate rides along as its tooltip. */
+    lockedShort: 'repeat · locked',
   },
   invocations: {
     intro: 'Names called up from below.',

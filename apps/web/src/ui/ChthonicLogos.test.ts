@@ -1,9 +1,9 @@
 /**
- * Render smoke tests for the Chthonic Logos's outcome ledger (the "logs at the foot" addition). The
- * scroll's rites / sigils / dismissal are covered by LogosPanel.test.ts; this pins the ledger wiring
- * the wrapper introduces: the heading + empty state before anything resolves, and a real Logos
- * outcome surfacing as a tier chip beside its soul yield, filtered to this program's rites (another
- * program's outcome in the same log must not leak in).
+ * Render smoke tests for the Chthonic Logos's outcome ledger (the Index Suasionum). The scroll's
+ * rites / echoes / dismissal are covered by LogosPanel.test.ts; this pins the ledger wiring the
+ * wrapper introduces: the heading + empty state before anything resolves, a real Logos outcome
+ * surfacing as a tier chip beside its soul yield, filtered to this program's rites (another
+ * program's outcome in the same log must not leak in), and only the last five replayed.
  */
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { act, createElement } from 'react';
@@ -49,12 +49,32 @@ describe('ChthonicLogos — outcome ledger', () => {
     );
   });
 
-  it('sits in its own card below the scroll, outside the drifting Latin', () => {
+  it('sits apart from the rites, outside the drifting thoughts', () => {
     render();
     const ledger = container!.querySelector('.logos-ledger');
     expect(ledger?.closest('.logos-index')).not.toBeNull();
-    expect(ledger?.closest('.logos-card')).toBeNull();
+    expect(ledger?.closest('.logos-row')).toBeNull();
+    expect(ledger?.closest('.logos-drift')).toBeNull();
     expect(container!.querySelector('.logos-index .logos-drift')).toBeNull();
+  });
+
+  it('replays only the last five temptations, newest first', () => {
+    useGameStore.setState({
+      log: Array.from({ length: 8 }, (_, i) => ({
+        actionId: 'suggestion',
+        tier: 'good' as const,
+        soulsDelta: i + 1,
+        reprobateDelta: 0,
+        goldDelta: 0,
+      })),
+    });
+    render();
+    const texts = Array.from(container!.querySelectorAll('.logos-ledger-text')).map(
+      (el) => el.textContent ?? '',
+    );
+    expect(texts.length).toBe(5);
+    expect(texts[0]).toContain('+1');
+    expect(texts[4]).toContain('+5');
   });
 
   it('surfaces a resolved Logos outcome as a tier chip beside its soul yield, filtered to its rites', () => {
@@ -104,6 +124,33 @@ describe('ChthonicLogos — outcome ledger', () => {
       `${suggestion} · −1 ${R} (${logosLost})`,
       `${imperium} · −40 ${R} (${logosLost})`,
     ]);
+  });
+});
+
+describe('ChthonicLogos — rite controls', () => {
+  it('labels a locked Auto toggle in words, with its gate as the hint', () => {
+    render();
+    const auto = container!.querySelector<HTMLButtonElement>('.logos-row .auto-repeat-btn--locked');
+    expect(auto).not.toBeNull();
+    expect(auto!.disabled).toBe(true);
+    expect(auto!.textContent).toBe(strings.autoRepeat.lockedShort);
+    expect(auto!.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(auto!.title).toBe(`${strings.autoRepeat.locked} ${strings.opera.anySin} I`);
+  });
+
+  it('calls the unlocked toggle repeat, and repeating once it loops', () => {
+    const initial = store().state!;
+    useGameStore.setState({
+      state: { ...initial, devotion: { ...initial.devotion, luxuria: bn(180) } },
+    });
+    render();
+    const toggle = (): HTMLButtonElement =>
+      container!.querySelector<HTMLButtonElement>('.logos-row .auto-repeat-btn')!;
+    expect(toggle().disabled).toBe(false);
+    expect(toggle().textContent).toBe(`\u21bb ${strings.autoRepeat.start}`);
+    act(() => toggle().click());
+    expect(toggle().getAttribute('aria-pressed')).toBe('true');
+    expect(toggle().textContent).toBe(`\u21bb ${strings.autoRepeat.stop}`);
   });
 });
 

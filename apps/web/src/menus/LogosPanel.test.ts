@@ -1,15 +1,25 @@
 /**
- * Render smoke tests for the Chthonic Logos scroll (Claude Design rework). These pin the wiring the
- * visual rework introduced: the scroll is a self-framed dialog with a close affordance, each rite
- * renders its sigil row, the active rite surfaces its progress ring + bar + flicker status, a
- * sealed (locked) rite shows redacted Latin + its Sin gate and offers no action, an open rite's
- * verb fires the real action, and the overlay / close both dismiss. The store wiring and the
+ * Render smoke tests for the Chthonic Logos drawn as the player's mind (Obsessio). These pin the
+ * wiring the redesign introduced: the scroll is a self-framed dialog with a close affordance and
+ * no visible title, each rite is a thought-button with its echo trail, the active rite lights its
+ * echoes with progress and speaks its status line, a sealed rite shows only echoes of its seal-name
+ * plus its Sin gate and cannot be spoken, dwelling on a rite recedes the others and makes the
+ * drifting thoughts louder, and the overlay / close / Esc all dismiss. The store wiring and the
  * action/cost math live in their own suites; this component is purely presentational.
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { strings } from '@panvitium/shared';
 import { LogosPanel, type LogosActionView } from './LogosPanel.js';
+import {
+  buildLogosThoughts,
+  logosEchoes,
+  LOGOS_ECHO_COUNT,
+  LOGOS_LATIN,
+  LOGOS_PATH_COUNT,
+  LOGOS_THOUGHT_COUNT,
+} from './logosThoughts.js';
 
 let container: HTMLDivElement | null = null;
 let root: Root | null = null;
@@ -29,13 +39,11 @@ function spy(): Spy {
 function baseAction(over: Partial<LogosActionView>): LogosActionView {
   return {
     id: 'suggestion',
-    numeral: 'I',
-    glyph: '\u263F',
     name: 'Suggestion',
     quote: 'A word left where a thought will find it.',
-    cost: '1 Influence \u00b7 1s',
+    cost: '1 Influence · 1s',
     cta: 'Speak',
-    status: 'A word is being left\u2026',
+    status: 'A word is being left…',
     locked: false,
     active: false,
     progress: 0,
@@ -45,6 +53,12 @@ function baseAction(over: Partial<LogosActionView>): LogosActionView {
   };
 }
 
+const THREE: LogosActionView[] = [
+  baseAction({ id: 'suggestion' }),
+  baseAction({ id: 'logismoi', name: 'Logismoi', cta: 'Infiltrate' }),
+  baseAction({ id: 'imperium', name: 'Imperium', cta: 'Command' }),
+];
+
 function render(props: { actions: LogosActionView[]; onClose: () => void }): void {
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -53,13 +67,16 @@ function render(props: { actions: LogosActionView[]; onClose: () => void }): voi
     root!.render(
       createElement(LogosPanel, {
         title: 'Chthonic Logos',
-        maxim: 'Veritatis simplex oratio est',
         closeLabel: 'Close the scroll',
         actions: props.actions,
         onClose: props.onClose,
       }),
     );
   });
+}
+
+function rows(): HTMLElement[] {
+  return Array.from(container!.querySelectorAll<HTMLElement>('.logos-row'));
 }
 
 afterEach(() => {
@@ -69,96 +86,218 @@ afterEach(() => {
   container = null;
 });
 
-describe('Chthonic Logos scroll', () => {
-  it('renders a labelled dialog with one row per temptation', () => {
-    render({
-      actions: [
-        baseAction({ id: 'suggestion' }),
-        baseAction({ id: 'logismoi', numeral: 'II', name: 'Logismoi', cta: 'Infiltrate' }),
-        baseAction({ id: 'imperium', numeral: 'III', name: 'Imperium', cta: 'Command' }),
-      ],
-      onClose: () => {},
-    });
+describe('Chthonic Logos (Obsessio)', () => {
+  it('renders a labelled dialog with one thought per temptation and no visible title', () => {
+    render({ actions: THREE, onClose: () => {} });
     const dialog = container!.querySelector('[role="dialog"]');
     expect(dialog?.getAttribute('aria-label')).toBe('Chthonic Logos');
-    expect(container!.querySelectorAll('.logos-row').length).toBe(3);
+    expect(rows().length).toBe(3);
+    // The title is the dialog's accessible name only; no heading or maxim is drawn.
+    expect(container!.querySelector('h1, h2')).toBeNull();
+    expect(container!.textContent).not.toContain('Veritatis');
+    // Each rite carries its full echo trail behind the word, hidden from assistive tech.
+    for (const row of rows()) {
+      const echoes = row.querySelectorAll('.logos-echo');
+      expect(echoes.length).toBe(LOGOS_ECHO_COUNT);
+      expect(Array.from(echoes).every((e) => e.getAttribute('aria-hidden') === 'true')).toBe(true);
+    }
   });
 
-  it('lights the progress ring for the active rite and reserves the bar/status space on idle rites', () => {
+  it('names each thought-button with its verb, rite and cost, and shows the verb and cost', () => {
+    render({ actions: THREE, onClose: () => {} });
+    const first = rows()[0]!;
+    expect(first.querySelector('.logos-act')?.getAttribute('aria-label')).toBe(
+      'Speak: Suggestion, 1 Influence · 1s',
+    );
+    expect(first.querySelector('.logos-cta')?.textContent).toBe('Speak');
+    expect(first.querySelector('.logos-cost')?.textContent).toBe('1 Influence · 1s');
+    expect(first.querySelector('.logos-line')?.textContent).toBe(
+      'A word left where a thought will find it.',
+    );
+  });
+
+  it('lights the active rite echo by echo with progress and speaks its status line', () => {
     render({
       actions: [
-        baseAction({ id: 'suggestion', active: true, progress: 60, disabled: true }),
-        baseAction({ id: 'logismoi', numeral: 'II', name: 'Logismoi' }),
-        baseAction({ id: 'imperium', numeral: 'III', name: 'Imperium' }),
+        baseAction({ id: 'suggestion', active: true, progress: 50, disabled: true }),
+        baseAction({ id: 'logismoi', name: 'Logismoi', disabled: true }),
       ],
       onClose: () => {},
     });
-    // The progress ring (arc) is drawn for the active rite alone.
-    expect(container!.querySelectorAll('.logos-arc').length).toBe(1);
-    const rows = container!.querySelectorAll('.logos-row');
-    // The active rite's bar is visible and reflects its progress.
-    const activeBar = rows[0]!.querySelector('.logos-bar') as HTMLElement;
-    expect(activeBar.classList.contains('logos-idle')).toBe(false);
-    expect(activeBar.style.width).toBe('60%');
-    expect(rows[0]!.querySelector('.logos-status')?.textContent).toContain('A word is being left');
-    // An idle (but castable) rite still renders its bar + status, hidden via `logos-idle`, so the
-    // row keeps a fixed height and the buttons do not jump when a rite starts or ends.
-    const idleBar = rows[1]!.querySelector('.logos-bar') as HTMLElement;
-    expect(idleBar.classList.contains('logos-idle')).toBe(true);
-    expect(rows[1]!.querySelector('.logos-status')?.classList.contains('logos-idle')).toBe(true);
+    const [active, other] = rows();
+    expect(active!.classList.contains('logos-row--active')).toBe(true);
+    // Half the rite spoken: half the echoes have caught the light.
+    expect(active!.querySelectorAll('.logos-echo--lit').length).toBe(LOGOS_ECHO_COUNT / 2);
+    expect(other!.querySelectorAll('.logos-echo--lit').length).toBe(0);
+    // The status replaces the maxim while the rite is underway.
+    const line = active!.querySelector('.logos-line');
+    expect(line?.classList.contains('logos-line--status')).toBe(true);
+    expect(line?.textContent).toContain('A word is being left');
+    // The spoken rite holds the focus: the others recede, the thoughts and the pressure rise.
+    expect(other!.classList.contains('logos-row--receded')).toBe(true);
+    // Waiting on another rite is not the same as wanting influence.
+    expect(other!.classList.contains('logos-row--wanting')).toBe(false);
+    expect(container!.querySelector('.logos-drift--spoken')).not.toBeNull();
+    expect(container!.querySelector('.logos-press--spoken')).not.toBeNull();
   });
 
-  it('renders a locked rite as sealed: redacted name, the gate, and no action button', () => {
+  it('renders a locked rite as sealed: echoes of its seal-name, the gate, and no speaking', () => {
+    const tempt = spy();
     render({
       actions: [
         baseAction({ id: 'suggestion' }),
         baseAction({
           id: 'imperium',
-          numeral: 'III',
           name: 'Xherum Oneytan',
-          quote: 'Qoth velim sarnu, ut nescias quod petat.',
+          quote: '...ut nescias quod petat.',
           locked: true,
           disabled: true,
           lockLabel: 'Requires Any Sin III',
+          onTempt: tempt.fn,
         }),
       ],
       onClose: () => {},
     });
-    const sealed = container!.querySelector('.logos-row--locked');
+    const sealed = container!.querySelector('.logos-row--locked')!;
     expect(sealed).not.toBeNull();
-    expect(sealed!.querySelector('.logos-name')?.textContent).toBe('Xherum Oneytan');
-    expect(sealed!.querySelector('.logos-gate')?.textContent).toBe('Requires Any Sin III');
-    // A sealed rite is unactionable — no Speak/Command button.
-    expect(sealed!.querySelector('.logos-act')).toBeNull();
-    // It can never be active, so it reserves no progress bar (only castable rites do).
-    expect(sealed!.querySelector('.logos-bar')).toBeNull();
+    expect(sealed.querySelector('.logos-name')?.textContent).toBe('Xherum Oneytan');
+    expect(sealed.querySelector('.logos-echo')?.textContent).toBe('Xherum Oneytan');
+    expect(sealed.querySelector('.logos-gate')?.textContent).toBe('Requires Any Sin III');
+    // A sealed rite offers no verb, cost or controls, and its thought cannot be spoken.
+    expect(sealed.querySelector('.logos-meta')).toBeNull();
+    const btn = sealed.querySelector('.logos-act') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+    expect(btn.getAttribute('aria-label')).toBe('Xherum Oneytan. Requires Any Sin III');
+    act(() => btn.click());
+    expect(tempt.calls).toBe(0);
   });
 
-  it('fires the real action when an open rite is spoken', () => {
+  it('marks a rite the player cannot afford as wanting, and it cannot be spoken', () => {
     const tempt = spy();
     render({
-      actions: [baseAction({ id: 'suggestion', onTempt: tempt.fn })],
+      actions: [baseAction({ id: 'suggestion', disabled: true, onTempt: tempt.fn })],
       onClose: () => {},
     });
-    const btn = container!.querySelector('.logos-act') as HTMLButtonElement;
-    act(() => btn.click());
+    const row = rows()[0]!;
+    expect(row.classList.contains('logos-row--wanting')).toBe(true);
+    act(() => (row.querySelector('.logos-act') as HTMLButtonElement).click());
+    expect(tempt.calls).toBe(0);
+  });
+
+  it('fires the real action when an open thought is clicked', () => {
+    const tempt = spy();
+    render({ actions: [baseAction({ id: 'suggestion', onTempt: tempt.fn })], onClose: () => {} });
+    act(() => (container!.querySelector('.logos-act') as HTMLButtonElement).click());
     expect(tempt.calls).toBe(1);
   });
 
-  it('dismisses on the overlay and the close button, but not on the scroll body', () => {
+  it('dwelling on a rite spreads its echoes, recedes the others and makes the thoughts louder', () => {
+    render({ actions: THREE, onClose: () => {} });
+    expect(container!.querySelector('.logos-drift--calm')).not.toBeNull();
+    const [first, second] = rows();
+    const restingSpread = first!.querySelector<HTMLElement>('.logos-echo')!.style.transform;
+    act(() => {
+      first!.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    });
+    expect(first!.classList.contains('logos-row--held')).toBe(true);
+    expect(second!.classList.contains('logos-row--receded')).toBe(true);
+    expect(container!.querySelector('.logos-drift--held')).not.toBeNull();
+    expect(first!.querySelector<HTMLElement>('.logos-echo')!.style.transform).not.toBe(
+      restingSpread,
+    );
+    act(() => {
+      first!.dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
+    });
+    expect(first!.classList.contains('logos-row--held')).toBe(false);
+    expect(container!.querySelector('.logos-drift--calm')).not.toBeNull();
+  });
+
+  it('carries the delegation controls beside an open rite', () => {
+    render({
+      actions: [
+        baseAction({
+          id: 'suggestion',
+          delegation: createElement('span', { className: 'probe' }, 'controls'),
+        }),
+      ],
+      onClose: () => {},
+    });
+    expect(container!.querySelector('.logos-meta .logos-deleg .probe')).not.toBeNull();
+  });
+
+  it('dismisses on the overlay, the close button and Esc, but not on the stage', () => {
     const close = spy();
     render({ actions: [baseAction({})], onClose: close.fn });
 
-    const scroll = container!.querySelector('.logos-scroll') as HTMLElement;
-    act(() => scroll.click());
-    expect(close.calls).toBe(0); // clicking the parchment must not close it
+    const stage = container!.querySelector('.logos-stage') as HTMLElement;
+    act(() => stage.click());
+    expect(close.calls).toBe(0); // clicking the mind itself must not close it
 
-    const closeBtn = container!.querySelector('.logos-close') as HTMLButtonElement;
-    act(() => closeBtn.click());
+    act(() => (container!.querySelector('.logos-close') as HTMLButtonElement).click());
     expect(close.calls).toBe(1);
 
-    const overlay = container!.querySelector('.logos-overlay') as HTMLElement;
-    act(() => overlay.click());
+    act(() => (container!.querySelector('.logos-overlay') as HTMLElement).click());
     expect(close.calls).toBe(2);
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(close.calls).toBe(3);
+  });
+
+  it('draws the drifting thoughts behind the rites, hidden from assistive tech', () => {
+    render({ actions: THREE, onClose: () => {} });
+    const drift = container!.querySelector('.logos-drift')!;
+    expect(drift.getAttribute('aria-hidden')).toBe('true');
+    expect(drift.querySelectorAll('.logos-mote').length).toBe(LOGOS_THOUGHT_COUNT);
+  });
+});
+
+describe('Chthonic Logos thoughts', () => {
+  it('builds the same field from the same seed, and a different one from another', () => {
+    const a = buildLogosThoughts();
+    expect(buildLogosThoughts()).toEqual(a);
+    expect(buildLogosThoughts(LOGOS_THOUGHT_COUNT, 'another')).not.toEqual(a);
+  });
+
+  it('mixes the untranslated Latin with the English fragments from the strings table', () => {
+    const texts = buildLogosThoughts().map((t) => t.text);
+    const english = strings.opera.logosThoughts;
+    expect(texts.some((t) => LOGOS_LATIN.includes(t))).toBe(true);
+    expect(texts.some((t) => english.includes(t))).toBe(true);
+    expect(texts.every((t) => LOGOS_LATIN.includes(t) || english.includes(t))).toBe(true);
+  });
+
+  it('varies heading, size, opacity and speed within readable bounds', () => {
+    const field = buildLogosThoughts();
+    for (const t of field) {
+      expect(Math.abs(t.rotate)).toBeLessThanOrEqual(75);
+      expect(t.path).toBeGreaterThanOrEqual(1);
+      expect(t.path).toBeLessThanOrEqual(LOGOS_PATH_COUNT);
+      expect(t.fontSize).toBeGreaterThanOrEqual(9);
+      expect(t.fontSize).toBeLessThanOrEqual(140);
+      expect(t.opacity).toBeGreaterThan(0);
+      expect(t.opacity).toBeLessThanOrEqual(0.22);
+      expect(t.duration).toBeGreaterThanOrEqual(14);
+      expect(t.duration).toBeLessThanOrEqual(220);
+      expect(t.delay).toBeLessThanOrEqual(0);
+    }
+    // Not parallel, not uniform: the field spreads across headings, sizes and speeds.
+    expect(new Set(field.map((t) => t.rotate)).size).toBeGreaterThan(20);
+    expect(new Set(field.map((t) => t.fontSize)).size).toBeGreaterThan(15);
+    expect(new Set(field.map((t) => t.duration)).size).toBeGreaterThan(30);
+  });
+
+  it('lights echoes in proportion to progress, and spreads them when dwelt on', () => {
+    const lit = (progress: number): number =>
+      logosEchoes({ sealed: false, held: true, active: true, progress }).filter((e) => e.lit)
+        .length;
+    expect(lit(0)).toBe(0);
+    expect(lit(50)).toBe(LOGOS_ECHO_COUNT / 2);
+    expect(lit(100)).toBe(LOGOS_ECHO_COUNT);
+    const resting = logosEchoes({ sealed: false, held: false, active: false, progress: 0 });
+    const dwelt = logosEchoes({ sealed: false, held: true, active: false, progress: 0 });
+    expect(dwelt[5]!.dx).toBeGreaterThan(resting[5]!.dx);
+    expect(resting.every((e) => !e.lit)).toBe(true);
   });
 });
