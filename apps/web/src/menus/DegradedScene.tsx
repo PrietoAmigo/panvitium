@@ -160,6 +160,7 @@ export function DegradedScene({
   glows = null,
   settings,
   className,
+  paused = false,
 }: DegradedSceneProps): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const passRef = useRef<DegradePass | null>(null);
@@ -185,6 +186,14 @@ export function DegradedScene({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Hold the pass while the scene is covered; resume (painting a fresh frame at once) when not.
+  useEffect(() => {
+    const pass = passRef.current;
+    if (!pass) return;
+    if (paused) pass.stop();
+    else pass.start();
+  }, [paused]);
 
   // The glows are sampled by the engine itself, every frame it renders.
   useEffect(() => {

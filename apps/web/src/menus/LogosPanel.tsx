@@ -12,6 +12,7 @@ import {
 import {
   buildLogosThoughts,
   logosEchoes,
+  logosPathKeyframes,
   LOGOS_STAGE_H,
   LOGOS_STAGE_W,
   type LogosThought,
@@ -73,6 +74,29 @@ const RITE_PLACES: readonly { x: number; y: number; rotate: number }[] = [
 /** The field, built once: it is layout, not state, and identical on every open. */
 const THOUGHTS: readonly LogosThought[] = buildLogosThoughts();
 
+/** The drift's compositor-only keyframes, sampled once from the curves in logosThoughts.ts. */
+const PATH_KEYFRAMES = logosPathKeyframes();
+
+/** `#rrggbb` at an alpha. A fragment's or echo's faintness rides in its colour rather than in an
+ *  `opacity` on a wrapper: opacity on the parent of an animated layer forces the compositor to
+ *  render that subtree offscreen every frame, and there are dozens of them. */
+function withAlpha(hex: string, alpha: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+/** A soft (out-of-focus) glyph: the fill goes clear and a blurred text-shadow in the same colour
+ *  draws it instead. Rasterised once with the text, so moving or pulsing it costs no refiltering,
+ *  where a CSS `filter: blur()` around animated content is recomputed every frame. */
+function softText(blur: number, color: string): CSSProperties {
+  return blur > 0
+    ? {
+        WebkitTextFillColor: 'transparent',
+        textShadow: `0 0 ${Math.round(blur * 20) / 10}px ${color}`,
+      }
+    : {};
+}
+
 /**
  * The drifting thoughts. Memoised with no props so the 10 Hz store updates that move a rite's
  * progress never touch the field; its loudness is set by a class on the wrapper instead.
@@ -84,13 +108,7 @@ const LogosThoughts = memo(function LogosThoughts(): ReactElement {
         <div
           key={i}
           className="logos-thought"
-          style={{
-            left: t.x,
-            top: t.y,
-            transform: `rotate(${t.rotate}deg)`,
-            opacity: t.opacity,
-            ...(t.blur > 0 ? { filter: `blur(${t.blur}px)` } : {}),
-          }}
+          style={{ left: t.x, top: t.y, transform: `rotate(${t.rotate}deg)` }}
         >
           <div
             className={t.flicker ? 'logos-flicker' : undefined}
@@ -107,9 +125,10 @@ const LogosThoughts = memo(function LogosThoughts(): ReactElement {
               className={`logos-mote logos-path-${t.path} ${t.latin ? 'logos-mote--latin' : 'logos-mote--note'}`}
               style={{
                 fontSize: t.fontSize,
-                color: t.color,
+                color: withAlpha(t.color, t.opacity),
                 animationDuration: `${t.duration}s`,
                 animationDelay: `${t.delay}s`,
+                ...softText(t.blur, withAlpha(t.color, t.opacity)),
               }}
             >
               {t.text}
@@ -201,6 +220,7 @@ export function LogosPanel({
         style={stageStyle}
         onClick={(e) => e.stopPropagation()}
       >
+        <style>{PATH_KEYFRAMES}</style>
         <div className={`logos-drift logos-drift--${mood}`} aria-hidden="true">
           <LogosThoughts />
         </div>
@@ -252,19 +272,13 @@ export function LogosPanel({
                       aria-hidden="true"
                       style={{
                         transform: `translate(${e.dx}px, ${e.dy}px) rotate(${e.rotate}deg) scale(${e.scale})`,
-                        opacity: e.opacity,
-                        filter: `blur(${e.blur}px)`,
+                        color: withAlpha(e.color, e.opacity),
+                        animationDuration: `${e.duration}s`,
+                        animationDelay: `${e.delay}s`,
+                        ...softText(e.blur, 'currentColor'),
                       }}
                     >
-                      <span
-                        className="logos-echo-pulse"
-                        style={{
-                          animationDuration: `${e.duration}s`,
-                          animationDelay: `${e.delay}s`,
-                        }}
-                      >
-                        {a.name}
-                      </span>
+                      {a.name}
                     </span>
                   ))}
                   <span className={'logos-name' + (a.locked ? ' logos-name--sealed' : '')}>
