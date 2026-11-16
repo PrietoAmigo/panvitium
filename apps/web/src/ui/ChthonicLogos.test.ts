@@ -127,6 +127,18 @@ describe('ChthonicLogos — outcome ledger', () => {
   });
 });
 
+describe('ChthonicLogos — rite controls', () => {
+  it('labels a locked Auto toggle in words, with its gate as the hint', () => {
+    render();
+    const auto = container!.querySelector<HTMLButtonElement>('.logos-row .auto-repeat-btn--locked');
+    expect(auto).not.toBeNull();
+    expect(auto!.disabled).toBe(true);
+    expect(auto!.textContent).toBe(strings.autoRepeat.lockedShort);
+    expect(auto!.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(auto!.title).toBe(`${strings.autoRepeat.locked} ${strings.opera.anySin} I`);
+  });
+});
+
 describe('ChthonicLogos — sealed action names', () => {
   it('keeps each seal on its action as other rites unlock, including after relocking', () => {
     const initial = store().state!;

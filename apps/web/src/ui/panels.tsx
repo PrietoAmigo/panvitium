@@ -188,7 +188,7 @@ function AutoRepeatToggle({ actionId }: { actionId: string }): ReactElement | nu
         title={label}
         aria-label={label}
       >
-        {'🔒'} {strings.autoRepeat.start}
+        {strings.autoRepeat.lockedShort}
       </button>
     );
   }

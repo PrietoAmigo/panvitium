@@ -379,6 +379,8 @@ export const strings = {
     label: 'Repeat this rite automatically',
     /** Shown on the (disabled) auto toggle before the rite's toggle Sin level is reached. */
     locked: 'Auto unlocks at',
+    /** The (disabled) auto toggle's own label until then; the gate rides along as its tooltip. */
+    lockedShort: 'Auto · locked',
   },
   invocations: {
     intro: 'Names called up from below.',
