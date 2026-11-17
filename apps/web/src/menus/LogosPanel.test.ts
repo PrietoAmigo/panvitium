@@ -23,6 +23,7 @@ import {
   sampleLogosPath,
   LOGOS_ECHO_COUNT,
   LOGOS_ENTRANCE,
+  LOGOS_FIELD_DIM,
   LOGOS_LATIN,
   LOGOS_PATHS,
   LOGOS_PATH_COUNT,
@@ -146,12 +147,13 @@ describe('Chthonic Logos (Obsessio)', () => {
     const line = active!.querySelector('.logos-line');
     expect(line?.classList.contains('logos-line--status')).toBe(true);
     expect(line?.textContent).toContain('A word is being left');
-    // The spoken rite holds the focus: the others recede, the thoughts and the pressure rise.
+    // The spoken rite holds the focus: the others recede and the pressure rises.
     expect(other!.classList.contains('logos-row--receded')).toBe(true);
     // Waiting on another rite is not the same as wanting influence.
     expect(other!.classList.contains('logos-row--wanting')).toBe(false);
-    expect(container!.querySelector('.logos-drift--spoken')).not.toBeNull();
     expect(container!.querySelector('.logos-press--spoken')).not.toBeNull();
+    // The drifting thoughts take no part: the field is as it is at rest.
+    expect(container!.querySelector('.logos-drift')!.className).toBe('logos-drift');
   });
 
   it('renders a locked rite as sealed: echoes of its seal-name, the gate, and no speaking', () => {
@@ -204,9 +206,10 @@ describe('Chthonic Logos (Obsessio)', () => {
     expect(tempt.calls).toBe(1);
   });
 
-  it('dwelling on a rite spreads its echoes, recedes the others and makes the thoughts louder', () => {
+  it('dwelling on a rite spreads its echoes and recedes the others, leaving the thoughts alone', () => {
     render({ actions: THREE, onClose: () => {} });
-    expect(container!.querySelector('.logos-drift--calm')).not.toBeNull();
+    const field = (): string => container!.querySelector('.logos-drift')!.outerHTML;
+    const resting = field();
     const [first, second] = rows();
     const restingSpread = first!.querySelector<HTMLElement>('.logos-echo')!.style.transform;
     act(() => {
@@ -214,7 +217,7 @@ describe('Chthonic Logos (Obsessio)', () => {
     });
     expect(first!.classList.contains('logos-row--held')).toBe(true);
     expect(second!.classList.contains('logos-row--receded')).toBe(true);
-    expect(container!.querySelector('.logos-drift--held')).not.toBeNull();
+    expect(field()).toBe(resting);
     expect(first!.querySelector<HTMLElement>('.logos-echo')!.style.transform).not.toBe(
       restingSpread,
     );
@@ -222,7 +225,41 @@ describe('Chthonic Logos (Obsessio)', () => {
       first!.dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
     });
     expect(first!.classList.contains('logos-row--held')).toBe(false);
-    expect(container!.querySelector('.logos-drift--calm')).not.toBeNull();
+    expect(field()).toBe(resting);
+  });
+
+  it('keeps the drifting thoughts exactly as they are while a rite is spoken', () => {
+    render({ actions: THREE, onClose: () => {} });
+    const field = (): string => container!.querySelector('.logos-drift')!.outerHTML;
+    const resting = field();
+    const speak = (progress: number): void => {
+      act(() => {
+        root!.render(
+          createElement(LogosPanel, {
+            title: 'Chthonic Logos',
+            closeLabel: 'Close the scroll',
+            actions: [
+              baseAction({ id: 'suggestion', active: true, progress, disabled: true }),
+              ...THREE.slice(1).map((a) => ({ ...a, disabled: true })),
+            ],
+            onClose: () => {},
+          }),
+        );
+      });
+    };
+    speak(10);
+    expect(container!.querySelector('.logos-row--active')).not.toBeNull();
+    expect(field()).toBe(resting);
+    speak(90);
+    expect(field()).toBe(resting);
+    // Its fixed faintness rides each fragment's colour, never an opacity on the field.
+    const drift = container!.querySelector<HTMLElement>('.logos-drift')!;
+    expect(drift.style.opacity).toBe('');
+    const t = buildLogosThoughts()[0]!;
+    const alpha = Math.round(t.opacity * LOGOS_FIELD_DIM * 1000) / 1000;
+    expect(container!.querySelector<HTMLElement>('.logos-mote')!.style.color).toContain(
+      `, ${alpha})`,
+    );
   });
 
   it('carries the delegation controls beside an open rite', () => {

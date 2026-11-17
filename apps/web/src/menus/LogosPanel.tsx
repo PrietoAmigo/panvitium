@@ -14,6 +14,7 @@ import {
   logosEchoes,
   logosPathKeyframes,
   logosSlitherKeyframes,
+  LOGOS_FIELD_DIM,
   LOGOS_STAGE_H,
   LOGOS_STAGE_W,
   type LogosThought,
@@ -98,14 +99,20 @@ function softText(blur: number, color: string): CSSProperties {
     : {};
 }
 
+/** A fragment's own opacity under the field's fixed faintness. */
+function fieldAlpha(opacity: number): number {
+  return Math.round(opacity * LOGOS_FIELD_DIM * 1000) / 1000;
+}
+
 /**
  * The drifting thoughts, each a serpent: the fragment drifts its path while its letters, the
  * vertebrae, ride the slither wave. The mind starts empty: each fragment surfaces at its own moment,
  * rides its path, vanishes at the end and surfaces again at the start a few seconds later. Its
  * presence (a wrapper scaled to nothing while it is gone) and its drift share one round and one
  * delay; both are transform-only, and nothing animates opacity above an animated letter. Memoised
- * with no props so the 10 Hz store updates that move a rite's progress never touch the field; its
- * loudness is set by a class on the wrapper instead.
+ * with no props, and nothing about it follows the rites: the 10 Hz store updates that move a rite's
+ * progress never touch it, and dwelling on or speaking a rite leaves it exactly as it is (its fixed
+ * faintness, LOGOS_FIELD_DIM, rides each fragment's colour rather than an opacity on the field).
  */
 const LogosThoughts = memo(function LogosThoughts(): ReactElement {
   return (
@@ -128,11 +135,11 @@ const LogosThoughts = memo(function LogosThoughts(): ReactElement {
               className={`logos-mote logos-path-${t.path} ${t.latin ? 'logos-mote--latin' : 'logos-mote--note'}`}
               style={{
                 fontSize: t.fontSize,
-                color: withAlpha(t.color, t.opacity),
+                color: withAlpha(t.color, fieldAlpha(t.opacity)),
                 animationDuration: `${t.cycle}s`,
                 animationDelay: `${t.enter}s`,
                 animationTimingFunction: t.driftEasing,
-                ...softText(t.blur, withAlpha(t.color, t.opacity)),
+                ...softText(t.blur, withAlpha(t.color, fieldAlpha(t.opacity))),
               }}
             >
               {t.vertebrae.map((v, k) => (
@@ -190,9 +197,10 @@ function useStageScale(): [RefObject<HTMLDivElement>, number] {
  * the player's mind: no boxes, no frames.
  *
  * Each rite is an intrusive word that will not stop repeating: an echo trail rises behind it and
- * pulses. Dwelling on a rite spreads its echoes and makes the drifting thoughts behind it louder;
- * while it is spoken the echoes light one by one with progress, the word trembles and a red pressure
- * gathers at the edges. A sealed rite is only echoes of an unreadable name, with its Sin gate. The
+ * pulses. Dwelling on a rite spreads its echoes and recedes the others; while it is spoken the
+ * echoes light one by one with progress, the word trembles and a red pressure gathers at the edges.
+ * The drifting thoughts behind take no part: they look and move the same throughout. A sealed rite
+ * is only echoes of an unreadable name, with its Sin gate. The
  * last few resolved temptations replay low on the right.
  *
  * A self-framed, full-surface overlay (mounted by App like Magna Goetia / the PC; it does NOT use
@@ -238,7 +246,7 @@ export function LogosPanel({
         onClick={(e) => e.stopPropagation()}
       >
         <style>{FIELD_KEYFRAMES}</style>
-        <div className={`logos-drift logos-drift--${mood}`} aria-hidden="true">
+        <div className="logos-drift" aria-hidden="true">
           <LogosThoughts />
         </div>
 

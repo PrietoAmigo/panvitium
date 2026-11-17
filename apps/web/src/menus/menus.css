@@ -4600,19 +4600,15 @@ body {
   animation: logos-throb 1.1s ease-in-out infinite;
 }
 
-/* ---- the drifting thoughts: focus makes the noise louder, not quieter ---- */
+/* ---- the drifting thoughts: they look and move the same whatever the rites are doing ---- */
+/* No opacity here (the field's faintness is baked into each fragment's colour, LOGOS_FIELD_DIM):
+   this is the parent of every slithering letter, and an opacity on it, let alone one that changes
+   when a rite is dwelt on or spoken, makes the compositor render the whole field offscreen and
+   rebuild it, stalling every letter at the start and end of each rite. */
 .logos-drift {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.62;
-  transition: opacity 0.5s ease;
-}
-.logos-drift--held {
-  opacity: 0.9;
-}
-.logos-drift--spoken {
-  opacity: 1;
 }
 /* A zero-size anchor at the fragment's point, rotated to its heading; its path is centred on it. */
 .logos-thought {
@@ -4706,7 +4702,10 @@ body {
   white-space: nowrap;
 }
 /* Echoes are sound, not substance: they never take the pointer from a neighbouring rite. Each
-   pulses on its own (opacity, composited); its colour, faintness and softness are inline. */
+   pulses on its own (opacity, composited); its colour, faintness and softness are inline. Only the
+   spread eases (transform, composited); colours and glows on the rites switch at once, because
+   easing them repaints blurred 64 px text every frame, and that raster work holds up the frames
+   of the slithering thoughts behind. */
 .logos-echo {
   position: absolute;
   left: 0;
@@ -4716,18 +4715,13 @@ body {
   animation-name: logos-echo;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-  transition:
-    transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1),
-    color 0.25s ease;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 .logos-name {
   position: relative;
   color: #e9dcc4;
   text-shadow: 0 0 18px rgba(120, 20, 12, 0.5);
-  transition:
-    color 0.3s ease,
-    text-shadow 0.3s ease;
 }
 .logos-row--held .logos-name,
 .logos-act:focus-visible .logos-name {
@@ -4751,7 +4745,6 @@ body {
   font-size: 23px;
   line-height: 1.3;
   color: #cdbb9c;
-  transition: color 0.3s ease;
 }
 .logos-row--held .logos-line {
   color: #eadcc2;
@@ -4792,7 +4785,6 @@ body {
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: #d9724a;
-  transition: color 0.3s ease;
 }
 .logos-row--held .logos-cta {
   color: #ffb070;
