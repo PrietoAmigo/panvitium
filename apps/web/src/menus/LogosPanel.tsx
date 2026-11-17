@@ -100,10 +100,10 @@ function softText(blur: number, color: string): CSSProperties {
 
 /**
  * The drifting thoughts, each a serpent: the fragment drifts its path while its letters, the
- * vertebrae, ride the slither wave, each also carrying the fragment's fade on the drift's own
- * duration and delay (so no animated opacity sits above an animated letter). Memoised with no props
- * so the 10 Hz store updates that move a rite's progress never touch the field; its loudness is set
- * by a class on the wrapper instead.
+ * vertebrae, ride the slither wave. They neither fade nor flicker: each is held at its own faintness
+ * the whole way (and nothing animates opacity above an animated letter). Memoised with no props so
+ * the 10 Hz store updates that move a rite's progress never touch the field; its loudness is set by
+ * a class on the wrapper instead.
  */
 const LogosThoughts = memo(function LogosThoughts(): ReactElement {
   return (
@@ -114,43 +114,31 @@ const LogosThoughts = memo(function LogosThoughts(): ReactElement {
           className="logos-thought"
           style={{ left: t.x, top: t.y, transform: `rotate(${t.rotate}deg)` }}
         >
-          <div
-            className={t.flicker ? 'logos-flicker' : undefined}
-            style={
-              t.flicker
-                ? {
-                    animationDuration: `${t.flicker.duration}s`,
-                    animationDelay: `${t.flicker.delay}s`,
-                  }
-                : undefined
-            }
+          <span
+            className={`logos-mote logos-path-${t.path} ${t.latin ? 'logos-mote--latin' : 'logos-mote--note'}`}
+            style={{
+              fontSize: t.fontSize,
+              color: withAlpha(t.color, t.opacity),
+              animationDuration: `${t.duration}s`,
+              animationDelay: `${t.delay}s`,
+              ...softText(t.blur, withAlpha(t.color, t.opacity)),
+            }}
           >
-            <span
-              className={`logos-mote logos-path-${t.path} ${t.latin ? 'logos-mote--latin' : 'logos-mote--note'}`}
-              style={{
-                fontSize: t.fontSize,
-                color: withAlpha(t.color, t.opacity),
-                animationDuration: `${t.duration}s`,
-                animationDelay: `${t.delay}s`,
-                ...softText(t.blur, withAlpha(t.color, t.opacity)),
-              }}
-            >
-              {t.vertebrae.map((v, k) => (
-                <span
-                  key={k}
-                  className="logos-vertebra"
-                  style={{
-                    fontSize: `${v.size}em`,
-                    animationName: `${v.keyframes}, logos-fade`,
-                    animationDuration: `${t.slither}s, ${t.duration}s`,
-                    animationDelay: `${v.delay}s, ${t.delay}s`,
-                  }}
-                >
-                  {v.ch}
-                </span>
-              ))}
-            </span>
-          </div>
+            {t.vertebrae.map((v, k) => (
+              <span
+                key={k}
+                className="logos-vertebra"
+                style={{
+                  fontSize: `${v.size}em`,
+                  animationName: v.keyframes,
+                  animationDuration: `${t.slither}s`,
+                  animationDelay: `${v.delay}s`,
+                }}
+              >
+                {v.ch}
+              </span>
+            ))}
+          </span>
         </div>
       ))}
     </>

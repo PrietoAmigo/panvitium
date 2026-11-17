@@ -273,16 +273,19 @@ describe('Chthonic Logos (Obsessio)', () => {
     motes.forEach((mote, i) => {
       const t = field[i]!;
       expect(mote.textContent).toBe(t.text);
+      // Straight on its anchor: no flicker wrapper between them.
+      expect(mote.parentElement?.className).toBe('logos-thought');
       const vertebrae = Array.from(mote.querySelectorAll<HTMLElement>('.logos-vertebra'));
       expect(vertebrae.length).toBe(Array.from(t.text).length);
       vertebrae.forEach((el, k) => {
         const v = t.vertebrae[k]!;
-        // Its wave, and the fragment's fade on the drift's own clock (the mote never fades).
-        expect(el.style.animationName).toBe(`${v.keyframes}, logos-fade`);
-        expect(el.style.animationDuration).toBe(`${t.slither}s, ${t.duration}s`);
-        expect(el.style.animationDelay).toBe(`${v.delay}s, ${t.delay}s`);
+        // Its wave and nothing else: the thoughts neither fade nor flicker.
+        expect(el.style.animationName).toBe(v.keyframes);
+        expect(el.style.animationDuration).toBe(`${t.slither}s`);
+        expect(el.style.animationDelay).toBe(`${v.delay}s`);
       });
     });
+    expect(container!.querySelector('.logos-flicker')).toBeNull();
     // Every set a vertebra names ships with the panel.
     const css = container!.querySelector('style')?.textContent ?? '';
     const named = new Set(field.flatMap((t) => t.vertebrae.map((v) => v.keyframes)));
@@ -376,7 +379,7 @@ describe('Chthonic Logos thoughts', () => {
     }
   });
 
-  it('builds the drift from transform keyframes only (the fade rides the letters)', () => {
+  it('builds the drift from transform keyframes only (no fade)', () => {
     const css = logosPathKeyframes();
     expect(css).not.toContain('offset-');
     expect(css).not.toContain('filter');

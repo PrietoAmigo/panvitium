@@ -167,10 +167,8 @@ const r1 = (n: number): number => Math.round(n * 10) / 10;
  * them. Each moves the fragment's centre along its curve with `transform` only, so the compositor
  * runs all of it and the drift costs the main thread nothing per frame. (A CSS motion path,
  * `offset-path`, draws the same curve but animates on the main thread, restyling every fragment
- * every frame.) The fade in over the first tenth and out over the last is not here: it rides each
- * of the fragment's letters (`logos-fade` in menus.css, on the drift's own duration and delay),
- * because an opacity animated on the fragment would make the compositor render its slithering
- * letters offscreen every frame.
+ * every frame.) No fade: a fragment holds its faintness the whole way round, and an opacity
+ * animated on it would make the compositor render its slithering letters offscreen every frame.
  */
 export function logosPathKeyframes(steps: number = LOGOS_PATH_STEPS): string {
   return LOGOS_PATHS.map(({ d, reverse }, i) => {
@@ -212,8 +210,6 @@ export interface LogosThought {
   duration: number;
   /** A negative delay, so the field is already mid-drift when the scroll opens. */
   delay: number;
-  /** A fragment that flickers (about one in six), with its own flicker period. */
-  flicker: { duration: number; delay: number } | null;
   /** Its body, one vertebra per character in reading order, phased from head to tail. */
   vertebrae: LogosVertebra[];
   /** One undulation of the body, in seconds: larger fragments slither slower. */
@@ -363,9 +359,11 @@ export function buildLogosThoughts(
         : rng.range(0.09, 0.22);
     const duration = Math.exp(rng.range(Math.log(14), Math.log(220)));
     const tone = rng.float();
-    const flickers = rng.chance(0.17);
-    const flickerDuration = rng.range(2.5, 8.5);
-    const flickerDelay = -rng.float() * flickerDuration;
+    // The retired flicker's three draws, still taken so every later draw (and so each fragment's
+    // softness, place, path and phase) stays where it was.
+    rng.chance(0.17);
+    rng.range(2.5, 8.5);
+    rng.float();
     const blur = huge ? 1.8 : rng.chance(0.18) ? rng.range(1, 2.6) : 0;
     const x = Math.round(rng.range(-160, LOGOS_STAGE_W + 160));
     const y = Math.round(rng.range(-120, LOGOS_STAGE_H + 120));
@@ -389,12 +387,6 @@ export function buildLogosThoughts(
       color: tone < 0.4 ? EMBER : tone < 0.52 ? CANDLE : BONE,
       duration: Math.round(duration * 10) / 10,
       delay: Math.round(-rng.float() * duration * 10) / 10,
-      flicker: flickers
-        ? {
-            duration: Math.round(flickerDuration * 10) / 10,
-            delay: Math.round(flickerDelay * 10) / 10,
-          }
-        : null,
       vertebrae: logosVertebrae(text, latin, headFirst, (i * 0.6180339887) % 1, slither),
       slither,
     });
