@@ -68,7 +68,9 @@ jobs:
   # End-to-end smoke tests (ADR-012): on PRs to main and on release tags, not every push.
   e2e:
     if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest is now Ubuntu 26.04, where Playwright 1.60 can't install Chromium's
+    # system dependencies (`playwright install --with-deps` fails before any test runs).
+    runs-on: ubuntu-24.04
     env:
       HUSKY: '0'
     steps:
