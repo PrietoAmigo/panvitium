@@ -155,6 +155,16 @@ describe('the baked plates', () => {
     }
   });
 
+  it('makes the black backgrounds transparent without changing the gold pixels', () => {
+    for (const id of INVOCATION_PLATE_IDS) {
+      const png = readFileSync(join(BAKED_DIR, `${id}.png`));
+      // tRNS directly after IHDR: 6 bytes identifying transparent RGB(0, 0, 0).
+      expect(png.readUInt32BE(33), id).toBe(6);
+      expect(png.subarray(37, 41).toString('ascii'), id).toBe('tRNS');
+      expect(png.subarray(41, 47), id).toEqual(Buffer.alloc(6));
+    }
+  });
+
   it('were baked from the current plates (re-bake after retuning one)', () => {
     const digests: Record<string, string> = baked;
     expect(Object.keys(digests)).toEqual([...INVOCATION_PLATE_IDS]);
