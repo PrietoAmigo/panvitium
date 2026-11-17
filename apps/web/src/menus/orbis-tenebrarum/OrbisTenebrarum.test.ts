@@ -22,7 +22,7 @@ import {
   formatCoord,
   MALEFICIA_COORDS,
   ORBIS_RARITY,
-  ORBIS_TIER_FIND,
+  ORBIS_TIER_COLOR,
 } from './orbis.data.js';
 import type { OrbisFind } from './index.js';
 import { IndagatioEmptioProgram } from '../../ui/panels.js';
@@ -629,16 +629,30 @@ describe('OrbisTenebrarum — enhanced globe stage', () => {
     ]);
   });
 
-  it('draws the odds as a bar, one segment per tier sized by its share and tinted by its rarity', () => {
+  it('draws the odds as a bar, one segment per tier sized by its share, in its tier colour', () => {
     mount(createElement(OrbisTenebrarum, baseProps({ tierChances: TIER_CHANCES })));
     const segs = [...container!.querySelectorAll<HTMLElement>('.orbis-odds-seg')];
     expect(segs.length).toBe(7);
     expect(segs[0]!.style.flexGrow).toBe('0.021');
-    // Stellar reaches for anathema (red); Good for rare (teal); Bad finds nothing (grey).
+    // Stellar red, Good teal; Neutral grey, Bad light cream, Terrible green, Apocalyptic light blue.
     expect(segs[0]!.style.background).toBe('rgb(208, 90, 77)');
     expect(segs[2]!.style.background).toBe('rgb(86, 179, 163)');
-    expect(segs[4]!.style.background).toBe('rgb(94, 88, 80)');
+    expect(segs[3]!.style.background).toBe('rgb(138, 134, 126)');
+    expect(segs[4]!.style.background).toBe('rgb(230, 220, 198)');
+    expect(segs[5]!.style.background).toBe('rgb(106, 168, 79)');
+    expect(segs[6]!.style.background).toBe('rgb(127, 182, 222)');
     expect(container!.querySelectorAll('.orbis-odds-row').length).toBe(7);
+  });
+
+  it("writes each tier's name in the lighter tint of its colour", () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ tierChances: TIER_CHANCES })));
+    const color = (tier: string): string =>
+      container!.querySelector<HTMLElement>(`.orbis-odds-row.tier-${tier} .orbis-odds-tier`)!.style
+        .color;
+    expect(color('neutral')).toBe('rgb(169, 165, 157)');
+    expect(color('bad')).toBe('rgb(239, 230, 210)');
+    expect(color('terrible')).toBe('rgb(140, 200, 112)');
+    expect(color('apocalyptic')).toBe('rgb(156, 203, 236)');
   });
 
   it('leaves a zero-chance tier out of the bar but keeps it in the list', () => {
@@ -658,16 +672,20 @@ describe('orbis helpers', () => {
     expect(formatCoord([-71, -36])).toBe('36.00°S · 71.00°W');
   });
 
-  it('maps each surfacing tier to the rarity it reaches for, and the failure tiers to none', () => {
-    expect(ORBIS_TIER_FIND).toEqual({
-      stellar: 'anathema',
-      excellent: 'profane',
-      good: 'rare',
-      neutral: 'common',
-      bad: null,
-      terrible: null,
-      apocalyptic: null,
-    });
+  it('gives every outcome tier a colour: grey Neutral, cream Bad, green Terrible, blue Apocalyptic', () => {
+    expect(Object.keys(ORBIS_TIER_COLOR)).toEqual([
+      'stellar',
+      'excellent',
+      'good',
+      'neutral',
+      'bad',
+      'terrible',
+      'apocalyptic',
+    ]);
+    expect(ORBIS_TIER_COLOR.neutral).toEqual({ bar: '#8a867e', text: '#a9a59d' });
+    expect(ORBIS_TIER_COLOR.bad).toEqual({ bar: '#e6dcc6', text: '#efe6d2' });
+    expect(ORBIS_TIER_COLOR.terrible).toEqual({ bar: '#6aa84f', text: '#8cc870' });
+    expect(ORBIS_TIER_COLOR.apocalyptic).toEqual({ bar: '#7fb6de', text: '#9ccbec' });
   });
 });
 

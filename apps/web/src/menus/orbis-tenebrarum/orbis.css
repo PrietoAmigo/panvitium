@@ -266,29 +266,19 @@
 }
 
 /* ---------- Search odds (the live per-tier Indagatio chances) ----------
-   A proportional bar, each tier painted in the rarity it reaches for (greys for the tiers that find
-   nothing), over the per-tier list in the same colours. */
+   A proportional bar over the per-tier list. Each tier's colour (its segment and its name) comes
+   from ORBIS_TIER_COLOR in orbis.data.ts, set inline by the component. */
 .orbis-odds {
   width: 100%;
   margin-top: 12px;
 }
-.orbis-odds-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
 .orbis-odds-title {
+  display: block;
   font-family: 'IM Fell English SC', serif;
   font-size: 10.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #a08850;
-}
-.orbis-odds-note {
-  font-family: 'IM Fell English', serif;
-  font-style: italic;
-  font-size: 12px;
-  color: #7f8c87;
 }
 .orbis-odds-bar {
   display: flex;
@@ -301,9 +291,13 @@
   min-width: 2px;
   border-radius: 2px;
 }
+/* Each tier is its name over its chance, sized to its own content and spread across the row, so a
+   long name ("Apocalyptic") or a wide chance ("<0.1%") never runs into its neighbour; if the stage
+   is ever too narrow for all seven, the row wraps rather than overlapping. */
 .orbis-odds-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 4px 12px;
   margin: 6px 0 0;
   padding: 0;
@@ -311,15 +305,15 @@
 }
 .orbis-odds-row {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  padding-bottom: 2px;
-  border-bottom: 1px dotted rgba(159, 145, 122, 0.18);
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  white-space: nowrap;
+  line-height: 1.15;
 }
 .orbis-odds-tier {
   font-family: 'Cinzel', serif;
-  font-size: 12px;
+  font-size: 11.5px;
   color: #9d917a;
 }
 .orbis-odds-chance {
@@ -328,21 +322,6 @@
   color: #c8bb9c;
   font-variant-numeric: tabular-nums;
 }
-/* The surfacing tiers wear the rarity they reach for (Stellar anathema, Excellent profane, Good
-   rare, Neutral common); Bad / Terrible / Apocalyptic find nothing and stay grey. */
-.orbis-odds-row.tier-stellar .orbis-odds-tier {
-  color: #e07a6e;
-}
-.orbis-odds-row.tier-excellent .orbis-odds-tier {
-  color: #c3a0ec;
-}
-.orbis-odds-row.tier-good .orbis-odds-tier {
-  color: #7fd0c0;
-}
-.orbis-odds-row.tier-neutral .orbis-odds-tier {
-  color: #d2c6a6;
-}
-
 /* ---------- emptio ledger ---------- */
 .orbis-ledger {
   width: 372px;

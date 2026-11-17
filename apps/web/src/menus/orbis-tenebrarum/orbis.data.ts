@@ -17,19 +17,19 @@ export const ORBIS_RARITY: Record<OrbisRarity, { label: string; color: string; g
 };
 
 /**
- * The rarity each Search outcome tier reaches for first (it falls back down the chain when none of
- * that rarity is left to find): the odds bar paints a tier in this rarity's colour. The failure
- * tiers (Bad: a false lead; Terrible / Apocalyptic: gold lost) find nothing and map to null.
- * Mirrors the sim's `indagatioTierDelta` chains.
+ * The Search odds palette, one colour per outcome tier: `bar` paints the tier's segment of the odds
+ * bar, `text` (a lighter tint, legible on the dark stage) its name. The surfacing tiers keep their
+ * rarity tints (Stellar red, Excellent purple, Good teal); Neutral is grey, Bad light cream,
+ * Terrible green and Apocalyptic light blue.
  */
-export const ORBIS_TIER_FIND: Readonly<Record<string, OrbisRarity | null>> = {
-  stellar: 'anathema',
-  excellent: 'profane',
-  good: 'rare',
-  neutral: 'common',
-  bad: null,
-  terrible: null,
-  apocalyptic: null,
+export const ORBIS_TIER_COLOR: Readonly<Record<string, { bar: string; text: string }>> = {
+  stellar: { bar: '#d05a4d', text: '#e07a6e' },
+  excellent: { bar: '#a574d8', text: '#c3a0ec' },
+  good: { bar: '#56b3a3', text: '#7fd0c0' },
+  neutral: { bar: '#8a867e', text: '#a9a59d' },
+  bad: { bar: '#e6dcc6', text: '#efe6d2' },
+  terrible: { bar: '#6aa84f', text: '#8cc870' },
+  apocalyptic: { bar: '#7fb6de', text: '#9ccbec' },
 };
 
 /** A globe position as a compact coordinate line, e.g. `43.50°N · 12.50°E`. */
