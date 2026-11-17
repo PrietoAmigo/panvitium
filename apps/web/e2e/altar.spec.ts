@@ -7,7 +7,7 @@ import { test, expect, type Page } from '@playwright/test';
  * light it casts is painted into the canvas, through the pass. Its first press arms it, the second
  * falls into the descent (empty-handed before the playthrough's first descent, the empty-handed
  * warning plays once instead; the first commit that does descend plays the first-descent cinematic
- * before the Abyss transit); STATUS QUO opens the Ledger, whose way back returns to the room; left
+ * before the Exstinctio transit); STATUS QUO opens the Ledger, whose way back returns to the room; left
  * alone for 4 s, the sigil fades away.
  */
 
@@ -90,7 +90,7 @@ test('arms on the first press; empty-handed, the first commit is stopped, the ne
   await expect(page.locator('.katabasis-flow')).toHaveCount(0);
   // The second commit descends, souls or not. The playthrough's first true descent plays the
   // first-descent cinematic first: unskippable, its plates composited through the degradation pass,
-  // its hand-off mounting the Abyss transit underneath late in Plate II's fall.
+  // its hand-off mounting the Exstinctio transit underneath late in Plate II's fall.
   await clickAltar(page);
   await page.getByRole('button', { name: 'Press the sigil' }).click();
   await page.getByRole('button', { name: /Confirm the descent/ }).click();

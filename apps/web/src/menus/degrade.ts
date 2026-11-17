@@ -301,8 +301,9 @@ const PALETTE_STOPS: Stops = [
   [1.0, 0xe9, 0xda, 0xb6],
 ];
 
-// 4x4 ordered Bayer matrix, normalised to ~ -0.5..0.5.
-const BAYER: number[] = (() => {
+// 4x4 ordered Bayer matrix, normalised to ~ -0.5..0.5. Exported for the Exstinctio transit, which
+// orders its extinction by the same dither so the dying light breaks up in the pass's own pattern.
+export const BAYER: readonly number[] = (() => {
   const m = [
     [0, 8, 2, 10],
     [12, 4, 14, 6],
@@ -337,7 +338,9 @@ function buildPaletteLUT(): Uint8ClampedArray {
   return lut;
 }
 
-const PAL_LUT = buildPaletteLUT();
+/** The grimoire ramp as a 256-entry RGB lookup by luminance (`PAL_LUT[l * 3 + c]`). Exported for the
+    Exstinctio transit, which grades its surviving light toward the same ramp. */
+export const PAL_LUT: Uint8ClampedArray = buildPaletteLUT();
 
 // The fire aura's casts, back to front: colour, peak alpha, blur (fraction of stage height), upward
 // lift and sideways sway (fractions of stage height), flicker frequency and phase.

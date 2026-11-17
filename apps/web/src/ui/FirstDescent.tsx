@@ -9,11 +9,11 @@ import { decodeImage } from '../menus/DegradedScene.js';
 import { ASSET_BASE } from '../menus/degrade.data.js';
 
 /* The first-descent cinematic, "the soul leaves the body" (Claude Design "First Katabasis"
-   handoff). The first time a playthrough truly descends, before the Abyss transit: the Altar Room
+   handoff). The first time a playthrough truly descends, before the Exstinctio transit: the Altar Room
    fades to black; Plate I (the golden glove upon the ritual altar) surfaces, holds and goes; Plate
    II (the crimson hooded figure on the stone altar) surfaces and at once falls away to the centre
    of the screen, shrinking ever faster while its rim darkens into an oval and erodes inward, until
-   nothing is left. Late in the fall the hand-off (`onTransit`) mounts the Abyss transit underneath,
+   nothing is left. Late in the fall the hand-off (`onTransit`) mounts the Exstinctio transit underneath,
    and the overlay lifts off it. Both plates composite THROUGH the degradation pass, like the
    jumpscare and the subliminal plates. App orchestrates when it plays; the store records that it
    has. Like the empty-handed warning and the transits it cannot be skipped: the overlay swallows
@@ -39,7 +39,7 @@ export const FIRST_DESCENT_GAP_MS = 250;
 /** The fall: Plate II shrinks away to the centre and dissolves. It begins the moment the plate has
  *  surfaced (Plate II never holds still). */
 export const FIRST_DESCENT_FALL_MS = 3000;
-/** How far into the fall the hand-off comes: the Abyss transit mounts and the overlay starts to lift. */
+/** How far into the fall the hand-off comes: the Exstinctio transit mounts and the overlay starts to lift. */
 export const FIRST_DESCENT_TRANSIT_AT = 0.72;
 /** The overlay is fully lifted this long after the fall ends. */
 export const FIRST_DESCENT_LIFT_MS = 700;
@@ -87,7 +87,7 @@ export interface FirstDescentTimeline {
   readonly plateIIIn: number;
   /** The fall begins (or, under reduced motion, the cross-fade into the transit). */
   readonly fallAt: number;
-  /** The hand-off: the Abyss transit mounts underneath and the overlay starts to lift. */
+  /** The hand-off: the Exstinctio transit mounts underneath and the overlay starts to lift. */
   readonly transitAt: number;
   /** The overlay has lifted: the cinematic is over. */
   readonly end: number;
@@ -323,7 +323,7 @@ export function FirstDescent({
   onDone,
   reducedMotion = false,
 }: {
-  /** The hand-off, late in the fall: begin the descent (the Abyss transit mounts underneath). */
+  /** The hand-off, late in the fall: begin the descent (the Exstinctio transit mounts underneath). */
   onTransit: () => void;
   /** The overlay has lifted: drop it. */
   onDone: () => void;

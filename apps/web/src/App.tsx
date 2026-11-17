@@ -178,11 +178,11 @@ export function App(): ReactElement {
 
   // The altar sigil (Claude Design "Altar sigil" handoff): clicking the altar raises the Katabasis
   // sigil over the room with STATUS QUO beneath it. The second press on the sigil commits the
-  // descent (the teardown + freeze, then the Abyss transition into the flow); STATUS QUO opens the
+  // descent (the teardown + freeze, then the Exstinctio transition into the flow); STATUS QUO opens the
   // read-only Ledger. Untouched for 4 s, it fades away. A commit made with no souls in hand before
   // the playthrough's first descent does not descend: the sigil goes down and the empty-handed warning plays
   // instead (checked before any teardown); the next commit descends as usual. The playthrough's
-  // first commit that does descend plays the first-descent cinematic before the Abyss transit: the
+  // first commit that does descend plays the first-descent cinematic before the Exstinctio transit: the
   // descent itself (teardown, freeze, transit) begins at the cinematic's hand-off, late in its fall.
   // Once Semet is named (the Eternal Sin revealed) and the player has risen through Anabasis, the
   // altar raises the golden seal of Semet instead of the Katabasis sigil. Its presses mirror the
@@ -462,7 +462,7 @@ export function App(): ReactElement {
       {emptyHandedWarning && <EmptyHandedWarning onDone={endEmptyHandedWarning} />}
       {/* The first-descent cinematic (z 9100): the soul leaving the body, over the warning's layer,
           under the jumpscare and subliminals; it blocks all input. Its hand-off begins the descent,
-          which mounts the Abyss transit underneath, and it clears itself once it has lifted off
+          which mounts the Exstinctio transit underneath, and it clears itself once it has lifted off
           it. See FirstDescent. */}
       {firstDescentPlaying && (
         <FirstDescent onTransit={descend} onDone={endFirstDescent} reducedMotion={reducedMotion} />

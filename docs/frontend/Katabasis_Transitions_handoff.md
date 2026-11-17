@@ -1,5 +1,11 @@
 # Handoff: Katabasis / Anabasis transitions
 
+> **Superseded** by the Exstinctio transit ("Katabasis Transitions" round 2, direction IV): the room
+> the player stands in loses its light in the order of its weakness on the way down, and gets it back
+> brightest-first on the way up. See `apps/web/src/menus/exstinctio.ts` and `Transition` in
+> `apps/web/src/menus/Katabasis.tsx`. The copy, the 5 s unskippable hold and the reduced-motion rule
+> below still hold; the Abyss treatment (`.tr-abyss`, the vignette, the breathing word) is retired.
+
 ## Overview
 Rework of the descent and ascent interstitials in the Katabasis flow (`Transition` in `apps/web/src/menus/Katabasis.tsx`, styles under `/* SCREEN · Descent / Ascent transition (Abyss) */` in `apps/web/src/menus/menus.css`).
 

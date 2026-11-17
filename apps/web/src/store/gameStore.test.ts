@@ -374,7 +374,7 @@ describe('gameStore — Katabasis', () => {
   it('beginKatabasis opens the menu on the descent', () => {
     store().beginKatabasis();
     expect(store().katabasisPhase).toBe('menu');
-    // The altar sigil's commit: the flow opens on the Abyss transition, not among the Princes.
+    // The altar sigil's commit: the flow opens on the Exstinctio transition, not among the Princes.
     expect(store().katabasisEntry).toBe('descent');
   });
 
