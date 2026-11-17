@@ -53,7 +53,6 @@ beforeEach(() => {
     emptyHandedWarning: false,
     firstDescentPlaying: false,
     katabasisPhase: null,
-    recap: null,
     titleOpen: false,
   });
   store().init();
@@ -486,7 +485,7 @@ describe('gameStore — Katabasis', () => {
   });
 });
 
-describe('gameStore — title & recap are frozen (no offline progression, ADR-032)', () => {
+describe('gameStore — title & descent are frozen (no offline progression, ADR-032)', () => {
   it('dismissTitle freezes the title-open time: no gains, clock reconciled to now', () => {
     const s0 = store().state as GameState;
     useGameStore.setState({
@@ -531,7 +530,7 @@ describe('gameStore — title & recap are frozen (no offline progression, ADR-03
     expect((store().state as GameState).lastTickAt).toBe(lastTick);
   });
 
-  it('both the committed descent and the recap that follows are frozen (no gains)', () => {
+  it('the committed descent is frozen, and the rise lands straight back in the room', () => {
     vi.useFakeTimers();
     try {
       vi.setSystemTime(1_700_000_000_000);
@@ -545,13 +544,15 @@ describe('gameStore — title & recap are frozen (no offline progression, ADR-03
       const soulsAtRise = floor((store().state as GameState).souls).toNumber();
       store().confirmKatabasis(); // rise: the descent's 30 min mint nothing (freeze)
       expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtRise);
-      expect(store().katabasisPhase).toBe('recap');
-      expect(store().katabasisEntry).toBeNull(); // the descent's entry is spent
-      vi.setSystemTime(t0 + 1800_000 + 3600_000); // read the recap for an hour
-      store().closeRecap();
+      // No recap screen (ADR-043): the flow closes and the new lifetime's clock stands at now.
       expect(store().katabasisPhase).toBeNull();
-      // The recap hour is frozen too — no offline progression, so souls are unchanged.
-      expect(floor((store().state as GameState).souls).toNumber()).toBe(soulsAtRise);
+      expect(store().katabasisEntry).toBeNull(); // the descent's entry is spent
+      const risen = store().state as GameState;
+      expect(risen.inKatabasis).not.toBe(true);
+      expect(risen.lastTickAt).toBe(t0 + 1800_000);
+      // …so the live tick resumes at once from there.
+      store().advance(1);
+      expect((store().state as GameState).lastTickAt).toBeGreaterThan(risen.lastTickAt);
     } finally {
       vi.useRealTimers();
     }

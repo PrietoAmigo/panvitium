@@ -202,7 +202,7 @@ export function enterKatabasis(state: GameState): GameState {
 
 // ── Commit ───────────────────────────────────────────────────────────────────
 
-/** What the player comes back with, for the recap screen (01 "The Katabasis recap", 02 §6). */
+/** What the player comes back with: the commit's report of what carried over (02 §6). */
 export interface KatabasisRecap {
   readonly goldKept: BigNum;
   readonly reprobatesKept: number;

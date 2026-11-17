@@ -12,7 +12,7 @@ const store = (): ReturnType<typeof useGameStore.getState> => useGameStore.getSt
 
 beforeEach(() => {
   localStorage.clear();
-  useGameStore.setState({ state: null, ready: false, katabasisPhase: null, recap: null });
+  useGameStore.setState({ state: null, ready: false, katabasisPhase: null });
   store().init();
   // init() leaves titleOpen at whatever was set; pin it true for this test.
   useGameStore.setState({ titleOpen: true });
