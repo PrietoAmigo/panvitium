@@ -15,7 +15,10 @@
 // which is the handoff's documented offline/degrade look — pins and all interaction are identical).
 
 import { useEffect, useRef, type RefObject, type ReactElement } from 'react';
-import { ORBIS_RARITY, coordForFind } from './orbis.data.js';
+import { PixelSprite } from '../PixelRelic.js';
+import { relicGrid } from '../pixelArt.js';
+import { RARITY as RELIC_RARITY } from '../relics.js';
+import { ORBIS_RARITY, ORBIS_TIER_FIND, coordForFind, formatCoord } from './orbis.data.js';
 import { WORLD_LAND } from './orbis.land.js';
 import type { OrbisFind, OrbisRarity, OrbisTenebrarumProps } from './orbis.types.js';
 
@@ -23,10 +26,38 @@ const RARITIES: readonly OrbisRarity[] = ['common', 'rare', 'profane', 'anathema
 
 const DEG = Math.PI / 180;
 
+/** Internal canvas resolution (px, square). CSS scales it to the space the stage leaves; the globe
+ *  takes 92% of it, the rest is room for the horizon markers. */
+const CANVAS_PX = 892;
+
+/** The detail's relic sprite: one art pixel per 2 design px, its long side 116 px. */
+const SPRITE_PIXEL = 2;
+const SPRITE_LONG_SIDE = 116;
+
+/** The colour of a find's owned ("bound") marker ring. */
+const BOUND_COLOR = '#7ea878';
+/** The colour of the Emptio progress ring and the search pulse. */
+const TEAL = '#56b3a3';
+
 interface GlobeSnapshot {
   finds: readonly OrbisFind[];
   searching: boolean;
   selectedId: string | null;
+  /** The relic an Emptio is buying, and how far along (0→1); null when none runs. */
+  emptio: { id: string; fraction: number } | null;
+}
+
+/** DOM nodes the engine updates every frame: the selected find's label (positioned over its pin,
+ *  so it is never clipped by the canvas) and the count of finds beyond the horizon. */
+interface GlobeOverlays {
+  label: RefObject<HTMLDivElement | null>;
+  beyond: RefObject<HTMLSpanElement | null>;
+}
+
+/** "1 more lies beyond the horizon" / "3 more lie beyond the horizon"; empty when none do. */
+function beyondText(n: number): string {
+  if (n <= 0) return '';
+  return n === 1 ? ' · 1 more lies beyond the horizon' : ` · ${n} more lie beyond the horizon`;
 }
 
 interface Engine {
@@ -77,6 +108,27 @@ function project(
   const x = Math.cos(ph) * Math.sin(la - la0);
   const y = Math.cos(ph0) * Math.sin(ph) - Math.sin(ph0) * Math.cos(ph) * Math.cos(la - la0);
   return [c + R * x, c - R * y];
+}
+
+/**
+ * The on-screen direction (unit vector, y down) from the globe's centre toward a `[lon, lat]` on the
+ * far hemisphere: where to mark it on the rim. Null when the point sits dead behind the centre.
+ */
+function horizonDir(
+  lon: number,
+  lat: number,
+  cLon: number,
+  cLat: number,
+): readonly [number, number] | null {
+  const la = lon * DEG;
+  const ph = lat * DEG;
+  const la0 = cLon * DEG;
+  const ph0 = cLat * DEG;
+  const x = Math.cos(ph) * Math.sin(la - la0);
+  const y = Math.cos(ph0) * Math.sin(ph) - Math.sin(ph0) * Math.cos(ph) * Math.cos(la - la0);
+  const n = Math.hypot(x, y);
+  if (n < 1e-6) return null;
+  return [x / n, -y / n];
 }
 
 /** Trace the front-facing graticule (meridians every 20°, parallels every 20°) into the path. */
@@ -245,23 +297,6 @@ function fillLandBands(
   }
 }
 
-function roundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  r: number,
-): void {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
 /**
  * Imperative globe engine bound to a <canvas>. Reads the latest props each frame via a ref, so the
  * rAF loop and listeners are set up exactly once. Emits selection through `onSelect`.
@@ -270,6 +305,7 @@ function useOrbisGlobe(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   snapshot: GlobeSnapshot,
   onSelect: (id: string) => void,
+  overlays: GlobeOverlays,
 ): void {
   const snap = useRef(snapshot);
   snap.current = snapshot;
@@ -326,6 +362,15 @@ function useOrbisGlobe(
 
     let rafId = 0;
 
+    // The far-side count is written only when it changes (it is read by a DOM span, not React).
+    let shownBeyond = -1;
+    const setBeyond = (n: number): void => {
+      if (n === shownBeyond) return;
+      shownBeyond = n;
+      const el = overlays.beyond.current;
+      if (el) el.textContent = beyondText(n);
+    };
+
     const pinScreen = (f: OrbisFind): { x: number; y: number } | null => {
       const ll = coordForFind(f);
       const p = project(ll[0], ll[1], e.cLon, e.cLat, R, c);
@@ -370,12 +415,32 @@ function useOrbisGlobe(
 
     const drawPins = (): void => {
       const u = W / 360;
-      const { finds, selectedId } = snap.current;
-      let sel: { x: number; y: number; rad: number; name: string; col: string } | null = null;
+      const { finds, selectedId, emptio } = snap.current;
+      let sel: { x: number; y: number; rad: number; col: string } | null = null;
+      let beyond = 0;
       for (const f of finds) {
-        const pos = pinScreen(f);
-        if (!pos) continue;
         const rar = ORBIS_RARITY[f.rarity];
+        const pos = pinScreen(f);
+        if (!pos) {
+          // Beyond the horizon: a small arrow on the rim, pointing the way to turn the world.
+          beyond += 1;
+          const ll = coordForFind(f);
+          const dir = horizonDir(ll[0], ll[1], e.cLon, e.cLat);
+          if (!dir) continue;
+          const rr = R + 8 * u;
+          ctx.save();
+          ctx.translate(c + dir[0] * rr, c + dir[1] * rr);
+          ctx.rotate(Math.atan2(dir[1], dir[0]));
+          ctx.beginPath();
+          ctx.moveTo(4.5 * u, 0);
+          ctx.lineTo(-3 * u, -4 * u);
+          ctx.lineTo(-3 * u, 4 * u);
+          ctx.closePath();
+          ctx.fillStyle = rgba(rar.color, f.acquired ? 0.45 : 0.9);
+          ctx.fill();
+          ctx.restore();
+          continue;
+        }
         const isSel = f.id === selectedId;
         let s = 1;
         const born = e.appear[f.id];
@@ -398,7 +463,37 @@ function useOrbisGlobe(
         ctx.strokeStyle = 'rgba(8,14,16,.7)';
         ctx.lineWidth = u;
         ctx.stroke();
-        if (isSel) sel = { x: pos.x, y: pos.y, rad, name: f.name, col: rar.color };
+        if (f.acquired) {
+          // Already bound: a dotted ring in the owned green.
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, rad + 3.5 * u, 0, 2 * Math.PI);
+          ctx.setLineDash([2 * u, 2 * u]);
+          ctx.strokeStyle = rgba(BOUND_COLOR, 0.9);
+          ctx.lineWidth = u;
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+        if (emptio && emptio.id === f.id) {
+          // Being bought: the Emptio's progress, as a ring filling clockwise from the top, drawn
+          // outside the selection ring so the two never overlap.
+          const rr = rad + 8.5 * u;
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, rr, 0, 2 * Math.PI);
+          ctx.strokeStyle = rgba(TEAL, 0.22);
+          ctx.lineWidth = 1.6 * u;
+          ctx.stroke();
+          const frac = Math.max(0, Math.min(1, emptio.fraction));
+          if (frac > 0) {
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, rr, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * frac);
+            ctx.strokeStyle = TEAL;
+            ctx.lineWidth = 2 * u;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.lineCap = 'butt';
+          }
+        }
+        if (isSel) sel = { x: pos.x, y: pos.y, rad, col: rar.color };
       }
       if (sel) {
         ctx.beginPath();
@@ -406,21 +501,26 @@ function useOrbisGlobe(
         ctx.strokeStyle = rgba(sel.col, 0.9);
         ctx.lineWidth = 2 * u;
         ctx.stroke();
-        ctx.font = `600 ${22 * u}px Cinzel, serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        const tw = ctx.measureText(sel.name).width;
-        const lx = sel.x;
-        const ly = sel.y - sel.rad - 22 * u;
-        roundRect(ctx, lx - tw / 2 - 10 * u, ly - 13 * u, tw + 20 * u, 26 * u, 6 * u);
-        ctx.fillStyle = 'rgba(8,12,14,.86)';
-        ctx.fill();
-        ctx.strokeStyle = rgba(sel.col, 0.4);
-        ctx.lineWidth = u;
-        ctx.stroke();
-        ctx.fillStyle = '#e7d8b4';
-        ctx.fillText(sel.name, lx, ly);
       }
+      // The selected find's name rides over its pin as DOM, so it can spill past the globe's edge
+      // without being clipped by the canvas; it hides while the pin is on the far side.
+      const label = overlays.label.current;
+      if (label) {
+        if (sel) {
+          label.style.left = `${(sel.x / W) * 100}%`;
+          label.style.top = `${((sel.y - sel.rad - 6 * u) / W) * 100}%`;
+          label.style.visibility = 'visible';
+        } else {
+          label.style.visibility = 'hidden';
+        }
+      }
+      setBeyond(beyond);
+    };
+
+    const hideOverlays = (): void => {
+      const label = overlays.label.current;
+      if (label) label.style.visibility = 'hidden';
+      setBeyond(0);
     };
 
     const draw = (): void => {
@@ -441,9 +541,14 @@ function useOrbisGlobe(
       ctx.strokeStyle = 'rgba(210,200,170,.12)';
       ctx.lineWidth = W * 0.0013;
       ctx.stroke();
-      // continents — filled teal as stable horizontal strips, then crisp visible coasts
+      // continents — filled teal as stable horizontal strips, then crisp visible coasts. The land
+      // takes the same light as the sea: brightest toward the upper-left highlight.
       fillLandBands(ctx, e.cLon, e.cLat, R2, c);
-      ctx.fillStyle = 'rgba(40,72,60,.95)';
+      const lg = ctx.createRadialGradient(c - R2 * 0.34, c - R2 * 0.4, R2 * 0.05, c, c, R2 * 1.1);
+      lg.addColorStop(0, 'rgba(72,120,98,.97)');
+      lg.addColorStop(0.55, 'rgba(44,80,65,.96)');
+      lg.addColorStop(1, 'rgba(24,44,36,.95)');
+      ctx.fillStyle = lg;
       ctx.fill();
       traceLand(ctx, e.cLon, e.cLat, R2, c);
       ctx.lineJoin = 'round';
@@ -482,9 +587,10 @@ function useOrbisGlobe(
         const ph = Math.sin(now() / 170) * 0.5 + 0.5;
         ctx.beginPath();
         ctx.arc(c, c, R2 - W * 0.004, 0, 2 * Math.PI);
-        ctx.strokeStyle = rgba('#56b3a3', 0.2 + 0.45 * ph);
+        ctx.strokeStyle = rgba(TEAL, 0.2 + 0.45 * ph);
         ctx.lineWidth = W * 0.011;
         ctx.stroke();
+        hideOverlays();
       } else {
         drawPins();
       }
@@ -581,6 +687,31 @@ function useOrbisGlobe(
   }, []);
 }
 
+/** The failure tiers find nothing: their odds segments are three greys, darkening with the loss. */
+const FAIL_SEGMENT: Readonly<Record<string, string>> = {
+  bad: '#5e5850',
+  terrible: '#48433d',
+  apocalyptic: '#35312d',
+};
+
+/** An odds-bar segment's colour: the rarity the tier reaches for, or a grey for a failure tier. */
+function segmentColor(tier: string): string {
+  const rarity = ORBIS_TIER_FIND[tier];
+  return rarity ? ORBIS_RARITY[rarity].color : (FAIL_SEGMENT[tier] ?? '#3a3631');
+}
+
+const pct = (fraction: number): string =>
+  `${Math.round(Math.max(0, Math.min(1, fraction)) * 100)}%`;
+
+function LockIcon(): ReactElement {
+  return (
+    <svg className="orbis-lock" width="10" height="11" viewBox="0 0 10 11" aria-hidden="true">
+      <rect x="1" y="5" width="8" height="5.5" rx="1" fill="none" stroke="currentColor" />
+      <path d="M3 5V3.5a2 2 0 0 1 4 0V5" fill="none" stroke="currentColor" />
+    </svg>
+  );
+}
+
 export function OrbisTenebrarum({
   finds,
   tierChances = [],
@@ -601,12 +732,39 @@ export function OrbisTenebrarum({
   onAcquire,
 }: OrbisTenebrarumProps): ReactElement {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  useOrbisGlobe(canvasRef, { finds, searching, selectedId }, onSelect);
+  const labelRef = useRef<HTMLDivElement | null>(null);
+  const beyondRef = useRef<HTMLSpanElement | null>(null);
+  useOrbisGlobe(canvasRef, { finds, searching, selectedId, emptio: emptioProgress }, onSelect, {
+    label: labelRef,
+    beyond: beyondRef,
+  });
 
   const selected = finds.find((f) => f.id === selectedId) ?? null;
   // Only one Emptio may run at once (its own background channel): while a purchase is in flight, the
-  // Acquire control is disabled for every relic, mirroring the sim's single-Emptio rule.
+  // Acquire control is disabled for every relic, mirroring the sim's single-Emptio rule, and says
+  // which relic is being bought.
   const emptioBusy = emptioProgress !== null;
+  const buying = emptioProgress ? (finds.find((f) => f.id === emptioProgress.id) ?? null) : null;
+
+  // Keep the selected row in view: picking a pin on the globe scrolls the ledger to its row.
+  const rowRefs = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => {
+    if (!selectedId) return;
+    rowRefs.current.get(selectedId)?.scrollIntoView?.({ block: 'nearest' });
+  }, [selectedId]);
+
+  const counts: Record<OrbisRarity, number> = { common: 0, rare: 0, profane: 0, anathema: 0 };
+  for (const f of finds) counts[f.rarity] += 1;
+
+  const acquireLabel = (f: OrbisFind): string => {
+    if (f.acquired) return '◈ Bound';
+    if (emptioProgress) {
+      const at = pct(emptioProgress.fraction);
+      if (emptioProgress.id === f.id) return `Emptio underway · ${at}`;
+      return buying ? `Emptio busy: ${buying.name} ${at}` : 'Emptio underway';
+    }
+    return f.affordable ? 'Acquire' : 'Insufficient gold';
+  };
 
   return (
     <div className="orbis-surface">
@@ -618,26 +776,34 @@ export function OrbisTenebrarum({
           <canvas
             ref={canvasRef}
             className="orbis-canvas"
-            width={720}
-            height={720}
+            width={CANVAS_PX}
+            height={CANVAS_PX}
             aria-label="Scrying globe — drag to rotate"
           />
-          <span className="orbis-hint" aria-hidden="true">
-            drag to turn the world
-          </span>
+          {selected && (
+            <div
+              ref={labelRef}
+              className={`orbis-pin-label orbis-pin-label--${selected.rarity}`}
+              aria-hidden="true"
+              style={{ visibility: 'hidden' }}
+            >
+              <span className="orbis-pin-label-name">{selected.name}</span>
+              <span className="orbis-pin-label-meta">
+                {ORBIS_RARITY[selected.rarity].label} {'·'}{' '}
+                {selected.acquired ? 'Bound' : selected.costLabel}
+              </span>
+            </div>
+          )}
         </div>
+        <p className="orbis-hint">
+          drag to turn the world
+          <span ref={beyondRef} />
+        </p>
 
         <div className="orbis-cast-row">
-          {/* LEFT — set the default share of gold every Search pours into itself */}
+          {/* LEFT — the default share of gold every Search pours into itself, flanked by the two
+              controls that move it: Divest lowers it, Invest raises it. */}
           <div className="orbis-invest-group">
-            <button
-              type="button"
-              className="orbis-invest-btn"
-              onClick={onInvest}
-              disabled={!canInvest}
-            >
-              Invest
-            </button>
             <button
               type="button"
               className="orbis-divest-btn"
@@ -646,24 +812,34 @@ export function OrbisTenebrarum({
             >
               Divest
             </button>
+            <div className="orbis-meter orbis-meter--invest">
+              <span className="orbis-meter-label">Investment</span>
+              <span className="orbis-invest-value">
+                <span className="orbis-invest-pct">{investmentPercent}</span>{' '}
+                <span className="orbis-invest-gold">({investmentGold})</span>
+              </span>
+            </div>
+            <button
+              type="button"
+              className="orbis-invest-btn"
+              onClick={onInvest}
+              disabled={!canInvest}
+            >
+              Invest
+            </button>
           </div>
 
-          {/* CENTER-LEFT — the default percentage, then the gold it amounts to right now */}
-          <div className="orbis-meter">
-            <span className="orbis-meter-label">Investment</span>
-            <span className="orbis-invest-value">
-              <span className="orbis-invest-pct">{investmentPercent}</span>{' '}
-              <span className="orbis-invest-gold">({investmentGold})</span>
-            </span>
-          </div>
+          <span className="orbis-cast-sep" aria-hidden="true" />
 
-          {/* CENTER — the gold the player holds */}
+          {/* The gold the player holds */}
           <div className="orbis-meter">
             <span className="orbis-meter-label">Gold</span>
             <span className="orbis-gold-value">{gold}</span>
           </div>
 
-          {/* CENTER-RIGHT — the running countdown, or the idle duration estimate */}
+          <span className="orbis-cast-sep" aria-hidden="true" />
+
+          {/* The running countdown, or the idle duration estimate */}
           <div className="orbis-meter">
             <span className="orbis-meter-label">{searching ? 'Time left' : 'Duration'}</span>
             <span className={`orbis-meter-value${searching ? ' is-counting' : ''}`}>
@@ -673,13 +849,27 @@ export function OrbisTenebrarum({
 
           {/* RIGHT — begin the Search */}
           <button type="button" className="orbis-cast-btn" onClick={onCast} disabled={searching}>
-            Cast the Search
+            {searching ? 'Search underway' : 'Cast the Search'}
           </button>
         </div>
 
         {tierChances.length > 0 && (
           <div className="orbis-odds" aria-label="Search odds by outcome tier">
-            <span className="orbis-odds-title">Search odds</span>
+            <div className="orbis-odds-head">
+              <span className="orbis-odds-title">Search odds</span>
+              <span className="orbis-odds-note">colour shows the rarity each outcome seeks</span>
+            </div>
+            <div className="orbis-odds-bar" aria-hidden="true">
+              {tierChances
+                .filter((t) => t.share > 0)
+                .map((t) => (
+                  <span
+                    key={t.tier}
+                    className={`orbis-odds-seg tier-${t.tier}`}
+                    style={{ flexGrow: t.share, background: segmentColor(t.tier) }}
+                  />
+                ))}
+            </div>
             <ul className="orbis-odds-list">
               {tierChances.map((t) => (
                 <li key={t.tier} className={`orbis-odds-row tier-${t.tier}`}>
@@ -694,13 +884,17 @@ export function OrbisTenebrarum({
 
       <aside className="orbis-ledger" aria-label="Emptio market">
         <div className="orbis-ledger-head">
-          <h3 className="orbis-ledger-title">Emptio</h3>
+          <div className="orbis-ledger-top">
+            <h3 className="orbis-ledger-title">Emptio</h3>
+            <span className="orbis-ledger-count">{finds.length} located</span>
+          </div>
           <p className="orbis-ledger-sub">Obtain the located maleficia</p>
           <div className="orbis-legend">
             {RARITIES.map((r) => (
               <span key={r} className="orbis-legend-item">
                 <span className={`orbis-swatch orbis-swatch--${r}`} aria-hidden="true" />
                 {ORBIS_RARITY[r].label}
+                <span className="orbis-legend-count">{counts[r]}</span>
               </span>
             ))}
           </div>
@@ -708,36 +902,49 @@ export function OrbisTenebrarum({
 
         <div className="orbis-list">
           {finds.map((f) => {
-            const buying =
+            const fraction =
               emptioProgress && emptioProgress.id === f.id ? emptioProgress.fraction : null;
             return (
               <button
                 key={f.id}
+                ref={(el) => {
+                  if (el) rowRefs.current.set(f.id, el);
+                  else rowRefs.current.delete(f.id);
+                }}
                 type="button"
-                className={`orbis-row${f.id === selectedId ? ' is-selected' : ''}${buying !== null ? ' is-buying' : ''}`}
+                className={`orbis-row${f.id === selectedId ? ' is-selected' : ''}${fraction !== null ? ' is-buying' : ''}${f.acquired ? ' is-owned' : ''}`}
                 onClick={() => onSelect(f.id)}
               >
                 <span className={`orbis-dot orbis-dot--${f.rarity}`} aria-hidden="true" />
                 <span className="orbis-row-body">
                   <span className="orbis-row-name">{f.name}</span>
                   {f.effect && <span className="orbis-row-effect">{f.effect}</span>}
-                  {buying !== null && (
+                  {fraction !== null && (
                     <span
                       className="orbis-row-progress"
                       role="progressbar"
                       aria-label="Emptio in progress"
-                      aria-valuenow={Math.round(buying * 100)}
+                      aria-valuenow={Math.round(fraction * 100)}
                       aria-valuemin={0}
                       aria-valuemax={100}
                     >
                       <span
                         className="orbis-row-progress-fill"
-                        style={{ width: `${(buying * 100).toFixed(1)}%` }}
+                        style={{ width: `${(fraction * 100).toFixed(1)}%` }}
                       />
                     </span>
                   )}
                 </span>
-                <span className="orbis-row-cost">{f.costLabel}</span>
+                {f.acquired ? (
+                  <span className="orbis-row-bound">{'◈'} Bound</span>
+                ) : fraction !== null ? (
+                  <span className="orbis-row-cost is-buying">{pct(fraction)}</span>
+                ) : (
+                  <span className={`orbis-row-cost${f.affordable ? '' : ' is-locked'}`}>
+                    {!f.affordable && <LockIcon />}
+                    {f.costLabel}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -745,26 +952,45 @@ export function OrbisTenebrarum({
 
         {selected && (
           <div className="orbis-detail">
-            <span className={`orbis-badge orbis-badge--${selected.rarity}`}>
-              {ORBIS_RARITY[selected.rarity].label}
-            </span>
-            <h4 className="orbis-detail-name">{selected.name}</h4>
+            <div className="orbis-detail-head">
+              {selected.img && (
+                <span className={`orbis-detail-art orbis-detail-art--${selected.rarity}`}>
+                  <span className="orbis-detail-sprite">
+                    <PixelSprite
+                      src={selected.img}
+                      grid={relicGrid(SPRITE_LONG_SIDE, SPRITE_PIXEL)}
+                      pixelSize={SPRITE_PIXEL}
+                      rgb={RELIC_RARITY[selected.rarity].rgb}
+                      fallback={null}
+                    />
+                  </span>
+                </span>
+              )}
+              <span className="orbis-detail-id">
+                <span className={`orbis-badge orbis-badge--${selected.rarity}`}>
+                  {ORBIS_RARITY[selected.rarity].label}
+                </span>
+                <h4 className="orbis-detail-name">{selected.name}</h4>
+                <span className="orbis-detail-coord">{formatCoord(coordForFind(selected))}</span>
+              </span>
+            </div>
             <p className="orbis-detail-desc">{selected.desc}</p>
+            {selected.boon && <p className="orbis-detail-boon">{selected.boon}</p>}
             {selected.effect && <p className="orbis-detail-effect">{selected.effect}</p>}
-            <button
-              type="button"
-              className={`orbis-acquire ${selected.acquired ? 'is-owned' : selected.affordable && !emptioBusy ? 'is-affordable' : 'is-locked'}`}
-              disabled={selected.acquired || !selected.affordable || emptioBusy}
-              onClick={() => onAcquire(selected.id)}
-            >
-              {selected.acquired
-                ? '\u25C8 Bound'
-                : emptioBusy
-                  ? 'Emptio underway'
-                  : selected.affordable
-                    ? `Acquire \u00B7 ${selected.costLabel}`
-                    : 'Insufficient gold'}
-            </button>
+            <div className="orbis-detail-buy">
+              <span className="orbis-detail-price">
+                <span className="orbis-detail-price-label">Price</span>
+                <span className="orbis-detail-price-value">{selected.costLabel}</span>
+              </span>
+              <button
+                type="button"
+                className={`orbis-acquire ${selected.acquired ? 'is-owned' : selected.affordable && !emptioBusy ? 'is-affordable' : 'is-locked'}`}
+                disabled={selected.acquired || !selected.affordable || emptioBusy}
+                onClick={() => onAcquire(selected.id)}
+              >
+                {acquireLabel(selected)}
+              </button>
+            </div>
           </div>
         )}
       </aside>

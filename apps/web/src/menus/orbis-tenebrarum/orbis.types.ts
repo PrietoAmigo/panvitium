@@ -17,8 +17,18 @@ export interface OrbisFind {
   rarity: OrbisRarity;
   /** One-line effect — REAL, from the sim catalog. Empty string when the relic grants no effect to show. */
   effect: string;
-  /** Grimoire flavour line — REAL, from the sim catalog. */
+  /**
+   * Grimoire flavour line — REAL, from the sim catalog. When `boon` is given this is the flavour
+   * alone; otherwise it is the whole description (flavour and effect together).
+   */
   desc: string;
+  /**
+   * The relic's effect clause, split from its description (e.g. `'+25% Desidia gain rate.'`), set
+   * apart in the detail panel. Omit to show `desc` as one block.
+   */
+  boon?: string;
+  /** The relic's art (a transparent PNG URL), drawn as a pixel sprite in the detail. Omit for none. */
+  img?: string;
   /** Price, PRE-FORMATTED by the app's bignum formatter, e.g. `'220 g'`. The component never formats numbers. */
   costLabel: string;
   /** True once bought via Emptio — REAL, from the store. */
@@ -46,6 +56,8 @@ export interface OrbisTierChance {
   label: string;
   /** Current probability of this tier on a Search, PRE-FORMATTED as a percentage string. */
   chance: string;
+  /** The same probability as a share in [0, 1]: the width of this tier's segment of the odds bar. */
+  share: number;
 }
 
 export interface OrbisTenebrarumProps {

@@ -52,7 +52,7 @@ import {
 } from '../menus/DepraedatioAccount.js';
 import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
-import { buildCabinet, invokingPowerText } from '../game/maleficia.js';
+import { buildCabinet, invokingPowerText, maleficiumView } from '../game/maleficia.js';
 import { formatBigNum } from '../game/format.js';
 import { OrbisTenebrarum, type OrbisFind } from '../menus/orbis-tenebrarum/index.js';
 import { useGameStore } from '../store/gameStore.js';
@@ -441,6 +441,8 @@ export function IndagatioEmptioProgram(): ReactElement {
       !stackable && owned.includes(id)
         ? true
         : stackable && countCopies(owned, id) >= (def.stackMax ?? Infinity);
+    // The Loculi's copy for the detail: flavour apart from the effect clause, and the relic's art.
+    const view = maleficiumView(id);
     return [
       {
         id,
@@ -448,7 +450,9 @@ export function IndagatioEmptioProgram(): ReactElement {
         rarity: def.rarity,
         // The invoking-power line ("+4 invoking power"); a relic that grants none shows no line.
         effect: invokingPowerText(def.invokingPower),
-        desc: def.description,
+        desc: view?.effect ? view.desc : def.description,
+        ...(view?.effect ? { boon: view.effect } : {}),
+        ...(view?.img ? { img: view.img } : {}),
         costLabel: `${price} g`,
         acquired,
         affordable: !acquired && goldNum >= price,
@@ -489,6 +493,7 @@ export function IndagatioEmptioProgram(): ReactElement {
     tier: t,
     label: strings.tiers[t],
     chance: formatTierPct(indagatioDist[t]),
+    share: indagatioDist[t],
   }));
 
   return (
