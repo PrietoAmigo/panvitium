@@ -18,7 +18,7 @@ import { useEffect, useRef, type RefObject, type ReactElement } from 'react';
 import { PixelSprite } from '../PixelRelic.js';
 import { relicGrid } from '../pixelArt.js';
 import { RARITY as RELIC_RARITY } from '../relics.js';
-import { ORBIS_RARITY, ORBIS_TIER_FIND, coordForFind, formatCoord } from './orbis.data.js';
+import { ORBIS_RARITY, ORBIS_TIER_COLOR, coordForFind, formatCoord } from './orbis.data.js';
 import { WORLD_LAND } from './orbis.land.js';
 import type { OrbisFind, OrbisRarity, OrbisTenebrarumProps } from './orbis.types.js';
 
@@ -687,17 +687,9 @@ function useOrbisGlobe(
   }, []);
 }
 
-/** The failure tiers find nothing: their odds segments are three greys, darkening with the loss. */
-const FAIL_SEGMENT: Readonly<Record<string, string>> = {
-  bad: '#5e5850',
-  terrible: '#48433d',
-  apocalyptic: '#35312d',
-};
-
-/** An odds-bar segment's colour: the rarity the tier reaches for, or a grey for a failure tier. */
-function segmentColor(tier: string): string {
-  const rarity = ORBIS_TIER_FIND[tier];
-  return rarity ? ORBIS_RARITY[rarity].color : (FAIL_SEGMENT[tier] ?? '#3a3631');
+/** A tier's odds colours (bar segment and name), with a muted fallback for an unknown tier. */
+function tierColor(tier: string): { bar: string; text: string } {
+  return ORBIS_TIER_COLOR[tier] ?? { bar: '#3a3631', text: '#9d917a' };
 }
 
 const pct = (fraction: number): string =>
@@ -855,10 +847,7 @@ export function OrbisTenebrarum({
 
         {tierChances.length > 0 && (
           <div className="orbis-odds" aria-label="Search odds by outcome tier">
-            <div className="orbis-odds-head">
-              <span className="orbis-odds-title">Search odds</span>
-              <span className="orbis-odds-note">colour shows the rarity each outcome seeks</span>
-            </div>
+            <span className="orbis-odds-title">Search odds</span>
             <div className="orbis-odds-bar" aria-hidden="true">
               {tierChances
                 .filter((t) => t.share > 0)
@@ -866,14 +855,16 @@ export function OrbisTenebrarum({
                   <span
                     key={t.tier}
                     className={`orbis-odds-seg tier-${t.tier}`}
-                    style={{ flexGrow: t.share, background: segmentColor(t.tier) }}
+                    style={{ flexGrow: t.share, background: tierColor(t.tier).bar }}
                   />
                 ))}
             </div>
             <ul className="orbis-odds-list">
               {tierChances.map((t) => (
                 <li key={t.tier} className={`orbis-odds-row tier-${t.tier}`}>
-                  <span className="orbis-odds-tier">{t.label}</span>
+                  <span className="orbis-odds-tier" style={{ color: tierColor(t.tier).text }}>
+                    {t.label}
+                  </span>
                   <span className="orbis-odds-chance">{t.chance}</span>
                 </li>
               ))}
