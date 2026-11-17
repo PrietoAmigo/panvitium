@@ -28,7 +28,15 @@ export const LOGOS_LATIN: readonly string[] = [
 ];
 
 /** How many fragments drift behind the rites. */
-export const LOGOS_THOUGHT_COUNT = 66;
+export const LOGOS_THOUGHT_COUNT = 33;
+
+/** When the scroll opens its mind is empty: each fragment surfaces at its own moment in this span
+ *  (seconds), so they arrive gradually and in no order (see `buildLogosThoughts`). */
+export const LOGOS_ENTRANCE: { readonly from: number; readonly to: number } = { from: 0.3, to: 8 };
+
+/** How long a fragment stays gone after it reaches the end of its path, before it surfaces again at
+ *  the start (seconds; each fragment draws its own). */
+export const LOGOS_RETURN: { readonly min: number; readonly max: number } = { min: 3, max: 5 };
 
 /**
  * The curved paths a fragment rides, in design px around its anchor (SVG path syntax; absolute
@@ -208,8 +216,17 @@ export interface LogosThought {
   color: string;
   /** One traversal of its path, in seconds. */
   duration: number;
-  /** A negative delay, so the field is already mid-drift when the scroll opens. */
-  delay: number;
+  /** How long it stays gone at the end of its path before surfacing again (LOGOS_RETURN). */
+  gap: number;
+  /** One whole round: its traversal, then its absence (`duration + gap`), in seconds. */
+  cycle: number;
+  /** When it first surfaces after the scroll opens, in seconds (LOGOS_ENTRANCE): a positive delay
+   *  on both its drift and its presence, so it is hidden until then and enters at its path's start. */
+  enter: number;
+  /** The drift's easing over a round: along the path in the traversal, then held at its end. */
+  driftEasing: string;
+  /** The presence's easing over a round: shown for the traversal, then gone (scaled to nothing). */
+  presenceEasing: string;
   /** Its body, one vertebra per character in reading order, phased from head to tail. */
   vertebrae: LogosVertebra[];
   /** One undulation of the body, in seconds: larger fragments slither slower. */
@@ -334,14 +351,25 @@ const BONE = '#eadcc2';
 
 /**
  * Build the field. Sizes span a wide range (a few huge, faint words among many small ones), speeds
- * are log-uniform between 14 s and 220 s, and colour mixes ember, candle and bone. Deterministic for
- * a given seed.
+ * are log-uniform between 14 s and 220 s, and colour mixes ember, candle and bone. Each fragment
+ * surfaces at its own moment after the scroll opens, rides its path once, vanishes at the end and
+ * surfaces again at the start 3-5 s later, round after round. Deterministic for a given seed.
  */
 export function buildLogosThoughts(
   count: number = LOGOS_THOUGHT_COUNT,
   seed = 'obsessio',
 ): LogosThought[] {
   const rng = makeRng(hashSeed(seed));
+  // Its own stream, so the field's look and placement stay where they were.
+  const timing = makeRng(hashSeed(`${seed}:cycle`));
+  // The entrance is stratified: each fragment takes a shuffled slot of the span and a random moment
+  // within it, so they surface steadily but irregularly, in no order and never in a burst.
+  const slots = Array.from({ length: count }, (_, k) => k);
+  for (let k = count - 1; k > 0; k--) {
+    const j = timing.int(k + 1);
+    [slots[k], slots[j]] = [slots[j]!, slots[k]!];
+  }
+  const slotSpan = (LOGOS_ENTRANCE.to - LOGOS_ENTRANCE.from) / Math.max(1, count);
   const english = strings.opera.logosThoughts;
   const out: LogosThought[] = [];
   for (let i = 0; i < count; i++) {
@@ -369,6 +397,12 @@ export function buildLogosThoughts(
     const y = Math.round(rng.range(-120, LOGOS_STAGE_H + 120));
     const rotate = Math.round(rng.range(-75, 75));
     const path = 1 + rng.int(LOGOS_PATH_COUNT);
+    // The retired mid-drift start (the field now enters gradually instead), still drawn.
+    rng.float();
+    const traversal = Math.round(duration * 10) / 10;
+    const gap = r1(timing.range(LOGOS_RETURN.min, LOGOS_RETURN.max));
+    const cycle = r1(traversal + gap);
+    const held = Math.round((traversal / cycle) * 100000) / 1000;
     // The serpent draws nothing from the stream (its phase is the index's golden-ratio step), so the
     // field's placement, timing and look are exactly what they were before it slithered.
     const headFirst = LOGOS_PATHS[path - 1]?.reverse ?? false;
@@ -385,8 +419,12 @@ export function buildLogosThoughts(
       opacity: Math.round(opacity * 1000) / 1000,
       blur: Math.round(blur * 10) / 10,
       color: tone < 0.4 ? EMBER : tone < 0.52 ? CANDLE : BONE,
-      duration: Math.round(duration * 10) / 10,
-      delay: Math.round(-rng.float() * duration * 10) / 10,
+      duration: traversal,
+      gap,
+      cycle,
+      enter: r1(LOGOS_ENTRANCE.from + ((slots[i] ?? i) + timing.float()) * slotSpan),
+      driftEasing: `linear(0, 1 ${held}%, 1)`,
+      presenceEasing: `linear(0, 0 ${held}%, 1 ${held}%, 1)`,
       vertebrae: logosVertebrae(text, latin, headFirst, (i * 0.6180339887) % 1, slither),
       slither,
     });

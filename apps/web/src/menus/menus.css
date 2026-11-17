@@ -4620,6 +4620,19 @@ body {
   width: 0;
   height: 0;
 }
+/* Whether the fragment is in the mind: scaled to nothing until it first surfaces (its inline
+   positive delay) and again for the few seconds after each traversal (its inline linear() easing
+   jumps to the end of `logos-presence` there). Transform only, so the compositor runs it. */
+.logos-presence {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform: scale(0);
+  animation-name: logos-presence;
+  animation-iteration-count: infinite;
+}
 .logos-mote {
   position: absolute;
   left: 0;
@@ -4640,7 +4653,8 @@ body {
 }
 /* The six curved paths (`.logos-path-N` and their keyframes) are sampled from the curves in
    menus/logosThoughts.ts and injected by <LogosPanel/>: transform keyframes, so the compositor runs
-   the whole drift. */
+   the whole drift. A mote's round (inline) is its traversal plus its absence; its inline linear()
+   easing runs the path over the traversal and holds the end through the absence. */
 /* Each fragment slithers as it drifts: every letter is a vertebra riding one sine wave, raised and
    turned with the wave's slope, its phase (an inline negative delay) trailing from the head to the
    tail. Its `logos-slither-*` set (built in menus/logosThoughts.ts and injected by <LogosPanel/>) is
@@ -4946,6 +4960,14 @@ body {
 }
 
 /* ---- keyframes ---- */
+@keyframes logos-presence {
+  from {
+    transform: none;
+  }
+  to {
+    transform: scale(0);
+  }
+}
 @keyframes logos-echo {
   0%,
   100% {
@@ -5010,6 +5032,10 @@ body {
   .logos-mote {
     animation: none;
     transform: translate(-50%, -50%);
+  }
+  .logos-presence {
+    animation: none;
+    transform: none;
   }
 }
 

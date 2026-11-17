@@ -22,10 +22,12 @@ import {
   logosVertebrae,
   sampleLogosPath,
   LOGOS_ECHO_COUNT,
+  LOGOS_ENTRANCE,
   LOGOS_LATIN,
   LOGOS_PATHS,
   LOGOS_PATH_COUNT,
   LOGOS_PATH_STEPS,
+  LOGOS_RETURN,
   LOGOS_SERPENT,
   LOGOS_SLITHER_STEPS,
   LOGOS_SWAY_LEVELS,
@@ -273,8 +275,16 @@ describe('Chthonic Logos (Obsessio)', () => {
     motes.forEach((mote, i) => {
       const t = field[i]!;
       expect(mote.textContent).toBe(t.text);
-      // Straight on its anchor: no flicker wrapper between them.
-      expect(mote.parentElement?.className).toBe('logos-thought');
+      // Its presence sits between it and its anchor (no flicker wrapper), on the same round.
+      const presence = mote.parentElement!;
+      expect(presence.className).toBe('logos-presence');
+      expect(presence.parentElement?.className).toBe('logos-thought');
+      for (const el of [presence, mote]) {
+        expect(el.style.animationDuration).toBe(`${t.cycle}s`);
+        expect(el.style.animationDelay).toBe(`${t.enter}s`);
+      }
+      expect(presence.style.animationTimingFunction).toBe(t.presenceEasing);
+      expect(mote.style.animationTimingFunction).toBe(t.driftEasing);
       const vertebrae = Array.from(mote.querySelectorAll<HTMLElement>('.logos-vertebra'));
       expect(vertebrae.length).toBe(Array.from(t.text).length);
       vertebrae.forEach((el, k) => {
@@ -344,12 +354,47 @@ describe('Chthonic Logos thoughts', () => {
       expect(t.opacity).toBeLessThanOrEqual(0.22);
       expect(t.duration).toBeGreaterThanOrEqual(14);
       expect(t.duration).toBeLessThanOrEqual(220);
-      expect(t.delay).toBeLessThanOrEqual(0);
     }
     // Not parallel, not uniform: the field spreads across headings, sizes and speeds.
     expect(new Set(field.map((t) => t.rotate)).size).toBeGreaterThan(20);
     expect(new Set(field.map((t) => t.fontSize)).size).toBeGreaterThan(15);
     expect(new Set(field.map((t) => t.duration)).size).toBeGreaterThan(30);
+  });
+
+  it('fills the mind gradually and out of order, each thought returning 3-5 s after it leaves', () => {
+    const field = buildLogosThoughts();
+    expect(field.length).toBe(LOGOS_THOUGHT_COUNT);
+    const enters = field.map((t) => t.enter);
+    for (const t of field) {
+      expect(t.enter).toBeGreaterThanOrEqual(LOGOS_ENTRANCE.from);
+      expect(t.enter).toBeLessThanOrEqual(LOGOS_ENTRANCE.to);
+      expect(t.gap).toBeGreaterThanOrEqual(LOGOS_RETURN.min);
+      expect(t.gap).toBeLessThanOrEqual(LOGOS_RETURN.max);
+      expect(t.cycle).toBeCloseTo(t.duration + t.gap, 5);
+      // The path runs over the traversal and holds its end through the absence, when the presence
+      // has jumped to nothing.
+      const held = Math.round((t.duration / t.cycle) * 100000) / 1000;
+      expect(t.driftEasing).toBe(`linear(0, 1 ${held}%, 1)`);
+      expect(t.presenceEasing).toBe(`linear(0, 0 ${held}%, 1 ${held}%, 1)`);
+    }
+    // Gradual: they surface across the whole entrance, steadily, never in a burst.
+    const sorted = [...enters].sort((a, b) => a - b);
+    expect(sorted[0]!).toBeLessThan(LOGOS_ENTRANCE.from + 0.5);
+    expect(sorted[sorted.length - 1]!).toBeGreaterThan(LOGOS_ENTRANCE.to - 0.5);
+    const densest = Math.max(
+      ...sorted.map((a) => sorted.filter((b) => b >= a && b < a + 0.5).length),
+    );
+    expect(densest).toBeLessThanOrEqual(4);
+    // Irregular: the waits between arrivals are uneven.
+    const waits = sorted.slice(1).map((e, k) => Math.round((e - sorted[k]!) * 10) / 10);
+    expect(new Set(waits).size).toBeGreaterThan(4);
+    // Out of order: neither in the field's order nor sweeping across the stage.
+    expect(enters).not.toEqual(sorted);
+    const byX = [...field].sort((a, b) => a.x - b.x).map((t) => t.enter);
+    expect(byX).not.toEqual(sorted);
+    expect(byX).not.toEqual([...sorted].reverse());
+    // The gaps differ from thought to thought.
+    expect(new Set(field.map((t) => t.gap)).size).toBeGreaterThan(5);
   });
 
   it('samples each path evenly from its start to its end, turning without a jump', () => {
