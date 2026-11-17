@@ -2,7 +2,7 @@
  * Render smoke tests for the cinematic Katabasis flow (Claude Design handoffs) and its trigger in
  * the Altar Room (the "Altar sigil" handoff). Clicking the altar raises the Katabasis sigil over
  * the room with STATUS QUO beneath it; the sigil arms on the first press and commits on the second
- * (the two-press safeguard, preserved), falling into the Abyss descent; STATUS QUO opens the
+ * (the two-press safeguard, preserved), falling into the Exstinctio descent; STATUS QUO opens the
  * read-only Ledger (Cardinal-Sin standing + bound-sigil effects), whose way back returns to the
  * room; left alone, the sigil fades away. The first commit of a playthrough made with no souls in
  * hand plays the empty-handed warning instead of descending; the first commit that does descend
@@ -286,13 +286,22 @@ describe('Katabasis flow — orchestrator', () => {
     expect((store().state as GameState).inKatabasis).not.toBe(true);
   });
 
-  it('beginKatabasis (the committed descent) opens the flow on the Abyss transition', () => {
+  it('beginKatabasis (the committed descent) opens the flow on the Exstinctio transition', () => {
     act(() => store().beginKatabasis());
     render();
     expect((store().state as GameState).inKatabasis).toBe(true);
-    expect(container!.querySelector('.transit')?.getAttribute('data-dir')).toBe('down');
+    const transit = container!.querySelector('.transit');
+    expect(transit?.getAttribute('data-dir')).toBe('down');
+    expect(transit?.classList.contains('transit--exstinctio')).toBe(true);
     expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
     expect(container!.querySelector('.ledger')).toBeNull();
+    // It opens on the room (its canvas) under the armed seal the player just pressed, inert.
+    expect(transit?.querySelector('canvas.exst-canvas')).not.toBeNull();
+    const seal = transit?.querySelector('.exst-seal');
+    expect(seal?.getAttribute('aria-hidden')).toBe('true');
+    expect(seal?.querySelector('.altar-sigil-btn.is-armed')).not.toBeNull();
+    expect(seal?.querySelector('img')?.getAttribute('src')).toMatch(/seal-panvitium\.png$/);
+    expect(transit?.querySelector('.exst-scrim')).toBeNull();
   });
 
   it('the descent reads Katabasis over "exspes in ima": no closing sentence, nothing to skip', () => {
@@ -380,6 +389,10 @@ describe('Katabasis flow — orchestrator', () => {
       expect(container!.querySelector('.transit-sub')?.textContent).toBe('Auctus ex imis');
       expect(transit()!.textContent).not.toMatch(/Ascensus|light you betrayed|continue/i);
       expect(transit()!.querySelectorAll('button').length).toBe(0);
+      // The light comes back into the room: no seal on the way up, a scrim under the type.
+      expect(transit()!.querySelector('canvas.exst-canvas')).not.toBeNull();
+      expect(transit()!.querySelector('.exst-seal')).toBeNull();
+      expect(transit()!.querySelector('.exst-scrim')).not.toBeNull();
       act(() => transit()!.click());
       act(() => {
         vi.advanceTimersByTime(TRANSIT_HOLD_MS - 1);
@@ -552,7 +565,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     expect(seal()?.classList.contains('is-armed')).toBe(true);
     expect((store().state as GameState).inKatabasis).not.toBe(true); // still safe to walk away
     click(/there is no return/);
-    // Committed: the teardown + freeze, and the flow falls straight into the Abyss descent.
+    // Committed: the teardown + freeze, and the flow falls straight into the Exstinctio descent.
     expect((store().state as GameState).inKatabasis).toBe(true);
     expect(store().katabasisPhase).toBe('menu');
     expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
@@ -675,6 +688,10 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
       expect((store().state as GameState).inKatabasis).toBe(true);
       expect(store().katabasisPhase).toBe('menu');
       expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
+      // The cinematic has already shown the soul leave: the transit opens on the void, the type
+      // alone (no room to put out, no seal).
+      expect(container!.querySelector('.exst-canvas')).toBeNull();
+      expect(container!.querySelector('.exst-seal')).toBeNull();
       expect(cinematic()).not.toBeNull();
       act(() => {
         vi.advanceTimersByTime(FIRST_DESCENT_TOTAL_MS - FIRST_DESCENT_TRANSIT_MS - 1);
@@ -736,7 +753,7 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
     expect(scene.decodes).toBe(0);
   });
 
-  it('plays the cinematic once: the next descent goes straight into the Abyss transit', () => {
+  it('plays the cinematic once: the next descent goes straight into the Exstinctio transit', () => {
     vi.useFakeTimers();
     try {
       patch({ souls: bn(5) });
@@ -758,6 +775,9 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
       expect(container!.querySelector('.first-descent')).toBeNull();
       expect((store().state as GameState).inKatabasis).toBe(true);
       expect(container!.querySelector('.transit-word')?.textContent).toBe('Katabasis');
+      // No cinematic this time: the transit opens on the room and the armed seal.
+      expect(container!.querySelector('.exst-canvas')).not.toBeNull();
+      expect(container!.querySelector('.exst-seal')).not.toBeNull();
     } finally {
       vi.useRealTimers();
     }

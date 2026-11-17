@@ -10,6 +10,7 @@ import {
 import { CALL_PLATE_RING } from './calls-in.data.js';
 import { AltarSigil, ALTAR_SIGIL_SRC, SEMET_SIGIL_SRC, type AltarSigilView } from './AltarSigil.js';
 import { altarGlows } from './altarGlow.js';
+import { registerRoomStage } from './roomSnapshot.js';
 
 interface RoomViewProps {
   room: RoomDef;
@@ -104,6 +105,9 @@ export function RoomView({
   const stageRef = useRef<HTMLDivElement>(null);
   const sampleAltarGlows = useCallback(() => altarGlows(stageRef.current), []);
   const sigilUp = room.id === 'altar' && altarSigil !== null;
+  // The descent and ascent transit (Exstinctio) opens on this room exactly as the pass last drew it,
+  // so it reads the room's canvas back through this stage when it mounts.
+  useEffect(() => registerRoomStage(stageRef.current), []);
 
   // The sigil's art is decoded while the player stands in the Altar Room, so it shows on the very
   // first click rather than a beat later.

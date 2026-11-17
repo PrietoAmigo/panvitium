@@ -297,7 +297,7 @@ interface GameStore {
    * hand-off does. Otherwise a no-op returning false: descend as usual.
    */
   playFirstDescent: () => boolean;
-  /** The first-descent cinematic has lifted off the Abyss transit: drop the overlay. */
+  /** The first-descent cinematic has lifted off the Exstinctio transit: drop the overlay. */
   endFirstDescent: () => void;
   /**
    * Open the Status Quo Ledger without committing — no teardown and no freeze: the lifetime keeps

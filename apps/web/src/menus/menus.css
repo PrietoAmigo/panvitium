@@ -2809,28 +2809,79 @@ body {
   }
 }
 
-/* ── SCREEN · Descent / Ascent transition (Abyss) ─────────────────────────── */
+/* ── SCREEN · Descent / Ascent transition (Exstinctio) ─────────────────────── */
+/* The "Exstinctio" transit ("Katabasis Transitions" round 2): the room the player stands in, as the
+   degradation pass last drew it, loses its light in the order of its weakness while the word gathers
+   it; the ascent runs it back. exstinctio.ts draws the frames into the canvas at the pass's own block
+   size; the seal, the type and the scrim are crisp chrome over it. The frame is laid exactly over the
+   room's stage (the component measures it at mount); this centred 16:9 box is only the fallback when
+   there is no room to read (then it holds the type alone, on the void). */
 .katabasis-flow .transit {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: #050204;
   overflow: hidden;
 }
-.katabasis-flow .transit-vignette {
+.katabasis-flow .exst-frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100vw, 1280px, 177.78vh);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+.katabasis-flow .exst-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+/* The pass's scanlines: a dark line over the first third of every block row (240 rows), as the pass
+   draws them; the snapshot is read between them, so they are laid back on here. */
+.katabasis-flow .exst-scan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25) 0 33.333%, transparent 33.333%) 0 0 /
+    100% calc(100% / 240) repeat-y;
+}
+.katabasis-flow .exst-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.6) 100%);
+}
+/* The ascent's type rides over the lit room: a soft dark behind it while it is there. */
+.katabasis-flow .exst-scrim {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(
-    ellipse at 50% 50%,
-    transparent 0%,
-    rgba(120, 14, 14, 0.18) 45%,
-    #000 86%
+    ellipse 44% 22% at 50% 26%,
+    rgba(5, 2, 4, 0.7),
+    rgba(5, 2, 4, 0.35) 55%,
+    rgba(5, 2, 4, 0) 100%
   );
 }
-/* The title, a short ember rule and the Latin line, centred as one column over the abyss. */
+/* The armed seal the player just pressed (the room's own .altar-sigil-* look), shown only while it
+   goes out; inert. */
+.katabasis-flow .exst-seal {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.katabasis-flow .exst-seal .altar-sigil-btn {
+  pointer-events: none;
+  cursor: default;
+}
+/* The title, a short ember rule and the Latin line, as one column over the vault of the room. */
 .katabasis-flow .transit-stack {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18%;
   z-index: 5;
   display: flex;
   flex-direction: column;
@@ -2854,43 +2905,28 @@ body {
   text-align: center;
   opacity: 1;
 }
-@keyframes kat-word-breathe {
-  0%,
-  100% {
-    text-shadow:
-      0 0 34px rgba(255, 50, 28, 0.7),
-      0 0 12px rgba(255, 110, 60, 0.85);
-  }
-  50% {
-    text-shadow:
-      0 0 56px rgba(255, 50, 28, 1),
-      0 0 20px rgba(255, 130, 70, 1);
-  }
-}
-@keyframes kat-word-in {
-  from {
-    letter-spacing: 0.62em;
-    transform: translateY(16px);
-  }
-  to {
-    letter-spacing: 0.3em;
-    transform: none;
-  }
-}
-@keyframes kat-word-in-up {
-  from {
-    letter-spacing: 0.62em;
-    transform: translateY(-16px);
-  }
-  to {
-    letter-spacing: 0.3em;
-    transform: none;
-  }
+/* Going down, the word holds all the light the room has lost (the still frame shows it so). */
+.katabasis-flow .transit[data-dir='down'] .transit-word {
+  text-shadow:
+    0 0 56px rgba(255, 50, 28, 1),
+    0 0 20px rgba(255, 130, 70, 1);
 }
 .katabasis-flow .transit-rule {
   width: 64px;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255, 90, 58, 0.6), transparent);
+}
+.katabasis-flow .transit-sub {
+  font-family: var(--font-inscribe);
+  font-size: 1.375rem;
+  letter-spacing: 0.42em;
+  padding-left: 0.42em;
+  color: #b3aaa2;
+  text-shadow:
+    0 0 18px rgba(0, 0, 0, 0.7),
+    0 0 18px rgba(255, 50, 28, 0.35);
+  text-align: center;
+  opacity: 1;
 }
 @keyframes kat-rule-in {
   from {
@@ -2902,16 +2938,6 @@ body {
     opacity: 1;
   }
 }
-.katabasis-flow .transit-sub {
-  font-family: var(--font-inscribe);
-  font-size: 1.375rem;
-  letter-spacing: 0.42em;
-  padding-left: 0.42em;
-  color: #b3aaa2;
-  text-shadow: 0 0 18px rgba(255, 50, 28, 0.35);
-  text-align: center;
-  opacity: 1;
-}
 @keyframes kat-sub-in {
   from {
     opacity: 0;
@@ -2922,63 +2948,123 @@ body {
     letter-spacing: 0.42em;
   }
 }
-@media (prefers-reduced-motion: no-preference) {
-  .katabasis-flow .transit-word {
-    animation:
-      kat-word-breathe 4s ease-in-out infinite,
-      kat-word-in 1.4s ease both;
+/* Down: dark until 1.0 s, faint at 1.1 s, then it fills as the room empties (full by 4.0 s). */
+@keyframes exst-word-gather {
+  0%,
+  20% {
+    opacity: 0;
+    text-shadow:
+      0 0 0 rgba(255, 50, 28, 0),
+      0 0 0 rgba(255, 110, 60, 0);
   }
-  .katabasis-flow .transit[data-dir='up'] .transit-word {
-    animation:
-      kat-word-breathe 4s ease-in-out infinite,
-      kat-word-in-up 1.4s ease both;
+  22% {
+    opacity: 0.18;
+    text-shadow:
+      0 0 6px rgba(255, 50, 28, 0.2),
+      0 0 2px rgba(255, 110, 60, 0.2);
   }
-  .katabasis-flow .transit-rule {
-    animation: kat-rule-in 1.2s ease 0.7s both;
+  60% {
+    opacity: 0.85;
+    text-shadow:
+      0 0 24px rgba(255, 50, 28, 0.5),
+      0 0 8px rgba(255, 110, 60, 0.6);
   }
-  .katabasis-flow .transit-sub {
-    animation: kat-sub-in 1.8s cubic-bezier(0.2, 0.6, 0.2, 1) 0.9s both;
-  }
-  .katabasis-flow .transit--abyss[data-dir='down'] .tr-abyss {
-    animation: kat-abyss-down 5s cubic-bezier(0.5, 0.05, 0.4, 1) both;
-  }
-  .katabasis-flow .transit--abyss[data-dir='up'] .tr-abyss {
-    animation: kat-abyss-up 5s cubic-bezier(0.3, 0.1, 0.3, 1) both;
+  80%,
+  100% {
+    opacity: 1;
+    text-shadow:
+      0 0 56px rgba(255, 50, 28, 1),
+      0 0 20px rgba(255, 130, 70, 1);
   }
 }
-.katabasis-flow .tr-abyss {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    circle at 50% 50%,
-    rgba(190, 30, 18, 0.55),
-    rgba(90, 10, 8, 0.35) 30%,
-    rgba(8, 2, 3, 0.9) 64%,
-    #050204 80%
-  );
-}
-@keyframes kat-abyss-down {
-  0% {
-    transform: scale(2.4);
-    opacity: 0.2;
+/* Up: it comes in full of light (1.2 to 1.8 s) and gives it back to the room (2.4 to 3.6 s). */
+@keyframes exst-word-return {
+  0%,
+  24% {
+    opacity: 0;
+    text-shadow:
+      0 0 56px rgba(255, 50, 28, 1),
+      0 0 20px rgba(255, 130, 70, 1);
   }
-  45% {
+  36%,
+  48% {
+    opacity: 1;
+    text-shadow:
+      0 0 56px rgba(255, 50, 28, 1),
+      0 0 20px rgba(255, 130, 70, 1);
+  }
+  72%,
+  100% {
+    opacity: 1;
+    text-shadow:
+      0 0 40px rgba(255, 50, 28, 0.8),
+      0 0 12px rgba(255, 110, 60, 0.9);
+  }
+}
+/* Up: the type lifts off the lit room for the last 0.6 s. */
+@keyframes exst-stack-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes exst-scrim {
+  0%,
+  44% {
+    opacity: 0;
+  }
+  60%,
+  88% {
     opacity: 1;
   }
   100% {
-    transform: scale(0.55);
-    opacity: 0.9;
+    opacity: 0;
   }
 }
-@keyframes kat-abyss-up {
+/* The seal goes out in three steps over the first 0.4 s (run with step-end). */
+@keyframes exst-seal-out {
   0% {
-    transform: scale(0.4);
-    opacity: 0.9;
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.66;
+  }
+  75% {
+    opacity: 0.33;
   }
   100% {
-    transform: scale(2.6);
-    opacity: 0.15;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .katabasis-flow .transit[data-dir='down'] .transit-word {
+    animation: exst-word-gather 5s linear both;
+  }
+  .katabasis-flow .transit[data-dir='down'] .transit-rule {
+    animation: kat-rule-in 0.6s ease 2.4s both;
+  }
+  .katabasis-flow .transit[data-dir='down'] .transit-sub {
+    animation: kat-sub-in 0.8s cubic-bezier(0.2, 0.6, 0.2, 1) 2.6s both;
+  }
+  .katabasis-flow .exst-seal {
+    animation: exst-seal-out 0.4s step-end both;
+  }
+  .katabasis-flow .transit[data-dir='up'] .transit-word {
+    animation: exst-word-return 5s linear both;
+  }
+  .katabasis-flow .transit[data-dir='up'] .transit-rule {
+    animation: kat-rule-in 0.6s ease 2s both;
+  }
+  .katabasis-flow .transit[data-dir='up'] .transit-sub {
+    animation: kat-sub-in 0.8s cubic-bezier(0.2, 0.6, 0.2, 1) 2.2s both;
+  }
+  .katabasis-flow .transit[data-dir='up'] .transit-stack {
+    animation: exst-stack-out 0.6s ease 4.4s both;
+  }
+  .katabasis-flow .exst-scrim {
+    animation: exst-scrim 5s linear both;
   }
 }
 

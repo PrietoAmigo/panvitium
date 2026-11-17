@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactElement,
+} from 'react';
 import { strings } from '@panvitium/shared';
 import {
   SINS,
@@ -37,6 +45,9 @@ import { formatBigNum, formatDuration } from '../game/format.js';
 import { AetherSigils, effectDisplay, toRoman } from './AetherSigils.js';
 import { HoldButton, boonLabel, useHoldPour } from './katabasisShared.js';
 import { RedCloud } from './RedCloud.js';
+import { ALTAR_SIGIL_SRC } from './AltarSigil.js';
+import { playExstinctio, prefersReducedMotion } from './exstinctio.js';
+import { snapshotRoom, type RoomSnapshot, type StageRect } from './roomSnapshot.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
 // the two carved-slab layers are placed here on apply (they live at the repo root + the design zip).
@@ -430,13 +441,22 @@ function StatuesPlace({
   );
 }
 
-// ── The descent / ascent interstitial (Abyss style — the locked production transition) ───────────
+// ── The descent / ascent interstitial (Exstinctio, "Katabasis Transitions" round 2) ─────────────
 /** How long each interstitial holds, both directions ("Katabasis transitions" handoff). */
 export const TRANSIT_HOLD_MS = 5000;
 
 /**
- * Katabasis on the way down, Anabasis on the way up, each with its Latin line beneath. Neither can
- * be skipped: no click, button or key ends it early; it holds for exactly `TRANSIT_HOLD_MS`.
+ * Exstinctio: Katabasis on the way down, Anabasis on the way up, each with its Latin line beneath.
+ * On the way down the room the player stands in (read back from the pass by `snapshotRoom`) loses
+ * its light in the order of its weakness, the armed seal goes out over it in three steps, the last
+ * candles fall out of the frame as embers, and the word gathers the light the room loses. On the way
+ * up embers rise into the candles and the light spreads back, brightest first, while the word gives
+ * its light back; the type then lifts off the lit room. The frames are drawn by `exstinctio.ts`
+ * into a canvas laid exactly over the room's stage. After the first-descent cinematic (which has
+ * already shown the soul leave the body) the descent opens on the void instead: only the type.
+ *
+ * Neither can be skipped: no click, button or key ends it early; it holds for exactly
+ * `TRANSIT_HOLD_MS`. Under reduced motion it holds one still frame.
  */
 function Transition({
   kind,
@@ -446,6 +466,10 @@ function Transition({
   onDone: () => void;
 }): ReactElement {
   const down = kind === 'descending';
+  const dir = down ? 'down' : 'up';
+  // Read once, at mount: the transit is a fixed 5 s piece.
+  const [fromVoid] = useState(() => down && useGameStore.getState().firstDescentPlaying);
+  const [still] = useState(prefersReducedMotion);
   // With no way to skip, the timer is the only exit: a re-render handing in a fresh `onDone` must
   // not restart it, so it is armed once per mount and reads the latest callback through a ref.
   const done = useRef(onDone);
@@ -456,14 +480,65 @@ function Transition({
     const t = setTimeout(() => done.current(), TRANSIT_HOLD_MS);
     return () => clearTimeout(t);
   }, []);
+
+  // Read the room back before the browser paints and before the pass draws its next frame, so the
+  // first frame is the room as it stood (the seal's glow still in it) and lies exactly over it.
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const snapRef = useRef<RoomSnapshot | null | undefined>(undefined);
+  const [rect, setRect] = useState<StageRect | null>(null);
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    // Read once per mount: React's development double-run of effects would otherwise read it again
+    // after the room has repainted without the seal's glow.
+    if (snapRef.current === undefined) snapRef.current = snapshotRoom();
+    const snap = snapRef.current;
+    if (!snap) return;
+    setRect(snap.rect);
+    // Going down, the player reads the room once more after the pass has repainted it without the
+    // seal's light, and runs the extinction on that.
+    return playExstinctio(
+      canvas,
+      snap.image,
+      dir,
+      still,
+      down ? () => snapshotRoom()?.image ?? null : undefined,
+    );
+  }, [dir, down, still]);
+
+  const frameStyle: CSSProperties | null = rect
+    ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height, transform: 'none' }
+    : null;
   return (
-    <div className="scene transit transit--abyss" data-dir={down ? 'down' : 'up'}>
-      <div className="tr-abyss" aria-hidden="true" />
-      <div className="transit-vignette" aria-hidden="true" />
-      <div className="transit-stack">
-        <div className="transit-word">{down ? 'Katabasis' : 'Anabasis'}</div>
-        <div className="transit-rule" aria-hidden="true" />
-        <div className="transit-sub">{down ? 'exspes in ima' : 'Auctus ex imis'}</div>
+    <div className="scene transit transit--exstinctio" data-dir={dir}>
+      <div className="exst-frame" {...(frameStyle ? { style: frameStyle } : {})}>
+        {!fromVoid && <canvas ref={canvasRef} className="exst-canvas" aria-hidden="true" />}
+        <div className="exst-scan" aria-hidden="true" />
+        <div className="exst-vignette" aria-hidden="true" />
+        {down && !fromVoid && (
+          // The armed seal the player just pressed, crisp chrome over the room as it was; it goes
+          // out in three steps as the room's light begins to die.
+          <div className="exst-seal" aria-hidden="true">
+            <div className="altar-sigil-wrap">
+              <span className="altar-sigil-btn is-armed">
+                <span className="altar-sigil-scale">
+                  <img
+                    className="altar-sigil-glyph"
+                    src={ALTAR_SIGIL_SRC}
+                    alt=""
+                    draggable={false}
+                  />
+                </span>
+              </span>
+            </div>
+          </div>
+        )}
+        {!down && <div className="exst-scrim" aria-hidden="true" />}
+        <div className="transit-stack">
+          <div className="transit-word">{down ? 'Katabasis' : 'Anabasis'}</div>
+          <div className="transit-rule" aria-hidden="true" />
+          <div className="transit-sub">{down ? 'exspes in ima' : 'Auctus ex imis'}</div>
+        </div>
       </div>
     </div>
   );
@@ -837,7 +912,7 @@ export function Katabasis(): ReactElement {
   const close = useGameStore((s) => s.closeKatabasis);
 
   // Before the commit (`inKatabasis === false`) the only screen is the Ledger. Once committed, the
-  // altar sigil's descent plays the Abyss transition first; a save written mid-Katabasis and
+  // altar sigil's descent plays the Exstinctio transition first; a save written mid-Katabasis and
   // reopened resumes on the Princes, where the player was. Lazy init: mount-time state only.
   const [screen, setScreen] = useState<Screen>(() =>
     state?.inKatabasis !== true ? 'ledger' : entry === 'descent' ? 'descending' : 'statues',
