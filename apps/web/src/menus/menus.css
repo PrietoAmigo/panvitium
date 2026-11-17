@@ -4641,6 +4641,18 @@ body {
 /* The six curved paths (`.logos-path-N` and their keyframes) are sampled from the curves in
    menus/logosThoughts.ts and injected by <LogosPanel/>: transform + opacity keyframes, so the
    compositor runs the whole drift. */
+/* Each fragment slithers as it drifts: every letter is a vertebra riding one sine wave, raised and
+   turned with the wave's slope, its phase (an inline negative delay) trailing from the head to the
+   tail. Two animations, both inline and both compositor-only: its `logos-slither-*` set (built in
+   menus/logosThoughts.ts and injected by <LogosPanel/>), and `logos-fade`, the fragment's fade in
+   and out, on the drift's own duration and delay. */
+.logos-vertebra {
+  display: inline-block;
+  white-space: pre;
+  transform-origin: 50% 55%;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
 .logos-flicker {
   animation-name: logos-flicker;
   animation-timing-function: steps(1, end);
@@ -4976,6 +4988,17 @@ body {
     opacity: 0.22;
   }
 }
+/* A drifting fragment's fade in over the first tenth of its path and out over the last. */
+@keyframes logos-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  10%,
+  90% {
+    opacity: 1;
+  }
+}
 @keyframes logos-tremor {
   0% {
     translate: 0 0;
@@ -5018,10 +5041,11 @@ body {
   }
 }
 
-/* ---- reduced motion: the thoughts hold still at their anchors; no pulse, tremor, throb or flicker ---- */
+/* ---- reduced motion: the thoughts hold still at their anchors; no slither, pulse, tremor, throb or flicker ---- */
 @media (prefers-reduced-motion: reduce) {
   .logos-overlay,
   .logos-flicker,
+  .logos-vertebra,
   .logos-echo,
   .logos-press--spoken,
   .logos-row--active .logos-name,
