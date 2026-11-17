@@ -1200,42 +1200,6 @@ body {
   letter-spacing: 0.08em;
 }
 
-/* ── Katabasis recap: black page, white text (01 / 02 §6) ────────────────── */
-.katabasis.recap {
-  background: #000;
-  align-items: center;
-}
-.recap-inner {
-  max-width: 480px;
-  width: 100%;
-  color: #f2ece4;
-}
-.recap-title {
-  font-family: var(--font-display);
-  letter-spacing: 0.16em;
-  text-align: center;
-  font-size: 1.8rem;
-  margin: 0 0 1.6rem;
-}
-.recap-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #1c1c1c;
-}
-.recap-label {
-  opacity: 0.7;
-}
-.recap-value {
-  font-variant-numeric: tabular-nums;
-}
-.recap-rise {
-  display: block;
-  margin: 1.8rem auto 0;
-  padding: 0.7rem 2.2rem;
-  letter-spacing: 0.12em;
-}
-
 /* ── Katabasis Prince card: skill, progress, quick-offer chips ───────────── */
 .prince-stats {
   display: flex;

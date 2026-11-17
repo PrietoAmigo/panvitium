@@ -1517,6 +1517,35 @@ while Ira's levels did nothing at all since *Decimatio* retired.
 
 ---
 
+## ADR-043: The rise shows no recap
+
+**Status.** Accepted [2026-11-17]. Supersedes the recap screen of `01` ("The Katabasis recap") and
+`02 §6` step 4, and the "You Rise" recap ADR-041 refers to.
+
+**Context.** Design decision (player request): after the Anabasis the "You Rise" recap (a black
+page listing the reprobates still here, the unlooted maleficia and the remaining gold, closed by
+*Acknowledge*) stood between the ascent and the room. Exstinctio's Anabasis already brings the light
+back into the room the player rises into, so the recap only interrupted that landing with a dismiss
+click.
+
+**Decision.**
+
+- **The recap is removed.** The Anabasis' hold commits the lifetime (`confirmKatabasis`) and the
+  flow closes at once: the player is back in the room, the live tick running from the risen clock.
+- The store's `recap` phase, its `recap` field and `closeRecap` go; `KatabasisPhase` is `'menu' |
+  null`. The recap's view, its CSS (`.recap*` in both stylesheets) and its strings (`recapTitle`,
+  with the already orphaned `soulsCarried` / `goldKept` / `reprobatesKept` / `maleficiaKept` /
+  `maleficiaLost` / `rise`) are deleted.
+
+**Consequences.**
+
+- No sim, save or RNG change: the recap was UI state, never persisted. `commitKatabasis` still
+  returns its `KatabasisRecap` (what carried over), which the sim tests read; the store ignores it.
+- The time the recap was open no longer exists, so its dismiss no longer grants Desidia for it.
+- `01` / `02 §6` still describe the recap screen; this ADR governs until they are synced.
+
+---
+
 ## Open items not yet decided
 
 These are deliberate non-decisions, dated for revisit.

@@ -55,7 +55,6 @@ import {
   type GameState,
   type OutcomeEvent,
   type Sin,
-  type KatabasisRecap,
   type DialOutcome,
 } from '@panvitium/sim';
 import {
@@ -92,8 +91,8 @@ import { audio } from '../audio/audio.js';
 /** How many recent outcomes the PC log keeps (02 §10). */
 const LOG_CAP = 100;
 
-/** Which Katabasis screen is showing: the allocation menu, the recap, or neither. */
-export type KatabasisPhase = 'menu' | 'recap' | null;
+/** Which Katabasis screen is showing: the flow (the Ledger or the descent), or neither. */
+export type KatabasisPhase = 'menu' | null;
 
 /**
  * How the Katabasis flow was entered from the Altar Room, read once as the flow mounts: the altar
@@ -209,8 +208,6 @@ interface GameStore {
    * hard reset, an import or a cloud save leaves them alone).
    */
   preferences: Preferences;
-  /** The recap produced by the last descent, shown on the recap screen. */
-  recap: KatabasisRecap | null;
   /** Load (or start) the game. Idempotent. */
   init: () => void;
   /** Advance the sim by `deltaSeconds`, folding its outcomes into the log and the Unveilings. */
@@ -333,12 +330,10 @@ interface GameStore {
    * reveal threshold names Semet (derived, `eternalSinRevealed`); no screen of its own (ADR-040).
    */
   offerEternal: (amount: BigNum | number) => void;
-  /** Commit the descent: reset the lifetime (clock risen to now) and show the recap. */
+  /** Commit the descent: reset the lifetime (clock risen to now) and return to the room. */
   confirmKatabasis: () => void;
   /** Close the Katabasis menu without descending. */
   closeKatabasis: () => void;
-  /** Dismiss the recap and resume the game (the time it was open is frozen, not paid out). */
-  closeRecap: () => void;
   /** Persist the current state to localStorage, bumping the save version. */
   persist: () => void;
   /** Retire the Unveiling that has finished (a no-op unless `seq` is the one at the head). */
@@ -460,7 +455,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   titleOpen: true,
   settingsOpen: false,
   preferences: DEFAULT_PREFERENCES,
-  recap: null,
   user: null,
   authReady: false,
   syncStatus: 'idle',
@@ -488,14 +482,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!current) return;
     // Screens that suspend the LIVE tick. The Status Quo Ledger (pre-commit, inKatabasis === false)
     // is NOT suspended: the soul is not yet under, so the lifetime ticks on online behind it.
-    // The committed descent (inKatabasis === true), the launch title menu, and the "You Rise" recap
-    // all suspend the tick — nothing accrues while they are open (the world does not advance offline
-    // either, so lingering costs the player nothing and gains nothing). We skip the sim so nothing
+    // The committed descent (inKatabasis === true) and the launch title menu suspend the tick —
+    // nothing accrues while they are open (the world does not advance offline either, so lingering
+    // costs the player nothing and gains nothing). We skip the sim so nothing
     // accrues (no suicides, no interest, no soul minting); the RAF accumulator drains harmlessly
     // through these no-op calls, so there is no catch-up burst when the screen closes.
     const phase = get().katabasisPhase;
-    const suspended =
-      phase === 'recap' || (phase === 'menu' && current.inKatabasis === true) || get().titleOpen;
+    const suspended = (phase === 'menu' && current.inKatabasis === true) || get().titleOpen;
     if (suspended) return;
     const { state, events, notices, achievementsUnlocked, emailsDelivered, emailsTriggered } = tick(
       current,
@@ -744,14 +737,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const current = get().state;
     if (!current) return;
     // Rise the new lifetime's clock to wall-clock NOW (not the descent-frozen `lastTickAt`): the
-    // committed descent was a freeze, so its duration is intentionally lost. The recap that follows
-    // is also frozen (`closeRecap` only reconciles the clock), so its time neither accrues nor
-    // counts against the player.
-    const { state, recap } = commitKatabasis(current, Date.now());
+    // committed descent was a freeze, so its duration is intentionally lost. The Anabasis lands
+    // straight back in the room (ADR-043): the live tick resumes from this clock on the next frame.
+    const { state } = commitKatabasis(current, Date.now());
     set({
       state,
-      recap,
-      katabasisPhase: 'recap',
+      katabasisPhase: null,
       katabasisEntry: null,
       log: [],
       ...NO_OBTAINED,
@@ -762,17 +753,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   openKatabasis: () => set({ katabasisPhase: 'menu', katabasisEntry: 'ledger', notice: null }),
   closeKatabasis: () => set({ katabasisPhase: null, katabasisEntry: null, notice: null }),
-  // The recap suspends the live tick and the world is frozen while it is open: `resumeGame` only
-  // reconciles `lastTickAt` to now (no progression), so the time spent reading "You Rise" is lost,
-  // not paid out.
-  closeRecap: () => {
-    const current = get().state;
-    set({
-      katabasisPhase: null,
-      recap: null,
-      ...(current ? { state: resumeGame(current, Date.now()) } : {}),
-    });
-  },
 
   persist: () => {
     const { state, saveVersion, deviceId } = get();
@@ -811,7 +791,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       firstDescentPlaying: false,
       katabasisPhase: null,
       katabasisEntry: null,
-      recap: null,
       settingsOpen: false,
     });
   },
@@ -917,7 +896,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       log: [],
       ...NO_OBTAINED,
       notice: null,
-      recap: null,
       katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
       katabasisEntry: null,
     });

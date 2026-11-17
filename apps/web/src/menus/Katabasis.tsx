@@ -902,8 +902,8 @@ type Screen = 'ledger' | 'descending' | 'statues' | 'sigils' | 'ascending';
  * Ledger (STATUS QUO, pre-commit), or already committed on the descent. The internal screen
  * (`descending → statues ⇄ sigils → ascending`) is local; offering pours Devotion through the store
  * immediately, binding moves souls to the seals (recoverable until you rise), and the ascent
- * transition commits the lifetime via `confirmKatabasis`. Rendered for the `menu` phase; the recap +
- * Eternal-Sin reveal are their own views.
+ * transition commits the lifetime via `confirmKatabasis`, which lands straight back in the room (no
+ * recap screen, ADR-043). Rendered for the `menu` phase.
  */
 export function Katabasis(): ReactElement {
   const state = useGameStore((s) => s.state);

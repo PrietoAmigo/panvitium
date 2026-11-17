@@ -48,7 +48,6 @@ beforeEach(() => {
     log: [],
     notice: null,
     katabasisPhase: null,
-    recap: null,
     user: null,
     authReady: false,
     syncStatus: 'idle',

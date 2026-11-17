@@ -1079,13 +1079,6 @@ export const strings = {
     holdOffer: 'Hold to offer',
     holdLock: 'Hold to bind',
     holdUnlock: 'Hold to unbind',
-    recapTitle: 'You rise',
-    soulsCarried: 'Souls carried',
-    goldKept: 'Gold remaining',
-    reprobatesKept: 'Reprobates still yours',
-    maleficiaKept: 'Maleficia retained',
-    maleficiaLost: 'Maleficia lost',
-    rise: 'Rise',
     // The once-per-playthrough warning when the altar sigil is committed with no souls in hand.
     emptyHanded: 'I should not descend empty-handed.',
   },

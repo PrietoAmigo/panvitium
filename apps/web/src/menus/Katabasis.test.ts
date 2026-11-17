@@ -6,7 +6,8 @@
  * read-only Ledger (Cardinal-Sin standing + bound-sigil effects), whose way back returns to the
  * room; left alone, the sigil fades away. The first commit of a playthrough made with no souls in
  * hand plays the empty-handed warning instead of descending; the first commit that does descend
- * plays the first-descent cinematic, whose hand-off begins the descent. The recap reads "You Rise" off the committed state.
+ * plays the first-descent cinematic, whose hand-off begins the descent. The Anabasis commits the
+ * lifetime and lands straight back in the room: there is no recap screen (ADR-043).
  * Once every Prince is mastered the ended scene is the feeding screen (the "Red Cloud" handoff): no
  * statue opens, and holding the obelisk thins the cloud; the pour that crosses the threshold raises
  * the Semet screen, whose Accept rises at once through Anabasis. The store actions and sim math
@@ -80,7 +81,6 @@ beforeEach(() => {
     ready: false,
     katabasisPhase: null,
     katabasisEntry: null,
-    recap: null,
     log: [],
     notice: null,
     emptyHandedWarning: false,
@@ -127,26 +127,18 @@ describe('Katabasis flow — orchestrator', () => {
     expect(button('Unfocus')).toBeNull();
   });
 
-  it('renders the "You Rise" recap off the committed state, listing what survived', () => {
-    // Give Gula enough Devotion for Rank 1 (180^1), then run the descent to the recap.
-    patch({
-      souls: bn(5000),
-      devotion: { ...(store().state as GameState).devotion, gula: bn(200) },
-    });
+  it('the rise shows no "You Rise" recap: the flow closes on the committed lifetime', () => {
+    patch({ souls: bn(5000) });
     store().beginKatabasis();
-    store().confirmKatabasis();
     render();
-    expect(container!.querySelector('.recap-title')?.textContent).toBe('You Rise');
-    const rows = Array.from(container!.querySelectorAll('.recap-line')).map(
-      (r) => r.textContent ?? '',
-    );
-    // The recap now reports what carried into the next lifetime, not ranks/devotion.
-    expect(rows.some((t) => t.includes('Reprobates still here'))).toBe(true);
-    expect(rows.some((t) => t.includes('Unlooted maleficia'))).toBe(true);
-    expect(rows.some((t) => t.includes('Remaining gold'))).toBe(true);
-    // The old "carried up / ranks held" lines are gone.
-    expect(rows.some((t) => t.includes('Souls carried up'))).toBe(false);
-    expect(rows.some((t) => t.includes('Ranks held'))).toBe(false);
+    expect(container!.querySelector('.katabasis-flow')).not.toBeNull();
+    act(() => store().confirmKatabasis());
+    expect(store().katabasisPhase).toBeNull();
+    expect((store().state as GameState).inKatabasis).not.toBe(true);
+    // Nothing of the flow is left on screen: no recap, no Acknowledge.
+    expect(container!.querySelector('.katabasis-flow')).toBeNull();
+    expect(container!.querySelector('.recap')).toBeNull();
+    expect(container!.textContent).not.toMatch(/You Rise|Acknowledge/i);
   });
 
   /** Every Sin mastered, down among the Princes, with `souls` in hand. */
@@ -259,11 +251,10 @@ describe('Katabasis flow — orchestrator', () => {
       act(() => {
         vi.advanceTimersByTime(TRANSIT_HOLD_MS);
       });
-      expect(store().katabasisPhase).toBe('recap');
+      // The rise lands straight back in the room: no recap screen (ADR-043).
+      expect(store().katabasisPhase).toBeNull();
       expect((store().state as GameState).inKatabasis).not.toBe(true);
-      // The recap reads only what carried over: no line for the Ninth.
-      expect(container!.querySelector('.recap')).not.toBeNull();
-      expect(container!.querySelector('.recap')!.textContent).not.toMatch(/Ninth|Named/);
+      expect(container!.querySelector('.katabasis-flow')).toBeNull();
     } finally {
       vi.useRealTimers();
     }
@@ -403,8 +394,10 @@ describe('Katabasis flow — orchestrator', () => {
       act(() => {
         vi.advanceTimersByTime(1);
       });
-      expect(store().katabasisPhase).toBe('recap');
+      // The rise lands straight back in the room: no recap screen (ADR-043).
+      expect(store().katabasisPhase).toBeNull();
       expect((store().state as GameState).inKatabasis).not.toBe(true);
+      expect(container!.querySelector('.katabasis-flow')).toBeNull();
     } finally {
       vi.useRealTimers();
     }
@@ -764,9 +757,8 @@ describe('The altar sigil (the Katabasis trigger in the Altar Room)', () => {
       act(() => {
         vi.advanceTimersByTime(FIRST_DESCENT_TOTAL_MS);
       });
-      // Rise into the next lifetime, back in the Altar Room.
+      // Rise into the next lifetime, straight back in the Altar Room.
       act(() => store().confirmKatabasis());
-      act(() => store().closeRecap());
       expect((store().state as GameState).katabasisCount).toBe(1);
       patch({ souls: bn(5) });
       click('The Altar');
