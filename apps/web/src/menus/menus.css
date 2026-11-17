@@ -4250,8 +4250,8 @@ body {
   height: 100%;
   width: auto;
   max-width: 100%;
-  /* The plate's own base fill, holding its place until the image decodes. */
-  background: #17110d;
+  /* The PNG's black color key is transparent; let the room show through. */
+  background: transparent;
 }
 .gb-back {
   align-self: flex-start;
