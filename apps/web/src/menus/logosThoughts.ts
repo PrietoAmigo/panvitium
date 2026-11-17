@@ -30,6 +30,10 @@ export const LOGOS_LATIN: readonly string[] = [
 /** How many fragments drift behind the rites. */
 export const LOGOS_THOUGHT_COUNT = 33;
 
+/** The whole field's faintness, applied to every fragment's colour (on top of its own opacity). It
+ *  never changes, whatever the rites are doing: the field looks and moves the same throughout. */
+export const LOGOS_FIELD_DIM = 0.62;
+
 /** When the scroll opens its mind is empty: each fragment surfaces at its own moment in this span
  *  (seconds), so they arrive gradually and in no order (see `buildLogosThoughts`). */
 export const LOGOS_ENTRANCE: { readonly from: number; readonly to: number } = { from: 0.3, to: 8 };
