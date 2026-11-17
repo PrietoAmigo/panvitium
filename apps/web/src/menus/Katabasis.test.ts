@@ -27,7 +27,8 @@ import {
   releaseFirstDescent,
 } from '../ui/FirstDescent.js';
 import { ALTAR_SIGIL_FADE_MS, ALTAR_SIGIL_IDLE_MS } from '../game/useAltarSigil.js';
-import { TRANSIT_HOLD_MS } from './Katabasis.js';
+import { SCORE_RESUME_MS, TRANSIT_HOLD_MS } from './Katabasis.js';
+import { KATABASIS_MUSIC_VOLUME } from './katabasisMusic.js';
 import { boonLabel } from './katabasisShared.js';
 import type { DegradedSceneProps } from './types.js';
 
@@ -401,6 +402,108 @@ describe('Katabasis flow — orchestrator', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // The score's fade is timed against the clock and stepped by animation frames: fake both.
+  const fakeClock = (): void => {
+    vi.useFakeTimers({
+      toFake: [
+        'setTimeout',
+        'clearTimeout',
+        'requestAnimationFrame',
+        'cancelAnimationFrame',
+        'performance',
+      ],
+    });
+  };
+
+  it('the ambient score rises across the whole descent and falls across the whole Anabasis', () => {
+    fakeClock();
+    const pause = vi.spyOn(window.HTMLMediaElement.prototype, 'pause');
+    try {
+      act(() => store().beginKatabasis());
+      render();
+      const score = (): HTMLAudioElement => container!.querySelector('audio')!;
+      // The commit: the score starts from silence, not at the element's default full volume.
+      expect(score().volume).toBe(0);
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS / 2);
+      });
+      // Halfway down it is rising, not yet half there.
+      expect(score().volume).toBeGreaterThan(0);
+      expect(score().volume).toBeLessThan(KATABASIS_MUSIC_VOLUME / 2);
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS / 2 - 1);
+      });
+      // Nearly down, nearly full...
+      expect(container!.querySelector('.transit')).not.toBeNull();
+      expect(score().volume).toBeGreaterThan(KATABASIS_MUSIC_VOLUME * 0.99);
+      expect(score().volume).toBeLessThan(KATABASIS_MUSIC_VOLUME);
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      // ...and fully there the moment the Princes appear.
+      expect(container!.querySelector('.statue-field')).not.toBeNull();
+      expect(score().volume).toBe(KATABASIS_MUSIC_VOLUME);
+      // Anabasis: from full at the rise...
+      click(/^Fall upwards/);
+      click(/^Fall upwards/);
+      expect(container!.querySelector('.transit')?.getAttribute('data-dir')).toBe('up');
+      expect(score().volume).toBe(KATABASIS_MUSIC_VOLUME);
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS / 2);
+      });
+      // ...falling, halfway up already more than half gone...
+      expect(score().volume).toBeGreaterThan(0);
+      expect(score().volume).toBeLessThan(KATABASIS_MUSIC_VOLUME / 2);
+      act(() => {
+        vi.advanceTimersByTime(TRANSIT_HOLD_MS / 2 - 1);
+      });
+      // ...all but silent as the room returns...
+      expect(store().katabasisPhase).toBe('menu');
+      expect(score().volume).toBeLessThan(KATABASIS_MUSIC_VOLUME * 0.001);
+      pause.mockClear();
+      act(() => {
+        vi.advanceTimersByTime(1);
+      });
+      // ...and stopped with the flow.
+      expect(container!.querySelector('.katabasis-flow')).toBeNull();
+      expect(pause).toHaveBeenCalled();
+    } finally {
+      pause.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('a descent reopened from a save brings the score up from silence on the Princes', () => {
+    fakeClock();
+    try {
+      patch({ inKatabasis: true });
+      useGameStore.setState({ katabasisPhase: 'menu', katabasisEntry: null });
+      render();
+      const score = (): HTMLAudioElement => container!.querySelector('audio')!;
+      expect(container!.querySelector('.statue-field')).not.toBeNull();
+      expect(score().volume).toBe(0);
+      act(() => {
+        vi.advanceTimersByTime(SCORE_RESUME_MS / 2);
+      });
+      expect(score().volume).toBeGreaterThan(0);
+      expect(score().volume).toBeLessThan(KATABASIS_MUSIC_VOLUME);
+      // One animation frame past the fade, it has landed.
+      act(() => {
+        vi.advanceTimersByTime(SCORE_RESUME_MS / 2 + 16);
+      });
+      expect(score().volume).toBe(KATABASIS_MUSIC_VOLUME);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('the Ledger is silent', () => {
+    act(() => store().openKatabasis());
+    render();
+    expect(container!.querySelector('.ledger-title')).not.toBeNull();
+    expect(container!.querySelector('audio')!.volume).toBe(0);
   });
 
   it('lists the eight Princes on the Ledger (fresh = none seated)', () => {

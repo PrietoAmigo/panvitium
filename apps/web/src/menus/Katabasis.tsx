@@ -48,11 +48,11 @@ import { RedCloud } from './RedCloud.js';
 import { ALTAR_SIGIL_SRC } from './AltarSigil.js';
 import { playExstinctio, prefersReducedMotion } from './exstinctio.js';
 import { snapshotRoom, type RoomSnapshot, type StageRect } from './roomSnapshot.js';
+import { KATABASIS_MUSIC_VOLUME, useAmbientScore } from './katabasisMusic.js';
 
 // Runtime art for the descent — served by Vite from apps/web/public. The four lightning frames and
 // the two carved-slab layers are placed here on apply (they live at the repo root + the design zip).
 const ASSET = '/assets/panvitium/katabasis';
-const AMBIENT_SRC = '/assets/panvitium/music/katabasis_ambient.mp3';
 const LIGHTNING_INTENSITY = 8; // 0..10; production value — a strike roughly every ~0.3–1.5s.
 
 function Pips({ level, max }: { level: number; max: number }): ReactElement {
@@ -896,6 +896,34 @@ function HellFloor({
 
 type Screen = 'ledger' | 'descending' | 'statues' | 'sigils' | 'ascending';
 
+/** A descent reopened from a save lands among the Princes with no transit: the score rises over this. */
+export const SCORE_RESUME_MS = 1500;
+
+/**
+ * The ambient score's course on each screen: the volume it heads for and how long it takes to get
+ * there. It rises across the whole descent transit, from silence at the commit, and is full the
+ * moment the Princes appear; it falls across the whole Anabasis, from full at the rise, and is gone
+ * the moment the room returns (the flow closes and the score stops with it). A descent reopened
+ * from a save (`openedOn` the Princes) has no transit, so the score rises there over
+ * `SCORE_RESUME_MS`. The Ledger (pre-commit) is silent.
+ */
+function scoreCourse(screen: Screen, openedOn: Screen): { target: number; ms: number } {
+  switch (screen) {
+    case 'descending':
+      return { target: KATABASIS_MUSIC_VOLUME, ms: TRANSIT_HOLD_MS };
+    case 'ascending':
+      return { target: 0, ms: TRANSIT_HOLD_MS };
+    case 'statues':
+    case 'sigils':
+      return {
+        target: KATABASIS_MUSIC_VOLUME,
+        ms: openedOn === 'descending' ? 0 : SCORE_RESUME_MS,
+      };
+    case 'ledger':
+      return { target: 0, ms: 0 };
+  }
+}
+
 /**
  * Katabasis — the cinematic demonic descent (02 §6/§10), rebuilt from the Claude Design handoff and
  * wired to the real live model. It opens from the Altar Room's sigil ("Altar sigil" handoff): on the
@@ -922,38 +950,11 @@ export function Katabasis(): ReactElement {
   const [modalOpen, setModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Ambient score — plays the whole time you are down in Katabasis, gentle fade in/out.
-  const inKatabasis =
-    screen === 'descending' ||
-    screen === 'statues' ||
-    screen === 'sigils' ||
-    screen === 'ascending';
-  useEffect(() => {
-    const a = audioRef.current;
-    if (!a) return;
-    if (!a.src) {
-      a.src = AMBIENT_SRC;
-      a.onerror = () => {};
-    }
-    const target = inKatabasis ? 0.4 : 0;
-    if (target > 0) {
-      const p = a.play();
-      if (p && p.catch) p.catch(() => {});
-    }
-    let raf = 0;
-    const ramp = (): void => {
-      const d = target - a.volume;
-      if (Math.abs(d) < 0.03) {
-        a.volume = target;
-        if (target === 0) a.pause();
-        return;
-      }
-      a.volume = Math.max(0, Math.min(1, a.volume + (d > 0 ? 0.035 : -0.05)));
-      raf = requestAnimationFrame(ramp);
-    };
-    ramp();
-    return () => cancelAnimationFrame(raf);
-  }, [inKatabasis]);
+  // Ambient score: it plays the whole time you are down in Katabasis, rising with the descent and
+  // falling with the Anabasis (see `scoreCourse`).
+  const [openedOn] = useState(screen);
+  const course = scoreCourse(screen, openedOn);
+  useAmbientScore(audioRef, course.target, course.ms);
 
   // Auto-disarm the rise after the two-press window.
   useEffect(() => {
