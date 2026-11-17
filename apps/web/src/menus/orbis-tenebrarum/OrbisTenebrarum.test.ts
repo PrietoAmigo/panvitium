@@ -17,7 +17,13 @@ import { createRoot, type Root } from 'react-dom/client';
 import { useGameStore } from '../../store/gameStore.js';
 import { OrbisTenebrarum } from './index.js';
 import { WORLD_LAND, isLand, LAND_POINTS } from './orbis.land.js';
-import { coordForFind, MALEFICIA_COORDS, ORBIS_RARITY } from './orbis.data.js';
+import {
+  coordForFind,
+  formatCoord,
+  MALEFICIA_COORDS,
+  ORBIS_RARITY,
+  ORBIS_TIER_FIND,
+} from './orbis.data.js';
 import type { OrbisFind } from './index.js';
 import { IndagatioEmptioProgram } from '../../ui/panels.js';
 
@@ -293,11 +299,12 @@ describe('OrbisTenebrarum — search countdown, Emptio progress, effect gating',
         onDivest: () => {},
       }),
     );
-    // Only one purchase runs at a time, so the whole Acquire control is disabled and says so.
+    // Only one purchase runs at a time, so the whole Acquire control is disabled and names the relic
+    // being bought, with its progress.
     const acquire = container!.querySelector<HTMLButtonElement>('.orbis-acquire');
     expect(acquire).not.toBeNull();
     expect(acquire!.disabled).toBe(true);
-    expect((acquire!.textContent ?? '').trim()).toBe('Emptio underway');
+    expect((acquire!.textContent ?? '').trim()).toBe('Emptio busy: Ars Serpens 50%');
   });
 
   it('omits the effect line when a relic grants no effect to show', () => {
@@ -459,5 +466,232 @@ describe('IndagatioEmptioProgram — live wiring', () => {
     );
     // The Spear of Longinus grants none: its row carries no line; the Codex Gigas grants 4.
     expect(lines).toEqual(['+4 invoking power']);
+  });
+});
+
+/** The props every enhanced-surface test shares; each test overrides what it pins. */
+function baseProps(
+  over: Partial<Parameters<typeof OrbisTenebrarum>[0]> = {},
+): Parameters<typeof OrbisTenebrarum>[0] {
+  return {
+    finds: MOCK_FINDS,
+    investmentPercent: '4%',
+    investmentGold: '1,240',
+    gold: '31,000',
+    searching: false,
+    onCast: noop,
+    onSelect: noop,
+    onAcquire: noop,
+    onInvest: noop,
+    onDivest: noop,
+    ...over,
+  };
+}
+
+const TIER_CHANCES = [
+  { tier: 'stellar', label: 'Stellar', chance: '2.1%', share: 0.021 },
+  { tier: 'excellent', label: 'Excellent', chance: '6.4%', share: 0.064 },
+  { tier: 'good', label: 'Good', chance: '18.0%', share: 0.18 },
+  { tier: 'neutral', label: 'Neutral', chance: '38.5%', share: 0.385 },
+  { tier: 'bad', label: 'Bad', chance: '22.0%', share: 0.22 },
+  { tier: 'terrible', label: 'Terrible', chance: '9.8%', share: 0.098 },
+  { tier: 'apocalyptic', label: 'Apocalyptic', chance: '3.2%', share: 0.032 },
+];
+
+describe('OrbisTenebrarum — enhanced ledger', () => {
+  it('counts the located maleficia, in total and per rarity', () => {
+    mount(createElement(OrbisTenebrarum, baseProps()));
+    expect((container!.querySelector('.orbis-ledger-count')?.textContent ?? '').trim()).toBe(
+      '2 located',
+    );
+    const counts = [...container!.querySelectorAll('.orbis-legend-count')].map(
+      (n) => n.textContent,
+    );
+    // Legend order is common, rare, profane, anathema; the mock holds one common and one rare.
+    expect(counts).toEqual(['1', '1', '0', '0']);
+  });
+
+  it('marks a bound relic in place of its price, and locks an unaffordable one', () => {
+    const finds: OrbisFind[] = [
+      { ...MOCK_FINDS[0]!, acquired: true, affordable: false },
+      MOCK_FINDS[1]!, // obsidian_mirror: not affordable
+    ];
+    mount(createElement(OrbisTenebrarum, baseProps({ finds, selectedId: 'ars_serpens' })));
+    const rows = container!.querySelectorAll('.orbis-row');
+    expect(rows[0]!.className).toContain('is-owned');
+    expect((rows[0]!.querySelector('.orbis-row-bound')?.textContent ?? '').trim()).toBe('◈ Bound');
+    expect(rows[0]!.querySelector('.orbis-row-cost')).toBeNull();
+    const locked = rows[1]!.querySelector('.orbis-row-cost.is-locked');
+    expect(locked).not.toBeNull();
+    expect(locked!.querySelector('svg.orbis-lock')).not.toBeNull();
+    expect((locked!.textContent ?? '').trim()).toBe('900 g');
+    // The bound relic's Acquire control is disabled and says so.
+    const acquire = container!.querySelector<HTMLButtonElement>('.orbis-acquire');
+    expect(acquire!.disabled).toBe(true);
+    expect((acquire!.textContent ?? '').trim()).toBe('◈ Bound');
+  });
+
+  it('shows the percentage on the row being bought, and Acquire for that relic reports it', () => {
+    mount(
+      createElement(
+        OrbisTenebrarum,
+        baseProps({
+          selectedId: 'ars_serpens',
+          emptioProgress: { id: 'ars_serpens', fraction: 0.4 },
+        }),
+      ),
+    );
+    const buying = container!.querySelector('.orbis-row.is-buying');
+    expect((buying?.querySelector('.orbis-row-cost.is-buying')?.textContent ?? '').trim()).toBe(
+      '40%',
+    );
+    expect((container!.querySelector('.orbis-acquire')?.textContent ?? '').trim()).toBe(
+      'Emptio underway · 40%',
+    );
+  });
+
+  it('gives the detail its coordinates, price, art niche and split effect clause', () => {
+    const finds: OrbisFind[] = [
+      {
+        ...MOCK_FINDS[0]!,
+        desc: 'Smooth to the touch and ear.',
+        boon: '+33% Logos efficiency.',
+        img: '/assets/panvitium/maleficia/ars_serpens.png',
+      },
+    ];
+    mount(createElement(OrbisTenebrarum, baseProps({ finds, selectedId: 'ars_serpens' })));
+    const detail = container!.querySelector('.orbis-detail')!;
+    expect((detail.querySelector('.orbis-detail-coord')?.textContent ?? '').trim()).toBe(
+      formatCoord(coordForFind(finds[0]!)),
+    );
+    expect((detail.querySelector('.orbis-detail-price-value')?.textContent ?? '').trim()).toBe(
+      '120 g',
+    );
+    expect(detail.querySelector('.orbis-detail-art--common')).not.toBeNull();
+    expect((detail.querySelector('.orbis-detail-desc')?.textContent ?? '').trim()).toBe(
+      'Smooth to the touch and ear.',
+    );
+    expect((detail.querySelector('.orbis-detail-boon')?.textContent ?? '').trim()).toBe(
+      '+33% Logos efficiency.',
+    );
+    // The invoking-power line stays as its own line.
+    expect((detail.querySelector('.orbis-detail-effect')?.textContent ?? '').trim()).toBe(
+      '+2 invoking power',
+    );
+    // An affordable relic's button just says Acquire: the price sits beside it.
+    expect((detail.querySelector('.orbis-acquire')?.textContent ?? '').trim()).toBe('Acquire');
+  });
+
+  it('omits the art niche and the effect clause when a find carries neither', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ selectedId: 'ars_serpens' })));
+    expect(container!.querySelector('.orbis-detail-art')).toBeNull();
+    expect(container!.querySelector('.orbis-detail-boon')).toBeNull();
+  });
+});
+
+describe('OrbisTenebrarum — enhanced globe stage', () => {
+  it('labels the selected find over the globe as DOM, with its rarity and price', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ selectedId: 'obsidian_mirror' })));
+    const label = container!.querySelector('.orbis-pin-label');
+    expect(label).not.toBeNull();
+    expect(label!.className).toContain('orbis-pin-label--rare');
+    expect((label!.querySelector('.orbis-pin-label-name')?.textContent ?? '').trim()).toBe(
+      'Obsidian Mirror',
+    );
+    expect((label!.querySelector('.orbis-pin-label-meta')?.textContent ?? '').trim()).toBe(
+      'Rare · 900 g',
+    );
+  });
+
+  it('shows no pin label when nothing is selected, and keeps the drag hint', () => {
+    mount(createElement(OrbisTenebrarum, baseProps()));
+    expect(container!.querySelector('.orbis-pin-label')).toBeNull();
+    expect(container!.querySelector('.orbis-hint')?.textContent ?? '').toContain(
+      'drag to turn the world',
+    );
+  });
+
+  it('relabels Cast while a search is underway', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ searching: true })));
+    expect((container!.querySelector('.orbis-cast-btn')?.textContent ?? '').trim()).toBe(
+      'Search underway',
+    );
+  });
+
+  it('places Divest and Invest either side of the Investment meter', () => {
+    mount(createElement(OrbisTenebrarum, baseProps()));
+    const group = container!.querySelector('.orbis-invest-group')!;
+    const kids = [...group.children].map((n) => n.className);
+    expect(kids).toEqual([
+      'orbis-divest-btn',
+      'orbis-meter orbis-meter--invest',
+      'orbis-invest-btn',
+    ]);
+  });
+
+  it('draws the odds as a bar, one segment per tier sized by its share and tinted by its rarity', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ tierChances: TIER_CHANCES })));
+    const segs = [...container!.querySelectorAll<HTMLElement>('.orbis-odds-seg')];
+    expect(segs.length).toBe(7);
+    expect(segs[0]!.style.flexGrow).toBe('0.021');
+    // Stellar reaches for anathema (red); Good for rare (teal); Bad finds nothing (grey).
+    expect(segs[0]!.style.background).toBe('rgb(208, 90, 77)');
+    expect(segs[2]!.style.background).toBe('rgb(86, 179, 163)');
+    expect(segs[4]!.style.background).toBe('rgb(94, 88, 80)');
+    expect(container!.querySelectorAll('.orbis-odds-row').length).toBe(7);
+  });
+
+  it('leaves a zero-chance tier out of the bar but keeps it in the list', () => {
+    const tiers = TIER_CHANCES.map((t) =>
+      t.tier === 'apocalyptic' ? { ...t, chance: '0.0%', share: 0 } : t,
+    );
+    mount(createElement(OrbisTenebrarum, baseProps({ tierChances: tiers })));
+    expect(container!.querySelectorAll('.orbis-odds-seg').length).toBe(6);
+    expect(container!.querySelectorAll('.orbis-odds-row').length).toBe(7);
+  });
+});
+
+describe('orbis helpers', () => {
+  it('formats a globe position as a compact coordinate line', () => {
+    expect(formatCoord([12.5, 43.5])).toBe('43.50°N · 12.50°E');
+    expect(formatCoord([-99, 19])).toBe('19.00°N · 99.00°W');
+    expect(formatCoord([-71, -36])).toBe('36.00°S · 71.00°W');
+  });
+
+  it('maps each surfacing tier to the rarity it reaches for, and the failure tiers to none', () => {
+    expect(ORBIS_TIER_FIND).toEqual({
+      stellar: 'anathema',
+      excellent: 'profane',
+      good: 'rare',
+      neutral: 'common',
+      bad: null,
+      terrible: null,
+      apocalyptic: null,
+    });
+  });
+});
+
+describe('IndagatioEmptioProgram — enhanced wiring', () => {
+  it("passes a relic's art and split copy into the detail, and the odds as bar shares", () => {
+    const s = store().state!;
+    useGameStore.setState({
+      state: { ...s, lifetime: { ...s.lifetime, emptioList: ['voynich_manuscript'] } },
+    });
+    mount(createElement(IndagatioEmptioProgram));
+    click(container!.querySelector('.orbis-row')!);
+    const detail = container!.querySelector('.orbis-detail')!;
+    expect((detail.querySelector('.orbis-detail-desc')?.textContent ?? '').trim()).toBe(
+      'Unreadable to the faithful; fluent to the fallen.',
+    );
+    expect((detail.querySelector('.orbis-detail-boon')?.textContent ?? '').trim()).toBe(
+      '+25% Desidia gain rate.',
+    );
+    expect(detail.querySelector('.orbis-detail-art--profane')).not.toBeNull();
+    // Every tier with a chance gets a bar segment; the shares sum to the whole bar.
+    const shares = [...container!.querySelectorAll<HTMLElement>('.orbis-odds-seg')].map((n) =>
+      Number(n.style.flexGrow),
+    );
+    expect(shares.length).toBeGreaterThan(0);
+    expect(shares.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6);
   });
 });

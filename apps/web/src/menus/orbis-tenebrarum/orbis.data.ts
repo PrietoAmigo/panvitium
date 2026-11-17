@@ -16,6 +16,29 @@ export const ORBIS_RARITY: Record<OrbisRarity, { label: string; color: string; g
   anathema: { label: 'Anathema', color: '#d05a4d', glow: 'rgba(208,90,77,.6)' },
 };
 
+/**
+ * The rarity each Search outcome tier reaches for first (it falls back down the chain when none of
+ * that rarity is left to find): the odds bar paints a tier in this rarity's colour. The failure
+ * tiers (Bad: a false lead; Terrible / Apocalyptic: gold lost) find nothing and map to null.
+ * Mirrors the sim's `indagatioTierDelta` chains.
+ */
+export const ORBIS_TIER_FIND: Readonly<Record<string, OrbisRarity | null>> = {
+  stellar: 'anathema',
+  excellent: 'profane',
+  good: 'rare',
+  neutral: 'common',
+  bad: null,
+  terrible: null,
+  apocalyptic: null,
+};
+
+/** A globe position as a compact coordinate line, e.g. `43.50°N · 12.50°E`. */
+export function formatCoord([lon, lat]: readonly [number, number]): string {
+  const ns = lat >= 0 ? 'N' : 'S';
+  const ew = lon >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(2)}°${ns} · ${Math.abs(lon).toFixed(2)}°${ew}`;
+}
+
 /** Hand-placed [lon, lat] for the known catalog ids — evocative, spread across the globe. */
 export const MALEFICIA_COORDS: Record<string, readonly [number, number]> = {
   ars_serpens: [35, 39],
