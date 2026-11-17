@@ -28,7 +28,15 @@ export const LOGOS_LATIN: readonly string[] = [
 ];
 
 /** How many fragments drift behind the rites. */
-export const LOGOS_THOUGHT_COUNT = 66;
+export const LOGOS_THOUGHT_COUNT = 33;
+
+/** When the scroll opens its mind is empty: each fragment surfaces at its own moment in this span
+ *  (seconds), so they arrive gradually and in no order (see `buildLogosThoughts`). */
+export const LOGOS_ENTRANCE: { readonly from: number; readonly to: number } = { from: 0.3, to: 8 };
+
+/** How long a fragment stays gone after it reaches the end of its path, before it surfaces again at
+ *  the start (seconds; each fragment draws its own). */
+export const LOGOS_RETURN: { readonly min: number; readonly max: number } = { min: 3, max: 5 };
 
 /**
  * The curved paths a fragment rides, in design px around its anchor (SVG path syntax; absolute
@@ -164,21 +172,21 @@ const r1 = (n: number): number => Math.round(n * 10) / 10;
 
 /**
  * The drift's keyframes, one `logos-path-N` per path, plus the `.logos-path-N` classes that pick
- * them. Each moves the fragment's centre along its curve with `transform` and fades it in over the
- * first tenth and out over the last: transform and opacity only, so the compositor runs all of it
- * and the drift costs the main thread nothing per frame. (A CSS motion path, `offset-path`, draws
- * the same curve but animates on the main thread, restyling every fragment every frame.)
+ * them. Each moves the fragment's centre along its curve with `transform` only, so the compositor
+ * runs all of it and the drift costs the main thread nothing per frame. (A CSS motion path,
+ * `offset-path`, draws the same curve but animates on the main thread, restyling every fragment
+ * every frame.) No fade: a fragment holds its faintness the whole way round, and an opacity
+ * animated on it would make the compositor render its slithering letters offscreen every frame.
  */
 export function logosPathKeyframes(steps: number = LOGOS_PATH_STEPS): string {
   return LOGOS_PATHS.map(({ d, reverse }, i) => {
     const n = i + 1;
     const frames = sampleLogosPath(d, reverse, steps).map((p, k) => {
       const at = r1((k * 100) / steps);
-      const fade = k === 0 || k === steps ? 'opacity:0;' : '';
-      return `${at}%{${fade}transform:translate(${r1(p.x)}px,${r1(p.y)}px) rotate(${r1(p.angle)}deg) translate(-50%,-50%)}`;
+      return `${at}%{transform:translate(${r1(p.x)}px,${r1(p.y)}px) rotate(${r1(p.angle)}deg) translate(-50%,-50%)}`;
     });
     return (
-      `@keyframes logos-path-${n}{${frames.join('')}10%{opacity:1}90%{opacity:1}}` +
+      `@keyframes logos-path-${n}{${frames.join('')}}` +
       `.logos-path-${n}{animation-name:logos-path-${n}}`
     );
   }).join('\n');
@@ -208,10 +216,133 @@ export interface LogosThought {
   color: string;
   /** One traversal of its path, in seconds. */
   duration: number;
-  /** A negative delay, so the field is already mid-drift when the scroll opens. */
+  /** How long it stays gone at the end of its path before surfacing again (LOGOS_RETURN). */
+  gap: number;
+  /** One whole round: its traversal, then its absence (`duration + gap`), in seconds. */
+  cycle: number;
+  /** When it first surfaces after the scroll opens, in seconds (LOGOS_ENTRANCE): a positive delay
+   *  on both its drift and its presence, so it is hidden until then and enters at its path's start. */
+  enter: number;
+  /** The drift's easing over a round: along the path in the traversal, then held at its end. */
+  driftEasing: string;
+  /** The presence's easing over a round: shown for the traversal, then gone (scaled to nothing). */
+  presenceEasing: string;
+  /** Its body, one vertebra per character in reading order, phased from head to tail. */
+  vertebrae: LogosVertebra[];
+  /** One undulation of the body, in seconds: larger fragments slither slower. */
+  slither: number;
+}
+
+/** One letter of a slithering fragment (see `logosVertebrae`). */
+export interface LogosVertebra {
+  ch: string;
+  /** The `logos-slither-*` keyframes it rides: its voice, its heading and its share of the swing. */
+  keyframes: string;
+  /** Its size in ems of the fragment: the body narrows toward the tail. */
+  size: number;
+  /** A negative delay that sets its phase on the wave. */
   delay: number;
-  /** A fragment that flickers (about one in six), with its own flicker period. */
-  flicker: { duration: number; delay: number } | null;
+}
+
+/**
+ * The serpents (Claude Design, "Serpent Words"): every drifting fragment slithers as it drifts.
+ * Each letter is a vertebra riding one sine wave, raised by the wave and turned with its slope; its
+ * phase runs from the head, the letter leading the drift, back to the tail. Tuned on the design
+ * canvas.
+ */
+export const LOGOS_SERPENT = {
+  /** A vertebra's peak sway at full share, in ems of its own size. */
+  amplitude: 0.5,
+  /** Letters per wave. */
+  wavelength: 9.5,
+  /** One undulation of an 18 px fragment, in seconds. */
+  period: 2.2,
+  /** How far the body narrows: the tail letter is `1 - taper` em. */
+  taper: 0.25,
+} as const;
+
+/** A vertebra's share of the swing: the head stays steadier, the body sways fully from 40% back.
+ *  Quantised to these levels so every vertebra rides one of a few fixed keyframe sets. */
+export const LOGOS_SWAY_LEVELS: readonly number[] = [0.35, 0.675, 1];
+
+/** A letter's advance in ems, which sets how steep the wave runs through it: Latin capitals carry
+ *  wide tracking, the English italic is narrow. */
+const LATIN_PITCH = 0.86;
+const NOTE_PITCH = 0.5;
+
+/** Steps per undulation in the slither keyframes (every 30°). */
+export const LOGOS_SLITHER_STEPS = 12;
+
+/** The keyframes a vertebra rides, by voice, heading (east: head last; west: head first) and level. */
+export function logosSlitherName(latin: boolean, headFirst: boolean, level: number): string {
+  return `logos-slither-${latin ? 'latin' : 'note'}-${headFirst ? 'w' : 'e'}${level}`;
+}
+
+/** The peak tilt, in degrees, that keeps a full-share vertebra along the wave's slope in a voice. */
+export function logosSlitherTilt(latin: boolean): number {
+  const { amplitude, wavelength } = LOGOS_SERPENT;
+  const gradient = (2 * Math.PI * amplitude) / (wavelength * (latin ? LATIN_PITCH : NOTE_PITCH));
+  return (Math.atan(gradient) * 180) / Math.PI;
+}
+
+const r3 = (n: number): number => Math.round(n * 1000) / 1000;
+
+/**
+ * The slither's keyframes, one set per voice, heading and sway level: a vertebra rises by
+ * `amplitude · sway · sin θ` em and turns by `tilt · sway · cos θ` (the slope; its sign flips with
+ * the heading, as the wave runs the other way along the word). Fixed values, transform only: the
+ * compositor runs them, where keyframes reading custom properties would be re-resolved on the main
+ * thread for every vertebra at every style pass.
+ */
+export function logosSlitherKeyframes(steps: number = LOGOS_SLITHER_STEPS): string {
+  const out: string[] = [];
+  for (const latin of [true, false]) {
+    const tilt = logosSlitherTilt(latin);
+    for (const headFirst of [false, true]) {
+      const bend = headFirst ? 1 : -1;
+      LOGOS_SWAY_LEVELS.forEach((sway, level) => {
+        const frames: string[] = [];
+        for (let k = 0; k <= steps; k++) {
+          const theta = (2 * Math.PI * k) / steps;
+          const y = r3(-LOGOS_SERPENT.amplitude * sway * Math.sin(theta)) || 0;
+          const turn = r1(tilt * bend * sway * Math.cos(theta)) || 0;
+          frames.push(`${r3((k * 100) / steps)}%{transform:translateY(${y}em) rotate(${turn}deg)}`);
+        }
+        out.push(`@keyframes ${logosSlitherName(latin, headFirst, level)}{${frames.join('')}}`);
+      });
+    }
+  }
+  return out.join('\n');
+}
+
+/**
+ * A fragment's body. `headFirst` when it is ridden leftward (its first letter leads); `phase` (0..1)
+ * offsets its wave from its neighbours'. Each vertebra's phase trails the head's by its distance
+ * back over the wavelength, so the wave runs from the head to the tail.
+ */
+export function logosVertebrae(
+  text: string,
+  latin: boolean,
+  headFirst: boolean,
+  phase: number,
+  slither: number,
+): LogosVertebra[] {
+  const chars = Array.from(text);
+  const n = chars.length;
+  const { wavelength, taper } = LOGOS_SERPENT;
+  const top = LOGOS_SWAY_LEVELS.length - 1;
+  return chars.map((ch, j) => {
+    const back = headFirst ? j : n - 1 - j;
+    const tail = n > 1 ? back / (n - 1) : 0;
+    const f = (((phase - back / wavelength) % 1) + 1) % 1;
+    const level = Math.round(Math.min(1, tail / 0.4) * top);
+    return {
+      ch,
+      keyframes: logosSlitherName(latin, headFirst, level),
+      size: r3(1 - taper * tail),
+      delay: r3(-f * slither) || 0,
+    };
+  });
 }
 
 const EMBER = '#d24a2c';
@@ -220,14 +351,25 @@ const BONE = '#eadcc2';
 
 /**
  * Build the field. Sizes span a wide range (a few huge, faint words among many small ones), speeds
- * are log-uniform between 14 s and 220 s, and colour mixes ember, candle and bone. Deterministic for
- * a given seed.
+ * are log-uniform between 14 s and 220 s, and colour mixes ember, candle and bone. Each fragment
+ * surfaces at its own moment after the scroll opens, rides its path once, vanishes at the end and
+ * surfaces again at the start 3-5 s later, round after round. Deterministic for a given seed.
  */
 export function buildLogosThoughts(
   count: number = LOGOS_THOUGHT_COUNT,
   seed = 'obsessio',
 ): LogosThought[] {
   const rng = makeRng(hashSeed(seed));
+  // Its own stream, so the field's look and placement stay where they were.
+  const timing = makeRng(hashSeed(`${seed}:cycle`));
+  // The entrance is stratified: each fragment takes a shuffled slot of the span and a random moment
+  // within it, so they surface steadily but irregularly, in no order and never in a burst.
+  const slots = Array.from({ length: count }, (_, k) => k);
+  for (let k = count - 1; k > 0; k--) {
+    const j = timing.int(k + 1);
+    [slots[k], slots[j]] = [slots[j]!, slots[k]!];
+  }
+  const slotSpan = (LOGOS_ENTRANCE.to - LOGOS_ENTRANCE.from) / Math.max(1, count);
   const english = strings.opera.logosThoughts;
   const out: LogosThought[] = [];
   for (let i = 0; i < count; i++) {
@@ -245,29 +387,46 @@ export function buildLogosThoughts(
         : rng.range(0.09, 0.22);
     const duration = Math.exp(rng.range(Math.log(14), Math.log(220)));
     const tone = rng.float();
-    const flickers = rng.chance(0.17);
-    const flickerDuration = rng.range(2.5, 8.5);
-    const flickerDelay = -rng.float() * flickerDuration;
+    // The retired flicker's three draws, still taken so every later draw (and so each fragment's
+    // softness, place, path and phase) stays where it was.
+    rng.chance(0.17);
+    rng.range(2.5, 8.5);
+    rng.float();
     const blur = huge ? 1.8 : rng.chance(0.18) ? rng.range(1, 2.6) : 0;
+    const x = Math.round(rng.range(-160, LOGOS_STAGE_W + 160));
+    const y = Math.round(rng.range(-120, LOGOS_STAGE_H + 120));
+    const rotate = Math.round(rng.range(-75, 75));
+    const path = 1 + rng.int(LOGOS_PATH_COUNT);
+    // The retired mid-drift start (the field now enters gradually instead), still drawn.
+    rng.float();
+    const traversal = Math.round(duration * 10) / 10;
+    const gap = r1(timing.range(LOGOS_RETURN.min, LOGOS_RETURN.max));
+    const cycle = r1(traversal + gap);
+    const held = Math.round((traversal / cycle) * 100000) / 1000;
+    // The serpent draws nothing from the stream (its phase is the index's golden-ratio step), so the
+    // field's placement, timing and look are exactly what they were before it slithered.
+    const headFirst = LOGOS_PATHS[path - 1]?.reverse ?? false;
+    const slither =
+      Math.round(LOGOS_SERPENT.period * Math.pow(Math.round(fontSize) / 18, 0.4) * 100) / 100;
     out.push({
       text,
       latin,
-      x: Math.round(rng.range(-160, LOGOS_STAGE_W + 160)),
-      y: Math.round(rng.range(-120, LOGOS_STAGE_H + 120)),
-      rotate: Math.round(rng.range(-75, 75)),
-      path: 1 + rng.int(LOGOS_PATH_COUNT),
+      x,
+      y,
+      rotate,
+      path,
       fontSize: Math.round(fontSize),
       opacity: Math.round(opacity * 1000) / 1000,
       blur: Math.round(blur * 10) / 10,
       color: tone < 0.4 ? EMBER : tone < 0.52 ? CANDLE : BONE,
-      duration: Math.round(duration * 10) / 10,
-      delay: Math.round(-rng.float() * duration * 10) / 10,
-      flicker: flickers
-        ? {
-            duration: Math.round(flickerDuration * 10) / 10,
-            delay: Math.round(flickerDelay * 10) / 10,
-          }
-        : null,
+      duration: traversal,
+      gap,
+      cycle,
+      enter: r1(LOGOS_ENTRANCE.from + ((slots[i] ?? i) + timing.float()) * slotSpan),
+      driftEasing: `linear(0, 1 ${held}%, 1)`,
+      presenceEasing: `linear(0, 0 ${held}%, 1 ${held}%, 1)`,
+      vertebrae: logosVertebrae(text, latin, headFirst, (i * 0.6180339887) % 1, slither),
+      slither,
     });
   }
   return out;

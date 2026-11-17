@@ -13,6 +13,7 @@ import {
   buildLogosThoughts,
   logosEchoes,
   logosPathKeyframes,
+  logosSlitherKeyframes,
   LOGOS_STAGE_H,
   LOGOS_STAGE_W,
   type LogosThought,
@@ -74,8 +75,8 @@ const RITE_PLACES: readonly { x: number; y: number; rotate: number }[] = [
 /** The field, built once: it is layout, not state, and identical on every open. */
 const THOUGHTS: readonly LogosThought[] = buildLogosThoughts();
 
-/** The drift's compositor-only keyframes, sampled once from the curves in logosThoughts.ts. */
-const PATH_KEYFRAMES = logosPathKeyframes();
+/** The drift's and the slither's compositor-only keyframes, built once in logosThoughts.ts. */
+const FIELD_KEYFRAMES = `${logosPathKeyframes()}\n${logosSlitherKeyframes()}`;
 
 /** `#rrggbb` at an alpha. A fragment's or echo's faintness rides in its colour rather than in an
  *  `opacity` on a wrapper: opacity on the parent of an animated layer forces the compositor to
@@ -98,8 +99,13 @@ function softText(blur: number, color: string): CSSProperties {
 }
 
 /**
- * The drifting thoughts. Memoised with no props so the 10 Hz store updates that move a rite's
- * progress never touch the field; its loudness is set by a class on the wrapper instead.
+ * The drifting thoughts, each a serpent: the fragment drifts its path while its letters, the
+ * vertebrae, ride the slither wave. The mind starts empty: each fragment surfaces at its own moment,
+ * rides its path, vanishes at the end and surfaces again at the start a few seconds later. Its
+ * presence (a wrapper scaled to nothing while it is gone) and its drift share one round and one
+ * delay; both are transform-only, and nothing animates opacity above an animated letter. Memoised
+ * with no props so the 10 Hz store updates that move a rite's progress never touch the field; its
+ * loudness is set by a class on the wrapper instead.
  */
 const LogosThoughts = memo(function LogosThoughts(): ReactElement {
   return (
@@ -111,27 +117,38 @@ const LogosThoughts = memo(function LogosThoughts(): ReactElement {
           style={{ left: t.x, top: t.y, transform: `rotate(${t.rotate}deg)` }}
         >
           <div
-            className={t.flicker ? 'logos-flicker' : undefined}
-            style={
-              t.flicker
-                ? {
-                    animationDuration: `${t.flicker.duration}s`,
-                    animationDelay: `${t.flicker.delay}s`,
-                  }
-                : undefined
-            }
+            className="logos-presence"
+            style={{
+              animationDuration: `${t.cycle}s`,
+              animationDelay: `${t.enter}s`,
+              animationTimingFunction: t.presenceEasing,
+            }}
           >
             <span
               className={`logos-mote logos-path-${t.path} ${t.latin ? 'logos-mote--latin' : 'logos-mote--note'}`}
               style={{
                 fontSize: t.fontSize,
                 color: withAlpha(t.color, t.opacity),
-                animationDuration: `${t.duration}s`,
-                animationDelay: `${t.delay}s`,
+                animationDuration: `${t.cycle}s`,
+                animationDelay: `${t.enter}s`,
+                animationTimingFunction: t.driftEasing,
                 ...softText(t.blur, withAlpha(t.color, t.opacity)),
               }}
             >
-              {t.text}
+              {t.vertebrae.map((v, k) => (
+                <span
+                  key={k}
+                  className="logos-vertebra"
+                  style={{
+                    fontSize: `${v.size}em`,
+                    animationName: v.keyframes,
+                    animationDuration: `${t.slither}s`,
+                    animationDelay: `${v.delay}s`,
+                  }}
+                >
+                  {v.ch}
+                </span>
+              ))}
             </span>
           </div>
         </div>
@@ -220,7 +237,7 @@ export function LogosPanel({
         style={stageStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        <style>{PATH_KEYFRAMES}</style>
+        <style>{FIELD_KEYFRAMES}</style>
         <div className={`logos-drift logos-drift--${mood}`} aria-hidden="true">
           <LogosThoughts />
         </div>

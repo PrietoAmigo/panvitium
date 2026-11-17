@@ -16,12 +16,21 @@ import {
   buildLogosThoughts,
   logosEchoes,
   logosPathKeyframes,
+  logosSlitherKeyframes,
+  logosSlitherName,
+  logosSlitherTilt,
+  logosVertebrae,
   sampleLogosPath,
   LOGOS_ECHO_COUNT,
+  LOGOS_ENTRANCE,
   LOGOS_LATIN,
   LOGOS_PATHS,
   LOGOS_PATH_COUNT,
   LOGOS_PATH_STEPS,
+  LOGOS_RETURN,
+  LOGOS_SERPENT,
+  LOGOS_SLITHER_STEPS,
+  LOGOS_SWAY_LEVELS,
   LOGOS_THOUGHT_COUNT,
 } from './logosThoughts.js';
 
@@ -258,6 +267,41 @@ describe('Chthonic Logos (Obsessio)', () => {
     expect(container!.querySelector('style')?.textContent).toContain('@keyframes logos-path-1');
   });
 
+  it('draws every thought as a serpent: one vertebra per letter, still reading as its text', () => {
+    render({ actions: THREE, onClose: () => {} });
+    const field = buildLogosThoughts();
+    const motes = Array.from(container!.querySelectorAll<HTMLElement>('.logos-mote'));
+    expect(motes.length).toBe(field.length);
+    motes.forEach((mote, i) => {
+      const t = field[i]!;
+      expect(mote.textContent).toBe(t.text);
+      // Its presence sits between it and its anchor (no flicker wrapper), on the same round.
+      const presence = mote.parentElement!;
+      expect(presence.className).toBe('logos-presence');
+      expect(presence.parentElement?.className).toBe('logos-thought');
+      for (const el of [presence, mote]) {
+        expect(el.style.animationDuration).toBe(`${t.cycle}s`);
+        expect(el.style.animationDelay).toBe(`${t.enter}s`);
+      }
+      expect(presence.style.animationTimingFunction).toBe(t.presenceEasing);
+      expect(mote.style.animationTimingFunction).toBe(t.driftEasing);
+      const vertebrae = Array.from(mote.querySelectorAll<HTMLElement>('.logos-vertebra'));
+      expect(vertebrae.length).toBe(Array.from(t.text).length);
+      vertebrae.forEach((el, k) => {
+        const v = t.vertebrae[k]!;
+        // Its wave and nothing else: the thoughts neither fade nor flicker.
+        expect(el.style.animationName).toBe(v.keyframes);
+        expect(el.style.animationDuration).toBe(`${t.slither}s`);
+        expect(el.style.animationDelay).toBe(`${v.delay}s`);
+      });
+    });
+    expect(container!.querySelector('.logos-flicker')).toBeNull();
+    // Every set a vertebra names ships with the panel.
+    const css = container!.querySelector('style')?.textContent ?? '';
+    const named = new Set(field.flatMap((t) => t.vertebrae.map((v) => v.keyframes)));
+    for (const name of named) expect(css).toContain(`@keyframes ${name}{`);
+  });
+
   it('animates nothing under a live blur filter or a faded wrapper (both cost a pass per frame)', () => {
     render({
       actions: [
@@ -310,12 +354,47 @@ describe('Chthonic Logos thoughts', () => {
       expect(t.opacity).toBeLessThanOrEqual(0.22);
       expect(t.duration).toBeGreaterThanOrEqual(14);
       expect(t.duration).toBeLessThanOrEqual(220);
-      expect(t.delay).toBeLessThanOrEqual(0);
     }
     // Not parallel, not uniform: the field spreads across headings, sizes and speeds.
     expect(new Set(field.map((t) => t.rotate)).size).toBeGreaterThan(20);
     expect(new Set(field.map((t) => t.fontSize)).size).toBeGreaterThan(15);
     expect(new Set(field.map((t) => t.duration)).size).toBeGreaterThan(30);
+  });
+
+  it('fills the mind gradually and out of order, each thought returning 3-5 s after it leaves', () => {
+    const field = buildLogosThoughts();
+    expect(field.length).toBe(LOGOS_THOUGHT_COUNT);
+    const enters = field.map((t) => t.enter);
+    for (const t of field) {
+      expect(t.enter).toBeGreaterThanOrEqual(LOGOS_ENTRANCE.from);
+      expect(t.enter).toBeLessThanOrEqual(LOGOS_ENTRANCE.to);
+      expect(t.gap).toBeGreaterThanOrEqual(LOGOS_RETURN.min);
+      expect(t.gap).toBeLessThanOrEqual(LOGOS_RETURN.max);
+      expect(t.cycle).toBeCloseTo(t.duration + t.gap, 5);
+      // The path runs over the traversal and holds its end through the absence, when the presence
+      // has jumped to nothing.
+      const held = Math.round((t.duration / t.cycle) * 100000) / 1000;
+      expect(t.driftEasing).toBe(`linear(0, 1 ${held}%, 1)`);
+      expect(t.presenceEasing).toBe(`linear(0, 0 ${held}%, 1 ${held}%, 1)`);
+    }
+    // Gradual: they surface across the whole entrance, steadily, never in a burst.
+    const sorted = [...enters].sort((a, b) => a - b);
+    expect(sorted[0]!).toBeLessThan(LOGOS_ENTRANCE.from + 0.5);
+    expect(sorted[sorted.length - 1]!).toBeGreaterThan(LOGOS_ENTRANCE.to - 0.5);
+    const densest = Math.max(
+      ...sorted.map((a) => sorted.filter((b) => b >= a && b < a + 0.5).length),
+    );
+    expect(densest).toBeLessThanOrEqual(4);
+    // Irregular: the waits between arrivals are uneven.
+    const waits = sorted.slice(1).map((e, k) => Math.round((e - sorted[k]!) * 10) / 10);
+    expect(new Set(waits).size).toBeGreaterThan(4);
+    // Out of order: neither in the field's order nor sweeping across the stage.
+    expect(enters).not.toEqual(sorted);
+    const byX = [...field].sort((a, b) => a.x - b.x).map((t) => t.enter);
+    expect(byX).not.toEqual(sorted);
+    expect(byX).not.toEqual([...sorted].reverse());
+    // The gaps differ from thought to thought.
+    expect(new Set(field.map((t) => t.gap)).size).toBeGreaterThan(5);
   });
 
   it('samples each path evenly from its start to its end, turning without a jump', () => {
@@ -345,17 +424,93 @@ describe('Chthonic Logos thoughts', () => {
     }
   });
 
-  it('builds the drift from transform and opacity keyframes only, fading in and out', () => {
+  it('builds the drift from transform keyframes only (no fade)', () => {
     const css = logosPathKeyframes();
     expect(css).not.toContain('offset-');
     expect(css).not.toContain('filter');
     for (let n = 1; n <= LOGOS_PATH_COUNT; n++) {
-      expect(css).toContain(`@keyframes logos-path-${n}{0%{opacity:0;transform:`);
+      expect(css).toContain(`@keyframes logos-path-${n}{0%{transform:`);
       expect(css).toContain(`.logos-path-${n}{animation-name:logos-path-${n}}`);
     }
     const props = new Set(Array.from(css.matchAll(/[{;]([a-z-]+):/g), (m) => m[1]));
-    expect([...props].sort()).toEqual(['animation-name', 'opacity', 'transform']);
-    expect(css.match(/100%\{opacity:0;/g)?.length).toBe(LOGOS_PATH_COUNT);
+    expect([...props].sort()).toEqual(['animation-name', 'transform']);
+  });
+
+  it('runs each body wave from the head back to the tail, the head steadier and the tail thinner', () => {
+    const { wavelength, taper } = LOGOS_SERPENT;
+    const top = LOGOS_SWAY_LEVELS.length - 1;
+    const phaseOf = (delay: number): number => -delay / 2;
+    for (const headFirst of [false, true]) {
+      const body = logosVertebrae('legio nomen mihi', true, headFirst, 0.3, 2);
+      expect(body.map((v) => v.ch).join('')).toBe('legio nomen mihi');
+      const fromHead = headFirst ? body : [...body].reverse();
+      const head = fromHead[0]!;
+      const tail = fromHead[fromHead.length - 1]!;
+      expect(head.size).toBe(1);
+      expect(tail.size).toBeCloseTo(1 - taper, 3);
+      expect(head.keyframes).toBe(logosSlitherName(true, headFirst, 0));
+      expect(tail.keyframes).toBe(logosSlitherName(true, headFirst, top));
+      for (const v of body) {
+        expect(v.delay).toBeLessThanOrEqual(0);
+        expect(v.delay).toBeGreaterThan(-2);
+      }
+      // Each vertebra back from the head trails it by 1/wavelength of a turn.
+      for (let k = 1; k < fromHead.length; k++) {
+        const step = phaseOf(fromHead[k - 1]!.delay) - phaseOf(fromHead[k]!.delay);
+        expect((((step % 1) + 1) % 1) - 1 / wavelength).toBeCloseTo(0, 2);
+      }
+    }
+  });
+
+  it('heads each serpent the way it drifts, in its own voice, and slows the larger ones', () => {
+    const field = buildLogosThoughts();
+    for (const t of field) {
+      const headFirst = LOGOS_PATHS[t.path - 1]!.reverse;
+      expect(t.vertebrae.map((v) => v.ch).join('')).toBe(t.text);
+      const sets = t.vertebrae.map((v) => v.keyframes);
+      const prefix = `logos-slither-${t.latin ? 'latin' : 'note'}-${headFirst ? 'w' : 'e'}`;
+      expect(sets.every((k) => k.startsWith(prefix))).toBe(true);
+    }
+    const bySize = [...field].sort((a, b) => a.fontSize - b.fontSize);
+    expect(bySize[bySize.length - 1]!.slither).toBeGreaterThan(bySize[0]!.slither);
+  });
+
+  it('builds the slither from fixed transform keyframes, rising by the sway and turning with the slope', () => {
+    const css = logosSlitherKeyframes();
+    // Fixed values only: keyframes reading custom properties are re-resolved on the main thread.
+    expect(css).not.toContain('var(');
+    const props = new Set(Array.from(css.matchAll(/[{;]([a-z-]+):/g), (m) => m[1]));
+    expect([...props]).toEqual(['transform']);
+    const frames = (name: string): { y: number; turn: number }[] => {
+      const block = css.match(new RegExp(`@keyframes ${name}\\{(.*?)\\}\\}`))![1]!;
+      return Array.from(
+        block.matchAll(/translateY\((-?[\d.]+)em\) rotate\((-?[\d.]+)deg\)/g),
+        (m) => ({
+          y: Number(m[1]),
+          turn: Number(m[2]),
+        }),
+      );
+    };
+    const top = LOGOS_SWAY_LEVELS.length - 1;
+    for (const latin of [true, false]) {
+      const tilt = logosSlitherTilt(latin);
+      expect(tilt).toBeGreaterThan(0);
+      expect(tilt).toBeLessThan(60);
+      for (const headFirst of [false, true]) {
+        const full = frames(logosSlitherName(latin, headFirst, top));
+        expect(full.length).toBe(LOGOS_SLITHER_STEPS + 1);
+        // A quarter turn in, the vertebra is at the crest (raised by the full sway, level).
+        const crest = full[LOGOS_SLITHER_STEPS / 4]!;
+        expect(crest.y).toBeCloseTo(-LOGOS_SERPENT.amplitude, 3);
+        expect(crest.turn).toBe(0);
+        // At the start it lies on the slope: turned one way heading east, the other heading west.
+        expect(Math.sign(full[0]!.turn)).toBe(headFirst ? 1 : -1);
+        expect(Math.abs(full[0]!.turn)).toBeCloseTo(tilt, 0);
+        // The head sways less than the body.
+        const head = frames(logosSlitherName(latin, headFirst, 0));
+        expect(Math.abs(head[LOGOS_SLITHER_STEPS / 4]!.y)).toBeLessThan(Math.abs(crest.y));
+      }
+    }
   });
 
   it('lights echoes in proportion to progress, and spreads them when dwelt on', () => {
