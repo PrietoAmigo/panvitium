@@ -19,6 +19,7 @@ import {
   type ReactElement,
   type RefObject,
 } from 'react';
+import { strings } from '@panvitium/shared';
 import { PixelSprite } from '../PixelRelic.js';
 import { relicGrid } from '../pixelArt.js';
 import { RARITY as RELIC_RARITY } from '../relics.js';
@@ -40,6 +41,9 @@ import {
 import type { OrbisFind, OrbisRarity, OrbisTenebrarumProps } from './orbis.types.js';
 
 const RARITIES: readonly OrbisRarity[] = ['common', 'rare', 'profane', 'anathema'];
+
+/** The Search log's own copy (its heading, note and empty line). */
+const LOG_COPY = strings.opera.searchLog;
 
 const DEG = Math.PI / 180;
 
@@ -511,9 +515,28 @@ function CoinIcon(): ReactElement {
   );
 }
 
+/** A search's mark in the log: the coin's 5×5 silhouette as a tiny world, land on a dark sea in the
+ *  globe's own colours. */
+function OrbIcon(): ReactElement {
+  return (
+    <svg
+      className="orbis-orb"
+      width="15"
+      height="15"
+      viewBox="0 0 5 5"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+    >
+      <path d="M1 0h3v1h1v3h-1v1h-3v-1h-1v-3h1z" fill="#2b5f66" />
+      <path d="M1 1h2v1h-1v1h-1z M3 3h1v1h-1z" fill="#7cc79a" />
+    </svg>
+  );
+}
+
 export function OrbisTenebrarum({
   finds,
   tierChances = [],
+  log,
   investmentPercent,
   investmentGold,
   gold,
@@ -640,6 +663,63 @@ export function OrbisTenebrarum({
                   ))}
                 </ul>
               </div>
+            )}
+
+            {log && (
+              <section className="orbis-log orbis-panel" aria-label="Recent searches and purchases">
+                {/* The legend names the two rites' marks once, so each line spends its width on
+                    what happened rather than on the rite's name. */}
+                <div className="orbis-log-head">
+                  <span className="orbis-log-title">{LOG_COPY.heading}</span>
+                  <span className="orbis-log-legend">
+                    <span className="orbis-log-legend-item">
+                      <OrbIcon />
+                      {strings.opera.indagatio}
+                    </span>
+                    <span className="orbis-log-legend-item">
+                      <CoinIcon />
+                      {strings.opera.emptio}
+                    </span>
+                  </span>
+                </div>
+                {log.length === 0 ? (
+                  <p className="orbis-log-empty">{LOG_COPY.empty}</p>
+                ) : (
+                  <ol className="orbis-log-list">
+                    {log.map((e) => (
+                      <li
+                        key={e.key}
+                        className={`orbis-log-row orbis-log-row--${e.rite} tier-${e.tier}`}
+                      >
+                        <span
+                          className="orbis-log-rite"
+                          role="img"
+                          aria-label={e.action}
+                          title={e.action}
+                        >
+                          {e.rite === 'emptio' ? <CoinIcon /> : <OrbIcon />}
+                        </span>
+                        <span className="orbis-log-tier">{e.tierLabel}</span>
+                        {/* The detail gives way (ellipsis) before the source tag; the whole line
+                            rides along as its hover title. */}
+                        <span className="orbis-log-detail">
+                          <span
+                            className="orbis-log-text"
+                            title={`${e.action} · ${e.tierLabel}: ${e.detail}${e.source ? ` (${e.source.title})` : ''}`}
+                          >
+                            {e.detail}
+                          </span>
+                          {e.source && (
+                            <span className="orbis-log-source" title={e.source.title}>
+                              {e.source.tag}
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
             )}
 
             <div className="orbis-cast-row">

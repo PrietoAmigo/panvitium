@@ -55,6 +55,7 @@ import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
 import { buildCabinet, invokingPowerText, maleficiumView } from '../game/maleficia.js';
 import { formatBigNum } from '../game/format.js';
+import { buildSearchLog } from '../game/searchLog.js';
 import {
   OrbisTenebrarum,
   scatterOverLand,
@@ -418,6 +419,7 @@ export function IndagatioEmptioProgram(): ReactElement {
   const act = useGameStore((s) => s.act);
   const invest = useGameStore((s) => s.investIndagatio);
   const divest = useGameStore((s) => s.divestIndagatio);
+  const searchLog = useGameStore((s) => s.searchLog);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
 
@@ -510,6 +512,7 @@ export function IndagatioEmptioProgram(): ReactElement {
     <OrbisTenebrarum
       finds={finds}
       tierChances={tierChances}
+      log={buildSearchLog(searchLog)}
       investmentPercent={`${investPercent}%`}
       investmentGold={formatBigNum(indagatioInvestmentGold(state))}
       gold={formatBigNum(state.lifetime.gold)}

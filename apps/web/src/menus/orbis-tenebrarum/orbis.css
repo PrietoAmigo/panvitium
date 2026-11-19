@@ -38,8 +38,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 26px 12px;
+  gap: 8px;
+  padding: 12px 26px 12px;
   background: #090c0e;
 }
 .orbis-stage-head {
@@ -174,7 +174,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   padding: 3px 3px 0;
 }
 .orbis-panel {
@@ -186,16 +186,18 @@
 /* The live per-tier Indagatio chances: one segmented bar per tier, drawn against the likeliest, each
    in the rarity its tier reaches for (greys for the tiers that find nothing). */
 .orbis-odds {
-  gap: 9px;
-  padding: 12px 14px 14px;
+  gap: 6px;
+  padding: 9px 14px 11px;
 }
-.orbis-odds-head {
+.orbis-odds-head,
+.orbis-log-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
 }
 .orbis-odds-title,
+.orbis-log-title,
 .orbis-meter-label,
 .orbis-detail-price-label {
   font-family: 'Silkscreen', monospace;
@@ -204,7 +206,8 @@
   text-transform: uppercase;
   color: #b39a5c;
 }
-.orbis-odds-note {
+.orbis-odds-note,
+.orbis-log-legend {
   font-size: 12px;
   color: #8a9893;
 }
@@ -213,7 +216,7 @@
   grid-template-columns: 92px minmax(0, 1fr) 46px;
   align-items: center;
   column-gap: 10px;
-  row-gap: 6px;
+  row-gap: 3px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -243,28 +246,112 @@
 }
 /* The surfacing tiers wear the rarity they reach for (Stellar anathema, Excellent profane, Good
    rare, Neutral common); Bad / Terrible / Apocalyptic find nothing and stay grey. */
-.orbis-odds-row.tier-stellar .orbis-odds-tier {
+.orbis-odds-row.tier-stellar .orbis-odds-tier,
+.orbis-log-row.tier-stellar .orbis-log-tier {
   color: #e07a6e;
 }
-.orbis-odds-row.tier-excellent .orbis-odds-tier {
+.orbis-odds-row.tier-excellent .orbis-odds-tier,
+.orbis-log-row.tier-excellent .orbis-log-tier {
   color: #c3a0ec;
 }
-.orbis-odds-row.tier-good .orbis-odds-tier {
+.orbis-odds-row.tier-good .orbis-odds-tier,
+.orbis-log-row.tier-good .orbis-log-tier {
   color: #7fd0c0;
 }
-.orbis-odds-row.tier-neutral .orbis-odds-tier {
+.orbis-odds-row.tier-neutral .orbis-odds-tier,
+.orbis-log-row.tier-neutral .orbis-log-tier {
   color: #d2c6a6;
+}
+
+/* The last three Indagatio and Emptio outcomes, one line each: the rite's mark (an orb for a
+   search, the purse's coin for a buy, named once in the head's legend), the tier in the odds' tint,
+   then what came of it, ellipsed before a source tag (PI's asset tracing). The body keeps three
+   lines' height while it fills, so the purse below never shifts. */
+.orbis-log {
+  gap: 5px;
+  padding: 8px 14px 10px;
+}
+.orbis-log-list {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
+  grid-auto-rows: 15px;
+  align-items: center;
+  align-content: start;
+  column-gap: 8px;
+  row-gap: 3px;
+  min-height: 51px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* The head centres its legend's marks on the title; they overhang its line by a pixel each side so
+   the head stays as short as the odds' head. */
+.orbis-log-head {
+  align-items: center;
+}
+.orbis-log-legend {
+  display: flex;
+  gap: 10px;
+}
+.orbis-log-legend svg {
+  margin: -1px 0;
+}
+.orbis-log-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.orbis-log-legend svg,
+.orbis-log-rite svg {
+  display: block;
+  flex: none;
+}
+.orbis-log-row {
+  display: contents;
+}
+.orbis-log-tier {
+  font-size: 13px;
+  color: #a49a88;
+}
+.orbis-log-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.orbis-log-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #d2c6a6;
+}
+.orbis-log-source {
+  flex: none;
+  padding: 0 3px;
+  font-family: 'Silkscreen', monospace;
+  font-size: 9px;
+  line-height: 12px;
+  color: #7fd0c0;
+  box-shadow: inset 0 0 0 1px #2c5f57;
+}
+.orbis-log-empty {
+  min-height: 51px;
+  margin: 0;
+  font-size: 13px;
+  color: #8a9893;
 }
 
 .orbis-cast-row {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 .orbis-purse {
   --orbis-pb: #3a3220;
-  gap: 12px;
-  padding: 12px 14px 14px;
+  gap: 8px;
+  padding: 10px 14px 12px;
 }
 /* Divest (silver) and Invest (gold) flank the Investment value they move. */
 .orbis-invest-group {
@@ -354,7 +441,7 @@
 .orbis-meters .orbis-meter {
   flex: 1;
   min-width: 0;
-  padding: 7px 10px;
+  padding: 5px 10px;
   background: #0c1012;
 }
 .orbis-gold {
@@ -383,7 +470,7 @@
 }
 .orbis-cast-btn {
   --orbis-pb: #9fe3d5;
-  height: 56px;
+  height: 46px;
   margin: 3px 3px 9px;
   border: 0;
   border-radius: 0;

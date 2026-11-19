@@ -91,6 +91,12 @@ import { audio } from '../audio/audio.js';
 /** How many recent outcomes the PC log keeps (02 §10). */
 const LOG_CAP = 100;
 
+/** How many recent Indagatio / Emptio outcomes the Indagatio menu's log keeps. */
+export const SEARCH_LOG_CAP = 3;
+
+/** The rites the Indagatio menu's log records. */
+const SEARCH_LOG_ACTIONS: ReadonlySet<string> = new Set(['indagatio', 'emptio']);
+
 /** Which Katabasis screen is showing: the flow (the Ledger or the descent), or neither. */
 export type KatabasisPhase = 'menu' | null;
 
@@ -160,6 +166,12 @@ interface GameStore {
   ready: boolean;
   /** Recent outcomes, newest first (transient; not persisted). */
   log: OutcomeEvent[];
+  /**
+   * The last `SEARCH_LOG_CAP` Indagatio and Emptio outcomes, newest first, for the Indagatio menu's
+   * log (transient; not persisted). Kept apart from `log` because a looping Suggestion (1 s) would
+   * push a 30-minute search out of the shared hundred long before the next one lands.
+   */
+  searchLog: OutcomeEvent[];
   /** The id of the most recently unlocked achievement (03 §7), for a toast; null when dismissed. */
   achievementToast: string | null;
   /**
@@ -444,6 +456,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   deviceId: '',
   ready: false,
   log: [],
+  searchLog: [],
   ...NO_OBTAINED,
   subliminalQueue: [],
   notice: null,
@@ -521,11 +534,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
         playerEvents.length > 0
           ? [...playerEvents].reverse().concat(s.log).slice(0, LOG_CAP)
           : s.log;
+      // The Indagatio menu's log reads the same outcomes, keeping only its own two rites.
+      const searchEvents = playerEvents.filter((e) => SEARCH_LOG_ACTIONS.has(e.actionId));
+      const searchLog =
+        searchEvents.length > 0
+          ? [...searchEvents].reverse().concat(s.searchLog).slice(0, SEARCH_LOG_CAP)
+          : s.searchLog;
       // An Emptio purchase that completed brings its maleficium home: queue its Unveiling (if on).
       const acquired = events.flatMap((e) => e.maleficiaAcquired ?? []);
       return {
         state,
         log,
+        searchLog,
         ...obtainedPatch(s.unveilQueue, acquired, s.preferences.showUnveiling),
         ...noticePatch,
         ...achievementPatch,
@@ -745,6 +765,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       katabasisPhase: null,
       katabasisEntry: null,
       log: [],
+      searchLog: [],
       ...NO_OBTAINED,
       notice: null,
     });
@@ -785,6 +806,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...loaded,
       ready: true,
       log: [],
+      searchLog: [],
       ...NO_OBTAINED,
       notice: null,
       emptyHandedWarning: false,
@@ -894,6 +916,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ...loaded,
       ready: true,
       log: [],
+      searchLog: [],
       ...NO_OBTAINED,
       notice: null,
       katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,
@@ -966,6 +989,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ...loaded,
         pendingConflict: null,
         log: [],
+        searchLog: [],
         ...NO_OBTAINED,
         notice: null,
         katabasisPhase: loaded.state.inKatabasis === true ? ('menu' as const) : null,

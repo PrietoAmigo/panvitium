@@ -25,6 +25,11 @@ export interface OutcomeEvent {
   readonly maleficiaAcquired?: readonly string[];
   /** Maleficium ids dropped from the Emptio list (Emptio failure terrible/apocalyptic). */
   readonly maleficiaLost?: readonly string[];
+  /**
+   * The maleficium an Emptio was buying, whatever the tier made of the deal: a Bad one names no
+   * relic in the three lists above, so a log line reads the target from here (Emptio only).
+   */
+  readonly target?: string;
 }
 
 /** The origin of an outcome event. */

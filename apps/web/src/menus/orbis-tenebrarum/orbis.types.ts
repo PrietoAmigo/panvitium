@@ -60,6 +60,30 @@ export interface OrbisTierChance {
   share: number;
 }
 
+/**
+ * One line of the Search log: a recent Indagatio or Emptio outcome. Every field is PRE-FORMATTED by
+ * the integrator; the component only lays the line out.
+ */
+export interface OrbisLogEntry {
+  /** Stable React key. */
+  key: string;
+  /** Which rite this was: picks the line's pixel icon (an orb for a search, a coin for a buy). */
+  rite: 'indagatio' | 'emptio';
+  /** The rite, as displayed (`'Indagatio'` / `'Emptio'`): the icon's accessible name and title. */
+  action: string;
+  /** Outcome tier id (`stellar` … `apocalyptic`): tints the tier label as the odds readout does. */
+  tier: string;
+  /** Display label for the tier (from `strings.tiers`). */
+  tierLabel: string;
+  /** What came of it, e.g. `'Found Ars Serpens'` or `'A Church trap, -1,350 Gold'`. */
+  detail: string;
+  /**
+   * Who ran it, when not the player's own hand: a short tag (`'PI'`) and its spelled-out title
+   * (`'Asset tracing'`). Omit for the player's own cast or buy.
+   */
+  source?: { tag: string; title: string };
+}
+
 export interface OrbisTenebrarumProps {
   /** The Emptio list — maleficia discovered but not necessarily bought — in discovery order. */
   finds: readonly OrbisFind[];
@@ -68,6 +92,11 @@ export interface OrbisTenebrarumProps {
    * how likely each outcome (and thus each rarity of find) is right now. Omit to hide the readout.
    */
   tierChances?: readonly OrbisTierChance[];
+  /**
+   * The last few Indagatio and Emptio outcomes, newest first, shown under the odds (the integrator
+   * sends at most three). An empty list shows the log's empty line; omit to hide the log.
+   */
+  log?: readonly OrbisLogEntry[];
   /**
    * The default Indagatio investment, PRE-FORMATTED as a percentage, e.g. `'4%'`: the share of the
    * gold held that every Search pours into itself when cast (spent, and baked into its speed). Shown

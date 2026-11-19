@@ -122,9 +122,10 @@ toggles `activeToggles` / `toggleDurations` and strip the `the_long_burn` achiev
 
 - **State (ADR-003): Zustand, `store/gameStore.ts`.** Owns the authoritative `GameState` + save
   metadata and delegates _all_ logic to the sim's `tick`/`startAction`/etc. UI-only state (current
-  room, open panel) lives in components, not the store. It also surfaces three transient,
-  non-persisted channels from each tick: the rolling outcome `log`, the `unveilQueue` of
-  maleficia Emptio has just brought home, and the `subliminalQueue` of plates to flash (Fausto's,
+  room, open panel) lives in components, not the store. It also surfaces four transient,
+  non-persisted channels from each tick: the rolling outcome `log`, the `searchLog` (the last three
+  Indagatio/Emptio outcomes for the Indagatio menu, kept apart so looping Logos rites can't flush
+  them), the `unveilQueue` of maleficia Emptio has just brought home, and the `subliminalQueue` of plates to flash (Fausto's,
   queued from the tick's `emailsTriggered`; the random ones from `useRandomSubliminals`). Device-local player preferences (the Settings switches,
   e.g. the Unveiling on/off) are not game state: they live in `store/preferences.ts` under their
   own `localStorage` key, never in `GameState` or the save, and the store holds them as

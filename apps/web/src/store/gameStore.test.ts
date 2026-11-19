@@ -11,7 +11,7 @@ import {
   devotionForLevel,
   type GameState,
 } from '@panvitium/sim';
-import { useGameStore } from './gameStore.js';
+import { SEARCH_LOG_CAP, useGameStore } from './gameStore.js';
 import { DEFAULT_PREFERENCES } from './preferences.js';
 import { FAUSTO_SUBLIMINALS } from '../game/subliminals.js';
 
@@ -46,6 +46,7 @@ beforeEach(() => {
     deviceId: '',
     ready: false,
     log: [],
+    searchLog: [],
     unveilQueue: [],
     lastObtained: null,
     subliminalQueue: [],
@@ -366,6 +367,71 @@ describe('gameStore — outcome log', () => {
     }
     expect(store().log).toHaveLength(100);
     expect(store().log[0]?.actionId).toBe('suggestion');
+  });
+});
+
+describe('gameStore — Indagatio search log', () => {
+  /** Cast a Search and let it resolve. */
+  function search(): void {
+    store().act('indagatio');
+    store().advance(ACTIONS.indagatio!.baseTimeSeconds + 1);
+  }
+
+  /** List a relic, fund it, and buy it through to the end of its Emptio. */
+  function buy(): void {
+    const s = store().state as GameState;
+    useGameStore.setState({
+      state: {
+        ...s,
+        lifetime: { ...s.lifetime, gold: bn(10_000), emptioList: ['witch_bottle'] },
+      },
+    });
+    store().act('emptio', 'witch_bottle');
+    store().advance(ACTIONS.emptio!.baseTimeSeconds + 1);
+  }
+
+  it('records Indagatio and Emptio outcomes, and not the Logos rites', () => {
+    patchInfluence(50);
+    store().act('suggestion');
+    store().advance(10);
+    expect(store().log[0]?.actionId).toBe('suggestion');
+    expect(store().searchLog).toHaveLength(0);
+
+    search();
+    expect(store().searchLog.map((e) => e.actionId)).toEqual(['indagatio']);
+    buy();
+    expect(store().searchLog.map((e) => e.actionId)).toEqual(['emptio', 'indagatio']);
+    expect(store().searchLog[0]?.target).toBe('witch_bottle');
+  });
+
+  it(`keeps only the last ${SEARCH_LOG_CAP}, newest first, however busy the PC log gets`, () => {
+    buy();
+    for (let i = 0; i < SEARCH_LOG_CAP; i++) search();
+    // The Emptio was the oldest of four: it has dropped off, leaving the three searches.
+    expect(store().searchLog).toHaveLength(SEARCH_LOG_CAP);
+    expect(store().searchLog.every((e) => e.actionId === 'indagatio')).toBe(true);
+
+    // A hundred looping Suggestions flush the shared PC log, but not the search log.
+    for (let i = 0; i < 110; i++) {
+      patchInfluence(50);
+      store().act('suggestion');
+      store().advance(10);
+    }
+    expect(store().log.some((e) => e.actionId === 'indagatio')).toBe(false);
+    expect(store().searchLog).toHaveLength(SEARCH_LOG_CAP);
+  });
+
+  it('starts empty on a new game and on the rise from Katabasis', () => {
+    search();
+    expect(store().searchLog).toHaveLength(1);
+    store().beginKatabasis();
+    store().confirmKatabasis();
+    expect(store().searchLog).toHaveLength(0);
+
+    search();
+    expect(store().searchLog).toHaveLength(1);
+    store().hardReset();
+    expect(store().searchLog).toHaveLength(0);
   });
 });
 

@@ -192,6 +192,32 @@ export const strings = {
     // apostate), with no soul: "-1 Reprobates (lost)".
     logosSuicide: 'suicide',
     logosLost: 'lost',
+    // The Indagatio menu's log, between the Search odds and the investment: the last three
+    // Indagatio and Emptio outcomes, one line each, newest first. `{name}` is a maleficium (or a
+    // list of them); a line that moved gold ends with the signed change in the ledger's own unit,
+    // `{gold}` (e.g. "-1,350 g", as the Emptio prices beside it read "2,000 g").
+    searchLog: {
+      heading: 'Log',
+      empty: 'No search cast, no relic bought.',
+      // Indagatio: what the search surfaced onto the Emptio list, or why it surfaced nothing.
+      found: 'Found {name}',
+      and: 'and',
+      foundNothing: 'Nothing new to find',
+      falseLead: 'A false lead',
+      churchTrap: 'A Church trap',
+      higherPower: 'A Higher Power\u2019s agent',
+      // Emptio: what became of the relic being bought.
+      bound: 'Bound {name}',
+      fellThrough: 'The deal for {name} fell through',
+      snatched: '{name} snatched away',
+      bait: 'Bait: {name} lost',
+      vanished: '{name} had vanished',
+      someRelic: 'the relic',
+      gold: '{gold} g',
+      // PI's automatic asset tracing ran this search, not the player's hand.
+      tracing: 'PI',
+      tracingTitle: 'Asset tracing',
+    },
   },
   /**
    * The Depraedatio "Counting House" account (Claude Design redesign of the Faeneratio loop). The
