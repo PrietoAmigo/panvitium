@@ -89,24 +89,12 @@ const STATUE_POS: Record<Sin, Pos> = {
 };
 
 // ── Imperative lightning: sharp strikes that flash the bright frames, then snap to dark ──────────
-function Lightning({ intensity, paused }: { intensity: number; paused: boolean }): ReactElement {
+function Lightning({ intensity }: { intensity: number }): ReactElement {
   const aRef = useRef<HTMLDivElement>(null);
   const bRef = useRef<HTMLDivElement>(null);
   const cRef = useRef<HTMLDivElement>(null);
   const wRef = useRef<HTMLDivElement>(null);
   const lastRef = useRef(-1);
-  const pausedRef = useRef(paused);
-  pausedRef.current = paused;
-
-  // While a Prince speaks, calm the storm to black: only he stays lit (StatuesPlace).
-  useEffect(() => {
-    if (!paused) return;
-    [aRef.current, bRef.current, cRef.current, wRef.current].forEach((el) => {
-      if (!el) return;
-      el.style.transition = 'opacity 320ms ease';
-      el.style.opacity = '0';
-    });
-  }, [paused]);
 
   useEffect(() => {
     let alive = true;
@@ -157,7 +145,7 @@ function Lightning({ intensity, paused }: { intensity: number; paused: boolean }
 
     const loop = (): void => {
       if (!alive) return;
-      if (!pausedRef.current) strike();
+      strike();
       const span = 1500 - intensity * 150;
       const gap = Math.max(220, span * 0.4 + Math.random() * span);
       timer = setTimeout(loop, gap);
@@ -194,9 +182,10 @@ function Lightning({ intensity, paused }: { intensity: number; paused: boolean }
 }
 
 // ── The Prince's inscription ("Katabasis statue text" handoff, direction A1 · Carved) ────────────
-// Clicking a statue raises no menu: the storm calms, only that Prince stays lit, and his words are
-// cut into the dark beside him, on whichever side of him has the room. The statue itself is the
-// pour: once his words are up, pressing and holding him pours Devotion through the hold ramp.
+// Clicking a statue raises no menu: the dark closes in around that Prince, so the storm's strikes
+// light only him and what stands near him, and his words are cut into the dark beside him, on
+// whichever side of him has the room. The statue itself is the pour: once his words are up,
+// pressing and holding him pours Devotion through the hold ramp.
 
 /** The gap between a statue's hotspot edge and its inscription, as a fraction of the scene width. */
 const INSCRIPTION_GAP = 0.03;
@@ -217,30 +206,32 @@ export function inscriptionSide(sin: Sin): 'left' | 'right' {
 }
 
 /**
- * The light's falloff: full on the statue, then easing into the dark through several steps over a
- * long reach, so the black closes in by degrees rather than at an edge (it spills, faintly, onto
- * the Princes beside him).
+ * The darkness's falloff: clear over the statue, then closing in through several steps so the black
+ * arrives by degrees rather than at an edge (a strike still reaches, faintly, the Princes beside
+ * him), and whole beyond.
  */
-const PRINCE_LIGHT_FALLOFF = [
-  '#000 30%',
-  'rgba(0, 0, 0, 0.85) 42%',
-  'rgba(0, 0, 0, 0.62) 54%',
-  'rgba(0, 0, 0, 0.4) 66%',
-  'rgba(0, 0, 0, 0.22) 78%',
-  'rgba(0, 0, 0, 0.08) 90%',
-  'transparent 100%',
+const PRINCE_DARKNESS_FALLOFF = [
+  'transparent 36%',
+  'rgba(0, 0, 0, 0.15) 47%',
+  'rgba(0, 0, 0, 0.38) 58%',
+  'rgba(0, 0, 0, 0.6) 69%',
+  'rgba(0, 0, 0, 0.78) 80%',
+  'rgba(0, 0, 0, 0.92) 91%',
+  '#000 100%',
 ].join(', ');
 
 /**
- * The light that stays on the chosen Prince once the storm calms: the lightning frame, masked to
- * an ellipse around his statue, well wider and taller than his hotspot so the light has room to
- * fade.
+ * The darkness that closes in around the chosen Prince, laid over the storm: an ellipse around his
+ * statue, wider and taller than his hotspot, clear for its inner 36% and black past its edge. A
+ * strike lights the scene beneath it, so only the clear ground near him flashes.
  */
-function princeLightMask(sin: Sin): string {
+export function princeDarkness(sin: Sin): string {
   const p = STATUE_POS[sin];
-  const rx = Math.max(p.w * 1.8, 0.17);
-  const ry = p.h * 0.95;
-  return `radial-gradient(ellipse ${pct(rx)} ${pct(ry)} at ${pct(p.x)} ${pct(p.y - 0.04)}, ${PRINCE_LIGHT_FALLOFF})`;
+  const rx = Math.max(p.w * 1.5, 0.14);
+  const ry = p.h * 0.78;
+  // Rounded to 0.01% so the inline style reads clean (0.62 - 0.04 is 57.99999999999999% raw).
+  const at = (v: number): string => `${Number((v * 100).toFixed(2))}%`;
+  return `radial-gradient(ellipse ${at(rx)} ${at(ry)} at ${at(p.x)} ${at(p.y - 0.04)}, ${PRINCE_DARKNESS_FALLOFF})`;
 }
 
 /** Carved text for the eye, with the plain words kept for a screen reader. */
@@ -446,9 +437,7 @@ function StatuesPlace({
   const density = Math.min(1, Math.max(0, 1 - eternalProgress(state)));
 
   return (
-    <div
-      className={`scene hell${ended ? ' hell--ended' : ''}${chosen !== null ? ' hell--focus' : ''}`}
-    >
+    <div className={`scene hell${ended ? ' hell--ended' : ''}`}>
       {ended ? (
         <>
           {/* The Court comes into focus as the cloud thins: its blur falls from 9px to none. */}
@@ -467,17 +456,14 @@ function StatuesPlace({
             className="bg-silhouette"
             style={{ backgroundImage: `url(${ASSET}/katabasis3.png)` }}
           />
-          {/* The storm calms while a Prince speaks; only he stays lit. */}
-          <Lightning intensity={LIGHTNING_INTENSITY} paused={chosen !== null} />
+          {/* The storm rages on while a Prince speaks, but the dark closing in around him lets
+              its strikes light only the ground near him. */}
+          <Lightning intensity={LIGHTNING_INTENSITY} />
           {chosen !== null && (
             <div
               key={chosen}
-              className="bg-lit"
-              style={{
-                backgroundImage: `url(${ASSET}/katabasis.png)`,
-                maskImage: princeLightMask(chosen),
-                WebkitMaskImage: princeLightMask(chosen),
-              }}
+              className="kat-darkness"
+              style={{ backgroundImage: princeDarkness(chosen) }}
             />
           )}
         </>
