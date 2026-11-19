@@ -19,9 +19,7 @@ import {
   type ReactElement,
   type RefObject,
 } from 'react';
-import { PixelSprite } from '../PixelRelic.js';
-import { relicGrid } from '../pixelArt.js';
-import { RARITY as RELIC_RARITY } from '../relics.js';
+import { strings } from '@panvitium/shared';
 import { ORBIS_RARITY, ORBIS_TIER_FIND, coordForFind, formatCoord } from './orbis.data.js';
 import {
   ART_PX,
@@ -41,13 +39,10 @@ import type { OrbisFind, OrbisRarity, OrbisTenebrarumProps } from './orbis.types
 
 const RARITIES: readonly OrbisRarity[] = ['common', 'rare', 'profane', 'anathema'];
 
-const DEG = Math.PI / 180;
+/** The Search log's own copy (its heading, note and empty line). */
+const LOG_COPY = strings.opera.searchLog;
 
-/** The detail's relic sprite: one art pixel per 2 design px, its long side 76 px. */
-const SPRITE_PIXEL = 2;
-const SPRITE_LONG_SIDE = 76;
-/** A ledger row's relic icon: one art pixel per design px in a 24 px slot. */
-const ROW_SPRITE_SIDE = 24;
+const DEG = Math.PI / 180;
 
 /** A bound (owned) find's pin, dimmed out of its rarity. */
 const BOUND_PIN = '#4d5a4a';
@@ -511,9 +506,28 @@ function CoinIcon(): ReactElement {
   );
 }
 
+/** A search's mark in the log: the coin's 5×5 silhouette as a tiny world, land on a dark sea in the
+ *  globe's own colours. */
+function OrbIcon(): ReactElement {
+  return (
+    <svg
+      className="orbis-orb"
+      width="15"
+      height="15"
+      viewBox="0 0 5 5"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+    >
+      <path d="M1 0h3v1h1v3h-1v1h-3v-1h-1v-3h1z" fill="#2b5f66" />
+      <path d="M1 1h2v1h-1v1h-1z M3 3h1v1h-1z" fill="#7cc79a" />
+    </svg>
+  );
+}
+
 export function OrbisTenebrarum({
   finds,
   tierChances = [],
+  log,
   investmentPercent,
   investmentGold,
   gold,
@@ -575,7 +589,7 @@ export function OrbisTenebrarum({
       <div className="orbis-stage">
         <header className="orbis-stage-head">
           <p className="orbis-eyebrow">Indagatio</p>
-          <h2 className="orbis-title">Search the world for maleficia</h2>
+          <h2 className="orbis-title">Search the world</h2>
         </header>
 
         <div className="orbis-stage-body">
@@ -616,7 +630,6 @@ export function OrbisTenebrarum({
               <div className="orbis-odds orbis-panel" aria-label="Search odds by outcome tier">
                 <div className="orbis-odds-head">
                   <span className="orbis-odds-title">Search odds</span>
-                  <span className="orbis-odds-note">colour = rarity sought</span>
                 </div>
                 <ul className="orbis-odds-list">
                   {tierChances.map((t) => (
@@ -640,6 +653,63 @@ export function OrbisTenebrarum({
                   ))}
                 </ul>
               </div>
+            )}
+
+            {log && (
+              <section className="orbis-log orbis-panel" aria-label="Recent searches and purchases">
+                {/* The legend names the two rites' marks once, so each line spends its width on
+                    what happened rather than on the rite's name. */}
+                <div className="orbis-log-head">
+                  <span className="orbis-log-title">{LOG_COPY.heading}</span>
+                  <span className="orbis-log-legend">
+                    <span className="orbis-log-legend-item">
+                      <OrbIcon />
+                      {strings.opera.indagatio}
+                    </span>
+                    <span className="orbis-log-legend-item">
+                      <CoinIcon />
+                      {strings.opera.emptio}
+                    </span>
+                  </span>
+                </div>
+                {log.length === 0 ? (
+                  <p className="orbis-log-empty">{LOG_COPY.empty}</p>
+                ) : (
+                  <ol className="orbis-log-list">
+                    {log.map((e) => (
+                      <li
+                        key={e.key}
+                        className={`orbis-log-row orbis-log-row--${e.rite} tier-${e.tier}`}
+                      >
+                        <span
+                          className="orbis-log-rite"
+                          role="img"
+                          aria-label={e.action}
+                          title={e.action}
+                        >
+                          {e.rite === 'emptio' ? <CoinIcon /> : <OrbIcon />}
+                        </span>
+                        <span className="orbis-log-tier">{e.tierLabel}</span>
+                        {/* The detail gives way (ellipsis) before the source tag; the whole line
+                            rides along as its hover title. */}
+                        <span className="orbis-log-detail">
+                          <span
+                            className="orbis-log-text"
+                            title={`${e.action} · ${e.tierLabel}: ${e.detail}${e.source ? ` (${e.source.title})` : ''}`}
+                          >
+                            {e.detail}
+                          </span>
+                          {e.source && (
+                            <span className="orbis-log-source" title={e.source.title}>
+                              {e.source.tag}
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
             )}
 
             <div className="orbis-cast-row">
@@ -739,21 +809,8 @@ export function OrbisTenebrarum({
                 className={`orbis-row orbis-row--${f.rarity}${f.id === selectedId ? ' is-selected' : ''}${fraction !== null ? ' is-buying' : ''}${f.acquired ? ' is-owned' : ''}`}
                 onClick={() => onSelect(f.id)}
               >
-                <span className="orbis-row-slot" aria-hidden="true">
-                  {f.img ? (
-                    <span className="orbis-row-sprite">
-                      <PixelSprite
-                        src={f.img}
-                        grid={relicGrid(ROW_SPRITE_SIDE, 1)}
-                        pixelSize={1}
-                        rgb={RELIC_RARITY[f.rarity].rgb}
-                        fallback={<span className={`orbis-dot orbis-dot--${f.rarity}`} />}
-                      />
-                    </span>
-                  ) : (
-                    <span className={`orbis-dot orbis-dot--${f.rarity}`} />
-                  )}
-                </span>
+                {/* The relic's rarity, as the legend's swatch: no art in the ledger. */}
+                <span className={`orbis-dot orbis-dot--${f.rarity}`} aria-hidden="true" />
                 <span className="orbis-row-body">
                   <span className="orbis-row-name">{f.name}</span>
                   {f.effect && <span className="orbis-row-effect">{f.effect}</span>}
@@ -791,19 +848,6 @@ export function OrbisTenebrarum({
         {selected && (
           <div className="orbis-detail">
             <div className="orbis-detail-head">
-              {selected.img && (
-                <span className={`orbis-detail-art orbis-detail-art--${selected.rarity}`}>
-                  <span className="orbis-detail-sprite">
-                    <PixelSprite
-                      src={selected.img}
-                      grid={relicGrid(SPRITE_LONG_SIDE, SPRITE_PIXEL)}
-                      pixelSize={SPRITE_PIXEL}
-                      rgb={RELIC_RARITY[selected.rarity].rgb}
-                      fallback={null}
-                    />
-                  </span>
-                </span>
-              )}
               <span className="orbis-detail-id">
                 <span className={`orbis-badge orbis-badge--${selected.rarity}`}>
                   {ORBIS_RARITY[selected.rarity].label}

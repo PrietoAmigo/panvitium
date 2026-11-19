@@ -713,6 +713,7 @@ export function resolveAction(
     ...(surfaced.length ? { maleficiaSurfaced: surfaced } : {}),
     ...(acquired.length ? { maleficiaAcquired: acquired } : {}),
     ...(lostFromList.length ? { maleficiaLost: lostFromList } : {}),
+    ...(def.id === 'emptio' && options.target !== undefined ? { target: options.target } : {}),
   };
   return { state: next, event };
 }

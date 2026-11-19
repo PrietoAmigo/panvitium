@@ -22,8 +22,7 @@
 .orbis-invest-btn,
 .orbis-divest-btn,
 .orbis-acquire,
-.orbis-pin-label,
-.orbis-detail-art {
+.orbis-pin-label {
   box-shadow:
     0 -3px 0 0 var(--orbis-pb),
     0 3px 0 0 var(--orbis-pb),
@@ -38,8 +37,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 26px 12px;
+  gap: 8px;
+  padding: 12px 26px 12px;
   background: #090c0e;
 }
 .orbis-stage-head {
@@ -174,7 +173,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   padding: 3px 3px 0;
 }
 .orbis-panel {
@@ -186,16 +185,18 @@
 /* The live per-tier Indagatio chances: one segmented bar per tier, drawn against the likeliest, each
    in the rarity its tier reaches for (greys for the tiers that find nothing). */
 .orbis-odds {
-  gap: 9px;
-  padding: 12px 14px 14px;
+  gap: 6px;
+  padding: 9px 14px 11px;
 }
-.orbis-odds-head {
+.orbis-odds-head,
+.orbis-log-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
 }
 .orbis-odds-title,
+.orbis-log-title,
 .orbis-meter-label,
 .orbis-detail-price-label {
   font-family: 'Silkscreen', monospace;
@@ -204,7 +205,7 @@
   text-transform: uppercase;
   color: #b39a5c;
 }
-.orbis-odds-note {
+.orbis-log-legend {
   font-size: 12px;
   color: #8a9893;
 }
@@ -213,7 +214,7 @@
   grid-template-columns: 92px minmax(0, 1fr) 46px;
   align-items: center;
   column-gap: 10px;
-  row-gap: 6px;
+  row-gap: 3px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -243,28 +244,112 @@
 }
 /* The surfacing tiers wear the rarity they reach for (Stellar anathema, Excellent profane, Good
    rare, Neutral common); Bad / Terrible / Apocalyptic find nothing and stay grey. */
-.orbis-odds-row.tier-stellar .orbis-odds-tier {
+.orbis-odds-row.tier-stellar .orbis-odds-tier,
+.orbis-log-row.tier-stellar .orbis-log-tier {
   color: #e07a6e;
 }
-.orbis-odds-row.tier-excellent .orbis-odds-tier {
+.orbis-odds-row.tier-excellent .orbis-odds-tier,
+.orbis-log-row.tier-excellent .orbis-log-tier {
   color: #c3a0ec;
 }
-.orbis-odds-row.tier-good .orbis-odds-tier {
+.orbis-odds-row.tier-good .orbis-odds-tier,
+.orbis-log-row.tier-good .orbis-log-tier {
   color: #7fd0c0;
 }
-.orbis-odds-row.tier-neutral .orbis-odds-tier {
+.orbis-odds-row.tier-neutral .orbis-odds-tier,
+.orbis-log-row.tier-neutral .orbis-log-tier {
   color: #d2c6a6;
+}
+
+/* The last three Indagatio and Emptio outcomes, one line each: the rite's mark (an orb for a
+   search, the purse's coin for a buy, named once in the head's legend), the tier in the odds' tint,
+   then what came of it, ellipsed before a source tag (PI's asset tracing). The body keeps three
+   lines' height while it fills, so the purse below never shifts. */
+.orbis-log {
+  gap: 5px;
+  padding: 8px 14px 10px;
+}
+.orbis-log-list {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
+  grid-auto-rows: 15px;
+  align-items: center;
+  align-content: start;
+  column-gap: 8px;
+  row-gap: 3px;
+  min-height: 51px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* The head centres its legend's marks on the title; they overhang its line by a pixel each side so
+   the head stays as short as the odds' head. */
+.orbis-log-head {
+  align-items: center;
+}
+.orbis-log-legend {
+  display: flex;
+  gap: 10px;
+}
+.orbis-log-legend svg {
+  margin: -1px 0;
+}
+.orbis-log-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.orbis-log-legend svg,
+.orbis-log-rite svg {
+  display: block;
+  flex: none;
+}
+.orbis-log-row {
+  display: contents;
+}
+.orbis-log-tier {
+  font-size: 13px;
+  color: #a49a88;
+}
+.orbis-log-detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.orbis-log-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #d2c6a6;
+}
+.orbis-log-source {
+  flex: none;
+  padding: 0 3px;
+  font-family: 'Silkscreen', monospace;
+  font-size: 9px;
+  line-height: 12px;
+  color: #7fd0c0;
+  box-shadow: inset 0 0 0 1px #2c5f57;
+}
+.orbis-log-empty {
+  min-height: 51px;
+  margin: 0;
+  font-size: 13px;
+  color: #8a9893;
 }
 
 .orbis-cast-row {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 .orbis-purse {
   --orbis-pb: #3a3220;
-  gap: 12px;
-  padding: 12px 14px 14px;
+  gap: 8px;
+  padding: 10px 14px 12px;
 }
 /* Divest (silver) and Invest (gold) flank the Investment value they move. */
 .orbis-invest-group {
@@ -354,7 +439,7 @@
 .orbis-meters .orbis-meter {
   flex: 1;
   min-width: 0;
-  padding: 7px 10px;
+  padding: 5px 10px;
   background: #0c1012;
 }
 .orbis-gold {
@@ -383,7 +468,7 @@
 }
 .orbis-cast-btn {
   --orbis-pb: #9fe3d5;
-  height: 56px;
+  height: 46px;
   margin: 3px 3px 9px;
   border: 0;
   border-radius: 0;
@@ -510,14 +595,13 @@
   display: none;
 }
 .orbis-row {
-  --orbis-slot: #4a4232;
   flex: none;
   width: 100%;
   height: 42px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 10px 0 6px;
+  padding: 0 10px 0 12px;
   border: 0;
   border-radius: 0;
   font-family: inherit;
@@ -540,33 +624,11 @@
 .orbis-row.is-buying {
   background: #0d1a18;
 }
-.orbis-row--rare {
-  --orbis-slot: #1f4d46;
-}
-.orbis-row--profane {
-  --orbis-slot: #45306a;
-}
-.orbis-row--anathema {
-  --orbis-slot: #62261f;
-}
-/* The relic's icon in a small slot framed in its rarity. */
-.orbis-row-slot {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  background: #15110c;
-  box-shadow: inset 0 0 0 3px var(--orbis-slot);
-}
-.orbis-row-sprite {
-  display: block;
-  width: 24px;
-  height: 24px;
-}
+/* A row marks its relic by rarity alone: a square in the legend's swatch colour. */
 .orbis-dot {
-  width: 9px;
-  height: 9px;
+  flex: none;
+  width: 12px;
+  height: 12px;
 }
 .orbis-dot--common {
   background: #b6a884;
@@ -628,7 +690,7 @@
 .orbis-row.is-owned .orbis-row-name {
   color: #8f8573;
 }
-.orbis-row.is-owned .orbis-row-slot > * {
+.orbis-row.is-owned .orbis-dot {
   opacity: 0.5;
 }
 .orbis-row-progress {
@@ -659,34 +721,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-}
-/* The relic's pixel sprite in a niche, dithered in its rarity's light. */
-.orbis-detail-art {
-  --orbis-pb: #2a2317;
-  --orbis-wash: rgba(182, 168, 132, 0.28);
-  flex: none;
-  width: 108px;
-  height: 88px;
-  margin: 3px;
-  display: grid;
-  place-items: center;
-  background-color: #0d0a08;
-  background-image: repeating-conic-gradient(var(--orbis-wash) 0 25%, transparent 0 50%);
-  background-size: 6px 6px;
-}
-.orbis-detail-art--rare {
-  --orbis-wash: rgba(86, 179, 163, 0.3);
-}
-.orbis-detail-art--profane {
-  --orbis-wash: rgba(165, 116, 216, 0.32);
-}
-.orbis-detail-art--anathema {
-  --orbis-wash: rgba(208, 90, 77, 0.32);
-}
-.orbis-detail-sprite {
-  display: block;
-  width: 96px;
-  height: 76px;
 }
 .orbis-detail-id {
   display: flex;

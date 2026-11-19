@@ -432,4 +432,21 @@ describe('resolveAction — dispatch wiring for Indagatio and Emptio', () => {
     }
     expect(surfaced).toBe(true);
   });
+
+  it('Emptio → every event names the relic it was buying, even a Bad deal that moved nothing', () => {
+    const base = fresh();
+    const listed: GameState = {
+      ...base,
+      lifetime: { ...base.lifetime, gold: bn(50_000), emptioList: ['red_robe'] },
+    };
+    const forced = (tier: 'bad' | 'good') =>
+      resolveAction(listed, 'emptio', rng(), { target: 'red_robe', forcedTier: tier }).event;
+    const bad = forced('bad');
+    expect(bad?.target).toBe('red_robe');
+    expect(bad?.maleficiaAcquired).toBeUndefined();
+    expect(bad?.maleficiaLost).toBeUndefined();
+    expect(forced('good')?.target).toBe('red_robe');
+    // Indagatio has no target: its event carries none.
+    expect(resolveAction(fresh(), 'indagatio', rng()).event).not.toHaveProperty('target');
+  });
 });

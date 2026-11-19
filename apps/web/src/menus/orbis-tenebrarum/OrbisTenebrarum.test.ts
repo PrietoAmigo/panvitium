@@ -26,7 +26,7 @@ import {
   scatterOverLand,
 } from './orbis.data.js';
 import { MALEFICIUM_IDS } from '@panvitium/sim';
-import type { OrbisFind } from './index.js';
+import type { OrbisFind, OrbisLogEntry } from './index.js';
 import { IndagatioEmptioProgram } from '../../ui/panels.js';
 
 let container: HTMLDivElement | null = null;
@@ -107,6 +107,9 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     expect(container!.querySelector('.orbis-surface')).not.toBeNull();
     expect((container!.querySelector('.orbis-eyebrow')?.textContent ?? '').trim()).toBe(
       'Indagatio',
+    );
+    expect((container!.querySelector('.orbis-title')?.textContent ?? '').trim()).toBe(
+      'Search the world',
     );
     expect((container!.querySelector('.orbis-ledger-title')?.textContent ?? '').trim()).toBe(
       'Emptio',
@@ -606,13 +609,12 @@ describe('OrbisTenebrarum — enhanced ledger', () => {
     );
   });
 
-  it('gives the detail its coordinates, price, art niche and split effect clause', () => {
+  it('gives the detail its coordinates, price and split effect clause', () => {
     const finds: OrbisFind[] = [
       {
         ...MOCK_FINDS[0]!,
         desc: 'Smooth to the touch and ear.',
         boon: '+33% Logos efficiency.',
-        img: '/assets/panvitium/maleficia/ars_serpens.png',
       },
     ];
     mount(createElement(OrbisTenebrarum, baseProps({ finds, selectedId: 'ars_serpens' })));
@@ -623,7 +625,6 @@ describe('OrbisTenebrarum — enhanced ledger', () => {
     expect((detail.querySelector('.orbis-detail-price-value')?.textContent ?? '').trim()).toBe(
       '120 g',
     );
-    expect(detail.querySelector('.orbis-detail-art--common')).not.toBeNull();
     expect((detail.querySelector('.orbis-detail-desc')?.textContent ?? '').trim()).toBe(
       'Smooth to the touch and ear.',
     );
@@ -638,10 +639,23 @@ describe('OrbisTenebrarum — enhanced ledger', () => {
     expect((detail.querySelector('.orbis-acquire')?.textContent ?? '').trim()).toBe('Acquire');
   });
 
-  it('omits the art niche and the effect clause when a find carries neither', () => {
+  it('omits the effect clause when a find carries none', () => {
     mount(createElement(OrbisTenebrarum, baseProps({ selectedId: 'ars_serpens' })));
-    expect(container!.querySelector('.orbis-detail-art')).toBeNull();
     expect(container!.querySelector('.orbis-detail-boon')).toBeNull();
+  });
+
+  it('marks each row by a square of its rarity, and draws no relic art in the list or the detail', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ selectedId: 'obsidian_mirror' })));
+    const rows = [...container!.querySelectorAll('.orbis-row')];
+    // The mock holds a common, then a rare: each row leads with its rarity's swatch.
+    expect(rows.map((r) => r.firstElementChild?.className)).toEqual([
+      'orbis-dot orbis-dot--common',
+      'orbis-dot orbis-dot--rare',
+    ]);
+    // No sprite canvas or image anywhere in the Emptio market: not on a row, not in the detail.
+    const ledger = container!.querySelector('.orbis-ledger')!;
+    expect(container!.querySelector('.orbis-detail')).not.toBeNull();
+    expect(ledger.querySelectorAll('canvas, img').length).toBe(0);
   });
 });
 
@@ -687,6 +701,10 @@ describe('OrbisTenebrarum — enhanced globe stage', () => {
 
   it('draws one segmented bar per tier, against the likeliest, tinted by the rarity it seeks', () => {
     mount(createElement(OrbisTenebrarum, baseProps({ tierChances: TIER_CHANCES })));
+    // The head is the title alone: no colour key beside it.
+    expect((container!.querySelector('.orbis-odds-head')?.textContent ?? '').trim()).toBe(
+      'Search odds',
+    );
     const rows = [...container!.querySelectorAll('.orbis-odds-row')];
     expect(rows.length).toBe(7);
     const fills = rows.map((r) => r.querySelector<HTMLElement>('.orbis-odds-fill')!);
@@ -739,7 +757,7 @@ describe('orbis helpers', () => {
 });
 
 describe('IndagatioEmptioProgram — enhanced wiring', () => {
-  it("passes a relic's art and split copy into the detail, and the odds as bars", () => {
+  it("passes a relic's rarity and split copy into the ledger, and the odds as bars", () => {
     const s = store().state!;
     useGameStore.setState({
       state: { ...s, lifetime: { ...s.lifetime, emptioList: ['voynich_manuscript'] } },
@@ -753,7 +771,11 @@ describe('IndagatioEmptioProgram — enhanced wiring', () => {
     expect((detail.querySelector('.orbis-detail-boon')?.textContent ?? '').trim()).toBe(
       '+25% Desidia gain rate.',
     );
-    expect(detail.querySelector('.orbis-detail-art--profane')).not.toBeNull();
+    // The relic is marked by its rarity (profane), with no art in its row or its detail.
+    expect(container!.querySelector('.orbis-row .orbis-dot--profane')).not.toBeNull();
+    expect(container!.querySelector('.orbis-ledger')!.querySelectorAll('canvas, img').length).toBe(
+      0,
+    );
     // The relic sits where this lifetime's scatter put it.
     const at = scatterOverLand(MALEFICIUM_IDS, `katabasis-${s.katabasisCount}`).get(
       'voynich_manuscript',
@@ -768,5 +790,133 @@ describe('IndagatioEmptioProgram — enhanced wiring', () => {
     );
     expect(widths.length).toBeGreaterThan(0);
     expect(Math.max(...widths)).toBe(100);
+  });
+});
+
+const LOG_ENTRIES: OrbisLogEntry[] = [
+  {
+    key: '0-emptio-good',
+    rite: 'emptio',
+    action: 'Emptio',
+    tier: 'good',
+    tierLabel: 'Good',
+    detail: 'Bound Obsidian Mirror, +450 g',
+  },
+  {
+    key: '1-indagatio-terrible',
+    rite: 'indagatio',
+    action: 'Indagatio',
+    tier: 'terrible',
+    tierLabel: 'Terrible',
+    detail: 'A Church trap, -13,500 g',
+  },
+  {
+    key: '2-indagatio-good',
+    rite: 'indagatio',
+    action: 'Indagatio',
+    tier: 'good',
+    tierLabel: 'Good',
+    detail: 'Found Ars Serpens',
+    source: { tag: 'PI', title: 'Asset tracing' },
+  },
+];
+
+describe('OrbisTenebrarum — Search log', () => {
+  it('sits between the Search odds and the investment purse', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ tierChances: TIER_CHANCES, log: [] })));
+    const console_ = container!.querySelector('.orbis-console')!;
+    const order = [...console_.children].map((n) => n.classList[0]);
+    expect(order).toEqual(['orbis-odds', 'orbis-log', 'orbis-cast-row']);
+    // The purse (investment) heads the cast row, so the log is directly above it.
+    expect(console_.querySelector('.orbis-cast-row')?.firstElementChild?.className).toContain(
+      'orbis-purse',
+    );
+  });
+
+  it('shows one line per entry, newest first: the rite mark, the tier, then what came of it', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ log: LOG_ENTRIES })));
+    const rows = [...container!.querySelectorAll('.orbis-log-row')];
+    expect(rows.length).toBe(3);
+    // The mark names the rite for assistive tech and on hover; the legend names both marks once.
+    expect(rows.map((r) => r.querySelector('.orbis-log-rite')?.getAttribute('aria-label'))).toEqual(
+      ['Emptio', 'Indagatio', 'Indagatio'],
+    );
+    expect(rows[0]!.querySelector('.orbis-log-rite .orbis-coin')).not.toBeNull();
+    expect(rows[1]!.querySelector('.orbis-log-rite .orbis-orb')).not.toBeNull();
+    expect((container!.querySelector('.orbis-log-legend')?.textContent ?? '').trim()).toBe(
+      'IndagatioEmptio',
+    );
+    expect(rows.map((r) => r.querySelector('.orbis-log-tier')?.textContent)).toEqual([
+      'Good',
+      'Terrible',
+      'Good',
+    ]);
+    // The tier wears the odds' tint through its row's tier class.
+    expect(rows[1]!.classList.contains('tier-terrible')).toBe(true);
+    expect(rows.map((r) => r.querySelector('.orbis-log-text')?.textContent)).toEqual([
+      'Bound Obsidian Mirror, +450 g',
+      'A Church trap, -13,500 g',
+      'Found Ars Serpens',
+    ]);
+    // A long line ellipses on screen, so the whole of it rides along as the hover title.
+    expect(rows[0]!.querySelector('.orbis-log-text')?.getAttribute('title')).toBe(
+      'Emptio · Good: Bound Obsidian Mirror, +450 g',
+    );
+  });
+
+  it("tags PI's asset tracing, and only the lines it ran", () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ log: LOG_ENTRIES })));
+    const tags = [...container!.querySelectorAll('.orbis-log-source')];
+    expect(tags.length).toBe(1);
+    expect(tags[0]!.textContent).toBe('PI');
+    expect(tags[0]!.getAttribute('title')).toBe('Asset tracing');
+    const traced = container!.querySelectorAll('.orbis-log-text')[2]!;
+    expect(traced.getAttribute('title')).toBe(
+      'Indagatio · Good: Found Ars Serpens (Asset tracing)',
+    );
+  });
+
+  it('says so while empty, and is absent when no log is given', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ log: [] })));
+    expect(container!.querySelector('.orbis-log')).not.toBeNull();
+    expect(container!.querySelector('.orbis-log-list')).toBeNull();
+    expect((container!.querySelector('.orbis-log-empty')?.textContent ?? '').trim()).toBe(
+      'No search cast, no relic bought.',
+    );
+    act(() => root!.render(createElement(OrbisTenebrarum, baseProps())));
+    expect(container!.querySelector('.orbis-log')).toBeNull();
+  });
+});
+
+describe('IndagatioEmptioProgram — Search log wiring', () => {
+  it("renders the store's recent Indagatio / Emptio outcomes, and the empty line on a fresh game", () => {
+    mount(createElement(IndagatioEmptioProgram));
+    expect(container!.querySelector('.orbis-log-empty')).not.toBeNull();
+    act(() =>
+      useGameStore.setState({
+        searchLog: [
+          {
+            actionId: 'emptio',
+            tier: 'neutral',
+            soulsDelta: 0,
+            reprobateDelta: 0,
+            goldDelta: 0,
+            target: 'obsidian_mirror',
+            maleficiaAcquired: ['obsidian_mirror'],
+          },
+          {
+            actionId: 'indagatio',
+            tier: 'bad',
+            soulsDelta: 0,
+            reprobateDelta: 0,
+            goldDelta: 0,
+          },
+        ],
+      }),
+    );
+    const texts = [...container!.querySelectorAll('.orbis-log-text')].map((n) => n.textContent);
+    expect(texts).toEqual(['Bound Obsidian Mirror', 'A false lead']);
+    const tiers = [...container!.querySelectorAll('.orbis-log-tier')].map((n) => n.textContent);
+    expect(tiers).toEqual(['Neutral', 'Bad']);
   });
 });

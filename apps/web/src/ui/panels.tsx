@@ -55,6 +55,7 @@ import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
 import { buildCabinet, invokingPowerText, maleficiumView } from '../game/maleficia.js';
 import { formatBigNum } from '../game/format.js';
+import { buildSearchLog } from '../game/searchLog.js';
 import {
   OrbisTenebrarum,
   scatterOverLand,
@@ -418,6 +419,7 @@ export function IndagatioEmptioProgram(): ReactElement {
   const act = useGameStore((s) => s.act);
   const invest = useGameStore((s) => s.investIndagatio);
   const divest = useGameStore((s) => s.divestIndagatio);
+  const searchLog = useGameStore((s) => s.searchLog);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   if (!state) return <p className="pc-empty">{strings.opera.notYet}.</p>;
 
@@ -449,7 +451,8 @@ export function IndagatioEmptioProgram(): ReactElement {
       !stackable && owned.includes(id)
         ? true
         : stackable && countCopies(owned, id) >= (def.stackMax ?? Infinity);
-    // The Loculi's copy for the detail: flavour apart from the effect clause, and the relic's art.
+    // The Loculi's copy for the detail: flavour apart from the effect clause (no art: the ledger
+    // marks a relic by its rarity alone).
     const view = maleficiumView(id);
     const coord = scatter.get(id);
     return [
@@ -461,7 +464,6 @@ export function IndagatioEmptioProgram(): ReactElement {
         effect: invokingPowerText(def.invokingPower),
         desc: view?.effect ? view.desc : def.description,
         ...(view?.effect ? { boon: view.effect } : {}),
-        ...(view?.img ? { img: view.img } : {}),
         costLabel: `${formatBigNum(bn(price))} g`,
         acquired,
         affordable: !acquired && goldNum >= price,
@@ -510,6 +512,7 @@ export function IndagatioEmptioProgram(): ReactElement {
     <OrbisTenebrarum
       finds={finds}
       tierChances={tierChances}
+      log={buildSearchLog(searchLog)}
       investmentPercent={`${investPercent}%`}
       investmentGold={formatBigNum(indagatioInvestmentGold(state))}
       gold={formatBigNum(state.lifetime.gold)}
