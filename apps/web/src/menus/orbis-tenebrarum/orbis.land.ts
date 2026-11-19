@@ -14,7 +14,7 @@ export const WORLD_LAND: number[][] = JSON.parse(
 // --- land queries, derived once from WORLD_LAND (no extra bundled data) ---
 
 /** Every ring edge, with antimeridian crossings split at ±180 so point-in-polygon tests stay correct. */
-const LAND_EDGES: ReadonlyArray<readonly [number, number, number, number]> = (() => {
+export const LAND_EDGES: ReadonlyArray<readonly [number, number, number, number]> = (() => {
   const edges: Array<readonly [number, number, number, number]> = [];
   for (const ring of WORLD_LAND) {
     const n = ring.length / 2;

@@ -18,12 +18,14 @@ import { useGameStore } from '../../store/gameStore.js';
 import { OrbisTenebrarum } from './index.js';
 import { WORLD_LAND, isLand, LAND_POINTS } from './orbis.land.js';
 import {
+  arcDegrees,
   coordForFind,
   formatCoord,
-  MALEFICIA_COORDS,
   ORBIS_RARITY,
   ORBIS_TIER_FIND,
+  scatterOverLand,
 } from './orbis.data.js';
+import { MALEFICIUM_IDS } from '@panvitium/sim';
 import type { OrbisFind } from './index.js';
 import { IndagatioEmptioProgram } from '../../ui/panels.js';
 
@@ -407,10 +409,64 @@ describe('rarity colours', () => {
 });
 
 describe('maleficia are placed on land', () => {
-  it('the curated coordinate table sits entirely on land', () => {
-    for (const [lon, lat] of Object.values(MALEFICIA_COORDS)) {
-      expect(isLand(lon, lat)).toBe(true);
+  it('scatters every catalog maleficium onto its own spot of land', () => {
+    const scatter = scatterOverLand(MALEFICIUM_IDS, 'katabasis-0');
+    expect(scatter.size).toBe(MALEFICIUM_IDS.length);
+    const seen = new Set<string>();
+    for (const id of MALEFICIUM_IDS) {
+      const at = scatter.get(id);
+      expect(at, id).toBeDefined();
+      expect(isLand(at![0], at![1]), id).toBe(true);
+      seen.add(`${at![0]},${at![1]}`);
     }
+    expect(seen.size).toBe(MALEFICIUM_IDS.length);
+  });
+
+  it('spreads the relics over every continent instead of one region', () => {
+    for (const salt of ['katabasis-0', 'katabasis-1', 'katabasis-9']) {
+      const pts = [...scatterOverLand(MALEFICIUM_IDS, salt).values()];
+      // Kept well apart: no two relics within 10 degrees of arc.
+      for (let i = 0; i < pts.length; i += 1) {
+        for (let j = i + 1; j < pts.length; j += 1) {
+          expect(arcDegrees(pts[i]!, pts[j]!)).toBeGreaterThan(10);
+        }
+      }
+      // Every broad band of longitude is used: the Americas, Europe and Africa, Asia and Oceania.
+      const americas = pts.filter(([lon]) => lon < -30).length;
+      const eurafrica = pts.filter(([lon]) => lon >= -30 && lon < 60).length;
+      const asia = pts.filter(([lon]) => lon >= 60).length;
+      expect(Math.min(americas, eurafrica, asia)).toBeGreaterThanOrEqual(6);
+      // Both hemispheres, and Europe plus the Near East hold only their share, not the bulk.
+      expect(pts.filter(([, lat]) => lat < 0).length).toBeGreaterThanOrEqual(6);
+      const europe = pts.filter(([lon, lat]) => lon > -15 && lon < 60 && lat > 25 && lat < 72);
+      expect(europe.length).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it('keeps a lifetime’s scatter stable and re-rolls it for the next lifetime', () => {
+    const a = scatterOverLand(MALEFICIUM_IDS, 'katabasis-3');
+    const again = scatterOverLand(MALEFICIUM_IDS, 'katabasis-3');
+    expect([...again.entries()]).toEqual([...a.entries()]);
+    const b = scatterOverLand(MALEFICIUM_IDS, 'katabasis-4');
+    const moved = MALEFICIUM_IDS.filter((id) => `${a.get(id)}` !== `${b.get(id)}`);
+    expect(moved.length).toBeGreaterThan(MALEFICIUM_IDS.length / 2);
+  });
+
+  it('coordForFind uses the given position, snapping a sea position to land', () => {
+    const find: OrbisFind = {
+      id: 'ars_serpens',
+      name: 'Ars Serpens',
+      rarity: 'rare',
+      effect: '',
+      desc: '',
+      costLabel: '',
+      acquired: false,
+      affordable: true,
+    };
+    expect(coordForFind({ ...find, coord: [-55, -10.5] })).toEqual([-55, -10.5]);
+    // Mid-Pacific: snapped to the nearest land anchor.
+    const [lon, lat] = coordForFind({ ...find, coord: [-150, 0] });
+    expect(isLand(lon, lat)).toBe(true);
   });
 
   it('exposes a non-empty land-anchor set, every point on land', () => {
@@ -629,25 +685,36 @@ describe('OrbisTenebrarum — enhanced globe stage', () => {
     ]);
   });
 
-  it('draws the odds as a bar, one segment per tier sized by its share and tinted by its rarity', () => {
+  it('draws one segmented bar per tier, against the likeliest, tinted by the rarity it seeks', () => {
     mount(createElement(OrbisTenebrarum, baseProps({ tierChances: TIER_CHANCES })));
-    const segs = [...container!.querySelectorAll<HTMLElement>('.orbis-odds-seg')];
-    expect(segs.length).toBe(7);
-    expect(segs[0]!.style.flexGrow).toBe('0.021');
+    const rows = [...container!.querySelectorAll('.orbis-odds-row')];
+    expect(rows.length).toBe(7);
+    const fills = rows.map((r) => r.querySelector<HTMLElement>('.orbis-odds-fill')!);
+    // Neutral (38.5%) is the likeliest, so its bar fills the track; the rest scale to it.
+    expect(fills[3]!.style.width).toBe('100%');
+    expect(parseFloat(fills[0]!.style.width)).toBeCloseTo((0.021 / 0.385) * 100, 6);
     // Stellar reaches for anathema (red); Good for rare (teal); Bad finds nothing (grey).
-    expect(segs[0]!.style.background).toBe('rgb(208, 90, 77)');
-    expect(segs[2]!.style.background).toBe('rgb(86, 179, 163)');
-    expect(segs[4]!.style.background).toBe('rgb(94, 88, 80)');
-    expect(container!.querySelectorAll('.orbis-odds-row').length).toBe(7);
+    expect(fills[0]!.style.getPropertyValue('--seg')).toBe('#d05a4d');
+    expect(fills[2]!.style.getPropertyValue('--seg')).toBe('#56b3a3');
+    expect(fills[4]!.style.getPropertyValue('--seg')).toBe('#6a6359');
+    expect((rows[3]!.querySelector('.orbis-odds-chance')?.textContent ?? '').trim()).toBe('38.5%');
   });
 
-  it('leaves a zero-chance tier out of the bar but keeps it in the list', () => {
+  it('draws no bar for a zero-chance tier but keeps it in the list', () => {
     const tiers = TIER_CHANCES.map((t) =>
       t.tier === 'apocalyptic' ? { ...t, chance: '0.0%', share: 0 } : t,
     );
     mount(createElement(OrbisTenebrarum, baseProps({ tierChances: tiers })));
-    expect(container!.querySelectorAll('.orbis-odds-seg').length).toBe(6);
+    expect(container!.querySelectorAll('.orbis-odds-fill').length).toBe(6);
     expect(container!.querySelectorAll('.orbis-odds-row').length).toBe(7);
+  });
+
+  it('sizes the globe canvas in whole art pixels, three CSS px each', () => {
+    mount(createElement(OrbisTenebrarum, baseProps()));
+    const canvas = container!.querySelector<HTMLCanvasElement>('canvas.orbis-canvas')!;
+    const globe = container!.querySelector<HTMLElement>('.orbis-globe')!;
+    expect(parseFloat(globe.style.width)).toBe(canvas.width * 3);
+    expect(parseFloat(globe.style.height)).toBe(canvas.height * 3);
   });
 });
 
@@ -672,7 +739,7 @@ describe('orbis helpers', () => {
 });
 
 describe('IndagatioEmptioProgram — enhanced wiring', () => {
-  it("passes a relic's art and split copy into the detail, and the odds as bar shares", () => {
+  it("passes a relic's art and split copy into the detail, and the odds as bars", () => {
     const s = store().state!;
     useGameStore.setState({
       state: { ...s, lifetime: { ...s.lifetime, emptioList: ['voynich_manuscript'] } },
@@ -687,11 +754,19 @@ describe('IndagatioEmptioProgram — enhanced wiring', () => {
       '+25% Desidia gain rate.',
     );
     expect(detail.querySelector('.orbis-detail-art--profane')).not.toBeNull();
-    // Every tier with a chance gets a bar segment; the shares sum to the whole bar.
-    const shares = [...container!.querySelectorAll<HTMLElement>('.orbis-odds-seg')].map((n) =>
-      Number(n.style.flexGrow),
+    // The relic sits where this lifetime's scatter put it.
+    const at = scatterOverLand(MALEFICIUM_IDS, `katabasis-${s.katabasisCount}`).get(
+      'voynich_manuscript',
+    )!;
+    expect((detail.querySelector('.orbis-detail-coord')?.textContent ?? '').trim()).toBe(
+      formatCoord(at),
     );
-    expect(shares.length).toBeGreaterThan(0);
-    expect(shares.reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6);
+    // Every tier is listed with its live chance; the likeliest one's bar fills its track.
+    expect(container!.querySelectorAll('.orbis-odds-row').length).toBe(7);
+    const widths = [...container!.querySelectorAll<HTMLElement>('.orbis-odds-fill')].map((n) =>
+      parseFloat(n.style.width),
+    );
+    expect(widths.length).toBeGreaterThan(0);
+    expect(Math.max(...widths)).toBe(100);
   });
 });
