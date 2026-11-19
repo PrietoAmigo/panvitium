@@ -598,7 +598,7 @@ export function OrbisTenebrarum({
       <div className="orbis-stage">
         <header className="orbis-stage-head">
           <p className="orbis-eyebrow">Indagatio</p>
-          <h2 className="orbis-title">Search the world for maleficia</h2>
+          <h2 className="orbis-title">Search the world</h2>
         </header>
 
         <div className="orbis-stage-body">

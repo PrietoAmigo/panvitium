@@ -108,6 +108,9 @@ describe('OrbisTenebrarum — globe Search + Emptio ledger', () => {
     expect((container!.querySelector('.orbis-eyebrow')?.textContent ?? '').trim()).toBe(
       'Indagatio',
     );
+    expect((container!.querySelector('.orbis-title')?.textContent ?? '').trim()).toBe(
+      'Search the world',
+    );
     expect((container!.querySelector('.orbis-ledger-title')?.textContent ?? '').trim()).toBe(
       'Emptio',
     );
