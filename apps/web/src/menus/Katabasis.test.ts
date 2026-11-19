@@ -10,13 +10,16 @@
  * lifetime and lands straight back in the room: there is no recap screen (ADR-043).
  * Once every Prince is mastered the ended scene is the feeding screen (the "Red Cloud" handoff): no
  * statue opens, and holding the obelisk thins the cloud; the pour that crosses the threshold raises
- * the Semet screen, whose Accept rises at once through Anabasis. The store actions and sim math
+ * the Semet screen, whose Accept rises at once through Anabasis. Before that, a statue raises no
+ * menu: the storm calms, the Prince's words are carved into the dark beside him, and holding his
+ * statue pours Devotion. The store actions and sim math
  * themselves are covered by their own suites.
  */
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { act, createElement, type FunctionComponent } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { bn, ETERNAL_SIN_THRESHOLD, SINS, type GameState } from '@panvitium/sim';
+import { strings } from '@panvitium/shared';
+import { bn, ETERNAL_SIN_THRESHOLD, SINS, type GameState, type Sin } from '@panvitium/sim';
 import { useGameStore } from '../store/gameStore.js';
 import { KatabasisModal } from '../ui/KatabasisModal.js';
 import { App } from '../App.js';
@@ -27,7 +30,13 @@ import {
   releaseFirstDescent,
 } from '../ui/FirstDescent.js';
 import { ALTAR_SIGIL_FADE_MS, ALTAR_SIGIL_IDLE_MS } from '../game/useAltarSigil.js';
-import { SCORE_RESUME_MS, TRANSIT_HOLD_MS } from './Katabasis.js';
+import {
+  SCORE_RESUME_MS,
+  TRANSIT_HOLD_MS,
+  inscribe,
+  inscriptionSide,
+  interpunct,
+} from './Katabasis.js';
 import { KATABASIS_MUSIC_VOLUME } from './katabasisMusic.js';
 import { boonLabel } from './katabasisShared.js';
 import type { DegradedSceneProps } from './types.js';
@@ -613,6 +622,162 @@ describe('Katabasis flow — orchestrator', () => {
     // …and we did not rewind to the Ledger or replay the descent transition.
     expect(container!.querySelector('.ledger')).toBeNull();
     expect(container!.querySelector('.transit')).toBeNull();
+  });
+});
+
+describe('The Princes speak (the carved inscription, no menu)', () => {
+  /** Land among the Princes, mid-descent, with the given state patched in. */
+  function princes(part: Partial<GameState> = {}): void {
+    patch({ inKatabasis: true, ...part });
+    useGameStore.setState({ katabasisPhase: 'menu' });
+    render();
+  }
+  const statue = (sin: Sin): HTMLButtonElement =>
+    container!.querySelectorAll<HTMLButtonElement>('.statue')[SINS.indexOf(sin)]!;
+  const inscription = (): HTMLElement | null =>
+    container!.querySelector<HTMLElement>('.inscription');
+  const devotion = (sin: Sin): number => (store().state as GameState).devotion[sin].toNumber();
+  const withRaf = (run: () => void): void => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      run();
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+
+  it('a statue raises no menu: his words are cut into the dark beside him and the storm calms', () => {
+    princes();
+    expect(inscription()).toBeNull();
+    act(() => statue('gula').click());
+    // No panel, no scrim, no close button, no hold button: the scene stays, the floor stays.
+    expect(container!.querySelector('.takeover')).toBeNull();
+    expect(container!.querySelector('.hold-btn')).toBeNull();
+    expect(container!.querySelector('.floor')).not.toBeNull();
+    expect(container!.querySelector('.kat-hud')).not.toBeNull();
+    // Only he stays lit, and the others sink into the dark.
+    expect(container!.querySelector('.hell--focus')).not.toBeNull();
+    expect(container!.querySelector('.bg-lit')).not.toBeNull();
+    expect(statue('gula').getAttribute('aria-pressed')).toBe('true');
+    // Carved: Roman capitals with V for U, the epithet parted by interpuncts.
+    const text = inscription()!.textContent ?? '';
+    expect(inscription()!.dataset.sin).toBe('gula');
+    expect(text).toContain('LORD · OF · THE · FLIES');
+    expect(text).toContain('BEELZEBVB');
+    expect(text).toContain('GVLA');
+    expect(text).toContain('Rank 0 of IV');
+    // Every effect line keeps its numbers; the live intensity sits beside the skill.
+    expect(text).toContain('Insatiability');
+    expect(text).toContain('intensity 0.00');
+    expect(text).toContain('Multiplies your action efficiency by 1 + intensity.');
+    expect(text).toContain('Each level removes 20% of the Bad, Terrible and Apocalyptic');
+    expect(text).toContain('of 180 Devotion toward Rank I');
+    // No English sin name and no instructions: the statue is the only verb.
+    expect(text).not.toContain('Gluttony');
+    expect(text).not.toMatch(/hold|pour|permanent|taking it back/i);
+  });
+
+  it('cuts each Prince’s words on the side of him with more room', () => {
+    princes();
+    for (const sin of SINS) {
+      act(() => statue(sin).click());
+      const info = strings.sins[sin];
+      expect(inscription()!.dataset.sin).toBe(sin);
+      expect(inscription()!.classList.contains(`inscription--${inscriptionSide(sin)}`)).toBe(true);
+      expect(inscription()!.textContent).toContain(inscribe(info.prince));
+      expect(inscription()!.textContent).toContain(inscribe(info.latin));
+      expect(inscription()!.textContent).not.toContain(info.english);
+    }
+    // The four on the left of the Court speak to their right; the four on the right, to their left.
+    expect(SINS.map(inscriptionSide)).toEqual([
+      'right',
+      'right',
+      'right',
+      'right',
+      'left',
+      'left',
+      'left',
+      'left',
+    ]);
+  });
+
+  it('carves the names as Roman capitals', () => {
+    expect(inscribe('Beelzebub')).toBe('BEELZEBVB');
+    expect(inscribe('Luxuria')).toBe('LVXVRIA');
+    expect(interpunct('King of the Nine Hells')).toBe('KING · OF · THE · NINE · HELLS');
+  });
+
+  it('the first click only speaks; holding the chosen statue pours, and stops on release', () => {
+    withRaf(() => {
+      princes({ souls: bn(1000) });
+      act(() => statue('gula').click());
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(devotion('gula')).toBe(0);
+      // A press on him pours: one step at once, the ramp's base of 8 souls.
+      act(() => {
+        statue('gula').dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(20);
+      });
+      expect(devotion('gula')).toBe(8);
+      expect((store().state as GameState).souls.toNumber()).toBe(992);
+      expect(container!.querySelector('.ins-dev.is-pour')).not.toBeNull();
+      act(() => {
+        window.dispatchEvent(new Event('pointerup'));
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(devotion('gula')).toBe(8);
+      expect(container!.querySelector('.ins-dev.is-pour')).toBeNull();
+      // A press on another Prince only turns to him; nothing pours until he is chosen.
+      act(() => {
+        statue('luxuria').dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(devotion('luxuria')).toBe(0);
+    });
+  });
+
+  it('a mastered Prince is sated and takes no more', () => {
+    withRaf(() => {
+      const s = store().state as GameState;
+      princes({ souls: bn(1000), devotion: { ...s.devotion, gula: bn(180 ** 4) } });
+      act(() => statue('gula').click());
+      expect(inscription()!.textContent).toContain('Mastered');
+      expect(inscription()!.textContent).toContain(
+        'It is sated. The rank is yours, and cannot be unmade.',
+      );
+      act(() => {
+        statue('gula').dispatchEvent(new Event('pointerdown', { bubbles: true }));
+      });
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(devotion('gula')).toBe(180 ** 4);
+      expect((store().state as GameState).souls.toNumber()).toBe(1000);
+    });
+  });
+
+  it('turning away, by a click off the statue or Escape, lets the words go and the storm return', () => {
+    princes();
+    act(() => statue('ira').click());
+    expect(inscription()).not.toBeNull();
+    click('Turn away');
+    expect(inscription()).toBeNull();
+    expect(container!.querySelector('.bg-lit')).toBeNull();
+    expect(container!.querySelector('.hell--focus')).toBeNull();
+    act(() => statue('ira').click());
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+    expect(inscription()).toBeNull();
+    expect(button('Turn away')).toBeNull();
   });
 });
 
