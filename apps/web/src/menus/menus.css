@@ -3265,7 +3265,7 @@ body {
   }
 }
 
-/* ── Full-screen Prince / Eternal takeover ────────────────────────────────── */
+/* ── Full-screen Eternal takeover (the Semet screen) ──────────────────────── */
 .katabasis-flow .takeover {
   position: absolute;
   inset: 0;
@@ -3304,220 +3304,245 @@ body {
     transform: none;
   }
 }
-.katabasis-flow .takeover-close {
-  position: absolute;
-  top: -2.6rem;
-  right: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(160, 140, 120, 0.3);
-  color: var(--dim);
-  font-size: 1.1rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    color 0.2s,
-    border-color 0.2s,
-    transform 0.2s;
-}
-.katabasis-flow .takeover-close:hover {
-  color: var(--bone);
-  border-color: var(--ember);
-  transform: rotate(90deg);
-}
 .katabasis-flow .tk-info-col {
   flex: 1 1 0;
   min-width: 0;
   max-width: 470px;
 }
-.katabasis-flow .tk-eyebrow {
-  font-family: var(--font-inscribe);
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  font-size: 0.78rem;
-  color: var(--faint);
+
+/* ── The Prince's inscription ("Katabasis statue text", direction A1 · Carved) ── */
+/* A statue raises no panel. The storm calms (Lightning is paused), the other Princes sink further
+   into the dark, the chosen one stays lit by the lightning frame masked to his statue (.bg-lit,
+   its mask inline) and his words are cut into the dark beside him, on the side with more room
+   (.inscription, placed inline). The light is the room's and pixelates with it; the words are
+   chrome, crisp above the scanlines. */
+.katabasis-flow .bg-silhouette {
+  transition: opacity 0.7s ease;
 }
-.katabasis-flow .tk-name {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(2.4rem, 5vw, 3.5rem);
-  line-height: 1;
-  margin: 0.4rem 0 0.35rem;
-  color: #f0e4dc;
+.katabasis-flow .hell--focus .bg-silhouette {
+  opacity: 0.06;
+}
+.katabasis-flow .bg-lit {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center bottom;
+  pointer-events: none;
+  filter: url(#kat-degrade);
+  animation: kat-fade-in 0.5s ease both;
+}
+@keyframes kat-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+/* Behind the statues: a click anywhere off the chosen Prince turns away from him. */
+.katabasis-flow .statue-away {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+/* The chosen statue is held to pour: keep the press from scrolling or zooming. */
+.katabasis-flow .statue--chosen {
+  touch-action: none;
+}
+.katabasis-flow .inscription {
+  position: absolute;
+  top: 13vh;
+  z-index: 25;
+  width: min(39vw, 32rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+  font-family: var(--font-body);
+  color: var(--ash);
   text-shadow:
-    0 0 34px rgba(150, 40, 40, 0.45),
+    0 -1px 0 rgba(0, 0, 0, 0.95),
+    0 1px 0 rgba(255, 236, 220, 0.1),
     0 2px 8px #000;
 }
-.katabasis-flow .tk-sin {
+/* A pool of deeper dark behind the words, so they read over any part of the Court. */
+.katabasis-flow .inscription::before {
+  content: '';
+  position: absolute;
+  inset: -12% -18%;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse at 50% 46%,
+    rgba(0, 0, 0, 0.66),
+    rgba(0, 0, 0, 0.32) 45%,
+    transparent 72%
+  );
+  animation: kat-fade-in 0.4s ease both;
+}
+/* Each line is cut in left to right, 40 ms after the one above (the delay is inline). The clip
+   reaches past the line's box so the carved shadows survive once the cut is done. */
+.katabasis-flow .ins-line {
+  clip-path: inset(-24px 100% -24px -24px);
+  animation: kat-ins-cut 0.3s cubic-bezier(0.5, 0, 0.25, 1) forwards;
+}
+@keyframes kat-ins-cut {
+  to {
+    clip-path: inset(-24px -24px -24px -24px);
+  }
+}
+/* The plain words beside the carved ones (V for U, interpuncts), for a screen reader only. */
+.katabasis-flow .ins-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.katabasis-flow .ins-epithet {
   font-family: var(--font-display);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+.katabasis-flow .ins-name {
+  margin: 0.875rem 0 0.625rem;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 3.75rem;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  color: #d4c9bd;
+  text-shadow:
+    0 -1px 0 rgba(0, 0, 0, 0.95),
+    0 1px 0 rgba(255, 236, 220, 0.18),
+    0 0 30px rgba(150, 40, 40, 0.35),
+    0 3px 10px #000;
+}
+.katabasis-flow .ins-sin {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.3em;
   font-size: 1rem;
   color: var(--ember);
 }
-.katabasis-flow .tk-sin--eternal {
-  color: var(--eternal);
+.katabasis-flow .ins-rank {
+  margin-top: 0.875rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.75rem;
 }
-.katabasis-flow .tk-sin span {
-  opacity: 0.5;
+.katabasis-flow .ins-rank .pips {
+  font-size: 0.8125rem;
 }
-.katabasis-flow .tk-rankline {
+.katabasis-flow .ins-rankword {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+.katabasis-flow .ins-divider {
+  margin: 2.25rem 0 2rem;
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  margin-top: 0.7rem;
+  gap: 0.75rem;
+  font-size: 9px;
+  color: #7a3a30;
 }
-.katabasis-flow .tk-rankline .pips {
-  font-size: 1.05rem;
-}
-.katabasis-flow .tk-rankword {
-  font-family: var(--font-inscribe);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  color: var(--dim);
-}
-.katabasis-flow .tk-rule {
+.katabasis-flow .ins-divider::before,
+.katabasis-flow .ins-divider::after {
+  content: '';
+  width: 6.25rem;
   height: 1px;
-  margin: 1.3rem 0;
-  background: linear-gradient(90deg, rgba(160, 120, 110, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(160, 120, 110, 0.6));
 }
-.katabasis-flow .tk-stats {
-  display: flex;
-  gap: 2.4rem;
+.katabasis-flow .ins-divider::after {
+  background: linear-gradient(90deg, rgba(160, 120, 110, 0.6), transparent);
 }
-.katabasis-flow .tk-stat {
+.katabasis-flow .ins-divider--last {
+  margin-bottom: 1.875rem;
+}
+.katabasis-flow .ins-lore {
   display: flex;
   flex-direction: column;
-  gap: 0.32rem;
+  gap: 0.25rem;
 }
-.katabasis-flow .tk-stat .k {
-  font-family: var(--font-inscribe);
-  color: var(--dim);
-  font-size: 0.76rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  line-height: 1.2;
+.katabasis-flow .ins-lore + .ins-lore {
+  margin-top: 1.625rem;
 }
-.katabasis-flow .tk-stat .v {
+.katabasis-flow .ins-head {
   font-family: var(--font-display);
-  font-size: 1.55rem;
-  line-height: 1;
-  color: #e9ddd4;
-  font-variant-numeric: tabular-nums;
-}
-.katabasis-flow .tk-stat .v.ember {
-  color: var(--ember);
-}
-.katabasis-flow .tk-meter {
-  margin-top: 1.1rem;
-  max-width: 410px;
-}
-.katabasis-flow .tk-meter-track {
-  height: 9px;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(120, 90, 80, 0.45);
-  overflow: hidden;
-}
-.katabasis-flow .tk-meter-fill {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--blood), var(--ember));
-  box-shadow: 0 0 14px rgba(255, 80, 45, 0.7);
-  transition: width 0.18s ease;
-}
-.katabasis-flow .tk-meter-cap {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.4rem;
-  font-family: var(--font-inscribe);
-  font-size: 0.78rem;
-  color: var(--dim);
-}
-.katabasis-flow .tk-meter-cap span:last-child {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.katabasis-flow .tk-lore {
-  margin-top: 1rem;
-}
-.katabasis-flow .tk-lore .h {
-  font-family: var(--font-inscribe);
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
-  font-size: 0.74rem;
+  font-size: 0.6875rem;
+}
+.katabasis-flow .ins-skill {
   color: var(--ember);
-  margin-bottom: 0.22rem;
 }
-.katabasis-flow .tk-lore .b {
-  font-family: var(--font-body);
-  color: var(--ash);
-  line-height: 1.5;
-  font-size: 1.04rem;
-  text-wrap: pretty;
-}
-.katabasis-flow .tk-lore .b.dim {
-  color: var(--dim);
-}
-.katabasis-flow .tk-actions {
-  margin-top: 1.6rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  align-items: flex-start;
-}
-.katabasis-flow .tk-actions .hold-btn {
-  font-size: 0.9rem;
-  padding: 0.85rem 1.5rem;
-}
-.katabasis-flow .tk-note {
-  font-family: var(--font-inscribe);
-  font-style: italic;
-  font-size: 0.86rem;
+.katabasis-flow .ins-dot {
   color: var(--faint);
 }
-.katabasis-flow .tk-mastered {
-  margin-top: 1.6rem;
+.katabasis-flow .ins-intensity {
+  color: var(--dim);
+}
+.katabasis-flow .ins-intensity .v {
+  color: #e9ddd4;
+  letter-spacing: 0.06em;
+}
+.katabasis-flow .ins-body {
+  font-size: 1.125rem;
+  line-height: 1.45;
+  color: var(--ash);
+  text-wrap: balance;
+}
+.katabasis-flow .ins-body--dim {
+  color: #9c948d;
+}
+.katabasis-flow .ins-devotion {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+.katabasis-flow .ins-dev {
   font-family: var(--font-display);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 1.75rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: #e6dbd0;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 -1px 0 rgba(0, 0, 0, 0.95),
+    0 1px 0 rgba(255, 236, 220, 0.18),
+    0 3px 10px #000;
+  transition: color 0.2s ease;
+}
+/* While the statue is held the figure turns ember as it climbs; the statue itself never glows. */
+.katabasis-flow .ins-dev.is-pour {
   color: var(--ember);
-  border: 1px solid var(--blood);
-  border-radius: 4px;
-  padding: 0.9rem 1.2rem;
-  box-shadow: inset 0 0 24px rgba(120, 10, 10, 0.4);
-  font-size: 0.82rem;
-  text-align: center;
 }
-.katabasis-flow .tk-mastered--eternal {
-  color: var(--eternal);
-  border-color: var(--eternal);
+.katabasis-flow .ins-toward {
+  font-style: italic;
+  font-size: 1.0625rem;
+  color: var(--dim);
 }
-@media (max-width: 720px) {
-  .katabasis-flow .takeover-body {
-    flex-direction: column;
-    gap: 1.4rem;
-  }
-  .katabasis-flow .takeover-close {
-    top: 0.4rem;
-    right: 0.4rem;
-  }
-  .katabasis-flow .tk-info-col {
-    max-width: none;
-    text-align: center;
-  }
-  .katabasis-flow .tk-stats {
-    justify-content: center;
-  }
-  .katabasis-flow .tk-actions {
-    align-items: center;
-  }
+.katabasis-flow .ins-sated {
+  margin-top: 1rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--ember);
 }
 
 /* ── Sigil inscription panel (slides from the right) ──────────────────────── */
@@ -4021,8 +4046,14 @@ body {
   .katabasis-flow .slab-molten,
   .katabasis-flow .cavern-glow,
   .katabasis-flow .goetia-count .flame-dot,
-  .katabasis-flow .floor-rise.is-armed {
+  .katabasis-flow .floor-rise.is-armed,
+  .katabasis-flow .bg-lit,
+  .katabasis-flow .inscription::before {
     animation: none !important;
+  }
+  .katabasis-flow .ins-line {
+    animation: none;
+    clip-path: none;
   }
   .katabasis-flow .bg-silhouette {
     opacity: 0.5;

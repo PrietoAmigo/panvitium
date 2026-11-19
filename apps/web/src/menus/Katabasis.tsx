@@ -11,7 +11,6 @@ import { strings } from '@panvitium/shared';
 import {
   SINS,
   sinLevel,
-  sinLevelProgress,
   skillIntensity,
   devotionForLevel,
   MAX_SIN_LEVEL,
@@ -43,7 +42,7 @@ import {
 import { useGameStore } from '../store/gameStore.js';
 import { formatBigNum, formatDuration } from '../game/format.js';
 import { AetherSigils, effectDisplay, toRoman } from './AetherSigils.js';
-import { HoldButton, boonLabel, useHoldPour } from './katabasisShared.js';
+import { boonLabel, useHoldPour } from './katabasisShared.js';
 import { RedCloud } from './RedCloud.js';
 import { ALTAR_SIGIL_SRC } from './AltarSigil.js';
 import { playExstinctio, prefersReducedMotion } from './exstinctio.js';
@@ -99,7 +98,7 @@ function Lightning({ intensity, paused }: { intensity: number; paused: boolean }
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
 
-  // When a takeover opens, calm the storm to black behind the scrim.
+  // While a Prince speaks, calm the storm to black: only he stays lit (StatuesPlace).
   useEffect(() => {
     if (!paused) return;
     [aRef.current, bRef.current, cRef.current, wRef.current].forEach((el) => {
@@ -194,96 +193,158 @@ function Lightning({ intensity, paused }: { intensity: number; paused: boolean }
   );
 }
 
-// ── Full-screen Prince takeover (text only — room reserved for future lore) ──────────────────────
-function PrinceModal({
+// ── The Prince's inscription ("Katabasis statue text" handoff, direction A1 · Carved) ────────────
+// Clicking a statue raises no menu: the storm calms, only that Prince stays lit, and his words are
+// cut into the dark beside him, on whichever side of him has the room. The statue itself is the
+// pour: once his words are up, pressing and holding him pours Devotion through the hold ramp.
+
+/** The gap between a statue's hotspot edge and its inscription, as a fraction of the scene width. */
+const INSCRIPTION_GAP = 0.03;
+
+/** Cut as Roman capitals: upper case, with V for U (Beelzebub → BEELZEBVB, Gula → GVLA). */
+export function inscribe(text: string): string {
+  return text.toUpperCase().replace(/U/g, 'V');
+}
+
+/** An inscription's epithet line: upper case, its words parted by interpuncts. */
+export function interpunct(text: string): string {
+  return text.toUpperCase().split(/\s+/).join(' · ');
+}
+
+/** The side of its statue a Prince's inscription is cut on: the side with more of the scene. */
+export function inscriptionSide(sin: Sin): 'left' | 'right' {
+  return STATUE_POS[sin].x < 0.5 ? 'right' : 'left';
+}
+
+/**
+ * The light's falloff: full on the statue, then easing into the dark through several steps over a
+ * long reach, so the black closes in by degrees rather than at an edge (it spills, faintly, onto
+ * the Princes beside him).
+ */
+const PRINCE_LIGHT_FALLOFF = [
+  '#000 30%',
+  'rgba(0, 0, 0, 0.85) 42%',
+  'rgba(0, 0, 0, 0.62) 54%',
+  'rgba(0, 0, 0, 0.4) 66%',
+  'rgba(0, 0, 0, 0.22) 78%',
+  'rgba(0, 0, 0, 0.08) 90%',
+  'transparent 100%',
+].join(', ');
+
+/**
+ * The light that stays on the chosen Prince once the storm calms: the lightning frame, masked to
+ * an ellipse around his statue, well wider and taller than his hotspot so the light has room to
+ * fade.
+ */
+function princeLightMask(sin: Sin): string {
+  const p = STATUE_POS[sin];
+  const rx = Math.max(p.w * 1.8, 0.17);
+  const ry = p.h * 0.95;
+  return `radial-gradient(ellipse ${pct(rx)} ${pct(ry)} at ${pct(p.x)} ${pct(p.y - 0.04)}, ${PRINCE_LIGHT_FALLOFF})`;
+}
+
+/** Carved text for the eye, with the plain words kept for a screen reader. */
+function Carved({ cut, plain }: { cut: string; plain: string }): ReactElement {
+  return (
+    <>
+      <span aria-hidden="true">{cut}</span>
+      <span className="ins-sr">{plain}</span>
+    </>
+  );
+}
+
+/** Each line is cut in left to right, one after another (40 ms apart). */
+const cutDelay = (i: number): CSSProperties => ({ animationDelay: `${i * 40}ms` });
+
+function PrinceInscription({
   sin,
   state,
-  onClose,
+  pouring,
 }: {
   sin: Sin;
   state: GameState;
-  onClose: () => void;
+  pouring: boolean;
 }): ReactElement {
-  const offer = useGameStore((s) => s.offer);
   const info = strings.sins[sin];
   const devotion = state.devotion[sin];
   const level = sinLevel(devotion);
   const maxed = level >= MAX_SIN_LEVEL;
   const intensity = skillIntensity(devotion);
-  const next = devotionForLevel(Math.min(level + 1, MAX_SIN_LEVEL));
-  const prog = sinLevelProgress(devotion);
+  const p = STATUE_POS[sin];
+  const side = inscriptionSide(sin);
+  const place: CSSProperties =
+    side === 'right'
+      ? { left: pct(p.x + p.w / 2 + INSCRIPTION_GAP) }
+      : { right: pct(1 - (p.x - p.w / 2) + INSCRIPTION_GAP) };
+  const devotionFigure = (
+    <span className={`ins-dev${pouring ? ' is-pour' : ''}`}>{formatBigNum(devotion)}</span>
+  );
 
   return (
-    <div className="takeover" role="dialog" aria-label={info.prince} onClick={onClose}>
-      <div className="takeover-body takeover-body--solo" onClick={(e) => e.stopPropagation()}>
-        <button className="takeover-close" onClick={onClose} aria-label="Turn away">
-          {'\u2715'}
-        </button>
-        <div className="tk-info-col">
-          <div className="tk-eyebrow">{info.epithet}</div>
-          <h1 className="tk-name">{info.prince}</h1>
-          <div className="tk-sin">
-            {info.latin} <span>&middot;</span> {info.english}
-          </div>
-          <div className="tk-rankline">
-            <Pips level={level} max={MAX_SIN_LEVEL} />
-            <span className="tk-rankword">
-              {maxed ? 'Mastered' : `Rank ${toRoman(level) || '0'} of ${toRoman(MAX_SIN_LEVEL)}`}
-            </span>
-          </div>
-
-          <div className="tk-rule" />
-
-          <div className="tk-stats">
-            <div className="tk-stat">
-              <span className="k">Devotion paid</span>
-              <span className="v ember">{formatBigNum(devotion)}</span>
-            </div>
-            <div className="tk-stat">
-              <span className="k">Skill intensity</span>
-              <span className="v">{intensity.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {!maxed && (
-            <div className="tk-meter">
-              <div className="tk-meter-track">
-                <span className="tk-meter-fill" style={{ width: pct(prog) }} />
-              </div>
-              <div className="tk-meter-cap">
-                <span>Toward Rank {toRoman(level + 1)}</span>
-                <span>
-                  {formatBigNum(devotion)} / {formatBigNum(next)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="tk-lore">
-            <div className="h">{info.skill}</div>
-            <div className="b">{info.skillEffect}</div>
-          </div>
-          <div className="tk-lore">
-            <div className="h">Per rank</div>
-            <div className="b dim">{info.levelEffect}</div>
-          </div>
-
-          {maxed ? (
-            <div className="tk-mastered">It is sated. The rank is yours, and cannot be unmade.</div>
-          ) : (
-            <div className="tk-actions">
-              <HoldButton
-                onStep={(d) => offer(sin, d)}
-                disabled={poolEmpty(state)}
-                ariaLabel={`Offer souls to ${info.prince}`}
-              >
-                Hold to pour out Devotion
-              </HoldButton>
-              <div className="tk-note">Devotion is permanent. There is no taking it back.</div>
-            </div>
-          )}
-        </div>
+    <div className={`inscription inscription--${side}`} style={place} data-sin={sin}>
+      <div className="ins-line ins-epithet" style={cutDelay(0)}>
+        <Carved cut={interpunct(info.epithet)} plain={info.epithet} />
       </div>
+      <div className="ins-line ins-name" style={cutDelay(1)}>
+        <Carved cut={inscribe(info.prince)} plain={info.prince} />
+      </div>
+      <div className="ins-line ins-sin" style={cutDelay(2)}>
+        <Carved cut={inscribe(info.latin)} plain={info.latin} />
+      </div>
+      <div className="ins-line ins-rank" style={cutDelay(3)}>
+        <Pips level={level} max={MAX_SIN_LEVEL} />
+        <span className="ins-rankword">
+          {maxed ? 'Mastered' : `Rank ${toRoman(level) || '0'} of ${toRoman(MAX_SIN_LEVEL)}`}
+        </span>
+      </div>
+
+      <div className="ins-line ins-divider" style={cutDelay(4)} aria-hidden="true">
+        <span>{'◆'}</span>
+      </div>
+
+      <div className="ins-line ins-lore" style={cutDelay(5)}>
+        <div className="ins-head">
+          <span className="ins-skill">{info.skill}</span>
+          <span className="ins-dot" aria-hidden="true">
+            {' · '}
+          </span>
+          <span className="ins-intensity">
+            intensity <span className="v">{intensity.toFixed(2)}</span>
+          </span>
+        </div>
+        <div className="ins-body">{info.skillEffect}</div>
+      </div>
+      <div className="ins-line ins-lore" style={cutDelay(6)}>
+        <div className="ins-head ins-skill">Per rank</div>
+        <div className="ins-body ins-body--dim">{info.levelEffect}</div>
+      </div>
+
+      <div
+        className="ins-line ins-divider ins-divider--last"
+        style={cutDelay(7)}
+        aria-hidden="true"
+      >
+        <span>{'◆'}</span>
+      </div>
+
+      {maxed ? (
+        <>
+          <div className="ins-line ins-devotion" style={cutDelay(8)}>
+            {devotionFigure}
+            <span className="ins-toward">Devotion paid</span>
+          </div>
+          <div className="ins-line ins-sated" style={cutDelay(9)}>
+            It is sated. The rank is yours, and cannot be unmade.
+          </div>
+        </>
+      ) : (
+        <div className="ins-line ins-devotion" style={cutDelay(8)}>
+          {devotionFigure}
+          <span className="ins-toward">
+            of {formatBigNum(devotionForLevel(level + 1))} Devotion toward Rank {toRoman(level + 1)}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -345,30 +406,49 @@ function StatuesPlace({
   state,
   ended,
   showCaption,
-  onModalChange,
   onAccept,
 }: {
   state: GameState;
   ended: boolean;
   showCaption: boolean;
-  onModalChange: (open: boolean) => void;
   onAccept: () => void;
 }): ReactElement {
+  const offer = useGameStore((s) => s.offer);
+  // The Prince whose words are up. Once all eight are mastered no statue stands to be chosen.
   const [sel, setSel] = useState<Sin | null>(null);
-  const open = (key: Sin): void => {
-    setSel(key);
-    onModalChange(true);
-  };
-  const close = (): void => {
+  const chosen = ended ? null : sel;
+  const chosenMaxed = chosen !== null && sinLevel(state.devotion[chosen]) >= MAX_SIN_LEVEL;
+  // Holding the chosen statue pours into his Sin through the hold ramp (a tap pours a little). A
+  // mastered Prince takes nothing more, and an empty pool gives nothing.
+  const { holding, begin, stop } = useHoldPour(
+    (d) => {
+      if (chosen !== null) offer(chosen, d);
+    },
+    chosen === null || chosenMaxed || poolEmpty(state),
+  );
+  const turnAway = (): void => {
+    stop();
     setSel(null);
-    onModalChange(false);
   };
+  // Escape turns away, as a click anywhere off the statue does.
+  useEffect(() => {
+    if (chosen === null) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape') return;
+      stop();
+      setSel(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [chosen, stop]);
   const named = ended && eternalSinRevealed(state);
   // The cloud's density: solid on arrival, thinning along the Eternal's log curve, clear at the name.
   const density = Math.min(1, Math.max(0, 1 - eternalProgress(state)));
 
   return (
-    <div className={`scene hell${ended ? ' hell--ended' : ''}`}>
+    <div
+      className={`scene hell${ended ? ' hell--ended' : ''}${chosen !== null ? ' hell--focus' : ''}`}
+    >
       {ended ? (
         <>
           {/* The Court comes into focus as the cloud thins: its blur falls from 9px to none. */}
@@ -387,14 +467,26 @@ function StatuesPlace({
             className="bg-silhouette"
             style={{ backgroundImage: `url(${ASSET}/katabasis3.png)` }}
           />
-          <Lightning intensity={LIGHTNING_INTENSITY} paused={sel !== null} />
+          {/* The storm calms while a Prince speaks; only he stays lit. */}
+          <Lightning intensity={LIGHTNING_INTENSITY} paused={chosen !== null} />
+          {chosen !== null && (
+            <div
+              key={chosen}
+              className="bg-lit"
+              style={{
+                backgroundImage: `url(${ASSET}/katabasis.png)`,
+                maskImage: princeLightMask(chosen),
+                WebkitMaskImage: princeLightMask(chosen),
+              }}
+            />
+          )}
         </>
       )}
 
       <div className="kat-degrade-chrome" aria-hidden="true" />
 
       {/* The ended scene carries no title: the painting and the cloud are the whole of it. */}
-      {showCaption && !ended && (
+      {showCaption && !ended && chosen === null && (
         <div className="hell-caption">
           <div className="t">The Court of Spires</div>
           <div className="s">Bow before the Princes.</div>
@@ -402,12 +494,17 @@ function StatuesPlace({
       )}
 
       <div className="statue-field">
+        {/* Behind the statues: a click anywhere off the chosen Prince turns away from him. */}
+        {chosen !== null && (
+          <button type="button" className="statue-away" aria-label="Turn away" onClick={turnAway} />
+        )}
         {/* Once all eight are mastered the Princes are only the painting: no statue opens. */}
         {!ended &&
           SINS.map((sin) => {
             const p = STATUE_POS[sin];
             const lvl = sinLevel(state.devotion[sin]);
             const info = strings.sins[sin];
+            const isChosen = sin === chosen;
             const style: CSSProperties = {
               left: pct(p.x),
               top: pct(p.y),
@@ -417,17 +514,27 @@ function StatuesPlace({
             return (
               <button
                 key={sin}
-                className={`statue${lvl >= MAX_SIN_LEVEL ? ' statue--maxed' : ''}`}
+                type="button"
+                className={`statue${lvl >= MAX_SIN_LEVEL ? ' statue--maxed' : ''}${isChosen ? ' statue--chosen' : ''}`}
                 style={style}
-                onClick={() => open(sin)}
+                onClick={() => setSel(sin)}
+                onPointerDown={() => {
+                  if (isChosen) begin();
+                }}
+                onPointerLeave={() => {
+                  if (isChosen) stop();
+                }}
                 aria-label={`${info.prince} \u2014 ${info.english}`}
+                aria-pressed={isChosen}
               >
-                <span className="statue-tag">
-                  {info.prince}
-                  <span className="pip">
-                    <Pips level={lvl} max={MAX_SIN_LEVEL} />
+                {!isChosen && (
+                  <span className="statue-tag">
+                    {info.prince}
+                    <span className="pip">
+                      <Pips level={lvl} max={MAX_SIN_LEVEL} />
+                    </span>
                   </span>
-                </span>
+                )}
               </button>
             );
           })}
@@ -435,7 +542,9 @@ function StatuesPlace({
         {ended && !named && <EternalHold state={state} />}
       </div>
 
-      {sel !== null && <PrinceModal sin={sel} state={state} onClose={close} />}
+      {chosen !== null && (
+        <PrinceInscription key={chosen} sin={chosen} state={state} pouring={holding} />
+      )}
       {named && <SemetScreen state={state} onAccept={onAccept} />}
     </div>
   );
@@ -1029,13 +1138,7 @@ export function Katabasis(): ReactElement {
       {screen === 'ascending' && <Transition kind="ascending" onDone={() => confirm()} />}
 
       {screen === 'statues' && (
-        <StatuesPlace
-          state={state}
-          ended={ended}
-          showCaption={caption}
-          onModalChange={setModalOpen}
-          onAccept={rise}
-        />
+        <StatuesPlace state={state} ended={ended} showCaption={caption} onAccept={rise} />
       )}
       {screen === 'sigils' && <AetherSigils state={state} onModalChange={setModalOpen} />}
 
