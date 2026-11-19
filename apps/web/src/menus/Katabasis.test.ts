@@ -662,6 +662,9 @@ describe('The Princes speak (the carved inscription, no menu)', () => {
     expect(dark).not.toBeNull();
     expect(dark!.style.backgroundImage).toBe(princeDarkness('gula'));
     expect(princeDarkness('gula')).toMatch(/^radial-gradient\(ellipse .* at 8\.3% 58%,/);
+    expect(princeDarkness('gula')).toContain('ellipse 15.19% 43.29% at');
+    // A slender Prince's lit ground is never narrower than 10.5% of the scene.
+    expect(princeDarkness('luxuria')).toContain('ellipse 10.5% 45.63% at');
     expect(princeDarkness('gula')).toContain('transparent 36%');
     expect(princeDarkness('gula')).toMatch(/#000 100%\)$/);
     expect(container!.querySelector('.bg-lit')).toBeNull();

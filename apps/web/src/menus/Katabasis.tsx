@@ -222,13 +222,14 @@ const PRINCE_DARKNESS_FALLOFF = [
 
 /**
  * The darkness that closes in around the chosen Prince, laid over the storm: an ellipse around his
- * statue, wider and taller than his hotspot, clear for its inner 36% and black past its edge. A
- * strike lights the scene beneath it, so only the clear ground near him flashes.
+ * statue, a little wider than his hotspot (at least 10.5% of the scene) and 0.585 of its height,
+ * clear for its inner 36% and black past its edge. A strike lights the scene beneath it, so only
+ * the clear ground near him flashes.
  */
 export function princeDarkness(sin: Sin): string {
   const p = STATUE_POS[sin];
-  const rx = Math.max(p.w * 1.5, 0.14);
-  const ry = p.h * 0.78;
+  const rx = Math.max(p.w * 1.125, 0.105);
+  const ry = p.h * 0.585;
   // Rounded to 0.01% so the inline style reads clean (0.62 - 0.04 is 57.99999999999999% raw).
   const at = (v: number): string => `${Number((v * 100).toFixed(2))}%`;
   return `radial-gradient(ellipse ${at(rx)} ${at(ry)} at ${at(p.x)} ${at(p.y - 0.04)}, ${PRINCE_DARKNESS_FALLOFF})`;
