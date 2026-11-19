@@ -217,14 +217,30 @@ export function inscriptionSide(sin: Sin): 'left' | 'right' {
 }
 
 /**
+ * The light's falloff: full on the statue, then easing into the dark through several steps over a
+ * long reach, so the black closes in by degrees rather than at an edge (it spills, faintly, onto
+ * the Princes beside him).
+ */
+const PRINCE_LIGHT_FALLOFF = [
+  '#000 30%',
+  'rgba(0, 0, 0, 0.85) 42%',
+  'rgba(0, 0, 0, 0.62) 54%',
+  'rgba(0, 0, 0, 0.4) 66%',
+  'rgba(0, 0, 0, 0.22) 78%',
+  'rgba(0, 0, 0, 0.08) 90%',
+  'transparent 100%',
+].join(', ');
+
+/**
  * The light that stays on the chosen Prince once the storm calms: the lightning frame, masked to
- * an ellipse around his statue (wider than a slender statue's hotspot so the light reads as light).
+ * an ellipse around his statue, well wider and taller than his hotspot so the light has room to
+ * fade.
  */
 function princeLightMask(sin: Sin): string {
   const p = STATUE_POS[sin];
-  const rx = Math.max(p.w * 1.1, 0.095);
-  const ry = p.h * 0.58;
-  return `radial-gradient(ellipse ${pct(rx)} ${pct(ry)} at ${pct(p.x)} ${pct(p.y - 0.04)}, #000 38%, transparent 100%)`;
+  const rx = Math.max(p.w * 1.8, 0.17);
+  const ry = p.h * 0.95;
+  return `radial-gradient(ellipse ${pct(rx)} ${pct(ry)} at ${pct(p.x)} ${pct(p.y - 0.04)}, ${PRINCE_LIGHT_FALLOFF})`;
 }
 
 /** Carved text for the eye, with the plain words kept for a screen reader. */
