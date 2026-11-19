@@ -27,8 +27,6 @@ export interface OrbisFind {
    * apart in the detail panel. Omit to show `desc` as one block.
    */
   boon?: string;
-  /** The relic's art (a transparent PNG URL), drawn as a pixel sprite in the detail. Omit for none. */
-  img?: string;
   /** Price, PRE-FORMATTED by the app's bignum formatter, e.g. `'220 g'`. The component never formats numbers. */
   costLabel: string;
   /** True once bought via Emptio — REAL, from the store. */

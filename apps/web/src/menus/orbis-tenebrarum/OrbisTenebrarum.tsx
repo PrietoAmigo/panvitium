@@ -20,9 +20,6 @@ import {
   type RefObject,
 } from 'react';
 import { strings } from '@panvitium/shared';
-import { PixelSprite } from '../PixelRelic.js';
-import { relicGrid } from '../pixelArt.js';
-import { RARITY as RELIC_RARITY } from '../relics.js';
 import { ORBIS_RARITY, ORBIS_TIER_FIND, coordForFind, formatCoord } from './orbis.data.js';
 import {
   ART_PX,
@@ -46,12 +43,6 @@ const RARITIES: readonly OrbisRarity[] = ['common', 'rare', 'profane', 'anathema
 const LOG_COPY = strings.opera.searchLog;
 
 const DEG = Math.PI / 180;
-
-/** The detail's relic sprite: one art pixel per 2 design px, its long side 76 px. */
-const SPRITE_PIXEL = 2;
-const SPRITE_LONG_SIDE = 76;
-/** A ledger row's relic icon: one art pixel per design px in a 24 px slot. */
-const ROW_SPRITE_SIDE = 24;
 
 /** A bound (owned) find's pin, dimmed out of its rarity. */
 const BOUND_PIN = '#4d5a4a';
@@ -819,21 +810,8 @@ export function OrbisTenebrarum({
                 className={`orbis-row orbis-row--${f.rarity}${f.id === selectedId ? ' is-selected' : ''}${fraction !== null ? ' is-buying' : ''}${f.acquired ? ' is-owned' : ''}`}
                 onClick={() => onSelect(f.id)}
               >
-                <span className="orbis-row-slot" aria-hidden="true">
-                  {f.img ? (
-                    <span className="orbis-row-sprite">
-                      <PixelSprite
-                        src={f.img}
-                        grid={relicGrid(ROW_SPRITE_SIDE, 1)}
-                        pixelSize={1}
-                        rgb={RELIC_RARITY[f.rarity].rgb}
-                        fallback={<span className={`orbis-dot orbis-dot--${f.rarity}`} />}
-                      />
-                    </span>
-                  ) : (
-                    <span className={`orbis-dot orbis-dot--${f.rarity}`} />
-                  )}
-                </span>
+                {/* The relic's rarity, as the legend's swatch: no art in the ledger. */}
+                <span className={`orbis-dot orbis-dot--${f.rarity}`} aria-hidden="true" />
                 <span className="orbis-row-body">
                   <span className="orbis-row-name">{f.name}</span>
                   {f.effect && <span className="orbis-row-effect">{f.effect}</span>}
@@ -871,19 +849,6 @@ export function OrbisTenebrarum({
         {selected && (
           <div className="orbis-detail">
             <div className="orbis-detail-head">
-              {selected.img && (
-                <span className={`orbis-detail-art orbis-detail-art--${selected.rarity}`}>
-                  <span className="orbis-detail-sprite">
-                    <PixelSprite
-                      src={selected.img}
-                      grid={relicGrid(SPRITE_LONG_SIDE, SPRITE_PIXEL)}
-                      pixelSize={SPRITE_PIXEL}
-                      rgb={RELIC_RARITY[selected.rarity].rgb}
-                      fallback={null}
-                    />
-                  </span>
-                </span>
-              )}
               <span className="orbis-detail-id">
                 <span className={`orbis-badge orbis-badge--${selected.rarity}`}>
                   {ORBIS_RARITY[selected.rarity].label}

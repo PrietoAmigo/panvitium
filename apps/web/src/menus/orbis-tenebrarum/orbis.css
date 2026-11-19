@@ -22,8 +22,7 @@
 .orbis-invest-btn,
 .orbis-divest-btn,
 .orbis-acquire,
-.orbis-pin-label,
-.orbis-detail-art {
+.orbis-pin-label {
   box-shadow:
     0 -3px 0 0 var(--orbis-pb),
     0 3px 0 0 var(--orbis-pb),
@@ -597,14 +596,13 @@
   display: none;
 }
 .orbis-row {
-  --orbis-slot: #4a4232;
   flex: none;
   width: 100%;
   height: 42px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 10px 0 6px;
+  padding: 0 10px 0 12px;
   border: 0;
   border-radius: 0;
   font-family: inherit;
@@ -627,33 +625,11 @@
 .orbis-row.is-buying {
   background: #0d1a18;
 }
-.orbis-row--rare {
-  --orbis-slot: #1f4d46;
-}
-.orbis-row--profane {
-  --orbis-slot: #45306a;
-}
-.orbis-row--anathema {
-  --orbis-slot: #62261f;
-}
-/* The relic's icon in a small slot framed in its rarity. */
-.orbis-row-slot {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  background: #15110c;
-  box-shadow: inset 0 0 0 3px var(--orbis-slot);
-}
-.orbis-row-sprite {
-  display: block;
-  width: 24px;
-  height: 24px;
-}
+/* A row marks its relic by rarity alone: a square in the legend's swatch colour. */
 .orbis-dot {
-  width: 9px;
-  height: 9px;
+  flex: none;
+  width: 12px;
+  height: 12px;
 }
 .orbis-dot--common {
   background: #b6a884;
@@ -715,7 +691,7 @@
 .orbis-row.is-owned .orbis-row-name {
   color: #8f8573;
 }
-.orbis-row.is-owned .orbis-row-slot > * {
+.orbis-row.is-owned .orbis-dot {
   opacity: 0.5;
 }
 .orbis-row-progress {
@@ -746,34 +722,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-}
-/* The relic's pixel sprite in a niche, dithered in its rarity's light. */
-.orbis-detail-art {
-  --orbis-pb: #2a2317;
-  --orbis-wash: rgba(182, 168, 132, 0.28);
-  flex: none;
-  width: 108px;
-  height: 88px;
-  margin: 3px;
-  display: grid;
-  place-items: center;
-  background-color: #0d0a08;
-  background-image: repeating-conic-gradient(var(--orbis-wash) 0 25%, transparent 0 50%);
-  background-size: 6px 6px;
-}
-.orbis-detail-art--rare {
-  --orbis-wash: rgba(86, 179, 163, 0.3);
-}
-.orbis-detail-art--profane {
-  --orbis-wash: rgba(165, 116, 216, 0.32);
-}
-.orbis-detail-art--anathema {
-  --orbis-wash: rgba(208, 90, 77, 0.32);
-}
-.orbis-detail-sprite {
-  display: block;
-  width: 96px;
-  height: 76px;
 }
 .orbis-detail-id {
   display: flex;

@@ -451,7 +451,8 @@ export function IndagatioEmptioProgram(): ReactElement {
       !stackable && owned.includes(id)
         ? true
         : stackable && countCopies(owned, id) >= (def.stackMax ?? Infinity);
-    // The Loculi's copy for the detail: flavour apart from the effect clause, and the relic's art.
+    // The Loculi's copy for the detail: flavour apart from the effect clause (no art: the ledger
+    // marks a relic by its rarity alone).
     const view = maleficiumView(id);
     const coord = scatter.get(id);
     return [
@@ -463,7 +464,6 @@ export function IndagatioEmptioProgram(): ReactElement {
         effect: invokingPowerText(def.invokingPower),
         desc: view?.effect ? view.desc : def.description,
         ...(view?.effect ? { boon: view.effect } : {}),
-        ...(view?.img ? { img: view.img } : {}),
         costLabel: `${formatBigNum(bn(price))} g`,
         acquired,
         affordable: !acquired && goldNum >= price,

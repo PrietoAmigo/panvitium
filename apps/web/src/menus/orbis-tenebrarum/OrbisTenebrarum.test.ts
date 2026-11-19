@@ -609,13 +609,12 @@ describe('OrbisTenebrarum — enhanced ledger', () => {
     );
   });
 
-  it('gives the detail its coordinates, price, art niche and split effect clause', () => {
+  it('gives the detail its coordinates, price and split effect clause', () => {
     const finds: OrbisFind[] = [
       {
         ...MOCK_FINDS[0]!,
         desc: 'Smooth to the touch and ear.',
         boon: '+33% Logos efficiency.',
-        img: '/assets/panvitium/maleficia/ars_serpens.png',
       },
     ];
     mount(createElement(OrbisTenebrarum, baseProps({ finds, selectedId: 'ars_serpens' })));
@@ -626,7 +625,6 @@ describe('OrbisTenebrarum — enhanced ledger', () => {
     expect((detail.querySelector('.orbis-detail-price-value')?.textContent ?? '').trim()).toBe(
       '120 g',
     );
-    expect(detail.querySelector('.orbis-detail-art--common')).not.toBeNull();
     expect((detail.querySelector('.orbis-detail-desc')?.textContent ?? '').trim()).toBe(
       'Smooth to the touch and ear.',
     );
@@ -641,10 +639,23 @@ describe('OrbisTenebrarum — enhanced ledger', () => {
     expect((detail.querySelector('.orbis-acquire')?.textContent ?? '').trim()).toBe('Acquire');
   });
 
-  it('omits the art niche and the effect clause when a find carries neither', () => {
+  it('omits the effect clause when a find carries none', () => {
     mount(createElement(OrbisTenebrarum, baseProps({ selectedId: 'ars_serpens' })));
-    expect(container!.querySelector('.orbis-detail-art')).toBeNull();
     expect(container!.querySelector('.orbis-detail-boon')).toBeNull();
+  });
+
+  it('marks each row by a square of its rarity, and draws no relic art in the list or the detail', () => {
+    mount(createElement(OrbisTenebrarum, baseProps({ selectedId: 'obsidian_mirror' })));
+    const rows = [...container!.querySelectorAll('.orbis-row')];
+    // The mock holds a common, then a rare: each row leads with its rarity's swatch.
+    expect(rows.map((r) => r.firstElementChild?.className)).toEqual([
+      'orbis-dot orbis-dot--common',
+      'orbis-dot orbis-dot--rare',
+    ]);
+    // No sprite canvas or image anywhere in the Emptio market: not on a row, not in the detail.
+    const ledger = container!.querySelector('.orbis-ledger')!;
+    expect(container!.querySelector('.orbis-detail')).not.toBeNull();
+    expect(ledger.querySelectorAll('canvas, img').length).toBe(0);
   });
 });
 
@@ -742,7 +753,7 @@ describe('orbis helpers', () => {
 });
 
 describe('IndagatioEmptioProgram — enhanced wiring', () => {
-  it("passes a relic's art and split copy into the detail, and the odds as bars", () => {
+  it("passes a relic's rarity and split copy into the ledger, and the odds as bars", () => {
     const s = store().state!;
     useGameStore.setState({
       state: { ...s, lifetime: { ...s.lifetime, emptioList: ['voynich_manuscript'] } },
@@ -756,7 +767,11 @@ describe('IndagatioEmptioProgram — enhanced wiring', () => {
     expect((detail.querySelector('.orbis-detail-boon')?.textContent ?? '').trim()).toBe(
       '+25% Desidia gain rate.',
     );
-    expect(detail.querySelector('.orbis-detail-art--profane')).not.toBeNull();
+    // The relic is marked by its rarity (profane), with no art in its row or its detail.
+    expect(container!.querySelector('.orbis-row .orbis-dot--profane')).not.toBeNull();
+    expect(container!.querySelector('.orbis-ledger')!.querySelectorAll('canvas, img').length).toBe(
+      0,
+    );
     // The relic sits where this lifetime's scatter put it.
     const at = scatterOverLand(MALEFICIUM_IDS, `katabasis-${s.katabasisCount}`).get(
       'voynich_manuscript',
