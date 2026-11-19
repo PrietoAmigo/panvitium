@@ -12,6 +12,7 @@ import {
   isStackable,
   countCopies,
   MALEFICIA,
+  MALEFICIUM_IDS,
   computeModifiers,
   indagatioInvestmentGold,
   INDAGATIO_INVEST_MAX_PERCENT,
@@ -54,7 +55,11 @@ import { AnalyticsGroup } from './Analytics.js';
 import { EmailsGroup } from './Emails.js';
 import { buildCabinet, invokingPowerText, maleficiumView } from '../game/maleficia.js';
 import { formatBigNum } from '../game/format.js';
-import { OrbisTenebrarum, type OrbisFind } from '../menus/orbis-tenebrarum/index.js';
+import {
+  OrbisTenebrarum,
+  scatterOverLand,
+  type OrbisFind,
+} from '../menus/orbis-tenebrarum/index.js';
 import { useGameStore } from '../store/gameStore.js';
 import { actionName } from '../game/labels.js';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion.js';
@@ -428,6 +433,9 @@ export function IndagatioEmptioProgram(): ReactElement {
   for (const id of state.lifetime.emptioList) {
     listedCounts.set(id, (listedCounts.get(id) ?? 0) + 1);
   }
+  // Where each relic glows on the globe (flavour): the whole catalog scattered over every continent,
+  // re-rolled each lifetime so a relic is not always found in the same place.
+  const scatter = scatterOverLand(MALEFICIUM_IDS, `katabasis-${state.katabasisCount}`);
   const finds: OrbisFind[] = [...listedCounts].flatMap(([id, count]) => {
     const def = MALEFICIA[id];
     if (!def) return [];
@@ -443,6 +451,7 @@ export function IndagatioEmptioProgram(): ReactElement {
         : stackable && countCopies(owned, id) >= (def.stackMax ?? Infinity);
     // The Loculi's copy for the detail: flavour apart from the effect clause, and the relic's art.
     const view = maleficiumView(id);
+    const coord = scatter.get(id);
     return [
       {
         id,
@@ -453,9 +462,10 @@ export function IndagatioEmptioProgram(): ReactElement {
         desc: view?.effect ? view.desc : def.description,
         ...(view?.effect ? { boon: view.effect } : {}),
         ...(view?.img ? { img: view.img } : {}),
-        costLabel: `${price} g`,
+        costLabel: `${formatBigNum(bn(price))} g`,
         acquired,
         affordable: !acquired && goldNum >= price,
+        ...(coord ? { coord } : {}),
       },
     ];
   });
