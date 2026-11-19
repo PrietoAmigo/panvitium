@@ -2815,23 +2815,96 @@ body {
    Contracts). Deliberately non-thematic: no occult register, just money.
    The account accent themes the whole surface through the --ch-accent* custom
    properties, set inline on .ch-root from the component's `accent` prop.
+
+   Pixel dress (Claude Design, "Depraedatio Pixel Rework"): the bank keeps its
+   palette and sizes but sits on the PC programs' 3 px art grid (the Orbis
+   Tenebrarum program's). Type is Pixelify Sans, small capitals Silkscreen
+   (a touch tighter than the old tracking, as Silkscreen runs wide). Corners
+   are stepped: two steps on the big cards (--ch-notch-2), one elsewhere
+   (--ch-notch). Borders are 3 px rings drawn inside the box as inset
+   shadows, so no box grows; the clip-path cuts the corner pixels out.
+   Buttons carry a 3 px bevel, hairlines become dotted 3 px rules, the old
+   gradients become ordered-dither bands, and the tier bar is segmented.
+   A clip-path also cuts a focus outline drawn outside the box, so focus is
+   drawn inside (outline-offset -3px).
    ───────────────────────────────────────────────────────────────────────── */
 .ch-root {
   --ch-accent: #1e4638;
   --ch-accent-light: #7ca98f;
   --ch-accent-soft: #1e463814;
   --ch-accent-border: #1e46383a;
-  --ch-serif: 'Newsreader', 'EB Garamond', Georgia, serif;
-  --ch-sans: 'Archivo', system-ui, -apple-system, sans-serif;
-  --ch-mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  --ch-accent-hi: #3e6054;
+  --ch-accent-lo: #153127;
+  --ch-pixel: 'Pixelify Sans', 'Ubuntu Mono', monospace;
+  --ch-caps: 'Silkscreen', monospace;
+  --ch-notch: polygon(
+    3px 0,
+    calc(100% - 3px) 0,
+    calc(100% - 3px) 3px,
+    100% 3px,
+    100% calc(100% - 3px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 3px) 100%,
+    3px 100%,
+    3px calc(100% - 3px),
+    0 calc(100% - 3px),
+    0 3px,
+    3px 3px
+  );
+  --ch-notch-2: polygon(
+    6px 0,
+    calc(100% - 6px) 0,
+    calc(100% - 6px) 3px,
+    calc(100% - 3px) 3px,
+    calc(100% - 3px) 6px,
+    100% 6px,
+    100% calc(100% - 6px),
+    calc(100% - 3px) calc(100% - 6px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 6px) calc(100% - 3px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    6px calc(100% - 3px),
+    3px calc(100% - 3px),
+    3px calc(100% - 6px),
+    0 calc(100% - 6px),
+    0 6px,
+    3px 6px,
+    3px 3px,
+    6px 3px
+  );
   display: flex;
   width: 100%;
   height: 100%;
   min-height: 0;
   background: #f4f1ea;
   color: #232019;
-  font-family: var(--ch-sans);
+  font-family: var(--ch-pixel);
+  /* Pixelify Sans joins "fi" into one glyph that reads as an "A" at these sizes. */
+  font-variant-ligatures: none;
   overflow: hidden;
+}
+.ch-icon {
+  display: block;
+  flex: none;
+}
+
+/* Focus, drawn inside the box (a clip-path would cut an outline drawn outside it). */
+.ch-root button:focus-visible {
+  outline: 3px solid var(--ch-accent);
+  outline-offset: -3px;
+}
+.ch-root .ch-navbtn:focus-visible {
+  outline-color: var(--ch-accent-light);
+}
+/* On a filled control the ring sits one art pixel in, so the fill still frames it against the card. */
+.ch-root .ch-navbtn--active:focus-visible,
+.ch-root .ch-deposit:focus-visible,
+.ch-root .ch-sign:focus-visible,
+.ch-root .ch-confirm-go:focus-visible,
+.ch-root .ch-switch-opt--active:focus-visible {
+  outline-color: #f4f1ea;
+  outline-offset: -6px;
 }
 
 /* ── Sidebar ── */
@@ -2841,8 +2914,8 @@ body {
   flex-direction: column;
   background: #17211c;
   color: #c7c1b2;
-  padding: 26px 20px 22px;
-  border-right: 1px solid #0e1512;
+  padding: 26px 21px 22px 20px;
+  box-shadow: inset -3px 0 0 0 #0e1512;
   overflow-y: auto;
 }
 .ch-brand {
@@ -2851,21 +2924,24 @@ body {
   gap: 12px;
   margin-bottom: 32px;
 }
+/* The monogram's 150° wash as an ordered dither: the light tone, a checker band, the dark tone. */
 .ch-monogram {
   flex: 0 0 auto;
   width: 38px;
   height: 38px;
-  border-radius: 7px;
-  background: linear-gradient(150deg, #26382f, #1a271f);
-  border: 1px solid #3a4d42;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--ch-serif);
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 17px;
   color: #e7dfce;
   letter-spacing: 0.02em;
+  background:
+    linear-gradient(#26382f, #26382f) top / 100% 13px no-repeat,
+    linear-gradient(#1a271f, #1a271f) bottom / 100% 13px no-repeat,
+    repeating-conic-gradient(#26382f 0 25%, #1a271f 0 50%) 0 1px / 6px 6px;
+  box-shadow: inset 0 0 0 3px #3a4d42;
+  clip-path: var(--ch-notch);
 }
 .ch-brand-text {
   display: flex;
@@ -2873,67 +2949,67 @@ body {
   gap: 2px;
 }
 .ch-brand-name {
-  font-family: var(--ch-serif);
-  font-size: 1.02rem;
+  font-size: 16px;
   font-weight: 500;
   letter-spacing: 0.08em;
   color: #f1ece0;
 }
 .ch-brand-sub {
-  font-size: 0.6rem;
-  letter-spacing: 0.26em;
+  font-family: var(--ch-caps);
+  font-size: 10px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #8b9088;
 }
 .ch-eyebrow {
-  font-family: var(--ch-sans);
-  font-size: 0.6rem;
-  letter-spacing: 0.22em;
+  font-family: var(--ch-caps);
+  font-size: 10px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #9a9486;
 }
 .ch-account {
-  padding: 16px 15px;
-  border: 1px solid #2a3730;
-  border-radius: 11px;
+  padding: 17px 16px;
   background: #131c17;
+  box-shadow: inset 0 0 0 3px #2a3730;
+  clip-path: var(--ch-notch);
   margin-bottom: 26px;
 }
 .ch-account .ch-eyebrow {
-  font-size: 0.58rem;
-  letter-spacing: 0.24em;
+  font-size: 9px;
+  letter-spacing: 0.14em;
   color: #7f857c;
 }
 .ch-account-name {
-  font-family: var(--ch-serif);
-  font-size: 1.14rem;
+  font-size: 18px;
   color: #f1ece0;
   letter-spacing: 0.01em;
   margin: 7px 0 4px;
 }
 .ch-account-no {
-  font-family: var(--ch-mono);
-  font-size: 0.68rem;
+  font-size: 11px;
   color: #8b9088;
   letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
 }
 .ch-account-tier {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 13px;
-  padding-top: 12px;
-  border-top: 1px solid #2a3730;
+  padding-top: 14px;
+  background: repeating-linear-gradient(90deg, #2a3730 0 3px, transparent 3px 6px) 0 0 / 100% 3px
+    no-repeat;
 }
 .ch-account-tier-val {
-  font-family: var(--ch-serif);
-  font-size: 0.9rem;
+  font-size: 14px;
   color: var(--ch-accent-light);
   letter-spacing: 0.06em;
 }
 .ch-account-tier-label {
-  font-size: 0.58rem;
-  letter-spacing: 0.16em;
+  font-family: var(--ch-caps);
+  font-size: 9px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #7f857c;
 }
@@ -2943,8 +3019,9 @@ body {
   gap: 4px;
 }
 .ch-nav-group {
-  font-size: 0.56rem;
-  letter-spacing: 0.24em;
+  font-family: var(--ch-caps);
+  font-size: 9px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #6f756d;
   padding: 0 6px 8px;
@@ -2956,14 +3033,15 @@ body {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-family: var(--ch-sans);
-  font-size: 0.82rem;
+  padding: 11px 15px;
+  font-family: var(--ch-pixel);
+  font-size: 13px;
   letter-spacing: 0.01em;
   color: #b9b3a4;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--ch-notch);
   cursor: pointer;
   width: 100%;
   text-align: left;
@@ -2979,47 +3057,48 @@ body {
 .ch-navbtn--active:hover {
   color: #f4f1ea;
   background: var(--ch-accent);
-  border-color: var(--ch-accent);
+  box-shadow:
+    inset 0 3px 0 0 var(--ch-accent-hi),
+    inset 0 -3px 0 0 var(--ch-accent-lo);
 }
 .ch-navbtn-glyph {
   display: inline-flex;
   justify-content: center;
-  width: 1.05em;
-  font-size: 0.95rem;
+  width: 15px;
+  flex: none;
 }
 .ch-nav-inert {
   display: flex;
   align-items: center;
   gap: 11px;
   padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: 13px;
   color: #5f655d;
   cursor: default;
 }
 .ch-side-foot {
   margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid #2a3730;
+  padding-top: 22px;
+  background: repeating-linear-gradient(90deg, #2a3730 0 3px, transparent 3px 6px) 0 0 / 100% 3px
+    no-repeat;
   display: flex;
   flex-direction: column;
   gap: 3px;
 }
 .ch-side-foot .ch-eyebrow {
-  font-size: 0.58rem;
-  letter-spacing: 0.2em;
+  font-size: 9px;
+  letter-spacing: 0.12em;
   color: #6f756d;
 }
 .ch-manager {
-  font-family: var(--ch-serif);
-  font-size: 0.9rem;
+  font-size: 14px;
   color: #c7c1b2;
 }
 .ch-statement {
-  font-family: var(--ch-mono);
-  font-size: 0.64rem;
+  font-size: 10px;
   color: #6f756d;
   margin-top: 5px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Main ── */
@@ -3036,9 +3115,9 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 20px 34px;
-  border-bottom: 1px solid #e4dfd2;
+  padding: 20px 34px 21px;
   background: #f7f4ed;
+  box-shadow: inset 0 -3px 0 0 #e4dfd2;
 }
 .ch-topbar-titles {
   display: flex;
@@ -3047,14 +3126,13 @@ body {
   min-width: 0;
 }
 .ch-view-title {
-  font-family: var(--ch-serif);
-  font-size: 1.34rem;
+  font-size: 21px;
   font-weight: 500;
   letter-spacing: 0.01em;
   color: #232019;
 }
 .ch-view-sub {
-  font-size: 0.72rem;
+  font-size: 12px;
   color: #8a8578;
   letter-spacing: 0.01em;
 }
@@ -3067,52 +3145,61 @@ body {
 .ch-privacy {
   width: 38px;
   height: 38px;
-  border-radius: 9px;
-  border: 1px solid #ddd7c8;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   background: #fff;
   color: #6f6a5d;
-  font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow:
+    inset 0 0 0 3px #ddd7c8,
+    inset 0 -6px 0 0 #ece7da;
+  clip-path: var(--ch-notch);
 }
 .ch-privacy:hover {
-  border-color: #c9c2b0;
+  box-shadow:
+    inset 0 0 0 3px #c9c2b0,
+    inset 0 -6px 0 0 #ece7da;
 }
-/* The Portfolio / Contracts switch: two equal segments under one sliding accent thumb. */
+/* The Portfolio / Contracts switch: two equal segments under one accent thumb that steps across. */
 .ch-switch {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   height: 38px;
-  padding: 3px;
-  border: 1px solid #ddd7c8;
-  border-radius: 10px;
+  padding: 6px;
   background: #fff;
+  box-shadow: inset 0 0 0 3px #ddd7c8;
+  clip-path: var(--ch-notch);
 }
 .ch-switch-thumb {
   position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc(50% - 3px);
-  border-radius: 7px;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
+  width: calc(50% - 6px);
   background: var(--ch-accent);
-  transition: transform 0.2s ease;
+  box-shadow:
+    inset 0 3px 0 0 var(--ch-accent-hi),
+    inset 0 -3px 0 0 var(--ch-accent-lo);
+  clip-path: var(--ch-notch);
+  transition: transform 0.2s steps(4, end);
 }
 .ch-switch--contracts .ch-switch-thumb {
   transform: translateX(100%);
 }
 .ch-switch-opt {
   position: relative;
-  font-family: var(--ch-sans);
-  font-size: 0.78rem;
+  font-family: var(--ch-pixel);
+  font-size: 12px;
   letter-spacing: 0.02em;
   color: #6f6a5d;
   background: transparent;
   border: 0;
-  border-radius: 7px;
+  border-radius: 0;
   padding: 0 16px;
   cursor: pointer;
   white-space: nowrap;
@@ -3132,12 +3219,12 @@ body {
   padding: 30px 34px 60px;
 }
 .ch-scroll::-webkit-scrollbar {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
 }
 .ch-scroll::-webkit-scrollbar-thumb {
   background: #dcd6c8;
-  border-radius: 7px;
+  border-radius: 0;
   border: 3px solid #f4f1ea;
 }
 .ch-scroll::-webkit-scrollbar-track {
@@ -3150,15 +3237,19 @@ body {
   flex-direction: column;
   gap: 22px;
 }
-/* ── Cards ── */
+/* ── Cards: a 3 px ring, two-step corners (the inner corner pixels are the four background squares) ── */
 .ch-card {
-  background: #fff;
-  border: 1px solid #e6e1d3;
-  border-radius: 16px;
+  background:
+    linear-gradient(#e6e1d3, #e6e1d3) 3px 3px / 3px 3px no-repeat,
+    linear-gradient(#e6e1d3, #e6e1d3) calc(100% - 3px) 3px / 3px 3px no-repeat,
+    linear-gradient(#e6e1d3, #e6e1d3) 3px calc(100% - 3px) / 3px 3px no-repeat,
+    linear-gradient(#e6e1d3, #e6e1d3) calc(100% - 3px) calc(100% - 3px) / 3px 3px no-repeat,
+    #fff;
+  box-shadow: inset 0 0 0 3px #e6e1d3;
+  clip-path: var(--ch-notch-2);
 }
 .ch-balance {
-  padding: 30px 32px;
-  box-shadow: 0 1px 0 rgba(20, 20, 16, 0.02);
+  padding: 31px 33px;
 }
 .ch-balance-head {
   display: flex;
@@ -3171,8 +3262,8 @@ body {
   min-width: 0;
 }
 .ch-balance .ch-eyebrow {
-  font-size: 0.64rem;
-  letter-spacing: 0.24em;
+  font-size: 10px;
+  letter-spacing: 0.14em;
   color: #9a9486;
   margin-bottom: 12px;
 }
@@ -3182,16 +3273,15 @@ body {
   gap: 10px;
 }
 .ch-balance-value {
-  font-family: var(--ch-serif);
   font-weight: 500;
-  font-size: 3.1rem;
+  font-size: 50px;
   line-height: 0.95;
   color: #20291f;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 .ch-balance-unit {
-  font-size: 0.8rem;
+  font-size: 13px;
   color: #9a9486;
   letter-spacing: 0.06em;
   padding-bottom: 7px;
@@ -3203,13 +3293,16 @@ body {
   margin-top: 12px;
 }
 .ch-delta-pct {
-  font-family: var(--ch-mono);
-  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
   color: #2f6b4e;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 .ch-delta-label {
-  font-size: 0.7rem;
+  font-size: 11px;
   color: #9a9486;
   letter-spacing: 0.04em;
 }
@@ -3219,40 +3312,44 @@ body {
 .ch-spark svg {
   display: block;
 }
+/* The wash's dither dots at 30%: about the old gradient's 16% at its top, fading out. */
+.ch-spark-area {
+  opacity: 0.3;
+}
+/* The KPI strip: four cells on a #ece7da frame, split by 3 px seams. */
 .ch-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
+  gap: 3px;
+  padding: 3px;
   margin-top: 26px;
   background: #ece7da;
-  border: 1px solid #ece7da;
-  border-radius: 12px;
-  overflow: hidden;
+  clip-path: var(--ch-notch);
 }
 .ch-stat {
   background: #fff;
   padding: 16px 18px;
 }
 .ch-stat-label {
-  font-size: 0.6rem;
-  letter-spacing: 0.18em;
+  font-family: var(--ch-caps);
+  font-size: 10px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #9a9486;
   margin-bottom: 8px;
 }
 .ch-stat-value {
-  font-family: var(--ch-serif);
-  font-size: 1.32rem;
+  font-size: 21px;
   color: #20291f;
   font-variant-numeric: tabular-nums;
 }
 .ch-stat-caption {
-  font-size: 0.64rem;
+  font-size: 10px;
   color: #9a9486;
   margin-top: 3px;
 }
 .ch-realised {
-  font-size: 0.74rem;
+  font-size: 12px;
   color: #8a8578;
   margin: 18px 0 0;
 }
@@ -3270,7 +3367,7 @@ body {
   align-items: stretch;
 }
 .ch-reserve {
-  padding: 26px 28px;
+  padding: 27px 29px;
   min-width: 0;
 }
 .ch-card-head {
@@ -3280,27 +3377,27 @@ body {
   gap: 12px;
 }
 .ch-card-title {
-  font-family: var(--ch-serif);
-  font-size: 1.28rem;
+  font-size: 20px;
+  font-weight: 500;
   color: #20291f;
 }
 .ch-card-sub {
-  font-size: 0.72rem;
+  font-size: 12px;
   color: #9a9486;
   margin-top: 2px;
 }
 .ch-pill {
-  border-radius: 20px;
-  padding: 5px 12px;
-  font-size: 0.72rem;
+  padding: 6px 13px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  clip-path: var(--ch-notch);
 }
 .ch-pill--yield {
-  font-family: var(--ch-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-accent);
   background: var(--ch-accent-soft);
-  border: 1px solid var(--ch-accent-border);
+  box-shadow: inset 0 0 0 3px var(--ch-accent-border);
 }
 .ch-figures {
   display: flex;
@@ -3309,8 +3406,7 @@ body {
   flex-wrap: wrap;
 }
 .ch-figure {
-  font-family: var(--ch-serif);
-  font-size: 1.7rem;
+  font-size: 27px;
   color: #20291f;
   font-variant-numeric: tabular-nums;
 }
@@ -3318,7 +3414,7 @@ body {
   color: #2f6b4e;
 }
 .ch-body-text {
-  font-size: 0.78rem;
+  font-size: 12px;
   line-height: 1.55;
   color: #6f6a5d;
   margin: 18px 0 0;
@@ -3328,8 +3424,9 @@ body {
 }
 .ch-money-block--top {
   margin-top: 22px;
-  padding-top: 20px;
-  border-top: 1px solid #efeade;
+  padding-top: 22px;
+  background: repeating-linear-gradient(90deg, #e6e1d3 0 3px, transparent 3px 6px) 0 0 / 100% 3px
+    no-repeat;
 }
 .ch-money-head {
   display: flex;
@@ -3339,21 +3436,23 @@ body {
   margin-bottom: 9px;
 }
 .ch-money-label {
-  font-size: 0.66rem;
-  letter-spacing: 0.16em;
+  font-family: var(--ch-caps);
+  font-size: 11px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #8a8578;
 }
 .ch-money-avail {
-  font-size: 0.68rem;
+  font-size: 11px;
   color: #9a9486;
 }
 .ch-mono {
-  font-family: var(--ch-mono);
+  font-family: var(--ch-pixel);
+  font-variant-numeric: tabular-nums;
   color: #3a362c;
 }
 .ch-money-charge {
-  font-size: 0.68rem;
+  font-size: 11px;
   color: #b06a4a;
 }
 .ch-money-row {
@@ -3362,20 +3461,34 @@ body {
   align-items: stretch;
   flex-wrap: wrap;
 }
+/* A sunken field: the ring, and a shaded top row inside it. */
 .ch-input {
   flex: 1;
   min-width: 120px;
-  font-family: var(--ch-mono);
-  font-size: 0.9rem;
+  font-family: var(--ch-pixel);
+  font-size: 14px;
   color: #232019;
   background: #faf8f2;
-  border: 1px solid #ddd7c8;
-  border-radius: 9px;
-  padding: 11px 13px;
+  border: 0;
+  border-radius: 0;
+  padding: 12px 14px;
+  box-shadow:
+    inset 0 0 0 3px #ddd7c8,
+    inset 0 6px 0 0 #efeade;
+  clip-path: var(--ch-notch);
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.ch-input::-webkit-inner-spin-button,
+.ch-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .ch-input:focus {
   outline: none;
-  border-color: var(--ch-accent);
+  box-shadow:
+    inset 0 0 0 3px var(--ch-accent),
+    inset 0 6px 0 0 #efeade;
 }
 .ch-input::placeholder {
   color: #a8a396;
@@ -3385,57 +3498,80 @@ body {
   cursor: not-allowed;
 }
 .ch-ghost {
-  font-family: var(--ch-sans);
-  font-size: 0.72rem;
+  font-family: var(--ch-pixel);
+  font-size: 12px;
   letter-spacing: 0.04em;
   color: #3a362c;
   background: #fff;
-  border: 1px solid #ddd7c8;
-  border-radius: 9px;
-  padding: 0 14px;
+  border: 0;
+  border-radius: 0;
+  padding: 0 15px;
+  box-shadow:
+    inset 0 0 0 3px #ddd7c8,
+    inset 0 -6px 0 0 #ece7da;
+  clip-path: var(--ch-notch);
   cursor: pointer;
   white-space: nowrap;
 }
 .ch-ghost:hover:not(:disabled) {
-  border-color: #c9c2b0;
+  box-shadow:
+    inset 0 0 0 3px #c9c2b0,
+    inset 0 -6px 0 0 #ece7da;
 }
 .ch-ghost:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+/* The primary: the accent with a lit top row and a shaded foot; it sinks one art pixel when pressed. */
 .ch-deposit {
-  font-family: var(--ch-sans);
-  font-size: 0.78rem;
+  font-family: var(--ch-pixel);
+  font-size: 12px;
   letter-spacing: 0.02em;
   color: #f4f1ea;
   background: var(--ch-accent);
-  border: 1px solid var(--ch-accent);
-  border-radius: 9px;
-  padding: 10px 18px;
+  border: 0;
+  border-radius: 0;
+  padding: 11px 19px;
+  box-shadow:
+    inset 0 3px 0 0 var(--ch-accent-hi),
+    inset 0 -3px 0 0 var(--ch-accent-lo);
+  clip-path: var(--ch-notch);
   cursor: pointer;
   white-space: nowrap;
 }
 .ch-deposit:hover:not(:disabled) {
   filter: brightness(1.12);
 }
+.ch-deposit:active:not(:disabled),
+.ch-sign:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: inset 0 3px 0 0 var(--ch-accent-lo);
+}
 .ch-deposit:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 .ch-withdraw {
-  font-family: var(--ch-sans);
-  font-size: 0.74rem;
+  font-family: var(--ch-pixel);
+  font-size: 12px;
   letter-spacing: 0.04em;
   color: #8a3d2c;
   background: #fbf1ec;
-  border: 1px solid #e6c8ba;
-  border-radius: 9px;
-  padding: 0 16px;
+  border: 0;
+  border-radius: 0;
+  padding: 0 17px;
+  box-shadow:
+    inset 0 0 0 3px #e6c8ba,
+    inset 0 -6px 0 0 #f6e6dd;
+  clip-path: var(--ch-notch);
   cursor: pointer;
   white-space: nowrap;
 }
 .ch-withdraw:hover:not(:disabled) {
   background: #f6e6dd;
+  box-shadow:
+    inset 0 0 0 3px #e6c8ba,
+    inset 0 -6px 0 0 #efd9cd;
 }
 .ch-withdraw:disabled {
   opacity: 0.4;
@@ -3443,10 +3579,10 @@ body {
 }
 .ch-confirm {
   margin-top: 11px;
-  padding: 13px 15px;
+  padding: 14px 16px;
   background: #fbf1ec;
-  border: 1px solid #ecd4c8;
-  border-radius: 10px;
+  box-shadow: inset 0 0 0 3px #ecd4c8;
+  clip-path: var(--ch-notch);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3454,28 +3590,33 @@ body {
   flex-wrap: wrap;
 }
 .ch-confirm-text {
-  font-size: 0.76rem;
+  font-size: 12px;
   color: #8a3d2c;
   line-height: 1.4;
 }
 .ch-confirm-text b {
-  font-family: var(--ch-mono);
+  font-family: var(--ch-pixel);
+  font-variant-numeric: tabular-nums;
 }
 .ch-confirm-actions {
   display: flex;
   gap: 8px;
 }
 .ch-confirm .ch-ghost {
-  padding: 8px 14px;
+  padding: 9px 15px;
 }
 .ch-confirm-go {
-  font-family: var(--ch-sans);
-  font-size: 0.72rem;
+  font-family: var(--ch-pixel);
+  font-size: 12px;
   color: #fff;
   background: #a2432f;
-  border: 1px solid #a2432f;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border: 0;
+  border-radius: 0;
+  padding: 9px 17px;
+  box-shadow:
+    inset 0 3px 0 0 #b06a4a,
+    inset 0 -3px 0 0 #8f3928;
+  clip-path: var(--ch-notch);
   cursor: pointer;
 }
 .ch-confirm-go:hover {
@@ -3483,29 +3624,37 @@ body {
 }
 
 /* ── Account status (dark) + recent activity ── */
+/* The old 168° wash as dither bands: the light tone, a checker band, the dark tone. */
 .ch-status {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: linear-gradient(168deg, #1b271f, #141d18);
-  border: 1px solid #26332b;
-  border-radius: 16px;
-  padding: 26px;
+  background:
+    linear-gradient(#26332b, #26332b) 3px 3px / 3px 3px no-repeat,
+    linear-gradient(#26332b, #26332b) calc(100% - 3px) 3px / 3px 3px no-repeat,
+    linear-gradient(#26332b, #26332b) 3px calc(100% - 3px) / 3px 3px no-repeat,
+    linear-gradient(#26332b, #26332b) calc(100% - 3px) calc(100% - 3px) / 3px 3px no-repeat,
+    linear-gradient(#1b271f, #1b271f) top / 100% 42% no-repeat,
+    linear-gradient(#141d18, #141d18) bottom / 100% 42% no-repeat,
+    repeating-conic-gradient(#1b271f 0 25%, #141d18 0 50%) 0 0 / 6px 6px;
+  box-shadow: inset 0 0 0 3px #26332b;
+  clip-path: var(--ch-notch-2);
+  padding: 27px;
   color: #d9d3c4;
 }
 .ch-eyebrow--dark {
-  font-size: 0.6rem;
-  letter-spacing: 0.24em;
+  font-size: 10px;
+  letter-spacing: 0.14em;
   color: #8b9088;
   margin-bottom: 14px;
 }
 .ch-status-tier {
-  font-family: var(--ch-serif);
-  font-size: 2rem;
+  font-size: 32px;
+  font-weight: 500;
   color: #f1ece0;
 }
 .ch-status-perk {
-  font-size: 0.8rem;
+  font-size: 13px;
   color: var(--ch-accent-light);
   margin-top: 6px;
 }
@@ -3515,7 +3664,7 @@ body {
 .ch-progress-head {
   display: flex;
   justify-content: space-between;
-  font-size: 0.66rem;
+  font-size: 11px;
   color: #8b9088;
   letter-spacing: 0.04em;
   margin-bottom: 7px;
@@ -3523,25 +3672,32 @@ body {
 .ch-progress-head .ch-mono {
   color: #8b9088;
 }
+/* The tier bar in 6 px segments on a 9 px pitch (the Orbis odds bars). */
 .ch-progress-track {
   height: 6px;
-  border-radius: 4px;
-  background: #2a3730;
+  background: repeating-linear-gradient(90deg, #2a3730 0 6px, transparent 6px 9px);
   overflow: hidden;
 }
 .ch-progress-fill {
   height: 100%;
-  background: var(--ch-accent-light);
-  border-radius: 4px;
+  width: var(--ch-progress, 0%);
+  background: repeating-linear-gradient(90deg, var(--ch-accent-light) 0 6px, transparent 6px 9px);
+}
+/* Where CSS can round, the fill stops on a whole segment instead of cutting one. */
+@supports (width: round(down, 50%, 9px)) {
+  .ch-progress-fill {
+    width: round(down, var(--ch-progress, 0%), 9px);
+  }
 }
 .ch-status-row {
   display: flex;
   justify-content: space-between;
   gap: 10px;
   margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid #26332b;
-  font-size: 0.66rem;
+  padding-top: 16px;
+  background: repeating-linear-gradient(90deg, #2a3730 0 3px, transparent 3px 6px) 0 0 / 100% 3px
+    no-repeat;
+  font-size: 11px;
   letter-spacing: 0.04em;
   color: #8b9088;
 }
@@ -3550,17 +3706,17 @@ body {
 }
 /* Pinned to the card's foot, so a stretched status card carries its slack above the body text. */
 .ch-status-body {
-  font-size: 0.72rem;
+  font-size: 12px;
   line-height: 1.55;
   color: #9aa098;
   margin: auto 0 0;
   padding-top: 18px;
 }
 .ch-activity {
-  padding: 22px 24px;
+  padding: 23px 25px;
 }
 .ch-activity-title {
-  font-size: 1.06rem;
+  font-size: 17px;
   margin-bottom: 14px;
 }
 .ch-activity-list {
@@ -3572,24 +3728,25 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px 0;
-  border-top: 1px solid #f0ebe0;
+  padding: 12px 0 10px;
+  background: repeating-linear-gradient(90deg, #ece7da 0 3px, transparent 3px 6px) 0 0 / 100% 3px
+    no-repeat;
 }
 .ch-activity-desc {
   min-width: 0;
 }
 .ch-activity-name {
-  font-size: 0.78rem;
+  font-size: 12px;
   color: #3a362c;
 }
 .ch-activity-sub {
-  font-size: 0.64rem;
+  font-size: 10px;
   color: #a29c8e;
   margin-top: 2px;
 }
 .ch-activity-amt {
-  font-family: var(--ch-mono);
-  font-size: 0.8rem;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .ch-activity-amt--credit {
@@ -3599,7 +3756,7 @@ body {
   color: #a2432f;
 }
 .ch-activity-empty {
-  font-size: 0.76rem;
+  font-size: 12px;
   color: #a29c8e;
   margin: 4px 0 0;
 }
@@ -3613,21 +3770,21 @@ body {
   flex-wrap: wrap;
 }
 .ch-contracts-blurb {
-  font-size: 0.86rem;
+  font-size: 14px;
   line-height: 1.6;
   color: #6f6a5d;
   max-width: 560px;
   margin: 0;
 }
 .ch-contracts-cash {
-  font-size: 0.72rem;
+  font-size: 12px;
   color: #9a9486;
   text-align: right;
   white-space: nowrap;
 }
 .ch-contracts-cash-val {
-  font-family: var(--ch-mono);
-  font-size: 1.02rem;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
   color: #3a362c;
 }
 /* One row per relationship tier: a heading line, then three equal-height contract cards. */
@@ -3641,8 +3798,8 @@ body {
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--ch-accent-border);
+  padding-bottom: 10px;
+  box-shadow: inset 0 -3px 0 0 var(--ch-accent-border);
 }
 .ch-tier-titles {
   display: flex;
@@ -3652,30 +3809,31 @@ body {
   min-width: 0;
 }
 .ch-tier-name {
-  font-family: var(--ch-serif);
-  font-size: 1.14rem;
+  font-size: 18px;
+  font-weight: 500;
   color: #20291f;
 }
 .ch-tier-sub {
-  font-family: var(--ch-mono);
-  font-size: 0.68rem;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: #a29c8e;
 }
 .ch-tier-pill {
-  font-size: 0.58rem;
-  letter-spacing: 0.14em;
+  font-family: var(--ch-caps);
+  font-size: 9px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #a29c8e;
   background: #faf8f2;
-  border: 1px solid #e6e1d3;
-  border-radius: 20px;
-  padding: 4px 10px;
+  box-shadow: inset 0 0 0 3px #e6e1d3;
+  clip-path: var(--ch-notch);
+  padding: 5px 11px;
   white-space: nowrap;
 }
 .ch-tier-pill--held {
   color: var(--ch-accent);
   background: var(--ch-accent-soft);
-  border-color: var(--ch-accent-border);
+  box-shadow: inset 0 0 0 3px var(--ch-accent-border);
 }
 .ch-terms {
   display: grid;
@@ -3687,19 +3845,29 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 15px 16px;
-  border-radius: 12px;
-  border: 1px solid #e6e1d3;
+  padding: 16px 17px;
   background: #fff;
+  box-shadow: inset 0 0 0 3px #e6e1d3;
+  clip-path: var(--ch-notch);
 }
 .ch-term--active {
-  border-color: var(--ch-accent-border);
   background: var(--ch-accent-soft);
+  box-shadow: inset 0 0 0 3px var(--ch-accent-border);
 }
+/* Out of reach or foreclosed: a dashed pixel frame (6 px dashes on a 12 px pitch) on the pale fill. */
 .ch-term--locked,
 .ch-term--foreclosed {
-  border-style: dashed;
-  background: #faf8f2;
+  background:
+    repeating-linear-gradient(90deg, #e6e1d3 0 6px, transparent 6px 12px) 3px 0 / calc(100% - 6px)
+      3px no-repeat,
+    repeating-linear-gradient(90deg, #e6e1d3 0 6px, transparent 6px 12px) 3px 100% /
+      calc(100% - 6px) 3px no-repeat,
+    repeating-linear-gradient(180deg, #e6e1d3 0 6px, transparent 6px 12px) 0 3px / 3px
+      calc(100% - 6px) no-repeat,
+    repeating-linear-gradient(180deg, #e6e1d3 0 6px, transparent 6px 12px) 100% 3px / 3px
+      calc(100% - 6px) no-repeat,
+    #faf8f2;
+  box-shadow: none;
   opacity: 0.72;
 }
 .ch-term-head {
@@ -3710,30 +3878,31 @@ body {
   min-height: 22px;
 }
 .ch-term-title {
-  font-family: var(--ch-serif);
-  font-size: 1rem;
+  font-size: 16px;
+  font-weight: 500;
   color: #20291f;
 }
 .ch-term-badge {
-  font-size: 0.56rem;
-  letter-spacing: 0.14em;
+  font-family: var(--ch-caps);
+  font-size: 9px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ch-accent);
   background: var(--ch-accent-soft);
-  border: 1px solid var(--ch-accent-border);
-  border-radius: 20px;
-  padding: 3px 9px;
+  box-shadow: inset 0 0 0 3px var(--ch-accent-border);
+  clip-path: var(--ch-notch);
+  padding: 4px 10px;
   white-space: nowrap;
 }
 .ch-term-effect {
-  font-size: 0.74rem;
+  font-size: 12px;
   line-height: 1.5;
   color: #6f6a5d;
   margin: 9px 0 0;
 }
 .ch-term-live {
-  font-family: var(--ch-mono);
-  font-size: 0.72rem;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   color: var(--ch-accent);
   margin-top: 6px;
 }
@@ -3743,8 +3912,7 @@ body {
   padding-top: 12px;
 }
 .ch-term-meta {
-  font-family: var(--ch-mono);
-  font-size: 0.66rem;
+  font-size: 11px;
   line-height: 1.45;
   color: #a29c8e;
 }
@@ -3754,18 +3922,22 @@ body {
   margin-top: 10px;
 }
 .ch-term-actions .ch-ghost {
-  padding: 8px 12px;
+  padding: 9px 13px;
 }
 .ch-sign {
-  font-family: var(--ch-sans);
-  font-size: 0.74rem;
+  font-family: var(--ch-pixel);
+  font-size: 12px;
   letter-spacing: 0.02em;
   margin-top: 10px;
   color: #f4f1ea;
   background: var(--ch-accent);
-  border: 1px solid var(--ch-accent);
-  border-radius: 9px;
-  padding: 9px 12px;
+  border: 0;
+  border-radius: 0;
+  padding: 10px 13px;
+  box-shadow:
+    inset 0 3px 0 0 var(--ch-accent-hi),
+    inset 0 -3px 0 0 var(--ch-accent-lo);
+  clip-path: var(--ch-notch);
   cursor: pointer;
   width: 100%;
 }
@@ -3776,9 +3948,8 @@ body {
   margin-top: 0;
   flex: 1;
   width: auto;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 0.72rem;
+  padding: 9px 13px;
+  font-size: 12px;
 }
 
 /* ── Responsive folds (the PC window shrinks with the viewport) ── */

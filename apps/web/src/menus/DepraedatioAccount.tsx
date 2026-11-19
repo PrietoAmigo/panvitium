@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
+import {
+  CH_DELTA_UP,
+  CH_ICONS,
+  mixHex,
+  pixelSparkline,
+  type ChIconName,
+} from './depraedatioPixel.js';
 
 /**
  * Depraedatio "Counting House" account (Claude Design redesign). A self-framed full-surface program
@@ -9,6 +16,11 @@ import { strings } from '@panvitium/shared';
  * one managed account; the Latin surfaces are relabelled in plain banking terms (Reserve, Interest,
  * Relationship tier, Contracts), while the underlying sim ids are unchanged (see the wrapper in
  * ui/panels.tsx which feeds this the real store figures + actions).
+ *
+ * Dress: the PC programs' pixel art (the Orbis Tenebrarum program's 3 px art grid, Pixelify Sans
+ * with Silkscreen small capitals), keeping the bank's own palette and sizes. Stepped corners, 3 px
+ * borders and bevels, dotted dividers, dithered washes and segmented bars live in index.css; the
+ * glyphs and the sparkline are drawn here on that grid from depraedatioPixel.ts.
  *
  * Layout: Portfolio is the balance summary (four KPI tiles in one row, then the realised-income line
  * since account inception), then the Reserve Account beside the Account status card (stretched to
@@ -118,6 +130,26 @@ const SPARK = [
   2330, 2318, 2360, 2402, 2388, 2430, 2465, 2486,
 ] as const;
 
+/** The sparkline's drawing box, in CSS px (88 × 22 art pixels). */
+const SPARK_W = 264;
+const SPARK_H = 66;
+
+/** One of the account's 5 × 5 pixel glyphs, 15 px square (one art pixel = 3 px). */
+function PixelIcon({ name }: { name: ChIconName }): ReactElement {
+  return (
+    <svg
+      className="ch-icon"
+      width="15"
+      height="15"
+      viewBox="0 0 5 5"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+    >
+      <path d={CH_ICONS[name]} fill="currentColor" />
+    </svg>
+  );
+}
+
 /** Integer with thousands separators. */
 function fmtInt(n: number): string {
   if (!Number.isFinite(n)) return '∞';
@@ -182,13 +214,15 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
   const [ledger, setLedger] = useState<readonly LedgerRow[]>([]);
   const [ledgerSeq, setLedgerSeq] = useState(0);
 
-  // Accent-derived tokens: soft fill + hairline border as 8-digit hex, exposed as CSS variables so
-  // the whole surface themes from the one accent knob.
+  // Accent-derived tokens: soft fill + hairline border as 8-digit hex, and the bevel's lit top edge
+  // and shaded foot, exposed as CSS variables so the whole surface themes from the one accent knob.
   const rootVars = {
     '--ch-accent': accent,
     '--ch-accent-light': ACCENT_LIGHT,
     '--ch-accent-soft': accent + '14',
     '--ch-accent-border': accent + '3a',
+    '--ch-accent-hi': mixHex(accent, '#ffffff', 0.14),
+    '--ch-accent-lo': mixHex(accent, '#000000', 0.3),
   } as CSSProperties;
 
   const maskStr = (s: string): string => (mask ? s.replace(/[0-9]/g, '•') : s);
@@ -243,21 +277,13 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
     setConfirmId(null);
   };
 
-  // Decorative sparkline path + area + a trailing delta, all from the fixed SPARK series.
+  // Decorative pixel sparkline (a stepped line over a dithered wash) + a trailing delta, all from
+  // the fixed SPARK series.
   const spark = useMemo(() => {
-    const w = 264;
-    const h = 66;
-    const pad = 6;
     const d = SPARK;
-    const mn = Math.min(...d);
-    const mx = Math.max(...d);
-    const xs = (i: number): number => pad + (i / (d.length - 1)) * (w - 2 * pad);
-    const ys = (v: number): number => pad + (1 - (v - mn) / (mx - mn || 1)) * (h - 2 * pad);
-    let path = `M${xs(0).toFixed(1)} ${ys(d[0]!).toFixed(1)}`;
-    for (let i = 1; i < d.length; i++) path += ` L${xs(i).toFixed(1)} ${ys(d[i]!).toFixed(1)}`;
-    const area = `${path} L${xs(d.length - 1).toFixed(1)} ${h - pad} L${xs(0).toFixed(1)} ${h - pad} Z`;
+    const { line, area } = pixelSparkline(d, SPARK_W, SPARK_H);
     const delta = `${((d[d.length - 1]! / d[0]! - 1) * 100).toFixed(1)}%`;
-    return { path, area, delta };
+    return { line, area, delta };
   }, []);
 
   const viewTitle = view === 'portfolio' ? F.portfolio : F.contracts;
@@ -308,7 +334,7 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
             onClick={() => setView('portfolio')}
           >
             <span className="ch-navbtn-glyph" aria-hidden="true">
-              {'◨'}
+              <PixelIcon name="portfolio" />
             </span>
             {F.portfolio}
           </button>
@@ -318,21 +344,27 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
             onClick={() => setView('contracts')}
           >
             <span className="ch-navbtn-glyph" aria-hidden="true">
-              {'❏'}
+              <PixelIcon name="contracts" />
             </span>
             {F.contracts}
           </button>
           <div className="ch-nav-group ch-nav-group--service">{F.navService}</div>
           <div className="ch-nav-inert" aria-hidden="true">
-            <span className="ch-navbtn-glyph">{'⛃'}</span>
+            <span className="ch-navbtn-glyph">
+              <PixelIcon name="statements" />
+            </span>
             {F.statements}
           </div>
           <div className="ch-nav-inert" aria-hidden="true">
-            <span className="ch-navbtn-glyph">{'☰'}</span>
+            <span className="ch-navbtn-glyph">
+              <PixelIcon name="documents" />
+            </span>
             {F.documents}
           </div>
           <div className="ch-nav-inert" aria-hidden="true">
-            <span className="ch-navbtn-glyph">{'⚙'}</span>
+            <span className="ch-navbtn-glyph">
+              <PixelIcon name="settings" />
+            </span>
             {F.settings}
           </div>
         </nav>
@@ -360,7 +392,7 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
               aria-label={F.togglePrivacy}
               aria-pressed={mask}
             >
-              {mask ? '◉' : '◎'}
+              <PixelIcon name={mask ? 'privacyOn' : 'privacyOff'} />
             </button>
             <div
               className={'ch-switch' + (view === 'contracts' ? ' ch-switch--contracts' : '')}
@@ -397,29 +429,31 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
                     </div>
                     <div className="ch-balance-delta">
                       <span className="ch-delta-pct">
-                        {'▲'} {spark.delta}
+                        <svg
+                          width="9"
+                          height="6"
+                          viewBox="0 0 3 2"
+                          shapeRendering="crispEdges"
+                          aria-hidden="true"
+                        >
+                          <path d={CH_DELTA_UP} fill="currentColor" />
+                        </svg>
+                        {spark.delta}
                       </span>
                       <span className="ch-delta-label">{F.trailing12}</span>
                     </div>
                   </div>
                   {showSparkline && (
                     <div className="ch-spark">
-                      <svg width="264" height="66" viewBox="0 0 264 66" aria-hidden="true">
-                        <defs>
-                          <linearGradient id="chSpark" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0" stopColor={accent} stopOpacity="0.16" />
-                            <stop offset="1" stopColor={accent} stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <path d={spark.area} fill="url(#chSpark)" />
-                        <path
-                          d={spark.path}
-                          fill="none"
-                          stroke={accent}
-                          strokeWidth="2"
-                          strokeLinejoin="round"
-                          strokeLinecap="round"
-                        />
+                      <svg
+                        width={SPARK_W}
+                        height={SPARK_H}
+                        viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
+                        shapeRendering="crispEdges"
+                        aria-hidden="true"
+                      >
+                        <path className="ch-spark-area" d={spark.area} fill={accent} />
+                        <path className="ch-spark-line" d={spark.line} fill={accent} />
                       </svg>
                     </div>
                   )}
@@ -609,9 +643,14 @@ export function DepraedatioAccount(props: DepraedatioAccountProps): ReactElement
                       {tier < maxTier && <span className="ch-mono">{nextThresholdStr}</span>}
                     </div>
                     <div className="ch-progress-track">
+                      {/* The width rides a variable so the CSS can round it down to whole segments. */}
                       <div
                         className="ch-progress-fill"
-                        style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
+                        style={
+                          {
+                            '--ch-progress': `${Math.max(0, Math.min(100, progressPct))}%`,
+                          } as CSSProperties
+                        }
                       />
                     </div>
                   </div>
