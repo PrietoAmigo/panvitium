@@ -701,6 +701,10 @@ describe('OrbisTenebrarum — enhanced globe stage', () => {
 
   it('draws one segmented bar per tier, against the likeliest, tinted by the rarity it seeks', () => {
     mount(createElement(OrbisTenebrarum, baseProps({ tierChances: TIER_CHANCES })));
+    // The head is the title alone: no colour key beside it.
+    expect((container!.querySelector('.orbis-odds-head')?.textContent ?? '').trim()).toBe(
+      'Search odds',
+    );
     const rows = [...container!.querySelectorAll('.orbis-odds-row')];
     expect(rows.length).toBe(7);
     const fills = rows.map((r) => r.querySelector<HTMLElement>('.orbis-odds-fill')!);

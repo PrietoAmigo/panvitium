@@ -630,7 +630,6 @@ export function OrbisTenebrarum({
               <div className="orbis-odds orbis-panel" aria-label="Search odds by outcome tier">
                 <div className="orbis-odds-head">
                   <span className="orbis-odds-title">Search odds</span>
-                  <span className="orbis-odds-note">colour = rarity sought</span>
                 </div>
                 <ul className="orbis-odds-list">
                   {tierChances.map((t) => (
