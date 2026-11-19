@@ -11,8 +11,8 @@
  * Once every Prince is mastered the ended scene is the feeding screen (the "Red Cloud" handoff): no
  * statue opens, and holding the obelisk thins the cloud; the pour that crosses the threshold raises
  * the Semet screen, whose Accept rises at once through Anabasis. Before that, a statue raises no
- * menu: the storm calms, the Prince's words are carved into the dark beside him, and holding his
- * statue pours Devotion. The store actions and sim math
+ * menu: the dark closes in around the Prince (the storm's strikes light only the ground near him),
+ * his words are carved into the dark beside him, and holding his statue pours Devotion. The store actions and sim math
  * themselves are covered by their own suites.
  */
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
@@ -36,6 +36,7 @@ import {
   inscribe,
   inscriptionSide,
   interpunct,
+  princeDarkness,
 } from './Katabasis.js';
 import { KATABASIS_MUSIC_VOLUME } from './katabasisMusic.js';
 import { boonLabel } from './katabasisShared.js';
@@ -646,7 +647,7 @@ describe('The Princes speak (the carved inscription, no menu)', () => {
     }
   };
 
-  it('a statue raises no menu: his words are cut into the dark beside him and the storm calms', () => {
+  it('a statue raises no menu: the dark closes in around him and his words are cut into it', () => {
     princes();
     expect(inscription()).toBeNull();
     act(() => statue('gula').click());
@@ -655,9 +656,15 @@ describe('The Princes speak (the carved inscription, no menu)', () => {
     expect(container!.querySelector('.hold-btn')).toBeNull();
     expect(container!.querySelector('.floor')).not.toBeNull();
     expect(container!.querySelector('.kat-hud')).not.toBeNull();
-    // Only he stays lit, and the others sink into the dark.
-    expect(container!.querySelector('.hell--focus')).not.toBeNull();
-    expect(container!.querySelector('.bg-lit')).not.toBeNull();
+    // The dark closes in around him: clear over his statue, black beyond. He keeps no light of his
+    // own; only a strike lights him.
+    const dark = container!.querySelector<HTMLElement>('.kat-darkness');
+    expect(dark).not.toBeNull();
+    expect(dark!.style.backgroundImage).toBe(princeDarkness('gula'));
+    expect(princeDarkness('gula')).toMatch(/^radial-gradient\(ellipse .* at 8\.3% 58%,/);
+    expect(princeDarkness('gula')).toContain('transparent 36%');
+    expect(princeDarkness('gula')).toMatch(/#000 100%\)$/);
+    expect(container!.querySelector('.bg-lit')).toBeNull();
     expect(statue('gula').getAttribute('aria-pressed')).toBe('true');
     // Carved: Roman capitals with V for U, the epithet parted by interpuncts.
     const text = inscription()!.textContent ?? '';
@@ -764,14 +771,32 @@ describe('The Princes speak (the carved inscription, no menu)', () => {
     });
   });
 
-  it('turning away, by a click off the statue or Escape, lets the words go and the storm return', () => {
+  it('the storm rages on while a Prince speaks: the lightning keeps striking', () => {
+    vi.useFakeTimers();
+    try {
+      princes();
+      act(() => statue('gula').click());
+      // Mark the three strike frames, then let the storm run: a strike rewrites a frame's fade.
+      const frames = Array.from(container!.querySelectorAll<HTMLElement>('.bg-strike'));
+      expect(frames.length).toBe(3);
+      for (const f of frames) f.style.transition = 'marked';
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(inscription()).not.toBeNull();
+      expect(frames.some((f) => f.style.transition.includes('cubic-bezier'))).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('turning away, by a click off the statue or Escape, lets the words go and the dark lift', () => {
     princes();
     act(() => statue('ira').click());
     expect(inscription()).not.toBeNull();
     click('Turn away');
     expect(inscription()).toBeNull();
-    expect(container!.querySelector('.bg-lit')).toBeNull();
-    expect(container!.querySelector('.hell--focus')).toBeNull();
+    expect(container!.querySelector('.kat-darkness')).toBeNull();
     act(() => statue('ira').click());
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));

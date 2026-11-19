@@ -3311,24 +3311,15 @@ body {
 }
 
 /* ── The Prince's inscription ("Katabasis statue text", direction A1 · Carved) ── */
-/* A statue raises no panel. The storm calms (Lightning is paused), the other Princes sink further
-   into the dark, the chosen one stays lit by the lightning frame masked to his statue (.bg-lit,
-   its mask inline) and his words are cut into the dark beside him, on the side with more room
-   (.inscription, placed inline). The light is the room's and pixelates with it; the words are
-   chrome, crisp above the scanlines. */
-.katabasis-flow .bg-silhouette {
-  transition: opacity 0.7s ease;
-}
-.katabasis-flow .hell--focus .bg-silhouette {
-  opacity: 0.06;
-}
-.katabasis-flow .bg-lit {
+/* A statue raises no panel. The dark closes in around the chosen Prince (.kat-darkness, its
+   ellipse inline): it lies over the silhouette and the storm, so the storm rages on but each strike
+   lights only the clear ground near him, and his words are cut into the dark beside him, on the
+   side with more room (.inscription, placed inline). The words are chrome, crisp above the
+   scanlines. */
+.katabasis-flow .kat-darkness {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center bottom;
   pointer-events: none;
-  filter: url(#kat-degrade);
   animation: kat-fade-in 0.5s ease both;
 }
 @keyframes kat-fade-in {
@@ -4047,7 +4038,7 @@ body {
   .katabasis-flow .cavern-glow,
   .katabasis-flow .goetia-count .flame-dot,
   .katabasis-flow .floor-rise.is-armed,
-  .katabasis-flow .bg-lit,
+  .katabasis-flow .kat-darkness,
   .katabasis-flow .inscription::before {
     animation: none !important;
   }
