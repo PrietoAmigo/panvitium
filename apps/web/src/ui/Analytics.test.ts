@@ -261,7 +261,8 @@ describe('AnalyticsGroup — report layout (Claude Design rework)', () => {
     const rite = container!.querySelector('.an-rite');
     expect(rite!.classList.contains('an-rite--idle')).toBe(true);
     expect(rite!.textContent).toBe('Player · idle');
-    expect((rite!.querySelector('.an-bar-fill') as HTMLElement).style.width).toBe('0%');
+    const fill = rite!.querySelector('.an-bar-fill') as HTMLElement;
+    expect(fill.style.getPropertyValue('--an-bar')).toBe('0%');
   });
 
   it("shows the player's in-flight rite with its time left", () => {

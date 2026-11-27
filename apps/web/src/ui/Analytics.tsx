@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useState, type CSSProperties, type ReactElement } from 'react';
 import { strings } from '@panvitium/shared';
 import {
   ACTIONS,
@@ -23,6 +23,7 @@ import { formatBigNum, formatDuration } from '../game/format.js';
 import { actionProgress } from '../game/progress.js';
 import { actionName } from '../game/labels.js';
 import { invocationEffectText } from '../game/invocationEffect.js';
+import { AN_ICONS, type AnIconName } from './analyticsPixel.js';
 
 type AnalyticsTab = 'main' | 'actions' | 'risk';
 
@@ -113,12 +114,34 @@ function SectionTitle({ title, note }: { title: string; note?: string }): ReactE
   );
 }
 
-/** A 10px square progress bar, `pct` in 0..1. */
+/**
+ * A segmented progress bar (6 px segments on a 9 px pitch), `pct` in 0..1. The width rides a
+ * variable so the CSS can round it down to whole segments.
+ */
 function Bar({ pct }: { pct: number }): ReactElement {
   return (
     <span className="an-bar">
-      <span className="an-bar-fill" style={{ width: `${(pct * 100).toFixed(0)}%` }} />
+      <span
+        className="an-bar-fill"
+        style={{ '--an-bar': `${(pct * 100).toFixed(0)}%` } as CSSProperties}
+      />
     </span>
+  );
+}
+
+/** One of the tabs' 5 × 5 pixel glyphs, 15 px square (one art pixel = 3 px). */
+function TabGlyph({ name }: { name: AnIconName }): ReactElement {
+  return (
+    <svg
+      className="an-tab-glyph"
+      width="15"
+      height="15"
+      viewBox="0 0 5 5"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+    >
+      <path d={AN_ICONS[name]} fill="currentColor" />
+    </svg>
   );
 }
 
@@ -127,7 +150,7 @@ function FlowTable({ rows }: { rows: readonly FlowRow[] }): ReactElement {
   const a = strings.analytics;
   return (
     <div className="an-table an-flows" role="table">
-      <div className="an-tr" role="row">
+      <div className="an-tr an-tr--head" role="row">
         <span className="an-th" role="columnheader" />
         <span className="an-th an-r" role="columnheader">
           {a.generation}
@@ -288,7 +311,7 @@ function AcolyteTable({ state }: { state: GameState }): ReactElement {
   const eff = Math.max(computeModifiers(state).acolyteEfficiencyMul, 1e-9);
   return (
     <div className="an-table an-acolytes" role="table">
-      <div className="an-tr" role="row">
+      <div className="an-tr an-tr--head" role="row">
         <span className="an-th" role="columnheader">
           {strings.acolytes.acolyte}
         </span>
@@ -452,7 +475,7 @@ function RiskTab(): ReactElement {
           const actions = Object.values(ACTIONS).filter((d) => d.category === cat);
           if (actions.length === 0) return null;
           return [
-            <div className="an-risk-row" role="row" key={`group-${cat}`}>
+            <div className="an-risk-row an-risk-row--group" role="row" key={`group-${cat}`}>
               <span className="an-risk-group" role="rowheader">
                 {strings.opera[cat]}
               </span>
@@ -490,7 +513,9 @@ function RiskTab(): ReactElement {
 
 /**
  * The PC's Analytics program (5.4): the live numeric readouts, laid out as a plain printed-report
- * BI tool that fills the PC window (full-bleed, see FULLBLEED in PcWindow). A fixed header carries the
+ * BI tool that fills the PC window (full-bleed, see FULLBLEED in PcWindow), dressed in the PC
+ * programs' pixel art (the 3 px art grid of the Orbis Tenebrarum program and the Counting House;
+ * the rules, bars and highlights live in index.css, the tab glyphs in analyticsPixel.ts). A fixed header carries the
  * tab row and the current tab's subtitle over a scrolling page. Main holds the resources, their flows
  * and the reprobate population; Actions everything acting on the player's behalf (the player, each
  * acolyte, each bound invocation). A third tab, Risk (every action's live outcome odds), opens once
@@ -513,6 +538,7 @@ export function AnalyticsGroup(): ReactElement {
       className={'an-tab' + (tab === id ? ' an-tab--active' : '')}
       onClick={() => setTab(id)}
     >
+      <TabGlyph name={id} />
       {label}
     </button>
   );
