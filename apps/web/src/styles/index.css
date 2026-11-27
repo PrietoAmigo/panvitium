@@ -2098,11 +2098,22 @@ body {
    Analytics_handoff.md). A mundane, printed-report corporate BI tool rendered
    full-bleed inside the PC window (see FULLBLEED in PcWindow): a fixed header
    (the tab row and the tab's subtitle over a heavy rule) above a scrolling page
-   of KPIs and ruled tables. Deliberately not the Counting House skin: no
-   sidebar, no rounded cards, no teal, no shadows; radius 0 throughout.
-   Ruled tables are grids with column-gap 0 whose rows are `display: contents`,
-   so every cell carries its own bottom rule and the rules run unbroken; the
-   column spacing is each non-first cell's 32px left padding.
+   of KPIs and ruled tables. Not the Counting House skin: no sidebar, no cards,
+   no teal; it keeps its own paper, ink and report blue.
+
+   Pixel dress: the report sits on the PC programs' 3 px art grid, the same as
+   the Orbis Tenebrarum program and the Counting House. Type is Pixelify Sans
+   for titles, body and figures (tabular digits), Silkscreen for the small
+   capitals (headings, labels, column heads). Every rule is 3 px: the strong
+   ones solid ink, the row hairlines dotted (3 px on, 3 px off). The bars are
+   segmented (6 px on a 9 px pitch, the Orbis odds bars) and round down to
+   whole segments where CSS can round; the active tab's bar and the likeliest
+   Risk outcome's highlight have stepped corners; the tabs carry 5 x 5 pixel
+   glyphs (analyticsPixel.ts).
+   Ruled tables are grids with column-gap 0 whose rows are subgrids spanning
+   every column, so each row is one box that draws its own dotted rule along
+   its foot and the dots keep one phase from row to row; the column spacing is
+   each non-first cell's 32px left padding.
    ───────────────────────────────────────────────────────────────────────── */
 .an-root {
   --an-paper: #f6f5f1;
@@ -2115,8 +2126,25 @@ body {
   --an-highlight: #e9e7df;
   --an-accent: #2f4fb0;
   --an-neg: #b3261e;
-  --an-sans: 'IBM Plex Sans Condensed', system-ui, sans-serif;
-  --an-mono: 'JetBrains Mono', monospace;
+  --an-pixel: 'Pixelify Sans', 'Ubuntu Mono', monospace;
+  --an-caps: 'Silkscreen', monospace;
+  /* A dotted 3 px rule, laid along a box's foot as a background (3 px on, 3 px off). */
+  --an-dots: repeating-linear-gradient(90deg, var(--an-rule-head) 0 3px, transparent 3px 6px);
+  /* One stepped corner (a 3 px notch) on each corner of a box. */
+  --an-notch: polygon(
+    3px 0,
+    calc(100% - 3px) 0,
+    calc(100% - 3px) 3px,
+    100% 3px,
+    100% calc(100% - 3px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 3px) 100%,
+    3px 100%,
+    3px calc(100% - 3px),
+    0 calc(100% - 3px),
+    0 3px,
+    3px 3px
+  );
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -2124,11 +2152,17 @@ body {
   min-height: 0;
   background: var(--an-paper);
   color: var(--an-ink);
-  font-family: var(--an-sans);
+  font-family: var(--an-pixel);
+  /* Pixelify Sans joins "fi" into one glyph that reads as an "A" at these sizes ("efficiency"). */
+  font-variant-ligatures: none;
   overflow: hidden;
 }
+.an-root button:focus-visible {
+  outline: 3px solid var(--an-accent);
+  outline-offset: 3px;
+}
 
-/* ── Header: the tab row and the current tab's subtitle ── */
+/* ── Header: the tab row and the current tab's subtitle, over a 3 px ink rule ── */
 .an-header {
   flex: 0 0 auto;
   display: flex;
@@ -2136,27 +2170,28 @@ body {
   justify-content: space-between;
   gap: 24px;
   padding: 0 32px;
-  border-bottom: 2px solid var(--an-ink);
   background: var(--an-paper);
+  box-shadow: inset 0 -3px 0 0 var(--an-ink);
 }
 .an-tabs {
   display: flex;
   align-items: flex-end;
-  gap: 28px;
+  gap: 30px;
 }
 .an-tab {
-  font-family: var(--an-sans);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--an-pixel);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--an-muted);
   background: none;
   border: none;
-  border-bottom: 4px solid transparent;
   border-radius: 0;
-  padding: 18px 0 12px;
-  /* The 4px bar sits over the header's 2px rule. */
-  margin-bottom: -2px;
+  padding: 18px 0 18px;
   cursor: pointer;
 }
 .an-tab:hover {
@@ -2164,14 +2199,38 @@ body {
 }
 .an-tab--active {
   color: var(--an-ink);
-  border-bottom-color: var(--an-accent);
+}
+.an-tab-glyph {
+  display: block;
+  flex: none;
+}
+/* The selected tab's bar: two art pixels of report blue over the header's rule, its top corners
+   stepped in by one. */
+.an-tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: var(--an-accent);
+  clip-path: polygon(
+    3px 0,
+    calc(100% - 3px) 0,
+    calc(100% - 3px) 3px,
+    100% 3px,
+    100% 100%,
+    0 100%,
+    0 3px,
+    3px 3px
+  );
 }
 .an-subtitle {
   min-width: 0;
-  padding-bottom: 14px;
-  font-family: var(--an-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.04em;
+  padding-bottom: 18px;
+  font-family: var(--an-pixel);
+  font-size: 12px;
+  letter-spacing: 0.02em;
   color: var(--an-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -2183,7 +2242,19 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 28px 32px 48px;
+  padding: 30px 32px 48px;
+}
+.an-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+.an-scroll::-webkit-scrollbar-thumb {
+  background: var(--an-rule-head);
+  border-radius: 0;
+  border: 3px solid var(--an-paper);
+}
+.an-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 .an-page {
   max-width: 1080px;
@@ -2199,26 +2270,29 @@ body {
   min-width: 0;
 }
 .an-h2 {
-  margin: 0 0 10px;
-  font-family: var(--an-sans);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  margin: 0 0 12px;
+  font-family: var(--an-caps);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .an-h2-note {
-  font-family: var(--an-mono);
-  font-weight: 400;
+  font-family: var(--an-pixel);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--an-muted);
 }
 .an-empty {
   margin: 0;
   padding: 12px 0;
-  border-top: 1px solid var(--an-ink);
-  font-size: 0.92rem;
+  border-top: 3px solid var(--an-ink);
+  font-size: 14px;
   color: var(--an-muted);
 }
 
-/* ── KPI: a top rule, a label, the big figure, an optional cap and net rate ── */
+/* ── KPI: a 3 px top rule, a small-capital label, the big figure, an optional cap and net rate ── */
 .an-kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -2228,14 +2302,15 @@ body {
 .an-kpi {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 9px;
   padding-top: 12px;
-  border-top: 1px solid var(--an-ink);
+  border-top: 3px solid var(--an-ink);
 }
 .an-kpi-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-family: var(--an-caps);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .an-kpi-line {
   display: flex;
@@ -2244,62 +2319,78 @@ body {
   gap: 10px;
 }
 .an-kpi-value {
-  font-size: 3.2rem;
+  font-size: 51px;
   font-weight: 500;
-  line-height: 1;
-  letter-spacing: -0.03em;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 .an-kpi-cap {
-  font-family: var(--an-mono);
-  font-size: 0.74rem;
+  font-size: 13px;
   color: var(--an-muted);
+  font-variant-numeric: tabular-nums;
 }
 .an-kpi-net {
-  font-family: var(--an-mono);
-  font-size: 0.78rem;
+  font-size: 13px;
   font-weight: 500;
   color: var(--an-accent);
+  font-variant-numeric: tabular-nums;
 }
 .an-kpi-net--neg {
   color: var(--an-neg);
 }
 
-/* ── Progress bar: 10px, square, accent fill on the row-rule track ── */
+/* ── Progress bar: 6 px segments on a 9 px pitch, report-blue fill over the row-rule track ── */
 .an-bar {
   display: block;
-  height: 10px;
-  background: var(--an-rule-row);
+  height: 9px;
+  background: repeating-linear-gradient(90deg, var(--an-rule-row) 0 6px, transparent 6px 9px);
+  overflow: hidden;
 }
 .an-bar-fill {
   display: block;
   height: 100%;
-  background: var(--an-accent);
+  width: var(--an-bar, 0%);
+  background: repeating-linear-gradient(90deg, var(--an-accent) 0 6px, transparent 6px 9px);
+}
+/* Where CSS can round, the fill stops on a whole segment instead of cutting one. */
+@supports (width: round(down, 50%, 9px)) {
+  .an-bar-fill {
+    width: round(down, var(--an-bar, 0%), 9px);
+  }
 }
 
 /* ── Ruled tables (Flows, Acolytes) ── */
 .an-table {
   display: grid;
   column-gap: 0;
-  border-top: 1px solid var(--an-ink);
+  border-top: 3px solid var(--an-ink);
   font-variant-numeric: tabular-nums;
 }
 .an-tr {
-  display: contents;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  background: var(--an-dots) left bottom / 100% 3px no-repeat;
+}
+.an-tr--head {
+  background: linear-gradient(var(--an-rule-head), var(--an-rule-head)) left bottom / 100% 3px
+    no-repeat;
 }
 .an-th {
-  padding: 8px 0 8px 32px;
-  border-bottom: 1px solid var(--an-rule-head);
-  font-size: 0.7rem;
+  padding: 9px 0 12px 32px;
+  font-family: var(--an-caps);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--an-muted);
 }
 .an-th--strong {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--an-ink);
 }
 .an-td {
-  padding: 12px 0 12px 32px;
-  border-bottom: 1px solid var(--an-rule-row);
+  padding: 12px 0 15px 32px;
 }
 .an-tr > :first-child {
   padding-left: 0;
@@ -2308,18 +2399,17 @@ body {
   text-align: right;
 }
 .an-td--label {
-  font-size: 0.92rem;
+  font-size: 15px;
   font-weight: 500;
 }
 .an-num {
-  font-family: var(--an-mono);
-  font-size: 0.82rem;
+  font-size: 14px;
   color: var(--an-ink-2);
   text-align: right;
   white-space: nowrap;
 }
 .an-num--net {
-  font-size: 0.86rem;
+  font-size: 14px;
   font-weight: 600;
   color: var(--an-accent);
 }
@@ -2339,27 +2429,28 @@ body {
 .an-ledger {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--an-ink);
+  border-top: 3px solid var(--an-ink);
 }
 .an-ledger-row {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--an-rule-row);
-  font-size: 0.92rem;
+  padding: 12px 0 15px;
+  background: var(--an-dots) left bottom / 100% 3px no-repeat;
+  font-size: 15px;
 }
 .an-ledger-row--total {
   font-weight: 600;
-  border-bottom: none;
+  background: none;
 }
 .an-ledger-val {
-  font-family: var(--an-mono);
-  font-size: 0.82rem;
+  font-size: 14px;
   color: var(--an-neg);
+  font-variant-numeric: tabular-nums;
 }
 .an-ledger-row--total .an-ledger-val {
-  font-size: 0.86rem;
+  font-size: 15px;
 }
 
 /* Actions: the efficiency figure beside the player's in-flight work. */
@@ -2372,15 +2463,15 @@ body {
 .an-rites {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
 }
 .an-rite {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
   padding-top: 12px;
-  border-top: 1px solid var(--an-ink);
+  border-top: 3px solid var(--an-ink);
 }
 .an-rite-head {
   display: flex;
@@ -2389,22 +2480,24 @@ body {
   gap: 12px;
 }
 .an-rite-label {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-family: var(--an-caps);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 .an-rite--idle .an-rite-label {
   color: var(--an-disabled);
 }
 .an-rite-time {
-  font-family: var(--an-mono);
-  font-size: 0.78rem;
+  font-size: 13px;
   color: var(--an-ink-2);
+  font-variant-numeric: tabular-nums;
 }
 
-/* The acolyte table centres each cell's content vertically inside the stretched cell, so the row
-   rules stay continuous across the mixed type sizes. Idle acolytes read greyed throughout. */
+/* The acolyte table centres each cell's content vertically inside the stretched cell, so the
+   contents line up across the mixed type sizes. Idle acolytes read greyed throughout. */
 .an-acolytes {
-  grid-template-columns: auto auto minmax(0, 1fr) auto minmax(120px, 260px);
+  grid-template-columns: auto auto minmax(0, 1fr) auto minmax(120px, 261px);
 }
 .an-acolytes .an-td {
   display: flex;
@@ -2417,12 +2510,12 @@ body {
   color: var(--an-ink);
 }
 .an-td--name {
-  font-size: 0.92rem;
+  font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
 }
 .an-td--action {
-  font-size: 0.92rem;
+  font-size: 15px;
 }
 .an-td--bar .an-bar {
   flex: 1 1 auto;
@@ -2431,27 +2524,26 @@ body {
   color: var(--an-disabled);
 }
 
-/* Invocations: a ruled grid of name + live total effect. */
+/* Invocations: a ruled grid of name + live total effect, each entry over its own dotted rule. */
 .an-invocations {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  column-gap: 0;
-  border-top: 1px solid var(--an-ink);
+  column-gap: 30px;
+  border-top: 3px solid var(--an-ink);
 }
 .an-inv {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px 32px 12px 0;
-  border-bottom: 1px solid var(--an-rule-row);
+  padding: 12px 0 15px;
+  background: var(--an-dots) left bottom / 100% 3px no-repeat;
 }
 .an-inv-name {
-  font-size: 0.92rem;
+  font-size: 15px;
   font-weight: 600;
 }
 .an-inv-effect {
-  font-family: var(--an-mono);
-  font-size: 0.78rem;
+  font-size: 13px;
   color: var(--an-ink-2);
 }
 
@@ -2461,54 +2553,72 @@ body {
 }
 .an-risk {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) repeat(7, minmax(70px, auto));
+  grid-template-columns: minmax(120px, 1fr) repeat(7, minmax(72px, auto));
   min-width: 720px;
-  border-top: 1px solid var(--an-ink);
+  border-top: 3px solid var(--an-ink);
   font-variant-numeric: tabular-nums;
 }
 .an-risk-row {
-  display: contents;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  background: var(--an-dots) left bottom / 100% 3px no-repeat;
+}
+.an-risk-head {
+  background: linear-gradient(var(--an-ink), var(--an-ink)) left bottom / 100% 3px no-repeat;
+}
+.an-risk-row--group {
+  background: linear-gradient(var(--an-rule-head), var(--an-rule-head)) left bottom / 100% 3px
+    no-repeat;
 }
 .an-risk-label {
-  padding: 10px 10px 10px 0;
-  border-bottom: 1px solid var(--an-rule-row);
-  font-size: 0.92rem;
+  padding: 12px 10px 15px 0;
+  font-size: 15px;
   font-weight: 500;
 }
 .an-risk-cell {
-  padding: 10px;
-  border-bottom: 1px solid var(--an-rule-row);
-  font-family: var(--an-mono);
-  font-size: 0.82rem;
+  position: relative;
+  z-index: 0;
+  padding: 12px 12px 15px;
+  font-size: 14px;
   text-align: right;
 }
 .an-risk-head .an-risk-label,
 .an-risk-head .an-risk-cell {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  border-bottom-color: var(--an-ink);
-  font-size: 0.7rem;
+  padding-top: 9px;
+  padding-bottom: 12px;
+  font-family: var(--an-caps);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .an-risk-head .an-risk-label {
-  font-weight: 400;
   color: var(--an-muted);
 }
 .an-risk-head .an-risk-cell {
-  font-family: var(--an-sans);
-  font-weight: 600;
+  font-weight: 700;
 }
 .an-risk-group {
   grid-column: 1 / -1;
-  padding: 16px 0 6px;
-  border-bottom: 1px solid var(--an-rule-head);
-  font-size: 0.7rem;
-  font-weight: 600;
+  padding: 18px 0 9px;
+  font-family: var(--an-caps);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--an-muted);
 }
-/* The likeliest outcome of each action. */
+/* The likeliest outcome of each action: a stepped chip of highlight behind the figure, clear of the
+   row's dotted rule. */
 .an-risk-cell--top {
   font-weight: 600;
+}
+.an-risk-cell--top::before {
+  content: '';
+  position: absolute;
+  inset: 3px 0 6px;
+  z-index: -1;
   background: var(--an-highlight);
+  clip-path: var(--an-notch);
 }
 .an-tier--stellar,
 .an-tier--excellent,
